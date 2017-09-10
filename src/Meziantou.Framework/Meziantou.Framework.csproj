@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <Authors>Meziantou</Authors>
+    <Company>Meziantou</Company>
+    <Description>No description</Description>
+    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
+    <RepositoryUrl></RepositoryUrl>
+    <RepositoryType></RepositoryType>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
+  </PropertyGroup>
+
+</Project>

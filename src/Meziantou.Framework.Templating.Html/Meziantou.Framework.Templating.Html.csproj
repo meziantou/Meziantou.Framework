@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Meziantou</Authors>
+    <Company>Meziantou</Company>
+    <Description>No description</Description>
+    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Templating\Meziantou.Framework.Templating.csproj" />
+  </ItemGroup>
+
+</Project>

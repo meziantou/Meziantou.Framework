@@ -7,6 +7,7 @@
     <Description>No description</Description>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

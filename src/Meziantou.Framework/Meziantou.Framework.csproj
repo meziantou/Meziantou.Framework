@@ -10,6 +10,7 @@
     <RepositoryType></RepositoryType>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
+    <Version>1.0.10</Version>
   </PropertyGroup>
 
 </Project>

@@ -24,7 +24,6 @@ namespace Meziantou.Framework.Utilities
             return null;
         }
 
-#if NET46
         /// <summary>
         /// Gets the linker timestamp of a specified assembly.
         /// </summary>
@@ -48,7 +47,6 @@ namespace Meziantou.Framework.Utilities
 
             return null;
         }
-#endif
 
         /// <summary>
         /// Gets the linker timestamp of a specified assembly.

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
-using Meziantou.Framework.Security.Native;
+using Meziantou.Framework.Win32.Native;
 
-namespace Meziantou.Framework.Security
+namespace Meziantou.Framework.Win32
 {
     public static class CredentialManager
     {

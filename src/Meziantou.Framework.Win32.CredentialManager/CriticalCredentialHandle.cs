@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
-using Meziantou.Framework.Security.Native;
+using Meziantou.Framework.Win32.Native;
 
-namespace Meziantou.Framework.Security
+namespace Meziantou.Framework.Win32
 {
     internal sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid
     {

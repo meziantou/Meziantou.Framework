@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.Security.Tests
+namespace Meziantou.Framework.Win32.Tests
 {
     [TestClass]
     public class CredentialManagerTests

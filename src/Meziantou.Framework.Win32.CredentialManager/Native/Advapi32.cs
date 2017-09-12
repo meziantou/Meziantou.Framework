@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Security.Native
+namespace Meziantou.Framework.Win32.Native
 {
     internal static class Advapi32
     {

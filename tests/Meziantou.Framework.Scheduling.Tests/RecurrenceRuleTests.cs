@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using Meziantou.Framework.Scheduling;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Scheduling.Tests

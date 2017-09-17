@@ -1,5 +1,3 @@
-using System;
-
 namespace Meziantou.Framework.CodeDom
 {
     public class CodeMethodDeclaration : CodeMemberDeclaration

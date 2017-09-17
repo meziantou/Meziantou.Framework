@@ -1,4 +1,3 @@
-using Meziantou.Framework.CodeDom;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.CodeDom.Tests

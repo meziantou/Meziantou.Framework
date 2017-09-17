@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.Templating;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Templating.Tests
 {

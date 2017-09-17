@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Tests.Utilities
             Assert.AreEqual(null, value);
         }
         [TestMethod]
-        public void TryConvert_StringToEnum_01()
+        public void TryConvert_StringToEnum_ValueAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -71,11 +71,22 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToEnum_02()
+        public void TryConvert_StringToEnum_CommaSeparatedString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("Option1, Option2", cultureInfo, out SampleEnum value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(SampleEnum.Option1 | SampleEnum.Option2, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToEnum_CommaSeparatedStringAndInt()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("Option1, 2", cultureInfo, out SampleEnum value);
 
             Assert.AreEqual(true, converted);
             Assert.AreEqual(SampleEnum.Option1 | SampleEnum.Option2, value);
@@ -104,7 +115,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_01()
+        public void TryConvert_CultureInfo_CultureAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -115,7 +126,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_02()
+        public void TryConvert_CultureInfo_NeutralCultureAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -126,7 +137,29 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_03()
+        public void TryConvert_CultureInfo_LcidAsInt()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual("en-US", value.Name);
+        }
+
+        [TestMethod]
+        public void TryConvert_CultureInfo_LcidAsString()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("1033", cultureInfo, out CultureInfo value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual("en-US", value.Name);
+        }
+
+        [TestMethod]
+        public void TryConvert_CultureInfo_InvalidCulture()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -136,7 +169,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_04()
+        public void TryConvert_CultureInfo_06()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;

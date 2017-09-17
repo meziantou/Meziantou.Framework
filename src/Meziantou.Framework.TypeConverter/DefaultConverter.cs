@@ -315,6 +315,33 @@ namespace Meziantou.Framework.Utilities
                 catch (CultureNotFoundException)
                 {
                 }
+
+                if (int.TryParse(name, out var i))
+                {
+                    if (TryConvert(i, provider, out value))
+                        return true;
+                }
+            }
+
+            if (input is int lcid)
+            {
+                if (TryConvert(lcid, provider, out value))
+                    return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        protected virtual bool TryConvert(int lcid, IFormatProvider provider, out CultureInfo value)
+        {
+            try
+            {
+                value = new CultureInfo(lcid);
+                return true;
+            }
+            catch (CultureNotFoundException)
+            {
             }
 
             value = null;
@@ -986,7 +1013,7 @@ namespace Meziantou.Framework.Utilities
                     return true;
                 }
 
-                var vtType = conversionType.GetTypeInfo().GenericTypeArguments[0];
+                var vtType = Nullable.GetUnderlyingType(conversionType);
                 if (TryConvert(input, vtType, provider, out object vtValue))
                 {
                     var nt = typeof(Nullable<>).MakeGenericType(vtType);

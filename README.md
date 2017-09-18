@@ -22,20 +22,31 @@ A universal converter that supports lots of conversion.
 
 ````csharp
 ConvertUtilities.ChangeType("42", defaultValue: 0)
+ConvertUtilities.ChangeType("Value1, 2", defaultValue: MyEnum.Unknown)
 ````
 
 # Meziantou.Framework.Csv
 
+CSV reader and writer.
+
 ````csharp
-var reader = new CsvReader(sr);
+var reader = new CsvReader(textReader);
 reader.HasHeaderRow = true;
 
 CsvRow row;
-while((row = reader.ReadRow()) != null)
+while((row = (await reader.ReadRowAsync())) != null)
 {
-    row1.GetValue(0);        // Get value by index
-    row1.GetValue("column1") // Get value by column name
+    row.GetValue(0);        // Get value by index
+    row.GetValue("column1") // Get value by column name
 }
+````
+
+````csharp
+var writer = new CsvWriter(sw);
+await writer.WriteRowAsync("A", "B");
+await writer.BeginRowAsync();
+await writer.WriteValueAsync("C");
+await writer.WriteValueAsync("D");
 ````
 
 # Meziantou.Framework.Scheduling
@@ -84,15 +95,17 @@ string result = template.Run("Meziantou"); // result= "Hello Meziantou!"
 
 # Meziantou.Framework.Templating.Html
 
+Extensions for Templating to support the html format: Encoding text, url or attribute. For email, it extracts the list of cid.
+
 ````csharp
 var template = new HtmlEmailTemplate();
-template.Load("Hello {{@begin section title}}{{# \"Meziantou\" }}{{@end section}}!");
-HtmlEmailMetadata metadata;
+template.Load("<head><title>{{@begin section title}}Hello {{# Name }}{{@end section}}!</title></head>" +
+"<body>{{#html "Here's an image"}} <img src=\"{{cid sample.png}}\" /></body>");
+template.AddArgument("Name", typeof(string));
 
-// Act 
-string result = template.Run(out metadata);
+string result = template.Run("Meziantou", out var metadata);
 
-// Assert
-Assert.AreEqual("Hello Meziantou!", result);
-Assert.AreEqual("Meziantou", metadata.Title);
+Assert.AreEqual("<head><title>Hello Meziantou!</title></head><body>Here's an image <img src=\"cid:sample.png\"/></body>", result);
+Assert.AreEqual("Hello Meziantou", metadata.Title);
+Assert.AreEqual("sample.png", metadata.ContentIdentifiers[0]);
 ````

@@ -1378,8 +1378,24 @@ namespace Meziantou.Framework.Utilities
                 // do nothing
             }
 
+            if (TryConvertUsingImplicitConverter(input, conversionType, provider, out value))
+                return true;
+
             value = defaultValue;
             return false;
+        }
+
+        protected virtual bool TryConvertUsingImplicitConverter(object input, Type conversionType, IFormatProvider provider, out object value)
+        {
+            var op = ReflectionUtilities.GetImplicitConversion(input, conversionType);
+            if (op == null)
+            {
+                value = default;
+                return false;
+            }
+
+            value = op.Invoke(null, new object[] { input });
+            return true;
         }
     }
 }

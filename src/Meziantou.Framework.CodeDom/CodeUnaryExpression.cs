@@ -2,8 +2,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public class CodeUnaryExpression : CodeExpression
     {
-        private CodeExpression _rightExpression;
-        private CodeExpression _leftExpression;
+        private CodeExpression _expression;
 
         public CodeUnaryExpression()
         {
@@ -19,8 +18,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeExpression Expression
         {
-            get { return _leftExpression; }
-            set { _leftExpression = SetParent(value); }
+            get { return _expression; }
+            set { _expression = SetParent(value); }
         }
     }
 }

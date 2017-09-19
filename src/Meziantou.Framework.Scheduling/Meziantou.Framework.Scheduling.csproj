@@ -3,10 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>No description</Description>
-    <Company>Meziantou</Company>
-    <Authors>Meziantou</Authors>
-    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
     <Version>1.0.7</Version>
   </PropertyGroup>
 

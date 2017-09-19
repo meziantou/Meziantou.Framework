@@ -3,7 +3,6 @@
     public class CodeCatchClause : CodeObject
     {
         private CodeTypeReference _exceptionType;
-        private string _exceptionVariableName;
         private CodeStatementCollection _body;
 
         public string ExceptionVariableName { get; set; }

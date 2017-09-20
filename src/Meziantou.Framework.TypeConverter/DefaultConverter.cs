@@ -914,59 +914,6 @@ namespace Meziantou.Framework.Utilities
             return false;
         }
 
-        private static TypeCode GetTypeCode(Type type)
-        {
-            if (type == null)
-                return TypeCode.Empty;
-
-            if (type == typeof(bool))
-                return TypeCode.Boolean;
-
-            if (type == typeof(char))
-                return TypeCode.Char;
-
-            if (type == typeof(sbyte))
-                return TypeCode.SByte;
-
-            if (type == typeof(byte))
-                return TypeCode.Byte;
-
-            if (type == typeof(short))
-                return TypeCode.Int16;
-
-            if (type == typeof(ushort))
-                return TypeCode.UInt16;
-
-            if (type == typeof(int))
-                return TypeCode.Int32;
-
-            if (type == typeof(uint))
-                return TypeCode.UInt32;
-
-            if (type == typeof(long))
-                return TypeCode.Int64;
-
-            if (type == typeof(ulong))
-                return TypeCode.UInt64;
-
-            if (type == typeof(float))
-                return TypeCode.Single;
-
-            if (type == typeof(double))
-                return TypeCode.Double;
-
-            if (type == typeof(decimal))
-                return TypeCode.Decimal;
-
-            if (type == typeof(DateTime))
-                return TypeCode.DateTime;
-
-            if (type == typeof(string))
-                return TypeCode.String;
-
-            return TypeCode.Object;
-        }
-
         protected virtual bool TryConvert(object input, Type conversionType, IFormatProvider provider, out object value)
         {
             if (conversionType == null)
@@ -978,7 +925,7 @@ namespace Meziantou.Framework.Utilities
                 return true;
             }
 
-            if (input == null)
+            if (input == null || Convert.IsDBNull(input))
             {
                 if (conversionType.IsNullableOfT())
                 {
@@ -1031,8 +978,7 @@ namespace Meziantou.Framework.Utilities
                     return true;
             }
 
-            var inputCode = GetTypeCode(inputType);
-            var conversionCode = GetTypeCode(conversionType);
+            var conversionCode = Type.GetTypeCode(conversionType);
             switch (conversionCode)
             {
                 case TypeCode.Boolean:
@@ -1237,8 +1183,13 @@ namespace Meziantou.Framework.Utilities
                     else if (conversionType == typeof(byte[]))
                     {
                         byte[] bytes;
+                        var inputCode = Type.GetTypeCode(inputType);
                         switch (inputCode)
                         {
+                            case TypeCode.DBNull:
+                                value = null;
+                                return true;
+
                             case TypeCode.Boolean:
                                 value = BitConverter.GetBytes((bool)input);
                                 return true;

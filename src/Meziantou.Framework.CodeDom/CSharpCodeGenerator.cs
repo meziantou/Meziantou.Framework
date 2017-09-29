@@ -114,6 +114,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case CodeConstructorInitializer o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -289,7 +293,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine(";");
         }
-        
+
         protected virtual void Write(IndentedTextWriter writer, CodeEventFieldDeclaration member)
         {
             Write(writer, member.CustomAttributes);
@@ -323,6 +327,13 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("(");
             Write(writer, member.Arguments);
             writer.Write(")");
+            if (member.Initializer != null)
+            {
+                writer.WriteLine();
+                writer.Indent++;
+                Write(writer, member.Initializer);
+                writer.Indent--;
+            }
             writer.WriteLine();
             WriteStatementsOrEmptyBlock(writer, member.Statements);
         }
@@ -569,6 +580,28 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, CodeCatchClauseCollection clauses)
         {
             Write(writer, clauses, "");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeConstructorInitializer initializer)
+        {
+            writer.Write(": ");
+            switch (initializer)
+            {
+                case CodeConstructorThisInitializer o:
+                    writer.Write("this");
+                    break;
+
+                case CodeConstructorBaseInitializer o:
+                    writer.Write("base");
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(initializer));
+            }
+
+            writer.Write('(');
+            Write(writer, initializer.Arguments, ", ");
+            writer.Write(')');
         }
 
         protected virtual string Write(BinaryOperator op)

@@ -28,7 +28,7 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(unit);
-            
+
             Assert.AreEqual(@"namespace Meziantou.Framework.CodeDom
 {
     class Sample
@@ -61,6 +61,27 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             Assert.AreEqual(@"while (true)
 {
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Constructor()
+        {
+            var type = new CodeClassDeclaration("Sample");
+            var ctor = type.AddMember(new CodeConstructorDeclaration());
+            ctor.Initializer = new CodeConstructorBaseInitializer();
+            ctor.Modifiers = Modifiers.Public;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            Assert.AreEqual(@"class Sample
+{
+    public Sample()
+        : base()
+    {
+    }
 }
 ", result);
         }

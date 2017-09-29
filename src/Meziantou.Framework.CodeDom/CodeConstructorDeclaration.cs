@@ -3,6 +3,7 @@ namespace Meziantou.Framework.CodeDom
     public class CodeConstructorDeclaration : CodeMemberDeclaration
     {
         private CodeStatementCollection _statements;
+        private CodeConstructorInitializer _initializer;
 
         public CodeConstructorDeclaration()
         {
@@ -15,6 +16,12 @@ namespace Meziantou.Framework.CodeDom
         {
             get { return _statements; }
             set { _statements = SetParent(value); }
+        }
+
+        public CodeConstructorInitializer Initializer
+        {
+            get { return _initializer; }
+            set { _initializer = SetParent(value); }
         }
 
         public Modifiers Modifiers { get; set; }

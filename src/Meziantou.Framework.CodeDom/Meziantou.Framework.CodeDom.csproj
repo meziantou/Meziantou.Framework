@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <Description>No description</Description>    
+    <Description>No description</Description>
+    <Version>1.0.1</Version>    
   </PropertyGroup>
 
 </Project>

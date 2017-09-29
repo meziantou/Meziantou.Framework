@@ -136,124 +136,237 @@ namespace Meziantou.Framework.CodeDom
             switch (expression.Value)
             {
                 case null:
-                    writer.Write("null");
+                    WriteNull(writer);
                     return;
 
-                case true:
-                    writer.Write("true");
-                    break;
-
-                case false:
-                    writer.Write("false");
+                case bool value:
+                    Write(writer, value);
                     break;
 
                 case sbyte value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                    Write(writer, value);
                     return;
 
                 case byte value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                    Write(writer, value);
                     return;
 
                 case short value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                    Write(writer, value);
                     return;
 
                 case ushort value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                    Write(writer, value);
                     return;
 
                 case int value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                    Write(writer, value);
                     return;
 
                 case uint value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("u");
+                    Write(writer, value);
                     return;
 
                 case long value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("L");
+                    Write(writer, value);
                     return;
 
                 case ulong value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("uL");
+                    Write(writer, value);
                     return;
 
                 case float value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("f");
+                    Write(writer, value);
                     return;
 
                 case double value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("d");
+                    Write(writer, value);
                     return;
 
                 case decimal value:
-                    writer.Write(value.ToString(CultureInfo.InvariantCulture));
-                    writer.Write("m");
+                    Write(writer, value);
                     return;
 
+                case char value:
+                    Write(writer, value);
+                    break;
+
                 case string value:
-                    writer.Write("\"");
-                    foreach (var c in value)
-                    {
-                        switch (c)
-                        {
-                            case '"':
-                                writer.Write("\\\"");
-                                break;
-
-                            case '\t':
-                                writer.Write("\\\t");
-                                break;
-
-                            case '\r':
-                                writer.Write("\\\r");
-                                break;
-
-                            case '\n':
-                                writer.Write("\\\n");
-                                break;
-
-                            case '\a':
-                                writer.Write("\\\a");
-                                break;
-
-                            case '\b':
-                                writer.Write("\\\b");
-                                break;
-
-                            case '\f':
-                                writer.Write("\\\f");
-                                break;
-
-                            case '\v':
-                                writer.Write("\\\v");
-                                break;
-
-                            case '\0':
-                                writer.Write("\\\0");
-                                break;
-
-                            case '\\':
-                                writer.Write("\\\\");
-                                break;
-
-                            default:
-                                break;
-
-                        }
-                    }
-
-                    writer.Write("\"");
+                    Write(writer, value);
                     return;
 
                 default:
                     throw new NotSupportedException();
+            }
+        }
+
+        protected virtual void WriteNull(IndentedTextWriter writer)
+        {
+            writer.Write("null");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, bool value)
+        {
+            if (value)
+            {
+                writer.Write("true");
+            }
+            else
+            {
+                writer.Write("false");
+            }
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, sbyte value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, byte value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, short value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, ushort value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, int value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, uint value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+            writer.Write("u");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, long value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+            writer.Write("L");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, ulong value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+            writer.Write("uL");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, string value)
+        {
+            writer.Write("\"");
+            foreach (var c in value)
+            {
+                switch (c)
+                {
+                    case '"':
+                        writer.Write("\\\"");
+                        break;
+
+                    case '\t':
+                        writer.Write("\\\t");
+                        break;
+
+                    case '\r':
+                        writer.Write("\\\r");
+                        break;
+
+                    case '\n':
+                        writer.Write("\\\n");
+                        break;
+
+                    case '\a':
+                        writer.Write("\\\a");
+                        break;
+
+                    case '\b':
+                        writer.Write("\\\b");
+                        break;
+
+                    case '\f':
+                        writer.Write("\\\f");
+                        break;
+
+                    case '\v':
+                        writer.Write("\\\v");
+                        break;
+
+                    case '\0':
+                        writer.Write("\\\0");
+                        break;
+
+                    case '\\':
+                        writer.Write("\\\\");
+                        break;
+
+                    default:
+                        break;
+
+                }
+            }
+            writer.Write("\"");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, char value)
+        {
+            writer.Write('\'');
+            writer.Write(value);
+            writer.Write('\'');
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, decimal value)
+        {
+            writer.Write(value.ToString(CultureInfo.InvariantCulture));
+            writer.Write("m");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, float value)
+        {
+            if (float.IsNaN(value))
+            {
+                writer.Write("float.NaN");
+            }
+            else if (float.IsNegativeInfinity(value))
+            {
+                writer.Write("float.NegativeInfinity");
+            }
+            else if (float.IsPositiveInfinity(value))
+            {
+                writer.Write("float.PositiveInfinity");
+            }
+            else
+            {
+                writer.Write(value.ToString(CultureInfo.InvariantCulture));
+                writer.Write("F");
+            }
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, double value)
+        {
+            if (double.IsNaN(value))
+            {
+                writer.Write("double.NaN");
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                writer.Write("double.NegativeInfinity");
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                writer.Write("double.PositiveInfinity");
+            }
+            else
+            {
+                writer.Write(value.ToString("R", CultureInfo.InvariantCulture));
+                writer.Write("D");
             }
         }
 

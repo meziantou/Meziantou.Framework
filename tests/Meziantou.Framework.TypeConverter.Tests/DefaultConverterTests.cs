@@ -229,5 +229,38 @@ namespace Meziantou.Framework.Tests.Utilities
             Assert.AreEqual(true, converted);
             Assert.AreEqual(CultureInfo.InvariantCulture, value);
         }
+
+        [TestMethod]
+        public void TryConvert_Uri_01()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("", cultureInfo, out Uri value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(null, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_Uri_02()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("test.png", cultureInfo, out Uri value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new Uri("test.png", UriKind.Relative), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_Uri_03()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("http://meziantou.net", cultureInfo, out Uri value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new Uri("http://meziantou.net", UriKind.Absolute), value);
+        }
     }
 }

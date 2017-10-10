@@ -16,8 +16,9 @@ namespace Meziantou.Framework.Utilities
         private static MethodInfo GetEnumTryParseMethodInfo()
         {
             // Enum.TryParse<T>(string value, bool ignoreCase, out T value)
-            return typeof(Enum).GetTypeInfo().GetDeclaredMethods(nameof(Enum.TryParse))
-                .First(m => m.IsGenericMethod && m.IsStatic && m.IsPublic && m.GetParameters().Length == 3);
+            return typeof(Enum)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .First(m => m.Name == nameof(Enum.TryParse) && m.IsGenericMethod && m.GetParameters().Length == 3);
         }
 
         public virtual bool TryChangeType(object input, Type conversionType, IFormatProvider provider, out object value)
@@ -933,7 +934,7 @@ namespace Meziantou.Framework.Utilities
                     return true;
                 }
 
-                if (conversionType.GetTypeInfo().IsValueType)
+                if (conversionType.IsValueType)
                 {
                     value = Activator.CreateInstance(conversionType);
                     return false;
@@ -944,7 +945,7 @@ namespace Meziantou.Framework.Utilities
             }
 
             var inputType = input.GetType();
-            if (conversionType.GetTypeInfo().IsAssignableFrom(inputType.GetTypeInfo()))
+            if (conversionType.IsAssignableFrom(inputType.GetTypeInfo()))
             {
                 value = input;
                 return true;
@@ -972,7 +973,7 @@ namespace Meziantou.Framework.Utilities
             }
 
             // enum must be before integers
-            if (conversionType.GetTypeInfo().IsEnum)
+            if (conversionType.IsEnum)
             {
                 if (TryConvertEnum(input, conversionType, provider, out value))
                     return true;
@@ -1315,7 +1316,7 @@ namespace Meziantou.Framework.Utilities
                 // do nothing
             }
 
-            var defaultValue = conversionType.GetTypeInfo().IsValueType ? Activator.CreateInstance(conversionType) : null;
+            var defaultValue = conversionType.IsValueType ? Activator.CreateInstance(conversionType) : null;
             try
             {
                 if (ctConverter != null && !(input is string) && ctConverter.CanConvertFrom(typeof(string)))

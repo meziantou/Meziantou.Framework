@@ -9,17 +9,17 @@ namespace Meziantou.Framework.Utilities
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            return type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
         public static bool IsFlagsEnum(Type type)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            if (!type.GetTypeInfo().IsEnum)
+            if (!type.IsEnum)
                 return false;
 
-            return type.GetTypeInfo().IsDefined(typeof(FlagsAttribute), true);
+            return type.IsDefined(typeof(FlagsAttribute), true);
         }
     }
 }

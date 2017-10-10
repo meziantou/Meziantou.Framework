@@ -88,10 +88,10 @@ namespace Meziantou.Framework.Templating
         public void AddReference(Type type)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
-            if (type.GetTypeInfo().Assembly.Location == null)
+            if (type.Assembly.Location == null)
                 throw new ArgumentException("Assembly has no location.");
 
-            ReferencePaths.Add(type.GetTypeInfo().Assembly.Location);
+            ReferencePaths.Add(type.Assembly.Location);
         }
 
         public void AddUsing(string @namespace)
@@ -139,7 +139,7 @@ namespace Meziantou.Framework.Templating
             if (type == null) throw new ArgumentNullException(nameof(type));
 
             string friendlyName = type.Name;
-            if (type.GetTypeInfo().IsGenericType)
+            if (type.IsGenericType)
             {
                 int iBacktick = friendlyName.IndexOf('`');
                 if (iBacktick > 0)
@@ -147,7 +147,7 @@ namespace Meziantou.Framework.Templating
                     friendlyName = friendlyName.Remove(iBacktick);
                 }
                 friendlyName += "<";
-                Type[] typeParameters = type.GetTypeInfo().GetGenericArguments();
+                Type[] typeParameters = type.GetGenericArguments();
                 for (int i = 0; i < typeParameters.Length; ++i)
                 {
                     string typeParamName = GetFriendlyTypeName(typeParameters[i]);
@@ -399,13 +399,13 @@ namespace Meziantou.Framework.Templating
         {
             var references = new List<string>
             {
-                typeof(object).GetTypeInfo().Assembly.Location,
-                typeof(Template).GetTypeInfo().Assembly.Location,
+                typeof(object).Assembly.Location,
+                typeof(Template).Assembly.Location,
                 // Require to use dynamic keyword                
-                typeof(System.Runtime.CompilerServices.DynamicAttribute).GetTypeInfo().Assembly.Location,
-                typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).GetTypeInfo().Assembly.Location,
-                typeof(System.Dynamic.DynamicObject).GetTypeInfo().Assembly.Location,
-                typeof(System.Linq.Expressions.ExpressionType).GetTypeInfo().Assembly.Location,
+                typeof(System.Runtime.CompilerServices.DynamicAttribute).Assembly.Location,
+                typeof(Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo).Assembly.Location,
+                typeof(System.Dynamic.DynamicObject).Assembly.Location,
+                typeof(System.Linq.Expressions.ExpressionType).Assembly.Location,
                 Assembly.Load(new AssemblyName("mscorlib")).Location,
                 Assembly.Load(new AssemblyName("System.Runtime")).Location,
                 Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location,
@@ -415,7 +415,7 @@ namespace Meziantou.Framework.Templating
 
             if (OutputType != null)
             {
-                references.Add(OutputType.GetTypeInfo().Assembly.Location);
+                references.Add(OutputType.Assembly.Location);
             }
 
             foreach (string reference in ReferencePaths)
@@ -510,7 +510,7 @@ namespace Meziantou.Framework.Templating
         protected virtual MethodInfo FindMethod(Assembly assembly)
         {
             var type = assembly.GetType(ClassName);
-            return type.GetTypeInfo().GetMethod(RunMethodName);
+            return type.GetMethod(RunMethodName);
         }
 
         protected virtual StringWriter CreateStringWriter()

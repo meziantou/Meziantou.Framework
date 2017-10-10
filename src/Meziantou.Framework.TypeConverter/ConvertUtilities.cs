@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Utilities
             {
                 if (v == null)
                 {
-                    if (typeof(T).GetTypeInfo().IsValueType)
+                    if (typeof(T).IsValueType)
                     {
                         value = (T)Activator.CreateInstance(typeof(T));
                     }
@@ -109,7 +109,7 @@ namespace Meziantou.Framework.Utilities
             if (conversionType == null)
                 throw new ArgumentNullException(nameof(conversionType));
 
-            if (defaultValue == null && conversionType.GetTypeInfo().IsValueType)
+            if (defaultValue == null && conversionType.IsValueType)
             {
                 defaultValue = Activator.CreateInstance(conversionType);
             }

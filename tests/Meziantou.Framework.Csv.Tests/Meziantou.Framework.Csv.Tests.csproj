@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Csv\Meziantou.Framework.Csv.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TypeConverter\Meziantou.Framework.TypeConverter.csproj" />
   </ItemGroup>
 
 </Project>

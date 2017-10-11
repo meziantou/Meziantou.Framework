@@ -171,11 +171,21 @@ namespace Meziantou.Framework.Csv
 
             if (HasHeaderRow && _columns == null)
             {
-                _columns = rowValues.Select((value, index) => new CsvColumn(value, index)).ToArray();
+                _columns = rowValues.Select((value, index) => CreateColumn(value, index)).ToArray();
                 return await ReadRowAsync().ConfigureAwait(false); // Read the first row with data
             }
 
-            return new CsvRow(_columns, rowValues);
+            return CreateRow(_columns, rowValues);
+        }
+
+        protected virtual CsvColumn CreateColumn(string name, int index)
+        {
+            return new CsvColumn(name, index);
+        }
+
+        protected virtual CsvRow CreateRow(IReadOnlyList<CsvColumn> columns, IReadOnlyList<string> values)
+        {
+            return new CsvRow(columns, values);
         }
     }
 }

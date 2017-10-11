@@ -26,13 +26,13 @@ namespace Meziantou.Framework.Csv.Tests
 
                 Assert.IsNull(row3);
 
-                Assert.AreEqual("value1.1", row1.GetValue(0));
-                Assert.AreEqual("value1.2", row1.GetValue(1));
-                Assert.AreEqual("value1.3", row1.GetValue(2));
+                Assert.AreEqual("value1.1", row1[0]);
+                Assert.AreEqual("value1.2", row1[1]);
+                Assert.AreEqual("value1.3", row1[2]);
 
-                Assert.AreEqual("value2.1", row2.GetValue(0));
-                Assert.AreEqual("value2.2", row2.GetValue(1));
-                Assert.AreEqual("value2.3", row2.GetValue(2));
+                Assert.AreEqual("value2.1", row2[0]);
+                Assert.AreEqual("value2.2", row2[1]);
+                Assert.AreEqual("value2.3", row2[2]);
             }
         }
 
@@ -54,13 +54,13 @@ namespace Meziantou.Framework.Csv.Tests
 
                 Assert.IsNull(row3);
 
-                Assert.AreEqual("value1.1", row1.GetValue("column1"));
-                Assert.AreEqual("value1.2", row1.GetValue("column2"));
-                Assert.AreEqual("value1.3", row1.GetValue("column3"));
+                Assert.AreEqual("value1.1", row1["column1"]);
+                Assert.AreEqual("value1.2", row1["column2"]);
+                Assert.AreEqual("value1.3", row1["column3"]);
 
-                Assert.AreEqual("value2.1", row2.GetValue("column1"));
-                Assert.AreEqual("value2.2", row2.GetValue("column2"));
-                Assert.AreEqual("value2.3", row2.GetValue("column3"));
+                Assert.AreEqual("value2.1", row2["column1"]);
+                Assert.AreEqual("value2.2", row2["column2"]);
+                Assert.AreEqual("value2.3", row2["column3"]);
             }
         }
 
@@ -82,13 +82,13 @@ namespace Meziantou.Framework.Csv.Tests
 
                 Assert.IsNull(row3);
 
-                Assert.AreEqual("value1.1", row1.GetValue("column1"));
-                Assert.AreEqual("value1.2\r\nline2", row1.GetValue("column2"));
-                Assert.AreEqual("value1.3", row1.GetValue("column3"));
+                Assert.AreEqual("value1.1", row1["column1"]);
+                Assert.AreEqual("value1.2\r\nline2", row1["column2"]);
+                Assert.AreEqual("value1.3", row1["column3"]);
 
-                Assert.AreEqual("value2.1", row2.GetValue("column1"));
-                Assert.AreEqual("value2.2", row2.GetValue("column2"));
-                Assert.AreEqual("value2.3", row2.GetValue("column3"));
+                Assert.AreEqual("value2.1", row2["column1"]);
+                Assert.AreEqual("value2.2", row2["column2"]);
+                Assert.AreEqual("value2.3", row2["column3"]);
             }
         }
 
@@ -103,7 +103,7 @@ namespace Meziantou.Framework.Csv.Tests
                 var reader = new CsvReader(sr);
                 var row1 = await reader.ReadRowAsync();
 
-                Assert.AreEqual("a\"c", row1.GetValue(0));
+                Assert.AreEqual("a\"c", row1[0]);
             }
         }
 
@@ -118,7 +118,7 @@ namespace Meziantou.Framework.Csv.Tests
                 var reader = new CsvReader(sr);
                 var row1 = await reader.ReadRowAsync();
 
-                Assert.AreEqual("\"bc", row1.GetValue(0));
+                Assert.AreEqual("\"bc", row1[0]);
             }
         }
 
@@ -133,7 +133,7 @@ namespace Meziantou.Framework.Csv.Tests
                 var reader = new CsvReader(sr);
                 var row1 = await reader.ReadRowAsync();
 
-                Assert.AreEqual("ab\"", row1.GetValue(0));
+                Assert.AreEqual("ab\"", row1[0]);
             }
         }
     }

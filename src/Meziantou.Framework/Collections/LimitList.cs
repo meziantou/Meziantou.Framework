@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Collections
         public LimitList(int maximumCount)
         {
             if (maximumCount <= 0)
-                throw new ArgumentException(null, "maximumCount");
+                throw new ArgumentException("Maximum count must be greater than 0.", nameof(maximumCount));
 
             MaximumCount = maximumCount;
         }

@@ -36,6 +36,77 @@ namespace Meziantou.Framework.Csv
 
         public Task WriteValueAsync(string value)
         {
+            string v = EscapeCsvValue(value);
+            return BaseWriter.WriteAsync(v);
+        }
+
+        public async Task WriteValuesAsync(IEnumerable<string> values)
+        {
+            foreach (var value in values)
+            {
+                await WriteValueAsync(value).ConfigureAwait(false);
+            }
+        }
+
+        public Task WriteValuesAsync(params string[] values)
+        {
+            return WriteValuesAsync((IEnumerable<string>)values);
+        }
+
+        public Task WriteRowAsync(params string[] values)
+        {
+            return WriteRowAsync((IEnumerable<string>)values);
+        }
+
+        public async Task WriteRowAsync(IEnumerable<string> values)
+        {
+            await BeginRowAsync().ConfigureAwait(false);
+            await WriteValuesAsync(values).ConfigureAwait(false);
+        }
+
+        public void BeginRow()
+        {
+            var isFirstRow = _isFirstRow;
+            _isFirstRow = false;
+            _isFirstRowValue = true;
+            if (!isFirstRow)
+            {
+                BaseWriter.Write(EndOfLine);
+            }
+        }
+
+        public void WriteValue(string value)
+        {
+            string v = EscapeCsvValue(value);
+            BaseWriter.Write(v);
+        }
+
+        public void WriteValues(IEnumerable<string> values)
+        {
+            foreach (var value in values)
+            {
+                WriteValue(value);
+            }
+        }
+
+        public void WriteValues(params string[] values)
+        {
+            WriteValues((IEnumerable<string>)values);
+        }
+
+        public void WriteRow(params string[] values)
+        {
+            WriteRow((IEnumerable<string>)values);
+        }
+
+        public void WriteRow(IEnumerable<string> values)
+        {
+            BeginRow();
+            WriteValues(values);
+        }
+
+        private string EscapeCsvValue(string value)
+        {
             var sb = new StringBuilder();
             if (!_isFirstRowValue)
             {
@@ -78,31 +149,8 @@ namespace Meziantou.Framework.Csv
                 }
             }
 
-            return BaseWriter.WriteAsync(sb.ToString());
-        }
-
-        public async Task WriteValuesAsync(IEnumerable<string> values)
-        {
-            foreach (var value in values)
-            {
-                await WriteValueAsync(value).ConfigureAwait(false);
-            }
-        }
-
-        public Task WriteValuesAsync(params string[] values)
-        {
-            return WriteValuesAsync((IEnumerable<string>)values);
-        }
-
-        public Task WriteRowAsync(params string[] values)
-        {
-            return WriteRowAsync((IEnumerable<string>)values);
-        }
-
-        public async Task WriteRowAsync(IEnumerable<string> values)
-        {
-            await BeginRowAsync().ConfigureAwait(false);
-            await WriteValuesAsync(values).ConfigureAwait(false);
+            var v = sb.ToString();
+            return v;
         }
     }
 }

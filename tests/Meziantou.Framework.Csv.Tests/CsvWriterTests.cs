@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Csv.Tests
     public class CsvWriterTests
     {
         [TestMethod]
-        public async Task CsvWriter_NoEscape()
+        public async Task CsvWriterAsync_NoEscape()
         {
             using (var sw = new StringWriter())
             {
@@ -24,7 +24,7 @@ C,D", sw.ToString());
         }
 
         [TestMethod]
-        public async Task CsvWriter_EscapeValueWithSeparator()
+        public async Task CsvWriterAsync_EscapeValueWithSeparator()
         {
             using (var sw = new StringWriter())
             {
@@ -38,7 +38,7 @@ C,D", sw.ToString());
         }
 
         [TestMethod]
-        public async Task CsvWriter_EscapeValueWithStartingQuote()
+        public async Task CsvWriterAsync_EscapeValueWithStartingQuote()
         {
             using (var sw = new StringWriter())
             {
@@ -55,7 +55,7 @@ C,D", sw.ToString());
         [DataRow(",A;B:D;E")]
         [DataRow("A;\"B:D;E")]
         [DataRow("A;B\":D;E")]
-        public async Task CsvWriter_CsvReader(string data)
+        public async Task CsvWriterAsync_CsvReader(string data)
         {
             var rows = new List<List<string>>();
             foreach (var row in data.Split(':'))
@@ -89,5 +89,84 @@ C,D", sw.ToString());
             }
         }
 
+        [TestMethod]
+        public void CsvWriter_NoEscape()
+        {
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                writer.WriteRow("A", "B");
+                writer.WriteRow("C", "D");
+
+                Assert.AreEqual(@"A,B
+C,D", sw.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void CsvWriter_EscapeValueWithSeparator()
+        {
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                writer.WriteRow("A", "B,");
+                writer.WriteRow("C", "D");
+
+                Assert.AreEqual(@"A,""B,""
+C,D", sw.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void CsvWriter_EscapeValueWithStartingQuote()
+        {
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                writer.WriteRow("A", "\"B");
+
+                Assert.AreEqual("A,\"\"\"B\"", sw.ToString());
+            }
+        }
+
+        [TestMethod]
+        [DataRow("A;B:D;E")]
+        [DataRow("A,;B:D;E")]
+        [DataRow(",A;B:D;E")]
+        [DataRow("A;\"B:D;E")]
+        [DataRow("A;B\":D;E")]
+        public async Task CsvWriter_CsvReader(string data)
+        {
+            var rows = new List<List<string>>();
+            foreach (var row in data.Split(':'))
+            {
+                rows.Add(new List<string>(row.Split(';')));
+            }
+
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                foreach (var row in rows)
+                {
+                    writer.WriteRow(row);
+                }
+
+                var csv = sw.ToString();
+                using (var sr = new StringReader(csv))
+                {
+                    var reader = new CsvReader(sr);
+
+                    var rowIndex = -1;
+                    CsvRow csvRow;
+                    while ((csvRow = await reader.ReadRowAsync()) != null)
+                    {
+                        rowIndex++;
+                        CollectionAssert.AreEqual(rows[rowIndex], csvRow.Values.ToList());
+                    }
+
+                    Assert.AreEqual(rows.Count - 1, rowIndex);
+                }
+            }
+        }
     }
 }

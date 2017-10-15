@@ -3,15 +3,22 @@
 Lots of extensions methods and utilities
 
 ````csharp
+// IO Extensions
 IOUtilities.PathCreateDirectory(@"c:\test\file.txt")
 IOUtilities.MakeRelativePath(root: @"c:\test", path: @"c:\temp\file.txt") // ..\temp\file.txt
 IOUtilities.ToValidFileName("tes/t.txt") // tes_x47_t.txt
 
-Slug.Create("My super blog post") // my-super-blog-post
-
+// String Extensions
 "test".EqualsIgnoreCase("Test")
 "test".ContainsIgoreCase("ES")
 "Tést".RemoveDiacritics() // Test
+
+// Throttle / Debounce
+action.Throttle(TimeSpan.FromMilliseconds(300));
+action.Debounce(TimeSpan.FromMilliseconds(300));
+
+// Slugs
+Slug.Create("My super blog post") // my-super-blog-post
 
 // And many more extensions/utilities
 ````
@@ -36,8 +43,8 @@ reader.HasHeaderRow = true;
 CsvRow row;
 while((row = (await reader.ReadRowAsync())) != null)
 {
-    row.GetValue(0);        // Get value by index
-    row.GetValue("column1") // Get value by column name
+    row[0];        // Get value by index
+    row["column1"] // Get value by column name
 }
 ````
 

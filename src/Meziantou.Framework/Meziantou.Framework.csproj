@@ -3,7 +3,35 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>No description</Description>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Utilities\DebounceExtensions.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>DebounceExtensions.cs</LastGenOutput>
+    </None>
+    <None Update="Utilities\ThrottleExtensions.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ThrottleExtensions.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Utilities\DebounceExtensions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>DebounceExtensions.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Utilities\ThrottleExtensions.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ThrottleExtensions.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
 
 </Project>

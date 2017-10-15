@@ -1,0 +1,71 @@
+﻿<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ output extension=".cs" #>
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Meziantou.Framework.Utilities
+{
+    public static class DebounceExtensions
+    {
+<# for (int i = 0; i < 10; i++) { #>
+        public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
+		{
+		    if (action == null) throw new ArgumentNullException(nameof(action));
+
+		    var last = 0;
+			return (<#= GetArgsString(i) #>) =>
+			{
+			    var current = Interlocked.Increment(ref last);
+				Task.Delay(interval).ContinueWith(task =>
+				{
+				    if (current == last)
+					{
+					    action(<#= GetArgsString(i) #>);
+					}
+
+					task.Dispose();
+				});
+			};
+		}
+
+<# } #>
+    }
+}
+<#+
+	string GetTemplateString(int count)
+	{
+		if (count == 0)
+		    return "";
+
+		var str = "<";
+		for (var i = 0; i < count; i++)
+		{
+		    if (i > 0)
+			{
+			    str += ", ";
+			}
+
+			str += "T" + i;
+		}
+		return str + ">";
+	}
+
+	string GetArgsString(int count)
+	{
+		if (count == 0)
+		    return "";
+
+		var str = "";
+		for (var i = 0; i < count; i++)
+		{
+		    if (i > 0)
+			{
+			    str += ", ";
+			}
+
+			str += "arg" + i;
+		}
+		return str;
+	}
+#>

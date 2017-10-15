@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Tests.Utilities
 
             debounced();
             debounced();
-            await Task.Delay(50);
+            await Task.Delay(70);
             Assert.AreEqual(1, count);
 
             debounced();

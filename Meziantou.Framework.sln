@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26823.1
+VisualStudioVersion = 15.0.27019.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{70A3E965-3866-4D23-9626-8D70E0E8729C}"
 EndProject
@@ -41,7 +41,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.TypeCon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeDom", "src\Meziantou.Framework.CodeDom\Meziantou.Framework.CodeDom.csproj", "{A2C2363D-DE98-4DDE-B587-59123F4799EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.CodeDom.Tests", "tests\Meziantou.Framework.CodeDom.Tests\Meziantou.Framework.CodeDom.Tests.csproj", "{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeDom.Tests", "tests\Meziantou.Framework.CodeDom.Tests\Meziantou.Framework.CodeDom.Tests.csproj", "{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AccessToken", "src\Meziantou.Framework.Win32.AccessToken\Meziantou.Framework.Win32.AccessToken.csproj", "{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AccessTokenConsoleTests", "tests\Meziantou.Framework.Win32.AccessTokenConsoleTests\Meziantou.Framework.Win32.AccessTokenConsoleTests.csproj", "{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -121,6 +125,14 @@ Global
 		{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -144,6 +156,8 @@ Global
 		{68C15D62-4838-498F-A11D-AAB05FE89FBC} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{A2C2363D-DE98-4DDE-B587-59123F4799EB} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

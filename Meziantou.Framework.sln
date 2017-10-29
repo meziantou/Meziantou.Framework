@@ -43,9 +43,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeDom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeDom.Tests", "tests\Meziantou.Framework.CodeDom.Tests\Meziantou.Framework.CodeDom.Tests.csproj", "{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AccessToken", "src\Meziantou.Framework.Win32.AccessToken\Meziantou.Framework.Win32.AccessToken.csproj", "{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AccessToken", "src\Meziantou.Framework.Win32.AccessToken\Meziantou.Framework.Win32.AccessToken.csproj", "{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AccessTokenConsoleTests", "tests\Meziantou.Framework.Win32.AccessTokenConsoleTests\Meziantou.Framework.Win32.AccessTokenConsoleTests.csproj", "{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AccessTokenConsole", "Samples\Meziantou.Framework.Win32.AccessTokenConsole\Meziantou.Framework.Win32.AccessTokenConsole.csproj", "{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DB679A70-C2CB-4CD1-9530-D31627343FC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -157,7 +159,7 @@ Global
 		{A2C2363D-DE98-4DDE-B587-59123F4799EB} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{6BE5B3FB-0ABB-4D34-AE16-930FD8736CBC} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
-		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

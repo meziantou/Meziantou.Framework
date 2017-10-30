@@ -11,7 +11,7 @@ namespace Meziantou.Framework.CodeDom
         public CodeUnaryExpression(UnaryOperator op, CodeExpression expression)
         {
             Operator = op;
-            Expression = Expression;
+            Expression = expression;
         }
 
         public UnaryOperator Operator { get; set; }

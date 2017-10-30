@@ -17,6 +17,8 @@ namespace Meziantou.Framework.CodeDom
         Substract,
         Multiply,
         Divide,
-        Modulo
+        Modulo,
+        ShiftLeft,
+        ShiftRight
     }
 }

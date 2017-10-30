@@ -118,6 +118,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case CodeTypeParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -158,7 +162,9 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
-                // TODO Interface
+                case CodeInterfaceDeclaration o:
+                    Write(writer, o);
+                    break;
 
                 default:
                     throw new NotSupportedException();
@@ -167,9 +173,8 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeEnumerationDeclaration enumeration)
         {
-            writer.Write("enumeration ");
+            writer.Write("enum ");
             WriteIdentifier(writer, enumeration.Name);
-            writer.WriteLine();
 
             if (enumeration.BaseType != null)
             {
@@ -177,15 +182,19 @@ namespace Meziantou.Framework.CodeDom
                 Write(writer, enumeration.BaseType);
             }
 
+            writer.WriteLine();
             writer.WriteLine("{");
             writer.Indent++;
 
-            foreach (var value in enumeration.Members)
+            Write(writer, enumeration.Members, (e) =>
             {
-                Write(writer, value);
-                writer.WriteLine(",");
-            }
+                if (!e.Last)
+                {
+                    writer.WriteLine(",");
+                }
+            });
 
+            writer.WriteLine();
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -381,7 +390,7 @@ namespace Meziantou.Framework.CodeDom
         {
             writer.Write("class ");
             WriteIdentifier(writer, type.Name);
-            writer.WriteLine();
+            WriteGenericParameters(writer, type);
 
             var baseTypes = GetBaseTypes(type);
             if (baseTypes.Any())
@@ -389,6 +398,33 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(" : ");
                 Write(writer, baseTypes, ", ");
             }
+
+            writer.WriteLine();
+            WriteGenericParameterConstraints(writer, type);
+
+            writer.WriteLine("{");
+            writer.Indent++;
+            Write(writer, type.Members, writer.NewLine);
+            Write(writer, type.Types, writer.NewLine);
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeInterfaceDeclaration type)
+        {
+            writer.Write("interface ");
+            WriteIdentifier(writer, type.Name);
+            WriteGenericParameters(writer, type);
+
+            var baseTypes = GetBaseTypes(type);
+            if (baseTypes.Any())
+            {
+                writer.Write(" : ");
+                Write(writer, baseTypes, ", ");
+            }
+
+            writer.WriteLine();
+            WriteGenericParameterConstraints(writer, type);
 
             writer.WriteLine("{");
             writer.Indent++;
@@ -604,6 +640,51 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(')');
         }
 
+        protected virtual void Write(IndentedTextWriter writer, CodeTypeParameterConstraint constraint)
+        {
+            switch (constraint)
+            {
+                case CodeBaseTypeParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
+                case CodeClassTypeParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
+                case CodeValueTypeTypeParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
+                case CodeConstructorParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeBaseTypeParameterConstraint constraint)
+        {
+            Write(writer, constraint.Type);
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeClassTypeParameterConstraint constraint)
+        {
+            writer.Write("class");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeValueTypeTypeParameterConstraint constraint)
+        {
+            writer.Write("struct");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeConstructorParameterConstraint constraint)
+        {
+            writer.Write("new()");
+        }
+
         protected virtual string Write(BinaryOperator op)
         {
             switch (op)
@@ -640,6 +721,10 @@ namespace Meziantou.Framework.CodeDom
                     return "/";
                 case BinaryOperator.Modulo:
                     return "%";
+                case BinaryOperator.ShiftLeft:
+                    return "<<";
+                case BinaryOperator.ShiftRight:
+                    return ">>";
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op));
@@ -731,7 +816,47 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        private List<CodeTypeReference> GetBaseTypes(CodeClassDeclaration c)
+        protected virtual void WriteConstraints(IndentedTextWriter writer, CodeTypeParameter parameter)
+        {
+            // 1. class, struct
+            // 2. base
+            // 3. new()
+            var orderedConstraints = new List<CodeTypeParameterConstraint>(parameter.Constraints.Count);
+            orderedConstraints.AddRange(parameter.Constraints.Where(p => p is CodeValueTypeTypeParameterConstraint || p is CodeClassTypeParameterConstraint));
+            orderedConstraints.AddRange(parameter.Constraints.Where(p => p is CodeBaseTypeParameterConstraint));
+            orderedConstraints.AddRange(parameter.Constraints.Where(p => p is CodeConstructorParameterConstraint));
+
+            writer.Write("where ");
+            writer.Write(parameter.Name);
+            writer.Write(" : ");
+            Write(writer, orderedConstraints, ", ");
+        }
+
+        private void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
+        {
+            if (type.Parameters.Any())
+            {
+                writer.Write("<");
+                WriteValues(writer, type.Parameters.Select(p => p.Name), ", ");
+                writer.Write(">");
+            }
+        }
+
+        private void WriteGenericParameterConstraints(IndentedTextWriter writer, IParametrableType type)
+        {
+            if (type.Parameters.Any())
+            {
+                writer.Indent++;
+                foreach (var parameter in type.Parameters)
+                {
+                    WriteConstraints(writer, parameter);
+                    writer.WriteLine();
+                }
+                writer.Indent--;
+            }
+        }
+
+        private List<CodeTypeReference> GetBaseTypes(IInheritanceParameters c)
         {
             var list = new List<CodeTypeReference>();
             if (c.BaseType != null)
@@ -747,7 +872,22 @@ namespace Meziantou.Framework.CodeDom
             return list;
         }
 
-        protected void Write<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator) where T : CodeObject
+        private void WriteValues<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator)
+        {
+            bool first = true;
+            foreach (var o in objects)
+            {
+                if (!first)
+                {
+                    writer.Write(separator);
+                }
+
+                writer.Write(o);
+                first = false;
+            }
+        }
+
+        private void Write<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator) where T : CodeObject
         {
             bool first = true;
             foreach (var o in objects)
@@ -759,6 +899,16 @@ namespace Meziantou.Framework.CodeDom
 
                 Write(writer, o);
                 first = false;
+            }
+        }
+
+        private void Write<T>(IndentedTextWriter writer, IReadOnlyList<T> objects, Action<(T Item, bool First, bool Last)> afterItemAction) where T : CodeObject
+        {
+            for (int i = 0; i < objects.Count; i++)
+            {
+                var o = objects[i];
+                Write(writer, o);
+                afterItemAction((o, i == 0, i == objects.Count - 1));
             }
         }
     }

@@ -1,13 +1,13 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
-    public class CodeClassDeclaration : CodeTypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer
+    public class CodeInterfaceDeclaration : CodeTypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer
     {
-        public CodeClassDeclaration()
+        public CodeInterfaceDeclaration()
             : this(null)
         {
         }
 
-        public CodeClassDeclaration(string name)
+        public CodeInterfaceDeclaration(string name)
         {
             Name = name;
             Implements = new CodeObjectCollection<CodeTypeReference>(this);

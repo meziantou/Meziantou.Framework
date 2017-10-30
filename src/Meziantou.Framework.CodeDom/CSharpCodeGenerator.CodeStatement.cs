@@ -74,7 +74,10 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("try");
             WriteStatementsOrEmptyBlock(writer, statement.Try);
 
-            Write(writer, statement.Catch);
+            if (statement.Catch != null)
+            {
+                Write(writer, statement.Catch);
+            }
 
             if (statement.Finally != null)
             {

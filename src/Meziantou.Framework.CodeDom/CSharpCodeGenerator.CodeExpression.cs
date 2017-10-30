@@ -81,6 +81,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case CodeVariableReference o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -272,42 +276,43 @@ namespace Meziantou.Framework.CodeDom
                         break;
 
                     case '\t':
-                        writer.Write("\\\t");
+                        writer.Write(@"\t");
                         break;
 
                     case '\r':
-                        writer.Write("\\\r");
+                        writer.Write(@"\r");
                         break;
 
                     case '\n':
-                        writer.Write("\\\n");
+                        writer.Write(@"\n");
                         break;
 
                     case '\a':
-                        writer.Write("\\\a");
+                        writer.Write(@"\a");
                         break;
 
                     case '\b':
-                        writer.Write("\\\b");
+                        writer.Write(@"\b");
                         break;
 
                     case '\f':
-                        writer.Write("\\\f");
+                        writer.Write(@"\f");
                         break;
 
                     case '\v':
-                        writer.Write("\\\v");
+                        writer.Write(@"\v");
                         break;
 
                     case '\0':
-                        writer.Write("\\\0");
+                        writer.Write(@"\0");
                         break;
 
                     case '\\':
-                        writer.Write("\\\\");
+                        writer.Write(@"\\");
                         break;
 
                     default:
+                        writer.Write(c);
                         break;
 
                 }
@@ -466,6 +471,11 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("typeof(");
             Write(writer, expression.Type);
             writer.Write(")");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeVariableReference expression)
+        {
+            WriteIdentifier(writer, expression.Name);
         }
     }
 }

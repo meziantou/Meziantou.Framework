@@ -9,6 +9,12 @@ namespace Meziantou.Framework.CodeDom
             Members = new CodeObjectCollection<CodeEnumerationMember>(this);
         }
 
+        public CodeEnumerationDeclaration(string name)
+        {
+            Members = new CodeObjectCollection<CodeEnumerationMember>(this);
+            Name = name;
+        }
+
         public CodeTypeReference BaseType
         {
             get { return _baseType; }

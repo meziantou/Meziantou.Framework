@@ -17,7 +17,7 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference(CodeTypeDeclaration typeDeclaration)
         {
-            _typeDeclaration = typeDeclaration;
+            _typeDeclaration = typeDeclaration ?? throw new ArgumentNullException(nameof(typeDeclaration));
         }
 
         public CodeTypeReference(string clrFullTypeName)
@@ -77,13 +77,21 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
+        private CodeObjectCollection<CodeTypeReference> _typeDeclarationParameters;
         public CodeObjectCollection<CodeTypeReference> Parameters
         {
             get
             {
-                if (_typeDeclaration is ITypeParameters typeParameter)
+                if (_typeDeclaration is IParametrableType typeParameter)
                 {
-                    return typeParameter.Parameters;
+                    if (_typeDeclarationParameters == null)
+                    {
+                        var collection = new CodeObjectCollection<CodeTypeReference>(this);
+                        collection.AddRange(typeParameter.Parameters.Select(p => new CodeTypeReference(p.Name)));
+                        _typeDeclarationParameters = collection;
+                    }
+
+                    return _typeDeclarationParameters;
                 }
 
                 if (_parameters == null)

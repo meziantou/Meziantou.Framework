@@ -12,7 +12,6 @@ namespace Meziantou.Framework.CodeDom
 
         public override Encoding Encoding => InnerWriter.Encoding;
 
-
         public override string NewLine
         {
             get
@@ -175,6 +174,12 @@ namespace Meziantou.Framework.CodeDom
 
         public override void WriteLine(string s)
         {
+            if (s == null)
+            {
+                WriteLine();
+                return;
+            }
+
             OutputTabs();
             InnerWriter.WriteLine(s);
             _tabsPending = true;
@@ -182,7 +187,7 @@ namespace Meziantou.Framework.CodeDom
 
         public override void WriteLine()
         {
-            OutputTabs();
+            //OutputTabs(); // we want actually empty line
             InnerWriter.WriteLine();
             _tabsPending = true;
         }

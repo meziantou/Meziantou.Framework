@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.CodeDom
 {
-    public class CodeMethodDeclaration : CodeMemberDeclaration
+    public class CodeMethodDeclaration : CodeMemberDeclaration, IParametrableType
     {
         private CodeTypeReference _returnType;
 
@@ -10,6 +10,7 @@ namespace Meziantou.Framework.CodeDom
             set { _returnType = SetParent(value); }
         }
 
+        public CodeObjectCollection<CodeTypeParameter> Parameters { get; }
         public CodeObjectCollection<CodeMethodArgumentDeclaration> Arguments { get; }
         public CodeStatementCollection Statements { get; set; }
         public Modifiers Modifiers { get; set; }
@@ -22,6 +23,7 @@ namespace Meziantou.Framework.CodeDom
         public CodeMethodDeclaration(string name)
         {
             Arguments = new CodeObjectCollection<CodeMethodArgumentDeclaration>(this);
+            Parameters = new CodeObjectCollection<CodeTypeParameter>(this);
             Name = name;
         }
     }

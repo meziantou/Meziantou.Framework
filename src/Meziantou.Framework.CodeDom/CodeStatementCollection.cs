@@ -106,5 +106,12 @@ namespace Meziantou.Framework.CodeDom
             collection.Add(codeStatement);
             return collection;
         }
+
+        public static implicit operator CodeStatementCollection(CodeExpression codeExpression)
+        {
+            CodeStatementCollection collection = new CodeStatementCollection();
+            collection.Add(codeExpression);
+            return collection;
+        }
     }
 }

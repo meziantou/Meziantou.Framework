@@ -7,6 +7,8 @@ namespace Meziantou.Framework.CodeDom
     {
         protected virtual void Write(IndentedTextWriter writer, CodeExpression expression)
         {
+            if (expression == null) throw new ArgumentNullException(nameof(expression));
+
             switch (expression)
             {
                 case CodeBinaryExpression o:
@@ -82,6 +84,14 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case CodeVariableReference o:
+                    Write(writer, o);
+                    break;
+
+                case CodeTypeReference o:
+                    Write(writer, o);
+                    break;
+
+                case CodeAwaitExpression o:
                     Write(writer, o);
                     break;
 
@@ -476,6 +486,26 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, CodeVariableReference expression)
         {
             WriteIdentifier(writer, expression.Name);
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeTypeReference expression)
+        {
+            string name = expression.ClrFullTypeName;
+            if (_predefinedTypes.TryGetValue(name, out var keyword))
+            {
+                name = keyword;
+            }
+
+            writer.Write(name);
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeAwaitExpression expression)
+        {
+            writer.Write("await ");
+            if (expression.Expression != null)
+            {
+                Write(writer, expression.Expression);
+            }
         }
     }
 }

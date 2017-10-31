@@ -7,11 +7,7 @@
         public CodeStatement Statement
         {
             get { return _statement; }
-            set
-            {
-                _statement = value;
-                SetParent(value);
-            }
+            set { _statement = SetParent(value); }
         }
 
         public CodeStatementCollection Body { get; set; }

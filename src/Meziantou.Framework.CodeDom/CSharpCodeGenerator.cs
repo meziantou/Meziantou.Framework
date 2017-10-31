@@ -87,7 +87,7 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case CodeStatement o:
-                    Write(writer, o);
+                    Write(writer, o, _defaultWriteStatementOptions);
                     break;
 
                 case CodeDirective o:
@@ -103,6 +103,10 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case CodeCustomAttribute o:
+                    Write(writer, o);
+                    break;
+
+                case CodeCustomAttributeArgument o:
                     Write(writer, o);
                     break;
 
@@ -224,17 +228,31 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(" ");
             }
             WriteIdentifier(writer, member.Name);
-            // TODO Generic Parameters
+            WriteGenericParameters(writer, member);
             writer.Write("(");
             Write(writer, member.Arguments);
             writer.Write(")");
+            if (member.Statements != null || member.HasConstraints())
+            {
+                writer.WriteLine();
+            }
+
+            WriteGenericParameterConstraints(writer, member);
             if (member.Statements == null)
             {
-                writer.Write(";");
+                if (member.HasConstraints())
+                {
+                    writer.Indent++;
+                    writer.WriteLine(";");
+                    writer.Indent--;
+                }
+                else
+                {
+                    writer.WriteLine(";");
+                }
             }
             else
             {
-                writer.WriteLine();
                 Write(writer, member.Statements);
             }
         }
@@ -375,17 +393,6 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeTypeReference reference)
-        {
-            string name = reference.ClrFullTypeName;
-            if (_predefinedTypes.TryGetValue(name, out var keyword))
-            {
-                name = keyword;
-            }
-
-            writer.Write(name);
-        }
-
         protected virtual void Write(IndentedTextWriter writer, CodeClassDeclaration type)
         {
             writer.Write("class ");
@@ -404,8 +411,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine("{");
             writer.Indent++;
-            Write(writer, type.Members, writer.NewLine);
-            Write(writer, type.Types, writer.NewLine);
+            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), null);
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -522,28 +528,35 @@ namespace Meziantou.Framework.CodeDom
             if (attribute.Arguments.Count > 0)
             {
                 writer.Write("(");
-                Write(writer, attribute.Arguments, ", ");
+                Write(writer, attribute.Arguments.OrderBy(GetSortOrder), ", ");
                 writer.Write(")");
             }
 
             writer.Write("]");
+
+            int GetSortOrder(CodeCustomAttributeArgument arg)
+            {
+                if (arg.PropertyName == null)
+                    return 0;
+
+                return 1;
+            }
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeCustomAttributeArgument arg)
         {
-            if (!string.IsNullOrEmpty(arg.Name))
+            if (!string.IsNullOrEmpty(arg.PropertyName))
             {
-                writer.Write(arg.Name);
-                writer.Write(": ");
+                WriteIdentifier(writer, arg.PropertyName);
+                writer.Write(" = ");
             }
 
             Write(writer, arg.Value);
-
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeMemberDeclaration directive)
+        protected virtual void Write(IndentedTextWriter writer, CodeMemberDeclaration member)
         {
-            switch (directive)
+            switch (member)
             {
                 case CodeEnumerationMember o:
                     Write(writer, o);
@@ -844,16 +857,16 @@ namespace Meziantou.Framework.CodeDom
 
         private void WriteGenericParameterConstraints(IndentedTextWriter writer, IParametrableType type)
         {
-            if (type.Parameters.Any())
+            writer.Indent++;
+            foreach (var parameter in type.Parameters)
             {
-                writer.Indent++;
-                foreach (var parameter in type.Parameters)
+                if (parameter.HasConstraints())
                 {
                     WriteConstraints(writer, parameter);
                     writer.WriteLine();
                 }
-                writer.Indent--;
             }
+            writer.Indent--;
         }
 
         private List<CodeTypeReference> GetBaseTypes(IInheritanceParameters c)
@@ -895,6 +908,21 @@ namespace Meziantou.Framework.CodeDom
                 if (!first)
                 {
                     writer.Write(separator);
+                }
+
+                Write(writer, o);
+                first = false;
+            }
+        }
+
+        private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string endOfLine) where T : CodeObject
+        {
+            bool first = true;
+            foreach (var o in objects)
+            {
+                if (!first)
+                {
+                    writer.WriteLine(endOfLine);
                 }
 
                 Write(writer, o);

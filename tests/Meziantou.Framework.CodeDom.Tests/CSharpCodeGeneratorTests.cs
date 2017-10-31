@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 
 namespace Meziantou.Framework.CodeDom.Tests
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(unit);
 
-            Assert.AreEqual(@"namespace Meziantou.Framework.CodeDom
+            Assert.That.StringEquals(@"namespace Meziantou.Framework.CodeDom
 {
     class Sample
     {
@@ -58,7 +58,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample
+            Assert.That.StringEquals(@"class Sample
 {
 }
 ", result);
@@ -81,7 +81,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample<T1, T2>
+            Assert.That.StringEquals(@"class Sample<T1, T2>
     where T1 : struct
     where T2 : class, System.ICloneable, new()
 {
@@ -97,7 +97,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"interface Sample
+            Assert.That.StringEquals(@"interface Sample
 {
 }
 ", result);
@@ -120,7 +120,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"interface Sample<T1, T2>
+            Assert.That.StringEquals(@"interface Sample<T1, T2>
     where T1 : struct
     where T2 : class, System.ICloneable, new()
 {
@@ -141,11 +141,33 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"[System.FlagsAttribute]
+            Assert.That.StringEquals(@"[System.FlagsAttribute]
 internal enum Sample : uint
 {
     A = 1,
     B = 2
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_FieldDeclaration()
+        {
+            var type = new CodeClassDeclaration("Sample");
+            type.AddMember(new CodeFieldDeclaration("_a", typeof(int)));
+            type.AddMember(new CodeFieldDeclaration("_b", typeof(Type), Modifiers.Private));
+            type.AddMember(new CodeFieldDeclaration("_c", typeof(int), Modifiers.Protected, 10));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            Assert.That.StringEquals(@"class Sample
+{
+    int _a;
+
+    private System.Type _b;
+
+    protected int _c = 10;
 }
 ", result);
         }
@@ -160,7 +182,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(loop);
 
-            Assert.AreEqual(@"while (true)
+            Assert.That.StringEquals(@"while (true)
 {
 }
 ", result);
@@ -175,7 +197,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample
+            Assert.That.StringEquals(@"class Sample
 {
     internal Sample()
     {
@@ -195,7 +217,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample
+            Assert.That.StringEquals(@"class Sample
 {
     public Sample()
         : base()
@@ -216,7 +238,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample
+            Assert.That.StringEquals(@"class Sample
 {
     public Sample()
         : this()
@@ -237,7 +259,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
 
-            Assert.AreEqual(@"class Sample
+            Assert.That.StringEquals(@"class Sample
 {
     public Sample()
         : this(""arg"")
@@ -256,7 +278,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.AreEqual(@"array[10]", result);
+            Assert.That.StringEquals(@"array[10]", result);
         }
 
         [TestMethod]
@@ -268,7 +290,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.AreEqual(@"array[10, ""test""]", result);
+            Assert.That.StringEquals(@"array[10, ""test""]", result);
         }
 
         [TestMethod]
@@ -279,7 +301,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"a = 10;
+            Assert.That.StringEquals(@"a = 10;
 ", result);
         }
 
@@ -293,7 +315,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"if (true)
+            Assert.That.StringEquals(@"if (true)
 {
     TrueSnippet
 }
@@ -311,7 +333,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"if (true)
+            Assert.That.StringEquals(@"if (true)
 {
     TrueSnippet
 }
@@ -331,7 +353,7 @@ else
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"if (true)
+            Assert.That.StringEquals(@"if (true)
 {
 }
 ", result);
@@ -348,7 +370,7 @@ else
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"try
+            Assert.That.StringEquals(@"try
 {
     TrySnippet
 }
@@ -381,7 +403,7 @@ catch
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"try
+            Assert.That.StringEquals(@"try
 {
     TrySnippet
 }
@@ -406,7 +428,7 @@ catch (System.Exception ex)
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.AreEqual(@"try
+            Assert.That.StringEquals(@"try
 {
     TrySnippet
 }
@@ -424,7 +446,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(literal);
 
-            Assert.AreEqual("\"test\"", result);
+            Assert.That.StringEquals("\"test\"", result);
         }
 
         [TestMethod]
@@ -434,7 +456,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(literal);
 
-            Assert.AreEqual("\"line1\\r\\nline2\"", result);
+            Assert.That.StringEquals("\"line1\\r\\nline2\"", result);
         }
 
         [TestMethod]
@@ -444,7 +466,436 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
-            Assert.AreEqual("default(string)", result);
+            Assert.That.StringEquals("default(string)", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Cast()
+        {
+            var expr = new CodeCastExpression(new CodeVariableReference("a"), typeof(string));
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expr);
+
+            Assert.That.StringEquals("((string)a)", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Convert()
+        {
+            var expr = new CodeConvertExpression(new CodeVariableReference("a"), typeof(string));
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expr);
+
+            Assert.That.StringEquals("(a as string)", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Throw()
+        {
+            var expr = new CodeThrowStatement(new CodeNewObjectExpression(typeof(Exception)));
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expr);
+
+            Assert.That.StringEquals(@"throw new System.Exception();
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithoutArgument()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute")));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithArgument()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(
+                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                {
+                    Arguments =
+                    {
+                        new CodeCustomAttributeArgument("arg1")
+                    }
+                });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute(""arg1"")]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithArguments()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(
+                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                {
+                    Arguments =
+                    {
+                        new CodeCustomAttributeArgument("arg1"),
+                        new CodeCustomAttributeArgument("arg2"),
+                    }
+                });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute(""arg1"", ""arg2"")]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithNamedArgument()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(
+                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                {
+                    Arguments =
+                    {
+                        new CodeCustomAttributeArgument("Name1", "arg1")
+                    }
+                });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute(Name1 = ""arg1"")]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithNamedArguments()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(
+                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                {
+                    Arguments =
+                    {
+                        new CodeCustomAttributeArgument("Name1", "arg1"),
+                        new CodeCustomAttributeArgument("Name2", "arg2")
+                    }
+                });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute(Name1 = ""arg1"", Name2 = ""arg2"")]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_WithMixedUnnamedAndNamedArguments()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(
+                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                {
+                    Arguments =
+                    {
+                        new CodeCustomAttributeArgument("arg1"),
+                        new CodeCustomAttributeArgument("Name2", "arg2"),
+                        new CodeCustomAttributeArgument("arg3"),
+                    }
+                });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute(""arg1"", ""arg3"", Name2 = ""arg2"")]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CustomAttributes_MultipleAttributes()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute1")));
+            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute2")));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"[TestAttribute1]
+[TestAttribute2]
+void Sample()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Method_GenericParameter()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.Parameters.Add(new CodeTypeParameter("T"));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"void Sample<T>()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Method_GenericParameterWithConstraint()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+            method.Parameters.Add(new CodeTypeParameter("T") { Constraints = { new CodeClassTypeParameterConstraint() } });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"void Sample<T>()
+    where T : class
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Method_Abstract()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Modifiers = Modifiers.Protected | Modifiers.Abstract;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"protected abstract void Sample();
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Method_AbstractWithGenericParameterWithConstraint()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Modifiers = Modifiers.Protected | Modifiers.Abstract;
+            method.Parameters.Add(new CodeTypeParameter("T") { Constraints = { new CodeClassTypeParameterConstraint() } });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"protected abstract void Sample<T>()
+    where T : class
+    ;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionStatement()
+        {
+            var statement = new CodeExpressionStatement(new CodeNewObjectExpression(new CodeTypeReference("Disposable")));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"new Disposable();
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_UsingDirective()
+        {
+            var directive = new CodeUsingDirective("System");
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(directive);
+
+            Assert.That.StringEquals(@"using System;", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_UsingStatement_WithoutBody()
+        {
+            var statement = new CodeUsingStatement();
+            statement.Statement = new CodeNewObjectExpression(new CodeTypeReference("Disposable"));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"using (new Disposable())
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_UsingStatement_WithBody()
+        {
+            var statement = new CodeUsingStatement();
+            statement.Statement = new CodeVariableDeclarationStatement(null, "disposable", new CodeNewObjectExpression(new CodeTypeReference("Disposable")));
+            statement.Body = (CodeStatement)new CodeMethodInvokeExpression(new CodeVariableReference("disposable"));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"using (var disposable = new Disposable())
+{
+    disposable();
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Iteration()
+        {
+            var statement = new CodeIterationStatement();
+            var variable = new CodeVariableDeclarationStatement(null, "i", 0);
+            statement.Initialization = variable;
+            statement.Condition = new CodeBinaryExpression(BinaryOperator.LessThan, variable, 10);
+            statement.IncrementStatement = new CodeUnaryExpression(UnaryOperator.PostIncrement, variable);
+            statement.Body = new CodeMethodInvokeExpression(
+                new CodeMemberReferenceExpression(new CodeTypeReference("Console"), "Write"),
+                variable);
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"for (var i = 0; (i < 10); (i++))
+{
+    Console.Write(i);
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Iteration_Empty()
+        {
+            var statement = new CodeIterationStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"for (; ; )
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_TypeOf()
+        {
+            var statement = new CodeTypeOfExpression(typeof(string));
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"typeof(string)", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_NextLoopIteration()
+        {
+            var statement = new CodeGotoNextLoopIterationStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"continue;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CodeExitLoop()
+        {
+            var statement = new CodeExitLoopStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"break;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Return()
+        {
+            var statement = new CodeReturnStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"return;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ReturnExpression()
+        {
+            var statement = new CodeReturnStatement(10);
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"return 10;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_YieldReturnExpression()
+        {
+            var statement = new CodeYieldReturnStatement(10);
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"yield return 10;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_YieldBreak()
+        {
+            var statement = new CodeYieldBreakStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"yield break;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Await()
+        {
+            var statement = new CodeAwaitExpression(new CodeVariableReference("awaitable"));
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"await awaitable", result);
         }
 
         [DataTestMethod]
@@ -471,7 +922,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.AreEqual($"(1 {symbol} 2)", result);
+            Assert.That.StringEquals($"(1 {symbol} 2)", result);
         }
 
         [DataTestMethod]
@@ -487,7 +938,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.AreEqual($"({symbol}1)", result);
+            Assert.That.StringEquals($"({symbol}1)", result);
         }
 
         [DataTestMethod]
@@ -499,7 +950,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.AreEqual($"(1{symbol})", result);
+            Assert.That.StringEquals($"(1{symbol})", result);
         }
     }
 }

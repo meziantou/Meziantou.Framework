@@ -91,6 +91,14 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o, options);
                     break;
 
+                case CodeAddEventHandlerStatement o:
+                    Write(writer, o, options);
+                    break;
+
+                case CodeRemoveEventHandlerStatement o:
+                    Write(writer, o, options);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -254,6 +262,40 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
             writer.WriteLine();
             WriteStatementsOrEmptyBlock(writer, statement.Body);
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeAddEventHandlerStatement statement, WriteStatementOptions options)
+        {
+            if (statement.LeftExpression != null)
+            {
+                Write(writer, statement.LeftExpression);
+            }
+
+            writer.Write(" += ");
+
+            if (statement.RightExpression != null)
+            {
+                Write(writer, statement.RightExpression);
+            }
+
+            writer.WriteLine(";");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeRemoveEventHandlerStatement statement, WriteStatementOptions options)
+        {
+            if (statement.LeftExpression != null)
+            {
+                Write(writer, statement.LeftExpression);
+            }
+
+            writer.Write(" -= ");
+
+            if (statement.RightExpression != null)
+            {
+                Write(writer, statement.RightExpression);
+            }
+
+            writer.WriteLine(";");
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeExpressionCollectionStatement statement, WriteStatementOptions options)

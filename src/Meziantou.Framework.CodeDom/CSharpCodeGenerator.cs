@@ -170,6 +170,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case CodeDelegateDeclaration o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -211,6 +215,36 @@ namespace Meziantou.Framework.CodeDom
             {
                 writer.Write(" = ");
                 Write(writer, member.Value);
+            }
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeDelegateDeclaration d)
+        {
+            writer.Write("delegate ");
+            if (d.ReturnType == null)
+            {
+                writer.Write("void ");
+            }
+            else
+            {
+                Write(writer, d.ReturnType);
+                writer.Write(" ");
+            }
+            WriteIdentifier(writer, d.Name);
+            WriteGenericParameters(writer, d);
+            writer.Write("(");
+            Write(writer, d.Arguments);
+            writer.Write(")");
+            WriteGenericParameterConstraints(writer, d);
+            if (d.HasConstraints())
+            {
+                writer.Indent++;
+                writer.WriteLine(";");
+                writer.Indent--;
+            }
+            else
+            {
+                writer.WriteLine(";");
             }
         }
 

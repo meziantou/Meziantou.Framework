@@ -151,6 +151,21 @@ internal enum Sample : uint
         }
 
         [TestMethod]
+        public void CSharpCodeGenerator_DelegateDeclaration()
+        {
+            var d = new CodeDelegateDeclaration("Sample");
+            d.ReturnType = typeof(void);
+            d.Arguments.Add(new CodeMethodArgumentDeclaration(typeof(string), "a"));
+            d.Modifiers = Modifiers.Public;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(d);
+
+            Assert.That.StringEquals(@"public delegate void Sample(string a);
+", result);
+        }
+
+        [TestMethod]
         public void CSharpCodeGenerator_FieldDeclaration()
         {
             var type = new CodeClassDeclaration("Sample");
@@ -169,6 +184,50 @@ internal enum Sample : uint
 
     protected int _c = 10;
 }
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_EventDeclaration()
+        {
+            var type = new CodeClassDeclaration("Sample");
+            type.AddMember(new CodeEventFieldDeclaration("A", typeof(EventHandler), Modifiers.Public));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            Assert.That.StringEquals(@"class Sample
+{
+    public event System.EventHandler A;
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_AddEventHandler()
+        {
+            var statement = new CodeAddEventHandlerStatement(
+                new CodeMemberReferenceExpression(new CodeThisExpression(), "A"),
+                new CodeMemberReferenceExpression(new CodeThisExpression(), "Handler"));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"this.A += this.Handler;
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_RemoveEventHandler()
+        {
+            var statement = new CodeRemoveEventHandlerStatement(
+                new CodeMemberReferenceExpression(new CodeThisExpression(), "A"),
+                new CodeMemberReferenceExpression(new CodeThisExpression(), "Handler"));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"this.A -= this.Handler;
 ", result);
         }
 

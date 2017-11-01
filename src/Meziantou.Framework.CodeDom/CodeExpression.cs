@@ -4,6 +4,9 @@ namespace Meziantou.Framework.CodeDom
 {
     public abstract class CodeExpression : CodeObject
     {
+        public string CommentAfter { get; set; }
+        public string CommentBefore { get; set; }
+
         public static implicit operator CodeExpression(CodeMemberDeclaration memberDeclaration)
         {
             return new CodeMemberReferenceExpression(memberDeclaration);

@@ -957,6 +957,99 @@ void Sample()
             Assert.That.StringEquals(@"await awaitable", result);
         }
 
+        [TestMethod]
+        public void CSharpCodeGenerator_Comment()
+        {
+            var statement = new CodeCommentStatement("test");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"// test
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CommentMultiLine()
+        {
+            var statement = new CodeCommentStatement("test1" + Environment.NewLine + Environment.NewLine + "test2");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"// test1
+//
+// test2
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CommentNull()
+        {
+            var statement = new CodeCommentStatement();
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(statement);
+
+            Assert.That.StringEquals(@"//
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentBeforeAndAfter()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentBefore = "comment1";
+            expression.CommentAfter = "comment2";
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"/* comment1 */ code /* comment2 */", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentBefore()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentBefore = "comment1";
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"/* comment1 */ code", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentAfter()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentAfter = "comment2";
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"code /* comment2 */", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentAfterWithInlineCommentEnd()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentAfter = "comment with */ in the middle";
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"code // comment with */ in the middle
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentBeforeWithInlineCommentEnd()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentBefore = "comment with */ in the middle";
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"// comment with */ in the middle
+code", result);
+        }
+
         [DataTestMethod]
         [DataRow(BinaryOperator.Add, "+")]
         [DataRow(BinaryOperator.And, "&&")]

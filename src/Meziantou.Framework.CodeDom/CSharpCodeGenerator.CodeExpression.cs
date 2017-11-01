@@ -9,6 +9,14 @@ namespace Meziantou.Framework.CodeDom
         {
             if (expression == null) throw new ArgumentNullException(nameof(expression));
 
+            if (expression.CommentBefore != null)
+            {
+                if (TryWriteInlineComment(writer, expression.CommentBefore))
+                {
+                    writer.Write(' ');
+                }
+            }
+
             switch (expression)
             {
                 case CodeBinaryExpression o:
@@ -97,6 +105,12 @@ namespace Meziantou.Framework.CodeDom
 
                 default:
                     throw new NotSupportedException();
+            }
+
+            if (expression.CommentAfter != null)
+            {
+                writer.Write(' ');
+                TryWriteInlineComment(writer, expression.CommentAfter);
             }
         }
 

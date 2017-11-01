@@ -879,6 +879,53 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, orderedConstraints, ", ");
         }
 
+        protected virtual void WriteLineComment(IndentedTextWriter writer, string comment)
+        {
+            if (comment == null)
+            {
+                writer.WriteLine("//");
+                return;
+            }
+
+            using (var sr = new StringReader(comment))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        writer.WriteLine("//");
+                    }
+                    else
+                    {
+                        writer.WriteLine("// " + line);
+                    }
+                }
+            }
+        }
+
+        protected virtual bool TryWriteInlineComment(IndentedTextWriter writer, string comment)
+        {
+            if (comment == null)
+            {
+                writer.WriteLine("/* */");
+                return true;
+            }
+
+            if (comment.Contains("*/"))
+            {
+                WriteLineComment(writer, comment);
+                return false;
+            }
+            else
+            {
+                writer.Write("/* ");
+                writer.Write(comment);
+                writer.Write(" */");
+                return true;
+            }
+        }
+
         private void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
         {
             if (type.Parameters.Any())

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -96,6 +97,10 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case CodeRemoveEventHandlerStatement o:
+                    Write(writer, o, options);
+                    break;
+
+                case CodeCommentStatement o:
                     Write(writer, o, options);
                     break;
 
@@ -301,6 +306,11 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, CodeExpressionCollectionStatement statement, WriteStatementOptions options)
         {
             Write(writer, statement, ", ");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, CodeCommentStatement statement, WriteStatementOptions options)
+        {
+            WriteLineComment(writer, statement.Content);
         }
     }
 }

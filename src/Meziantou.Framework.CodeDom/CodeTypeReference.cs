@@ -107,7 +107,7 @@ namespace Meziantou.Framework.CodeDom
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 if (!string.IsNullOrEmpty(Namespace))
                 {
                     sb.Append(Namespace + ".");

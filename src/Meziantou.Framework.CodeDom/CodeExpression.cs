@@ -21,8 +21,32 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator CodeExpression(Enum value)
         {
             var type = value.GetType();
-            var name = value.ToString();
-            return new CodeMemberReferenceExpression(new CodeTypeReference(type), name);
+            if (Enum.IsDefined(type, value))
+            {
+                var name = value.ToString();
+                return new CodeMemberReferenceExpression(new CodeTypeReference(type), name);
+            }
+            else
+            {
+                //  byte, sbyte, short, ushort, int, uint, long, or ulong.
+                var underlyingType = Enum.GetUnderlyingType(type);
+                object typedValue = Convert.ChangeType(value, underlyingType); ;
+                return new CodeCastExpression(new CodeLiteralExpression(typedValue), new CodeTypeReference(type));
+                //if (underlyingType == typeof(byte))
+                //{
+                //    typedValue = (byte)(object)value;
+                //}
+                //else if (underlyingType == typeof(sbyte))
+                //{
+                //    typedValue = (sbyte)(object)value;
+                //}
+                //else
+                //{
+                //    throw new ArgumentOutOfRangeException(nameof(value));
+                //}
+
+
+            }
         }
 
         public static implicit operator CodeExpression(Type type)

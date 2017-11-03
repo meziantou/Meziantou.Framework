@@ -1120,6 +1120,96 @@ void Sample()
 ", result);
         }
 
+        [TestMethod]
+        public void CSharpCodeGenerator_TypeReference()
+        {
+            var expression = new CodeTypeReference(typeof(Console));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"System.Console", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_TypeReference_Nested()
+        {
+            var expression = new CodeTypeReference(typeof(SampleEnum));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_TypeReference_Generic()
+        {
+            var expression = new CodeTypeReference(typeof(Sample<int>));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+            
+            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>", result);
+        }
+
+        private class Sample<T>
+        {
+        }
+
+        [Flags]
+        private enum SampleEnum
+        {
+            A = 1,
+            B = 2,
+            C = 4,
+            All = 7
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CodeExpressionFromEnum()
+        {
+            CodeExpression expression = SampleEnum.A;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CodeExpressionFromEnum_DefinedCombinaison()
+        {
+            CodeExpression expression = SampleEnum.All;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CodeExpressionFromEnum_Combinaison()
+        {
+            CodeExpression expression = (SampleEnum)3;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_CodeExpressionFromEnum_UndefinedValue()
+        {
+            CodeExpression expression = (SampleEnum)10;
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)", result);
+        }
+
         [DataTestMethod]
         [DataRow(BinaryOperator.Add, "+")]
         [DataRow(BinaryOperator.And, "&&")]

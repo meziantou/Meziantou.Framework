@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -491,15 +492,42 @@ namespace Meziantou.Framework.CodeDom
             WriteIdentifier(writer, expression.Name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeTypeReference expression)
+        protected virtual void Write(IndentedTextWriter writer, CodeTypeReference type)
         {
-            string name = expression.ClrFullTypeName;
-            if (_predefinedTypes.TryGetValue(name, out var keyword))
+            if (_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
             {
-                name = keyword;
+                writer.Write(keyword);
+                return;
             }
 
-            writer.Write(name);
+            if (type.Namespace != null)
+            {
+                writer.Write(type.Namespace);
+                writer.Write('.');
+            }
+
+            if (type.Name != null)
+            {
+                writer.Write(type.Name.Replace('+', '.'));
+            }
+
+            if (type.Parameters.Any())
+            {
+                writer.Write('<');
+                bool first = true;
+                foreach (var parameter in type.Parameters)
+                {
+                    if (!first)
+                    {
+                        writer.Write(',');
+                    }
+
+                    Write(writer, parameter);
+                    first = false;
+                }
+
+                writer.Write('>');
+            }
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeAwaitExpression expression)

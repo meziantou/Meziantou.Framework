@@ -780,6 +780,65 @@ void Sample()
     ;
 ", result);
         }
+                
+        [TestMethod]
+        public void CSharpCodeGenerator_Method_ExplicitImplementation()
+        {
+            var method = new CodeMethodDeclaration("A");
+            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
+            method.Statements = new CodeStatementCollection();
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"void Foo.IBar.A()
+{
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Property_ExplicitImplementation()
+        {
+            var method = new CodePropertyDeclaration("A", typeof(int));
+            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
+            method.Getter = new CodeReturnStatement(10);       
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"int Foo.IBar.A
+{
+    get
+    {
+        return 10;
+    }
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Event_ExplicitImplementation()
+        {
+            var method = new CodeEventFieldDeclaration("A", typeof(EventHandler));
+            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
+            method.AddAccessor = new CodeStatementCollection();
+            method.RemoveAccessor = new CodeStatementCollection();
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"event System.EventHandler Foo.IBar.A
+{
+    add
+    {
+    }
+    remove
+    {
+    }
+}
+", result);
+        }
 
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionStatement()
@@ -1209,7 +1268,7 @@ void Sample()
 
             Assert.That.StringEquals(@"((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)", result);
         }
-
+        
         [DataTestMethod]
         [DataRow(BinaryOperator.Add, "+")]
         [DataRow(BinaryOperator.And, "&&")]

@@ -5,6 +5,18 @@ namespace Meziantou.Framework.CodeDom
         private CodeStatementCollection _setter;
         private CodeStatementCollection _getter;
         private CodeTypeReference _type;
+        private CodeTypeReference _privateImplementationType;
+
+        public CodePropertyDeclaration()
+            : this(null, null)
+        {
+        }
+
+        public CodePropertyDeclaration(string name, CodeTypeReference type)
+        {
+            Name = name;
+            Type = type;
+        }
 
         public Modifiers Modifiers { get; set; }
 
@@ -24,6 +36,12 @@ namespace Meziantou.Framework.CodeDom
         {
             get { return _setter; }
             set { _setter = SetParent(value); }
+        }
+
+        public CodeTypeReference PrivateImplementationType
+        {
+            get { return _privateImplementationType; }
+            set { _privateImplementationType = SetParent(value); }
         }
     }
 }

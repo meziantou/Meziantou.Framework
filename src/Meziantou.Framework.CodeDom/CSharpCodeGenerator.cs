@@ -268,8 +268,15 @@ namespace Meziantou.Framework.CodeDom
             else
             {
                 Write(writer, member.ReturnType);
-                writer.Write(" ");
+                writer.Write(' ');
             }
+
+            if (member.PrivateImplementationType != null)
+            {
+                Write(writer, member.PrivateImplementationType);
+                writer.Write('.');
+            }
+
             WriteIdentifier(writer, member.Name);
             WriteGenericParameters(writer, member);
             writer.Write("(");
@@ -372,18 +379,45 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, member.CustomAttributes);
             Write(writer, member.Modifiers);
             writer.Write("event ");
-            if (member.Type == null)
-            {
-                writer.Write("var ");
-            }
-            else
+            if (member.Type != null)
             {
                 Write(writer, member.Type);
                 writer.Write(" ");
             }
 
+            if (member.PrivateImplementationType != null)
+            {
+                Write(writer, member.PrivateImplementationType);
+                writer.Write('.');
+            }
+
             WriteIdentifier(writer, member.Name);
-            writer.WriteLine(";");
+
+            if (member.AddAccessor == null && member.RemoveAccessor == null)
+            {
+                writer.WriteLine(";");
+            }
+            else
+            {
+                writer.WriteLine();
+                writer.WriteLine("{");
+                writer.Indent++;
+
+                if (member.AddAccessor != null)
+                {
+                    writer.WriteLine("add");
+                    WriteStatementsOrEmptyBlock(writer, member.AddAccessor);
+                }
+
+                if (member.RemoveAccessor != null)
+                {
+                    writer.WriteLine("remove");
+                    WriteStatementsOrEmptyBlock(writer, member.RemoveAccessor);
+                }
+
+                writer.Indent--;
+                writer.WriteLine("}");
+            }
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeConstructorDeclaration member)
@@ -417,6 +451,13 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, member.Modifiers);
             Write(writer, member.Type);
             writer.Write(" ");
+
+            if (member.PrivateImplementationType != null)
+            {
+                Write(writer, member.PrivateImplementationType);
+                writer.Write('.');
+            }
+
             WriteIdentifier(writer, member.Name);
 
             writer.WriteLine();

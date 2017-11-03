@@ -2,11 +2,11 @@
 
 namespace Meziantou.Framework.CodeDom
 {
-    public abstract class CodeConstructorInitializer : CodeObject
+    public abstract class CodeConstructorInitializer : CodeObject, ICommentable
     {
         public CodeConstructorInitializer()
+            : this((IEnumerable<CodeExpression>)null)
         {
-            Arguments = new CodeObjectCollection<CodeExpression>(this);
         }
 
         public CodeConstructorInitializer(params CodeExpression[] codeExpressions)
@@ -16,13 +16,21 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeConstructorInitializer(IEnumerable<CodeExpression> codeExpressions)
         {
+            CommentsBefore = new CodeCommentCollection(this);
+            CommentsAfter = new CodeCommentCollection(this);
             Arguments = new CodeObjectCollection<CodeExpression>(this);
-            foreach (var codeExpression in codeExpressions)
+
+            if (codeExpressions != null)
             {
-                Arguments.Add(codeExpression);
+                foreach (var codeExpression in codeExpressions)
+                {
+                    Arguments.Add(codeExpression);
+                }
             }
         }
 
+        public CodeCommentCollection CommentsBefore { get; }
+        public CodeCommentCollection CommentsAfter { get; }
         public CodeObjectCollection<CodeExpression> Arguments { get; }
     }
 }

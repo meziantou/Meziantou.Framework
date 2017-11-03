@@ -996,8 +996,8 @@ void Sample()
         public void CSharpCodeGenerator_ExpressionCommentBeforeAndAfter()
         {
             var expression = new CodeSnippetExpression("code");
-            expression.CommentBefore = "comment1";
-            expression.CommentAfter = "comment2";
+            expression.CommentsBefore.Add("comment1");
+            expression.CommentsAfter.Add("comment2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1008,7 +1008,7 @@ void Sample()
         public void CSharpCodeGenerator_ExpressionCommentBefore()
         {
             var expression = new CodeSnippetExpression("code");
-            expression.CommentBefore = "comment1";
+            expression.CommentsBefore.Add("comment1");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1019,7 +1019,7 @@ void Sample()
         public void CSharpCodeGenerator_ExpressionCommentAfter()
         {
             var expression = new CodeSnippetExpression("code");
-            expression.CommentAfter = "comment2";
+            expression.CommentsAfter.Add("comment2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1030,7 +1030,7 @@ void Sample()
         public void CSharpCodeGenerator_ExpressionCommentAfterWithInlineCommentEnd()
         {
             var expression = new CodeSnippetExpression("code");
-            expression.CommentAfter = "comment with */ in the middle";
+            expression.CommentsAfter.Add("comment with */ in the middle");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1042,12 +1042,82 @@ void Sample()
         public void CSharpCodeGenerator_ExpressionCommentBeforeWithInlineCommentEnd()
         {
             var expression = new CodeSnippetExpression("code");
-            expression.CommentBefore = "comment with */ in the middle";
+            expression.CommentsBefore.Add("comment with */ in the middle");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
             Assert.That.StringEquals(@"// comment with */ in the middle
 code", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentsBefore_Inlines()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentsBefore.Add("com1");
+            expression.CommentsBefore.Add("com2");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"/* com1 */ /* com2 */ code", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentsBefore_LineAndInline()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentsBefore.Add("com1", CodeCommentType.LineComment);
+            expression.CommentsBefore.Add("com2");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"// com1
+/* com2 */ code", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_ExpressionCommentsAfter_LineAndInline()
+        {
+            var expression = new CodeSnippetExpression("code");
+            expression.CommentsAfter.Add("com1", CodeCommentType.LineComment);
+            expression.CommentsAfter.Add("com2");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"code // com1
+/* com2 */", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_StatementCommentsAfter_Line()
+        {
+            var expression = new CodeReturnStatement();
+            expression.CommentsAfter.Add("com1", CodeCommentType.LineComment);
+            expression.CommentsAfter.Add("com2");
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"return;
+// com1
+// com2
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_MethodXmlDocmentation()
+        {
+            var method = new CodeMethodDeclaration("Sample");
+            method.Statements = new CodeStatementCollection();
+
+            method.CommentsBefore.Add("<summary>Test</summary>", CodeCommentType.DocumentationComment);
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"/// <summary>Test</summary>
+void Sample()
+{
+}
+", result);
         }
 
         [DataTestMethod]

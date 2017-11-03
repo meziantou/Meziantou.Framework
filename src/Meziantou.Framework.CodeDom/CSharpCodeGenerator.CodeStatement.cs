@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -13,6 +12,7 @@ namespace Meziantou.Framework.CodeDom
             {
                 if (EndStatement)
                 {
+                    
                     writer.WriteLine(";");
                 }
             }
@@ -26,6 +26,7 @@ namespace Meziantou.Framework.CodeDom
             if (statement == null) throw new ArgumentNullException(nameof(statement));
             if (options == null) throw new ArgumentNullException(nameof(options));
 
+            WriteBeforeComments(writer, statement);
             switch (statement)
             {
                 case CodeConditionStatement o:
@@ -107,6 +108,8 @@ namespace Meziantou.Framework.CodeDom
                 default:
                     throw new NotSupportedException();
             }
+
+            WriteAfterComments(writer, statement);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeTryCatchFinallyStatement statement, WriteStatementOptions options)

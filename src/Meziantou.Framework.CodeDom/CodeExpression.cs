@@ -2,10 +2,16 @@ using System;
 
 namespace Meziantou.Framework.CodeDom
 {
-    public abstract class CodeExpression : CodeObject
+    public abstract class CodeExpression : CodeObject, ICommentable
     {
-        public string CommentAfter { get; set; }
-        public string CommentBefore { get; set; }
+        public CodeCommentCollection CommentsAfter { get; }
+        public CodeCommentCollection CommentsBefore { get; }
+
+        public CodeExpression()
+        {
+            CommentsBefore = new CodeCommentCollection(this, CodeCommentType.InlineComment);
+            CommentsAfter = new CodeCommentCollection(this, CodeCommentType.InlineComment);
+        }
 
         public static implicit operator CodeExpression(CodeMemberDeclaration memberDeclaration)
         {
@@ -28,7 +34,7 @@ namespace Meziantou.Framework.CodeDom
         {
             return new CodeVariableReference(variableDeclarationStatement);
         }
-        
+
         public static implicit operator CodeExpression(CodeMethodArgumentDeclaration argument)
         {
             return new CodeArgumentReferenceExpression(argument);

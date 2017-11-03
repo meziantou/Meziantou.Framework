@@ -126,6 +126,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case CodeComment o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -140,6 +144,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeNamespaceDeclaration ns)
         {
+            WriteBeforeComments(writer, ns);
             writer.Write("namespace ");
             WriteIdentifier(writer, ns.Name);
             writer.WriteLine();
@@ -150,10 +155,12 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, ns.Namespaces, writer.NewLine);
             writer.Indent--;
             writer.WriteLine("}");
+            WriteAfterComments(writer, ns);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeTypeDeclaration type)
         {
+            WriteBeforeComments(writer, type);
             Write(writer, type.CustomAttributes);
             Write(writer, type.Modifiers);
             switch (type)
@@ -177,6 +184,8 @@ namespace Meziantou.Framework.CodeDom
                 default:
                     throw new NotSupportedException();
             }
+
+            WriteAfterComments(writer, type);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeEnumerationDeclaration enumeration)
@@ -298,6 +307,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeMethodArgumentDeclaration arg)
         {
+            WriteBeforeComments(writer, arg);
             Write(writer, arg.CustomAttributes);
             Write(writer, arg.Direction);
             Write(writer, arg.Type);
@@ -308,6 +318,8 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(" = ");
                 Write(writer, arg.DefaultValue);
             }
+
+            WriteAfterComments(writer, arg);
         }
 
         protected virtual void Write(IndentedTextWriter writer, Direction direction)
@@ -556,6 +568,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeCustomAttribute attribute)
         {
+            WriteBeforeComments(writer, attribute);
             writer.Write("[");
             Write(writer, attribute.Type);
 
@@ -567,6 +580,7 @@ namespace Meziantou.Framework.CodeDom
             }
 
             writer.Write("]");
+            WriteAfterComments(writer, attribute);
 
             int GetSortOrder(CodeCustomAttributeArgument arg)
             {
@@ -579,6 +593,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeCustomAttributeArgument arg)
         {
+            WriteBeforeComments(writer, arg);
             if (!string.IsNullOrEmpty(arg.PropertyName))
             {
                 WriteIdentifier(writer, arg.PropertyName);
@@ -586,10 +601,12 @@ namespace Meziantou.Framework.CodeDom
             }
 
             Write(writer, arg.Value);
+            WriteAfterComments(writer, arg);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeMemberDeclaration member)
         {
+            WriteBeforeComments(writer, member);
             switch (member)
             {
                 case CodeEnumerationMember o:
@@ -619,10 +636,13 @@ namespace Meziantou.Framework.CodeDom
                 default:
                     throw new NotSupportedException();
             }
+
+            WriteAfterComments(writer, member);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeDirective directive)
         {
+            WriteBeforeComments(writer, directive);
             switch (directive)
             {
                 case CodeUsingDirective o:
@@ -632,6 +652,8 @@ namespace Meziantou.Framework.CodeDom
                 default:
                     throw new NotSupportedException();
             }
+
+            WriteAfterComments(writer, directive);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeUsingDirective usingDirective)
@@ -643,6 +665,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeCatchClause catchClause)
         {
+            WriteBeforeComments(writer, catchClause);
             writer.Write("catch");
             if (catchClause.ExceptionType != null)
             {
@@ -658,6 +681,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine();
 
             WriteStatementsOrEmptyBlock(writer, catchClause.Body);
+            WriteAfterComments(writer, catchClause);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeCatchClauseCollection clauses)
@@ -667,6 +691,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeConstructorInitializer initializer)
         {
+            WriteBeforeComments(writer, initializer);
             writer.Write(": ");
             switch (initializer)
             {
@@ -685,6 +710,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write('(');
             Write(writer, initializer.Arguments, ", ");
             writer.Write(')');
+            WriteAfterComments(writer, initializer);
         }
 
         protected virtual void Write(IndentedTextWriter writer, CodeTypeParameterConstraint constraint)
@@ -730,6 +756,28 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, CodeConstructorParameterConstraint constraint)
         {
             writer.Write("new()");
+        }
+
+        protected virtual CodeCommentType Write(IndentedTextWriter writer, CodeComment comment)
+        {
+            switch (comment.Type)
+            {
+                case CodeCommentType.LineComment:
+                    WriteLineComment(writer, comment.Text);
+                    return CodeCommentType.LineComment;
+
+                case CodeCommentType.InlineComment:
+                    if (TryWriteInlineComment(writer, comment.Text))
+                        return CodeCommentType.InlineComment;
+                    return CodeCommentType.LineComment;
+
+                case CodeCommentType.DocumentationComment:
+                    WriteDocumentationComment(writer, comment.Text);
+                    return CodeCommentType.DocumentationComment;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(comment));
+            }
         }
 
         protected virtual string Write(BinaryOperator op)
@@ -879,6 +927,28 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, orderedConstraints, ", ");
         }
 
+        protected virtual void WriteDocumentationComment(IndentedTextWriter writer, string comment)
+        {
+            if (comment == null)
+                return;
+
+            using (var sr = new StringReader(comment))
+            {
+                string line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (string.IsNullOrEmpty(line))
+                    {
+                        writer.WriteLine("///");
+                    }
+                    else
+                    {
+                        writer.WriteLine("/// " + line);
+                    }
+                }
+            }
+        }
+
         protected virtual void WriteLineComment(IndentedTextWriter writer, string comment)
         {
             if (comment == null)
@@ -923,6 +993,48 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(comment);
                 writer.Write(" */");
                 return true;
+            }
+        }
+
+        protected virtual void WriteBeforeComments(IndentedTextWriter writer, ICommentable commentable)
+        {
+            CodeCommentType type = default;
+            bool first = true;
+            foreach (var c in commentable.CommentsBefore)
+            {
+                if (!first)
+                {
+                    if (type == CodeCommentType.InlineComment)
+                    {
+                        writer.Write(' ');
+                    }
+                }
+
+                type = Write(writer, c);
+                first = false;
+            }
+
+            if (!first && type == CodeCommentType.InlineComment)
+            {
+                writer.Write(' ');
+            }
+        }
+
+        protected virtual void WriteAfterComments(IndentedTextWriter writer, ICommentable commentable)
+        {
+            bool isInlined = commentable is CodeExpression;
+
+            CodeCommentType type = default;
+            bool first = true;
+            foreach (var c in commentable.CommentsAfter)
+            {
+                if ((isInlined && first) || (type == CodeCommentType.InlineComment && c.Type == CodeCommentType.InlineComment))
+                {
+                    writer.Write(' ');
+                }
+
+                type = Write(writer, c);
+                first = false;
             }
         }
 

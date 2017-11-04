@@ -19,6 +19,7 @@ namespace Meziantou.Framework.CodeDom
         Divide,
         Modulo,
         ShiftLeft,
-        ShiftRight
+        ShiftRight,
+        Xor
     }
 }

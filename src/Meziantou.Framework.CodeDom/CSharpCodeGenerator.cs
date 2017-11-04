@@ -861,6 +861,8 @@ namespace Meziantou.Framework.CodeDom
                     return "<<";
                 case BinaryOperator.ShiftRight:
                     return ">>";
+                case BinaryOperator.Xor:
+                    return "^";
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op));

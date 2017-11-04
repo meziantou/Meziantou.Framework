@@ -1287,6 +1287,7 @@ void Sample()
         [DataRow(BinaryOperator.ShiftLeft, "<<")]
         [DataRow(BinaryOperator.ShiftRight, ">>")]
         [DataRow(BinaryOperator.Substract, "-")]
+        [DataRow(BinaryOperator.Xor, "^")]
         public void CSharpCodeGenerator_BinaryExpression(BinaryOperator op, string symbol)
         {
             var expression = new CodeBinaryExpression(op, 1, 2);

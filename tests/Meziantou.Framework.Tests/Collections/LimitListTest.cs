@@ -238,5 +238,23 @@ namespace Meziantou.Framework.Tests.Collections
             // Act/Assert
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => list[1] = 10);
         }
+
+        [TestMethod]
+        public void RemoveAt()
+        {
+            // Arrange
+            var list = new LimitList<int>(3);
+            list.AddLast(1);
+            list.AddLast(2);
+            list.AddLast(3);
+
+            // Act
+            list.RemoveAt(1);
+
+            // Assert
+            Assert.AreEqual(2, list.Count);
+            Assert.AreEqual(1, list[0]);
+            Assert.AreEqual(3, list[1]);
+        }
     }
 }

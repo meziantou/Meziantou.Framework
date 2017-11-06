@@ -5,9 +5,9 @@ using Meziantou.Framework.Utilities;
 
 namespace Meziantou.Framework.Collections
 {
-    public class LimitList<T> : IEnumerable<T>, IReadOnlyCollection<T>, ICollection<T>, IReadOnlyList<T>
+    public class LimitList<T> : ICollection<T>, IReadOnlyList<T>
     {
-        private LinkedList<T> _list = new LinkedList<T>();
+        private readonly LinkedList<T> _list = new LinkedList<T>();
 
         public int MaximumCount { get; }
         public int Count => _list.Count;
@@ -138,6 +138,7 @@ namespace Meziantou.Framework.Collections
                 }
 
                 node = node.Next;
+                i++;
             }
         }
 

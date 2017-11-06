@@ -7,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
         public CodeCommentCollection CommentsAfter { get; }
         public CodeCommentCollection CommentsBefore { get; }
 
-        public CodeExpression()
+        protected CodeExpression()
         {
             CommentsBefore = new CodeCommentCollection(this, CodeCommentType.InlineComment);
             CommentsAfter = new CodeCommentCollection(this, CodeCommentType.InlineComment);
@@ -29,7 +29,7 @@ namespace Meziantou.Framework.CodeDom
             else
             {
                 var underlyingType = Enum.GetUnderlyingType(type);
-                object typedValue = Convert.ChangeType(value, underlyingType); ;
+                object typedValue = Convert.ChangeType(value, underlyingType);
                 return new CodeCastExpression(new CodeLiteralExpression(typedValue), new CodeTypeReference(type));
             }
         }
@@ -59,7 +59,7 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator CodeExpression(decimal value) => new CodeLiteralExpression(value);
         public static implicit operator CodeExpression(string value) => new CodeLiteralExpression(value);
         public static implicit operator CodeExpression(bool value) => new CodeLiteralExpression(value);
-        
+
         public static CodeBinaryExpression operator >(CodeExpression left, CodeExpression right)
         {
             return new CodeBinaryExpression(BinaryOperator.GreaterThan, left, right);
@@ -150,6 +150,14 @@ namespace Meziantou.Framework.CodeDom
             return new CodeUnaryExpression(UnaryOperator.Complement, expression);
         }
 
+        public CodeArrayIndexerExpression this[params CodeExpression[] indices]
+        {
+            get
+            {
+                return new CodeArrayIndexerExpression(this, indices);
+            }
+        }
+
         // "expr == null" is ambiguous
         //public static bool operator ==(CodeExpression left, object o)
         //{
@@ -170,7 +178,7 @@ namespace Meziantou.Framework.CodeDom
         //{
         //    return new CodeBinaryExpression(BinaryOperator.NotEquals, left, right);
         //}
-        
+
         // Cannot disinguish PreIncrement from PostIncrement
         //public static CodeUnaryExpression operator ++(CodeExpression expression)
         //{

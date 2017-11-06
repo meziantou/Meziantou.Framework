@@ -34,5 +34,26 @@ namespace Meziantou.Framework.CodeDom.Tests
             Assert.AreEqual(5, ((CodeLiteralExpression)result.Expression).Value);
             Assert.AreEqual(UnaryOperator.Minus, result.Operator);
         }
+
+        [TestMethod]
+        public void CodeExpression_Indexer_OneIndex()
+        {
+            var result = new CodeVariableReference("a")[1];
+
+            Assert.AreEqual("a", ((CodeVariableReference)result.ArrayExpression).Name);
+            Assert.AreEqual(1, result.Indices.Count);
+            Assert.AreEqual(1, ((CodeLiteralExpression)result.Indices[0]).Value);
+        }
+
+        [TestMethod]
+        public void CodeExpression_Indexer_MultipleIndices()
+        {
+            var result = new CodeVariableReference("a")[1, "test"];
+
+            Assert.AreEqual("a", ((CodeVariableReference)result.ArrayExpression).Name);
+            Assert.AreEqual(2, result.Indices.Count);
+            Assert.AreEqual(1, ((CodeLiteralExpression)result.Indices[0]).Value);
+            Assert.AreEqual("test", ((CodeLiteralExpression)result.Indices[1]).Value);
+        }
     }
 }

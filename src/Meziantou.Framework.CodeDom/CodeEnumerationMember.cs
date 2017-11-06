@@ -22,7 +22,7 @@
         public CodeExpression Value
         {
             get => _value;
-            set => _value = SetParent(value);
+            set => SetParent(ref _value, value);
         }
     }
 }

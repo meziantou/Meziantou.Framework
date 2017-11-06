@@ -17,14 +17,14 @@
 
         public CodeExpression LeftExpression
         {
-            get { return _leftExpression; }
-            set { _leftExpression = SetParent(value); }
+            get => _leftExpression;
+            set => SetParent(ref _leftExpression, value);
         }
 
         public CodeExpression RightExpression
         {
-            get { return _rightExpression; }
-            set { _rightExpression = SetParent(value); }
+            get => _rightExpression;
+            set => SetParent(ref _rightExpression, value);
         }
     }
 }

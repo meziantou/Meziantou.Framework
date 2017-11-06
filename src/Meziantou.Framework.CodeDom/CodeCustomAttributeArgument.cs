@@ -30,7 +30,7 @@ namespace Meziantou.Framework.CodeDom
         public CodeExpression Value
         {
             get { return _value; }
-            set { _value = SetParent(value); }
+            set { SetParent(ref _value, value); }
         }
     }
 }

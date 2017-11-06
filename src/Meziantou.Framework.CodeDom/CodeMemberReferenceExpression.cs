@@ -46,8 +46,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeExpression TargetObject
         {
-            get { return _targetObject; }
-            set { _targetObject = SetParent(value); }
+            get => _targetObject;
+            set => SetParent(ref _targetObject, value);
         }
     }
 }

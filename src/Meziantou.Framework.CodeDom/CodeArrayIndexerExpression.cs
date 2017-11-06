@@ -20,11 +20,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeExpression ArrayExpression
         {
-            get { return _arrayExpression; }
-            set
-            {
-                _arrayExpression = SetParent(value);
-            }
+            get => _arrayExpression;
+            set => SetParent(ref _arrayExpression, value);
         }
 
         public CodeObjectCollection<CodeExpression> Indices { get; }

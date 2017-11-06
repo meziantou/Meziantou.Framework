@@ -17,8 +17,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference BaseType
         {
-            get { return _baseType; }
-            set { _baseType = SetParent(value); }
+            get => _baseType;
+            set => SetParent(ref _baseType, value);
         }
 
         public CodeObjectCollection<CodeEnumerationMember> Members { get; }

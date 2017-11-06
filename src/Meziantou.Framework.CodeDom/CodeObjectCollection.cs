@@ -4,16 +4,18 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework.CodeDom
 {
-    public class CodeObjectCollection<T> : IList<T>, IReadOnlyList<T> where T : CodeObject
+    public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> where T : CodeObject
     {
         private readonly IList<T> _list = new List<T>();
+
+        public CodeObjectCollection()
+        {
+        }
 
         public CodeObjectCollection(CodeObject parent)
         {
             Parent = parent ?? throw new ArgumentNullException(nameof(parent));
         }
-
-        public CodeObject Parent { get; }
 
         public IEnumerator<T> GetEnumerator()
         {
@@ -27,7 +29,7 @@ namespace Meziantou.Framework.CodeDom
 
         public void AddRange(IEnumerable<T> items)
         {
-            foreach(var item in items)
+            foreach (var item in items)
             {
                 Add(item);
             }

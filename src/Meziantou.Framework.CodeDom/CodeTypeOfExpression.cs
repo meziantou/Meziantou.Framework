@@ -16,7 +16,7 @@
         public CodeTypeReference Type
         {
             get => _type;
-            set => _type = SetParent(value);
+            set => SetParent(ref _type, value);
         }
     }
 }

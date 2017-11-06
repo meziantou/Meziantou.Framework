@@ -9,26 +9,26 @@
 
         public CodeStatement Initialization
         {
-            get { return _initialization; }
-            set { _initialization = SetParent(value); }
+            get => _initialization;
+            set => SetParent(ref _initialization, value);
         }
 
         public CodeStatement IncrementStatement
         {
-            get { return _incrementStatement; }
-            set { _incrementStatement = SetParent(value); }
+            get => _incrementStatement;
+            set => SetParent(ref _incrementStatement, value);
         }
 
         public CodeExpression Condition
         {
-            get { return _condition; }
-            set { _condition = SetParent(value); }
+            get => _condition;
+            set => SetParent(ref _condition, value);
         }
 
         public CodeStatementCollection Body
         {
             get => _body;
-            set => _body = SetParent(value);
+            set => SetParent(ref _body, value);
         }
     }
 }

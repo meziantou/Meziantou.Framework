@@ -23,25 +23,25 @@ namespace Meziantou.Framework.CodeDom
         public CodeTypeReference Type
         {
             get { return _type; }
-            set { _type = SetParent(value); }
+            set { SetParent(ref _type, value); }
         }
 
         public CodeStatementCollection Getter
         {
             get { return _getter; }
-            set { _getter = SetParent(value); }
+            set { SetParent(ref _getter, value); }
         }
 
         public CodeStatementCollection Setter
         {
             get { return _setter; }
-            set { _setter = SetParent(value); }
+            set { SetParent(ref _setter, value); }
         }
 
         public CodeTypeReference PrivateImplementationType
         {
             get { return _privateImplementationType; }
-            set { _privateImplementationType = SetParent(value); }
+            set { SetParent(ref _privateImplementationType, value); }
         }
     }
 }

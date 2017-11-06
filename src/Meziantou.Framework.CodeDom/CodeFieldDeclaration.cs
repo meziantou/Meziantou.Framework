@@ -31,13 +31,13 @@ namespace Meziantou.Framework.CodeDom
         public CodeExpression InitExpression
         {
             get { return _initExpression; }
-            set { _initExpression = SetParent(value); }
+            set { SetParent(ref _initExpression, value); }
         }
 
         public CodeTypeReference Type
         {
             get { return _type; }
-            set { _type = SetParent(value); }
+            set { SetParent(ref _type, value); }
         }
 
         public Modifiers Modifiers { get; set; }

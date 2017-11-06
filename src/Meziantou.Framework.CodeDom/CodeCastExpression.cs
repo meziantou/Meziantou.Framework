@@ -18,13 +18,13 @@
         public CodeExpression Expression
         {
             get { return _expression; }
-            set { _expression = SetParent(value); }
+            set { SetParent(ref _expression, value); }
         }
 
         public CodeTypeReference Type
         {
             get { return _type; }
-            set { _type = SetParent(value); }
+            set { SetParent(ref _type, value); }
         }
     }
 }

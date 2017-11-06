@@ -15,8 +15,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference Type
         {
-            get { return _type; }
-            set { _type = SetParent(value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
     }
 }

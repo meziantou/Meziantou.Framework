@@ -14,14 +14,14 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeStatementCollection Statements
         {
-            get { return _statements; }
-            set { _statements = SetParent(value); }
+            get => _statements;
+            set => SetParent(ref _statements, value);
         }
 
         public CodeConstructorInitializer Initializer
         {
-            get { return _initializer; }
-            set { _initializer = SetParent(value); }
+            get => _initializer;
+            set => SetParent(ref _initializer, value);
         }
 
         public Modifiers Modifiers { get; set; }

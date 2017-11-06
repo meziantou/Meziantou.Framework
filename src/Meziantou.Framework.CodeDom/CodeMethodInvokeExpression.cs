@@ -26,8 +26,8 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeExpression Method
         {
-            get { return _method; }
-            set { _method = SetParent(value); }
+            get => _method;
+            set => SetParent(ref _method, value);
         }
 
         public CodeObjectCollection<CodeExpression> Arguments { get; }

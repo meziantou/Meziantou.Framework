@@ -9,24 +9,24 @@ namespace Meziantou.Framework.CodeDom
         public CodeExpression Condition
         {
             get { return _condition; }
-            set { _condition = SetParent(value); }
+            set { SetParent(ref _condition, value); }
         }
 
         public CodeStatementCollection TrueStatements
         {
             get { return _trueStatements; }
-            set { _trueStatements = SetParent(value); }
+            set { SetParent(ref _trueStatements, value); }
         }
 
         public CodeStatementCollection FalseStatements
         {
             get { return _falseStatements; }
-            set { _falseStatements = SetParent(value); }
+            set { SetParent(ref _falseStatements, value); }
         }
 
         public static CodeConditionStatement CreateIfNotNull(CodeExpression leftExpression)
         {
-            CodeConditionStatement condition = new CodeConditionStatement();
+            var condition = new CodeConditionStatement();
             condition.Condition = new CodeBinaryExpression(BinaryOperator.NotEquals, leftExpression, new CodeLiteralExpression(null));
             return condition;
         }

@@ -18,13 +18,13 @@
         public CodeTypeReference ExceptionType
         {
             get => _exceptionType;
-            set => _exceptionType = SetParent(value);
+            set => SetParent(ref _exceptionType, value);
         }
 
         public CodeStatementCollection Body
         {
             get => _body;
-            set => _body = SetParent(value);
+            set => SetParent(ref _body, value);
         }
     }
 }

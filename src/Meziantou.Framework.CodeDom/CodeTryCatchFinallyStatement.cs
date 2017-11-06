@@ -9,19 +9,19 @@
         public CodeStatementCollection Try
         {
             get { return _try; }
-            set { _try = SetParent(value); }
+            set { SetParent(ref _try, value); }
         }
 
         public CodeCatchClauseCollection Catch
         {
             get { return _catch; }
-            set { _catch = SetParent(value); }
+            set { SetParent(ref _catch, value); }
         }
 
         public CodeStatementCollection Finally
         {
             get => _finally;
-            set => _finally = SetParent(value);
+            set => SetParent(ref _finally, value);
         }
     }
 }

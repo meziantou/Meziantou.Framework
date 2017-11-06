@@ -7,14 +7,14 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference ReturnType
         {
-            get { return _returnType; }
-            set { _returnType = SetParent(value); }
+            get => _returnType;
+            set => SetParent(ref _returnType, value);
         }
 
         public CodeTypeReference PrivateImplementationType
         {
-            get { return _privateImplementationType; }
-            set { _privateImplementationType = SetParent(value); }
+            get => _privateImplementationType;
+            set => SetParent(ref _privateImplementationType, value);
         }
 
         public CodeObjectCollection<CodeTypeParameter> Parameters { get; }

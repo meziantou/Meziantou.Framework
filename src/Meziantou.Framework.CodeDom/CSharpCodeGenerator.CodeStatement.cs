@@ -12,7 +12,6 @@ namespace Meziantou.Framework.CodeDom
             {
                 if (EndStatement)
                 {
-                    
                     writer.WriteLine(";");
                 }
             }
@@ -23,8 +22,10 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CodeStatement statement, WriteStatementOptions options)
         {
-            if (statement == null) throw new ArgumentNullException(nameof(statement));
-            if (options == null) throw new ArgumentNullException(nameof(options));
+            if (statement == null)
+                throw new ArgumentNullException(nameof(statement));
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
 
             WriteBeforeComments(writer, statement);
             switch (statement)

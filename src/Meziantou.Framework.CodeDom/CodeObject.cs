@@ -11,8 +11,34 @@ namespace Meziantou.Framework.CodeDom
         {
             Data[key] = value;
         }
-        
+
         public CodeObject Parent { get; internal set; }
+
+        protected void SetParent<T>(ref T field, T value) where T : CodeObject
+        {
+            SetParent(this, ref field, value);
+        }
+
+        protected void SetParent<T>(CodeObject parent, ref T field, T value) where T : CodeObject
+        {
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+
+            if (field != null)
+            {
+                field.Parent = null; // Detach previous value
+            }
+
+            if (value != null)
+            {
+                if (value.Parent != null && value.Parent != parent)
+                    throw new ArgumentException("Object already has a parent.", nameof(value));
+
+                value.Parent = parent;
+            }
+
+            field = value;
+        }
 
         protected T SetParent<T>(T value) where T : CodeObject
         {
@@ -21,15 +47,11 @@ namespace Meziantou.Framework.CodeDom
 
         protected T SetParent<T>(CodeObject parent, T value) where T : CodeObject
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
 
-            if (value == null)
-                return null;
-
-            if (value.Parent != null && value.Parent != parent)
-            {
+            if (value?.Parent != parent)
                 throw new ArgumentException("Object already has a parent.", nameof(value));
-            }
 
             value.Parent = parent;
             return value;

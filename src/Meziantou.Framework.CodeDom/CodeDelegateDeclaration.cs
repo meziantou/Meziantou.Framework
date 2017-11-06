@@ -6,8 +6,8 @@
 
         public CodeTypeReference ReturnType
         {
-            get { return _returnType; }
-            set { _returnType = SetParent(value); }
+            get => _returnType;
+            set => SetParent(ref _returnType, value);
         }
 
         public CodeObjectCollection<CodeTypeParameter> Parameters { get; }
@@ -24,6 +24,5 @@
             Parameters = new CodeObjectCollection<CodeTypeParameter>(this);
             Name = name;
         }
-
     }
 }

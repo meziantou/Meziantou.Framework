@@ -27,14 +27,14 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference Type
         {
-            get { return _type; }
-            set { _type = SetParent(value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
 
         public CodeExpression DefaultValue
         {
-            get { return _defaultValue; }
-            set { _defaultValue = SetParent(value); }
+            get => _defaultValue;
+            set => SetParent(ref _defaultValue, value);
         }
 
         public Direction Direction { get; set; }

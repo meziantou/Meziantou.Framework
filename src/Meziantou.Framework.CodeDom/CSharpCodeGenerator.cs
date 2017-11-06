@@ -307,7 +307,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, IEnumerable<CodeMethodArgumentDeclaration> args)
+        protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<CodeMethodArgumentDeclaration> args)
         {
             Write(writer, args, ", ");
         }
@@ -598,7 +598,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ICollection<CodeCustomAttribute> attributes)
+        protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<CodeCustomAttribute> attributes)
         {
             if (attributes.Count > 0)
             {

@@ -16,7 +16,7 @@ namespace Meziantou.Framework.CodeDom
             : this(name, type, Modifiers.None)
         {
         }
-        
+
         public CodeEventFieldDeclaration(string name, CodeTypeReference type, Modifiers modifiers)
             : base(name)
         {
@@ -26,26 +26,26 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeTypeReference Type
         {
-            get { return _type; }
-            set { _type = SetParent(value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
 
         public CodeStatementCollection AddAccessor
         {
-            get { return _addAccessor; }
-            set { _addAccessor = SetParent(value); }
+            get => _addAccessor;
+            set => SetParent(ref _addAccessor, value);
         }
 
         public CodeStatementCollection RemoveAccessor
         {
-            get { return _removeAccessor; }
-            set { _removeAccessor = SetParent(value); }
+            get => _removeAccessor;
+            set => SetParent(ref _removeAccessor, value);
         }
 
         public CodeTypeReference PrivateImplementationType
         {
-            get { return _privateImplementationType; }
-            set { _privateImplementationType = SetParent(value); }
+            get => _privateImplementationType;
+            set => SetParent(ref _privateImplementationType, value);
         }
 
         public Modifiers Modifiers { get; set; }

@@ -8,13 +8,13 @@
         public CodeExpression Condition
         {
             get { return _condition; }
-            set { _condition = SetParent(value); }
+            set { SetParent(ref _condition, value); }
         }
 
         public CodeStatementCollection Body
         {
             get => _body;
-            set => _body = SetParent(value);
+            set => SetParent(ref _body, value);
         }
     }
 }

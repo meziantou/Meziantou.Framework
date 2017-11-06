@@ -23,13 +23,10 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeExpression Value
         {
-            get { return _value; }
-            set
-            {
-                _value = SetParent(value);
-            }
+            get => _value;
+            set => SetParent(ref _value, value);
         }
-        
+
         public static implicit operator CodeMethodInvokeArgumentExpression(CodeMethodArgumentDeclaration argument)
         {
             return new CodeMethodInvokeArgumentExpression(new CodeArgumentReferenceExpression(argument));

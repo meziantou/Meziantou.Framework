@@ -2,8 +2,8 @@
 {
     public interface ICommentable
     {
-        CodeCommentCollection CommentsAfter { get; }
-        CodeCommentCollection CommentsBefore { get; }
+        CommentCollection CommentsAfter { get; }
+        CommentCollection CommentsBefore { get; }
 
     }
 }

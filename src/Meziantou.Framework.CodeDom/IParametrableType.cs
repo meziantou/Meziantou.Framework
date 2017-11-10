@@ -2,6 +2,6 @@
 {
     public interface IParametrableType
     {
-        CodeObjectCollection<CodeTypeParameter> Parameters { get; }
+        CodeObjectCollection<TypeParameter> Parameters { get; }
     }
 }

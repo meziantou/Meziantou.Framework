@@ -20,7 +20,7 @@ namespace Meziantou.Framework.CodeDom
         protected readonly WriteStatementOptions _defaultWriteStatementOptions = new WriteStatementOptions();
         protected readonly WriteStatementOptions _inlineStatementWriteStatementOptions = new WriteStatementOptions() { EndStatement = false };
 
-        protected virtual void Write(IndentedTextWriter writer, CodeStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, Statement statement, WriteStatementOptions options)
         {
             if (statement == null)
                 throw new ArgumentNullException(nameof(statement));
@@ -30,79 +30,79 @@ namespace Meziantou.Framework.CodeDom
             WriteBeforeComments(writer, statement);
             switch (statement)
             {
-                case CodeConditionStatement o:
+                case ConditionStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeReturnStatement o:
+                case ReturnStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeYieldReturnStatement o:
+                case YieldReturnStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeYieldBreakStatement o:
+                case YieldBreakStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeAssignStatement o:
+                case AssignStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeExpressionStatement o:
+                case ExpressionStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeThrowStatement o:
+                case ThrowStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeUsingStatement o:
+                case UsingStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeVariableDeclarationStatement o:
+                case VariableDeclarationStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeWhileStatement o:
+                case WhileStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeIterationStatement o:
+                case IterationStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeExpressionCollectionStatement o:
+                case ExpressionCollectionStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeGotoNextLoopIterationStatement o:
+                case GotoNextLoopIterationStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeExitLoopStatement o:
+                case ExitLoopStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeSnippetStatement o:
+                case SnippetStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeTryCatchFinallyStatement o:
+                case TryCatchFinallyStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeAddEventHandlerStatement o:
+                case AddEventHandlerStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeRemoveEventHandlerStatement o:
+                case RemoveEventHandlerStatement o:
                     Write(writer, o, options);
                     break;
 
-                case CodeCommentStatement o:
+                case CommentStatement o:
                     Write(writer, o, options);
                     break;
 
@@ -113,7 +113,7 @@ namespace Meziantou.Framework.CodeDom
             WriteAfterComments(writer, statement);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeTryCatchFinallyStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, TryCatchFinallyStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("try");
             WriteStatementsOrEmptyBlock(writer, statement.Try);
@@ -130,22 +130,22 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeSnippetStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, SnippetStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine(statement.Statement);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeGotoNextLoopIterationStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, GotoNextLoopIterationStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("continue;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeExitLoopStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ExitLoopStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("break;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeReturnStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ReturnStatement statement, WriteStatementOptions options)
         {
             writer.Write("return");
             if (statement.Expression != null)
@@ -156,7 +156,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeYieldReturnStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, YieldReturnStatement statement, WriteStatementOptions options)
         {
             writer.Write("yield return");
             if (statement.Expression != null)
@@ -167,12 +167,12 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeYieldBreakStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, YieldBreakStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("yield break;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeConditionStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ConditionStatement statement, WriteStatementOptions options)
         {
             writer.Write("if (");
             Write(writer, statement.Condition);
@@ -185,7 +185,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeAssignStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, AssignStatement statement, WriteStatementOptions options)
         {
             Write(writer, statement.LeftExpression);
             writer.Write(" = ");
@@ -193,13 +193,13 @@ namespace Meziantou.Framework.CodeDom
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeExpressionStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ExpressionStatement statement, WriteStatementOptions options)
         {
             Write(writer, statement.Expression);
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeThrowStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ThrowStatement statement, WriteStatementOptions options)
         {
             writer.Write("throw");
             if (statement.Expression != null)
@@ -210,7 +210,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeUsingStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, UsingStatement statement, WriteStatementOptions options)
         {
             writer.Write("using (");
             Write(writer, statement.Statement, _inlineStatementWriteStatementOptions);
@@ -219,7 +219,7 @@ namespace Meziantou.Framework.CodeDom
             WriteStatementsOrEmptyBlock(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeVariableDeclarationStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, VariableDeclarationStatement statement, WriteStatementOptions options)
         {
             if (statement.Type != null)
             {
@@ -241,7 +241,7 @@ namespace Meziantou.Framework.CodeDom
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeWhileStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, WhileStatement statement, WriteStatementOptions options)
         {
             writer.Write("while (");
             Write(writer, statement.Condition);
@@ -251,7 +251,7 @@ namespace Meziantou.Framework.CodeDom
             WriteStatementsOrEmptyBlock(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeIterationStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, IterationStatement statement, WriteStatementOptions options)
         {
             writer.Write("for (");
             if (statement.Initialization != null)
@@ -273,7 +273,7 @@ namespace Meziantou.Framework.CodeDom
             WriteStatementsOrEmptyBlock(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeAddEventHandlerStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, AddEventHandlerStatement statement, WriteStatementOptions options)
         {
             if (statement.LeftExpression != null)
             {
@@ -290,7 +290,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeRemoveEventHandlerStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, RemoveEventHandlerStatement statement, WriteStatementOptions options)
         {
             if (statement.LeftExpression != null)
             {
@@ -307,12 +307,12 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeExpressionCollectionStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, ExpressionCollectionStatement statement, WriteStatementOptions options)
         {
             Write(writer, statement, ", ");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeCommentStatement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, CommentStatement statement, WriteStatementOptions options)
         {
             WriteLineComment(writer, statement.Content);
         }

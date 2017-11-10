@@ -19,56 +19,56 @@ namespace Meziantou.Framework.CodeDom
             return null;
         }
 
-        public static CodeNamespaceDeclaration AddNamespace(this INamespaceDeclarationContainer unit, string name)
+        public static NamespaceDeclaration AddNamespace(this INamespaceDeclarationContainer unit, string name)
         {
-            var ns = new CodeNamespaceDeclaration(name);
+            var ns = new NamespaceDeclaration(name);
             unit.Namespaces.Add(ns);
             return ns;
         }
 
-        public static CodeNamespaceDeclaration AddNamespace(this INamespaceDeclarationContainer unit, CodeNamespaceDeclaration ns)
+        public static NamespaceDeclaration AddNamespace(this INamespaceDeclarationContainer unit, NamespaceDeclaration ns)
         {
             unit.Namespaces.Add(ns);
             return ns;
         }
 
-        public static T AddType<T>(this ITypeDeclarationContainer unit, T type) where T : CodeTypeDeclaration
+        public static T AddType<T>(this ITypeDeclarationContainer unit, T type) where T : TypeDeclaration
         {
             unit.Types.Add(type);
             return type;
         }
 
-        public static CodeUsingDirective AddUsing(this IUsingDirectiveContainer unit, string ns)
+        public static UsingDirective AddUsing(this IUsingDirectiveContainer unit, string ns)
         {
-            var directive = new CodeUsingDirective(ns);
+            var directive = new UsingDirective(ns);
             unit.Usings.Add(directive);
             return directive;
         }
 
-        public static CodeMethodArgumentDeclaration AddArgument(this CodeMethodDeclaration method, CodeMethodArgumentDeclaration argument)
+        public static MethodArgumentDeclaration AddArgument(this MethodDeclaration method, MethodArgumentDeclaration argument)
         {
             method.Arguments.Add(argument);
             return argument;
         }
 
-        public static CodeMethodArgumentDeclaration AddArgument(this CodeMethodDeclaration method, string name, CodeTypeReference type)
+        public static MethodArgumentDeclaration AddArgument(this MethodDeclaration method, string name, TypeReference type)
         {
-            var argument = new CodeMethodArgumentDeclaration(type, name);
+            var argument = new MethodArgumentDeclaration(type, name);
             method.Arguments.Add(argument);
             return argument;
         }
 
-        public static T AddMember<T>(this CodeClassDeclaration c, T member) where T : CodeMemberDeclaration
+        public static T AddMember<T>(this ClassDeclaration c, T member) where T : MemberDeclaration
         {
             c.Members.Add(member);
             return member;
         }
 
-        public static CodeConditionStatement CreateThrowIfNullStatement(this CodeMethodArgumentDeclaration argument)
+        public static ConditionStatement CreateThrowIfNullStatement(this MethodArgumentDeclaration argument)
         {
-            CodeConditionStatement condition = new CodeConditionStatement();
-            condition.Condition = new CodeBinaryExpression(BinaryOperator.Equals, argument, new CodeLiteralExpression(null));
-            condition.TrueStatements = new CodeThrowStatement(new CodeNewObjectExpression(typeof(ArgumentNullException), new CodeNameofExpression(argument)));
+            ConditionStatement condition = new ConditionStatement();
+            condition.Condition = new BinaryExpression(BinaryOperator.Equals, argument, new LiteralExpression(null));
+            condition.TrueStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentNullException), new NameofExpression(argument)));
             return condition;
         }
     }

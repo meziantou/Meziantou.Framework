@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom
 {
     internal static class ParametrableTypeExtensions
     {
-        public static bool HasConstraints(this CodeTypeParameter parameter)
+        public static bool HasConstraints(this TypeParameter parameter)
         {
             return parameter.Constraints.Any();
         }

@@ -9,22 +9,22 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_Factorial()
         {
-            var unit = new CodeCompilationUnit();
+            var unit = new CompilationUnit();
             var ns = unit.AddNamespace("Meziantou.Framework.CodeDom");
-            var c = ns.AddType(new CodeClassDeclaration("Sample"));
-            var method = c.AddMember(new CodeMethodDeclaration("Factorial"));
+            var c = ns.AddType(new ClassDeclaration("Sample"));
+            var method = c.AddMember(new MethodDeclaration("Factorial"));
             method.ReturnType = typeof(int);
             var n = method.AddArgument("n", typeof(int));
             method.Modifiers = Modifiers.Public | Modifiers.Static;
 
-            method.Statements = new CodeConditionStatement()
+            method.Statements = new ConditionStatement()
             {
-                Condition = new CodeBinaryExpression(BinaryOperator.LessThanOrEqual, 1, n),
-                TrueStatements = new CodeReturnStatement(1),
-                FalseStatements = new CodeReturnStatement(new CodeBinaryExpression(
+                Condition = new BinaryExpression(BinaryOperator.LessThanOrEqual, 1, n),
+                TrueStatements = new ReturnStatement(1),
+                FalseStatements = new ReturnStatement(new BinaryExpression(
                     BinaryOperator.Multiply,
                     n,
-                    new CodeMethodInvokeExpression(method, new CodeBinaryExpression(BinaryOperator.Substract, n, 1))))
+                    new MethodInvokeExpression(method, new BinaryExpression(BinaryOperator.Substract, n, 1))))
             };
 
             var generator = new CSharpCodeGenerator();
@@ -53,7 +53,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_ClassDeclaration()
         {
-            var type = new CodeClassDeclaration("Sample");
+            var type = new ClassDeclaration("Sample");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -67,14 +67,14 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_ClassDeclaration_Generic()
         {
-            var type = new CodeClassDeclaration("Sample");
-            type.Parameters.Add(new CodeTypeParameter("T1") { Constraints = { new CodeValueTypeTypeParameterConstraint() } });
-            type.Parameters.Add(new CodeTypeParameter("T2")
+            var type = new ClassDeclaration("Sample");
+            type.Parameters.Add(new TypeParameter("T1") { Constraints = { new ValueTypeTypeParameterConstraint() } });
+            type.Parameters.Add(new TypeParameter("T2")
             {
                 Constraints = {
-                        new CodeConstructorParameterConstraint(),
-                        new CodeClassTypeParameterConstraint(),
-                        new CodeBaseTypeParameterConstraint(typeof(ICloneable))
+                        new ConstructorParameterConstraint(),
+                        new ClassTypeParameterConstraint(),
+                        new BaseTypeParameterConstraint(typeof(ICloneable))
                 }
             });
 
@@ -92,7 +92,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_InterfaceDeclaration()
         {
-            var type = new CodeInterfaceDeclaration("Sample");
+            var type = new InterfaceDeclaration("Sample");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -106,14 +106,14 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_InterfaceDeclaration_Generic()
         {
-            var type = new CodeInterfaceDeclaration("Sample");
-            type.Parameters.Add(new CodeTypeParameter("T1") { Constraints = { new CodeValueTypeTypeParameterConstraint() } });
-            type.Parameters.Add(new CodeTypeParameter("T2")
+            var type = new InterfaceDeclaration("Sample");
+            type.Parameters.Add(new TypeParameter("T1") { Constraints = { new ValueTypeTypeParameterConstraint() } });
+            type.Parameters.Add(new TypeParameter("T2")
             {
                 Constraints = {
-                        new CodeConstructorParameterConstraint(),
-                        new CodeClassTypeParameterConstraint(),
-                        new CodeBaseTypeParameterConstraint(typeof(ICloneable))
+                        new ConstructorParameterConstraint(),
+                        new ClassTypeParameterConstraint(),
+                        new BaseTypeParameterConstraint(typeof(ICloneable))
                 }
             });
 
@@ -131,12 +131,12 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CSharpCodeGenerator_EnumDeclaration()
         {
-            var type = new CodeEnumerationDeclaration("Sample");
+            var type = new EnumerationDeclaration("Sample");
             type.BaseType = typeof(uint);
             type.Modifiers = Modifiers.Internal;
-            type.Members.Add(new CodeEnumerationMember("A", 1));
-            type.Members.Add(new CodeEnumerationMember("B", 2));
-            type.CustomAttributes.Add(new CodeCustomAttribute(typeof(FlagsAttribute)));
+            type.Members.Add(new EnumerationMember("A", 1));
+            type.Members.Add(new EnumerationMember("B", 2));
+            type.CustomAttributes.Add(new CustomAttribute(typeof(FlagsAttribute)));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -153,9 +153,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_DelegateDeclaration()
         {
-            var d = new CodeDelegateDeclaration("Sample");
+            var d = new DelegateDeclaration("Sample");
             d.ReturnType = typeof(void);
-            d.Arguments.Add(new CodeMethodArgumentDeclaration(typeof(string), "a"));
+            d.Arguments.Add(new MethodArgumentDeclaration(typeof(string), "a"));
             d.Modifiers = Modifiers.Public;
 
             var generator = new CSharpCodeGenerator();
@@ -168,10 +168,10 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_FieldDeclaration()
         {
-            var type = new CodeClassDeclaration("Sample");
-            type.AddMember(new CodeFieldDeclaration("_a", typeof(int)));
-            type.AddMember(new CodeFieldDeclaration("_b", typeof(Type), Modifiers.Private));
-            type.AddMember(new CodeFieldDeclaration("_c", typeof(int), Modifiers.Protected, 10));
+            var type = new ClassDeclaration("Sample");
+            type.AddMember(new FieldDeclaration("_a", typeof(int)));
+            type.AddMember(new FieldDeclaration("_b", typeof(Type), Modifiers.Private));
+            type.AddMember(new FieldDeclaration("_c", typeof(int), Modifiers.Protected, 10));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -190,8 +190,8 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_EventDeclaration()
         {
-            var type = new CodeClassDeclaration("Sample");
-            type.AddMember(new CodeEventFieldDeclaration("A", typeof(EventHandler), Modifiers.Public));
+            var type = new ClassDeclaration("Sample");
+            type.AddMember(new EventFieldDeclaration("A", typeof(EventHandler), Modifiers.Public));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -206,9 +206,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_AddEventHandler()
         {
-            var statement = new CodeAddEventHandlerStatement(
-                new CodeMemberReferenceExpression(new CodeThisExpression(), "A"),
-                new CodeMemberReferenceExpression(new CodeThisExpression(), "Handler"));
+            var statement = new AddEventHandlerStatement(
+                new MemberReferenceExpression(new ThisExpression(), "A"),
+                new MemberReferenceExpression(new ThisExpression(), "Handler"));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -220,9 +220,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_RemoveEventHandler()
         {
-            var statement = new CodeRemoveEventHandlerStatement(
-                new CodeMemberReferenceExpression(new CodeThisExpression(), "A"),
-                new CodeMemberReferenceExpression(new CodeThisExpression(), "Handler"));
+            var statement = new RemoveEventHandlerStatement(
+                new MemberReferenceExpression(new ThisExpression(), "A"),
+                new MemberReferenceExpression(new ThisExpression(), "Handler"));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -234,9 +234,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_WhileLoop()
         {
-            var loop = new CodeWhileStatement();
-            loop.Condition = new CodeLiteralExpression(true);
-            loop.Body = new CodeStatementCollection();
+            var loop = new WhileStatement();
+            loop.Condition = new LiteralExpression(true);
+            loop.Body = new StatementCollection();
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(loop);
@@ -250,8 +250,8 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Constructor()
         {
-            var type = new CodeClassDeclaration("Sample");
-            var ctor = type.AddMember(new CodeConstructorDeclaration());
+            var type = new ClassDeclaration("Sample");
+            var ctor = type.AddMember(new ConstructorDeclaration());
             ctor.Modifiers = Modifiers.Internal;
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(type);
@@ -268,9 +268,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Constructor_Base()
         {
-            var type = new CodeClassDeclaration("Sample");
-            var ctor = type.AddMember(new CodeConstructorDeclaration());
-            ctor.Initializer = new CodeConstructorBaseInitializer();
+            var type = new ClassDeclaration("Sample");
+            var ctor = type.AddMember(new ConstructorDeclaration());
+            ctor.Initializer = new ConstructorBaseInitializer();
             ctor.Modifiers = Modifiers.Public;
 
             var generator = new CSharpCodeGenerator();
@@ -289,9 +289,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Constructor_This()
         {
-            var type = new CodeClassDeclaration("Sample");
-            var ctor = type.AddMember(new CodeConstructorDeclaration());
-            ctor.Initializer = new CodeConstructorThisInitializer();
+            var type = new ClassDeclaration("Sample");
+            var ctor = type.AddMember(new ConstructorDeclaration());
+            ctor.Initializer = new ConstructorThisInitializer();
             ctor.Modifiers = Modifiers.Public;
 
             var generator = new CSharpCodeGenerator();
@@ -310,9 +310,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Constructor_ThisWithArgs()
         {
-            var type = new CodeClassDeclaration("Sample");
-            var ctor = type.AddMember(new CodeConstructorDeclaration());
-            ctor.Initializer = new CodeConstructorThisInitializer(new CodeLiteralExpression("arg"));
+            var type = new ClassDeclaration("Sample");
+            var ctor = type.AddMember(new ConstructorDeclaration());
+            ctor.Initializer = new ConstructorThisInitializer(new LiteralExpression("arg"));
             ctor.Modifiers = Modifiers.Public;
 
             var generator = new CSharpCodeGenerator();
@@ -331,8 +331,8 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_ArrayIndexer()
         {
-            var array = new CodeVariableReference("array");
-            CodeExpression expression = new CodeArrayIndexerExpression(array, 10);
+            var array = new VariableReference("array");
+            Expression expression = new ArrayIndexerExpression(array, 10);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -343,8 +343,8 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_ArrayIndexer_Multiple()
         {
-            var array = new CodeVariableReference("array");
-            CodeExpression expression = new CodeArrayIndexerExpression(array, 10, "test");
+            var array = new VariableReference("array");
+            Expression expression = new ArrayIndexerExpression(array, 10, "test");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -355,7 +355,7 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Assign()
         {
-            var statement = new CodeAssignStatement(new CodeVariableReference("a"), 10);
+            var statement = new AssignStatement(new VariableReference("a"), 10);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -367,9 +367,9 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_If()
         {
-            var statement = new CodeConditionStatement();
-            statement.Condition = new CodeLiteralExpression(true);
-            statement.TrueStatements = new CodeSnippetStatement("TrueSnippet");
+            var statement = new ConditionStatement();
+            statement.Condition = new LiteralExpression(true);
+            statement.TrueStatements = new SnippetStatement("TrueSnippet");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -384,10 +384,10 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_If_Else()
         {
-            var statement = new CodeConditionStatement();
-            statement.Condition = new CodeLiteralExpression(true);
-            statement.TrueStatements = new CodeSnippetStatement("TrueSnippet");
-            statement.FalseStatements = new CodeSnippetStatement("FalseSnippet");
+            var statement = new ConditionStatement();
+            statement.Condition = new LiteralExpression(true);
+            statement.TrueStatements = new SnippetStatement("TrueSnippet");
+            statement.FalseStatements = new SnippetStatement("FalseSnippet");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -406,8 +406,8 @@ else
         [TestMethod]
         public void CSharpCodeGenerator_If_Empty()
         {
-            var statement = new CodeConditionStatement();
-            statement.Condition = new CodeLiteralExpression(true);
+            var statement = new ConditionStatement();
+            statement.Condition = new LiteralExpression(true);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -421,10 +421,10 @@ else
         [TestMethod]
         public void CSharpCodeGenerator_Try_Catch()
         {
-            var statement = new CodeTryCatchFinallyStatement();
-            statement.Try = new CodeSnippetStatement("TrySnippet");
-            statement.Catch = new CodeCatchClauseCollection();
-            statement.Catch.Add(new CodeCatchClause() { Body = new CodeSnippetStatement("Catch1") });
+            var statement = new TryCatchFinallyStatement();
+            statement.Try = new SnippetStatement("TrySnippet");
+            statement.Catch = new CatchClauseCollection();
+            statement.Catch.Add(new CatchClause() { Body = new SnippetStatement("Catch1") });
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -443,20 +443,20 @@ catch
         [TestMethod]
         public void CSharpCodeGenerator_Try_Catch_WithException()
         {
-            var statement = new CodeTryCatchFinallyStatement();
-            statement.Try = new CodeSnippetStatement("TrySnippet");
-            statement.Catch = new CodeCatchClauseCollection();
-            statement.Catch.Add(new CodeCatchClause()
+            var statement = new TryCatchFinallyStatement();
+            statement.Try = new SnippetStatement("TrySnippet");
+            statement.Catch = new CatchClauseCollection();
+            statement.Catch.Add(new CatchClause()
             {
                 ExceptionType = typeof(NotImplementedException),
                 ExceptionVariableName = "nie",
-                Body = new CodeSnippetStatement("Catch1")
+                Body = new SnippetStatement("Catch1")
             });
-            statement.Catch.Add(new CodeCatchClause()
+            statement.Catch.Add(new CatchClause()
             {
                 ExceptionType = typeof(Exception),
                 ExceptionVariableName = "ex",
-                Body = new CodeThrowStatement()
+                Body = new ThrowStatement()
             });
 
             var generator = new CSharpCodeGenerator();
@@ -480,9 +480,9 @@ catch (System.Exception ex)
         [TestMethod]
         public void CSharpCodeGenerator_Try_Finally()
         {
-            var statement = new CodeTryCatchFinallyStatement();
-            statement.Try = new CodeSnippetStatement("TrySnippet");
-            statement.Finally = new CodeSnippetStatement("FinallyStatement");
+            var statement = new TryCatchFinallyStatement();
+            statement.Try = new SnippetStatement("TrySnippet");
+            statement.Finally = new SnippetStatement("FinallyStatement");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -501,7 +501,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Literal_String()
         {
-            var literal = new CodeLiteralExpression("test");
+            var literal = new LiteralExpression("test");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(literal);
 
@@ -511,7 +511,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Literal_StringWithNewLine()
         {
-            var literal = new CodeLiteralExpression("line1\r\nline2");
+            var literal = new LiteralExpression("line1\r\nline2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(literal);
 
@@ -521,7 +521,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Default()
         {
-            var expr = new CodeDefaultValueExpression(typeof(string));
+            var expr = new DefaultValueExpression(typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -531,7 +531,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Cast()
         {
-            var expr = new CodeCastExpression(new CodeVariableReference("a"), typeof(string));
+            var expr = new CastExpression(new VariableReference("a"), typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -541,7 +541,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Convert()
         {
-            var expr = new CodeConvertExpression(new CodeVariableReference("a"), typeof(string));
+            var expr = new ConvertExpression(new VariableReference("a"), typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -551,7 +551,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Throw()
         {
-            var expr = new CodeThrowStatement(new CodeNewObjectExpression(typeof(Exception)));
+            var expr = new ThrowStatement(new NewObjectExpression(typeof(Exception)));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -562,9 +562,9 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithoutArgument()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
-            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute")));
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
+            method.CustomAttributes.Add(new CustomAttribute(new TypeReference("TestAttribute")));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -579,14 +579,14 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithArgument()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
             method.CustomAttributes.Add(
-                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                new CustomAttribute(new TypeReference("TestAttribute"))
                 {
                     Arguments =
                     {
-                        new CodeCustomAttributeArgument("arg1")
+                        new CustomAttributeArgument("arg1")
                     }
                 });
 
@@ -603,15 +603,15 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithArguments()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
             method.CustomAttributes.Add(
-                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                new CustomAttribute(new TypeReference("TestAttribute"))
                 {
                     Arguments =
                     {
-                        new CodeCustomAttributeArgument("arg1"),
-                        new CodeCustomAttributeArgument("arg2"),
+                        new CustomAttributeArgument("arg1"),
+                        new CustomAttributeArgument("arg2"),
                     }
                 });
 
@@ -628,14 +628,14 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithNamedArgument()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
             method.CustomAttributes.Add(
-                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                new CustomAttribute(new TypeReference("TestAttribute"))
                 {
                     Arguments =
                     {
-                        new CodeCustomAttributeArgument("Name1", "arg1")
+                        new CustomAttributeArgument("Name1", "arg1")
                     }
                 });
 
@@ -652,15 +652,15 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithNamedArguments()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
             method.CustomAttributes.Add(
-                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                new CustomAttribute(new TypeReference("TestAttribute"))
                 {
                     Arguments =
                     {
-                        new CodeCustomAttributeArgument("Name1", "arg1"),
-                        new CodeCustomAttributeArgument("Name2", "arg2")
+                        new CustomAttributeArgument("Name1", "arg1"),
+                        new CustomAttributeArgument("Name2", "arg2")
                     }
                 });
 
@@ -677,16 +677,16 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_WithMixedUnnamedAndNamedArguments()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
             method.CustomAttributes.Add(
-                new CodeCustomAttribute(new CodeTypeReference("TestAttribute"))
+                new CustomAttribute(new TypeReference("TestAttribute"))
                 {
                     Arguments =
                     {
-                        new CodeCustomAttributeArgument("arg1"),
-                        new CodeCustomAttributeArgument("Name2", "arg2"),
-                        new CodeCustomAttributeArgument("arg3"),
+                        new CustomAttributeArgument("arg1"),
+                        new CustomAttributeArgument("Name2", "arg2"),
+                        new CustomAttributeArgument("arg3"),
                     }
                 });
 
@@ -703,10 +703,10 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CustomAttributes_MultipleAttributes()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
-            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute1")));
-            method.CustomAttributes.Add(new CodeCustomAttribute(new CodeTypeReference("TestAttribute2")));
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
+            method.CustomAttributes.Add(new CustomAttribute(new TypeReference("TestAttribute1")));
+            method.CustomAttributes.Add(new CustomAttribute(new TypeReference("TestAttribute2")));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -722,9 +722,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Method_GenericParameter()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
-            method.Parameters.Add(new CodeTypeParameter("T"));
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
+            method.Parameters.Add(new TypeParameter("T"));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -738,9 +738,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Method_GenericParameterWithConstraint()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
-            method.Parameters.Add(new CodeTypeParameter("T") { Constraints = { new CodeClassTypeParameterConstraint() } });
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
+            method.Parameters.Add(new TypeParameter("T") { Constraints = { new ClassTypeParameterConstraint() } });
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -755,7 +755,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Method_Abstract()
         {
-            var method = new CodeMethodDeclaration("Sample");
+            var method = new MethodDeclaration("Sample");
             method.Modifiers = Modifiers.Protected | Modifiers.Abstract;
 
             var generator = new CSharpCodeGenerator();
@@ -768,9 +768,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Method_AbstractWithGenericParameterWithConstraint()
         {
-            var method = new CodeMethodDeclaration("Sample");
+            var method = new MethodDeclaration("Sample");
             method.Modifiers = Modifiers.Protected | Modifiers.Abstract;
-            method.Parameters.Add(new CodeTypeParameter("T") { Constraints = { new CodeClassTypeParameterConstraint() } });
+            method.Parameters.Add(new TypeParameter("T") { Constraints = { new ClassTypeParameterConstraint() } });
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -784,9 +784,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Method_ExplicitImplementation()
         {
-            var method = new CodeMethodDeclaration("A");
-            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("A");
+            method.PrivateImplementationType = new TypeReference("Foo.IBar");
+            method.Statements = new StatementCollection();
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -800,9 +800,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Property_ExplicitImplementation()
         {
-            var method = new CodePropertyDeclaration("A", typeof(int));
-            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
-            method.Getter = new CodeReturnStatement(10);       
+            var method = new PropertyDeclaration("A", typeof(int));
+            method.PrivateImplementationType = new TypeReference("Foo.IBar");
+            method.Getter = new ReturnStatement(10);       
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -820,10 +820,10 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Event_ExplicitImplementation()
         {
-            var method = new CodeEventFieldDeclaration("A", typeof(EventHandler));
-            method.PrivateImplementationType = new CodeTypeReference("Foo.IBar");
-            method.AddAccessor = new CodeStatementCollection();
-            method.RemoveAccessor = new CodeStatementCollection();
+            var method = new EventFieldDeclaration("A", typeof(EventHandler));
+            method.PrivateImplementationType = new TypeReference("Foo.IBar");
+            method.AddAccessor = new StatementCollection();
+            method.RemoveAccessor = new StatementCollection();
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -843,7 +843,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionStatement()
         {
-            var statement = new CodeExpressionStatement(new CodeNewObjectExpression(new CodeTypeReference("Disposable")));
+            var statement = new ExpressionStatement(new NewObjectExpression(new TypeReference("Disposable")));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -855,7 +855,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_UsingDirective()
         {
-            var directive = new CodeUsingDirective("System");
+            var directive = new UsingDirective("System");
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(directive);
@@ -866,8 +866,8 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_UsingStatement_WithoutBody()
         {
-            var statement = new CodeUsingStatement();
-            statement.Statement = new CodeNewObjectExpression(new CodeTypeReference("Disposable"));
+            var statement = new UsingStatement();
+            statement.Statement = new NewObjectExpression(new TypeReference("Disposable"));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -881,9 +881,9 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_UsingStatement_WithBody()
         {
-            var statement = new CodeUsingStatement();
-            statement.Statement = new CodeVariableDeclarationStatement(null, "disposable", new CodeNewObjectExpression(new CodeTypeReference("Disposable")));
-            statement.Body = (CodeStatement)new CodeMethodInvokeExpression(new CodeVariableReference("disposable"));
+            var statement = new UsingStatement();
+            statement.Statement = new VariableDeclarationStatement(null, "disposable", new NewObjectExpression(new TypeReference("Disposable")));
+            statement.Body = (Statement)new MethodInvokeExpression(new VariableReference("disposable"));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -898,13 +898,13 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Iteration()
         {
-            var statement = new CodeIterationStatement();
-            var variable = new CodeVariableDeclarationStatement(null, "i", 0);
+            var statement = new IterationStatement();
+            var variable = new VariableDeclarationStatement(null, "i", 0);
             statement.Initialization = variable;
-            statement.Condition = new CodeBinaryExpression(BinaryOperator.LessThan, variable, 10);
-            statement.IncrementStatement = new CodeUnaryExpression(UnaryOperator.PostIncrement, variable);
-            statement.Body = new CodeMethodInvokeExpression(
-                new CodeMemberReferenceExpression(new CodeTypeReference("Console"), "Write"),
+            statement.Condition = new BinaryExpression(BinaryOperator.LessThan, variable, 10);
+            statement.IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, variable);
+            statement.Body = new MethodInvokeExpression(
+                new MemberReferenceExpression(new TypeReference("Console"), "Write"),
                 variable);
 
             var generator = new CSharpCodeGenerator();
@@ -920,7 +920,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Iteration_Empty()
         {
-            var statement = new CodeIterationStatement();
+            var statement = new IterationStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -933,7 +933,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_TypeOf()
         {
-            var statement = new CodeTypeOfExpression(typeof(string));
+            var statement = new TypeOfExpression(typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -943,7 +943,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_NextLoopIteration()
         {
-            var statement = new CodeGotoNextLoopIterationStatement();
+            var statement = new GotoNextLoopIterationStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -954,7 +954,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CodeExitLoop()
         {
-            var statement = new CodeExitLoopStatement();
+            var statement = new ExitLoopStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -965,7 +965,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Return()
         {
-            var statement = new CodeReturnStatement();
+            var statement = new ReturnStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -976,7 +976,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ReturnExpression()
         {
-            var statement = new CodeReturnStatement(10);
+            var statement = new ReturnStatement(10);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -987,7 +987,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_YieldReturnExpression()
         {
-            var statement = new CodeYieldReturnStatement(10);
+            var statement = new YieldReturnStatement(10);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -998,7 +998,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_YieldBreak()
         {
-            var statement = new CodeYieldBreakStatement();
+            var statement = new YieldBreakStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1009,7 +1009,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Await()
         {
-            var statement = new CodeAwaitExpression(new CodeVariableReference("awaitable"));
+            var statement = new AwaitExpression(new VariableReference("awaitable"));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1019,7 +1019,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Comment()
         {
-            var statement = new CodeCommentStatement("test");
+            var statement = new CommentStatement("test");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1030,7 +1030,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CommentMultiLine()
         {
-            var statement = new CodeCommentStatement("test1" + Environment.NewLine + Environment.NewLine + "test2");
+            var statement = new CommentStatement("test1" + Environment.NewLine + Environment.NewLine + "test2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1043,7 +1043,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CommentNull()
         {
-            var statement = new CodeCommentStatement();
+            var statement = new CommentStatement();
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1054,7 +1054,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentBeforeAndAfter()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment1");
             expression.CommentsAfter.Add("comment2");
             var generator = new CSharpCodeGenerator();
@@ -1066,7 +1066,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentBefore()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment1");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1077,7 +1077,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentAfter()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsAfter.Add("comment2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1088,7 +1088,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentAfterWithInlineCommentEnd()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsAfter.Add("comment with */ in the middle");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1100,7 +1100,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentBeforeWithInlineCommentEnd()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment with */ in the middle");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1112,7 +1112,7 @@ code", result);
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentsBefore_Inlines()
         {
-            var expression = new CodeSnippetExpression("code");
+            var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("com1");
             expression.CommentsBefore.Add("com2");
             var generator = new CSharpCodeGenerator();
@@ -1124,8 +1124,8 @@ code", result);
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentsBefore_LineAndInline()
         {
-            var expression = new CodeSnippetExpression("code");
-            expression.CommentsBefore.Add("com1", CodeCommentType.LineComment);
+            var expression = new SnippetExpression("code");
+            expression.CommentsBefore.Add("com1", CommentType.LineComment);
             expression.CommentsBefore.Add("com2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1137,8 +1137,8 @@ code", result);
         [TestMethod]
         public void CSharpCodeGenerator_ExpressionCommentsAfter_LineAndInline()
         {
-            var expression = new CodeSnippetExpression("code");
-            expression.CommentsAfter.Add("com1", CodeCommentType.LineComment);
+            var expression = new SnippetExpression("code");
+            expression.CommentsAfter.Add("com1", CommentType.LineComment);
             expression.CommentsAfter.Add("com2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1150,8 +1150,8 @@ code", result);
         [TestMethod]
         public void CSharpCodeGenerator_StatementCommentsAfter_Line()
         {
-            var expression = new CodeReturnStatement();
-            expression.CommentsAfter.Add("com1", CodeCommentType.LineComment);
+            var expression = new ReturnStatement();
+            expression.CommentsAfter.Add("com1", CommentType.LineComment);
             expression.CommentsAfter.Add("com2");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1165,10 +1165,10 @@ code", result);
         [TestMethod]
         public void CSharpCodeGenerator_MethodXmlDocmentation()
         {
-            var method = new CodeMethodDeclaration("Sample");
-            method.Statements = new CodeStatementCollection();
+            var method = new MethodDeclaration("Sample");
+            method.Statements = new StatementCollection();
 
-            method.CommentsBefore.Add("<summary>Test</summary>", CodeCommentType.DocumentationComment);
+            method.CommentsBefore.Add("<summary>Test</summary>", CommentType.DocumentationComment);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
 
@@ -1182,7 +1182,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_TypeReference()
         {
-            var expression = new CodeTypeReference(typeof(Console));
+            var expression = new TypeReference(typeof(Console));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1193,7 +1193,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_TypeReference_Nested()
         {
-            var expression = new CodeTypeReference(typeof(SampleEnum));
+            var expression = new TypeReference(typeof(SampleEnum));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1204,7 +1204,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_TypeReference_Generic()
         {
-            var expression = new CodeTypeReference(typeof(Sample<int>));
+            var expression = new TypeReference(typeof(Sample<int>));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1228,7 +1228,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CodeExpressionFromEnum()
         {
-            CodeExpression expression = SampleEnum.A;
+            Expression expression = SampleEnum.A;
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1239,7 +1239,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CodeExpressionFromEnum_DefinedCombinaison()
         {
-            CodeExpression expression = SampleEnum.All;
+            Expression expression = SampleEnum.All;
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1250,7 +1250,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CodeExpressionFromEnum_Combinaison()
         {
-            CodeExpression expression = (SampleEnum)3;
+            Expression expression = (SampleEnum)3;
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1261,7 +1261,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_CodeExpressionFromEnum_UndefinedValue()
         {
-            CodeExpression expression = (SampleEnum)10;
+            Expression expression = (SampleEnum)10;
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1290,7 +1290,7 @@ void Sample()
         [DataRow(BinaryOperator.Xor, "^")]
         public void CSharpCodeGenerator_BinaryExpression(BinaryOperator op, string symbol)
         {
-            var expression = new CodeBinaryExpression(op, 1, 2);
+            var expression = new BinaryExpression(op, 1, 2);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1306,7 +1306,7 @@ void Sample()
         [DataRow(UnaryOperator.PreIncrement, "++")]
         public void CSharpCodeGenerator_UnaryExpression_Pre(UnaryOperator op, string symbol)
         {
-            var expression = new CodeUnaryExpression(op, 1);
+            var expression = new UnaryExpression(op, 1);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
@@ -1318,7 +1318,7 @@ void Sample()
         [DataRow(UnaryOperator.PostDecrement, "--")]
         public void CSharpCodeGenerator_UnaryExpression_Post(UnaryOperator op, string symbol)
         {
-            var expression = new CodeUnaryExpression(op, 1);
+            var expression = new UnaryExpression(op, 1);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 

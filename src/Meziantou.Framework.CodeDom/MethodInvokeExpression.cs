@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom
         private Expression _method;
 
         public MethodInvokeExpression()
-            : this(null, null)
+            : this(null)
         {
         }
 

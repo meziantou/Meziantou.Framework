@@ -1,14 +1,16 @@
-﻿namespace Meziantou.Framework.Utilities
+﻿using System;
+
+namespace Meziantou.Framework.Utilities
 {
     public static class Range
     {
-        public static Range<T> Create<T>(T from, T to)
+        public static Range<T> Create<T>(T from, T to) where T : IComparable<T>
         {
             return new Range<T>(from, to);
         }
     }
 
-    public struct Range<T>
+    public struct Range<T> : IEquatable<Range<T>> where T : IComparable<T>
     {
         public Range(T from, T to)
         {
@@ -16,7 +18,95 @@
             To = to;
         }
 
-        public T From { get; set; }
-        public T To { get; set; }
+        public T From { get; }
+        public T To { get; }
+
+        public bool IsInRangeInclusive(T value)
+        {
+            if (From != null && From.CompareTo(value) > 0)
+                return false;
+
+            if (To != null && To.CompareTo(value) < 0)
+                return false;
+
+            return true;
+        }
+
+        public bool IsInRangeExclusive(T value)
+        {
+            if (From != null && From.CompareTo(value) >= 0)
+                return false;
+
+            if (To != null && To.CompareTo(value) <= 0)
+                return false;
+
+            return true;
+        }
+
+        public bool IsInRangeLowerInclusive(T value)
+        {
+            if (From != null && From.CompareTo(value) > 0)
+                return false;
+
+            if (To != null && To.CompareTo(value) <= 0)
+                return false;
+
+            return true;
+        }
+
+        public bool IsInRangeUpperInclusive(T value)
+        {
+            if (From != null && From.CompareTo(value) >= 0)
+                return false;
+
+            if (To != null && To.CompareTo(value) < 0)
+                return false;
+
+            return true;
+        }
+
+        public bool IsInRangeInclusive(Range<T> range)
+        {
+            return IsInRangeInclusive(range.From) && IsInRangeInclusive(range.To);
+        }
+
+        public bool IsInRangeExclusive(Range<T> range)
+        {
+            return IsInRangeExclusive(range.From) && IsInRangeExclusive(range.To);
+        }
+
+        public bool IsInRangeLowerInclusive(Range<T> range)
+        {
+            return IsInRangeLowerInclusive(range.From) && IsInRangeLowerInclusive(range.To);
+        }
+
+        public bool IsInRangeUpperInclusive(Range<T> range)
+        {
+            return IsInRangeUpperInclusive(range.From) && IsInRangeUpperInclusive(range.To);
+        }
+
+        public bool Equals(Range<T> other)
+        {
+            if (From != null)
+            {
+                if (From.CompareTo(other.From) != 0)
+                    return false;
+
+                if (other.From != null && other.From.CompareTo(From) != 0)
+                    return false;
+            }
+
+
+            if (To != null)
+            {
+                if (To.CompareTo(other.To) != 0)
+                    return false;
+
+                if (other.To != null && other.To.CompareTo(To) != 0)
+                    return false;
+            }
+
+            return true;
+        }
     }
 }

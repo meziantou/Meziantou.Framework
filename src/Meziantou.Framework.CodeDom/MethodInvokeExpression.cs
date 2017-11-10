@@ -11,10 +11,21 @@ namespace Meziantou.Framework.CodeDom
 
         public MethodInvokeExpression(Expression method, params Expression[] arguments)
         {
-            Arguments = new CodeObjectCollection<Expression>(this);
-
             Method = method;
+            Arguments = new MethodInvokeExpressionCollection(this);
+            if (arguments != null)
+            {
+                foreach (var argument in arguments)
+                {
+                    Arguments.Add(argument);
+                }
+            }
+        }
 
+        public MethodInvokeExpression(Expression method, params MethodInvokeExpression[] arguments)
+        {
+            Method = method;
+            Arguments = new MethodInvokeExpressionCollection(this);
             if (arguments != null)
             {
                 foreach (var argument in arguments)
@@ -30,6 +41,6 @@ namespace Meziantou.Framework.CodeDom
             set => SetParent(ref _method, value);
         }
 
-        public CodeObjectCollection<Expression> Arguments { get; }
+        public MethodInvokeExpressionCollection Arguments { get; }
     }
 }

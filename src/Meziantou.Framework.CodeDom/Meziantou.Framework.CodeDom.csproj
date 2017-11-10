@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Description>No description</Description>
-    <Version>2.0.1</Version>    
+    <Version>2.0.2</Version>    
   </PropertyGroup>
 
 </Project>

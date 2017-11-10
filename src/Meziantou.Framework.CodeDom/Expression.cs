@@ -200,15 +200,5 @@ namespace Meziantou.Framework.CodeDom
         {
             return new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
         }
-
-        public Expression Invoke(params MethodInvokeArgumentExpression[] arguments)
-        {
-            return new MethodInvokeExpression(this, arguments);
-        }
-
-        public Expression Invoke(string memberName, params MethodInvokeArgumentExpression[] arguments)
-        {
-            return new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
-        }
     }
 }

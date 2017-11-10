@@ -9,20 +9,12 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public MethodInvokeExpression(Expression method, params Expression[] arguments)
+        public MethodInvokeExpression(Expression method)
+            : this(method, null)
         {
-            Method = method;
-            Arguments = new MethodInvokeExpressionCollection(this);
-            if (arguments != null)
-            {
-                foreach (var argument in arguments)
-                {
-                    Arguments.Add(argument);
-                }
-            }
         }
 
-        public MethodInvokeExpression(Expression method, params MethodInvokeExpression[] arguments)
+        public MethodInvokeExpression(Expression method, params Expression[] arguments)
         {
             Method = method;
             Arguments = new MethodInvokeExpressionCollection(this);

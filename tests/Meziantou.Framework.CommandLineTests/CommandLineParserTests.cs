@@ -1,7 +1,6 @@
-﻿using Meziantou.Framework.Utilities;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.Tests.Utilities
+namespace Meziantou.Framework.CommandLine.Tests.Utilities
 {
     [TestClass]
     public class CommandLineParserTests
@@ -60,6 +59,42 @@ namespace Meziantou.Framework.Tests.Utilities
             // Assert
             Assert.AreEqual("value1", valueA);
             Assert.AreEqual("value2", valueB);
+            Assert.IsFalse(helpRequested);
+        }
+
+        [TestMethod]
+        public void GetArgument_TrailingWhitespace()
+        {
+            // Arrange
+            var args = new[] { "/a=value1 ", "value2" };
+            var parser = new CommandLineParser();
+            parser.Parse(args);
+
+            // Act
+            var valueA = parser.GetArgument("a");
+            var valueB = parser.GetArgument(1);
+            var helpRequested = parser.HelpRequested;
+
+            // Assert
+            Assert.AreEqual("value1 ", valueA);
+            Assert.AreEqual("value2", valueB);
+            Assert.IsFalse(helpRequested);
+        }
+
+        [TestMethod]
+        public void GetArgument_OnlyWhitespace()
+        {
+            // Arrange
+            var args = new[] { "   " };
+            var parser = new CommandLineParser();
+            parser.Parse(args);
+
+            // Act
+            var valueA = parser.GetArgument(0);
+            var helpRequested = parser.HelpRequested;
+
+            // Assert
+            Assert.AreEqual("   ", valueA);
             Assert.IsFalse(helpRequested);
         }
 

@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Meziantou.Framework.Utilities
+namespace Meziantou.Framework
 {
     public class CommandLineParser
     {
+        private static readonly string[] HelpArguments = { "-?", "/?", "-help", "/help", "--help" };
+
         private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
         private bool _helpRequested;
@@ -13,11 +16,21 @@ namespace Meziantou.Framework.Utilities
         {
             for (var i = 0; i < args.Length; i++)
             {
-                var arg = args[i].Nullify(true);
-                if (arg == null)
+                var arg = args[i];
+                if (string.IsNullOrEmpty(arg))
                     continue;
 
-                if (arg.EqualsIgnoreCase("/?") || arg.EqualsIgnoreCase("-?") || arg.EqualsIgnoreCase("/help") || arg.EqualsIgnoreCase("-help"))
+                if (arg.All(c => c == ' '))
+                {
+                    _positionArguments[i] = arg;
+                    continue;
+                }
+
+                arg = arg.TrimStart();
+                if (string.IsNullOrEmpty(arg))
+                    continue;
+
+                if (IsHelpArgument(arg))
                 {
                     _helpRequested = true;
                     continue;
@@ -64,6 +77,11 @@ namespace Meziantou.Framework.Utilities
                 return value;
 
             return null;
+        }
+
+        private static bool IsHelpArgument(string arg)
+        {
+            return HelpArguments.Contains(arg, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

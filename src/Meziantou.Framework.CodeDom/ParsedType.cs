@@ -12,15 +12,8 @@ namespace Meziantou.Framework.CodeDom
 
         public string TypeName
         {
-            get
-            {
-                return _typeName;
-            }
-            private set
-            {
-                if (value == null) throw new ArgumentNullException("value");
-                _typeName = value;
-            }
+            get => _typeName;
+            private set => _typeName = value ?? throw new ArgumentNullException("value");
         }
 
         public string Namespace
@@ -59,13 +52,7 @@ namespace Meziantou.Framework.CodeDom
 
         public bool IsGeneric { get; private set; }
 
-        public ParsedType[] Arguments
-        {
-            get
-            {
-                return _arguments.ToArray();
-            }
-        }
+        public ParsedType[] Arguments => _arguments.ToArray();
 
         static ParsedType()
         {
@@ -81,7 +68,7 @@ namespace Meziantou.Framework.CodeDom
             _parsedTypes["sbyte"] = new ParsedType(typeof(sbyte).FullName);
             _parsedTypes["float"] = new ParsedType(typeof(float).FullName);
             _parsedTypes["double"] = new ParsedType(typeof(double).FullName);
-            _parsedTypes["decimal"] = new ParsedType(typeof(Decimal).FullName);
+            _parsedTypes["decimal"] = new ParsedType(typeof(decimal).FullName);
             _parsedTypes["object"] = new ParsedType(typeof(object).FullName);
             _parsedTypes["char"] = new ParsedType(typeof(char).FullName);
             _parsedTypes["void"] = new ParsedType(typeof(void).FullName);
@@ -97,7 +84,7 @@ namespace Meziantou.Framework.CodeDom
                 TypeName = TypeName.Substring(1, TypeName.Length - 2).Trim();
             }
 
-            int asm = TypeName.IndexOf(',');
+            var asm = TypeName.IndexOf(',');
             if (asm >= 0)
             {
                 AssemblyName = TypeName.Substring(asm + 1).Trim();
@@ -115,8 +102,7 @@ namespace Meziantou.Framework.CodeDom
                 typeName = typeName.Substring(3).Trim();
             }
 
-            ParsedType pt;
-            if (!_parsedTypes.TryGetValue(typeName, out pt))
+            if (!_parsedTypes.TryGetValue(typeName, out ParsedType pt))
             {
                 pt = Parse(typeName, "<", '>');
                 if (pt != null)
@@ -150,7 +136,7 @@ namespace Meziantou.Framework.CodeDom
             ParsedType pt;
             int lt;
             int gt;
-            int quot = typeName.IndexOf('`');
+            var quot = typeName.IndexOf('`');
             if (quot >= 0)
             {
                 // reflection style
@@ -159,7 +145,7 @@ namespace Meziantou.Framework.CodeDom
                 if ((lt < 0) || (gt < 0))
                 {
                     int args;
-                    int asm = typeName.IndexOf(',', quot);
+                    var asm = typeName.IndexOf(',', quot);
                     if (asm < 0)
                     {
                         pt = new ParsedType(typeName.Substring(0, quot));
@@ -171,7 +157,7 @@ namespace Meziantou.Framework.CodeDom
                         pt.AssemblyName = typeName.Substring(asm + 1).Trim();
                         args = int.Parse(typeName.Substring(quot + 1, asm - quot - 1));
                     }
-                    for (int i = 0; i < args; i++)
+                    for (var i = 0; i < args; i++)
                     {
                         pt._arguments.Add(new ParsedType(string.Empty));
                     }
@@ -197,11 +183,11 @@ namespace Meziantou.Framework.CodeDom
             }
             pt.IsGeneric = true;
 
-            int startPos = lt + 1;
-            int parenCount = 0;
-            for (int i = startPos; i < gt; i++)
+            var startPos = lt + 1;
+            var parenCount = 0;
+            for (var i = startPos; i < gt; i++)
             {
-                char c = typeName[i];
+                var c = typeName[i];
                 if (parenCount == 0)
                 {
                     if (c == ',')
@@ -256,7 +242,7 @@ namespace Meziantou.Framework.CodeDom
 
         private static bool ChunkStarts(string text, int pos, string chunk)
         {
-            for (int i = 0; i < chunk.Length; i++)
+            for (var i = 0; i < chunk.Length; i++)
             {
                 if ((i + pos) > (text.Length - 1))
                     return false;

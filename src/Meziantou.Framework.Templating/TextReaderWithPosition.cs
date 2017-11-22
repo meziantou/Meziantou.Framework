@@ -13,8 +13,7 @@ namespace Meziantou.Framework.Templating
 
         public TextReaderWithPosition(TextReader reader)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
-            _reader = reader;
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
         }
 
         public override int Peek()

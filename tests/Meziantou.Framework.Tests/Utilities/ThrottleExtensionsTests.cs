@@ -12,9 +12,8 @@ namespace Meziantou.Framework.Tests.Utilities
         [Ignore("Fails in CI")]
         public async Task Throttle()
         {
-            int count = 0;
-            Action action = () => { count++; };
-            var throttled = action.Throttle(TimeSpan.FromMilliseconds(30));
+            var count = 0;
+            var throttled = ThrottleExtensions.Throttle(() => { count++; }, TimeSpan.FromMilliseconds(30));
 
             throttled();
             throttled();
@@ -38,8 +37,7 @@ namespace Meziantou.Framework.Tests.Utilities
         public async Task Throttle_CallActionsWithArgumentsOfTheLastCall()
         {
             int lastArg = default;
-            Action<int> action = (i) => { lastArg = i; };
-            var throttled = action.Throttle(TimeSpan.FromMilliseconds(0));
+            var throttled = ThrottleExtensions.Throttle<int>((i) => { lastArg = i; }, TimeSpan.FromMilliseconds(0));
 
             throttled(1);
             throttled(2);

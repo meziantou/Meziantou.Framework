@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Utilities
                     }
                     else
                     {
-                        value = default(T);
+                        value = default;
                     }
                 }
                 else

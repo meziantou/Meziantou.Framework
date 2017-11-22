@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Utilities
             if (exception == null)
                 throw new ArgumentNullException("exception");
 
-            int hr = exception.HResult;
+            var hr = exception.HResult;
             return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION
         }
 
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Utilities
                 filePath = Path.GetFullPath(filePath);
             }
 
-            string dir = Path.GetDirectoryName(filePath);
+            var dir = Path.GetDirectoryName(filePath);
             if (dir == null)
                 return;
 
@@ -124,7 +124,7 @@ namespace Meziantou.Framework.Utilities
             char[] invalid = Path.GetInvalidFileNameChars();
 
             var sb = new StringBuilder(fileName.Length);
-            foreach (char c in fileName)
+            foreach (var c in fileName)
             {
                 if (Array.IndexOf(invalid, c) >= 0)
                 {
@@ -136,7 +136,7 @@ namespace Meziantou.Framework.Utilities
                 }
             }
 
-            string s = sb.ToString();
+            var s = sb.ToString();
             if (string.Equals(s, fileName, StringComparison.Ordinal))
             {
                 s = fileName;
@@ -146,7 +146,7 @@ namespace Meziantou.Framework.Utilities
 
         private static bool IsAllDots(string fileName)
         {
-            foreach (char c in fileName)
+            foreach (var c in fileName)
             {
                 if (c != '.')
                     return false;

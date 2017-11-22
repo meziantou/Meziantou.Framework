@@ -12,23 +12,25 @@ namespace Meziantou.Framework.CodeDom
 
         static CSharpCodeGenerator()
         {
-            _predefinedTypes = new Dictionary<string, string>();
-            _predefinedTypes[typeof(bool).FullName] = "bool";
-            _predefinedTypes[typeof(byte).FullName] = "byte";
-            _predefinedTypes[typeof(char).FullName] = "char";
-            _predefinedTypes[typeof(decimal).FullName] = "decimal";
-            _predefinedTypes[typeof(double).FullName] = "double";
-            _predefinedTypes[typeof(float).FullName] = "float";
-            _predefinedTypes[typeof(int).FullName] = "int";
-            _predefinedTypes[typeof(long).FullName] = "long";
-            _predefinedTypes[typeof(object).FullName] = "object";
-            _predefinedTypes[typeof(sbyte).FullName] = "sbyte";
-            _predefinedTypes[typeof(short).FullName] = "short";
-            _predefinedTypes[typeof(string).FullName] = "string";
-            _predefinedTypes[typeof(uint).FullName] = "uint";
-            _predefinedTypes[typeof(ulong).FullName] = "ulong";
-            _predefinedTypes[typeof(ushort).FullName] = "ushort";
-            _predefinedTypes[typeof(void).FullName] = "void";
+            _predefinedTypes = new Dictionary<string, string>
+            {
+                [typeof(bool).FullName] = "bool",
+                [typeof(byte).FullName] = "byte",
+                [typeof(char).FullName] = "char",
+                [typeof(decimal).FullName] = "decimal",
+                [typeof(double).FullName] = "double",
+                [typeof(float).FullName] = "float",
+                [typeof(int).FullName] = "int",
+                [typeof(long).FullName] = "long",
+                [typeof(object).FullName] = "object",
+                [typeof(sbyte).FullName] = "sbyte",
+                [typeof(short).FullName] = "short",
+                [typeof(string).FullName] = "string",
+                [typeof(uint).FullName] = "uint",
+                [typeof(ulong).FullName] = "ulong",
+                [typeof(ushort).FullName] = "ushort",
+                [typeof(void).FullName] = "void"
+            };
 
             _keywords = new string[]
             {
@@ -1042,7 +1044,7 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void WriteBeforeComments(IndentedTextWriter writer, ICommentable commentable)
         {
             CommentType type = default;
-            bool first = true;
+            var first = true;
             foreach (var c in commentable.CommentsBefore)
             {
                 if (!first)
@@ -1065,10 +1067,10 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void WriteAfterComments(IndentedTextWriter writer, ICommentable commentable)
         {
-            bool isInlined = commentable is Expression;
+            var isInlined = commentable is Expression;
 
             CommentType type = default;
-            bool first = true;
+            var first = true;
             foreach (var c in commentable.CommentsAfter)
             {
                 if ((isInlined && first) || (type == CommentType.InlineComment && c.Type == CommentType.InlineComment))
@@ -1123,7 +1125,7 @@ namespace Meziantou.Framework.CodeDom
 
         private void WriteValues<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator)
         {
-            bool first = true;
+            var first = true;
             foreach (var o in objects)
             {
                 if (!first)
@@ -1138,7 +1140,7 @@ namespace Meziantou.Framework.CodeDom
 
         private void Write<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator) where T : CodeObject
         {
-            bool first = true;
+            var first = true;
             foreach (var o in objects)
             {
                 if (!first)
@@ -1153,7 +1155,7 @@ namespace Meziantou.Framework.CodeDom
 
         private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string endOfLine) where T : CodeObject
         {
-            bool first = true;
+            var first = true;
             foreach (var o in objects)
             {
                 if (!first)
@@ -1168,7 +1170,7 @@ namespace Meziantou.Framework.CodeDom
 
         private void Write<T>(IndentedTextWriter writer, IReadOnlyList<T> objects, Action<(T Item, bool First, bool Last)> afterItemAction) where T : CodeObject
         {
-            for (int i = 0; i < objects.Count; i++)
+            for (var i = 0; i < objects.Count; i++)
             {
                 var o = objects[i];
                 Write(writer, o);

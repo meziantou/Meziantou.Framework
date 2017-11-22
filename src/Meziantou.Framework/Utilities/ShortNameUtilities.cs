@@ -13,15 +13,15 @@ namespace Meziantou.Framework.Utilities
         {
             if (shortNames == null) throw new ArgumentNullException(nameof(shortNames));
 
-            string shortName = name.Substring(0, (name.Length < maxLength) ? name.Length : maxLength);
-            int number = 0;
-            int pos = maxLength;
+            var shortName = name.Substring(0, (name.Length < maxLength) ? name.Length : maxLength);
+            var number = 0;
+            var pos = maxLength;
             string oldName = null;
             while (shortNames.Contains(shortName))
             {
                 if ((name.Length <= maxLength) || (pos >= name.Length))
                 {
-                    string sn = number.ToString(CultureInfo.InvariantCulture);
+                    var sn = number.ToString(CultureInfo.InvariantCulture);
                     if (sn.Length < maxLength)
                     {
                         shortName = name.Substring(0, (name.Length < (maxLength - sn.Length)) ? name.Length : (maxLength - sn.Length)) + sn;
@@ -79,13 +79,13 @@ namespace Meziantou.Framework.Utilities
 
             var shortNames = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
             var dict = new HashSet<string>(names, StringComparer.CurrentCultureIgnoreCase);
-            foreach (string name in names)
+            foreach (var name in names)
             {
                 if (name == null)
                     throw new ArgumentException(null, nameof(names));
                 
                 dict.Remove(name);
-                string shortName = CreateShortName(dict, maxLength, name);
+                var shortName = CreateShortName(dict, maxLength, name);
                 dict.Add(shortName);
                 shortNames.Add(name, shortName);
             }

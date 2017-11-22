@@ -29,9 +29,9 @@ namespace Meziantou.Framework.Utilities
             text = text.Normalize(NormalizationForm.FormD);
 
             var sb = new StringBuilder(options.MaximumLength > 0 ? Math.Min(text.Length, options.MaximumLength) : text.Length);
-            for (int index = 0; index < text.Length; index++)
+            for (var index = 0; index < text.Length; index++)
             {
-                char ch = text[index];
+                var ch = text[index];
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(ch);
                 if (options.AllowedUnicodeCategories.Contains(unicodeCategory) && options.IsAllowed(ch))
                 {

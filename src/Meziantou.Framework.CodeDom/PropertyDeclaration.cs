@@ -22,26 +22,26 @@ namespace Meziantou.Framework.CodeDom
 
         public TypeReference Type
         {
-            get { return _type; }
-            set { SetParent(ref _type, value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
 
         public StatementCollection Getter
         {
-            get { return _getter; }
-            set { SetParent(ref _getter, value); }
+            get => _getter;
+            set => SetParent(ref _getter, value);
         }
 
         public StatementCollection Setter
         {
-            get { return _setter; }
-            set { SetParent(ref _setter, value); }
+            get => _setter;
+            set => SetParent(ref _setter, value);
         }
 
         public TypeReference PrivateImplementationType
         {
-            get { return _privateImplementationType; }
-            set { SetParent(ref _privateImplementationType, value); }
+            get => _privateImplementationType;
+            set => SetParent(ref _privateImplementationType, value);
         }
     }
 }

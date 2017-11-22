@@ -100,11 +100,10 @@ namespace Meziantou.Framework.CodeDom
 
         public T this[int index]
         {
-            get { return _list[index]; }
+            get => _list[index];
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                if (value == null) throw new ArgumentNullException(nameof(value));
 
                 var item = this[index];
                 _list[index] = value;

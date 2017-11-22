@@ -14,22 +14,13 @@ namespace Meziantou.Framework.CodeDom
 
         public override string NewLine
         {
-            get
-            {
-                return InnerWriter.NewLine;
-            }
-            set
-            {
-                InnerWriter.NewLine = value;
-            }
+            get => InnerWriter.NewLine;
+            set => InnerWriter.NewLine = value;
         }
 
         public int Indent
         {
-            get
-            {
-                return _indentLevel;
-            }
+            get => _indentLevel;
             set
             {
                 if (value < 0)
@@ -81,7 +72,7 @@ namespace Meziantou.Framework.CodeDom
             if (!_tabsPending)
                 return;
 
-            for (int index = 0; index < _indentLevel; index++)
+            for (var index = 0; index < _indentLevel; index++)
             {
                 InnerWriter.Write(TabString);
             }

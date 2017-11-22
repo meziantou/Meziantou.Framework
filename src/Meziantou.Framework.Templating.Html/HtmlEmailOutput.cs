@@ -18,10 +18,7 @@ namespace Meziantou.Framework.Templating
         private readonly IList<string> _contentIdentifiers = new List<string>();
 
 
-        public IList<string> ContentIdentifiers
-        {
-            get { return _contentIdentifiers; }
-        }
+        public IList<string> ContentIdentifiers => _contentIdentifiers;
 
         public HtmlEmailOutput(Template template, TextWriter writer) : base(template, writer)
         {
@@ -81,7 +78,7 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteUrlEncode(string format, params object[] args)
         {
-            string urlEncode = _urlEncoder.Encode(string.Format(format, args));
+            var urlEncode = _urlEncoder.Encode(string.Format(format, args));
             Write(urlEncode);
         }
 

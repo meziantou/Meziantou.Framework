@@ -27,46 +27,46 @@ namespace Meziantou.Framework.Templating
 
         public override string BuildCode()
         {
-            string text = Text.Trim();
+            var text = Text.Trim();
             if (text.StartsWith(HtmlEncodedCodePrefixString))
             {
-                string html = text.Substring(HtmlEncodedCodePrefixString.Length);
+                var html = text.Substring(HtmlEncodedCodePrefixString.Length);
                 return HtmlDecode(html);
             }
 
             if (text.StartsWith(BeginSectionPrefixString))
             {
-                string sectionName = Nullify(text.Substring(BeginSectionPrefixString.Length));
+                var sectionName = Nullify(text.Substring(BeginSectionPrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.BeginSection)}(@\"{EscapeVerbatimString(sectionName)}\");";
             }
 
             if (text.StartsWith(EndSectionPrefixString))
             {
-                string sectionName = Nullify(text.Substring(EndSectionPrefixString.Length));
+                var sectionName = Nullify(text.Substring(EndSectionPrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.EndSection)}(@\"{EscapeVerbatimString(sectionName)}\");";
             }
 
             if (text.StartsWith(HtmlEncodePrefixString))
             {
-                string html = Nullify(text.Substring(HtmlEncodePrefixString.Length));
+                var html = Nullify(text.Substring(HtmlEncodePrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteHtmlEncode)}({html});";
             }
 
             if (text.StartsWith(HtmlAttributeEncodePrefixString))
             {
-                string html = Nullify(text.Substring(HtmlAttributeEncodePrefixString.Length));
+                var html = Nullify(text.Substring(HtmlAttributeEncodePrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteHtmlAttributeEncode)}({html});";
             }
 
             if (text.StartsWith(UrlEncodePrefixString))
             {
-                string url = Nullify(text.Substring(UrlEncodePrefixString.Length));
+                var url = Nullify(text.Substring(UrlEncodePrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteUrlEncode)}({url});";
             }
 
             if (text.StartsWith(CidPrefixString))
             {
-                string cid = Nullify(text.Substring(CidPrefixString.Length));
+                var cid = Nullify(text.Substring(CidPrefixString.Length));
                 return Template.OutputParameterName + $".{nameof(HtmlEmailOutput.WriteContentIdentifier)}(@\"{EscapeVerbatimString(cid)}\");";
             }
 

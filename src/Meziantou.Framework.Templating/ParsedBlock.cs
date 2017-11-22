@@ -7,11 +7,8 @@ namespace Meziantou.Framework.Templating
     {
         public ParsedBlock(Template template, string text, int index)
         {
-            if (template == null) throw new ArgumentNullException(nameof(template));
-            if (text == null) throw new ArgumentNullException(nameof(text));
-
-            Template = template;
-            Text = text;
+            Template = template ?? throw new ArgumentNullException(nameof(template));
+            Text = text ?? throw new ArgumentNullException(nameof(text));
             Index = index;
         }
 

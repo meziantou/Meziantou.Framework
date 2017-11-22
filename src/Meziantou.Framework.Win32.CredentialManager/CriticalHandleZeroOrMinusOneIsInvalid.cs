@@ -12,9 +12,6 @@ namespace Meziantou.Framework.Win32
         {
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == new IntPtr(0) || handle == new IntPtr(-1); }
-        }
+        public override bool IsInvalid => handle == new IntPtr(0) || handle == new IntPtr(-1);
     }
 }

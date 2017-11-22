@@ -8,6 +8,18 @@ namespace Meziantou.Framework.CodeDom
     {
         private readonly List<Expression> _expressions = new List<Expression>();
 
+        public ExpressionCollectionStatement()
+        {
+        }
+
+        public ExpressionCollectionStatement(params Expression[] expressions)
+        {
+            foreach (var expression in expressions)
+            {
+                Add(expression);
+            }
+        }
+
         public IEnumerator<Expression> GetEnumerator()
         {
             return _expressions.GetEnumerator();
@@ -54,15 +66,9 @@ namespace Meziantou.Framework.CodeDom
             return remove;
         }
 
-        public int Count
-        {
-            get { return _expressions.Count; }
-        }
+        public int Count => _expressions.Count;
 
-        public bool IsReadOnly
-        {
-            get { return ((IList<Expression>)_expressions).IsReadOnly; }
-        }
+        public bool IsReadOnly => ((IList<Expression>)_expressions).IsReadOnly;
 
         public int IndexOf(Expression item)
         {
@@ -88,7 +94,7 @@ namespace Meziantou.Framework.CodeDom
 
         public Expression this[int index]
         {
-            get { return _expressions[index]; }
+            get => _expressions[index];
             set
             {
                 if (value == null) throw new ArgumentNullException(nameof(value));

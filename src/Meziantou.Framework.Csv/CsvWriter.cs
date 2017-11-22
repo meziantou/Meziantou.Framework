@@ -36,7 +36,7 @@ namespace Meziantou.Framework.Csv
 
         public Task WriteValueAsync(string value)
         {
-            string v = EscapeCsvValue(value);
+            var v = EscapeCsvValue(value);
             return BaseWriter.WriteAsync(v);
         }
 
@@ -77,7 +77,7 @@ namespace Meziantou.Framework.Csv
 
         public void WriteValue(string value)
         {
-            string v = EscapeCsvValue(value);
+            var v = EscapeCsvValue(value);
             BaseWriter.Write(v);
         }
 

@@ -10,8 +10,10 @@ namespace Meziantou.Framework.TypeConverter.Tests
         public void GetValue_KeyExists()
         {
             // Arrange
-            var dictionary = new Dictionary<string, object>();
-            dictionary.Add("test", 42);
+            var dictionary = new Dictionary<string, object>
+            {
+                { "test", 42 }
+            };
 
             // Act
             var actual = dictionary.GetValueOrDefault("test", "");

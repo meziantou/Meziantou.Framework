@@ -35,7 +35,7 @@ namespace Meziantou.Framework.CodeDom
             {
                 foreach (var argument in parsedType.Arguments)
                 {
-                    TypeReference typeReference = new TypeReference();
+                    var typeReference = new TypeReference();
                     typeReference.FromParsedType(argument);
                     Parameters.Add(typeReference);
                 }
@@ -117,7 +117,7 @@ namespace Meziantou.Framework.CodeDom
                 if (Parameters.Any())
                 {
                     sb.Append('<');
-                    bool first = true;
+                    var first = true;
                     foreach (var parameter in Parameters)
                     {
                         if (!first)
@@ -135,7 +135,7 @@ namespace Meziantou.Framework.CodeDom
 
         public TypeReference Clone()
         {
-            TypeReference clone = new TypeReference();
+            var clone = new TypeReference();
             clone._name = _name;
             clone._namespace = _namespace;
             clone._typeDeclaration = _typeDeclaration;

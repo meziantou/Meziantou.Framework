@@ -10,10 +10,8 @@ namespace Meziantou.Framework.Templating
 
         public Output(Template template, TextWriter writer)
         {
-            if (template == null) throw new ArgumentNullException(nameof(template));
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            Template = template;
-            Writer = writer;
+            Template = template ?? throw new ArgumentNullException(nameof(template));
+            Writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
         public virtual void Write(object value)

@@ -122,7 +122,7 @@ namespace Meziantou.Framework.Win32
             var offset = Marshal.OffsetOf<TContainer>(fieldName);
             var size = Marshal.SizeOf<TItem>();
             var basePtr = new IntPtr(handle.ToInt64() + offset.ToInt64());
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 yield return Marshal.PtrToStructure<TItem>(basePtr + i * size);
             }

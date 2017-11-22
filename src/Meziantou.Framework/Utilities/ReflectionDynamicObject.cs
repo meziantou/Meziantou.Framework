@@ -17,9 +17,8 @@ namespace Meziantou.Framework.Utilities
 
         public ReflectionDynamicObject(object obj)
         {
-            if (obj == null) throw new ArgumentNullException(nameof(obj));
+            _originalObject = obj ?? throw new ArgumentNullException(nameof(obj));
 
-            _originalObject = obj;
             var type = obj.GetType();
             if (!_cache.TryGetValue(type, out var typeCache))
             {

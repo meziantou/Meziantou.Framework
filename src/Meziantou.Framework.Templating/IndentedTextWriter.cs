@@ -22,10 +22,7 @@ namespace Meziantou.Framework.Templating
         /// <returns>
         ///     An <see cref="T:System.Text.Encoding" /> that indicates the encoding for the text writer to use.
         /// </returns>
-        public override Encoding Encoding
-        {
-            get { return _writer.Encoding; }
-        }
+        public override Encoding Encoding => _writer.Encoding;
 
         /// <summary>
         ///     Gets or sets the new line character to use.
@@ -33,8 +30,8 @@ namespace Meziantou.Framework.Templating
         /// <returns> The new line character to use. </returns>
         public override string NewLine
         {
-            get { return _writer.NewLine; }
-            set { _writer.NewLine = value; }
+            get => _writer.NewLine;
+            set => _writer.NewLine = value;
         }
 
         /// <summary>
@@ -43,7 +40,7 @@ namespace Meziantou.Framework.Templating
         /// <returns> The number of spaces to indent. </returns>
         public int Indent
         {
-            get { return _indentLevel; }
+            get => _indentLevel;
             set
             {
                 if (value < 0)
@@ -60,10 +57,7 @@ namespace Meziantou.Framework.Templating
         /// <returns>
         ///     The <see cref="T:System.IO.TextWriter" /> to use.
         /// </returns>
-        public TextWriter InnerWriter
-        {
-            get { return _writer; }
-        }
+        public TextWriter InnerWriter => _writer;
 
         /// <summary>
         ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and default tab string.

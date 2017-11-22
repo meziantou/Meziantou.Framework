@@ -26,49 +26,26 @@ namespace Meziantou.Framework.Templating
 
         private string ClassName
         {
-            get
-            {
-                if (string.IsNullOrEmpty(_className))
-                    return DefaultClassName;
-                return _className;
-            }
-            set { _className = value; }
+            get => string.IsNullOrEmpty(_className) ? DefaultClassName : _className;
+            set => _className = value;
         }
 
         private string RunMethodName
         {
-            get
-            {
-                if (string.IsNullOrEmpty(_runMethodName))
-                    return DefaultRunMethodName;
-                return _runMethodName;
-            }
-            set { _runMethodName = value; }
+            get => string.IsNullOrEmpty(_runMethodName) ? DefaultRunMethodName : _runMethodName;
+            set => _runMethodName = value;
         }
 
         public string OutputParameterName
         {
-            get
-            {
-                if (string.IsNullOrEmpty(_writerParameterName))
-                    return DefaultWriterParameterName;
-                return _writerParameterName;
-            }
-            set { _writerParameterName = value; }
+            get => string.IsNullOrEmpty(_writerParameterName) ? DefaultWriterParameterName : _writerParameterName;
+            set => _writerParameterName = value;
         }
 
         public Type OutputType
         {
-            get
-            {
-                if (_writerType == null)
-                    return _defaultWriterType;
-                return _writerType;
-            }
-            set
-            {
-                _writerType = value;
-            }
+            get => _writerType ?? _defaultWriterType;
+            set => _writerType = value;
         }
 
         public string BaseClassFullTypeName { get; set; }
@@ -138,19 +115,19 @@ namespace Meziantou.Framework.Templating
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            string friendlyName = type.Name;
+            var friendlyName = type.Name;
             if (type.IsGenericType)
             {
-                int iBacktick = friendlyName.IndexOf('`');
+                var iBacktick = friendlyName.IndexOf('`');
                 if (iBacktick > 0)
                 {
                     friendlyName = friendlyName.Remove(iBacktick);
                 }
                 friendlyName += "<";
                 Type[] typeParameters = type.GetGenericArguments();
-                for (int i = 0; i < typeParameters.Length; ++i)
+                for (var i = 0; i < typeParameters.Length; ++i)
                 {
-                    string typeParamName = GetFriendlyTypeName(typeParameters[i]);
+                    var typeParamName = GetFriendlyTypeName(typeParameters[i]);
                     friendlyName += (i == 0 ? typeParamName : "," + typeParamName);
                 }
                 friendlyName += ">";
@@ -232,26 +209,26 @@ namespace Meziantou.Framework.Templating
             if (IsBuilt)
                 throw new InvalidOperationException("Template is already built.");
 
-            List<ParsedBlock> blocks = new List<ParsedBlock>();
-            bool isInBlock = false;
-            StringBuilder currentBlock = new StringBuilder();
-            string nextDelimiter = StartCodeBlockDelimiter;
+            var blocks = new List<ParsedBlock>();
+            var isInBlock = false;
+            var currentBlock = new StringBuilder();
+            var nextDelimiter = StartCodeBlockDelimiter;
             var blockDelimiterIndex = 0;
-            int blockIndex = 0;
-            int startLine = reader.Line;
-            int startColumn = reader.Column;
+            var blockIndex = 0;
+            var startLine = reader.Line;
+            var startColumn = reader.Column;
 
             int n;
             while ((n = reader.Read()) >= 0)
             {
-                char c = (char)n;
+                var c = (char)n;
 
                 if (blockDelimiterIndex < nextDelimiter.Length && c == nextDelimiter[blockDelimiterIndex])
                 {
                     blockDelimiterIndex++;
                     if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
                     {
-                        string text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
+                        var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
                         ParsedBlock block = CreateBlock(isInBlock, text, blockIndex++, startLine, startColumn, reader.Line, reader.Column);
                         blocks.Add(block);
 
@@ -322,7 +299,7 @@ namespace Meziantou.Framework.Templating
                 {
                     using (var tw = new IndentedTextWriter(sw))
                     {
-                        foreach (string @using in Usings)
+                        foreach (var @using in Usings)
                         {
                             if (string.IsNullOrEmpty(@using))
                                 continue;
@@ -370,7 +347,7 @@ namespace Meziantou.Framework.Templating
                         tw.WriteLine("}");
                     }
 
-                    string source = sw.ToString();
+                    var source = sw.ToString();
                     SourceCode = source;
                     Compile(source);
                 }
@@ -418,7 +395,7 @@ namespace Meziantou.Framework.Templating
                 references.Add(OutputType.Assembly.Location);
             }
 
-            foreach (string reference in ReferencePaths)
+            foreach (var reference in ReferencePaths)
             {
                 if (string.IsNullOrEmpty(reference))
                     continue;
@@ -435,12 +412,12 @@ namespace Meziantou.Framework.Templating
         {
             if (syntaxTree == null) throw new ArgumentNullException(nameof(syntaxTree));
 
-            string assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + Guid.NewGuid().ToString("N");
+            var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + Guid.NewGuid().ToString("N");
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithOptimizationLevel(Debug ? OptimizationLevel.Debug : OptimizationLevel.Release)
                 .WithPlatform(Platform.AnyCpu);
 
-            CSharpCompilation compilation = CSharpCompilation.Create(assemblyName,
+            var compilation = CSharpCompilation.Create(assemblyName,
                 new[] { syntaxTree },
                 CreateReferences(),
                 options);
@@ -559,7 +536,7 @@ namespace Meziantou.Framework.Templating
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            using (StringWriter writer = new StringWriter())
+            using (var writer = new StringWriter())
             {
                 Run(writer, parameters);
                 return writer.ToString();

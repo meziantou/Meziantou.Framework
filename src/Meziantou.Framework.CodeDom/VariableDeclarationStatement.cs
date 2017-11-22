@@ -20,14 +20,14 @@ namespace Meziantou.Framework.CodeDom
 
         public TypeReference Type
         {
-            get { return _type; }
-            set { SetParent(ref _type, value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
 
         public Expression InitExpression
         {
-            get { return _initExpression; }
-            set { SetParent(ref _initExpression, value); }
+            get => _initExpression;
+            set => SetParent(ref _initExpression, value);
         }
     }
 }

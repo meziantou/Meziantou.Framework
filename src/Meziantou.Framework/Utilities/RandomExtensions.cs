@@ -161,11 +161,11 @@ namespace Meziantou.Framework.Utilities
         {
             if (random == null) throw new ArgumentNullException(nameof(random));
 
-            int length = minLength + random.Next(0, maxLength - minLength + 1); // length of the string
+            var length = minLength + random.Next(0, maxLength - minLength + 1); // length of the string
 
-            int max = chars.Length; // number of available characters
+            var max = chars.Length; // number of available characters
             var sb = new StringBuilder(length);
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
                 sb.Append(chars[random.Next(0, max)]);
             }

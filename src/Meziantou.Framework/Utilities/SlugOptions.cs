@@ -26,10 +26,7 @@ namespace Meziantou.Framework.Utilities
 
         public bool ToLower
         {
-            get
-            {
-                return _toLower;
-            }
+            get => _toLower;
             set
             {
                 _toLower = value;
@@ -41,10 +38,7 @@ namespace Meziantou.Framework.Utilities
 
         public bool ToUpper
         {
-            get
-            {
-                return _toUpper;
-            }
+            get => _toUpper;
             set
             {
                 _toUpper = value;

@@ -16,7 +16,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var expectedFormat2 = Replace2(expected);
             var actualFormat2 = Replace2(actual);
 
-            int index = expectedFormat2.Zip(actualFormat2, (c1, c2) => c1 == c2).TakeWhile(b => b).Count() + 1;
+            var index = expectedFormat2.Zip(actualFormat2, (c1, c2) => c1 == c2).TakeWhile(b => b).Count() + 1;
 
 
             throw new AssertFailedException($@"Expect: <{expectedFormat1}>

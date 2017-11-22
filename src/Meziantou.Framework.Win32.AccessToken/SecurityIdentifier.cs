@@ -73,11 +73,11 @@ namespace Meziantou.Framework.Win32
 
         private static (string domain, string name) LookupName(IntPtr sid)
         {
-            int userNameLen = 256;
-            int domainNameLen = 256;
+            var userNameLen = 256;
+            var domainNameLen = 256;
             var bufUserName = new StringBuilder(userNameLen);
             var bufDomainName = new StringBuilder(domainNameLen);
-            int sidNameUse = 0;
+            var sidNameUse = 0;
 
             if (NativeMethods.LookupAccountSid(null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
             {

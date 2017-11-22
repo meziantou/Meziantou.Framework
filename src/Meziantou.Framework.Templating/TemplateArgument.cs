@@ -6,9 +6,7 @@ namespace Meziantou.Framework.Templating
     {
         public TemplateArgument(string name, Type type)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
-            Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Type = type;
         }
 

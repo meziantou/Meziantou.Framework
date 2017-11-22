@@ -7,8 +7,8 @@
 
         public Expression Condition
         {
-            get { return _condition; }
-            set { SetParent(ref _condition, value); }
+            get => _condition;
+            set => SetParent(ref _condition, value);
         }
 
         public StatementCollection Body

@@ -9,12 +9,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("Hello {{# \"Meziantou\" }}!");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("Hello Meziantou!", result);
@@ -25,12 +24,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_Section_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("Hello {{@begin section title}}{{# \"Meziantou\" }}{{@end section}}!");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("Hello Meziantou!", result);
@@ -41,12 +39,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_HtmlEncode_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("Hello {{#html \"<Meziantou>\" }}!");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("Hello &lt;Meziantou&gt;!", result);
@@ -56,12 +53,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_UrlEncode_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("Hello <a href=\"http://www.localhost.com/{{#url \"Sample&Url\" }}\">Meziantou</a>!");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
@@ -71,12 +67,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_HtmlAttributeEncode_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("Hello <a href=\"{{#attr \"Sample&Sample\"}}\">Meziantou</a>!");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
@@ -86,12 +81,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_HtmlCode_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("{{html for(int i = 0; i &lt; 3; i++) { }}{{#i}} {{ } }}");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("0 1 2 ", result);
@@ -101,12 +95,11 @@ namespace Meziantou.Framework.Templating.Tests
         public void EmailTemplate_Cid_01()
         {
             // Arrange
-            HtmlEmailTemplate template = new HtmlEmailTemplate();
+            var template = new HtmlEmailTemplate();
             template.Load("<img src=\"{{cid test1.png}}\" /><img src=\"{{cid test2.png}}\" />");
-            HtmlEmailMetadata metadata;
 
             // Act 
-            string result = template.Run(out metadata);
+            var result = template.Run(out HtmlEmailMetadata metadata);
 
             // Assert
             Assert.AreEqual("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);

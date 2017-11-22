@@ -29,7 +29,7 @@ namespace Meziantou.Framework.CodeDom
             else
             {
                 var underlyingType = Enum.GetUnderlyingType(type);
-                object typedValue = Convert.ChangeType(value, underlyingType);
+                var typedValue = Convert.ChangeType(value, underlyingType);
                 return new CastExpression(new LiteralExpression(typedValue), new TypeReference(type));
             }
         }

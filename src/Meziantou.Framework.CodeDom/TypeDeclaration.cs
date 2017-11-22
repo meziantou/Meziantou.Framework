@@ -15,12 +15,6 @@
             CommentsAfter = new CommentCollection(this);
         }
 
-        public string Namespace
-        {
-            get
-            {
-                return this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
-            }
-        }
+        public string Namespace => this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
     }
 }

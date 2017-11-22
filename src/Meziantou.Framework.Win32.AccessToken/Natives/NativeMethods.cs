@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Win32.Natives
 
         internal static string LookupPrivilegeName(LUID luid)
         {
-            int luidNameLen = 0;
+            var luidNameLen = 0;
             LookupPrivilegeName(null, ref luid, null, ref luidNameLen);
             var sb = new StringBuilder(luidNameLen);
             if (LookupPrivilegeName(null, ref luid, sb, ref luidNameLen))

@@ -66,9 +66,11 @@ namespace Meziantou.Framework.CodeDom
 
         public static ConditionStatement CreateThrowIfNullStatement(this MethodArgumentDeclaration argument)
         {
-            ConditionStatement condition = new ConditionStatement();
-            condition.Condition = new BinaryExpression(BinaryOperator.Equals, argument, new LiteralExpression(null));
-            condition.TrueStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentNullException), new NameofExpression(argument)));
+            var condition = new ConditionStatement
+            {
+                Condition = new BinaryExpression(BinaryOperator.Equals, argument, new LiteralExpression(null)),
+                TrueStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentNullException), new NameofExpression(argument)))
+            };
             return condition;
         }
     }

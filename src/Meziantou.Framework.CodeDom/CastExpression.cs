@@ -17,14 +17,14 @@
 
         public Expression Expression
         {
-            get { return _expression; }
-            set { SetParent(ref _expression, value); }
+            get => _expression;
+            set => SetParent(ref _expression, value);
         }
 
         public TypeReference Type
         {
-            get { return _type; }
-            set { SetParent(ref _type, value); }
+            get => _type;
+            set => SetParent(ref _type, value);
         }
     }
 }

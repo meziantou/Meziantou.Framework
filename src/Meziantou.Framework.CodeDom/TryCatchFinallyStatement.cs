@@ -8,14 +8,14 @@
 
         public StatementCollection Try
         {
-            get { return _try; }
-            set { SetParent(ref _try, value); }
+            get => _try;
+            set => SetParent(ref _try, value);
         }
 
         public CatchClauseCollection Catch
         {
-            get { return _catch; }
-            set { SetParent(ref _catch, value); }
+            get => _catch;
+            set => SetParent(ref _catch, value);
         }
 
         public StatementCollection Finally

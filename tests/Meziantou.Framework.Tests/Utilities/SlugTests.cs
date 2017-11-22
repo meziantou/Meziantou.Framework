@@ -25,8 +25,10 @@ namespace Meziantou.Framework.Tests.Utilities
         [DataRow("TeSt", "test")]
         public void Slug_Lowercase(string text, string expected)
         {
-            var options = new SlugOptions();
-            options.ToLower = true;
+            var options = new SlugOptions
+            {
+                ToLower = true
+            };
             var slug = Slug.Create(text, options);
 
             Assert.AreEqual(expected, slug);

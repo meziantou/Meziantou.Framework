@@ -14,7 +14,7 @@ namespace Meziantou.Framework
 
         private static void EscapeArgument(string value, StringBuilder sb)
         {
-            for (int i = 0; i < value.Length; i++)
+            for (var i = 0; i < value.Length; i++)
             {
                 var c = value[i];
                 var numberBackslashes = 0;
@@ -78,7 +78,7 @@ namespace Meziantou.Framework
             EscapeArgument(value, sb);
             sb.Append('"');
 
-            for (int i = sb.Length - 2; i >= 1; i--)
+            for (var i = sb.Length - 2; i >= 1; i--)
             {
                 var c = sb[i];
                 if (CmdReservedCharacters.Contains(c))

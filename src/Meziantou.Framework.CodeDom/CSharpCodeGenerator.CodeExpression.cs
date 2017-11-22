@@ -514,7 +514,7 @@ namespace Meziantou.Framework.CodeDom
             if (type.Parameters.Any())
             {
                 writer.Write('<');
-                bool first = true;
+                var first = true;
                 foreach (var parameter in type.Parameters)
                 {
                     if (!first)

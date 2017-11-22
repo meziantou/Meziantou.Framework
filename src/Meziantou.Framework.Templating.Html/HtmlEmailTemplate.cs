@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Templating
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            using (StringWriter writer = new StringWriter())
+            using (var writer = new StringWriter())
             {
                 Run(writer, out metadata, parameters);
                 return writer.ToString();
@@ -38,7 +38,7 @@ namespace Meziantou.Framework.Templating
         {
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));
 
-            using (StringWriter writer = new StringWriter())
+            using (var writer = new StringWriter())
             {
                 Run(writer, out metadata, parameters);
                 return writer.ToString();
@@ -47,7 +47,7 @@ namespace Meziantou.Framework.Templating
 
         public virtual string Run(out HtmlEmailMetadata metadata)
         {
-            using (StringWriter writer = new StringWriter())
+            using (var writer = new StringWriter())
             {
                 Run(writer, out metadata);
                 return writer.ToString();
@@ -88,7 +88,7 @@ namespace Meziantou.Framework.Templating
             HtmlEmailOutput htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
             if (htmlEmailOutput != null)
             {
-                HtmlEmailMetadata metadata = new HtmlEmailMetadata();
+                var metadata = new HtmlEmailMetadata();
                 metadata.Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName);
                 metadata.ContentIdentifiers = htmlEmailOutput.ContentIdentifiers;
                 return metadata;

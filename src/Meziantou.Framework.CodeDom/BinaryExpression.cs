@@ -20,14 +20,14 @@ namespace Meziantou.Framework.CodeDom
 
         public Expression LeftExpression
         {
-            get { return _leftExpression; }
-            set { SetParent(ref _leftExpression, value); }
+            get => _leftExpression;
+            set => SetParent(ref _leftExpression, value);
         }
 
         public Expression RightExpression
         {
-            get { return _rightExpression; }
-            set { SetParent(ref _rightExpression, value); }
+            get => _rightExpression;
+            set => SetParent(ref _rightExpression, value);
         }
     }
 }

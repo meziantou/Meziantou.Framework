@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Utilities
             {
                 const int prefixLength = 2;
                 var b = new byte[(str.Length / 2) - 1];
-                for (int i = 0; i < str.Length / 2 - 1; i++)
+                for (var i = 0; i < str.Length / 2 - 1; i++)
                 {
                     var c = str[(i * 2) + prefixLength];
                     b[i] = (byte)(GetInt(c) << 4);

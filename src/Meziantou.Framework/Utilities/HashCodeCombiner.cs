@@ -7,10 +7,7 @@ namespace Meziantou.Framework.Utilities
     {
         private int _hash;
 
-        public int HashCode
-        {
-            get { return _hash.GetHashCode(); }
-        }
+        public int HashCode => _hash.GetHashCode();
 
         public static implicit operator int(HashCodeCombiner hashCodeCombiner)
         {
@@ -43,7 +40,7 @@ namespace Meziantou.Framework.Utilities
             else
             {
                 var count = 0;
-                foreach (object o in e)
+                foreach (var o in e)
                 {
                     Add(o);
                     count++;

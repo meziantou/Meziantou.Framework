@@ -10,10 +10,8 @@ namespace Meziantou.Framework.Templating
 
         public HtmlEmailSection(string name, StringWriter writer)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            Name = name;
-            Writer = writer;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
     }
 }

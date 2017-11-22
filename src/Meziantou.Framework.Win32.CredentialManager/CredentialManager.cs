@@ -11,8 +11,7 @@ namespace Meziantou.Framework.Win32
     {
         public static Credential ReadCredential(string applicationName)
         {
-            IntPtr nCredPtr;
-            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out nCredPtr);
+            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out IntPtr nCredPtr);
             if (read)
             {
                 using (var critCred = new CriticalCredentialHandle(nCredPtr))
@@ -44,17 +43,19 @@ namespace Meziantou.Framework.Win32
             //if (byteArray.Length > 512)
             //    throw new ArgumentOutOfRangeException("secret", "The secret message has exceeded 512 bytes.");
 
-            var credential = new CREDENTIAL();
-            credential.AttributeCount = 0;
-            credential.Attributes = IntPtr.Zero;
-            credential.Comment = IntPtr.Zero;
-            credential.TargetAlias = IntPtr.Zero;
-            credential.Type = CredentialType.Generic;
-            credential.Persist = persistence;
-            credential.CredentialBlobSize = (uint)Encoding.Unicode.GetBytes(secret).Length;
-            credential.TargetName = Marshal.StringToCoTaskMemUni(applicationName);
-            credential.CredentialBlob = Marshal.StringToCoTaskMemUni(secret);
-            credential.UserName = Marshal.StringToCoTaskMemUni(userName);
+            var credential = new CREDENTIAL
+            {
+                AttributeCount = 0,
+                Attributes = IntPtr.Zero,
+                Comment = IntPtr.Zero,
+                TargetAlias = IntPtr.Zero,
+                Type = CredentialType.Generic,
+                Persist = persistence,
+                CredentialBlobSize = (uint)Encoding.Unicode.GetBytes(secret).Length,
+                TargetName = Marshal.StringToCoTaskMemUni(applicationName),
+                CredentialBlob = Marshal.StringToCoTaskMemUni(secret),
+                UserName = Marshal.StringToCoTaskMemUni(userName)
+            };
 
             var written = Advapi32.CredWrite(ref credential, 0);
             var lastError = Marshal.GetLastWin32Error();
@@ -82,10 +83,7 @@ namespace Meziantou.Framework.Win32
         public static IReadOnlyList<Credential> EnumerateCrendentials()
         {
             var result = new List<Credential>();
-
-            int count;
-            IntPtr pCredentials;
-            var ret = Advapi32.CredEnumerate(null, 0, out count, out pCredentials);
+            var ret = Advapi32.CredEnumerate(null, 0, out int count, out IntPtr pCredentials);
             if (ret)
             {
                 for (var n = 0; n < count; n++)

@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Tests.Utilities
         public void CreateShortName_01()
         {
             // Arrange
-            string name = "bbb";
+            var name = "bbb";
             var names = new List<string> { "aaa", "aab" };
 
             // Act
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Tests.Utilities
         public void CreateShortName_02()
         {
             // Arrange
-            string name = "aaa";
+            var name = "aaa";
             var names = new List<string> { "aaa", "aab" };
 
             // Act

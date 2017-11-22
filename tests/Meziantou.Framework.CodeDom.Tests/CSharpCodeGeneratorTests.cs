@@ -234,9 +234,11 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_WhileLoop()
         {
-            var loop = new WhileStatement();
-            loop.Condition = new LiteralExpression(true);
-            loop.Body = new StatementCollection();
+            var loop = new WhileStatement
+            {
+                Condition = new LiteralExpression(true),
+                Body = new StatementCollection()
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(loop);
@@ -384,10 +386,12 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_If_Else()
         {
-            var statement = new ConditionStatement();
-            statement.Condition = new LiteralExpression(true);
-            statement.TrueStatements = new SnippetStatement("TrueSnippet");
-            statement.FalseStatements = new SnippetStatement("FalseSnippet");
+            var statement = new ConditionStatement
+            {
+                Condition = new LiteralExpression(true),
+                TrueStatements = new SnippetStatement("TrueSnippet"),
+                FalseStatements = new SnippetStatement("FalseSnippet")
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -480,9 +484,11 @@ catch (System.Exception ex)
         [TestMethod]
         public void CSharpCodeGenerator_Try_Finally()
         {
-            var statement = new TryCatchFinallyStatement();
-            statement.Try = new SnippetStatement("TrySnippet");
-            statement.Finally = new SnippetStatement("FinallyStatement");
+            var statement = new TryCatchFinallyStatement
+            {
+                Try = new SnippetStatement("TrySnippet"),
+                Finally = new SnippetStatement("FinallyStatement")
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -820,10 +826,12 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Event_ExplicitImplementation()
         {
-            var method = new EventFieldDeclaration("A", typeof(EventHandler));
-            method.PrivateImplementationType = new TypeReference("Foo.IBar");
-            method.AddAccessor = new StatementCollection();
-            method.RemoveAccessor = new StatementCollection();
+            var method = new EventFieldDeclaration("A", typeof(EventHandler))
+            {
+                PrivateImplementationType = new TypeReference("Foo.IBar"),
+                AddAccessor = new StatementCollection(),
+                RemoveAccessor = new StatementCollection()
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -881,9 +889,11 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_UsingStatement_WithBody()
         {
-            var statement = new UsingStatement();
-            statement.Statement = new VariableDeclarationStatement(null, "disposable", new NewObjectExpression(new TypeReference("Disposable")));
-            statement.Body = (Statement)new MethodInvokeExpression(new VariableReference("disposable"));
+            var statement = new UsingStatement
+            {
+                Statement = new VariableDeclarationStatement(null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
+                Body = (Statement)new MethodInvokeExpression(new VariableReference("disposable"))
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);

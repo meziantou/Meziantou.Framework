@@ -125,14 +125,13 @@ namespace Meziantou.Framework.Win32
         {
             if (fileName == null) throw new ArgumentNullException(nameof(fileName));
 
-            string extension = Path.GetExtension(fileName);
+            var extension = Path.GetExtension(fileName);
             if (extension == null)
                 throw new ArgumentException(null, nameof(fileName));
 
             extension = extension.ToLowerInvariant();
 
-            Perceived ptype;
-            if (_perceivedTypes.TryGetValue(extension, out ptype))
+            if (_perceivedTypes.TryGetValue(extension, out Perceived ptype))
                 return ptype;
 
             lock (SyncObject)
@@ -146,7 +145,7 @@ namespace Meziantou.Framework.Win32
                     {
                         if (key != null)
                         {
-                            string ct = key.GetStringValue("PerceivedType");
+                            var ct = key.GetStringValue("PerceivedType");
                             if (ct != null)
                             {
                                 ptype.PerceivedType = Extensions.GetEnumValue(ct, PerceivedType.Custom);
@@ -157,7 +156,7 @@ namespace Meziantou.Framework.Win32
                                 ct = key.GetStringValue("Content Type");
                                 if (ct != null)
                                 {
-                                    int pos = ct.IndexOf('/');
+                                    var pos = ct.IndexOf('/');
                                     if (pos > 0)
                                     {
                                         ptype.PerceivedType = Extensions.GetEnumValue(ct.Substring(0, pos), PerceivedType.Custom);
@@ -173,7 +172,7 @@ namespace Meziantou.Framework.Win32
                         var text = IntPtr.Zero;
                         var type = PerceivedType.Unknown;
                         var source = PerceivedTypeSource.Undefined;
-                        int hr = AssocGetPerceivedType(extension, ref type, ref source, ref text);
+                        var hr = AssocGetPerceivedType(extension, ref type, ref source, ref text);
                         if (hr != 0)
                         {
                             ptype.PerceivedType = PerceivedType.Unspecified;

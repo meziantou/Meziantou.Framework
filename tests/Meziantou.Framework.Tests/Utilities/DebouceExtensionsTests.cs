@@ -12,9 +12,8 @@ namespace Meziantou.Framework.Tests.Utilities
         [Ignore("Fails in CI")]
         public async Task DebounceTests()
         {
-            int count = 0;
-            Action action = () => { count++; };
-            var debounced = action.Debounce(TimeSpan.FromMilliseconds(30));
+            var count = 0;
+            var debounced = DebounceExtensions.Debounce(() => { count++; }, TimeSpan.FromMilliseconds(30));
 
             debounced();
             debounced();
@@ -38,8 +37,7 @@ namespace Meziantou.Framework.Tests.Utilities
         public async Task Debounce_CallActionsWithArgumentsOfTheLastCall()
         {
             int lastArg = default;
-            Action<int> action = (i) => { lastArg = i; };
-            var debounced = action.Debounce(TimeSpan.FromMilliseconds(0));
+            var debounced = DebounceExtensions.Debounce<int>((i) => { lastArg = i; }, TimeSpan.FromMilliseconds(0));
 
             debounced(1);
             debounced(2);

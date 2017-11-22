@@ -29,8 +29,8 @@ namespace Meziantou.Framework.CodeDom
 
         public Expression Value
         {
-            get { return _value; }
-            set { SetParent(ref _value, value); }
+            get => _value;
+            set => SetParent(ref _value, value);
         }
     }
 }

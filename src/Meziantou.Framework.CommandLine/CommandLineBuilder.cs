@@ -4,7 +4,7 @@ using System.Text;
 namespace Meziantou.Framework
 {
     // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-    public class CommandLineBuilder
+    public static class CommandLineBuilder
     {
         private static readonly char[] ReservedCharacters = { ' ', '\t', '\n', '\v', '"' };
 
@@ -44,7 +44,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public string WindowsQuotedArgument(string value)
+        public static string WindowsQuotedArgument(string value)
         {
             if (value == null)
                 return null;
@@ -60,12 +60,12 @@ namespace Meziantou.Framework
             return sb.ToString();
         }
 
-        public string WindowsQuotedArguments(params string[] values)
+        public static string WindowsQuotedArguments(params string[] values)
         {
             return string.Join(" ", values.Select(WindowsQuotedArgument));
         }
 
-        public string WindowsCmdArgument(string value)
+        public static string WindowsCmdArgument(string value)
         {
             if (value == null)
                 return null;
@@ -90,7 +90,7 @@ namespace Meziantou.Framework
             return sb.ToString();
         }
 
-        public string WindowsCmdArguments(params string[] values)
+        public static string WindowsCmdArguments(params string[] values)
         {
             return string.Join(" ", values.Select(WindowsCmdArgument));
         }

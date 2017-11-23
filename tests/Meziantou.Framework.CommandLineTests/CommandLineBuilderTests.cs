@@ -14,8 +14,7 @@ namespace Meziantou.Framework.CommandLineTests
         [DataRow(@"""a", @"""\""a""")]
         public void WindowsQuotedArgument_Test(string value, string expected)
         {
-            var builder = new CommandLineBuilder();
-            var args = builder.WindowsQuotedArgument(value);
+            var args = CommandLineBuilder.WindowsQuotedArgument(value);
             Assert.AreEqual(expected, args);
         }
 
@@ -26,8 +25,7 @@ namespace Meziantou.Framework.CommandLineTests
         [DataRow("a|b", @"""a^|b""")]
         public void WindowsCmdArgument_Test(string value, string expected)
         {
-            var builder = new CommandLineBuilder();
-            var args = builder.WindowsCmdArgument(value);
+            var args = CommandLineBuilder.WindowsCmdArgument(value);
             Assert.AreEqual(expected, args);
         }
     }

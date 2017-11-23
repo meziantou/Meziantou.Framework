@@ -32,7 +32,7 @@ namespace Meziantou.Framework.Utilities
             const int addToAlpha = 55;
             const int addToDigit = -7;
 
-            char[] c = new char[bytes.Length * 2];
+            var c = new char[bytes.Length * 2];
             for (var i = 0; i < bytes.Length; i++)
             {
                 var b = bytes[i] >> 4;
@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Utilities
             const int addToAlpha = 87;
             const int addToDigit = -39;
 
-            char[] c = new char[bytes.Length * 2];
+            var c = new char[bytes.Length * 2];
             for (var i = 0; i < bytes.Length; i++)
             {
                 var b = bytes[i] >> 4;
@@ -68,7 +68,7 @@ namespace Meziantou.Framework.Utilities
             if (str == null) throw new ArgumentNullException(nameof(str));
 
             if (str.Length % 2 != 0)
-                throw new ArgumentException($"Invalid string length", nameof(str));
+                throw new ArgumentException("Invalid string length", nameof(str));
 
             // handle 0x or 0X notation
             if (str.Length >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))

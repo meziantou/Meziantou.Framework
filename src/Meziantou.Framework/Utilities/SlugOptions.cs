@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace Meziantou.Framework.Utilities
 {
@@ -68,12 +69,19 @@ namespace Meziantou.Framework.Utilities
 
         public virtual bool IsAllowed(char character)
         {
-            foreach (var allowedRange in AllowedRanges)
+            if (AllowedRanges.Count > 0 && AllowedRanges.All(range => !range.IsInRangeInclusive(character)))
             {
-                if (character >= allowedRange.From && character <= allowedRange.To)
-                    return true;
+                return false;
             }
-            return false;
+
+            if (AllowedUnicodeCategories.Count > 0)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(character);
+                if (!AllowedUnicodeCategories.Contains(unicodeCategory))
+                    return false;
+            }
+
+            return true;
         }
 
         public virtual string Replace(char character)

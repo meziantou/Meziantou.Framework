@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Utilities
             {
                 var ch = text[index];
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (options.AllowedUnicodeCategories.Contains(unicodeCategory) && options.IsAllowed(ch))
+                if (options.IsAllowed(ch))
                 {
                     switch (unicodeCategory)
                     {

@@ -8,7 +8,8 @@ namespace Meziantou.Framework.Utilities
 {
     public class ReflectionDynamicObject : DynamicObject
     {
-        private const BindingFlags DefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         private static Dictionary<Type, TypeCache> _cache = new Dictionary<Type, TypeCache>();
 
@@ -20,6 +21,19 @@ namespace Meziantou.Framework.Utilities
             _originalObject = obj ?? throw new ArgumentNullException(nameof(obj));
 
             var type = obj.GetType();
+            if (!_cache.TryGetValue(type, out var typeCache))
+            {
+                typeCache = TypeCache.Create(type);
+                _cache[type] = typeCache;
+            }
+
+            _typeCache = typeCache;
+        }
+
+        public ReflectionDynamicObject(Type type)
+        {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+
             if (!_cache.TryGetValue(type, out var typeCache))
             {
                 typeCache = TypeCache.Create(type);
@@ -41,21 +55,20 @@ namespace Meziantou.Framework.Utilities
 
         public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
         {
-            foreach (var indexer in _typeCache.Indexers)
+            if (_originalObject == null)
             {
-                try
+                foreach (var indexer in _typeCache.StaticIndexers)
                 {
-                    result = indexer.GetValue(_originalObject, indexes);
-                    return true;
+                    if (TryGetIndex(indexer, _originalObject, indexes, out result))
+                        return true;
                 }
-                catch (ArgumentException)
+            }
+            else
+            {
+                foreach (var indexer in _typeCache.InstanceIndexers)
                 {
-                }
-                catch (TargetParameterCountException)
-                {
-                }
-                catch (TargetInvocationException)
-                {
+                    if (TryGetIndex(indexer, _originalObject, indexes, out result))
+                        return true;
                 }
             }
 
@@ -65,21 +78,20 @@ namespace Meziantou.Framework.Utilities
 
         public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value)
         {
-            foreach (var indexer in _typeCache.Indexers)
+            if (_originalObject == null)
             {
-                try
+                foreach (var indexer in _typeCache.StaticIndexers)
                 {
-                    indexer.SetValue(_originalObject, value, indexes);
-                    return true;
+                    if (TrySetIndex(indexer, null, indexes, value))
+                        return true;
                 }
-                catch (ArgumentException)
+            }
+            else
+            {
+                foreach (var indexer in _typeCache.InstanceIndexers)
                 {
-                }
-                catch (TargetParameterCountException)
-                {
-                }
-                catch (TargetInvocationException)
-                {
+                    if (TrySetIndex(indexer, _originalObject, indexes, value))
+                        return true;
                 }
             }
 
@@ -88,12 +100,15 @@ namespace Meziantou.Framework.Utilities
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            var type = _originalObject.GetType();
+            var type = _typeCache.Type;
+            var flags = _originalObject == null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
+            flags |= BindingFlags.InvokeMethod;
+
             while (type != null)
             {
                 try
                 {
-                    result = type.InvokeMember(binder.Name, DefaultBindingFlags | BindingFlags.InvokeMethod, null, _originalObject, args);
+                    result = type.InvokeMember(binder.Name, flags, null, _originalObject, args);
                     return true;
                 }
                 catch (MissingMethodException)
@@ -108,19 +123,39 @@ namespace Meziantou.Framework.Utilities
 
         public override IEnumerable<string> GetDynamicMemberNames()
         {
-            foreach (var propertyInfo in _typeCache.Properties)
-            {
-                yield return propertyInfo.Key;
-            }
+            return GetAllMembers().Distinct();
 
-            foreach (var field in _typeCache.Indexers)
+            IEnumerable<string> GetAllMembers()
             {
-                yield return field.Name;
-            }
+                foreach (var propertyInfo in _typeCache.InstanceProperties)
+                {
+                    yield return propertyInfo.Key;
+                }
 
-            foreach (var field in _typeCache.Fields)
-            {
-                yield return field.Key;
+                foreach (var field in _typeCache.InstanceIndexers)
+                {
+                    yield return field.Name;
+                }
+
+                foreach (var field in _typeCache.InstanceFields)
+                {
+                    yield return field.Key;
+                }
+
+                foreach (var propertyInfo in _typeCache.StaticProperties)
+                {
+                    yield return propertyInfo.Key;
+                }
+
+                foreach (var field in _typeCache.StaticIndexers)
+                {
+                    yield return field.Name;
+                }
+
+                foreach (var field in _typeCache.StaticFields)
+                {
+                    yield return field.Key;
+                }
             }
         }
 
@@ -132,21 +167,41 @@ namespace Meziantou.Framework.Utilities
 
         public override string ToString()
         {
-            return _originalObject.ToString();
+            if (_originalObject != null)
+                return _originalObject.ToString();
+
+            return null;
         }
 
         private bool TryGetMemberValue(string name, out object result)
         {
-            if (_typeCache.Properties.TryGetValue(name, out PropertyInfo property))
+            if (_originalObject == null)
             {
-                result = property.GetValue(_originalObject);
-                return true;
-            }
+                if (_typeCache.StaticProperties.TryGetValue(name, out PropertyInfo property))
+                {
+                    result = property.GetValue(null);
+                    return true;
+                }
 
-            if (_typeCache.Fields.TryGetValue(name, out FieldInfo field))
+                if (_typeCache.StaticFields.TryGetValue(name, out FieldInfo field))
+                {
+                    result = field.GetValue(null);
+                    return true;
+                }
+            }
+            else
             {
-                result = field.GetValue(_originalObject);
-                return true;
+                if (_typeCache.InstanceProperties.TryGetValue(name, out PropertyInfo property))
+                {
+                    result = property.GetValue(_originalObject);
+                    return true;
+                }
+
+                if (_typeCache.InstanceFields.TryGetValue(name, out FieldInfo field))
+                {
+                    result = field.GetValue(_originalObject);
+                    return true;
+                }
             }
 
             result = null;
@@ -155,16 +210,74 @@ namespace Meziantou.Framework.Utilities
 
         private bool TrySetMemberValue(string name, object value)
         {
-            if (_typeCache.Properties.TryGetValue(name, out PropertyInfo property))
+            if (_originalObject == null)
             {
-                property.SetValue(_originalObject, value);
-                return true;
+                if (_typeCache.StaticProperties.TryGetValue(name, out PropertyInfo property))
+                {
+                    property.SetValue(null, value);
+                    return true;
+                }
+
+                if (_typeCache.StaticFields.TryGetValue(name, out FieldInfo field))
+                {
+                    field.SetValue(null, value);
+                    return true;
+                }
+            }
+            else
+            {
+                if (_typeCache.InstanceProperties.TryGetValue(name, out PropertyInfo property))
+                {
+                    property.SetValue(_originalObject, value);
+                    return true;
+                }
+
+                if (_typeCache.InstanceFields.TryGetValue(name, out FieldInfo field))
+                {
+                    field.SetValue(_originalObject, value);
+                    return true;
+                }
             }
 
-            if (_typeCache.Fields.TryGetValue(name, out FieldInfo field))
+            return false;
+        }
+
+        private bool TryGetIndex(PropertyInfo indexer, object instance, object[] indexes, out object result)
+        {
+            try
             {
-                field.SetValue(_originalObject, value);
+                result = indexer.GetValue(instance, indexes);
                 return true;
+            }
+            catch (ArgumentException)
+            {
+            }
+            catch (TargetParameterCountException)
+            {
+            }
+            catch (TargetInvocationException)
+            {
+            }
+
+            result = null;
+            return false;
+        }
+
+        private bool TrySetIndex(PropertyInfo indexer, object instance, object[] indexes, object value)
+        {
+            try
+            {
+                indexer.SetValue(instance, value, indexes);
+                return true;
+            }
+            catch (ArgumentException)
+            {
+            }
+            catch (TargetParameterCountException)
+            {
+            }
+            catch (TargetInvocationException)
+            {
             }
 
             return false;
@@ -172,39 +285,71 @@ namespace Meziantou.Framework.Utilities
 
         private class TypeCache
         {
-            private TypeCache()
+            private TypeCache(Type type)
             {
+                Type = type;
             }
 
-            public Dictionary<string, PropertyInfo> Properties { get; } = new Dictionary<string, PropertyInfo>();
-            public Dictionary<string, FieldInfo> Fields { get; } = new Dictionary<string, FieldInfo>();
-            public List<PropertyInfo> Indexers { get; } = new List<PropertyInfo>();
+            public Type Type { get; }
+
+            public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>();
+            public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>();
+            public List<PropertyInfo> InstanceIndexers { get; } = new List<PropertyInfo>();
+
+            public Dictionary<string, PropertyInfo> StaticProperties { get; } = new Dictionary<string, PropertyInfo>();
+            public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>();
+            public List<PropertyInfo> StaticIndexers { get; } = new List<PropertyInfo>();
 
             public static TypeCache Create(Type type)
             {
-                var instance = new TypeCache();
+                var instance = new TypeCache(type);
                 while (type != null)
                 {
-                    foreach (var propertyInfo in type.GetProperties(DefaultBindingFlags))
+                    // Instances
+                    foreach (var propertyInfo in type.GetProperties(InstanceDefaultBindingFlags))
                     {
                         if (propertyInfo.GetIndexParameters().Any())
                         {
-                            instance.Indexers.Add(propertyInfo);
+                            instance.InstanceIndexers.Add(propertyInfo);
                         }
                         else
                         {
-                            if (!instance.Properties.ContainsKey(propertyInfo.Name))
+                            if (!instance.InstanceProperties.ContainsKey(propertyInfo.Name))
                             {
-                                instance.Properties.Add(propertyInfo.Name, propertyInfo);
+                                instance.InstanceProperties.Add(propertyInfo.Name, propertyInfo);
                             }
                         }
                     }
 
-                    foreach (var fieldInfo in type.GetFields(DefaultBindingFlags))
+                    foreach (var fieldInfo in type.GetFields(InstanceDefaultBindingFlags))
                     {
-                        if (!instance.Fields.ContainsKey(fieldInfo.Name))
+                        if (!instance.InstanceFields.ContainsKey(fieldInfo.Name))
                         {
-                            instance.Fields.Add(fieldInfo.Name, fieldInfo);
+                            instance.InstanceFields.Add(fieldInfo.Name, fieldInfo);
+                        }
+                    }
+
+                    // Static
+                    foreach (var propertyInfo in type.GetProperties(StaticDefaultBindingFlags))
+                    {
+                        if (propertyInfo.GetIndexParameters().Any())
+                        {
+                            instance.StaticIndexers.Add(propertyInfo);
+                        }
+                        else
+                        {
+                            if (!instance.StaticProperties.ContainsKey(propertyInfo.Name))
+                            {
+                                instance.StaticProperties.Add(propertyInfo.Name, propertyInfo);
+                            }
+                        }
+                    }
+
+                    foreach (var fieldInfo in type.GetFields(StaticDefaultBindingFlags))
+                    {
+                        if (!instance.StaticFields.ContainsKey(fieldInfo.Name))
+                        {
+                            instance.StaticFields.Add(fieldInfo.Name, fieldInfo);
                         }
                     }
 

@@ -41,6 +41,13 @@ namespace Meziantou.Framework.Tests.Utilities
             Assert.AreEqual("test2", rdo.ProtectedVirtualMethod());
         }
 
+        [TestMethod]
+        public void ReflectionDynamicObject_StaticMethod()
+        {
+            dynamic rdo = new ReflectionDynamicObject(typeof(Test));
+            Assert.AreEqual(1, rdo.Static(1));
+        }
+
         private class Test
         {
             private int _privateField = 42;
@@ -83,6 +90,8 @@ namespace Meziantou.Framework.Tests.Utilities
                 get => str + _indexer;
                 set => _indexer = value;
             }
+
+            private static int Static(int a) => a;
         }
 
         private class Test2 : Test

@@ -1082,8 +1082,7 @@ namespace Meziantou.Framework.Utilities
                     break;
 
                 case TypeCode.String:
-                    var inputBytes = input as byte[];
-                    if (inputBytes != null)
+                    if (input is byte[] inputBytes)
                     {
                         if (TryConvert(inputBytes, provider, out string str))
                         {
@@ -1094,6 +1093,14 @@ namespace Meziantou.Framework.Utilities
                         value = null;
                         return false;
                     }
+
+#if NETSTANDARD2_0
+                    if (input is CultureInfo ci)
+                    {
+                        value = ci.Name;
+                        return true;
+                    }
+#endif
 
                     var tc = TypeDescriptor.GetConverter(inputType);
                     if (tc != null && tc.CanConvertTo(typeof(string)))
@@ -1293,7 +1300,15 @@ namespace Meziantou.Framework.Utilities
                 ctConverter = TypeDescriptor.GetConverter(conversionType);
                 if (ctConverter != null && ctConverter.CanConvertFrom(inputType))
                 {
-                    value = ctConverter.ConvertFrom(null, provider as CultureInfo, input);
+                    if (provider is CultureInfo cultureInfo)
+                    {
+                        value = ctConverter.ConvertFrom(null, cultureInfo, input);
+                    }
+                    else
+                    {
+                        value = ctConverter.ConvertFrom(input);
+                    }
+
                     return true;
                 }
             }

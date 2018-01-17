@@ -220,7 +220,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_06()
+        public void TryConvert_CultureInfo_EmptyString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -228,6 +228,35 @@ namespace Meziantou.Framework.Tests.Utilities
 
             Assert.AreEqual(true, converted);
             Assert.AreEqual(CultureInfo.InvariantCulture, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_CultureInfo_NullValue()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType<CultureInfo>(null, null, out var value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(null, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_CultureInfoToStringInvariant()
+        {
+            var converter = new DefaultConverter();
+            var value = converter.ChangeType<string>(new CultureInfo("en"), null, CultureInfo.InvariantCulture);
+
+            Assert.AreEqual("en", value);
+        }
+
+        [TestMethod]
+        public void TryConvert_CultureInfoToString()
+        {
+            var converter = new DefaultConverter();
+            var value = converter.ChangeType<string>(new CultureInfo("en"), null, new CultureInfo("en-US"));
+
+            Assert.AreEqual("en", value);
         }
 
         [TestMethod]

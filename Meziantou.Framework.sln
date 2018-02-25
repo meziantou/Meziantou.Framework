@@ -49,11 +49,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DB679A70-C2CB-4CD1-9530-D31627343FC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.CommandLine", "src\Meziantou.Framework.CommandLine\Meziantou.Framework.CommandLine.csproj", "{684E6D0F-25AE-4169-9A69-9B739F9FF71C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CommandLine", "src\Meziantou.Framework.CommandLine\Meziantou.Framework.CommandLine.csproj", "{684E6D0F-25AE-4169-9A69-9B739F9FF71C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.CommandLineTests", "tests\Meziantou.Framework.CommandLineTests\Meziantou.Framework.CommandLineTests.csproj", "{FE6AE531-9319-4E74-998E-76F04F6D4901}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CommandLineTests", "tests\Meziantou.Framework.CommandLineTests\Meziantou.Framework.CommandLineTests.csproj", "{FE6AE531-9319-4E74-998E-76F04F6D4901}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EchoArguments", "tests\EchoArguments\EchoArguments.csproj", "{85B252D5-BBE1-46ED-9D78-5E84125C2F80}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EchoArguments", "tests\EchoArguments\EchoArguments.csproj", "{85B252D5-BBE1-46ED-9D78-5E84125C2F80}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Dialogs", "src\Meziantou.Framework.Win32.Dialogs\Meziantou.Framework.Win32.Dialogs.csproj", "{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.DialogsSamples", "Samples\Meziantou.Framework.Win32.DialogsSamples\Meziantou.Framework.Win32.DialogsSamples.csproj", "{8ED9101B-5E85-49EB-A216-F542E8AD9F79}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -153,6 +157,14 @@ Global
 		{85B252D5-BBE1-46ED-9D78-5E84125C2F80}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{85B252D5-BBE1-46ED-9D78-5E84125C2F80}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{85B252D5-BBE1-46ED-9D78-5E84125C2F80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -181,6 +193,8 @@ Global
 		{684E6D0F-25AE-4169-9A69-9B739F9FF71C} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{FE6AE531-9319-4E74-998E-76F04F6D4901} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{85B252D5-BBE1-46ED-9D78-5E84125C2F80} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

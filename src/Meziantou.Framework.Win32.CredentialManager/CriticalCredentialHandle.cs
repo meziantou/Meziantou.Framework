@@ -1,6 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
-using Meziantou.Framework.Win32.Native;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {

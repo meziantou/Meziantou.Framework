@@ -14,59 +14,7 @@ namespace Meziantou.Framework.Win32
         private static readonly Dictionary<string, Perceived> _perceivedTypes = new Dictionary<string, Perceived>(StringComparer.OrdinalIgnoreCase);
 
         private static object SyncObject { get; } = new object();
-
-        static Perceived()
-        {
-            AddPerceived(".appxmanifest", PerceivedType.Text);
-            AddPerceived(".asax", PerceivedType.Text);
-            AddPerceived(".ascx", PerceivedType.Text);
-            AddPerceived(".ashx", PerceivedType.Text);
-            AddPerceived(".asmx", PerceivedType.Text);
-            AddPerceived(".bat", PerceivedType.Text);
-            AddPerceived(".class", PerceivedType.Text);
-            AddPerceived(".cmd", PerceivedType.Text);
-            AddPerceived(".cs", PerceivedType.Text);
-            AddPerceived(".cshtml", PerceivedType.Text);
-            AddPerceived(".css", PerceivedType.Text);
-            AddPerceived(".cfxproj", PerceivedType.Text);
-            AddPerceived(".config", PerceivedType.Text);
-            AddPerceived(".csproj", PerceivedType.Text);
-            AddPerceived(".dll", PerceivedType.Application);
-            AddPerceived(".exe", PerceivedType.Application);
-            AddPerceived(".htm", PerceivedType.Text);
-            AddPerceived(".html", PerceivedType.Text);
-            AddPerceived(".iqy", PerceivedType.Text);
-            AddPerceived(".js", PerceivedType.Text);
-            AddPerceived(".master", PerceivedType.Text);
-            AddPerceived(".manifest", PerceivedType.Text);
-            AddPerceived(".rdl", PerceivedType.Text);
-            AddPerceived(".reg", PerceivedType.Text);
-            AddPerceived(".resx", PerceivedType.Text);
-            AddPerceived(".rtf", PerceivedType.Text);
-            AddPerceived(".rzt", PerceivedType.Text);
-            AddPerceived(".sln", PerceivedType.Text);
-            AddPerceived(".sql", PerceivedType.Text);
-            AddPerceived(".sqlproj", PerceivedType.Text);
-            AddPerceived(".snippet", PerceivedType.Text);
-            AddPerceived(".svc", PerceivedType.Text);
-            AddPerceived(".tpl", PerceivedType.Text);
-            AddPerceived(".tplxaml", PerceivedType.Text);
-            AddPerceived(".vb", PerceivedType.Text);
-            AddPerceived(".vbhtml", PerceivedType.Text);
-            AddPerceived(".vbproj", PerceivedType.Text);
-            AddPerceived(".vbs", PerceivedType.Text);
-            AddPerceived(".vdproj", PerceivedType.Text);
-            AddPerceived(".wsdl", PerceivedType.Text);
-            AddPerceived(".wxi", PerceivedType.Text);
-            AddPerceived(".wxl", PerceivedType.Text);
-            AddPerceived(".wxs", PerceivedType.Text);
-            AddPerceived(".wixlib", PerceivedType.Text);
-            AddPerceived(".xaml", PerceivedType.Text);
-            AddPerceived(".xsd", PerceivedType.Text);
-            AddPerceived(".xsl", PerceivedType.Text);
-            AddPerceived(".xslt", PerceivedType.Text);
-        }
-
+        
         private Perceived()
         {
         }

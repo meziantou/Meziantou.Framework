@@ -14,10 +14,34 @@ namespace Meziantou.Framework.Win32.Dialogs
         {
             var hwndOwner = owner != IntPtr.Zero ? owner : NativeMethods.GetActiveWindow();
             var dialog = (IFileOpenDialog)new NativeFileOpenDialog();
-            IShellItem item;
+            Configure(dialog);
+
+            var hr = dialog.Show(hwndOwner);
+            if (hr == NativeMethods.ERROR_CANCELLED)
+                return DialogResult.Cancel;
+
+            if (hr != NativeMethods.S_OK)
+                return DialogResult.Abort;
+
+            dialog.GetResult(out var item);
+            item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
+            SelectedPath = path;
+            return DialogResult.OK;
+        }
+
+        public string Title { get; set; }
+        public string OkButtonLabel { get; set; }
+        public string InitialDirectory { get; set; }
+        public string SelectedPath { get; set; }
+        public bool ChangeCurrentDirectory { get; set; }
+
+        private void Configure(IFileOpenDialog dialog)
+        {
+            dialog.SetOptions(CreateOptions());
+
             if (!string.IsNullOrEmpty(InitialDirectory))
             {
-                NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out item);
+                NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out var item);
                 if (item != null)
                 {
                     dialog.SetFolder(item);
@@ -33,28 +57,9 @@ namespace Meziantou.Framework.Win32.Dialogs
             {
                 dialog.SetOkButtonLabel(OkButtonLabel);
             }
-
-            Configure(dialog);
-            var hr = dialog.Show(hwndOwner);
-            if (hr == NativeMethods.ERROR_CANCELLED)
-                return DialogResult.Cancel;
-
-            if (hr != NativeMethods.S_OK)
-                return DialogResult.Abort;
-
-            dialog.GetResult(out item);
-            item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
-            SelectedPath = path;
-            return DialogResult.OK;
         }
 
-        public string Title { get; set; }
-        public string OkButtonLabel { get; set; }
-        public string InitialDirectory { get; set; }
-        public string SelectedPath { get; set; }
-        public bool ChangeCurrentDirectory { get; set; }
-
-        private protected virtual FOS CreateOptions()
+        private FOS CreateOptions()
         {
             var result = FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PICKFOLDERS;
             if (!ChangeCurrentDirectory)
@@ -63,11 +68,6 @@ namespace Meziantou.Framework.Win32.Dialogs
             }
 
             return result;
-        }
-
-        private protected virtual void Configure(IFileOpenDialog dialog)
-        {
-            dialog.SetOptions(CreateOptions());
         }
     }
 }

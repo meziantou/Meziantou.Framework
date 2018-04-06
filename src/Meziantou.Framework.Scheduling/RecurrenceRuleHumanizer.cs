@@ -14,9 +14,11 @@ namespace Meziantou.Framework.Scheduling
 
         static RecurrenceRuleHumanizer()
         {
-            SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>();
-            SupportedHumanizers.Add(EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish());
-            SupportedHumanizers.Add(FrenchCultureInfo, new RecurrenceRuleHumanizerFrench());
+            SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
+            {
+                { EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish() },
+                { FrenchCultureInfo, new RecurrenceRuleHumanizerFrench() }
+            };
         }
 
         public static string GetText(RecurrenceRule rrule)

@@ -18,5 +18,4 @@ namespace Meziantou.Framework.Win32.Natives
         [FieldOffset(108)]
         public uint PeakJobMemoryUsed;
     }
-
 }

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Win32
         private static readonly Dictionary<string, Perceived> _perceivedTypes = new Dictionary<string, Perceived>(StringComparer.OrdinalIgnoreCase);
 
         private static object SyncObject { get; } = new object();
-        
+
         private Perceived()
         {
         }

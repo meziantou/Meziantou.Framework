@@ -339,7 +339,7 @@ internal enum Sample : uint
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"array[10]", result);
+            Assert.That.StringEquals("array[10]", result);
         }
 
         [TestMethod]
@@ -786,7 +786,7 @@ void Sample()
     ;
 ", result);
         }
-                
+
         [TestMethod]
         public void CSharpCodeGenerator_Method_ExplicitImplementation()
         {
@@ -808,7 +808,7 @@ void Sample()
         {
             var method = new PropertyDeclaration("A", typeof(int));
             method.PrivateImplementationType = new TypeReference("Foo.IBar");
-            method.Getter = new ReturnStatement(10);       
+            method.Getter = new ReturnStatement(10);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
@@ -868,7 +868,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(directive);
 
-            Assert.That.StringEquals(@"using System;", result);
+            Assert.That.StringEquals("using System;", result);
         }
 
         [TestMethod]
@@ -947,7 +947,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.That.StringEquals(@"typeof(string)", result);
+            Assert.That.StringEquals("typeof(string)", result);
         }
 
         [TestMethod]
@@ -1023,7 +1023,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
-            Assert.That.StringEquals(@"await awaitable", result);
+            Assert.That.StringEquals("await awaitable", result);
         }
 
         [TestMethod]
@@ -1070,7 +1070,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"/* comment1 */ code /* comment2 */", result);
+            Assert.That.StringEquals("/* comment1 */ code /* comment2 */", result);
         }
 
         [TestMethod]
@@ -1081,7 +1081,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"/* comment1 */ code", result);
+            Assert.That.StringEquals("/* comment1 */ code", result);
         }
 
         [TestMethod]
@@ -1092,7 +1092,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"code /* comment2 */", result);
+            Assert.That.StringEquals("code /* comment2 */", result);
         }
 
         [TestMethod]
@@ -1128,7 +1128,7 @@ code", result);
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"/* com1 */ /* com2 */ code", result);
+            Assert.That.StringEquals("/* com1 */ /* com2 */ code", result);
         }
 
         [TestMethod]
@@ -1197,7 +1197,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"System.Console", result);
+            Assert.That.StringEquals("System.Console", result);
         }
 
         [TestMethod]
@@ -1208,7 +1208,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum", result);
+            Assert.That.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum", result);
         }
 
         [TestMethod]
@@ -1218,8 +1218,8 @@ void Sample()
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
-            
-            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>", result);
+
+            Assert.That.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>", result);
         }
 
         private class Sample<T>
@@ -1232,7 +1232,7 @@ void Sample()
             A = 1,
             B = 2,
             C = 4,
-            All = 7
+            All = A | B | C
         }
 
         [TestMethod]
@@ -1243,7 +1243,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A", result);
+            Assert.That.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A", result);
         }
 
         [TestMethod]
@@ -1254,7 +1254,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All", result);
+            Assert.That.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All", result);
         }
 
         [TestMethod]
@@ -1265,7 +1265,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)", result);
+            Assert.That.StringEquals("((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)", result);
         }
 
         [TestMethod]
@@ -1276,9 +1276,9 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)", result);
+            Assert.That.StringEquals("((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)", result);
         }
-        
+
         [DataTestMethod]
         [DataRow(BinaryOperator.Add, "+")]
         [DataRow(BinaryOperator.And, "&&")]

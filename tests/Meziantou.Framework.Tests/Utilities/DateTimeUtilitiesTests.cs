@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Tests.Utilities
             var expected = new DateTime(2015, 05, 11);
             Assert.AreEqual(expected, actual);
         }
-        
+
         [TestMethod]
         public void FirstDateOfWeekIso8601_01()
         {
@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Tests.Utilities
             // Arrange
             var year = 2005;
             var week = 52;
-            
+
             // Act
             var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
 

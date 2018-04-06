@@ -10,5 +10,4 @@ namespace Meziantou.Framework.Win32.Natives
         public IntPtr lpSecurityDescriptor;
         public bool bInheritHandle;
     }
-
 }

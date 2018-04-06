@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Scheduling
 
             return dt.ToString(DateTimeFormat);
         }
-        
+
         public static string StatusToString(EventStatus status)
         {
             switch (status)

@@ -77,8 +77,7 @@ namespace Meziantou.Framework.Utilities
                 var headerPos = BitConverter.ToInt32(bytes, peHeaderOffset);
                 var secondsSince1970 = BitConverter.ToInt32(bytes, headerPos + linkerTimestampOffset);
                 var dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                dt = dt.AddSeconds(secondsSince1970);
-                return dt;
+                return dt.AddSeconds(secondsSince1970);
             }
             catch
             {

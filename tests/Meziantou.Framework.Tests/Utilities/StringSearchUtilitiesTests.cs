@@ -225,7 +225,9 @@ namespace Meziantou.Framework.Tests.Utilities
                     "Korie",
                     "Korrie",
                     "Korry" })
+            {
                 yield return new object[] { "Gary", item };
+            }
 
             foreach (var item in new[] {
                      "Gena",
@@ -287,7 +289,9 @@ namespace Meziantou.Framework.Tests.Utilities
                      "June",
                      "Junia",
                      "Junie" })
+            {
                 yield return new object[] { "John", item };
+            }
 
             foreach (var item in new[] {
                     "Mair",
@@ -311,7 +315,9 @@ namespace Meziantou.Framework.Tests.Utilities
                     "Muire",
                     "Myra",
                     "Myrah" })
+            {
                 yield return new object[] { "Mary", item };
+            }
 
             foreach (var item in new[] { "Pearcy", "Perris", "Piercy", "Pierz", "Pryse" })
                 yield return new object[] { "Paris", item };
@@ -330,7 +336,6 @@ namespace Meziantou.Framework.Tests.Utilities
 
             foreach (var item in new[] { "Celene", "Celina", "Celine", "Selena", "Selene", "Selina", "Seline", "Suellen", "Xylina" })
                 yield return new object[] { "Xalan", item };
-
         }
     }
 }

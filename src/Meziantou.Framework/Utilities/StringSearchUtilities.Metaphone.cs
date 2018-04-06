@@ -22,11 +22,11 @@ namespace Meziantou.Framework.Utilities
 
             if (s.Length == 0)
                 return string.Empty;
-            
+
             if (s.Length == 1)
                 return s.ToUpper();
 
-            char[] inwd = s.ToUpper().ToCharArray();            
+            char[] inwd = s.ToUpper().ToCharArray();
             var local = new StringBuilder(40); // manipulate
             var code = new StringBuilder(10); // output
 
@@ -117,7 +117,7 @@ namespace Meziantou.Framework.Utilities
                             }
 
                             break; // only use vowel if leading char
-                        case 'B':                            
+                        case 'B':
                             if (((n > 0) && n == wdsz - 1) && (local[n - 1] == 'M'))
                             {
                                 break;

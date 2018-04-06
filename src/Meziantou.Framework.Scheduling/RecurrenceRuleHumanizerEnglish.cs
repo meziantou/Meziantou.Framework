@@ -207,7 +207,7 @@ namespace Meziantou.Framework.Scheduling
                 if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
                 {
                     sb.Append("the ");
-                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions.First()));
+                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                     sb.Append(" ");
                 }
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
@@ -249,7 +249,7 @@ namespace Meziantou.Framework.Scheduling
                     if (rrule.ByMonths != null && rrule.ByMonths.Any())
                     {
                         sb.Append(" of ");
-                        sb.Append(rrule.ByMonths.First());
+                        sb.Append(rrule.ByMonths[0]);
                     }
                 }
                 else
@@ -257,7 +257,7 @@ namespace Meziantou.Framework.Scheduling
                     if (rrule.ByMonths != null && rrule.ByMonths.Any())
                     {
                         sb.Append(" on ");
-                        sb.Append(rrule.ByMonths.First());
+                        sb.Append(rrule.ByMonths[0]);
                     }
 
                     sb.Append(" the ");
@@ -271,7 +271,7 @@ namespace Meziantou.Framework.Scheduling
                 if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
                 {
                     sb.Append("the ");
-                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions.First()));
+                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                     sb.Append(" ");
                 }
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
@@ -279,7 +279,7 @@ namespace Meziantou.Framework.Scheduling
                 if (rrule.ByMonths != null && rrule.ByMonths.Any())
                 {
                     sb.Append(" of ");
-                    sb.Append(rrule.ByMonths.First());
+                    sb.Append(rrule.ByMonths[0]);
                 }
             }
 

@@ -110,7 +110,7 @@ namespace Meziantou.Framework.CodeDom
                 var sb = new StringBuilder();
                 if (!string.IsNullOrEmpty(Namespace))
                 {
-                    sb.Append(Namespace + ".");
+                    sb.Append(Namespace).Append(".");
                 }
 
                 sb.Append(Name);
@@ -121,7 +121,10 @@ namespace Meziantou.Framework.CodeDom
                     foreach (var parameter in Parameters)
                     {
                         if (!first)
+                        {
                             sb.Append(", ");
+                        }
+
                         sb.Append(parameter.ClrFullTypeName);
 
                         first = false;

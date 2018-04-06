@@ -501,7 +501,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             var startDate = new DateTime(1998, 01, 01, 09, 00, 00);
             var occurrences = rrule.GetNextOccurrences(startDate);
 
-
             var expectedDates = new List<DateTime>();
             for (var year = 0; year < 3; year++)
             {
@@ -520,7 +519,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T090000Z;BYMONTH=1");
             var startDate = new DateTime(1998, 01, 01, 09, 00, 00);
             var occurrences = rrule.GetNextOccurrences(startDate);
-
 
             var expectedDates = new List<DateTime>();
             for (var year = 0; year < 3; year++)

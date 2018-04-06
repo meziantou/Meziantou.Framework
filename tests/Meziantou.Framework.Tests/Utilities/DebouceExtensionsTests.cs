@@ -13,22 +13,22 @@ namespace Meziantou.Framework.Tests.Utilities
         public async Task DebounceTests()
         {
             var count = 0;
-            var debounced = DebounceExtensions.Debounce(() => { count++; }, TimeSpan.FromMilliseconds(30));
+            var debounced = DebounceExtensions.Debounce(() => count++, TimeSpan.FromMilliseconds(30));
 
             debounced();
             debounced();
-            await Task.Delay(70);
+            await Task.Delay(70).ConfigureAwait(false);
             Assert.AreEqual(1, count);
 
             debounced();
-            await Task.Delay(15);
+            await Task.Delay(15).ConfigureAwait(false);
             debounced();
-            await Task.Delay(15);
+            await Task.Delay(15).ConfigureAwait(false);
             debounced();
-            await Task.Delay(15);
+            await Task.Delay(15).ConfigureAwait(false);
             debounced();
 
-            await Task.Delay(50);
+            await Task.Delay(50).ConfigureAwait(false);
             Assert.AreEqual(2, count);
         }
 
@@ -37,11 +37,11 @@ namespace Meziantou.Framework.Tests.Utilities
         public async Task Debounce_CallActionsWithArgumentsOfTheLastCall()
         {
             int lastArg = default;
-            var debounced = DebounceExtensions.Debounce<int>((i) => { lastArg = i; }, TimeSpan.FromMilliseconds(0));
+            var debounced = DebounceExtensions.Debounce<int>(i => lastArg = i, TimeSpan.FromMilliseconds(0));
 
             debounced(1);
             debounced(2);
-            await Task.Delay(1);
+            await Task.Delay(1).ConfigureAwait(false);
             Assert.AreEqual(2, lastArg);
         }
     }

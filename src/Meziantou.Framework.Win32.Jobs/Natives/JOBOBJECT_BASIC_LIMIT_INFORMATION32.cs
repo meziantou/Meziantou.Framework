@@ -25,5 +25,4 @@ namespace Meziantou.Framework.Win32.Natives
         [FieldOffset(40)]
         public uint SchedulingClass;
     }
-
 }

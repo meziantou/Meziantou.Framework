@@ -43,7 +43,6 @@ namespace Meziantou.Framework.Tests.Utilities
             Assert.AreEqual(expectedResult, result);
         }
 
-
         [DataTestMethod]
         [DataRow("sample.txt", "sample.txt")]
         [DataRow("sample/.txt", "sample_x47_.txt")]

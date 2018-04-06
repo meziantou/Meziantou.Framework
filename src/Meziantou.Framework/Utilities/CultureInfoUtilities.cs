@@ -101,7 +101,7 @@ namespace Meziantou.Framework.Utilities
 
             return null;
         }
-        
+
         public static CultureInfo GetNeutralCulture(this CultureInfo cultureInfo)
         {
             if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));

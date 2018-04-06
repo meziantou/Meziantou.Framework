@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom.Tests
 {
     internal static class AssertExtensions
     {
-        public static void StringEquals(this Assert assert, string expected, string actual)
+        public static void StringEquals(this Assert _, string expected, string actual)
         {
             if (expected == actual)
                 return;
@@ -18,14 +18,13 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             var index = expectedFormat2.Zip(actualFormat2, (c1, c2) => c1 == c2).TakeWhile(b => b).Count() + 1;
 
-
             throw new AssertFailedException($@"Expect: <{expectedFormat1}>
 Actual: <{actualFormat1}>
 
 Expect: <{expectedFormat2}>
 Actual: <{actualFormat2}>
          {new string(' ', index)}^");
-            
+
             string Replace1(string value)
             {
                 return value

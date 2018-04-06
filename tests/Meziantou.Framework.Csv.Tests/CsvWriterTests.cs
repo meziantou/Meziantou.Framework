@@ -15,8 +15,8 @@ namespace Meziantou.Framework.Csv.Tests
             using (var sw = new StringWriter())
             {
                 var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "B");
-                await writer.WriteRowAsync("C", "D");
+                await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
+                await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
                 Assert.AreEqual(@"A,B
 C,D", sw.ToString());
@@ -29,8 +29,8 @@ C,D", sw.ToString());
             using (var sw = new StringWriter())
             {
                 var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "B,");
-                await writer.WriteRowAsync("C", "D");
+                await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
+                await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
                 Assert.AreEqual(@"A,""B,""
 C,D", sw.ToString());
@@ -43,7 +43,7 @@ C,D", sw.ToString());
             using (var sw = new StringWriter())
             {
                 var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "\"B");
+                await writer.WriteRowAsync("A", "\"B").ConfigureAwait(false);
 
                 Assert.AreEqual("A,\"\"\"B\"", sw.ToString());
             }
@@ -68,7 +68,7 @@ C,D", sw.ToString());
                 var writer = new CsvWriter(sw);
                 foreach (var row in rows)
                 {
-                    await writer.WriteRowAsync(row);
+                    await writer.WriteRowAsync(row).ConfigureAwait(false);
                 }
 
                 var csv = sw.ToString();
@@ -78,7 +78,7 @@ C,D", sw.ToString());
 
                     var rowIndex = -1;
                     CsvRow csvRow;
-                    while ((csvRow = await reader.ReadRowAsync()) != null)
+                    while ((csvRow = await reader.ReadRowAsync().ConfigureAwait(false)) != null)
                     {
                         rowIndex++;
                         CollectionAssert.AreEqual(rows[rowIndex], csvRow.Values.ToList());

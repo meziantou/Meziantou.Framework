@@ -21,5 +21,4 @@ namespace Meziantou.Framework.Win32.Natives
         KillOnJobClose = 0x00002000,
         SubsetAffinity = 0x00004000,
     }
-
 }

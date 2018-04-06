@@ -328,7 +328,6 @@ namespace Meziantou.Framework.CodeDom
                     default:
                         writer.Write(c);
                         break;
-
                 }
             }
             writer.Write("\"");

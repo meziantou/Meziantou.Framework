@@ -110,6 +110,7 @@ namespace Meziantou.Framework.Tests.Utilities
             Assert.AreEqual(true, converted);
             Assert.AreEqual(null, value);
         }
+
         [TestMethod]
         public void TryConvert_StringToEnum_ValueAsString()
         {

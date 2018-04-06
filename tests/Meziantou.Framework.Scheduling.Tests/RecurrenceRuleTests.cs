@@ -112,7 +112,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             TestGetHumanText("FREQ=DAILY;UNTIL=20150101", "en-US", "every day until January 1, 2015");
         }
 
-
         [TestMethod]
         public void Weekly_GetHumanText_en_us_01()
         {
@@ -148,7 +147,6 @@ namespace Meziantou.Framework.Scheduling.Tests
         {
             TestGetHumanText("FREQ=WEEKLY;BYDAY=SA,SU", "en-US", "every week on Saturday and Sunday");
         }
-
 
         [TestMethod]
         public void Monthly_GetHumanText_en_us_01()
@@ -216,7 +214,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             TestGetHumanText("FREQ=MONTHLY;BYSETPOS=-1;BYDAY=MO,TU,WE,TH,FR;COUNT=10", "en-US", "every month on the last weekday for 10 times");
         }
 
-
         [TestMethod]
         public void Yearly_GetHumanText_en_us_01()
         {
@@ -234,7 +231,6 @@ namespace Meziantou.Framework.Scheduling.Tests
         {
             TestGetHumanText("FREQ=YEARLY;BYMONTH=7;BYDAY=SA,SU;BYSETPOS=-1;UNTIL=20150101", "en-US", "every year on the last weekend day of July until January 1, 2015");
         }
-
 
         [TestMethod]
         public void Yearly_GetHumanText_en_us_04()
@@ -302,7 +298,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             TestGetHumanText("FREQ=DAILY;UNTIL=20150101", "fr-FR", "tous les jours jusqu'au 1 janvier 2015");
         }
 
-
         [TestMethod]
         public void Weekly_GetHumanText_fr_fr_01()
         {
@@ -338,7 +333,6 @@ namespace Meziantou.Framework.Scheduling.Tests
         {
             TestGetHumanText("FREQ=WEEKLY;BYDAY=SA,SU", "fr-FR", "toutes les semaines le samedi et dimanche");
         }
-
 
         [TestMethod]
         public void Monthly_GetHumanText_fr_fr_01()
@@ -406,7 +400,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             TestGetHumanText("FREQ=MONTHLY;BYSETPOS=-1;BYDAY=MO,TU,WE,TH,FR;COUNT=10", "fr-FR", "tous les mois le dernier jour de semaine pour 10 fois");
         }
 
-
         [TestMethod]
         public void Yearly_GetHumanText_fr_fr_01()
         {
@@ -424,7 +417,6 @@ namespace Meziantou.Framework.Scheduling.Tests
         {
             TestGetHumanText("FREQ=YEARLY;BYMONTH=7;BYDAY=SA,SU;BYSETPOS=-1;UNTIL=20150101", "fr-FR", "tous les ans le dernier jour de weekend de juillet jusqu'au 1 janvier 2015");
         }
-
 
         [TestMethod]
         public void Yearly_GetHumanText_fr_fr_04()
@@ -455,6 +447,5 @@ namespace Meziantou.Framework.Scheduling.Tests
         {
             TestGetHumanText("FREQ=YEARLY;BYMONTH=5;BYDAY=TH;BYSETPOS=4;INTERVAL=2", "fr-FR", "tous les 2 ans le quatrième jeudi de mai");
         }
-
     }
 }

@@ -14,7 +14,6 @@ namespace Meziantou.Framework.Tests.IO
             using (var sw2 = new StringWriter())
             using (var tee = new TeeTextWriter(sw1, sw2))
             {
-
                 tee.Write("abc");
                 tee.Flush();
 

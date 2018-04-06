@@ -5,7 +5,7 @@
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
 
-        public Directive()
+        protected Directive()
         {
             CommentsBefore = new CommentCollection(this);
             CommentsAfter = new CommentCollection(this);

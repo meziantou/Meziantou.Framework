@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 
 namespace Meziantou.Framework.Utilities
@@ -8,14 +7,16 @@ namespace Meziantou.Framework.Utilities
     {
         public static bool IsNullableOfT(this Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
         public static bool IsFlagsEnum(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
             if (!type.IsEnum)
                 return false;
@@ -29,8 +30,7 @@ namespace Meziantou.Framework.Utilities
                 return null;
 
             var valueType = value.GetType();
-            return valueType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .FirstOrDefault(IsImplicitOperator);
+            return Array.Find(valueType.GetMethods(BindingFlags.Public | BindingFlags.Static), IsImplicitOperator);
 
             bool IsImplicitOperator(MethodInfo mi)
             {
@@ -46,6 +46,7 @@ namespace Meziantou.Framework.Utilities
 
                 if (!p[0].ParameterType.IsAssignableFrom(valueType))
                     return false;
+
                 return true;
             }
         }

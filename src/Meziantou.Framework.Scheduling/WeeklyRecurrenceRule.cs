@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Scheduling
 
             // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
         }
-       
+
         public override string Text
         {
             get

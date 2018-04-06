@@ -7,8 +7,8 @@ namespace Meziantou.Framework.CodeDom
 {
     public partial class CSharpCodeGenerator
     {
-        private static IDictionary<string, string> _predefinedTypes;
-        private static string[] _keywords;
+        private static readonly IDictionary<string, string> _predefinedTypes;
+        private static readonly string[] _keywords;
 
         static CSharpCodeGenerator()
         {

@@ -39,7 +39,8 @@ namespace Meziantou.Framework.Scheduling
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule, out string error)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
             recurrenceRule = null;
             error = null;
             try
@@ -199,23 +200,6 @@ namespace Meziantou.Framework.Scheduling
                 }
             }
             return months;
-        }
-
-        private static IList<int> ParseByWeekNo(IDictionary<string, string> values)
-        {
-            return ParseByWeekNo(values.GetValue("BYWEEKNO", (string)null));
-        }
-
-        private static IList<int> ParseByWeekNo(string str)
-        {
-            var weekNos = SplitToInt32List(str);
-            foreach (var weekNo in weekNos)
-            {
-                if ((weekNo >= 1 && weekNo <= 53) || (weekNo <= -1 && weekNo >= -53))
-                    continue;
-                throw new FormatException($"Week number '{weekNo}' is invalid.");
-            }
-            return weekNos;
         }
 
         private static IList<int> ParseByYearDay(IDictionary<string, string> values)

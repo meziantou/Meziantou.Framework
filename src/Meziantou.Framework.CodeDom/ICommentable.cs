@@ -4,6 +4,5 @@
     {
         CommentCollection CommentsAfter { get; }
         CommentCollection CommentsBefore { get; }
-
     }
 }

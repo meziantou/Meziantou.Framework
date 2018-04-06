@@ -83,7 +83,7 @@ namespace Meziantou.Framework.Utilities
             {
                 if (name == null)
                     throw new ArgumentException(null, nameof(names));
-                
+
                 dict.Remove(name);
                 var shortName = CreateShortName(dict, maxLength, name);
                 dict.Add(shortName);

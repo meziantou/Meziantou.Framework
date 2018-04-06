@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Utilities
         public static bool IsSharingViolation(IOException exception)
         {
             if (exception == null)
-                throw new ArgumentNullException("exception");
+                throw new ArgumentNullException(nameof(exception));
 
             var hr = exception.HResult;
             return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION
@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Utilities
         public static void PathUnprotect(string path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
 
             if (File.Exists(path))
             {
@@ -119,7 +119,9 @@ namespace Meziantou.Framework.Utilities
 
             if (Array.IndexOf(ReservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
                 IsAllDots(fileName))
+            {
                 return string.Format(reservedNameFormat, fileName);
+            }
 
             char[] invalid = Path.GetInvalidFileNameChars();
 

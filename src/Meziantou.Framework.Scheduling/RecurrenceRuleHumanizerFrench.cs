@@ -91,7 +91,7 @@ namespace Meziantou.Framework.Scheduling
                 if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
                 {
                     sb.Append(" le ");
-                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions.First()));
+                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 }
                 sb.Append(" ");
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
@@ -150,7 +150,6 @@ namespace Meziantou.Framework.Scheduling
                         ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                     }
                 }
-
             }
 
             if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
@@ -158,7 +157,7 @@ namespace Meziantou.Framework.Scheduling
                 if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
                 {
                     sb.Append(" le ");
-                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions.First()));
+                    sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 }
                 sb.Append(" ");
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
@@ -183,7 +182,6 @@ namespace Meziantou.Framework.Scheduling
 
         private static bool MustPrecedeByApostrophe(string str)
         {
-
             if (string.IsNullOrEmpty(str))
                 return false;
 

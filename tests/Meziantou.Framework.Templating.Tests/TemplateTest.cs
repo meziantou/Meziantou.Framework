@@ -104,7 +104,7 @@ namespace Meziantou.Framework.Templating.Tests
             var template = new Template();
             template.AddArgument("Name");
             template.Load("Hello <%= Name %>!");
-            
+
             // Act 
             var result = template.Run("John");
 

@@ -2,12 +2,12 @@ namespace Meziantou.Framework.CodeDom
 {
     public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
     {
-        public MemberDeclaration()
+        protected MemberDeclaration()
             : this(null)
         {
         }
 
-        public MemberDeclaration(string name)
+        protected MemberDeclaration(string name)
         {
             CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
             Implements = new CodeObjectCollection<MemberReferenceExpression>(this);

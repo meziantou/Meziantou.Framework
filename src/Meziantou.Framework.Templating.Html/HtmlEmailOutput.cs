@@ -17,7 +17,6 @@ namespace Meziantou.Framework.Templating
         private readonly IList<HtmlEmailSection> _currentSections = new List<HtmlEmailSection>();
         private readonly IList<string> _contentIdentifiers = new List<string>();
 
-
         public IList<string> ContentIdentifiers => _contentIdentifiers;
 
         public HtmlEmailOutput(Template template, TextWriter writer) : base(template, writer)
@@ -47,7 +46,6 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteHtmlEncode(string format, params object[] args)
         {
-
             Write(_htmlEncoder.Encode(string.Format(format, args)));
         }
 
@@ -124,13 +122,13 @@ namespace Meziantou.Framework.Templating
 
             return null;
         }
-        
+
         protected virtual string HtmlDecode(string html)
         {
             if (html == null)
                 return null;
 
             return WebUtility.HtmlDecode(html);
-        }   
+        }
     }
 }

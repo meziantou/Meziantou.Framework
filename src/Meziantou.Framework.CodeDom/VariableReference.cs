@@ -34,7 +34,7 @@ namespace Meziantou.Framework.CodeDom
                 _variableDeclarationStatement = null;
             }
         }
-        
+
         public static implicit operator VariableReference(VariableDeclarationStatement variableDeclarationStatement)
         {
             return new VariableReference(variableDeclarationStatement);

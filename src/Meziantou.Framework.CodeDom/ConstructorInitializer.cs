@@ -4,17 +4,17 @@ namespace Meziantou.Framework.CodeDom
 {
     public abstract class ConstructorInitializer : CodeObject, ICommentable
     {
-        public ConstructorInitializer()
+        protected ConstructorInitializer()
             : this((IEnumerable<Expression>)null)
         {
         }
 
-        public ConstructorInitializer(params Expression[] codeExpressions)
+        protected ConstructorInitializer(params Expression[] codeExpressions)
             : this((IEnumerable<Expression>)codeExpressions)
         {
         }
 
-        public ConstructorInitializer(IEnumerable<Expression> codeExpressions)
+        protected ConstructorInitializer(IEnumerable<Expression> codeExpressions)
         {
             CommentsBefore = new CommentCollection(this);
             CommentsAfter = new CommentCollection(this);

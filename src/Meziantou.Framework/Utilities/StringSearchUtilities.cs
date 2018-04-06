@@ -30,13 +30,12 @@ namespace Meziantou.Framework.Utilities
         /// <summary>
         /// Compute the Hamming distance. http://en.wikipedia.org/wiki/Hamming_distance
         /// </summary>
-        /// <typeparam name="T">Type of elements.</typeparam>
         /// <param name="word1">The first word.</param>
         /// <param name="word2">The second word.</param>
         /// <exception cref="ArgumentException">Lists must have the same length.</exception>
         /// <returns> The hamming distance.</returns>
         [Pure]
-        public static int Hamming<T>(string word1, string word2)
+        public static int Hamming(string word1, string word2)
         {
             if (word1 == null) throw new ArgumentNullException(nameof(word1));
             if (word2 == null) throw new ArgumentNullException(nameof(word2));
@@ -132,7 +131,7 @@ namespace Meziantou.Framework.Utilities
                     var y = lastColumn[i] + 1;
                     var z = (i == 0 ? j - 1 : lastColumn[i - 1]) + (word1[j - 1] == word2[i] ? 0 : 1);
 
-                    var forLastValue = lastValue;                    
+                    var forLastValue = lastValue;
                     lastValue = Math.Min(Math.Min(x, y), z);
                     if (i > 0)
                     {
@@ -148,6 +147,5 @@ namespace Meziantou.Framework.Utilities
 
             return lastValue;
         }
-
     }
 }

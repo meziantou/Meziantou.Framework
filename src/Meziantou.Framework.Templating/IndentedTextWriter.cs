@@ -85,7 +85,7 @@ namespace Meziantou.Framework.Templating
             _indentLevel = 0;
             _tabsPending = false;
         }
-        
+
         protected override void Dispose(bool disposing)
         {
             _writer.Dispose();

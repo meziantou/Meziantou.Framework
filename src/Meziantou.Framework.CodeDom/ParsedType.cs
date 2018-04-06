@@ -7,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
     {
         private static readonly Dictionary<string, ParsedType> _parsedTypes = new Dictionary<string, ParsedType>();
 
-        private List<ParsedType> _arguments = new List<ParsedType>();
+        private readonly List<ParsedType> _arguments = new List<ParsedType>();
         private string _typeName;
 
         public string TypeName

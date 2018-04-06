@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Win32
         /// </returns>
         public bool AssignProcess(Process process, bool throwOnError)
         {
-            return AssignProcess(process.Handle, throwOnError: false);
+            return AssignProcess(process.Handle, throwOnError);
         }
 
         /// <summary>

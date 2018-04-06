@@ -47,5 +47,4 @@ namespace Meziantou.Framework.Win32.Natives
             return info;
         }
     }
-
 }

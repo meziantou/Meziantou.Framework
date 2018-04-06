@@ -11,10 +11,10 @@ namespace Meziantou.Framework.Utilities
         private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static Dictionary<Type, TypeCache> _cache = new Dictionary<Type, TypeCache>();
+        private static readonly Dictionary<Type, TypeCache> _cache = new Dictionary<Type, TypeCache>();
 
         private readonly object _originalObject;
-        private TypeCache _typeCache;
+        private readonly TypeCache _typeCache;
 
         public ReflectionDynamicObject(object obj)
         {

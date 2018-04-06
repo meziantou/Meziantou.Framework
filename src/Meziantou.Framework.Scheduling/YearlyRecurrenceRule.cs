@@ -213,7 +213,7 @@ namespace Meziantou.Framework.Scheduling
         //    }
         //    return result;
         //}
-        
+
         public override string Text
         {
             get

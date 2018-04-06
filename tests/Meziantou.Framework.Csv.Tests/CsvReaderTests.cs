@@ -20,9 +20,9 @@ namespace Meziantou.Framework.Csv.Tests
                 var reader = new CsvReader(sr);
                 reader.HasHeaderRow = false;
 
-                var row1 = await reader.ReadRowAsync();
-                var row2 = await reader.ReadRowAsync();
-                var row3 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.IsNull(row3);
 
@@ -48,9 +48,9 @@ namespace Meziantou.Framework.Csv.Tests
             {
                 var reader = new CsvReader(sr);
                 reader.HasHeaderRow = true;
-                var row1 = await reader.ReadRowAsync();
-                var row2 = await reader.ReadRowAsync();
-                var row3 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.IsNull(row3);
 
@@ -76,9 +76,9 @@ namespace Meziantou.Framework.Csv.Tests
             {
                 var reader = new CsvReader(sr);
                 reader.HasHeaderRow = true;
-                var row1 = await reader.ReadRowAsync();
-                var row2 = await reader.ReadRowAsync();
-                var row3 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
+                var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.IsNull(row3);
 
@@ -101,7 +101,7 @@ namespace Meziantou.Framework.Csv.Tests
             using (var sr = new StringReader(sb.ToString()))
             {
                 var reader = new CsvReader(sr);
-                var row1 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.AreEqual("a\"c", row1[0]);
             }
@@ -116,7 +116,7 @@ namespace Meziantou.Framework.Csv.Tests
             using (var sr = new StringReader(sb.ToString()))
             {
                 var reader = new CsvReader(sr);
-                var row1 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.AreEqual("\"bc", row1[0]);
             }
@@ -131,7 +131,7 @@ namespace Meziantou.Framework.Csv.Tests
             using (var sr = new StringReader(sb.ToString()))
             {
                 var reader = new CsvReader(sr);
-                var row1 = await reader.ReadRowAsync();
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.AreEqual("ab\"", row1[0]);
             }

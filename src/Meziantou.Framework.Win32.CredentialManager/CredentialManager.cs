@@ -34,44 +34,97 @@ namespace Meziantou.Framework.Win32
                 secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
             }
 
-            return new Credential(credential.Type, applicationName, userName, secret);
+            string comment = null;
+            if (credential.Comment != IntPtr.Zero)
+            {
+                comment = Marshal.PtrToStringUni(credential.Comment);
+            }
+
+            return new Credential(credential.Type, applicationName, userName, secret, comment);
         }
 
         public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence)
         {
-            //byte[] byteArray = Encoding.Unicode.GetBytes(secret);
-            //if (byteArray.Length > 512)
-            //    throw new ArgumentOutOfRangeException("secret", "The secret message has exceeded 512 bytes.");
+            WriteCredential(applicationName, userName, secret, null, persistence);
+        }
 
-            var credential = new CREDENTIAL
+        public static void WriteCredential(string applicationName, string userName, string secret, string comment, CredentialPersistence persistence)
+        {
+            if (applicationName == null)
+                throw new ArgumentNullException(nameof(applicationName));
+
+            if (userName == null)
+                throw new ArgumentNullException(nameof(userName));
+
+            if (secret == null)
+                throw new ArgumentNullException(nameof(secret));
+
+            // CRED_MAX_CREDENTIAL_BLOB_SIZE 
+            // XP and Vista: 512; 
+            // 7 and above: 5*512
+            var secretLength = secret.Length * UnicodeEncoding.CharSize;
+            if (Environment.OSVersion.Version < new Version(6, 1) /* Windows 7 */)
             {
-                AttributeCount = 0,
-                Attributes = IntPtr.Zero,
-                Comment = IntPtr.Zero,
-                TargetAlias = IntPtr.Zero,
-                Type = CredentialType.Generic,
-                Persist = persistence,
-                CredentialBlobSize = (uint)Encoding.Unicode.GetBytes(secret).Length,
-                TargetName = Marshal.StringToCoTaskMemUni(applicationName),
-                CredentialBlob = Marshal.StringToCoTaskMemUni(secret),
-                UserName = Marshal.StringToCoTaskMemUni(userName)
-            };
-
-            var written = Advapi32.CredWrite(ref credential, 0);
-            var lastError = Marshal.GetLastWin32Error();
-
-            Marshal.FreeCoTaskMem(credential.TargetName);
-            Marshal.FreeCoTaskMem(credential.CredentialBlob);
-            Marshal.FreeCoTaskMem(credential.UserName);
-
-            if (!written)
+                if (secretLength > 512)
+                    throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 512 bytes.");
+            }
+            else
             {
-                throw new Exception($"CredWrite failed with the error code {lastError}.");
+                if (secretLength > 2560)
+                    throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 2560 bytes.");
+            }
+
+            if (comment != null)
+            {
+                // CRED_MAX_STRING_LENGTH 256
+                if (comment.Length > 255)
+                    throw new ArgumentOutOfRangeException(nameof(comment), "The comment message has exceeded 256 characters.");
+            }
+
+            IntPtr commentPtr = IntPtr.Zero;
+            IntPtr targetNamePtr = IntPtr.Zero;
+            IntPtr credentialBlobPtr = IntPtr.Zero;
+            IntPtr userNamePtr = IntPtr.Zero;
+            try
+            {
+                commentPtr = comment != null ? Marshal.StringToCoTaskMemUni(comment) : IntPtr.Zero;
+                targetNamePtr = Marshal.StringToCoTaskMemUni(applicationName);
+                credentialBlobPtr = Marshal.StringToCoTaskMemUni(secret);
+                userNamePtr = Marshal.StringToCoTaskMemUni(userName);
+
+                var credential = new CREDENTIAL
+                {
+                    AttributeCount = 0,
+                    Attributes = IntPtr.Zero,
+                    Comment = commentPtr,
+                    TargetAlias = IntPtr.Zero,
+                    Type = CredentialType.Generic,
+                    Persist = persistence,
+                    CredentialBlobSize = (uint)secretLength,
+                    TargetName = targetNamePtr,
+                    CredentialBlob = credentialBlobPtr,
+                    UserName = userNamePtr
+                };
+
+                var written = Advapi32.CredWrite(ref credential, 0);
+                var lastError = Marshal.GetLastWin32Error();
+                if (!written)
+                    throw new Win32Exception(lastError, $"CredWrite failed with the error code {lastError}.");
+            }
+            finally
+            {
+                FreeCoTaskMem(commentPtr);
+                FreeCoTaskMem(targetNamePtr);
+                FreeCoTaskMem(credentialBlobPtr);
+                FreeCoTaskMem(userNamePtr);
             }
         }
 
         public static void DeleteCredential(string applicationName)
         {
+            if (applicationName == null)
+                throw new ArgumentNullException(nameof(applicationName));
+
             var success = Advapi32.CredDelete(applicationName, CredentialType.Generic, 0);
             if (!success)
             {
@@ -82,23 +135,43 @@ namespace Meziantou.Framework.Win32
 
         public static IReadOnlyList<Credential> EnumerateCrendentials()
         {
+            return EnumerateCrendentials(null);
+        }
+
+        public static IReadOnlyList<Credential> EnumerateCrendentials(string filter)
+        {
             var result = new List<Credential>();
-            var ret = Advapi32.CredEnumerate(null, 0, out int count, out IntPtr pCredentials);
-            if (ret)
+            var ret = Advapi32.CredEnumerate(filter, 0, out int count, out IntPtr pCredentials);
+            try
             {
-                for (var n = 0; n < count; n++)
+                if (ret)
                 {
-                    var credential = Marshal.ReadIntPtr(pCredentials, n * Marshal.SizeOf<IntPtr>());
-                    result.Add(ReadCredential(Marshal.PtrToStructure<CREDENTIAL>(credential)));
+                    for (var n = 0; n < count; n++)
+                    {
+                        var credential = Marshal.ReadIntPtr(pCredentials, n * Marshal.SizeOf<IntPtr>());
+                        result.Add(ReadCredential(Marshal.PtrToStructure<CREDENTIAL>(credential)));
+                    }
+                }
+                else
+                {
+                    var lastError = Marshal.GetLastWin32Error();
+                    throw new Win32Exception(lastError);
                 }
             }
-            else
+            finally
             {
-                var lastError = Marshal.GetLastWin32Error();
-                throw new Win32Exception(lastError);
+                Advapi32.CredFree(pCredentials);
             }
 
             return result;
+        }
+
+        private static void FreeCoTaskMem(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+                return;
+
+            Marshal.FreeCoTaskMem(ptr);
         }
     }
 }

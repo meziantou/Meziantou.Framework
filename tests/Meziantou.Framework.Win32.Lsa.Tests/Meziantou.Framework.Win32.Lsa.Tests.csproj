@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.0;net461</TargetFrameworks>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -10,10 +10,11 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.6.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.1" />
     <PackageReference Include="MSTest.TestFramework" Version="1.2.1" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="4.4.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.TypeConverter\Meziantou.Framework.TypeConverter.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.Lsa\Meziantou.Framework.Win32.Lsa.csproj" />
   </ItemGroup>
 
 </Project>

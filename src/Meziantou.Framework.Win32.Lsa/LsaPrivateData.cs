@@ -5,13 +5,113 @@ using System.Text;
 
 namespace Meziantou.Framework.Win32.Lsa
 {
-    public class LsaPrivateData
+    public static class LsaPrivateData
     {
+        public static void RemoveValue(string key)
+        {
+            SetValue(key, null);
+        }
+
+        public static void SetValue(string key, string value)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (key.Length == 0)
+                throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+
+            var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
+            var localsystem = new LSA_UNICODE_STRING();
+            var secretName = new LSA_UNICODE_STRING(key);
+
+            var lusSecretData = value != null && value.Length > 0 ? new LSA_UNICODE_STRING(value) : default;
+
+            var lsaPolicyHandle = GetLsaPolicy(ref objectAttributes, ref localsystem);
+
+            var result = LsaStorePrivateData(lsaPolicyHandle, ref secretName, ref lusSecretData);
+            ReleaseLsaPolicy(lsaPolicyHandle);
+
+            var winErrorCode = LsaNtStatusToWinError(result);
+            if (winErrorCode != 0)
+                throw new Win32Exception((int)winErrorCode, "StorePrivateData failed: " + winErrorCode);
+        }
+
+        public static string GetValue(string key)
+        {
+            if (key == null)
+                throw new ArgumentNullException(nameof(key));
+
+            if (key.Length == 0)
+                throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
+
+            var objectAttributes = new LSA_OBJECT_ATTRIBUTES();
+            var localsystem = new LSA_UNICODE_STRING();
+            var secretName = new LSA_UNICODE_STRING(key);
+
+            // Get LSA policy
+            var lsaPolicyHandle = GetLsaPolicy(ref objectAttributes, ref localsystem);
+
+            var result = LsaRetrievePrivateData(lsaPolicyHandle, ref secretName, out var privateData);
+            ReleaseLsaPolicy(lsaPolicyHandle);
+
+            if (result == STATUS_OBJECT_NAME_NOT_FOUND)
+                return null;
+
+            var winErrorCode = LsaNtStatusToWinError(result);
+            if (winErrorCode != 0)
+                throw new Win32Exception(winErrorCode, "LsaRetrievePrivateData failed: " + winErrorCode);
+
+            if (privateData == IntPtr.Zero)
+                return null;
+
+            var lusSecretData = Marshal.PtrToStructure<LSA_UNICODE_STRING>(privateData);
+            var value = Marshal.PtrToStringAuto(lusSecretData.Buffer).Substring(0, lusSecretData.Length / UnicodeEncoding.CharSize);
+
+            FreeMemory(privateData);
+
+            return value;
+        }
+
+        private static IntPtr GetLsaPolicy(ref LSA_OBJECT_ATTRIBUTES objectAttributes, ref LSA_UNICODE_STRING localsystem)
+        {
+            var ntsResult = LsaOpenPolicy(ref localsystem, ref objectAttributes, (uint)LSA_AccessPolicy.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
+            var winErrorCode = LsaNtStatusToWinError(ntsResult);
+            if (winErrorCode != 0)
+                throw new Win32Exception(winErrorCode, "LsaOpenPolicy failed: " + winErrorCode);
+
+            return lsaPolicyHandle;
+        }
+
+        private static void ReleaseLsaPolicy(IntPtr LsaPolicyHandle)
+        {
+            var ntsResult = LsaClose(LsaPolicyHandle);
+            var winErrorCode = LsaNtStatusToWinError(ntsResult);
+            if (winErrorCode != 0)
+                throw new Win32Exception(winErrorCode, "LsaClose failed: " + winErrorCode);
+        }
+
+        private static void FreeMemory(IntPtr Buffer)
+        {
+            var ntsResult = LsaFreeMemory(Buffer);
+            var winErrorCode = LsaNtStatusToWinError(ntsResult);
+            if (winErrorCode != 0)
+                throw new Win32Exception(winErrorCode, "LsaFreeMemory failed: " + winErrorCode);
+        }
+
+        private const uint STATUS_OBJECT_NAME_NOT_FOUND = 0xC0000034;
+
         [StructLayout(LayoutKind.Sequential)]
         private struct LSA_UNICODE_STRING
         {
-            public UInt16 Length;
-            public UInt16 MaximumLength;
+            public LSA_UNICODE_STRING(string value)
+            {
+                Buffer = Marshal.StringToHGlobalUni(value);
+                Length = (ushort)(value.Length * UnicodeEncoding.CharSize);
+                MaximumLength = (ushort)((value.Length + 1) * UnicodeEncoding.CharSize);
+            }
+
+            public ushort Length;
+            public ushort MaximumLength;
             public IntPtr Buffer;
         }
 
@@ -53,83 +153,12 @@ namespace Meziantou.Framework.Win32.Lsa
         private static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING SystemName, ref LSA_OBJECT_ATTRIBUTES ObjectAttributes, uint DesiredAccess, out IntPtr PolicyHandle);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
-        private static extern uint LsaNtStatusToWinError(uint status);
+        private static extern int LsaNtStatusToWinError(uint status);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
         private static extern uint LsaClose(IntPtr policyHandle);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
         private static extern uint LsaFreeMemory(IntPtr buffer);
-
-        private static void ReleaseLsaPolicy(IntPtr LsaPolicyHandle)
-        {
-            uint ntsResult = LsaClose(LsaPolicyHandle);
-            uint winErrorCode = LsaNtStatusToWinError(ntsResult);
-            if (winErrorCode != 0)
-            {
-                throw new Exception("LsaClose failed: " + winErrorCode);
-            }
-        }
-
-        public static void SetValue(string key, string value)
-        {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-
-            if (key.Length == 0)
-                throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
-
-            var objectAttributes = new LSA_OBJECT_ATTRIBUTES
-            {
-                Length = 0,
-                RootDirectory = IntPtr.Zero,
-                Attributes = 0,
-                SecurityDescriptor = IntPtr.Zero,
-                SecurityQualityOfService = IntPtr.Zero
-            };
-
-            var localsystem = new LSA_UNICODE_STRING
-            {
-                Buffer = IntPtr.Zero,
-                Length = 0,
-                MaximumLength = 0
-            };
-
-            var secretName = new LSA_UNICODE_STRING
-            {
-                Buffer = Marshal.StringToHGlobalUni(key),
-                Length = (ushort)(key.Length * UnicodeEncoding.CharSize),
-                MaximumLength = (ushort)((key.Length + 1) * UnicodeEncoding.CharSize)
-            };
-
-            var lusSecretData = new LSA_UNICODE_STRING();
-            if (value.Length > 0)
-            {
-                // Create data and key
-                lusSecretData.Buffer = Marshal.StringToHGlobalUni(value);
-                lusSecretData.Length = (UInt16)(value.Length * UnicodeEncoding.CharSize);
-                lusSecretData.MaximumLength = (UInt16)((value.Length + 1) * UnicodeEncoding.CharSize);
-            }
-            else
-            {
-                // Delete data and key
-                lusSecretData.Buffer = IntPtr.Zero;
-                lusSecretData.Length = 0;
-                lusSecretData.MaximumLength = 0;
-            }
-
-            // Get LSA policy
-            uint ntsResult = LsaOpenPolicy(ref localsystem, ref objectAttributes, (uint)LSA_AccessPolicy.POLICY_CREATE_SECRET, out var lsaPolicyHandle);
-            uint winErrorCode = LsaNtStatusToWinError(ntsResult);
-            if (winErrorCode != 0)
-                throw new Win32Exception((int)winErrorCode, "LsaOpenPolicy failed: " + winErrorCode);
-
-            uint result = LsaStorePrivateData(lsaPolicyHandle, ref secretName, ref lusSecretData);
-            ReleaseLsaPolicy(lsaPolicyHandle);
-
-            winErrorCode = LsaNtStatusToWinError(result);
-            if (winErrorCode != 0)
-                throw new Win32Exception((int)winErrorCode, "StorePrivateData failed: " + winErrorCode);
-        }
     }
 }

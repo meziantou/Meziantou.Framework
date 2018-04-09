@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Win32.Lsa
             var localsystem = new LSA_UNICODE_STRING();
             var secretName = new LSA_UNICODE_STRING(key);
 
-            var lusSecretData = value != null && value.Length > 0 ? new LSA_UNICODE_STRING(value) : default;
+            var lusSecretData = !string.IsNullOrEmpty(value) ? new LSA_UNICODE_STRING(value) : default;
 
             var lsaPolicyHandle = GetLsaPolicy(ref objectAttributes, ref localsystem);
 
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Win32.Lsa
 
             var winErrorCode = LsaNtStatusToWinError(result);
             if (winErrorCode != 0)
-                throw new Win32Exception((int)winErrorCode, "StorePrivateData failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "StorePrivateData failed: " + winErrorCode);
         }
 
         public static string GetValue(string key)

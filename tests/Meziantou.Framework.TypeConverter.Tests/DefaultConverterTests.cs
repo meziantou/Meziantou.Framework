@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Tests.Utilities
 
         private class ImplicitConverter
         {
-            public static implicit operator int(ImplicitConverter value)
+            public static implicit operator int(ImplicitConverter _)
             {
                 return 1;
             }

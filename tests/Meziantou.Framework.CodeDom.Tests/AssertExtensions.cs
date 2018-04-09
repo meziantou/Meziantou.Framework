@@ -7,6 +7,17 @@ namespace Meziantou.Framework.CodeDom.Tests
     {
         public static void StringEquals(this Assert _, string expected, string actual)
         {
+            StringEquals(_, expected, actual, true);
+        }
+
+        public static void StringEquals(this Assert _, string expected, string actual, bool ignoreNewLines)
+        {
+            if (ignoreNewLines)
+            {
+                expected = expected.Replace("\r\n", "\n");
+                actual = actual.Replace("\r\n", "\n");
+            }
+
             if (expected == actual)
                 return;
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,8 +19,7 @@ namespace Meziantou.Framework.Csv.Tests
                 await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
                 await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-                Assert.AreEqual(@"A,B
-C,D", sw.ToString());
+                Assert.AreEqual($"A,B{Environment.NewLine}C,D", sw.ToString());
             }
         }
 
@@ -32,8 +32,7 @@ C,D", sw.ToString());
                 await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
                 await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-                Assert.AreEqual(@"A,""B,""
-C,D", sw.ToString());
+                Assert.AreEqual($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
             }
         }
 

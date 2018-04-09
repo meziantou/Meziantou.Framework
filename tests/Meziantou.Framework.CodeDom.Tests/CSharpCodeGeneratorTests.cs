@@ -521,7 +521,7 @@ finally
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(literal);
 
-            Assert.That.StringEquals("\"line1\\r\\nline2\"", result);
+            Assert.That.StringEquals("\"line1\\r\\nline2\"", result, ignoreNewLines: false);
         }
 
         [TestMethod]

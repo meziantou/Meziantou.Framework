@@ -150,13 +150,7 @@ namespace Meziantou.Framework.CodeDom
             return new UnaryExpression(UnaryOperator.Complement, expression);
         }
 
-        public ArrayIndexerExpression this[params Expression[] indices]
-        {
-            get
-            {
-                return new ArrayIndexerExpression(this, indices);
-            }
-        }
+        public ArrayIndexerExpression this[params Expression[] indices] => new ArrayIndexerExpression(this, indices);
 
         // "expr == null" is ambiguous
         //public static bool operator ==(CodeExpression left, object o)

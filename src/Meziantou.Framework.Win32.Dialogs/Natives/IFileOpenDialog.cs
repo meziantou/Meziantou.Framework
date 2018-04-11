@@ -9,57 +9,32 @@ namespace Meziantou.Framework.Win32.Dialogs.Natives
     internal interface IFileOpenDialog : IFileDialog
     {
         [PreserveSig]
-        int Show([In] IntPtr parent);
-
+        new int Show([In] IntPtr parent);
         void SetFileTypes([In] uint cFileTypes, [In] ref COMDLG_FILTERSPEC rgFilterSpec);
-
-        void SetFileTypeIndex([In] uint iFileType);
-
-        void GetFileTypeIndex(out uint piFileType);
-
-        void Advise([In, MarshalAs(UnmanagedType.Interface)] IFileDialogEvents pfde, out uint pdwCookie);
-
-        void Unadvise([In] uint dwCookie);
-
-        void SetOptions([In] FOS fos);
-
-        void GetOptions(out FOS pfos);
-
-        void SetDefaultFolder([In, MarshalAs(UnmanagedType.Interface)] IShellItem psi);
-
-        void SetFolder([In, MarshalAs(UnmanagedType.Interface)] IShellItem psi);
-
-        void GetFolder([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
-
-        void GetCurrentSelection([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
-
-        void SetFileName([In, MarshalAs(UnmanagedType.LPWStr)] string pszName);
-
-        void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
-
-        void SetTitle([In, MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
-
-        void SetOkButtonLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszText);
-
-        void SetFileNameLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
-
-        void GetResult([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
-
+        new void SetFileTypeIndex([In] uint iFileType);
+        new void GetFileTypeIndex(out uint piFileType);
+        new void Advise([In, MarshalAs(UnmanagedType.Interface)] IFileDialogEvents pfde, out uint pdwCookie);
+        new void Unadvise([In] uint dwCookie);
+        new void SetOptions([In] FOS fos);
+        new void GetOptions(out FOS pfos);
+        new void SetDefaultFolder([In, MarshalAs(UnmanagedType.Interface)] IShellItem psi);
+        new void SetFolder([In, MarshalAs(UnmanagedType.Interface)] IShellItem psi);
+        new void GetFolder([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
+        new void GetCurrentSelection([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
+        new void SetFileName([In, MarshalAs(UnmanagedType.LPWStr)] string pszName);
+        new void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
+        new void SetTitle([In, MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
+        new void SetOkButtonLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszText);
+        new void SetFileNameLabel([In, MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
+        new void GetResult([MarshalAs(UnmanagedType.Interface)] out IShellItem ppsi);
         // void AddPlace([In, MarshalAs(UnmanagedType.Interface)] IShellItem psi, FileDialogCustomPlace fdcp);
         void AddPlace(); // incomplete signature
-
-        void SetDefaultExtension([In, MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
-
-        void Close([MarshalAs(UnmanagedType.Error)] int hr);
-
-        void SetClientGuid([In] ref Guid guid);
-
-        void ClearClientData();
-
-        void SetFilter([MarshalAs(UnmanagedType.Interface)] IntPtr pFilter);
-
+        new void SetDefaultExtension([In, MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
+        new void Close([MarshalAs(UnmanagedType.Error)] int hr);
+        new void SetClientGuid([In] ref Guid guid);
+        new void ClearClientData();
+        new void SetFilter([MarshalAs(UnmanagedType.Interface)] IntPtr pFilter);
         void GetResults([MarshalAs(UnmanagedType.Interface)] out IShellItemArray ppenum);
-
         void GetSelectedItems([MarshalAs(UnmanagedType.Interface)] out IShellItemArray ppsai);
     }
 }

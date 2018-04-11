@@ -102,11 +102,10 @@ namespace Meziantou.Framework.Utilities
             if (input == null)
                 return true;
 
-            var s = input as string;
-            if (s == null)
-                return false;
+            if (input is string s)
+                return string.IsNullOrWhiteSpace(s);
 
-            return string.IsNullOrWhiteSpace(s);
+            return false;
         }
 
         private static bool EnumTryParse(Type type, string input, out object value)
@@ -239,7 +238,7 @@ namespace Meziantou.Framework.Utilities
 
             if (input is DateTimeOffset)
             {
-                if (TryConvert(((DateTimeOffset)input).DateTime, typeof(byte[]), provider, out object result))
+                if (TryConvert(((DateTimeOffset)input).DateTime, typeof(byte[]), provider, out var result))
                 {
                     value = (byte[])result;
                     return true;
@@ -892,7 +891,7 @@ namespace Meziantou.Framework.Utilities
                 return false;
             }
 
-            if (TryConvert(input, typeof(long), provider, out object b))
+            if (TryConvert(input, typeof(long), provider, out var b))
             {
                 value = (long)b != 0;
                 return true;
@@ -962,7 +961,7 @@ namespace Meziantou.Framework.Utilities
                 }
 
                 var vtType = Nullable.GetUnderlyingType(conversionType);
-                if (TryConvert(input, vtType, provider, out object vtValue))
+                if (TryConvert(input, vtType, provider, out var vtValue))
                 {
                     var nt = typeof(Nullable<>).MakeGenericType(vtType);
                     value = Activator.CreateInstance(nt, vtValue);
@@ -1084,7 +1083,7 @@ namespace Meziantou.Framework.Utilities
                 case TypeCode.String:
                     if (input is byte[] inputBytes)
                     {
-                        if (TryConvert(inputBytes, provider, out string str))
+                        if (TryConvert(inputBytes, provider, out var str))
                         {
                             value = str;
                             return true;

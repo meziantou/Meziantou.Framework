@@ -30,10 +30,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public JobObjectLimitFlags Flags
         {
-            get
-            {
-                return _flags;
-            }
+            get => _flags;
             set
             {
                 _flags = value;
@@ -49,10 +46,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public long PerProcessUserTimeLimit
         {
-            get
-            {
-                return _perProcessUserTimeLimit;
-            }
+            get => _perProcessUserTimeLimit;
             set
             {
                 _perProcessUserTimeLimit = value;
@@ -68,10 +62,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public long PerJobUserTimeLimit
         {
-            get
-            {
-                return _perJobUserTimeLimit;
-            }
+            get => _perJobUserTimeLimit;
             set
             {
                 _perJobUserTimeLimit = value;
@@ -87,10 +78,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public ulong MinimumWorkingSetSize
         {
-            get
-            {
-                return _minimumWorkingSetSize;
-            }
+            get => _minimumWorkingSetSize;
             set
             {
                 if (IntPtr.Size == 4 && value > uint.MaxValue)
@@ -111,10 +99,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public ulong MaximumWorkingSetSize
         {
-            get
-            {
-                return _maximumWorkingSetSize;
-            }
+            get => _maximumWorkingSetSize;
             set
             {
                 if (IntPtr.Size == 4 && value > uint.MaxValue)
@@ -135,10 +120,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public uint ActiveProcessLimit
         {
-            get
-            {
-                return _activeProcessLimit;
-            }
+            get => _activeProcessLimit;
             set
             {
                 _activeProcessLimit = value;
@@ -154,10 +136,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public IntPtr Affinity
         {
-            get
-            {
-                return _affinity;
-            }
+            get => _affinity;
             set
             {
                 _affinity = value;
@@ -173,10 +152,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public uint PriorityClass
         {
-            get
-            {
-                return _priorityClass;
-            }
+            get => _priorityClass;
             set
             {
                 _priorityClass = value;
@@ -192,10 +168,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public uint SchedulingClass
         {
-            get
-            {
-                return _schedulingClass;
-            }
+            get => _schedulingClass;
             set
             {
                 _schedulingClass = value;
@@ -211,10 +184,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public ulong ProcessMemoryLimit
         {
-            get
-            {
-                return _processMemoryLimit;
-            }
+            get => _processMemoryLimit;
             set
             {
                 if (IntPtr.Size == 4 && value > uint.MaxValue)
@@ -235,10 +205,7 @@ namespace Meziantou.Framework.Win32
         /// </value>
         public ulong JobMemoryLimit
         {
-            get
-            {
-                return _jobMemoryLimit;
-            }
+            get => _jobMemoryLimit;
             set
             {
                 if (IntPtr.Size == 4 && value > uint.MaxValue)

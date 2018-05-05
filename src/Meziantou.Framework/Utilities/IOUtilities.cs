@@ -58,12 +58,13 @@ namespace Meziantou.Framework.Utilities
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
 
-            if (File.Exists(path))
+            var fi = new FileInfo(path);
+            if (fi.Exists)
             {
-                var attributes = File.GetAttributes(path);
-                if ((attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                var attributes = fi.Attributes;
+                if (fi.IsReadOnly)
                 {
-                    File.SetAttributes(path, attributes & ~FileAttributes.ReadOnly);
+                    fi.IsReadOnly = false;
                 }
             }
         }
@@ -143,6 +144,7 @@ namespace Meziantou.Framework.Utilities
             {
                 s = fileName;
             }
+
             return s;
         }
 

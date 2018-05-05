@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Meziantou.Framework.Win32.Lsa
+namespace Meziantou.Framework.Win32
 {
     public static class LsaPrivateData
     {

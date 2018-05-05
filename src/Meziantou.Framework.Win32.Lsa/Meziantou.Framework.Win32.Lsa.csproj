@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
   </PropertyGroup>
 
 </Project>

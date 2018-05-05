@@ -96,7 +96,7 @@ namespace Meziantou.Framework.Utilities
             {
             }
 
-            if (int.TryParse(name, out int i))
+            if (int.TryParse(name, out var i))
                 return new CultureInfo(i);
 
             return null;

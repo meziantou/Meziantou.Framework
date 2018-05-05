@@ -1,0 +1,26 @@
+﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.Win32.Natives
+{
+    /// <summary>
+    /// Uniquely identifies a process by its PID and the time the process began.
+    /// An array of RM_UNIQUE_PROCESS structures can be passed to the RmRegisterResources function. 
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RM_UNIQUE_PROCESS
+    {
+        public int dwProcessId;
+        public System.Runtime.InteropServices.ComTypes.FILETIME ProcessStartTime;
+
+        public static RM_UNIQUE_PROCESS GetProcesses(Process process)
+        {
+            var rp = new RM_UNIQUE_PROCESS();
+            rp.dwProcessId = process.Id;
+            NativeMethods.GetProcessTimes(process.Handle, out var creationTime, out var exitTime, out var kernelTime, out var userTime);
+            rp.ProcessStartTime = creationTime;
+            return rp;
+        }
+
+    }
+}

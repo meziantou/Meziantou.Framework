@@ -63,7 +63,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.J
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Lsa", "src\Meziantou.Framework.Win32.Lsa\Meziantou.Framework.Win32.Lsa.csproj", "{4DABE304-CE95-4AE2-A4FE-D15E2D02A1F6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.Lsa.Tests", "tests\Meziantou.Framework.Win32.Lsa.Tests\Meziantou.Framework.Win32.Lsa.Tests.csproj", "{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Lsa.Tests", "tests\Meziantou.Framework.Win32.Lsa.Tests\Meziantou.Framework.Win32.Lsa.Tests.csproj", "{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.RestartManager", "src\Meziantou.Framework.Win32.RestartManager\Meziantou.Framework.Win32.RestartManager.csproj", "{69C03C81-0806-492E-8FB8-F7ECA2EEA612}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.RestartManager.Tests", "tests\Meziantou.Framework.Win32.RestartManager.Tests\Meziantou.Framework.Win32.RestartManager.Tests.csproj", "{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -183,6 +187,14 @@ Global
 		{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69C03C81-0806-492E-8FB8-F7ECA2EEA612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69C03C81-0806-492E-8FB8-F7ECA2EEA612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69C03C81-0806-492E-8FB8-F7ECA2EEA612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69C03C81-0806-492E-8FB8-F7ECA2EEA612}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -216,6 +228,8 @@ Global
 		{A94CC207-257F-4E41-A575-C5FBF6B121BE} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{4DABE304-CE95-4AE2-A4FE-D15E2D02A1F6} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{5E37BB66-FFC3-47C5-8D10-5B4C9B6B4739} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{69C03C81-0806-492E-8FB8-F7ECA2EEA612} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{54ECD9D8-D466-468C-A761-34B1B1E3A1E4} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

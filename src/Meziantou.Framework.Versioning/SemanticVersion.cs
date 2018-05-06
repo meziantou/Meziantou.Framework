@@ -278,7 +278,7 @@ namespace Meziantou.Framework.Versioning
                     break;
             }
 
-            return result.Count == 0 ? EmptyArray : result.AsReadOnly();
+            return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
         }
 
         private static bool TryReadMetadata(string versionString, ref int index, out IReadOnlyList<string> labels)
@@ -309,7 +309,7 @@ namespace Meziantou.Framework.Versioning
                     break;
             }
 
-            return result.Count == 0 ? EmptyArray : result.AsReadOnly();
+            return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
         }
 
         private static bool IsPrereleaseIdentifier(string label)

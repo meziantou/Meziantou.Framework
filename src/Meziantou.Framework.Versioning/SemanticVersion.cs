@@ -165,7 +165,7 @@ namespace Meziantou.Framework.Versioning
 
         public virtual bool Equals(SemanticVersion other)
         {
-            return SemanticVersionComparer.Instance.Compare(this, other) == 0;
+            return SemanticVersionComparer.Instance.Equals(this, other);
         }
 
         public virtual int CompareTo(object obj)

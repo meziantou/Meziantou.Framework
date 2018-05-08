@@ -28,7 +28,6 @@ namespace Meziantou.Framework.Utilities
 <# if (i > 0) { #>
 			ValueTuple<#= GetTemplateString(i) #> args = default;
 <# } #>
-
             return (<#= GetTypedArgsString(i, "arg") #>) =>
             {
 <# if (i > 0) { #>
@@ -51,7 +50,6 @@ namespace Meziantou.Framework.Utilities
                 }
             };
         }
-
 <# } #>
 
         private static class ValueTuple
@@ -65,12 +63,11 @@ namespace Meziantou.Framework.Utilities
 		}
 
 <# for (int i = 1; i < count; i++) { #>
-        private struct ValueTuple<#= GetTemplateString(i) #>
+        private readonly struct ValueTuple<#= GetTemplateString(i) #>
 		{
 <# for (var j = 0; j < i; j++) { #>
-            public T<#= j #> Item<#= j #>;
+            public readonly T<#= j #> Item<#= j #>;
 <# } #>
-
             public ValueTuple(<#= GetTypedArgsString(i, "arg") #>)
             {
 <# for (var j = 0; j < i; j++) { #>

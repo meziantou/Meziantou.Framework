@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Utilities
         }
     }
 
-    public struct Range<T> : IEquatable<Range<T>> where T : IComparable<T>
+    public readonly struct Range<T> : IEquatable<Range<T>> where T : IComparable<T>
     {
         public Range(T from, T to)
         {

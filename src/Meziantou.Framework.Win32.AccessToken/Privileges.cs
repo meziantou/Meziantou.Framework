@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.Win32
 {
-    public class Privileges
+    public static class Privileges
     {
         public const string SE_ASSIGNPRIMARYTOKEN_NAME = "SeAssignPrimaryTokenPrivilege";
         public const string SE_AUDIT_NAME = "SeAuditPrivilege";

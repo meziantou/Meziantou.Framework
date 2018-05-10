@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework.Scheduling
 {
-    internal class Utilities
+    internal static class Utilities
     {
         public const string DateTimeFormat = "yyyyMMddTHHmmsszzz";
         public const string UtcDateTimeFormat = "yyyyMMddTHHmmssZ";

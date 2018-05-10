@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Dialogs.Natives
 {
-    internal class NativeMethods
+    internal static class NativeMethods
     {
         internal const int S_OK = 0x00000000;
         internal const int ERROR_CANCELLED = unchecked((int)0x800704C7);

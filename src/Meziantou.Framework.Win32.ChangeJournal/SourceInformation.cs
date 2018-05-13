@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Meziantou.Framework.Win32.Native.Journal
+namespace Meziantou.Framework.Win32
 {
     [Flags]
     public enum SourceInformation

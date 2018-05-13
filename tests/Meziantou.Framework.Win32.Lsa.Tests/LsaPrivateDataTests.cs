@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
     [TestClass]
     public class LsaPrivateDataTests
     {
-        [TestMethod]
-        public void LsaPrivateData_SetGetRemove()
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
         {
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);
@@ -15,7 +15,11 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
             {
                 Assert.Inconclusive("Current user is not in the administator group");
             }
+        }
 
+        [TestMethod]
+        public void LsaPrivateData_SetGetRemove()
+        {
             // Set
             LsaPrivateData.SetValue("LsaPrivateDataTests", "test");
 
@@ -32,13 +36,6 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
         [TestMethod]
         public void LsaPrivateData_GetUnsetValue()
         {
-            var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
-            {
-                Assert.Inconclusive("Current user is not in the administator group");
-            }
-
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
             Assert.IsNull(value);

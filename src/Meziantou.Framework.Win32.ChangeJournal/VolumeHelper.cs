@@ -1,42 +1,31 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Win32
 {
     public static class VolumeHelper
     {
-        public static IEnumerable<string> GetValidVolumes()
+        internal static string GetValidVolumePath(DriveInfo driveInfo)
         {
-            foreach (var info in DriveInfo.GetDrives())
+            string name;
+            if (!string.IsNullOrEmpty(driveInfo.Name))
             {
-                if (!info.IsReady || info.DriveFormat != "NTFS")
-                    continue;
-
-                if (!string.IsNullOrEmpty(info.Name))
-                    yield return info.Name;
-                else if (!string.IsNullOrEmpty(info.VolumeLabel))
-                    yield return info.VolumeLabel;
+                name = driveInfo.Name;
             }
-        }
+            else if (!string.IsNullOrEmpty(driveInfo.VolumeLabel))
+            {
+                name = driveInfo.VolumeLabel;
+            }
+            else
+            {
+                throw new ArgumentException("Cannot determine the name of the drive", nameof(driveInfo));
+            }
 
-        public static IEnumerable<string> GetValidVolumePaths()
-        {
-            foreach (var volume in GetValidVolumes())
-                yield return GetValidVolumePath(volume);
-        }
-
-        public static string GetValidVolumePath(string driveNameOrLabel)
-        {
-            var temp = driveNameOrLabel
+            name = name
                 .Replace(":", "")
                 .Replace(Path.DirectorySeparatorChar.ToString(), "");
 
-            return string.Format("{0}{0}.{0}{1}:", Path.DirectorySeparatorChar, temp);
-        }
-
-        public static bool VolumePathIsValid(string formattedPath)
-        {
-            return formattedPath.StartsWith("\\\\.\\") && formattedPath.EndsWith(":");
+            return string.Format("\\\\.\\{0}:", name);
         }
     }
 }

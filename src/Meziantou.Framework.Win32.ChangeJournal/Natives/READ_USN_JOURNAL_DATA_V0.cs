@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Native.Journal
+namespace Meziantou.Framework.Win32.Natives
 {
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365481(v=vs.85).aspx
     [StructLayout(LayoutKind.Sequential)]

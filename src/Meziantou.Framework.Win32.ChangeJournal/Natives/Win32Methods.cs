@@ -2,7 +2,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Native.Win32
+namespace Meziantou.Framework.Win32.Natives
 {
     internal static class Win32Methods
     {

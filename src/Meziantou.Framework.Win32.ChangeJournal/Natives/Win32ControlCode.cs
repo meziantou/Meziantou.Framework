@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Win32.Native.Win32
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     internal enum Win32ControlCode : uint
     {

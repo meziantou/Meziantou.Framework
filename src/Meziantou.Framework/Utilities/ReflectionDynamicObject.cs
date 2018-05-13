@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace Meziantou.Framework.Utilities
         private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static readonly Dictionary<Type, TypeCache> _cache = new Dictionary<Type, TypeCache>();
+        private static readonly ConcurrentDictionary<Type, TypeCache> _cache = new ConcurrentDictionary<Type, TypeCache>();
 
         private readonly object _originalObject;
         private readonly TypeCache _typeCache;
@@ -21,26 +22,14 @@ namespace Meziantou.Framework.Utilities
             _originalObject = obj ?? throw new ArgumentNullException(nameof(obj));
 
             var type = obj.GetType();
-            if (!_cache.TryGetValue(type, out var typeCache))
-            {
-                typeCache = TypeCache.Create(type);
-                _cache[type] = typeCache;
-            }
-
-            _typeCache = typeCache;
+            _typeCache = _cache.GetOrAdd(type, t => TypeCache.Create(t));
         }
 
         public ReflectionDynamicObject(Type type)
         {
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            if (!_cache.TryGetValue(type, out var typeCache))
-            {
-                typeCache = TypeCache.Create(type);
-                _cache[type] = typeCache;
-            }
-
-            _typeCache = typeCache;
+            _typeCache = _cache.GetOrAdd(type, t => TypeCache.Create(t));
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)

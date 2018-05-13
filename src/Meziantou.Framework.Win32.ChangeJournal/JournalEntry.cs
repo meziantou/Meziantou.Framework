@@ -5,7 +5,6 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    [DebuggerDisplay("{Name} ({Reason})")]
     public class JournalEntry
     {
         /// <summary>
@@ -16,16 +15,16 @@ namespace Meziantou.Framework.Win32
         internal JournalEntry(USN_RECORD_V2 nativeEntry, string name)
         {
             Name = name;
-            Length = (int) nativeEntry.RecordLength;
+            Length = (int)nativeEntry.RecordLength;
             Version = new Version(nativeEntry.MajorVersion, nativeEntry.MinorVersion);
-            ReferenceNumber = (long) nativeEntry.FileReferenceNumber;
-            ParentReferenceNumber = (long) nativeEntry.ParentFileReferenceNumber;
+            ReferenceNumber = nativeEntry.FileReferenceNumber;
+            ParentReferenceNumber = nativeEntry.ParentFileReferenceNumber;
             UniqueSequenceNumber = nativeEntry.USN;
             TimeStamp = DateTime.FromFileTimeUtc(nativeEntry.TimeStamp);
-            Reason = (ChangeReason) nativeEntry.Reason;
-            Source = (SourceInformation) nativeEntry.SourceInfo;
-            SecurityID = (int) nativeEntry.SecurityId;
-            Attributes = (FileAttributes) nativeEntry.FileAttributes;
+            Reason = (ChangeReason)nativeEntry.Reason;
+            Source = (SourceInformation)nativeEntry.SourceInfo;
+            SecurityID = (int)nativeEntry.SecurityId;
+            Attributes = (FileAttributes)nativeEntry.FileAttributes;
         }
 
         /// <summary>
@@ -44,18 +43,18 @@ namespace Meziantou.Framework.Win32
         ///     Gets the reference number of the file or
         ///     directory associated with this entry.
         /// </summary>
-        public long ReferenceNumber { get; }
+        public ulong ReferenceNumber { get; }
 
         /// <summary>
         ///     Gets the reference number of the parent of the file or
         ///     directory associated with this entry.
         /// </summary>
-        public long ParentReferenceNumber { get; }
+        public ulong ParentReferenceNumber { get; }
 
         /// <summary>
         ///     Gets the Unique Sequence Number of this entry.
         /// </summary>
-        public long UniqueSequenceNumber { get; }
+        public Usn UniqueSequenceNumber { get; }
 
         /// <summary>
         ///     Gets thhe standard UTC time stamp of when this entry was written.
@@ -89,5 +88,10 @@ namespace Meziantou.Framework.Win32
         ///     The name of the file or directory associated with this record.
         /// </summary>
         public string Name { get; }
+
+        public override string ToString()
+        {
+            return $"{Name} ({Reason})";
+        }
     }
 }

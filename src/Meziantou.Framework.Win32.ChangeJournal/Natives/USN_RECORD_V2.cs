@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32.Natives
         public ushort MinorVersion;
         public ulong FileReferenceNumber;
         public ulong ParentFileReferenceNumber;
-        public long USN;
+        public Usn USN;
         public long TimeStamp;
         public uint Reason;
         public uint SourceInfo;

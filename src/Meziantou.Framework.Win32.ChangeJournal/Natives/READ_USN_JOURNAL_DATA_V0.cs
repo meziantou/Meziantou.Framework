@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Win32.Natives
     [StructLayout(LayoutKind.Sequential)]
     internal struct READ_USN_JOURNAL_DATA_V0
     {
-        public long StartUsn;
+        public Usn StartUsn;
         public ChangeReason ReasonMask;
         public uint ReturnOnlyOnClose;
         public ulong Timeout;

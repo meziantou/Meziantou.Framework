@@ -6,10 +6,10 @@ namespace Meziantou.Framework.Win32.Natives
     internal struct USN_JOURNAL_DATA
     {
         public ulong UsnJournalID;
-        public long FirstUsn;
-        public long NextUsn;
-        public long LowestValidUsn;
-        public long MaxixmumUsn;
+        public Usn FirstUsn;
+        public Usn NextUsn;
+        public Usn LowestValidUsn;
+        public Usn MaxixmumUsn;
         public ulong MaximumSize;
         public ulong AllocationDelta;
     }

@@ -11,11 +11,16 @@ namespace Meziantou.Framework.Win32
     {
         internal ChangeJournalSafeHandle ChangeJournalHandle { get; }
 
-        public JournalData Data { get; }
+        public JournalData Data { get; private set; }
 
         public IEnumerable<JournalEntry> Entries { get; }
 
-        public IEnumerable<JournalEntry> GetEntries(long currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+        public IEnumerable<JournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+        {
+            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, reasonFilter, returnOnlyOnClose, timeout));
+        }
+
+        public IEnumerable<JournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
         {
             if (currentUSN < Data.FirstUSN || currentUSN > Data.MaximumUSN)
                 throw new ArgumentOutOfRangeException(nameof(currentUSN));
@@ -26,8 +31,8 @@ namespace Meziantou.Framework.Win32
         private ChangeJournal(ChangeJournalSafeHandle handle)
         {
             ChangeJournalHandle = handle;
-            Data = ReadJournalData();
-            Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(Data.FirstUSN, ChangeReason.All, false, TimeSpan.Zero));
+            Data = ReadJournalDataImpl();
+            Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, ChangeReason.All, false, TimeSpan.Zero));
         }
 
         public static ChangeJournal Open(DriveInfo driveInfo)
@@ -43,7 +48,12 @@ namespace Meziantou.Framework.Win32
             return new ChangeJournal(handle);
         }
 
-        private JournalData ReadJournalData()
+        public void ReadJournalData()
+        {
+            Data = ReadJournalDataImpl();
+        }
+
+        private JournalData ReadJournalDataImpl()
         {
             try
             {

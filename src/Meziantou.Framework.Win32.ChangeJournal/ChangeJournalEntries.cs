@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Win32
         {
             private const int BufferSize = 8192;
 
-            private long _currentUSN;
+            private Usn _currentUSN;
             private bool _eof;
 
             private readonly List<JournalEntry> _entries = new List<JournalEntry>();
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.Win32
 
             public void Reset()
             {
-                _currentUSN = Options.InitialUSN;
+                _currentUSN = Options.InitialUSN ?? ChangeJournal.Data.FirstUSN;
                 _currentIndex = -1;
             }
 
@@ -92,7 +92,7 @@ namespace Meziantou.Framework.Win32
                 {
                     StartUsn = _currentUSN,
                     ReasonMask = Options.ReasonFilter,
-                    UsnJournalID = (ulong)ChangeJournal.Data.ID,
+                    UsnJournalID = ChangeJournal.Data.ID,
                     ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? (uint)1 : 0,
                     Timeout = (ulong)Options.Timeout.TotalSeconds
                 };

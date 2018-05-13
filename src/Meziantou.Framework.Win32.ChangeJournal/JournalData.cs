@@ -16,51 +16,51 @@ namespace Meziantou.Framework.Win32
         internal JournalData(USN_JOURNAL_DATA nativeData)
             : this()
         {
-            ID = (long)nativeData.UsnJournalID;
+            ID = nativeData.UsnJournalID;
             FirstUSN = nativeData.FirstUsn;
             NextUSN = nativeData.NextUsn;
             LowestValidUSN = nativeData.LowestValidUsn;
             MaximumUSN = nativeData.MaxixmumUsn;
-            MaximumSize = (long)nativeData.MaximumSize;
-            AllocationDelta = (long)nativeData.AllocationDelta;
+            MaximumSize = nativeData.MaximumSize;
+            AllocationDelta = nativeData.AllocationDelta;
         }
 
         /// <summary>
         ///     64-bit unique journal identifier.
         /// </summary>
-        public long ID { get; }
+        public ulong ID { get; }
 
         /// <summary>
         ///     Identifies the first Usn in the journal.
         ///     All Usn's below this value have been purged.
         /// </summary>
-        public long FirstUSN { get; }
+        public Usn FirstUSN { get; }
 
         /// <summary>
         ///     The Usn that will be assigned to the next record appended to the journal.
         /// </summary>
-        public long NextUSN { get; }
+        public Usn NextUSN { get; }
         
         /// <summary>
         ///     The lowest Usn that is valid for this journal and may be zero.
         ///     All changes with this Usn or higher have been recorded in the journal.
         /// </summary>
-        public long LowestValidUSN { get; }
+        public Usn LowestValidUSN { get; }
 
         /// <summary>
         ///     The largest Usn that will ever to assigned to a record in this journal.
         /// </summary>
-        public long MaximumUSN { get; }
+        public Usn MaximumUSN { get; }
 
         /// <summary>
         ///     The maximum size, in bytes, the journal can use on the volume.
         /// </summary>
-        public long MaximumSize { get; }
+        public ulong MaximumSize { get; }
 
         /// <summary>
         ///     The size, in bytes, the journal can grow when needed, and
         ///     purge from the start of the journal is it grows past MaximumSize.
         /// </summary>
-        public long AllocationDelta { get; }
+        public ulong AllocationDelta { get; }
     }
 }

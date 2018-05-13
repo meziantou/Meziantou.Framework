@@ -15,19 +15,6 @@ namespace Meziantou.Framework.Win32
 
         public IEnumerable<JournalEntry> Entries { get; }
 
-        public IEnumerable<JournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
-        {
-            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, reasonFilter, returnOnlyOnClose, timeout));
-        }
-
-        public IEnumerable<JournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
-        {
-            if (currentUSN < Data.FirstUSN || currentUSN > Data.MaximumUSN)
-                throw new ArgumentOutOfRangeException(nameof(currentUSN));
-
-            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout));
-        }
-
         private ChangeJournal(ChangeJournalSafeHandle handle)
         {
             ChangeJournalHandle = handle;
@@ -46,6 +33,19 @@ namespace Meziantou.Framework.Win32
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return new ChangeJournal(handle);
+        }
+
+        public IEnumerable<JournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+        {
+            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, reasonFilter, returnOnlyOnClose, timeout));
+        }
+
+        public IEnumerable<JournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+        {
+            if (currentUSN < Data.FirstUSN || currentUSN > Data.MaximumUSN)
+                throw new ArgumentOutOfRangeException(nameof(currentUSN));
+
+            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout));
         }
 
         public void ReadJournalData()
@@ -71,6 +71,30 @@ namespace Meziantou.Framework.Win32
         public void Dispose()
         {
             ChangeJournalHandle.Dispose();
+        }
+
+        public void Delete()
+        {
+            var deletionData = new DELETE_USN_JOURNAL_DATA
+            {
+                UsnJournalID = Data.ID,
+                DeleteFlags = DeletionFlag.WaitUntilDeleteCompletes
+            };
+
+            Win32DeviceControl.ControlWithInput(ChangeJournalHandle.Handle, Win32ControlCode.CreateUsnJournal, ref deletionData, 0);
+            ReadJournalData();
+        }
+
+        public void Create(long maximumSize, long allocationDelta)
+        {
+            var creationData = new CREATE_USN_JOURNAL_DATA
+            {
+                AllocationDelta = allocationDelta,
+                MaximumSize = maximumSize
+            };
+
+            Win32DeviceControl.ControlWithInput(ChangeJournalHandle.Handle, Win32ControlCode.CreateUsnJournal, ref creationData, 0);
+            ReadJournalData();
         }
     }
 }

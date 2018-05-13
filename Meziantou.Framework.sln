@@ -69,11 +69,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.R
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.RestartManager.Tests", "tests\Meziantou.Framework.Win32.RestartManager.Tests\Meziantou.Framework.Win32.RestartManager.Tests.csproj", "{54ECD9D8-D466-468C-A761-34B1B1E3A1E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.SemanticVersion.Tests", "tests\Meziantou.Framework.SemanticVersion.Tests\Meziantou.Framework.SemanticVersion.Tests.csproj", "{4DE80FA8-93A3-4D74-8928-60EB577B0F3D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SemanticVersion.Tests", "tests\Meziantou.Framework.SemanticVersion.Tests\Meziantou.Framework.SemanticVersion.Tests.csproj", "{4DE80FA8-93A3-4D74-8928-60EB577B0F3D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Versioning.Tests", "tests\Meziantou.Framework.Versioning.Tests\Meziantou.Framework.Versioning.Tests.csproj", "{8DC46A44-8B19-43C4-ABB6-31A4F006A2E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Versioning.Tests", "tests\Meziantou.Framework.Versioning.Tests\Meziantou.Framework.Versioning.Tests.csproj", "{8DC46A44-8B19-43C4-ABB6-31A4F006A2E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Versioning", "src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj", "{270442E3-EC01-44EF-9238-BE79817F0B90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Versioning", "src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj", "{270442E3-EC01-44EF-9238-BE79817F0B90}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.ChangeJournal", "src\Meziantou.Framework.Win32.ChangeJournal\Meziantou.Framework.Win32.ChangeJournal.csproj", "{231DF75A-43D9-4C45-8218-78BA59E424C3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.ChangeJournal.Tests", "tests\Meziantou.Framework.Win32.ChangeJournal.Tests\Meziantou.Framework.Win32.ChangeJournal.Tests.csproj", "{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B0CAE46C-7276-4CAE-A765-440D6290A6F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -213,6 +219,14 @@ Global
 		{270442E3-EC01-44EF-9238-BE79817F0B90}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{270442E3-EC01-44EF-9238-BE79817F0B90}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{270442E3-EC01-44EF-9238-BE79817F0B90}.Release|Any CPU.Build.0 = Release|Any CPU
+		{231DF75A-43D9-4C45-8218-78BA59E424C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{231DF75A-43D9-4C45-8218-78BA59E424C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{231DF75A-43D9-4C45-8218-78BA59E424C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{231DF75A-43D9-4C45-8218-78BA59E424C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -251,6 +265,8 @@ Global
 		{4DE80FA8-93A3-4D74-8928-60EB577B0F3D} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{8DC46A44-8B19-43C4-ABB6-31A4F006A2E0} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{270442E3-EC01-44EF-9238-BE79817F0B90} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{231DF75A-43D9-4C45-8218-78BA59E424C3} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

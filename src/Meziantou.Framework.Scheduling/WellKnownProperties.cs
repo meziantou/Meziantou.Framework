@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Scheduling
 {
-    public class WellKnownProperties
+    public static class WellKnownProperties
     {
         public const string ProductId = "PRODID";
     }

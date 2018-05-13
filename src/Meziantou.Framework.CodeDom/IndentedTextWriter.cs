@@ -80,10 +80,10 @@ namespace Meziantou.Framework.CodeDom
             _tabsPending = false;
         }
 
-        public override void Write(string s)
+        public override void Write(string value)
         {
             OutputTabs();
-            InnerWriter.Write(s);
+            InnerWriter.Write(value);
         }
 
         public override void Write(bool value)
@@ -163,16 +163,16 @@ namespace Meziantou.Framework.CodeDom
             InnerWriter.WriteLine(s);
         }
 
-        public override void WriteLine(string s)
+        public override void WriteLine(string value)
         {
-            if (s == null)
+            if (value == null)
             {
                 WriteLine();
                 return;
             }
 
             OutputTabs();
-            InnerWriter.WriteLine(s);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 

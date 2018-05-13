@@ -282,8 +282,9 @@ namespace Meziantou.Framework.Utilities
                 value = Convert.FromBase64String(text);
                 return true;
             }
-            catch (Exception)
+            catch
             {
+                // the value is invalid, continue with other methods
             }
 
             var bytes = FromHexa(text);

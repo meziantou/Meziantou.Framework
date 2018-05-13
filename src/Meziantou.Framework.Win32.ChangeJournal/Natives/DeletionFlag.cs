@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Win32.Native.Journal
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     ///     Flags to be used in conjunction with Usn structures

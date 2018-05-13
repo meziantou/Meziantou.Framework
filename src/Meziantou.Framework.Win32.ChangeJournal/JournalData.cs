@@ -1,4 +1,6 @@
-﻿namespace Meziantou.Framework.Win32
+﻿using Meziantou.Framework.Win32.Natives;
+
+namespace Meziantou.Framework.Win32
 {
     public class JournalData
     {
@@ -11,7 +13,7 @@
         ///     populating elements from the corresponding structure.
         /// </summary>
         /// <param name="nativeData"></param>
-        internal JournalData(Native.Journal.USN_JOURNAL_DATA nativeData)
+        internal JournalData(USN_JOURNAL_DATA nativeData)
             : this()
         {
             ID = (long)nativeData.UsnJournalID;
@@ -22,17 +24,6 @@
             MaximumSize = (long)nativeData.MaximumSize;
             AllocationDelta = (long)nativeData.AllocationDelta;
         }
-
-        /// <summary>
-        ///     Gets a value indicating whether a journal is active, or not.
-        /// </summary>
-        public bool IsActive { get; internal set; }
-
-        /// <summary>
-        ///     Gets a value indicating whether the end of the journal has
-        ///     been reached by reading, or not.
-        /// </summary>
-        public bool AtEndOfJournal { get; internal set; }
 
         /// <summary>
         ///     64-bit unique journal identifier.
@@ -49,9 +40,7 @@
         ///     The Usn that will be assigned to the next record appended to the journal.
         /// </summary>
         public long NextUSN { get; }
-
-        public long CurrentUSN { get; internal set; }
-
+        
         /// <summary>
         ///     The lowest Usn that is valid for this journal and may be zero.
         ///     All changes with this Usn or higher have been recorded in the journal.

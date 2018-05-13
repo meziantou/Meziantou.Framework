@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Native.Journal
+namespace Meziantou.Framework.Win32.Natives
 {
     [StructLayout(LayoutKind.Sequential)]
     internal struct USN_JOURNAL_DATA

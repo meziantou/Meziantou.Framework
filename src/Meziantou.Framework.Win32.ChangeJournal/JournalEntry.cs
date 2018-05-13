@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
-using Meziantou.Framework.Win32.Native.Journal;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [DebuggerDisplay("{Name} ({Reason})")]
     public class JournalEntry
     {
         /// <summary>

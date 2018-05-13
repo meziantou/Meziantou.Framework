@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Scheduling
             }
 
             var dayOffsets = ByWeekDays.Select(day => ((day - WeekStart) + 7) % 7).Distinct().OrderBy(a => a).ToList();
-            var startOfWeek = startDate.StartOfWeek(WeekStart);
+            var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
 
             while (true)
             {

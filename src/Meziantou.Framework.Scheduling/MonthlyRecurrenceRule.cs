@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Scheduling
                 }
             }
 
-            var startOfMonth = startDate.StartOfMonth(keepTime: true);
+            var startOfMonth = Extensions.StartOfMonth(startDate, keepTime: true);
             while (true)
             {
                 var b = true;

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Tests.Utilities
             var dt = new DateTime(2015, 05, 17);
 
             // Act
-            var actual = dt.StartOfWeek(DayOfWeek.Sunday);
+            var actual = DateTimeUtilities.StartOfWeek(dt, DayOfWeek.Sunday);
 
             // Assert
             var expected = new DateTime(2015, 05, 17);
@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Tests.Utilities
             var dt = new DateTime(2015, 05, 17);
 
             // Act
-            var actual = dt.StartOfWeek(DayOfWeek.Monday);
+            var actual = DateTimeUtilities.StartOfWeek(dt, DayOfWeek.Monday);
 
             // Assert
             var expected = new DateTime(2015, 05, 11);

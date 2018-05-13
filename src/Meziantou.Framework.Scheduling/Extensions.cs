@@ -52,13 +52,13 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static DateTime StartOfWeek(this DateTime dt)
+        public static DateTime StartOfWeek(DateTime dt)
         {
             return StartOfWeek(dt, CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek);
         }
 
         [Pure]
-        public static DateTime StartOfWeek(this DateTime dt, DayOfWeek startOfWeek)
+        public static DateTime StartOfWeek(DateTime dt, DayOfWeek startOfWeek)
         {
             var diff = dt.DayOfWeek - startOfWeek;
             if (diff < 0)
@@ -70,13 +70,13 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static DateTime StartOfMonth(this DateTime dt)
+        public static DateTime StartOfMonth(DateTime dt)
         {
             return StartOfMonth(dt, false);
         }
 
         [Pure]
-        public static DateTime StartOfMonth(this DateTime dt, bool keepTime)
+        public static DateTime StartOfMonth(DateTime dt, bool keepTime)
         {
             if (keepTime)
             {
@@ -87,13 +87,13 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static DateTime StartOfYear(this DateTime dt)
+        public static DateTime StartOfYear(DateTime dt)
         {
             return StartOfYear(dt, false);
         }
 
         [Pure]
-        public static DateTime StartOfYear(this DateTime dt, bool keepTime)
+        public static DateTime StartOfYear(DateTime dt, bool keepTime)
         {
             if (keepTime)
             {

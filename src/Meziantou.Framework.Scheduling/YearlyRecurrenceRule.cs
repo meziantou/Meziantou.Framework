@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Scheduling
                 }
             }
 
-            var startOfYear = startDate.StartOfYear(keepTime: true);
+            var startOfYear = Extensions.StartOfYear(startDate, keepTime: true);
             while (true)
             {
                 var resultByMonthDays = ResultByMonthDays(startDate, startOfYear);

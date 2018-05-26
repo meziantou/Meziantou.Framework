@@ -1,6 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.CommandLine.Tests.Utilities
+namespace Meziantou.Framework.CommandLineTests
 {
     [TestClass]
     public class CommandLineParserTests

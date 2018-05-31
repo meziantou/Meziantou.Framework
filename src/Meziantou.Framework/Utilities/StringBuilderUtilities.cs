@@ -7,10 +7,24 @@ namespace Meziantou.Framework.Utilities
     public static class StringBuilderUtilities
     {
         [Pure]
+        public static bool StartsWith(this StringBuilder stringBuilder, char prefix)
+        {
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+
+            if (stringBuilder.Length == 0)
+                return false;
+
+            return stringBuilder[0] == prefix;
+        }
+
+        [Pure]
         public static bool StartsWith(this StringBuilder stringBuilder, string prefix)
         {
-            if (stringBuilder == null) throw new ArgumentNullException(nameof(stringBuilder));
-            if (prefix == null) throw new ArgumentNullException(nameof(prefix));
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+            if (prefix == null)
+                throw new ArgumentNullException(nameof(prefix));
 
             if (stringBuilder.Length < prefix.Length)
                 return false;
@@ -25,10 +39,24 @@ namespace Meziantou.Framework.Utilities
         }
 
         [Pure]
+        public static bool EndsWith(this StringBuilder stringBuilder, char suffix)
+        {
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+
+            if (stringBuilder.Length == 0)
+                return false;
+
+            return stringBuilder[stringBuilder.Length - 1] == suffix;
+        }
+
+        [Pure]
         public static bool EndsWith(this StringBuilder stringBuilder, string suffix)
         {
-            if (stringBuilder == null) throw new ArgumentNullException(nameof(stringBuilder));
-            if (suffix == null) throw new ArgumentNullException(nameof(suffix));
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+            if (suffix == null)
+                throw new ArgumentNullException(nameof(suffix));
 
             if (stringBuilder.Length < suffix.Length)
                 return false;

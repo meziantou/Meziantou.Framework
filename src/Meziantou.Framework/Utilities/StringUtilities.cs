@@ -83,5 +83,23 @@ namespace Meziantou.Framework.Utilities
             sb.Append(str.Substring(previousIndex));
             return sb.ToString();
         }
+
+        [Pure]
+        public static bool EndsWith(this string str, char c)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            return str[str.Length - 1] == c;
+        }
+
+        [Pure]
+        public static bool StartsWith(this string str, char c)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            return str[0] == c;
+        }
     }
 }

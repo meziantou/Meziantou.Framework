@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Win32
 
         private AccessToken(IntPtr token)
         {
-            if (token == IntPtr.Zero) throw new ArgumentNullException(nameof(token));
+            if (token == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(token));
 
             _token = token;
         }
@@ -183,14 +184,16 @@ namespace Meziantou.Framework.Win32
 
         public void EnablePrivilege(string privilegeName)
         {
-            if (privilegeName == null) throw new ArgumentNullException(nameof(privilegeName));
+            if (privilegeName == null)
+                throw new ArgumentNullException(nameof(privilegeName));
 
             AdjustPrivilege(privilegeName, PrivilegeOperation.Enable);
         }
 
         public void DisablePrivilege(string privilegeName)
         {
-            if (privilegeName == null) throw new ArgumentNullException(nameof(privilegeName));
+            if (privilegeName == null)
+                throw new ArgumentNullException(nameof(privilegeName));
 
             AdjustPrivilege(privilegeName, PrivilegeOperation.Disable);
         }
@@ -204,7 +207,8 @@ namespace Meziantou.Framework.Win32
 
         public void RemovePrivilege(string privilegeName)
         {
-            if (privilegeName == null) throw new ArgumentNullException(nameof(privilegeName));
+            if (privilegeName == null)
+                throw new ArgumentNullException(nameof(privilegeName));
 
             AdjustPrivilege(privilegeName, PrivilegeOperation.Remove);
         }
@@ -264,12 +268,21 @@ namespace Meziantou.Framework.Win32
 
         public static AccessToken OpenProcessToken(Process process, TokenAccessLevels accessLevels)
         {
-            if (process == null) throw new ArgumentNullException(nameof(process));
+            if (process == null)
+                throw new ArgumentNullException(nameof(process));
 
             if (!NativeMethods.OpenProcessToken(process.Handle, accessLevels, out var tokenHandle))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return new AccessToken(tokenHandle);
+        }
+
+        public static bool IsLimitedToken()
+        {
+            using (var token = OpenCurrentProcessToken(TokenAccessLevels.Query))
+            {
+                return token.GetElevationType() == TokenElevationType.Limited;
+            }
         }
 
         private enum PrivilegeOperation

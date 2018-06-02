@@ -2,15 +2,31 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Utilities
 {
     public static class ProcessExtensions
     {
+        private static bool IsWindows()
+        {
+#if NETSTANDARD2_0
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#elif NET461
+            return true;
+#else
+#error Platform not supported
+#endif
+        }
+
         public static void KillProcessTree(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
+
+            if (!IsWindows())
+                throw new PlatformNotSupportedException("Only supported on Windows");
 
             var childProcesses = GetChildProcesses(process);
             foreach (var childProcess in childProcesses)
@@ -35,6 +51,9 @@ namespace Meziantou.Framework.Utilities
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
+
+            if (!IsWindows())
+                throw new PlatformNotSupportedException("Only supported on Windows");
 
             var children = new List<Process>();
             GetChildProcesses(process, children);
@@ -76,6 +95,118 @@ namespace Meziantou.Framework.Utilities
                     CloseHandle(snapShotHandle);
                 }
             }
+        }
+
+        public static Task<ProcessResult> RunAsTask(string fileName, string arguments, CancellationToken cancellationToken = default)
+        {
+            return RunAsTask(fileName, arguments, null, cancellationToken);
+        }
+
+        public static Task<ProcessResult> RunAsTask(string fileName, string arguments, string workingDirectory, CancellationToken cancellationToken = default)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                WorkingDirectory = workingDirectory,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                ErrorDialog = false,
+                UseShellExecute = false
+            };
+
+            return RunAsTask(psi, cancellationToken);
+        }
+
+        public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
+        {
+            if (redirectOutput)
+            {
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardOutput = true;
+                psi.UseShellExecute = false;
+            }
+            else
+            {
+                psi.RedirectStandardError = false;
+                psi.RedirectStandardOutput = false;
+            }
+
+            return RunAsTask(psi, cancellationToken);
+        }
+
+        public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return Task.FromCanceled<ProcessResult>(cancellationToken);
+
+            var tcs = new TaskCompletionSource<ProcessResult>();
+            var logs = new List<ProcessOutput>();
+
+            var process = new Process();
+            process.StartInfo = psi;
+            process.EnableRaisingEvents = true;
+            process.Exited += (sender, e) =>
+            {
+                tcs.SetResult(new ProcessResult(process.ExitCode, logs));
+                process.Dispose();
+            };
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                }
+            };
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null)
+                {
+                    logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                }
+            };
+
+            if (!process.Start())
+                throw new InvalidOperationException($"Cannot start the process '{psi.FileName}'");
+
+            if (psi.RedirectStandardOutput)
+            {
+                process.BeginOutputReadLine();
+            }
+
+            if (psi.RedirectStandardError)
+            {
+                process.BeginErrorReadLine();
+            }
+
+            cancellationToken.Register(() =>
+            {
+                if (process.HasExited)
+                    return;
+
+                try
+                {
+                    if (IsWindows())
+                    {
+                        process.KillProcessTree();
+                    }
+                    else
+                    {
+                        process.Kill();
+                    }
+                }
+                finally
+                {
+                    process.Dispose();
+                }
+            });
+
+            if (psi.RedirectStandardInput)
+            {
+                process.StandardInput.Close();
+            }
+
+            return tcs.Task;
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

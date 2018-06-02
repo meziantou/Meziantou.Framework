@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.Utilities;
+﻿using System;
+using Meziantou.Framework.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Tests.Utilities
@@ -46,6 +47,34 @@ namespace Meziantou.Framework.Tests.Utilities
         {
             dynamic rdo = new ReflectionDynamicObject(typeof(Test));
             Assert.AreEqual(1, rdo.Static(1));
+        }
+
+        [TestMethod]
+        public void ReflectionDynamicObject_DefaultConstructor()
+        {
+            dynamic rdo = new ReflectionDynamicObject(typeof(Test3)).CreateInstance();
+            Assert.AreEqual(0, rdo.Value);
+        }
+
+        [TestMethod]
+        public void ReflectionDynamicObject_IntConstructor()
+        {
+            dynamic rdo = new ReflectionDynamicObject(typeof(Test3)).CreateInstance(10);
+            Assert.AreEqual(10, rdo.Value);
+        }
+
+        [TestMethod]
+        public void ReflectionDynamicObject_StringConstructor()
+        {
+            dynamic rdo = new ReflectionDynamicObject(typeof(Test3)).CreateInstance("20");
+            Assert.AreEqual(20, rdo.Value);
+        }
+
+        [TestMethod]
+        public void ReflectionDynamicObject_StringConstructor_ThrowException()
+        {
+            var rdo = new ReflectionDynamicObject(typeof(Test3));
+            Assert.ThrowsException<ArgumentException>(() => rdo.CreateInstance("tests"));
         }
 
         private class Test
@@ -100,6 +129,25 @@ namespace Meziantou.Framework.Tests.Utilities
             protected override string ProtectedVirtualMethod()
             {
                 return "test2";
+            }
+        }
+
+        private class Test3
+        {
+            public int Value { get; set; }
+
+            public Test3()
+            {
+            }
+
+            public Test3(int value)
+            {
+                Value = value;
+            }
+
+            public Test3(string value)
+            {
+                Value = int.Parse(value);
             }
         }
     }

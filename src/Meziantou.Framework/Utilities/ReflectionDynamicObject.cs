@@ -27,9 +27,34 @@ namespace Meziantou.Framework.Utilities
 
         public ReflectionDynamicObject(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
             _typeCache = _cache.GetOrAdd(type, t => TypeCache.Create(t));
+        }
+
+        public ReflectionDynamicObject CreateInstance(params object[] parameters)
+        {
+            var exceptions = new List<Exception>();
+
+            foreach (var constructor in _typeCache.Constructors)
+            {
+                var ctorParameters = constructor.GetParameters();
+                if (ctorParameters.Length != parameters.Length)
+                    continue;
+
+                try
+                {
+                    return new ReflectionDynamicObject(constructor.Invoke(parameters));
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+
+            Exception exception = exceptions.Count == 0 ? null : new AggregateException(exceptions);
+            throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", exception);
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -281,6 +306,8 @@ namespace Meziantou.Framework.Utilities
 
             public Type Type { get; }
 
+            public List<ConstructorInfo> Constructors { get; } = new List<ConstructorInfo>();
+
             public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>();
             public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>();
             public List<PropertyInfo> InstanceIndexers { get; } = new List<PropertyInfo>();
@@ -291,7 +318,9 @@ namespace Meziantou.Framework.Utilities
 
             public static TypeCache Create(Type type)
             {
-                var instance = new TypeCache(type);
+                var typeCache = new TypeCache(type);
+                typeCache.Constructors.AddRange(type.GetConstructors());
+
                 while (type != null)
                 {
                     // Instances
@@ -299,22 +328,22 @@ namespace Meziantou.Framework.Utilities
                     {
                         if (propertyInfo.GetIndexParameters().Any())
                         {
-                            instance.InstanceIndexers.Add(propertyInfo);
+                            typeCache.InstanceIndexers.Add(propertyInfo);
                         }
                         else
                         {
-                            if (!instance.InstanceProperties.ContainsKey(propertyInfo.Name))
+                            if (!typeCache.InstanceProperties.ContainsKey(propertyInfo.Name))
                             {
-                                instance.InstanceProperties.Add(propertyInfo.Name, propertyInfo);
+                                typeCache.InstanceProperties.Add(propertyInfo.Name, propertyInfo);
                             }
                         }
                     }
 
                     foreach (var fieldInfo in type.GetFields(InstanceDefaultBindingFlags))
                     {
-                        if (!instance.InstanceFields.ContainsKey(fieldInfo.Name))
+                        if (!typeCache.InstanceFields.ContainsKey(fieldInfo.Name))
                         {
-                            instance.InstanceFields.Add(fieldInfo.Name, fieldInfo);
+                            typeCache.InstanceFields.Add(fieldInfo.Name, fieldInfo);
                         }
                     }
 
@@ -323,29 +352,29 @@ namespace Meziantou.Framework.Utilities
                     {
                         if (propertyInfo.GetIndexParameters().Any())
                         {
-                            instance.StaticIndexers.Add(propertyInfo);
+                            typeCache.StaticIndexers.Add(propertyInfo);
                         }
                         else
                         {
-                            if (!instance.StaticProperties.ContainsKey(propertyInfo.Name))
+                            if (!typeCache.StaticProperties.ContainsKey(propertyInfo.Name))
                             {
-                                instance.StaticProperties.Add(propertyInfo.Name, propertyInfo);
+                                typeCache.StaticProperties.Add(propertyInfo.Name, propertyInfo);
                             }
                         }
                     }
 
                     foreach (var fieldInfo in type.GetFields(StaticDefaultBindingFlags))
                     {
-                        if (!instance.StaticFields.ContainsKey(fieldInfo.Name))
+                        if (!typeCache.StaticFields.ContainsKey(fieldInfo.Name))
                         {
-                            instance.StaticFields.Add(fieldInfo.Name, fieldInfo);
+                            typeCache.StaticFields.Add(fieldInfo.Name, fieldInfo);
                         }
                     }
 
                     type = type.BaseType;
                 }
 
-                return instance;
+                return typeCache;
             }
         }
     }

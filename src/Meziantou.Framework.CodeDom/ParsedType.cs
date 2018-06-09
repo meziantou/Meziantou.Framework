@@ -13,7 +13,7 @@ namespace Meziantou.Framework.CodeDom
         public string TypeName
         {
             get => _typeName;
-            private set => _typeName = value ?? throw new ArgumentNullException("value");
+            private set => _typeName = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public string Namespace

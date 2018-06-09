@@ -12,8 +12,8 @@ namespace Meziantou.Framework.Csv
 
         public CsvRow(IReadOnlyList<CsvColumn> columns, IReadOnlyList<string> values)
         {
+            Values = values ?? throw new ArgumentNullException(nameof(values));
             Columns = columns;
-            Values = values;
         }
 
         public virtual string this[int index]
@@ -34,7 +34,8 @@ namespace Meziantou.Framework.Csv
         {
             get
             {
-                if (columnName == null) throw new ArgumentNullException(nameof(columnName));
+                if (columnName == null)
+                    throw new ArgumentNullException(nameof(columnName));
 
                 var column = Columns.FirstOrDefault(c => c.Name == columnName);
                 return this[column];
@@ -45,13 +46,14 @@ namespace Meziantou.Framework.Csv
         {
             get
             {
-                if (column == null) throw new ArgumentNullException(nameof(column));
+                if (column == null)
+                    throw new ArgumentNullException(nameof(column));
 
                 return this[column.Index];
             }
         }
 
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Columns.Select(c => c.Name);
+        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Columns == null ? Enumerable.Empty<string>() : Columns.Select(c => c.Name);
 
         IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
 
@@ -79,6 +81,9 @@ namespace Meziantou.Framework.Csv
 
         IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
         {
+            if (Columns == null)
+                return Values.Select(v => new KeyValuePair<string, string>(null, v)).GetEnumerator();
+
             return Columns.Select(c => new KeyValuePair<string, string>(c.Name, this[c])).GetEnumerator();
         }
 

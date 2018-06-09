@@ -49,6 +49,39 @@ namespace Meziantou.Framework.Csv.Tests
         }
 
         [TestMethod]
+        public async Task CsvWriterAsync_WriteValues()
+        {
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                writer.EndOfLine = "\n";
+                await writer.BeginRowAsync();
+                await writer.WriteValuesAsync("A", "B").ConfigureAwait(false);
+                await writer.WriteValuesAsync("C", "D").ConfigureAwait(false);
+                await writer.BeginRowAsync();
+                await writer.WriteValuesAsync("E").ConfigureAwait(false);
+
+                Assert.AreEqual("A,B,C,D\nE", sw.ToString());
+            }
+        }
+
+
+        [TestMethod]
+        public async Task CsvWriterAsync_NoQuoteCharacter()
+        {
+            using (var sw = new StringWriter())
+            {
+                var writer = new CsvWriter(sw);
+                writer.Quote = null;
+                
+                await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
+
+                Assert.AreEqual("A\",B", sw.ToString());
+            }
+        }
+
+
+        [TestMethod]
         [DataRow("A;B:D;E")]
         [DataRow("A,;B:D;E")]
         [DataRow(",A;B:D;E")]

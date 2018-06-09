@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <Description>No description</Description>
+    <Description>C# code generator</Description>
     <Version>2.0.3</Version>    
   </PropertyGroup>
 

@@ -76,7 +76,7 @@ namespace Meziantou.Framework.Versioning
                 var labels = new ReadOnlyList<string>();
                 foreach (var label in metadata)
                 {
-                    if (!IsPrereleaseIdentifier(label))
+                    if (!IsMetadataIdentifier(label))
                         throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
                     labels.Add(label);

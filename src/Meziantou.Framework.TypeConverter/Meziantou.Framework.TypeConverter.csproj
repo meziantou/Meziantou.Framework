@@ -1,9 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <Description>No description</Description>
+    <Description>Convert object to an other type</Description>
     <Version>1.3.0</Version>
+    <DefineConstants>ReflectionUtilities_Interal;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework\Utilities\ReflectionUtilities.cs" Link="ReflectionUtilities.cs" />
+  </ItemGroup>
 
 </Project>

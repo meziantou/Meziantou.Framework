@@ -167,7 +167,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_CultureAsString()
+        public void TryConvert_StringToCultureInfo_CultureAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -178,7 +178,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_NeutralCultureAsString()
+        public void TryConvert_StringToCultureInfo_NeutralCultureAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -189,7 +189,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_LcidAsInt()
+        public void TryConvert_Int32ToCultureInfo_LcidAsInt()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -200,7 +200,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_LcidAsString()
+        public void TryConvert_StringToCultureInfo_LcidAsString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -211,7 +211,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_InvalidCulture()
+        public void TryConvert_StringToCultureInfo_InvalidCulture()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -221,7 +221,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_EmptyString()
+        public void TryConvert_StringToCultureInfo_EmptyString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -232,18 +232,19 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfo_NullValue()
+        public void TryConvert_StringToCultureInfo_NullValue()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType<CultureInfo>(null, null, out var value);
+            string inputValue = null;
+            var converted = converter.TryChangeType<CultureInfo>(inputValue, cultureInfo, out var value);
 
             Assert.AreEqual(true, converted);
             Assert.AreEqual(null, value);
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfoToStringInvariant()
+        public void TryConvert_CultureInfoToString_UsingInvariantCulture()
         {
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), null, CultureInfo.InvariantCulture);
@@ -252,7 +253,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfoToString()
+        public void TryConvert_CultureInfoToString_UsingSpecificCulture()
         {
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), null, new CultureInfo("en-US"));
@@ -261,7 +262,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_Uri_01()
+        public void TryConvert_StringToUri_EmptyString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -273,7 +274,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_Uri_02()
+        public void TryConvert_StringToUri_RelativeUri()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -284,14 +285,93 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_Uri_03()
+        public void TryConvert_StringToUri_AbsoluteUri()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("http://meziantou.net", cultureInfo, out Uri value);
+            var converted = converter.TryChangeType("https://meziantou.net", cultureInfo, out Uri value);
 
             Assert.AreEqual(true, converted);
-            Assert.AreEqual(new Uri("http://meziantou.net", UriKind.Absolute), value);
+            Assert.AreEqual(new Uri("https://meziantou.net", UriKind.Absolute), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_ByteArrayToString_Base64()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual("AQIDBA==", value);
+        }
+
+        [TestMethod]
+        public void TryConvert_ByteArrayToString_Base16WithPrefix()
+        {
+            var converter = new DefaultConverter();
+            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual("0x01020304", value);
+        }
+
+        [TestMethod]
+        public void TryConvert_ByteArrayToString_Base16WithoutPrefix()
+        {
+            var converter = new DefaultConverter();
+            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16;
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual("01020304", value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToTimeSpan()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("12:30", cultureInfo, out TimeSpan value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new TimeSpan(12, 30, 0), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToGuid()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("2d8a54aa-569b-404f-933b-693918885dba", cultureInfo, out Guid value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new Guid("2d8a54aa-569b-404f-933b-693918885dba"), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToDecimal()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("42.24", cultureInfo, out decimal value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(42.24m, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToDateTime()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("2018/09/24", cultureInfo, out DateTime value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new DateTime(2018, 9, 24), value);
         }
     }
 }

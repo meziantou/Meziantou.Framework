@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Win32.Natives
     {
         [FieldOffset(0)]
         public JOBOBJECT_EXTENDED_LIMIT_INFORMATION32 ExtendedLimits32;
+
         [FieldOffset(0)]
         public JOBOBJECT_EXTENDED_LIMIT_INFORMATION64 ExtendedLimits64;
 

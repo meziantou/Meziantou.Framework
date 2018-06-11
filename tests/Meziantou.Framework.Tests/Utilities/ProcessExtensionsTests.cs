@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Tests.Utilities
         [TestMethod]
         public async Task RunAsTask()
         {
-            var result = await ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None);
+            var result = await ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None).ConfigureAwait(false);
             Assert.AreEqual(0, result.ExitCode);
             Assert.AreEqual(1, result.Output.Count);
             Assert.AreEqual("test", result.Output[0].Text);
@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Tests.Utilities
             psi.FileName = "cmd.exe";
             psi.Arguments = "/C echo test";
 
-            var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None);
+            var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.AreEqual(0, result.ExitCode);
             Assert.AreEqual(1, result.Output.Count);
             Assert.AreEqual("test", result.Output[0].Text);
@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Tests.Utilities
             psi.FileName = "cmd.exe";
             psi.Arguments = "/C echo test";
 
-            var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None);
+            var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.AreEqual(0, result.ExitCode);
             Assert.AreEqual(0, result.Output.Count);
         }
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Tests.Utilities
         {
             var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
 
-            await Assert.ThrowsExceptionAsync<Win32Exception>(() => psi.RunAsTask(CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<Win32Exception>(() => psi.RunAsTask(CancellationToken.None)).ConfigureAwait(false);
         }
     }
 }

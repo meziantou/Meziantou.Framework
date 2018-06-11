@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.CodeDom
 {
-    partial class CSharpCodeGenerator
+    public partial class CSharpCodeGenerator
     {
         protected class WriteStatementOptions
         {

@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Win32
         /// When overridden in a derived class, gets a value indicating whether the handle value is invalid.
         /// </summary>
         /// <returns>true if the handle value is invalid; otherwise, false.</returns>
-        public override bool IsInvalid => IsClosed ? true : handle == IntPtr.Zero;
+        public override bool IsInvalid => IsClosed || handle == IntPtr.Zero;
 
         /// <summary>
         /// When overridden in a derived class, executes the code required to free the handle.

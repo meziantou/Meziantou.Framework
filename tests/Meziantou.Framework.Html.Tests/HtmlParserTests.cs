@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Html.Tests
@@ -55,6 +56,30 @@ namespace Meziantou.Framework.Html.Tests
             var absoluteUrl = document.MakeAbsoluteUrl("test.html");
 
             Assert.AreEqual("https://www.meziantou.net/test.html", absoluteUrl);
+        }
+
+        [TestMethod]
+        public void HtmlParser_ErrorTagNotOpened()
+        {
+            var document = new HtmlDocument();
+            document.LoadHtml("</p>");
+
+            var errors = document.Errors.ToList();
+
+            Assert.AreEqual(1, errors.Count);
+            Assert.AreEqual(HtmlErrorType.TagNotOpened, errors[0].ErrorType);
+        }
+
+        [TestMethod]
+        public void HtmlParser_ErrorDuplicateAttribute()
+        {
+            var document = new HtmlDocument();
+            document.LoadHtml("<p a='a' a='b'></p>");
+
+            var errors = document.Errors.ToList();
+
+            Assert.AreEqual(1, errors.Count);
+            Assert.AreEqual(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
         }
     }
 }

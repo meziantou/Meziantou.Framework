@@ -15,5 +15,9 @@ namespace Meziantou.Framework.Templating
         public TemplateException(string message, Exception innerException) : base(message, innerException)
         {
         }
+
+        protected TemplateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context)
+        {
+        }
     }
 }

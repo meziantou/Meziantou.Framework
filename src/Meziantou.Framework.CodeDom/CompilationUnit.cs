@@ -1,20 +1,5 @@
 namespace Meziantou.Framework.CodeDom
 {
-    public interface ITypeDeclarationContainer
-    {
-        CodeObjectCollection<TypeDeclaration> Types { get; }
-    }
-
-    public interface INamespaceDeclarationContainer
-    {
-        CodeObjectCollection<NamespaceDeclaration> Namespaces { get; }
-    }
-
-    public interface IUsingDirectiveContainer
-    {
-        CodeObjectCollection<UsingDirective> Usings { get; }
-    }
-
     public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer
     {
         private CodeObjectCollection<TypeDeclaration> _types;
@@ -49,6 +34,7 @@ namespace Meziantou.Framework.CodeDom
                 {
                     _types = new CodeObjectCollection<TypeDeclaration>(this);
                 }
+
                 return _types;
             }
         }
@@ -61,6 +47,7 @@ namespace Meziantou.Framework.CodeDom
                 {
                     _namespaces = new CodeObjectCollection<NamespaceDeclaration>(this);
                 }
+
                 return _namespaces;
             }
         }

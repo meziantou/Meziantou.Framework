@@ -18,6 +18,11 @@ namespace Meziantou.Framework.Utilities
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
+        public static bool IsFlagsEnum<T>()
+        {
+            return IsFlagsEnum(typeof(T));
+        }
+
         public static bool IsFlagsEnum(Type type)
         {
             if (type == null)

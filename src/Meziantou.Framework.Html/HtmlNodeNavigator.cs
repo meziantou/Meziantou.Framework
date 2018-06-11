@@ -19,9 +19,9 @@ namespace Meziantou.Framework.Html
 #if HTML_XPATH_TRACE
             if (!EnableTrace)
                 return;
+#endif
 
             Debug.WriteLine(methodName + ":" + value);
-#endif
         }
 
 #if HTML_XPATH_TRACE
@@ -194,7 +194,7 @@ namespace Meziantou.Framework.Html
             return null;
         }
 
-        public override bool MoveToFirstNamespace(XPathNamespaceScope scope)
+        public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
             var element = CurrentNode as HtmlElement;
             if (element == null)
@@ -202,7 +202,7 @@ namespace Meziantou.Framework.Html
 
             HtmlAttribute att = null;
             HtmlAttributeList attributes = null;
-            switch (scope)
+            switch (namespaceScope)
             {
                 case XPathNamespaceScope.Local:
                     if (element.HasAttributes)
@@ -298,7 +298,7 @@ namespace Meziantou.Framework.Html
             return null;
         }
 
-        public override bool MoveToNextNamespace(XPathNamespaceScope scope)
+        public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
             var attribute = CurrentNode as HtmlAttribute;
             if (attribute == null || !attribute.IsNamespace)
@@ -306,7 +306,7 @@ namespace Meziantou.Framework.Html
 
             HtmlAttribute att;
             HtmlAttributeList attributes = attribute.ParentNode.HasAttributes ? attribute.ParentNode.Attributes : null;
-            switch (scope)
+            switch (namespaceScope)
             {
                 case XPathNamespaceScope.Local:
                     att = MoveToNextNamespaceLocal(attribute);
@@ -348,12 +348,6 @@ namespace Meziantou.Framework.Html
                     break;
             }
             return true;
-        }
-
-        public override bool MoveToId(string id)
-        {
-            Trace("id:" + id);
-            throw new NotImplementedException();
         }
 
         public override bool MoveToNext()
@@ -414,6 +408,11 @@ namespace Meziantou.Framework.Html
         {
             Trace(null);
             CurrentNode = Document ?? BaseNode;
+        }
+
+        public override bool MoveToId(string id)
+        {
+            throw new NotSupportedException();
         }
 
         public override string LocalName

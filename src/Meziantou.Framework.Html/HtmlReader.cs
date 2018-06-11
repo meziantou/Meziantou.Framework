@@ -50,13 +50,7 @@ namespace Meziantou.Framework.Html
         public HtmlParserState ParserState { get; protected set; }
         public StringBuilder Value { get; private set; }
 
-        protected Queue<HtmlReaderState> ParserStatesQueue
-        {
-            get
-            {
-                return _parserStatesQueue;
-            }
-        }
+        protected Queue<HtmlReaderState> ParserStatesQueue => _parserStatesQueue;
 
         public virtual bool IsRestartable
         {

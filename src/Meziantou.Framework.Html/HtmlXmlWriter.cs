@@ -49,7 +49,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override void WriteCData(string text)
@@ -144,14 +144,13 @@ namespace Meziantou.Framework.Html
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
             HtmlElement current = GetCurrentElement();
-            HtmlAttribute att = current.Attributes.Add(prefix, localName, ns);
-            Current = att;
+            Current = current.Attributes.Add(prefix, localName, ns);
             _writeState = WriteState.Attribute;
         }
 
@@ -167,7 +166,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteStartDocument(bool standalone)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override void WriteStartDocument()
@@ -177,7 +176,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteEndDocument()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override void WriteStartElement(string prefix, string localName, string ns)

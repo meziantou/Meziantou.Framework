@@ -390,9 +390,9 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void CopyTo(HtmlNode target, HtmlCloneOptions copyOptions)
+        public override void CopyTo(HtmlNode target, HtmlCloneOptions options)
         {
-            base.CopyTo(target, copyOptions);
+            base.CopyTo(target, options);
             var element = (HtmlElement)target;
             element._closed = _closed;
             element._empty = _empty;

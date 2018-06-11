@@ -425,10 +425,14 @@ else
         [TestMethod]
         public void CSharpCodeGenerator_Try_Catch()
         {
-            var statement = new TryCatchFinallyStatement();
-            statement.Try = new SnippetStatement("TrySnippet");
-            statement.Catch = new CatchClauseCollection();
-            statement.Catch.Add(new CatchClause() { Body = new SnippetStatement("Catch1") });
+            var statement = new TryCatchFinallyStatement
+            {
+                Try = new SnippetStatement("TrySnippet"),
+                Catch = new CatchClauseCollection
+                {
+                    new CatchClause() { Body = new SnippetStatement("Catch1") }
+                }
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -449,19 +453,21 @@ catch
         {
             var statement = new TryCatchFinallyStatement();
             statement.Try = new SnippetStatement("TrySnippet");
-            statement.Catch = new CatchClauseCollection();
-            statement.Catch.Add(new CatchClause()
+            statement.Catch = new CatchClauseCollection
             {
-                ExceptionType = typeof(NotImplementedException),
-                ExceptionVariableName = "nie",
-                Body = new SnippetStatement("Catch1")
-            });
-            statement.Catch.Add(new CatchClause()
-            {
-                ExceptionType = typeof(Exception),
-                ExceptionVariableName = "ex",
-                Body = new ThrowStatement()
-            });
+                new CatchClause()
+                {
+                    ExceptionType = typeof(NotImplementedException),
+                    ExceptionVariableName = "nie",
+                    Body = new SnippetStatement("Catch1")
+                },
+                new CatchClause()
+                {
+                    ExceptionType = typeof(Exception),
+                    ExceptionVariableName = "ex",
+                    Body = new ThrowStatement()
+                }
+            };
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);

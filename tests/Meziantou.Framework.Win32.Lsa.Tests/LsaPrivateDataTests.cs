@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
     public class LsaPrivateDataTests
     {
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext _)
         {
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);

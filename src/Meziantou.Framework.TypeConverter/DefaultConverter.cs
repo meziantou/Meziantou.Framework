@@ -179,7 +179,7 @@ namespace Meziantou.Framework.Utilities
 
                 if (lo)
                 {
-                    list.Add((byte)(prev * 16 + b));
+                    list.Add((byte)((prev * 16) + b));
                 }
                 else
                 {
@@ -241,9 +241,9 @@ namespace Meziantou.Framework.Utilities
         protected virtual bool TryConvert(object input, IFormatProvider provider, out byte[] value)
         {
             byte[] bytes;
-            if (input is Guid)
+            if (input is Guid guid)
             {
-                if (TryConvert((Guid)input, provider, out bytes))
+                if (TryConvert(guid, provider, out bytes))
                 {
                     value = bytes;
                     return true;
@@ -253,18 +253,15 @@ namespace Meziantou.Framework.Utilities
                 return false;
             }
 
-            if (input is DateTimeOffset)
+            if (input is DateTimeOffset dateTimeOffset && TryConvert((dateTimeOffset).DateTime, typeof(byte[]), provider, out var result))
             {
-                if (TryConvert(((DateTimeOffset)input).DateTime, typeof(byte[]), provider, out var result))
-                {
-                    value = (byte[])result;
-                    return true;
-                }
+                value = (byte[])result;
+                return true;
             }
 
-            if (input is TimeSpan)
+            if (input is TimeSpan timeSpan)
             {
-                if (TryConvert((TimeSpan)input, provider, out bytes))
+                if (TryConvert(timeSpan, provider, out bytes))
                 {
                     value = bytes;
                     return true;
@@ -280,10 +277,7 @@ namespace Meziantou.Framework.Utilities
 
         protected virtual bool TryConvertEnum(object input, Type conversionType, IFormatProvider provider, out object value)
         {
-            if (EnumTryParse(conversionType, Convert.ToString(input, provider), out value))
-                return true;
-
-            return false;
+            return EnumTryParse(conversionType, Convert.ToString(input, provider), out value);
         }
 
         protected virtual bool TryConvert(string text, IFormatProvider provider, out byte[] value)
@@ -817,9 +811,9 @@ namespace Meziantou.Framework.Utilities
                 return false;
             }
 
-            if (input is IntPtr)
+            if (input is IntPtr intPtr)
             {
-                value = ((IntPtr)input).ToInt32();
+                value = intPtr.ToInt32();
                 return true;
             }
 
@@ -866,9 +860,9 @@ namespace Meziantou.Framework.Utilities
                 return false;
             }
 
-            if (input is IntPtr)
+            if (input is IntPtr intPtr)
             {
-                value = ((IntPtr)input).ToInt64();
+                value = intPtr.ToInt64();
                 return true;
             }
 
@@ -926,10 +920,7 @@ namespace Meziantou.Framework.Utilities
                 return true;
             }
 
-            if (bools == "n" || bools == "no" || bools == "f" || bools.StartsWith("false"))
-                return true;
-
-            return false;
+            return bools == "n" || bools == "no" || bools == "f" || bools.StartsWith("false");
         }
 
         protected virtual bool TryConvert(object input, Type conversionType, IFormatProvider provider, out object value)

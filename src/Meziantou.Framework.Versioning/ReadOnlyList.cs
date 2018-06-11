@@ -12,7 +12,6 @@ namespace Meziantou.Framework.Versioning
             list.Freeze();
             return list;
         }
-
     }
 
     internal class ReadOnlyList<T> : IList<T>, IReadOnlyList<T>
@@ -34,6 +33,7 @@ namespace Meziantou.Framework.Versioning
         {
             _items = new List<T>(items);
         }
+
         public T this[int index]
         {
             get => _items[index];

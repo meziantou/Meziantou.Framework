@@ -117,18 +117,18 @@ namespace Meziantou.Framework.Html
             RemoveAllNoCheck();
         }
 
-        public void Insert(int index, HtmlNode node)
+        public void Insert(int index, HtmlNode item)
         {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
 
-            if (node.ParentNode != null)
-                throw new ArgumentException(null, nameof(node));
+            if (item.ParentNode != null)
+                throw new ArgumentException(null, nameof(item));
 
-            HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
-            _list.Insert(index, node);
-            node.ParentNode = _parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node, index));
+            HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
+            _list.Insert(index, item);
+            item.ParentNode = _parent;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         public void AddRange(IEnumerable<HtmlNode> nodes)

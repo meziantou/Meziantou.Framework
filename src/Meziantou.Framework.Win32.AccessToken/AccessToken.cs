@@ -125,7 +125,7 @@ namespace Meziantou.Framework.Win32
             var basePtr = new IntPtr(handle.ToInt64() + offset.ToInt64());
             for (var i = 0; i < count; i++)
             {
-                yield return Marshal.PtrToStructure<TItem>(basePtr + i * size);
+                yield return Marshal.PtrToStructure<TItem>(basePtr + (i * size));
             }
         }
 

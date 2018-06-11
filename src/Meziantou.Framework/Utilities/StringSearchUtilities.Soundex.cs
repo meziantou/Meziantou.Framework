@@ -321,8 +321,7 @@ namespace Meziantou.Framework.Utilities
             }
 
             // Return empty string if string is empty
-            var s1 = sb.ToString();
-            if (s1 == string.Empty)
+            if (sb.Length == 0)
                 return string.Empty;
 
             // Replace characters

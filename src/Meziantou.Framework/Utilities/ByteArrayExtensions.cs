@@ -39,7 +39,7 @@ namespace Meziantou.Framework.Utilities
                 c[i * 2] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
 
                 b = bytes[i] & 0xF;
-                c[i * 2 + 1] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
+                c[(i * 2) + 1] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
             }
 
             return new string(c);
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Utilities
                 c[i * 2] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
 
                 b = bytes[i] & 0xF;
-                c[i * 2 + 1] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
+                c[(i * 2) + 1] = (char)(addToAlpha + b + (((b - 10) >> 31) & addToDigit));
             }
 
             return new string(c);
@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Utilities
             {
                 const int prefixLength = 2;
                 var b = new byte[(str.Length / 2) - 1];
-                for (var i = 0; i < str.Length / 2 - 1; i++)
+                for (var i = 0; i < (str.Length / 2) - 1; i++)
                 {
                     var c = str[(i * 2) + prefixLength];
                     b[i] = (byte)(GetInt(c) << 4);
@@ -92,7 +92,7 @@ namespace Meziantou.Framework.Utilities
                 {
                     var c = str[i * 2];
                     b[i] = (byte)(GetInt(c) << 4);
-                    c = str[i * 2 + 1];
+                    c = str[(i * 2) + 1];
                     b[i] += (byte)GetInt(c);
                 }
 

@@ -14,5 +14,4 @@ namespace Meziantou.Framework.Utilities
         public int ExitCode { get; }
         public IReadOnlyList<ProcessOutput> Output { get; }
     }
-
 }

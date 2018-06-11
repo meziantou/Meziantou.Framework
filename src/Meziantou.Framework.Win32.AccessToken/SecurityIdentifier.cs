@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32
     public class SecurityIdentifier
     {
         private const byte MaxSubAuthorities = 15;
-        private const int MaxBinaryLength = 1 + 1 + 6 + MaxSubAuthorities * 4; // 4 bytes for each subauth
+        private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
 
         private readonly IntPtr _sid;
 

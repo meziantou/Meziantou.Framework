@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Html
 {
     public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNamespaceResolver
     {
-        private static readonly int _maxRecursion = 300; // TODO configurable
+        private const int _maxRecursion = 300; // TODO configurable
 
         public const string XmlnsPrefix = "xmlns";
         public const string XmlnsNamespaceURI = "http://www.w3.org/2000/xmlns/";

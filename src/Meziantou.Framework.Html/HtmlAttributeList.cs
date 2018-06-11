@@ -127,17 +127,17 @@ namespace Meziantou.Framework.Html
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
-        public void Insert(int index, HtmlAttribute attribute)
+        public void Insert(int index, HtmlAttribute item)
         {
-            if (attribute == null)
-                throw new ArgumentNullException(nameof(attribute));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
 
-            if (attribute.ParentNode != null)
-                throw new ArgumentException(null, nameof(attribute));
+            if (item.ParentNode != null)
+                throw new ArgumentException(null, nameof(item));
 
-            _list.Insert(index, attribute);
-            attribute.ParentNode = Parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute, index));
+            _list.Insert(index, item);
+            item.ParentNode = Parent;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         public bool Contains(HtmlAttribute item)
@@ -150,12 +150,12 @@ namespace Meziantou.Framework.Html
             _list.CopyTo(array, arrayIndex);
         }
 
-        public int IndexOf(HtmlAttribute attribute)
+        public int IndexOf(HtmlAttribute item)
         {
-            if (attribute == null)
-                throw new ArgumentNullException(nameof(attribute));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
 
-            return _list.IndexOf(attribute);
+            return _list.IndexOf(item);
         }
 
         public int IndexOf(string name)

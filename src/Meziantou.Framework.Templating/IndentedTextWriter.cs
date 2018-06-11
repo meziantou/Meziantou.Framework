@@ -10,8 +10,6 @@ namespace Meziantou.Framework.Templating
         ///     Specifies the default tab string. This field is constant.
         /// </summary>
         public const string DefaultTabString = "    ";
-
-        private readonly TextWriter _writer;
         private int _indentLevel;
         private bool _tabsPending;
         private readonly string _tabString;
@@ -22,7 +20,7 @@ namespace Meziantou.Framework.Templating
         /// <returns>
         ///     An <see cref="T:System.Text.Encoding" /> that indicates the encoding for the text writer to use.
         /// </returns>
-        public override Encoding Encoding => _writer.Encoding;
+        public override Encoding Encoding => InnerWriter.Encoding;
 
         /// <summary>
         ///     Gets or sets the new line character to use.
@@ -30,8 +28,8 @@ namespace Meziantou.Framework.Templating
         /// <returns> The new line character to use. </returns>
         public override string NewLine
         {
-            get => _writer.NewLine;
-            set => _writer.NewLine = value;
+            get => InnerWriter.NewLine;
+            set => InnerWriter.NewLine = value;
         }
 
         /// <summary>
@@ -57,7 +55,7 @@ namespace Meziantou.Framework.Templating
         /// <returns>
         ///     The <see cref="T:System.IO.TextWriter" /> to use.
         /// </returns>
-        public TextWriter InnerWriter => _writer;
+        public TextWriter InnerWriter { get; }
 
         /// <summary>
         ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and default tab string.
@@ -80,7 +78,7 @@ namespace Meziantou.Framework.Templating
         public IndentedTextWriter(TextWriter writer, string tabString)
             : base(CultureInfo.InvariantCulture)
         {
-            _writer = writer;
+            InnerWriter = writer;
             _tabString = tabString;
             _indentLevel = 0;
             _tabsPending = false;
@@ -88,7 +86,7 @@ namespace Meziantou.Framework.Templating
 
         protected override void Dispose(bool disposing)
         {
-            _writer.Dispose();
+            InnerWriter.Dispose();
             base.Dispose(disposing);
         }
 
@@ -97,7 +95,7 @@ namespace Meziantou.Framework.Templating
         /// </summary>
         public override void Flush()
         {
-            _writer.Flush();
+            InnerWriter.Flush();
         }
 
         /// <summary>
@@ -113,7 +111,7 @@ namespace Meziantou.Framework.Templating
 
             for (var index = 0; index < _indentLevel; ++index)
             {
-                _writer.Write(_tabString);
+                InnerWriter.Write(_tabString);
             }
 
             _tabsPending = false;
@@ -126,7 +124,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(string value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -136,7 +134,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(bool value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -146,7 +144,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(char value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -156,7 +154,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(char[] buffer)
         {
             OutputTabs();
-            _writer.Write(buffer);
+            InnerWriter.Write(buffer);
         }
 
         /// <summary>
@@ -168,7 +166,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(char[] buffer, int index, int count)
         {
             OutputTabs();
-            _writer.Write(buffer, index, count);
+            InnerWriter.Write(buffer, index, count);
         }
 
         /// <summary>
@@ -178,7 +176,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(double value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -188,7 +186,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(float value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -198,7 +196,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(int value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -208,7 +206,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(long value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -218,7 +216,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(object value)
         {
             OutputTabs();
-            _writer.Write(value);
+            InnerWriter.Write(value);
         }
 
         /// <summary>
@@ -229,7 +227,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(string format, object arg0)
         {
             OutputTabs();
-            _writer.Write(format, arg0);
+            InnerWriter.Write(format, arg0);
         }
 
         /// <summary>
@@ -241,7 +239,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(string format, object arg0, object arg1)
         {
             OutputTabs();
-            _writer.Write(format, arg0, arg1);
+            InnerWriter.Write(format, arg0, arg1);
         }
 
         /// <summary>
@@ -252,7 +250,7 @@ namespace Meziantou.Framework.Templating
         public override void Write(string format, params object[] arg)
         {
             OutputTabs();
-            _writer.Write(format, arg);
+            InnerWriter.Write(format, arg);
         }
 
         /// <summary>
@@ -261,7 +259,7 @@ namespace Meziantou.Framework.Templating
         /// <param name="value"> The string to write. </param>
         public void WriteLineNoTabs(string value)
         {
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
         }
 
         /// <summary>
@@ -271,7 +269,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(string value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -281,7 +279,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine()
         {
             OutputTabs();
-            _writer.WriteLine();
+            InnerWriter.WriteLine();
             _tabsPending = true;
         }
 
@@ -292,7 +290,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(bool value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -303,7 +301,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(char value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -314,7 +312,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(char[] buffer)
         {
             OutputTabs();
-            _writer.WriteLine(buffer);
+            InnerWriter.WriteLine(buffer);
             _tabsPending = true;
         }
 
@@ -327,7 +325,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(char[] buffer, int index, int count)
         {
             OutputTabs();
-            _writer.WriteLine(buffer, index, count);
+            InnerWriter.WriteLine(buffer, index, count);
             _tabsPending = true;
         }
 
@@ -338,7 +336,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(double value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -349,7 +347,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(float value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -360,7 +358,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(int value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -371,7 +369,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(long value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -382,7 +380,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(object value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
 
@@ -394,7 +392,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(string format, object arg0)
         {
             OutputTabs();
-            _writer.WriteLine(format, arg0);
+            InnerWriter.WriteLine(format, arg0);
             _tabsPending = true;
         }
 
@@ -407,7 +405,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(string format, object arg0, object arg1)
         {
             OutputTabs();
-            _writer.WriteLine(format, arg0, arg1);
+            InnerWriter.WriteLine(format, arg0, arg1);
             _tabsPending = true;
         }
 
@@ -419,7 +417,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(string format, params object[] arg)
         {
             OutputTabs();
-            _writer.WriteLine(format, arg);
+            InnerWriter.WriteLine(format, arg);
             _tabsPending = true;
         }
 
@@ -430,7 +428,7 @@ namespace Meziantou.Framework.Templating
         public override void WriteLine(uint value)
         {
             OutputTabs();
-            _writer.WriteLine(value);
+            InnerWriter.WriteLine(value);
             _tabsPending = true;
         }
     }

@@ -98,12 +98,12 @@ namespace Meziantou.Framework.Scheduling
 
         protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
         {
-            return (daysOfWeek.Count == 5 &&
-                    daysOfWeek.Contains(DayOfWeek.Monday) &&
-                    daysOfWeek.Contains(DayOfWeek.Tuesday) &&
-                    daysOfWeek.Contains(DayOfWeek.Wednesday) &&
-                    daysOfWeek.Contains(DayOfWeek.Thursday) &&
-                    daysOfWeek.Contains(DayOfWeek.Friday));
+            return daysOfWeek.Count == 5 &&
+                   daysOfWeek.Contains(DayOfWeek.Monday) &&
+                   daysOfWeek.Contains(DayOfWeek.Tuesday) &&
+                   daysOfWeek.Contains(DayOfWeek.Wednesday) &&
+                   daysOfWeek.Contains(DayOfWeek.Thursday) &&
+                   daysOfWeek.Contains(DayOfWeek.Friday);
         }
 
         protected static bool IsWeekendDay(ICollection<DayOfWeek> daysOfWeek)

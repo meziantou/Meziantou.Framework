@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Win32.Dialogs.Natives
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         internal string pszName;
+
         [MarshalAs(UnmanagedType.LPWStr)]
         internal string pszSpec;
     }

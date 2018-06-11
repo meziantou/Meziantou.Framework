@@ -15,9 +15,6 @@ namespace Meziantou.Framework.Versioning
     {
         private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
 
-        private readonly IReadOnlyList<string> _prereleaseLabel = EmptyArray;
-        private readonly IReadOnlyList<string> _metadata = EmptyArray;
-
         public SemanticVersion(int major, int minor, int patch)
         {
             Major = major;
@@ -36,7 +33,7 @@ namespace Meziantou.Framework.Versioning
             if (prereleaseLabel != null)
             {
                 var index = 0;
-                _prereleaseLabel = ReadPrereleaseIdentifiers(prereleaseLabel, ref index);
+                PrereleaseLabels = ReadPrereleaseIdentifiers(prereleaseLabel, ref index);
                 if (index != prereleaseLabel.Length)
                     throw new ArgumentException("Value is not valid", nameof(prereleaseLabel));
             }
@@ -44,7 +41,7 @@ namespace Meziantou.Framework.Versioning
             if (metadata != null)
             {
                 var index = 0;
-                _metadata = TryReadMetadataIdentifiers(metadata, ref index);
+                Metadata = TryReadMetadataIdentifiers(metadata, ref index);
                 if (index != metadata.Length)
                     throw new ArgumentException("Value is not valid", nameof(metadata));
             }
@@ -67,7 +64,7 @@ namespace Meziantou.Framework.Versioning
                 if (labels.Count > 0)
                 {
                     labels.Freeze();
-                    _prereleaseLabel = labels;
+                    PrereleaseLabels = labels;
                 }
             }
 
@@ -76,7 +73,7 @@ namespace Meziantou.Framework.Versioning
                 var labels = new ReadOnlyList<string>();
                 foreach (var label in metadata)
                 {
-                    if (!IsPrereleaseIdentifier(label))
+                    if (!IsMetadataIdentifier(label))
                         throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
                     labels.Add(label);
@@ -85,7 +82,7 @@ namespace Meziantou.Framework.Versioning
                 if (labels.Count > 0)
                 {
                     labels.Freeze();
-                    _metadata = labels;
+                    Metadata = labels;
                 }
             }
         }
@@ -94,11 +91,11 @@ namespace Meziantou.Framework.Versioning
         public int Minor { get; }
         public int Patch { get; }
 
-        public virtual IReadOnlyList<string> PrereleaseLabels => _prereleaseLabel;
-        public virtual bool IsPrerelease => _prereleaseLabel != EmptyArray;
+        public virtual IReadOnlyList<string> PrereleaseLabels { get; } = EmptyArray;
+        public virtual bool IsPrerelease => PrereleaseLabels != EmptyArray;
 
-        public virtual IReadOnlyList<string> Metadata => _metadata;
-        public virtual bool HasMetadata => _metadata != EmptyArray;
+        public virtual IReadOnlyList<string> Metadata { get; } = EmptyArray;
+        public virtual bool HasMetadata => Metadata != EmptyArray;
 
         public virtual string ToString(string format, IFormatProvider formatProvider)
         {
@@ -335,7 +332,7 @@ namespace Meziantou.Framework.Versioning
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
             {
-                last += 1;
+                last++;
             }
 
             if (last > index)
@@ -362,7 +359,7 @@ namespace Meziantou.Framework.Versioning
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
             {
-                last += 1;
+                last++;
             }
 
             if (last > index)
@@ -386,7 +383,7 @@ namespace Meziantou.Framework.Versioning
             var last = index;
             while (last < versionString.Length && IsDigit(versionString[last]))
             {
-                last += 1;
+                last++;
             }
 
             if (last > index)

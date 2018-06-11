@@ -136,5 +136,23 @@ namespace Meziantou.Framework.Csv.Tests
                 Assert.AreEqual("ab\"", row1[0]);
             }
         }
+
+        [TestMethod]
+        public async Task CsvReader_QuoteAndSeparator()
+        {
+            var sb = new StringBuilder();
+            sb.Append("'ab'\t'cd'");
+
+            using (var sr = new StringReader(sb.ToString()))
+            {
+                var reader = new CsvReader(sr);
+                reader.Quote = '\'';
+                reader.Separator= '\t';
+                var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+
+                Assert.AreEqual("ab", row1[0]);
+                Assert.AreEqual("cd", row1[1]);
+            }
+        }
     }
 }

@@ -7,14 +7,19 @@ namespace Meziantou.Framework.Win32.Natives
     {
         [FieldOffset(0)]
         public JOBOBJECT_BASIC_LIMIT_INFORMATION64 BasicLimits;
+
         [FieldOffset(64)]
         public IO_COUNTERS IoInfo;
+
         [FieldOffset(112)]
         public ulong ProcessMemoryLimit;
+
         [FieldOffset(120)]
         public ulong JobMemoryLimit;
+
         [FieldOffset(128)]
         public ulong PeakProcessMemoryUsed;
+
         [FieldOffset(136)]
         public ulong PeakJobMemoryUsed;
     }

@@ -525,10 +525,7 @@ namespace Meziantou.Framework.Templating
         {
             object[] p = new object[parameters?.Length + 1 ?? 1];
             p[0] = CreateOutput(writer);
-            if (parameters != null)
-            {
-                parameters.CopyTo(p, 1);
-            }
+            parameters?.CopyTo(p, 1);
             return p;
         }
 

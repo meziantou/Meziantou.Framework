@@ -21,6 +21,5 @@ namespace Meziantou.Framework.Win32.Natives
             rp.ProcessStartTime = creationTime;
             return rp;
         }
-
     }
 }

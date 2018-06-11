@@ -34,5 +34,42 @@ namespace Meziantou.Framework.Tests.Utilities
             var actual = str.StartsWith(c);
             Assert.AreEqual(expected, actual);
         }
+
+        [TestMethod]
+        public void Replace_ShouldReplaceAllOccurences()
+        {
+            var actual = "abcABC".Replace("ab", "ba", System.StringComparison.OrdinalIgnoreCase);
+            Assert.AreEqual("bacbaC", actual);
+        }
+
+        [TestMethod]
+        public void Replace_ShouldUseStringComparison()
+        {
+            var actual = "abcABC".Replace("ab", "ba", System.StringComparison.Ordinal);
+            Assert.AreEqual("bacABC", actual);
+        }
+
+        [DataTestMethod]
+        [DataRow(null, null, true)]
+        [DataRow("", "", true)]
+        [DataRow("abc", "abc", true)]
+        [DataRow("abc", "aBc", true)]
+        [DataRow("aabc", "abc", false)]
+        public void EqualsIgnoreCase(string left, string right, bool expectedResult)
+        {
+            Assert.AreEqual(expectedResult, left.EqualsIgnoreCase(right));
+        }
+
+        [DataTestMethod]
+        [DataRow(null, null, true)]
+        [DataRow("", "", true)]
+        [DataRow("abc", "abc", true)]
+        [DataRow("abc", "aBc", true)]
+        [DataRow("aabc", "abc", true)]
+        [DataRow("bc", "abc", false)]
+        public void ContainsIgnoreCase(string left, string right, bool expectedResult)
+        {
+            Assert.AreEqual(expectedResult, left.ContainsIgnoreCase(right));
+        }
     }
 }

@@ -28,9 +28,9 @@ namespace Meziantou.Framework.Scheduling
             while (true)
             {
                 var resultByMonthDays = ResultByMonthDays(startDate, startOfYear);
-                var resultByWeekDays = ResultByWeekDays(startDate, startOfYear);
-                var resultByYearDays = ResultByYearDays(startDate, startOfYear);
-                var resultByMonths = ResultByMonths(startDate, startOfYear);
+                var resultByWeekDays = ResultByWeekDays(startOfYear);
+                var resultByYearDays = ResultByYearDays(startOfYear);
+                var resultByMonths = ResultByMonths(startOfYear);
                 List<DateTime> resultByWeekNo = null;// ResultByWeekNo(startDate, startOfYear);
 
                 var result = Intersect(resultByMonths, resultByWeekNo, resultByYearDays, resultByMonthDays, resultByWeekDays);
@@ -47,7 +47,7 @@ namespace Meziantou.Framework.Scheduling
             // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
         }
 
-        private List<DateTime> ResultByWeekDays(DateTime startDate, DateTime startOfYear)
+        private List<DateTime> ResultByWeekDays(DateTime startOfYear)
         {
             List<DateTime> result = null;
             if (!IsEmpty(ByWeekDays))
@@ -149,7 +149,7 @@ namespace Meziantou.Framework.Scheduling
             return result;
         }
 
-        private List<DateTime> ResultByYearDays(DateTime startDate, DateTime startOfYear)
+        private List<DateTime> ResultByYearDays(DateTime startOfYear)
         {
             List<DateTime> result = null;
             if (!IsEmpty(ByYearDays))
@@ -174,7 +174,7 @@ namespace Meziantou.Framework.Scheduling
             return result;
         }
 
-        private List<DateTime> ResultByMonths(DateTime startDate, DateTime startOfYear)
+        private List<DateTime> ResultByMonths(DateTime startOfYear)
         {
             List<DateTime> result = null;
             if (!IsEmpty(ByMonths))

@@ -137,6 +137,7 @@ namespace Meziantou.Framework.Win32.Natives
         internal struct TOKEN_GROUPS
         {
             public int GroupCount;
+
             [MarshalAs(UnmanagedType.ByValArray)]
             public SID_AND_ATTRIBUTES[] Groups;
         }
@@ -145,6 +146,7 @@ namespace Meziantou.Framework.Win32.Natives
         internal struct TOKEN_PRIVILEGES
         {
             public int PrivilegeCount;
+
             [MarshalAs(UnmanagedType.ByValArray)]
             public LUID_AND_ATTRIBUTES[] Privileges;
         }

@@ -79,7 +79,7 @@ namespace Meziantou.Framework.Templating
                 return null;
 
             text = text.Trim();
-            return text == string.Empty ? null : text;
+            return text.Length == 0 ? null : text;
         }
     }
 }

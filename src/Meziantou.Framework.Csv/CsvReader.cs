@@ -88,20 +88,20 @@ namespace Meziantou.Framework.Csv
                             if (next == '\n')
                             {
                                 hasCell = true;
-                                value.Append(c);
+                                value.Append(c.Value);
                                 c = await ReadCharAsync().ConfigureAwait(false);
                                 ColumnNumber++;
                             }
                             LineNumber++;
                         }
 
-                        if (c == Quote)
+                        if (Quote.HasValue && c == Quote)
                         {
                             if (next == Quote)
                             {
                                 await ReadCharAsync().ConfigureAwait(false);
                                 hasCell = true;
-                                value.Append(Quote);
+                                value.Append(Quote.Value);
                             }
                             else
                             {
@@ -111,7 +111,7 @@ namespace Meziantou.Framework.Csv
                         else
                         {
                             hasCell = true;
-                            value.Append(c);
+                            value.Append(c.Value);
                         }
                     }
                     else if (c == '\n')
@@ -140,7 +140,7 @@ namespace Meziantou.Framework.Csv
                         LineNumber++;
                         break;
                     }
-                    else if (c == Quote)
+                    else if (Quote.HasValue && c == Quote)
                     {
                         if (value.Length == 0)
                         {
@@ -149,7 +149,7 @@ namespace Meziantou.Framework.Csv
                         else
                         {
                             hasCell = true;
-                            value.Append(c);
+                            value.Append(c.Value);
                         }
                     }
                     else if (c == Separator)
@@ -161,7 +161,7 @@ namespace Meziantou.Framework.Csv
                     else
                     {
                         hasCell = true;
-                        value.Append(c);
+                        value.Append(c.Value);
                     }
                 }
             }
@@ -171,7 +171,7 @@ namespace Meziantou.Framework.Csv
 
             if (HasHeaderRow && _columns == null)
             {
-                _columns = rowValues.Select((value, index) => CreateColumn(value, index)).ToArray();
+                _columns = rowValues.Select(CreateColumn).ToArray();
                 return await ReadRowAsync().ConfigureAwait(false); // Read the first row with data
             }
 

@@ -328,7 +328,6 @@ namespace Meziantou.Framework.Scheduling
             }
         }
 
-
         [Flags]
         private enum WeekdayHumanTextOptions
         {

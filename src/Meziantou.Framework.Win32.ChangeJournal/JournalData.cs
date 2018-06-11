@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Win32
         ///     The Usn that will be assigned to the next record appended to the journal.
         /// </summary>
         public Usn NextUSN { get; }
-        
+
         /// <summary>
         ///     The lowest Usn that is valid for this journal and may be zero.
         ///     All changes with this Usn or higher have been recorded in the journal.

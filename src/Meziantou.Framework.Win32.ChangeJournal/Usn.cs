@@ -13,12 +13,12 @@ namespace Meziantou.Framework.Win32
 
         public override string ToString()
         {
-            return base.ToString();
+            return Value.ToString();
         }
 
         public override bool Equals(object obj)
         {
-            return obj is Usn && Equals((Usn)obj);
+            return obj is Usn usn && Equals(usn);
         }
 
         public bool Equals(Usn other)

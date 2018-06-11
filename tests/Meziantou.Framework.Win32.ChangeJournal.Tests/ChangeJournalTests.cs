@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Win32.Tests
     public class ChangeJournalTests
     {
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext _)
         {
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);

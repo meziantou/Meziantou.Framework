@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework.CodeDom
 {
-    internal class ParsedType
+    internal sealed class ParsedType
     {
         private static readonly Dictionary<string, ParsedType> _parsedTypes = new Dictionary<string, ParsedType>();
 
@@ -13,7 +13,7 @@ namespace Meziantou.Framework.CodeDom
         public string TypeName
         {
             get => _typeName;
-            private set => _typeName = value ?? throw new ArgumentNullException("value");
+            private set => _typeName = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public string Namespace
@@ -76,7 +76,8 @@ namespace Meziantou.Framework.CodeDom
 
         private ParsedType(string typeName)
         {
-            if (typeName == null) throw new ArgumentNullException(nameof(typeName));
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
 
             TypeName = typeName.Trim();
             if ((TypeName.StartsWith("[")) && (TypeName.EndsWith("]")))
@@ -94,7 +95,8 @@ namespace Meziantou.Framework.CodeDom
 
         public static ParsedType Parse(string typeName)
         {
-            if (typeName == null) throw new ArgumentNullException(nameof(typeName));
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
 
             typeName = typeName.Trim();
             if (typeName.StartsWith("Of "))
@@ -126,7 +128,8 @@ namespace Meziantou.Framework.CodeDom
 
         private static ParsedType Parse(string typeName, string start, char end)
         {
-            if (typeName == null) throw new ArgumentNullException(nameof(typeName));
+            if (typeName == null)
+                throw new ArgumentNullException(nameof(typeName));
 
             if ((typeName.StartsWith("[")) && (typeName.EndsWith("]")))
             {
@@ -181,6 +184,7 @@ namespace Meziantou.Framework.CodeDom
             {
                 pt = new ParsedType(typeName.Substring(0, lt));
             }
+
             pt.IsGeneric = true;
 
             var startPos = lt + 1;

@@ -96,7 +96,6 @@ namespace Meziantou.Framework.Utilities
                     return false;
             }
 
-
             if (To != null)
             {
                 if (To.CompareTo(other.To) != 0)

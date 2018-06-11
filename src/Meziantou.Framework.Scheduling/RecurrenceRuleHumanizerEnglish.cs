@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Scheduling
 
         private static string GetWeekdayHumanText(IList<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
         {
-            if (!daysOfWeek.Any())
+            if (daysOfWeek.Count == 0)
                 return null;
 
             return GetWeekdayHumanText(daysOfWeek.Where(dow => !dow.Ordinal.HasValue).Select(dow => dow.DayOfWeek).ToList(), ", ", " and ", options);

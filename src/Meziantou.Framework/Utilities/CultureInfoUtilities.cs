@@ -90,14 +90,14 @@ namespace Meziantou.Framework.Utilities
 
             try
             {
-                return new CultureInfo(name);
+                return CultureInfo.GetCultureInfo(name);
             }
             catch (CultureNotFoundException)
             {
             }
 
             if (int.TryParse(name, out var i))
-                return new CultureInfo(i);
+                return CultureInfo.GetCultureInfo(i);
 
             return null;
         }

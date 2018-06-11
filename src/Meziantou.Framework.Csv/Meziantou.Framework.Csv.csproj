@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
-    <Description>No description</Description>
-    <Version>3.1.0</Version>
+    <Description>CSV reader and writer</Description>
+    <Version>3.1.1</Version>
   </PropertyGroup>
 
 </Project>

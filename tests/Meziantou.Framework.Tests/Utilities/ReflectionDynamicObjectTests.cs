@@ -113,6 +113,7 @@ namespace Meziantou.Framework.Tests.Utilities
             private int this[int i, int j] => i + j;
 
             private string _indexer;
+
             private string this[string str]
             {
                 get => str + _indexer;

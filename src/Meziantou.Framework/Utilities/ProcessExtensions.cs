@@ -237,6 +237,7 @@ namespace Meziantou.Framework.Utilities
             public uint th32ParentProcessID;
             public int pcPriClassBase;
             public uint dwFlags;
+
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
             public string szExeFile;
         }

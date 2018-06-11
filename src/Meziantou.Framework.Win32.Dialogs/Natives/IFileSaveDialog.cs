@@ -10,6 +10,7 @@ namespace Meziantou.Framework.Win32.Dialogs.Natives
     {
         [PreserveSig]
         new int Show([In] IntPtr parent);
+
         void SetFileTypes([In] uint cFileTypes, [In] ref COMDLG_FILTERSPEC rgFilterSpec);
         new void SetFileTypeIndex([In] uint iFileType);
         new void GetFileTypeIndex(out uint piFileType);

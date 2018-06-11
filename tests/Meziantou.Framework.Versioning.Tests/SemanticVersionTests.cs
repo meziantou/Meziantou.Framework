@@ -38,6 +38,8 @@ namespace Meziantou.Framework.Versioning.Tests
         [DataRow("1.02.3")] // No leading 0
         [DataRow("1.2.03")] // No leading 0
         [DataRow("1.0.0-01")] // No leading 0
+        [DataRow("1.0.0-beta.01")] // No leading 0
+        [DataRow("1.0.0+é")] // Invalid character
         public void TryParse_ShouldNotParseVersion(string version)
         {
             Assert.IsFalse(SemanticVersion.TryParse(version, out _));

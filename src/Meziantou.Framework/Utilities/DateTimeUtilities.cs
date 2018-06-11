@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Utilities
             var weekNum = weekOfYear;
             if (firstWeek <= 1)
             {
-                weekNum -= 1;
+                weekNum--;
             }
 
             var result = firstThursday.AddDays(weekNum * 7);

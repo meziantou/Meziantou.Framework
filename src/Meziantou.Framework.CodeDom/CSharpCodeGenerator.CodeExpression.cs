@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Meziantou.Framework.CodeDom
 {
-    partial class CSharpCodeGenerator
+    public partial class CSharpCodeGenerator
     {
         protected virtual void Write(IndentedTextWriter writer, Expression expression)
         {

@@ -6,7 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.Framework.Tests.Utilities
 {
     [TestClass]
-    public class DefaultConverterTests
+    public class DefaultConverterTests_StringTo
     {
         [Flags]
         private enum SampleEnum
@@ -17,59 +17,8 @@ namespace Meziantou.Framework.Tests.Utilities
             Option3 = 0x4
         }
 
-        private class ImplicitConverter
-        {
-            public static implicit operator int(ImplicitConverter _)
-            {
-                return 1;
-            }
-        }
-
         [TestMethod]
-        public void TryConvert_ImplicitConverter_01()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(new ImplicitConverter(), cultureInfo, out int value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(1, value);
-        }
-
-        [TestMethod]
-        public void TryConvert_DbNullToNullableInt32()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int? value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(null, value);
-        }
-
-        [TestMethod]
-        public void TryConvert_DbNullToInt32()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int value);
-
-            Assert.AreEqual(false, converted);
-        }
-
-        [TestMethod]
-        public void TryConvert_DbNullToString()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(null, value);
-        }
-
-        [TestMethod]
-        public void TryConvert_StringToInt32_01()
+        public void TryConvert_StringToInt32_ValidValue()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -80,7 +29,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToInt32_02()
+        public void TryConvert_StringToInt32_EmptyString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -90,7 +39,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToNullableInt32_01()
+        public void TryConvert_StringToNullableInt32_ValidInteger()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -101,7 +50,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToNullableInt32_02()
+        public void TryConvert_StringToNullableInt32_EmptyString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -145,18 +94,7 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToGuid_01()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("afa523e478df4b2da8c86d6b43c48e3e", cultureInfo, out Guid value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(Guid.Parse("afa523e478df4b2da8c86d6b43c48e3e"), value);
-        }
-
-        [TestMethod]
-        public void TryConvert_StringToNullableLong_01()
+        public void TryConvert_StringToNullableLong()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
@@ -186,17 +124,6 @@ namespace Meziantou.Framework.Tests.Utilities
 
             Assert.AreEqual(true, converted);
             Assert.AreEqual("es", value.Name);
-        }
-
-        [TestMethod]
-        public void TryConvert_Int32ToCultureInfo_LcidAsInt()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual("en-US", value.Name);
         }
 
         [TestMethod]
@@ -244,24 +171,6 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_CultureInfoToString_UsingInvariantCulture()
-        {
-            var converter = new DefaultConverter();
-            var value = converter.ChangeType<string>(new CultureInfo("en"), null, CultureInfo.InvariantCulture);
-
-            Assert.AreEqual("en", value);
-        }
-
-        [TestMethod]
-        public void TryConvert_CultureInfoToString_UsingSpecificCulture()
-        {
-            var converter = new DefaultConverter();
-            var value = converter.ChangeType<string>(new CultureInfo("en"), null, new CultureInfo("en-US"));
-
-            Assert.AreEqual("en", value);
-        }
-
-        [TestMethod]
         public void TryConvert_StringToUri_EmptyString()
         {
             var converter = new DefaultConverter();
@@ -270,7 +179,11 @@ namespace Meziantou.Framework.Tests.Utilities
 
             Assert.AreEqual(true, converted);
             // Different behavior in .NET461 and .NET Core 2
-            Assert.IsTrue(string.IsNullOrEmpty(value?.ToString()));
+#if NET461
+            Assert.AreEqual("", value.ToString());
+#else
+            Assert.AreEqual(null, value);
+#endif
         }
 
         [TestMethod]
@@ -293,41 +206,6 @@ namespace Meziantou.Framework.Tests.Utilities
 
             Assert.AreEqual(true, converted);
             Assert.AreEqual(new Uri("https://meziantou.net", UriKind.Absolute), value);
-        }
-
-        [TestMethod]
-        public void TryConvert_ByteArrayToString_Base64()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual("AQIDBA==", value);
-        }
-
-        [TestMethod]
-        public void TryConvert_ByteArrayToString_Base16WithPrefix()
-        {
-            var converter = new DefaultConverter();
-            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual("0x01020304", value);
-        }
-
-        [TestMethod]
-        public void TryConvert_ByteArrayToString_Base16WithoutPrefix()
-        {
-            var converter = new DefaultConverter();
-            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16;
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual("01020304", value);
         }
 
         [TestMethod]
@@ -364,14 +242,90 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
+        public void TryConvert_StringToByteArray_Base16_Prefixed()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(true, converted);
+            CollectionAssert.AreEqual(new byte[] { 0x0A, 0xFF }, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToByteArray_Base64()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(true, converted);
+            CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToByteArray_Base64_Invalid()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(false, converted);
+        }
+
+        [TestMethod]
         public void TryConvert_StringToDateTime()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("2018/09/24", cultureInfo, out DateTime value);
+            var converted = converter.TryChangeType("2018/06/24 14:21:01", cultureInfo, out DateTime value);
 
             Assert.AreEqual(true, converted);
-            Assert.AreEqual(new DateTime(2018, 9, 24), value);
+            Assert.AreEqual(new DateTime(2018, 06, 24, 14, 21, 01), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToDateTimeOffset()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("2018/06/24 14:21:01+0230", cultureInfo, out DateTimeOffset value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(new DateTimeOffset(2018, 06, 24, 14, 21, 01, new TimeSpan(2, 30, 0)), value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToByteArray_Base64()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("YWJj", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(true, converted);
+            CollectionAssert.AreEqual(new byte[] { (byte)'a', (byte)'b', (byte)'c' }, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToByteArray_Base16()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(true, converted);
+            CollectionAssert.AreEqual(new byte[] { 0x0d, 0x01, 0x02 }, value);
+        }
+
+        [TestMethod]
+        public void TryConvert_StringToByteArray_Base16Prefixed()
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[] value);
+
+            Assert.AreEqual(true, converted);
+            CollectionAssert.AreEqual(new byte[] { 0x0d, 0x01 }, value);
         }
     }
 }

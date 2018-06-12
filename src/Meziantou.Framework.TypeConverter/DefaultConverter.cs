@@ -157,21 +157,15 @@ namespace Meziantou.Framework.Utilities
             var list = new List<byte>();
             var lo = false;
             byte prev = 0;
-            int offset;
-
-            // handle 0x or 0X notation
-            if (hex.Length >= 2 && hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X'))
-            {
-                offset = 2;
-            }
-            else
-            {
-                offset = 0;
-            }
+            var offset = IsHexPrefix(hex) ? 2 : 0; // handle 0x or 0X notation
 
             for (var i = 0; i < hex.Length - offset; i++)
             {
-                var b = GetHexaByte(hex[i + offset]);
+                var c = hex[i + offset];
+                if (c == '-')
+                    continue;
+
+                var b = GetHexaByte(c);
                 if (b == 0xFF)
                 {
                     return null;
@@ -185,6 +179,7 @@ namespace Meziantou.Framework.Utilities
                 {
                     prev = b;
                 }
+
                 lo = !lo;
             }
 
@@ -288,14 +283,17 @@ namespace Meziantou.Framework.Utilities
                 return true;
             }
 
-            try
+            if (!IsHexPrefix(text))
             {
-                value = Convert.FromBase64String(text);
-                return true;
-            }
-            catch
-            {
-                // the value is invalid, continue with other methods
+                try
+                {
+                    value = Convert.FromBase64String(text);
+                    return true;
+                }
+                catch
+                {
+                    // the value is invalid, continue with other methods
+                }
             }
 
             var bytes = FromHexa(text);
@@ -307,6 +305,11 @@ namespace Meziantou.Framework.Utilities
 
             value = null;
             return false;
+        }
+
+        private static bool IsHexPrefix(string text)
+        {
+            return text.Length >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
         }
 
         protected virtual bool TryConvert(object input, IFormatProvider provider, out CultureInfo value)
@@ -380,37 +383,7 @@ namespace Meziantou.Framework.Utilities
             if (TimeSpan.TryParse(Convert.ToString(input, provider), provider, out value))
                 return true;
 
-            if (TryConvert(input, provider, out long l))
-            {
-                value = new TimeSpan(l);
-                return true;
-            }
-
             value = TimeSpan.Zero;
-            return false;
-        }
-
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out IntPtr value)
-        {
-            value = IntPtr.Zero;
-            if (IsNullOrEmptyString(input))
-                return false;
-
-            if (IntPtr.Size == 4)
-            {
-                if (TryConvert(input, provider, out int i))
-                {
-                    value = new IntPtr(i);
-                    return true;
-                }
-                return false;
-            }
-
-            if (TryConvert(input, provider, out long l))
-            {
-                value = new IntPtr(l);
-                return true;
-            }
             return false;
         }
 
@@ -811,12 +784,6 @@ namespace Meziantou.Framework.Utilities
                 return false;
             }
 
-            if (input is IntPtr intPtr)
-            {
-                value = intPtr.ToInt32();
-                return true;
-            }
-
             if (!(input is string))
             {
                 if (input is IConvertible ic)
@@ -859,13 +826,7 @@ namespace Meziantou.Framework.Utilities
                 }
                 return false;
             }
-
-            if (input is IntPtr intPtr)
-            {
-                value = intPtr.ToInt64();
-                return true;
-            }
-
+            
             if (!(input is string))
             {
                 if (input is IConvertible ic)
@@ -1102,13 +1063,11 @@ namespace Meziantou.Framework.Utilities
                         return false;
                     }
 
-#if NETSTANDARD2_0
                     if (input is CultureInfo ci)
                     {
                         value = ci.Name;
                         return true;
                     }
-#endif
 
                     var tc = TypeDescriptor.GetConverter(inputType);
                     if (tc != null && tc.CanConvertTo(typeof(string)))
@@ -1156,27 +1115,11 @@ namespace Meziantou.Framework.Utilities
                             return true;
                         }
                     }
-                    else if (conversionType == typeof(IntPtr))
-                    {
-                        if (TryConvert(input, provider, out IntPtr ptr))
-                        {
-                            value = ptr;
-                            return true;
-                        }
-                    }
                     else if (conversionType == typeof(CultureInfo))
                     {
                         if (TryConvert(input, provider, out CultureInfo cultureInfo))
                         {
                             value = cultureInfo;
-                            return true;
-                        }
-                    }
-                    else if (conversionType == typeof(Version))
-                    {
-                        if (Version.TryParse(Convert.ToString(input, provider), out Version version))
-                        {
-                            value = version;
                             return true;
                         }
                     }

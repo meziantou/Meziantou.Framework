@@ -148,6 +148,7 @@ namespace Meziantou.Framework.Utilities
             process.EnableRaisingEvents = true;
             process.Exited += (sender, e) =>
             {
+                process.WaitForExit();
                 tcs.SetResult(new ProcessResult(process.ExitCode, logs));
                 process.Dispose();
             };

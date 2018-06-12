@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Html
     public static class HtmlMicroDataExtensions
     {
         // https://developers.google.com/structured-data/schema-org?hl=en&rd=1
-        public static readonly Func<string, string> SchemasOrgParser = (type) =>
+        private static readonly Func<string, string> SchemasOrgParser = (type) =>
         {
             if (type != null &&
                 (type.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||

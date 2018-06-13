@@ -499,6 +499,13 @@ namespace Meziantou.Framework.Html
             return new HtmlText(this);
         }
 
+        public HtmlText CreateText(string value)
+        {
+            var htmlText = CreateText();
+            htmlText.Value = value;
+            return htmlText;
+        }
+
         public HtmlElement CreateElement(string name)
         {
             if (name == null)

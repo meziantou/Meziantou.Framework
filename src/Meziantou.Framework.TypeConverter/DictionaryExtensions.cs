@@ -7,20 +7,19 @@ namespace Meziantou.Framework.Utilities
     {
         public static TResult GetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
-            if (dict.TryGetValue(key, out var value))
-            {
-                if (ConvertUtilities.TryChangeType(value, out TResult result))
-                    return result;
-            }
+            if (TryGetValueOrDefault(dict, key, out TResult result))
+                return result;
 
             return defaultValue;
         }
 
         public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, out TResult value)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             if (dict.TryGetValue(key, out var v))
             {

@@ -21,5 +21,35 @@ namespace Meziantou.Framework.TypeConverter.Tests
             // Assert
             Assert.AreEqual("42", actual);
         }
+
+        public void GetValue_KeyNotExists()
+        {
+            // Arrange
+            var dictionary = new Dictionary<string, object>
+            {
+                { "test", 42 }
+            };
+
+            // Act
+            var actual = dictionary.GetValueOrDefault("unknown", "");
+
+            // Assert
+            Assert.AreEqual("", actual);
+        }
+
+        public void GetValue_KeyNotConvertible()
+        {
+            // Arrange
+            var dictionary = new Dictionary<string, object>
+            {
+                { "test", "aaa" }
+            };
+
+            // Act
+            var actual = dictionary.GetValueOrDefault("test", 0);
+
+            // Assert
+            Assert.AreEqual(0, actual);
+        }
     }
 }

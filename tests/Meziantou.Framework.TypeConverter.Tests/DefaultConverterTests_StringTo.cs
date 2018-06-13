@@ -296,17 +296,6 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
-        public void TryConvert_StringToByteArray_Base64()
-        {
-            var converter = new DefaultConverter();
-            var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("YWJj", cultureInfo, out byte[] value);
-
-            Assert.AreEqual(true, converted);
-            CollectionAssert.AreEqual(new byte[] { (byte)'a', (byte)'b', (byte)'c' }, value);
-        }
-
-        [TestMethod]
         public void TryConvert_StringToByteArray_Base16()
         {
             var converter = new DefaultConverter();
@@ -326,6 +315,38 @@ namespace Meziantou.Framework.Tests.Utilities
 
             Assert.AreEqual(true, converted);
             CollectionAssert.AreEqual(new byte[] { 0x0d, 0x01 }, value);
+        }
+
+        [DataTestMethod]
+        [DataRow("True")]
+        [DataRow("true")]
+        [DataRow("t")]
+        [DataRow("yes")]
+        [DataRow("y")]
+        public void TryConvert_StringToBoolean_TrueValue(string text)
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(text, cultureInfo, out bool value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(true, value);
+        }
+
+        [DataTestMethod]
+        [DataRow("False")]
+        [DataRow("false")]
+        [DataRow("f")]
+        [DataRow("No")]
+        [DataRow("n")]
+        public void TryConvert_StringToBoolean_FalseValue(string text)
+        {
+            var converter = new DefaultConverter();
+            var cultureInfo = CultureInfo.InvariantCulture;
+            var converted = converter.TryChangeType(text, cultureInfo, out bool value);
+
+            Assert.AreEqual(true, converted);
+            Assert.AreEqual(false, value);
         }
     }
 }

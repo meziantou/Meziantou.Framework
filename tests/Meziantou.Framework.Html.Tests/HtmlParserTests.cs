@@ -1,4 +1,6 @@
+﻿using System.IO;
 using System.Linq;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Html.Tests
@@ -80,6 +82,51 @@ namespace Meziantou.Framework.Html.Tests
 
             Assert.AreEqual(1, errors.Count);
             Assert.AreEqual(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
+        }
+
+        [TestMethod]
+        public void HtmlParser_ParseComment()
+        {
+            var document = new HtmlDocument();
+            document.LoadHtml("<!--Test-->");
+
+            Assert.AreEqual(HtmlNodeType.Comment, document.FirstChild.NodeType);
+        }
+
+        [TestMethod]
+        public void HtmlParser_ReadCharacterSet()
+        {
+            var html = "<html><head><meta charset='UTF-8'></head></html>";
+            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
+            {
+                var document = new HtmlDocument();
+                document.Load(memoryStream);
+                Assert.AreEqual(Encoding.UTF8, document.DetectedEncoding);
+            }
+        }
+
+        [TestMethod]
+        public void HtmlParser_ReadCharacterSet2()
+        {
+            var html = "<html><head><meta charset='UTF-7'></head></html>";
+            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
+            {
+                var document = new HtmlDocument();
+                document.Load(memoryStream);
+                Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
+            }
+        }
+
+        [TestMethod]
+        public void HtmlParser_ReadCharacterSetFromMetaHttpEquiv()
+        {
+            var html = "<html><head><meta http-equiv='Content-Type' content='text/html; charset=UTF-7' /></head></html>";
+            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
+            {
+                var document = new HtmlDocument();
+                document.Load(memoryStream);
+                Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
+            }
         }
     }
 }

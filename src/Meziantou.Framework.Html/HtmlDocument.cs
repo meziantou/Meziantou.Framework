@@ -227,7 +227,7 @@ namespace Meziantou.Framework.Html
 
             Clear();
             FilePath = filePath;
-            using (StreamReader reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), true))
+            using (StreamReader reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding()))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -253,7 +253,7 @@ namespace Meziantou.Framework.Html
             Clear();
             if (detectEncodingFromByteOrderMarks)
             {
-                using (var reader = new StreamReader(stream, true))
+                using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
@@ -263,7 +263,7 @@ namespace Meziantou.Framework.Html
             }
             else
             {
-                using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), false))
+                using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
@@ -274,7 +274,7 @@ namespace Meziantou.Framework.Html
 
             Encoding streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding))
+            using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -288,7 +288,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(stream));
 
             Clear();
-            using (var reader = new StreamReader(stream, encoding))
+            using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -298,7 +298,7 @@ namespace Meziantou.Framework.Html
 
             Encoding streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding))
+            using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -312,7 +312,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(stream));
 
             Clear();
-            using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks))
+            using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -322,7 +322,7 @@ namespace Meziantou.Framework.Html
 
             Encoding streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding))
+            using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -336,7 +336,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(stream));
 
             Clear();
-            using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize))
+            using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -346,7 +346,7 @@ namespace Meziantou.Framework.Html
 
             Encoding streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding, false, bufferSize))
+            using (var reader = new StreamReader(stream, streamEncoding, false, bufferSize, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -360,7 +360,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(stream));
 
             Clear();
-            using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding()))
+            using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -370,7 +370,7 @@ namespace Meziantou.Framework.Html
 
             Encoding streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding))
+            using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;

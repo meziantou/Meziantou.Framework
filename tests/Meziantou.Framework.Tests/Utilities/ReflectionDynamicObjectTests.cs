@@ -50,6 +50,15 @@ namespace Meziantou.Framework.Tests.Utilities
         }
 
         [TestMethod]
+        public void ReflectionDynamicObject_StaticProperty()
+        {
+            dynamic rdo = new ReflectionDynamicObject(typeof(Test));
+            Assert.AreEqual(12, rdo.StaticProperty);
+            rdo.StaticProperty = 42;
+            Assert.AreEqual(42, rdo.StaticProperty);
+        }
+
+        [TestMethod]
         public void ReflectionDynamicObject_DefaultConstructor()
         {
             dynamic rdo = new ReflectionDynamicObject(typeof(Test3)).CreateInstance();
@@ -121,6 +130,7 @@ namespace Meziantou.Framework.Tests.Utilities
             }
 
             private static int Static(int a) => a;
+            private static int StaticProperty { get; set; } = 12;
         }
 
         private class Test2 : Test

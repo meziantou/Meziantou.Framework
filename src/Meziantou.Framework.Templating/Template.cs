@@ -12,17 +12,21 @@ namespace Meziantou.Framework.Templating
 {
     public class Template
     {
+        private const string DefaultClassName = "Template";
+        private const string DefaultRunMethodName = "Run";
+        private const string DefaultWriterParameterName = "__output__";
+
         private static readonly object _lock = new object();
+        private static readonly Type _defaultWriterType = null; // dynamic by default
+
         private MethodInfo _runMethodInfo = null;
         private string _className;
         private string _runMethodName;
         private string _writerParameterName;
         private Type _writerType;
-        private static readonly Type _defaultWriterType = null; // dynamic by default
-
-        private const string DefaultClassName = "Template";
-        private const string DefaultRunMethodName = "Run";
-        private const string DefaultWriterParameterName = "__output__";
+        private readonly List<TemplateArgument> _arguments = new List<TemplateArgument>();
+        private readonly List<string> _usings = new List<string>();
+        private readonly List<string> _referencePaths = new List<string>();
 
         private string ClassName
         {
@@ -56,19 +60,20 @@ namespace Meziantou.Framework.Templating
         public bool IsBuilt => _runMethodInfo != null;
         public string SourceCode { get; private set; }
 
-        public IList<TemplateArgument> Arguments { get; } = new List<TemplateArgument>();
-        public IList<string> Usings { get; } = new List<string>();
-        public IList<string> ReferencePaths { get; } = new List<string>();
+        public IReadOnlyList<TemplateArgument> Arguments => _arguments;
+        public IReadOnlyList<string> Usings => _usings;
+        public IReadOnlyList<string> ReferencePaths => _referencePaths;
 
         public bool Debug { get; set; } = false;
 
         public void AddReference(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
             if (type.Assembly.Location == null)
                 throw new ArgumentException("Assembly has no location.");
 
-            ReferencePaths.Add(type.Assembly.Location);
+            _referencePaths.Add(type.Assembly.Location);
         }
 
         public void AddUsing(string @namespace)
@@ -78,15 +83,16 @@ namespace Meziantou.Framework.Templating
 
         public void AddUsing(string @namespace, string alias)
         {
-            if (@namespace == null) throw new ArgumentNullException(nameof(@namespace));
+            if (@namespace == null)
+                throw new ArgumentNullException(nameof(@namespace));
 
             if (!string.IsNullOrEmpty(alias))
             {
-                Usings.Add(alias + " = " + @namespace);
+                _usings.Add(alias + " = " + @namespace);
             }
             else
             {
-                Usings.Add(@namespace);
+                _usings.Add(@namespace);
             }
         }
 
@@ -97,15 +103,16 @@ namespace Meziantou.Framework.Templating
 
         public void AddUsing(Type type, string alias)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
             if (!string.IsNullOrEmpty(alias))
             {
-                Usings.Add(alias + " = " + GetFriendlyTypeName(type));
+                _usings.Add(alias + " = " + GetFriendlyTypeName(type));
             }
             else
             {
-                Usings.Add(type.Namespace);
+                _usings.Add(type.Namespace);
             }
 
             AddReference(type);
@@ -113,7 +120,8 @@ namespace Meziantou.Framework.Templating
 
         private static string GetFriendlyTypeName(Type type)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == null)
+                throw new ArgumentNullException(nameof(type));
 
             var friendlyName = type.Name;
             if (type.IsGenericType)
@@ -153,18 +161,20 @@ namespace Meziantou.Framework.Templating
 
         public void AddArgument(string name, Type type)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
 
-            Arguments.Add(new TemplateArgument(name, type));
+            _arguments.Add(new TemplateArgument(name, type));
             if (type != null)
             {
                 AddReference(type);
             }
         }
 
-        public void AddArguments(IDictionary<string, object> arguments)
+        public void AddArguments(IReadOnlyDictionary<string, object> arguments)
         {
-            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
 
             foreach (var argument in arguments)
             {
@@ -174,7 +184,8 @@ namespace Meziantou.Framework.Templating
 
         public void AddArguments(params string[] arguments)
         {
-            if (arguments == null) throw new ArgumentNullException(nameof(arguments));
+            if (arguments == null)
+                throw new ArgumentNullException(nameof(arguments));
 
             foreach (var argument in arguments)
             {
@@ -184,7 +195,8 @@ namespace Meziantou.Framework.Templating
 
         public void Load(string text)
         {
-            if (text == null) throw new ArgumentNullException(nameof(text));
+            if (text == null)
+                throw new ArgumentNullException(nameof(text));
 
             using (var reader = new StringReader(text))
             {
@@ -194,7 +206,8 @@ namespace Meziantou.Framework.Templating
 
         public void Load(TextReader reader)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
 
             using (var r = new TextReaderWithPosition(reader))
             {
@@ -204,7 +217,8 @@ namespace Meziantou.Framework.Templating
 
         private void Load(TextReaderWithPosition reader)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
 
             if (IsBuilt)
                 throw new InvalidOperationException("Template is already built.");
@@ -366,9 +380,13 @@ namespace Meziantou.Framework.Templating
 
         protected virtual SyntaxTree CreateSyntaxTree(string source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
 
-            var options = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
+            var options = CSharpParseOptions.Default
+                .WithLanguageVersion(LanguageVersion.Latest)
+                .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
+
             return CSharpSyntaxTree.ParseText(source, options);
         }
 
@@ -410,10 +428,12 @@ namespace Meziantou.Framework.Templating
 
         protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree)
         {
-            if (syntaxTree == null) throw new ArgumentNullException(nameof(syntaxTree));
+            if (syntaxTree == null)
+                throw new ArgumentNullException(nameof(syntaxTree));
 
             var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + Guid.NewGuid().ToString("N");
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithDeterministic(true)
                 .WithOptimizationLevel(Debug ? OptimizationLevel.Debug : OptimizationLevel.Release)
                 .WithPlatform(Platform.AnyCpu);
 
@@ -481,7 +501,7 @@ namespace Meziantou.Framework.Templating
 
         protected virtual Assembly LoadAssembly(MemoryStream peStream, MemoryStream pdbStream)
         {
-            return System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(peStream, pdbStream);
+            return Assembly.Load(peStream.ToArray(), pdbStream.ToArray());
         }
 
         protected virtual MethodInfo FindMethod(Assembly assembly)
@@ -529,9 +549,10 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        public string Run(IDictionary<string, object> parameters)
+        public string Run(IReadOnlyDictionary<string, object> parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             using (var writer = new StringWriter())
             {
@@ -540,16 +561,18 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public virtual void Run(TextWriter writer, IDictionary<string, object> parameters)
+        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             var p = CreateMethodParameters(writer, parameters);
             InvokeRunMethod(p);
         }
 
-        protected virtual object[] CreateMethodParameters(TextWriter writer, IDictionary<string, object> parameters)
+        protected virtual object[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
         {
             if (!IsBuilt)
             {

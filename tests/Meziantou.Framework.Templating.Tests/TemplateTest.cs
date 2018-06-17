@@ -111,5 +111,51 @@ namespace Meziantou.Framework.Templating.Tests
             // Assert
             Assert.AreEqual("Hello John!", result);
         }
+
+        [TestMethod]
+        public void Template_Debug()
+        {
+            // Arrange
+            var template = new Template();
+            template.Debug = true;
+            template.Load(@"Hello <%= 
+#if DEBUG
+""debug""
+#elif RELEASE
+""release""
+#else
+#error Error
+#endif
+%>!");
+
+            // Act 
+            var result = template.Run();
+
+            // Assert
+            Assert.AreEqual("Hello debug!", result);
+        }
+
+        [TestMethod]
+        public void Template_Release()
+        {
+            // Arrange
+            var template = new Template();
+            template.Debug = false;
+            template.Load(@"Hello <%= 
+#if DEBUG
+""debug""
+#elif RELEASE
+""release""
+#else
+#error Error
+#endif
+%>!");
+
+            // Act 
+            var result = template.Run();
+
+            // Assert
+            Assert.AreEqual("Hello release!", result);
+        }
     }
 }

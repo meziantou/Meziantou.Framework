@@ -54,7 +54,7 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, IDictionary<string, object> parameters)
+        public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, IReadOnlyDictionary<string, object> parameters)
         {
             if (writer == null) throw new ArgumentNullException(nameof(writer));
             if (parameters == null) throw new ArgumentNullException(nameof(parameters));

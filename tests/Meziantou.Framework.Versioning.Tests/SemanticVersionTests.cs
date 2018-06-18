@@ -162,5 +162,47 @@ namespace Meziantou.Framework.Versioning.Tests
         {
             Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, null, "label./"));
         }
+
+        [TestMethod]
+        public void NextPatchVersion_ShouldRemovePrereleaseTag()
+        {
+            var version = new SemanticVersion(1, 0, 0, "test");
+            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextPathVersion());
+        }
+
+        [TestMethod]
+        public void NextPatchVersion_ShouldIncreasePatch()
+        {
+            var version = new SemanticVersion(1, 0, 1);
+            Assert.AreEqual(new SemanticVersion(1, 0, 2), version.NextPathVersion());
+        }
+
+        [TestMethod]
+        public void NextMinorVersion_ShouldRemovePrereleaseTag()
+        {
+            var version = new SemanticVersion(1, 0, 0, "test");
+            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextMinorVersion());
+        }
+
+        [TestMethod]
+        public void NextMinorVersion_ShouldIncreaseMinor()
+        {
+            var version = new SemanticVersion(1, 0, 1);
+            Assert.AreEqual(new SemanticVersion(1, 1, 0), version.NextMinorVersion());
+        }
+
+        [TestMethod]
+        public void NextMajorVersion_ShouldRemovePrereleaseTag()
+        {
+            var version = new SemanticVersion(1, 0, 0, "test");
+            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextMajorVersion());
+        }
+
+        [TestMethod]
+        public void NextMajorVersion_ShouldIncreaseMajor()
+        {
+            var version = new SemanticVersion(1, 2, 3);
+            Assert.AreEqual(new SemanticVersion(2, 0, 0), version.NextMajorVersion());
+        }
     }
 }

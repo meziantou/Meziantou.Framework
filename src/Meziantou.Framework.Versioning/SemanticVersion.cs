@@ -452,5 +452,35 @@ namespace Meziantou.Framework.Versioning
         {
             return SemanticVersionComparer.Instance.Compare(left, right) >= 0;
         }
+
+        public SemanticVersion NextPathVersion()
+        {
+            if (IsPrerelease)
+            {
+                return new SemanticVersion(Major, Minor, Patch);
+            }
+
+            return new SemanticVersion(Major, Minor, Patch + 1);
+        }
+
+        public SemanticVersion NextMinorVersion()
+        {
+            if (IsPrerelease)
+            {
+                return new SemanticVersion(Major, Minor, 0);
+            }
+
+            return new SemanticVersion(Major, Minor + 1, 0);
+        }
+
+        public SemanticVersion NextMajorVersion()
+        {
+            if (IsPrerelease)
+            {
+                return new SemanticVersion(Major, 0, 0);
+            }
+
+            return new SemanticVersion(Major + 1, 0, 0);
+        }
     }
 }

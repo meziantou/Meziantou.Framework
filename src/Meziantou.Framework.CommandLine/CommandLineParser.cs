@@ -10,7 +10,15 @@ namespace Meziantou.Framework
 
         private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
-        private bool _helpRequested;
+
+        public static CommandLineParser Current { get; } = ParseCurrent();
+
+        private static CommandLineParser ParseCurrent()
+        {
+            var parser = new CommandLineParser();
+            parser.Parse(Environment.GetCommandLineArgs());
+            return parser;
+        }
 
         public void Parse(string[] args)
         {
@@ -32,7 +40,7 @@ namespace Meziantou.Framework
 
                 if (IsHelpArgument(arg))
                 {
-                    _helpRequested = true;
+                    HelpRequested = true;
                     continue;
                 }
 
@@ -56,7 +64,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public bool HelpRequested => _helpRequested;
+        public bool HelpRequested { get; private set; }
 
         public bool HasArgument(string name)
         {

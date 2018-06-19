@@ -79,8 +79,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.ChangeJournal.Tests", "tests\Meziantou.Framework.Win32.ChangeJournal.Tests\Meziantou.Framework.Win32.ChangeJournal.Tests.csproj", "{7A7CBAAF-361B-4D4A-A58B-C8322D2210EC}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B0CAE46C-7276-4CAE-A765-440D6290A6F8}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Html", "src\Meziantou.Framework.Html\Meziantou.Framework.Html.csproj", "{79528639-40F1-4D63-AA72-89EAF4D7F8E7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Html.Tests", "tests\Meziantou.Framework.Html.Tests\Meziantou.Framework.Html.Tests.csproj", "{BCC4DA42-3D87-44E1-ABE1-054557A5961D}"

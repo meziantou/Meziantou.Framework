@@ -3,6 +3,7 @@
 namespace Meziantou.Framework.Win32.Tests
 {
     [TestClass]
+    [DoNotParallelize]
     public class CredentialManagerTests
     {
         [TestMethod]

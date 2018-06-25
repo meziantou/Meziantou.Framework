@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Meziantou.Framework.Win32.Lsa.Tests
 {
     [TestClass]
+    [DoNotParallelize]
     public class LsaPrivateDataTests
     {
         [ClassInitialize]

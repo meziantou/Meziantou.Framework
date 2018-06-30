@@ -77,7 +77,7 @@ namespace Meziantou.Framework.Html
             return Utilities.GetValidXmlName(name);
         }
 
-        protected virtual internal void ClearCaches()
+        protected internal virtual void ClearCaches()
         {
             ClearCaches(0);
         }
@@ -440,6 +440,20 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        public HtmlElement ParentElement
+        {
+            get
+            {
+                for (var node = ParentNode; node != null; node = node.ParentNode)
+                {
+                    if (node is HtmlElement parentElement)
+                        return parentElement;
+                }
+
+                return null;
+            }
+        }
+
         public string Id
         {
             get
@@ -448,7 +462,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        protected virtual internal void AddError(HtmlError error)
+        protected internal virtual void AddError(HtmlError error)
         {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
@@ -457,7 +471,7 @@ namespace Meziantou.Framework.Html
             _errors.Add(error);
         }
 
-        protected virtual internal void ClearErrors()
+        protected internal virtual void ClearErrors()
         {
             if (_errors == null)
                 return;

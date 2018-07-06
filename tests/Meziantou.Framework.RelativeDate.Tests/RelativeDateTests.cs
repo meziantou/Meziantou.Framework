@@ -16,6 +16,14 @@ namespace Meziantou.Framework.RelativeDate.Tests
             Assert.ThrowsException<NotSupportedException>(() => new RelativeDate(new DateTime(2018, 1, 2)).ToString());
         }
 
+        [TestMethod]
+        public void DefaultDate_ToString()
+        {
+            DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
+            var result = new RelativeDate(default).ToString();
+            Assert.AreEqual("2018 years ago", result);
+        }
+
         [DataTestMethod]
         [DynamicData(nameof(RelativeDate_ToString_Data), DynamicDataSourceType.Property)]
         public void RelativeDate_ToString(string dateTimeStr, string nowStr, DateTimeKind kind, string expectedValueEn, string expectedValueFr)

@@ -58,6 +58,8 @@ namespace Meziantou.Framework.RelativeDate
 
         public string GetString(string name, CultureInfo culture)
         {
+            culture = culture ?? CultureInfo.InvariantCulture;
+
             if (!_cultures.TryGetValue(culture, out var values))
             {
                 if (culture == null || culture.IsNeutralCulture || culture == culture.Parent)

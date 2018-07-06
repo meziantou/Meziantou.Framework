@@ -28,6 +28,9 @@ namespace Meziantou.Framework.RelativeDate.Tests
             var resultEn = relativeDate.ToString(null, CultureInfo.InvariantCulture);
             Assert.AreEqual(expectedValueEn, resultEn);
 
+            var resultEs = relativeDate.ToString(null, CultureInfo.GetCultureInfo("es-ES"));
+            Assert.AreEqual(expectedValueEn, resultEs);
+
             var resultFr = relativeDate.ToString(null, CultureInfo.GetCultureInfo("fr"));
             Assert.AreEqual(expectedValueFr, resultFr);
         }

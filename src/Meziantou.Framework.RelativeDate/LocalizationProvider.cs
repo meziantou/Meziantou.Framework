@@ -60,11 +60,8 @@ namespace Meziantou.Framework.RelativeDate
         {
             if (!_cultures.TryGetValue(culture, out var values))
             {
-                if (culture == null)
+                if (culture == null || culture.IsNeutralCulture || culture == culture.Parent)
                     return GetString(name, CultureInfo.InvariantCulture);
-
-                if (culture.IsNeutralCulture || culture == culture.Parent)
-                    return null;
 
                 return GetString(name, culture.Parent);
             }

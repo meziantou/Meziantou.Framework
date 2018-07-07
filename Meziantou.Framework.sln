@@ -83,9 +83,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Html", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Html.Tests", "tests\Meziantou.Framework.Html.Tests\Meziantou.Framework.Html.Tests.csproj", "{BCC4DA42-3D87-44E1-ABE1-054557A5961D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.RelativeDate", "src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj", "{1367709E-D081-4325-B4FD-0C6646867C2C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.RelativeDate", "src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj", "{1367709E-D081-4325-B4FD-0C6646867C2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.RelativeDate.Tests", "tests\Meziantou.Framework.RelativeDate.Tests\Meziantou.Framework.RelativeDate.Tests.csproj", "{2D0F0C96-A5D7-4EB1-8B8F-E28800BBCD88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.RelativeDate.Tests", "tests\Meziantou.Framework.RelativeDate.Tests\Meziantou.Framework.RelativeDate.Tests.csproj", "{2D0F0C96-A5D7-4EB1-8B8F-E28800BBCD88}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E2871031-4703-4F07-93EC-AB1463BA2499}"
+	ProjectSection(SolutionItems) = preProject
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

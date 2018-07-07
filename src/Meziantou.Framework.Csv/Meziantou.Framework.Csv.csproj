@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>CSV reader and writer</Description>
-    <Version>3.1.1</Version>
+    <Version>3.1.2</Version>
   </PropertyGroup>
 
 </Project>

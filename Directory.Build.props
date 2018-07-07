@@ -3,14 +3,24 @@
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/meziantou/Meziantou.Framework</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
- 
+
+  <!-- sourcelink: https://github.com/dotnet/sourcelink/#using-sourcelink -->
+  <PropertyGroup>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-*" PrivateAssets="All"/>
+  </ItemGroup>
+
 </Project>

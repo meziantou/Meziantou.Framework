@@ -8,6 +8,7 @@ namespace Meziantou.Framework.CodeDom
         public ConstructorDeclaration()
         {
             Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
+            Statements = new StatementCollection(this);
         }
 
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }

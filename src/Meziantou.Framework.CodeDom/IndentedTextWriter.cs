@@ -82,8 +82,16 @@ namespace Meziantou.Framework.CodeDom
 
         public override void Write(string value)
         {
-            OutputTabs();
+            if (value != NewLine)
+            {
+                OutputTabs();
+            }
+
             InnerWriter.Write(value);
+            if (value != null && value.EndsWith(NewLine))
+            {
+                _tabsPending = true;
+            }
         }
 
         public override void Write(bool value)
@@ -178,7 +186,7 @@ namespace Meziantou.Framework.CodeDom
 
         public override void WriteLine()
         {
-            //OutputTabs(); // we want actually empty line
+            //OutputTabs(); // do not create a line with only empty spaces
             InnerWriter.WriteLine();
             _tabsPending = true;
         }

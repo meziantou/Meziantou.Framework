@@ -45,7 +45,8 @@ namespace Meziantou.Framework.CodeDom
 
         public string Write(CodeObject codeObject)
         {
-            if (codeObject == null) throw new ArgumentNullException(nameof(codeObject));
+            if (codeObject == null)
+                throw new ArgumentNullException(nameof(codeObject));
 
             using (var sw = new StringWriter())
             {
@@ -56,19 +57,25 @@ namespace Meziantou.Framework.CodeDom
 
         public void Write(TextWriter writer, CodeObject codeObject)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            if (codeObject == null) throw new ArgumentNullException(nameof(codeObject));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (codeObject == null)
+                throw new ArgumentNullException(nameof(codeObject));
 
             using (var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, false))
             {
+                indentedTextWriter.NewLine = "\n";
+
                 Write(indentedTextWriter, codeObject);
             }
         }
 
         public void Write(IndentedTextWriter writer, CodeObject codeObject)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            if (codeObject == null) throw new ArgumentNullException(nameof(codeObject));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (codeObject == null)
+                throw new ArgumentNullException(nameof(codeObject));
 
             switch (codeObject)
             {

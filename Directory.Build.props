@@ -13,6 +13,11 @@
     <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict</Features>
+  </PropertyGroup>
+
   <!-- sourcelink: https://github.com/dotnet/sourcelink/#using-sourcelink -->
   <PropertyGroup>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>

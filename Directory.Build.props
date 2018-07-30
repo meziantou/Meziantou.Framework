@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Enables Strict mode for Roslyn compiler -->
+    <Deterministic>true</Deterministic>
     <Features>strict</Features>
   </PropertyGroup>
 

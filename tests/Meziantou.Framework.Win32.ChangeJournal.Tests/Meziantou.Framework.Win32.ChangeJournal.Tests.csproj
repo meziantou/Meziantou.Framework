@@ -21,4 +21,8 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.ChangeJournal\Meziantou.Framework.Win32.ChangeJournal.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0-eap03" />
+  </ItemGroup>
+
 </Project>

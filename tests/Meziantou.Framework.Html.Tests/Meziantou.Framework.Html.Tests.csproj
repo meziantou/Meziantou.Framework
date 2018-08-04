@@ -20,4 +20,8 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Html\Meziantou.Framework.Html.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0-eap03" />
+  </ItemGroup>
+
 </Project>

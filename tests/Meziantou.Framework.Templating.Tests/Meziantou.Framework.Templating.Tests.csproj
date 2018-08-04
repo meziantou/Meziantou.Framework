@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0-eap03" />
+    <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0-eap06" />
   </ItemGroup>
 
 </Project>

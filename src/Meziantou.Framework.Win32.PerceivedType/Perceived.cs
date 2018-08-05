@@ -92,13 +92,6 @@ namespace Meziantou.Framework.Win32
             return perceived;
         }
 
-        [DllImport("shlwapi.dll")]
-        private static extern int AssocGetPerceivedType(
-            [MarshalAs(UnmanagedType.LPWStr)] string pszExt,
-            ref PerceivedType ptype,
-            ref PerceivedTypeSource pflag,
-            ref IntPtr ppszType);
-
         /// <summary>
         /// Gets the file's xtension.
         /// </summary>
@@ -135,6 +128,9 @@ namespace Meziantou.Framework.Win32
 
             if (s_perceivedTypes.TryGetValue(extension, out var ptype))
                 return ptype;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                throw new PlatformNotSupportedException("PerceivedType is only supported on Windows");
 
             lock (SyncObject)
             {
@@ -204,5 +200,12 @@ namespace Meziantou.Framework.Win32
         {
             return Extension + ":" + PerceivedType + " (" + PerceivedTypeSource + ")";
         }
+
+        [DllImport("shlwapi.dll")]
+        private static extern int AssocGetPerceivedType(
+            [MarshalAs(UnmanagedType.LPWStr)] string pszExt,
+            ref PerceivedType ptype,
+            ref PerceivedTypeSource pflag,
+            ref IntPtr ppszType);
     }
 }

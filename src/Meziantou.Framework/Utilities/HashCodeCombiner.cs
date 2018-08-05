@@ -9,10 +9,7 @@ namespace Meziantou.Framework.Utilities
 
         public int HashCode => _hash.GetHashCode();
 
-        public static implicit operator int(HashCodeCombiner hashCodeCombiner)
-        {
-            return hashCodeCombiner.HashCode;
-        }
+        public static implicit operator int(HashCodeCombiner hashCodeCombiner) => hashCodeCombiner.HashCode;
 
         private void Add(int i)
         {

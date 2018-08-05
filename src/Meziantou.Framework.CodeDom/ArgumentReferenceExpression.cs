@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ArgumentReferenceExpression : Expression
     {
@@ -35,9 +35,6 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator ArgumentReferenceExpression(MethodArgumentDeclaration methodArgumentDeclaration)
-        {
-            return new ArgumentReferenceExpression(methodArgumentDeclaration);
-        }
+        public static implicit operator ArgumentReferenceExpression(MethodArgumentDeclaration methodArgumentDeclaration) => new ArgumentReferenceExpression(methodArgumentDeclaration);
     }
 }

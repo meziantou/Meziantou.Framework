@@ -22,27 +22,15 @@ namespace Meziantou.Framework.Html.Tests
         public string Name { get; }
         public XPathResultType[] ArgTypes { get; }
 
-        public static object CreateXsltArgument(HtmlXsltContext context)
-        {
-            return new XsltArgument(context);
-        }
+        public static object CreateXsltArgument(HtmlXsltContext context) => new XsltArgument(context);
 
         public abstract object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext);
 
-        public virtual int Maxargs
-        {
-            get { return Minargs; }
-        }
+        public virtual int Maxargs => Minargs;
 
-        public virtual int Minargs
-        {
-            get { return 1; }
-        }
+        public virtual int Minargs => 1;
 
-        public virtual XPathResultType ReturnType
-        {
-            get { return XPathResultType.String; }
-        }
+        public virtual XPathResultType ReturnType => XPathResultType.String;
 
         public static T ConvertTo<T>(object argument, CultureInfo ci, T defaultValue)
         {
@@ -52,8 +40,7 @@ namespace Meziantou.Framework.Html.Tests
             if (argument is T)
                 return (T)argument;
 
-            var it = argument as XPathNodeIterator;
-            if (it != null)
+            if (argument is XPathNodeIterator it)
             {
                 if (!it.MoveNext())
                     return defaultValue;
@@ -64,10 +51,9 @@ namespace Meziantou.Framework.Html.Tests
                 return defaultValue;
             }
 
-            var enumerable = argument as IEnumerable;
-            if (enumerable != null && (!(argument is string)))
+            if (argument is IEnumerable enumerable && (!(argument is string)))
             {
-                foreach (object arg in enumerable)
+                foreach (var arg in enumerable)
                 {
                     if (arg is T result)
                         return result;
@@ -84,12 +70,10 @@ namespace Meziantou.Framework.Html.Tests
             if (argument == null)
                 return null;
 
-            string s = argument as string;
-            if (s != null)
+            if (argument is string s)
                 return s;
 
-            var it = argument as XPathNodeIterator;
-            if (it != null)
+            if (argument is XPathNodeIterator it)
             {
                 if (!it.MoveNext())
                     return null;
@@ -97,16 +81,14 @@ namespace Meziantou.Framework.Html.Tests
                 var sb = new StringBuilder();
                 do
                 {
-                    var n = it.Current as HtmlNodeNavigator;
-                    if (n != null && n.CurrentNode != null)
+                    if (it.Current is HtmlNodeNavigator n && n.CurrentNode != null)
                     {
                         if (sb.Length > 0 && separator != null)
                         {
                             sb.Append(separator);
                         }
 
-                        var element = n.CurrentNode as HtmlElement;
-                        if (element != null)
+                        if (n.CurrentNode is HtmlElement element)
                         {
                             var clone = (HtmlElement)element.Clone();
                             sb.Append(outer ? clone.OuterHtml : clone.InnerHtml);
@@ -124,7 +106,7 @@ namespace Meziantou.Framework.Html.Tests
             if (argument is IEnumerable enumerable)
             {
                 StringBuilder sb = null;
-                foreach (object arg in enumerable)
+                foreach (var arg in enumerable)
                 {
                     if (sb == null)
                     {
@@ -136,7 +118,7 @@ namespace Meziantou.Framework.Html.Tests
                         sb.Append(separator);
                     }
 
-                    string s2 = ConvertToString(arg, outer, separator);
+                    var s2 = ConvertToString(arg, outer, separator);
                     if (s2 != null)
                     {
                         sb.Append(s2);
@@ -169,7 +151,7 @@ namespace Meziantou.Framework.Html.Tests
 
             if (arg is IEnumerable e)
             {
-                foreach (object o in e)
+                foreach (var o in e)
                     return false;
 
                 return true;

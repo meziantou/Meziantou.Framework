@@ -93,7 +93,7 @@ namespace Meziantou.Framework.Html
             {
                 if (ParentNode?.HasAttributes == true)
                 {
-                    for (int i = 0; i < ParentNode.Attributes.Count; i++)
+                    for (var i = 0; i < ParentNode.Attributes.Count; i++)
                     {
                         if (ParentNode.Attributes[i] == this)
                             return i;
@@ -111,7 +111,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasAttributes)
                     return null;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index < 0 || (index + 1) >= ParentNode.Attributes.Count)
                     return null;
 
@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasAttributes)
                     return null;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index <= 0)
                     return null;
 
@@ -174,7 +174,7 @@ namespace Meziantou.Framework.Html
             {
                 writer.Write('=');
 
-                char quoteChar = GetQuoteChar();
+                var quoteChar = GetQuoteChar();
                 if (quoteChar == '\0')
                 {
                     WriteContentToWhenUndefinedQuoteChar(writer);
@@ -210,8 +210,8 @@ namespace Meziantou.Framework.Html
 
         public virtual void WriteContentToWhenUndefinedQuoteChar(TextWriter writer)
         {
-            bool eqc = EscapeQuoteChar;
-            string s = GetValue(ref eqc);
+            var eqc = EscapeQuoteChar;
+            var s = GetValue(ref eqc);
             if (string.IsNullOrWhiteSpace(s) || s.IndexOf('"') < 0)
             {
                 writer.Write('"');
@@ -240,7 +240,7 @@ namespace Meziantou.Framework.Html
         {
             using (var sw = new StringWriter())
             {
-                foreach (HtmlNode node in ChildNodes)
+                foreach (var node in ChildNodes)
                 {
                     node.WriteTo(sw);
                 }
@@ -253,8 +253,8 @@ namespace Meziantou.Framework.Html
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            bool eqc = EscapeQuoteChar;
-            string s = GetValue(ref eqc);
+            var eqc = EscapeQuoteChar;
+            var s = GetValue(ref eqc);
             if (s != null)
             {
                 if (eqc)
@@ -290,7 +290,7 @@ namespace Meziantou.Framework.Html
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            foreach (HtmlNode node in ChildNodes)
+            foreach (var node in ChildNodes)
             {
                 node.WriteTo(writer);
             }

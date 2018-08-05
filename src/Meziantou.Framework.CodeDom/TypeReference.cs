@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text;
 
@@ -153,14 +153,8 @@ namespace Meziantou.Framework.CodeDom
             return clone;
         }
 
-        public static implicit operator TypeReference(TypeDeclaration typeDeclaration)
-        {
-            return new TypeReference(typeDeclaration);
-        }
+        public static implicit operator TypeReference(TypeDeclaration typeDeclaration) => new TypeReference(typeDeclaration);
 
-        public static implicit operator TypeReference(Type type)
-        {
-            return new TypeReference(type);
-        }
+        public static implicit operator TypeReference(Type type) => new TypeReference(type);
     }
 }

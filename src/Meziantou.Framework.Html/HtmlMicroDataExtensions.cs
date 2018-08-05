@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Html
                 type.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
             {
                 const string tok = ".org/"; // works for schema.org, auto.schema.org, data-vocabulary.org etc.
-                int pos = type.LastIndexOf(tok);
+                var pos = type.LastIndexOf(tok);
                 if (pos >= 0)
                     return type.Substring(pos + tok.Length);
             }
@@ -26,18 +26,18 @@ namespace Meziantou.Framework.Html
 
         public static string GetItemScopePath(this HtmlNode node, string separator, Func<string, string> typeParser)
         {
-            string path = GetItemProp(node);
+            var path = GetItemProp(node);
             if (path == null)
                 return null;
 
-            HtmlNode current = node;
+            var current = node;
             while (true)
             {
-                HtmlNode scope = GetItemScope(current);
+                var scope = GetItemScope(current);
                 if (scope == null)
                     break;
 
-                string type = GetItemType(scope);
+                var type = GetItemType(scope);
                 if (type != null)
                 {
                     if (typeParser != null)
@@ -107,7 +107,7 @@ namespace Meziantou.Framework.Html
                 return string.Empty;
 
             string value;
-            string name = node.Name.ToLowerInvariant();
+            var name = node.Name.ToLowerInvariant();
             switch (name)
             {
                 case "meta":

@@ -59,7 +59,7 @@ namespace Meziantou.Framework.Collections
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 var i = 0;
-                foreach (T item in _list)
+                foreach (var item in _list)
                 {
                     if (i == index)
                         return item;

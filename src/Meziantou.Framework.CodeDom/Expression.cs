@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -13,10 +13,7 @@ namespace Meziantou.Framework.CodeDom
             CommentsAfter = new CommentCollection(this, CommentType.InlineComment);
         }
 
-        public static implicit operator Expression(MemberDeclaration memberDeclaration)
-        {
-            return new MemberReferenceExpression(memberDeclaration);
-        }
+        public static implicit operator Expression(MemberDeclaration memberDeclaration) => new MemberReferenceExpression(memberDeclaration);
 
         public static implicit operator Expression(Enum value)
         {
@@ -34,15 +31,9 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator Expression(VariableDeclarationStatement variableDeclarationStatement)
-        {
-            return new VariableReference(variableDeclarationStatement);
-        }
+        public static implicit operator Expression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReference(variableDeclarationStatement);
 
-        public static implicit operator Expression(MethodArgumentDeclaration argument)
-        {
-            return new ArgumentReferenceExpression(argument);
-        }
+        public static implicit operator Expression(MethodArgumentDeclaration argument) => new ArgumentReferenceExpression(argument);
 
         public static implicit operator Expression(Type type) => new TypeReference(type);
 
@@ -60,95 +51,41 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator Expression(string value) => new LiteralExpression(value);
         public static implicit operator Expression(bool value) => new LiteralExpression(value);
 
-        public static BinaryExpression operator >(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.GreaterThan, left, right);
-        }
+        public static BinaryExpression operator >(Expression left, Expression right) => new BinaryExpression(BinaryOperator.GreaterThan, left, right);
 
-        public static BinaryExpression operator <(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.LessThan, left, right);
-        }
+        public static BinaryExpression operator <(Expression left, Expression right) => new BinaryExpression(BinaryOperator.LessThan, left, right);
 
-        public static BinaryExpression operator >=(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.GreaterThanOrEqual, left, right);
-        }
+        public static BinaryExpression operator >=(Expression left, Expression right) => new BinaryExpression(BinaryOperator.GreaterThanOrEqual, left, right);
 
-        public static BinaryExpression operator <=(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.LessThanOrEqual, left, right);
-        }
+        public static BinaryExpression operator <=(Expression left, Expression right) => new BinaryExpression(BinaryOperator.LessThanOrEqual, left, right);
 
-        public static BinaryExpression operator +(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Add, left, right);
-        }
+        public static BinaryExpression operator +(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Add, left, right);
 
-        public static BinaryExpression operator -(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Substract, left, right);
-        }
+        public static BinaryExpression operator -(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Substract, left, right);
 
-        public static BinaryExpression operator *(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Multiply, left, right);
-        }
+        public static BinaryExpression operator *(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Multiply, left, right);
 
-        public static BinaryExpression operator /(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Divide, left, right);
-        }
+        public static BinaryExpression operator /(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Divide, left, right);
 
-        public static BinaryExpression operator %(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Modulo, left, right);
-        }
+        public static BinaryExpression operator %(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Modulo, left, right);
 
-        public static BinaryExpression operator &(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.BitwiseAnd, left, right);
-        }
+        public static BinaryExpression operator &(Expression left, Expression right) => new BinaryExpression(BinaryOperator.BitwiseAnd, left, right);
 
-        public static BinaryExpression operator |(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.BitwiseOr, left, right);
-        }
+        public static BinaryExpression operator |(Expression left, Expression right) => new BinaryExpression(BinaryOperator.BitwiseOr, left, right);
 
-        public static BinaryExpression operator ^(Expression left, Expression right)
-        {
-            return new BinaryExpression(BinaryOperator.Xor, left, right);
-        }
+        public static BinaryExpression operator ^(Expression left, Expression right) => new BinaryExpression(BinaryOperator.Xor, left, right);
 
-        public static BinaryExpression operator <<(Expression left, int right)
-        {
-            return new BinaryExpression(BinaryOperator.ShiftLeft, left, new LiteralExpression(right));
-        }
+        public static BinaryExpression operator <<(Expression left, int right) => new BinaryExpression(BinaryOperator.ShiftLeft, left, new LiteralExpression(right));
 
-        public static BinaryExpression operator >>(Expression left, int right)
-        {
-            return new BinaryExpression(BinaryOperator.ShiftRight, left, new LiteralExpression(right));
-        }
+        public static BinaryExpression operator >>(Expression left, int right) => new BinaryExpression(BinaryOperator.ShiftRight, left, new LiteralExpression(right));
 
-        public static UnaryExpression operator +(Expression expression)
-        {
-            return new UnaryExpression(UnaryOperator.Plus, expression);
-        }
+        public static UnaryExpression operator +(Expression expression) => new UnaryExpression(UnaryOperator.Plus, expression);
 
-        public static UnaryExpression operator -(Expression expression)
-        {
-            return new UnaryExpression(UnaryOperator.Minus, expression);
-        }
+        public static UnaryExpression operator -(Expression expression) => new UnaryExpression(UnaryOperator.Minus, expression);
 
-        public static UnaryExpression operator !(Expression expression)
-        {
-            return new UnaryExpression(UnaryOperator.Not, expression);
-        }
+        public static UnaryExpression operator !(Expression expression) => new UnaryExpression(UnaryOperator.Not, expression);
 
-        public static UnaryExpression operator ~(Expression expression)
-        {
-            return new UnaryExpression(UnaryOperator.Complement, expression);
-        }
+        public static UnaryExpression operator ~(Expression expression) => new UnaryExpression(UnaryOperator.Complement, expression);
 
         public ArrayIndexerExpression this[params Expression[] indices] => new ArrayIndexerExpression(this, indices);
 
@@ -185,14 +122,8 @@ namespace Meziantou.Framework.CodeDom
         //    return new CodeUnaryExpression(UnaryOperator.PostDecrement, expression);
         //}
 
-        public Expression Invoke(params Expression[] arguments)
-        {
-            return new MethodInvokeExpression(this, arguments);
-        }
+        public Expression Invoke(params Expression[] arguments) => new MethodInvokeExpression(this, arguments);
 
-        public Expression Invoke(string memberName, params Expression[] arguments)
-        {
-            return new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
-        }
+        public Expression Invoke(string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
     }
 }

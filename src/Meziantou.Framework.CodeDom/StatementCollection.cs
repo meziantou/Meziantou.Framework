@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class StatementCollection : CodeObjectCollection<Statement>
     {
@@ -10,18 +10,8 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public static implicit operator StatementCollection(Statement codeStatement)
-        {
-            var collection = new StatementCollection();
-            collection.Add(codeStatement);
-            return collection;
-        }
+        public static implicit operator StatementCollection(Statement codeStatement) => new StatementCollection { codeStatement };
 
-        public static implicit operator StatementCollection(Expression codeExpression)
-        {
-            var collection = new StatementCollection();
-            collection.Add(codeExpression);
-            return collection;
-        }
+        public static implicit operator StatementCollection(Expression codeExpression) => new StatementCollection { codeExpression };
     }
 }

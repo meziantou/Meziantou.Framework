@@ -113,13 +113,7 @@ namespace Meziantou.Framework.Html
             PropertyChanged?.Invoke(this, e);
         }
 
-        protected string DeclaredNamespaceURI
-        {
-            get
-            {
-                return _namespaceURI;
-            }
-        }
+        protected string DeclaredNamespaceURI => _namespaceURI;
 
         public virtual int ParentIndex
         {
@@ -127,7 +121,7 @@ namespace Meziantou.Framework.Html
             {
                 if (ParentNode?.HasChildNodes == true)
                 {
-                    for (int i = 0; i < ParentNode.ChildNodes.Count; i++)
+                    for (var i = 0; i < ParentNode.ChildNodes.Count; i++)
                     {
                         if (ParentNode.ChildNodes[i] == this)
                             return i;
@@ -144,7 +138,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasChildNodes)
                     yield break;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index < 0 || (index + 1) >= ParentNode.ChildNodes.Count)
                     yield break;
 
@@ -162,7 +156,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasChildNodes)
                     return null;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index < 0 || (index + 1) >= ParentNode.ChildNodes.Count)
                     return null;
 
@@ -177,7 +171,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasChildNodes)
                     yield break;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index <= 0)
                     yield break;
 
@@ -195,7 +189,7 @@ namespace Meziantou.Framework.Html
                 if (ParentNode == null || !ParentNode.HasChildNodes)
                     return null;
 
-                int index = ParentIndex;
+                var index = ParentIndex;
                 if (index <= 0)
                     return null;
 
@@ -203,40 +197,19 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual HtmlNodeList ChildNodes
-        {
-            get
-            {
-                return _childNodes ?? (_childNodes = new HtmlNodeList(this));
-            }
-        }
+        public virtual HtmlNodeList ChildNodes => _childNodes ?? (_childNodes = new HtmlNodeList(this));
 
-        public virtual HtmlAttributeList Attributes
-        {
-            get
-            {
-                return _attributes ?? (_attributes = new HtmlAttributeList(this));
-            }
-        }
+        public virtual HtmlAttributeList Attributes => _attributes ?? (_attributes = new HtmlAttributeList(this));
 
         public virtual bool RaisePropertyChanged { get; set; }
         public virtual int StreamOrder { get; set; }
         public abstract HtmlNodeType NodeType { get; }
 
-        public int Depth
-        {
-            get
-            {
-                return ParentNode != null ? ParentNode.Depth + 1 : 0;
-            }
-        }
+        public int Depth => ParentNode != null ? ParentNode.Depth + 1 : 0;
 
         public string Prefix
         {
-            get
-            {
-                return _prefix;
-            }
+            get => _prefix;
             set
             {
                 if (value == null)
@@ -260,7 +233,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            int pos = name.IndexOf(':');
+            var pos = name.IndexOf(':');
             if (pos < 0)
             {
                 prefix = string.Empty;
@@ -303,7 +276,7 @@ namespace Meziantou.Framework.Html
                 return;
 
             ClearCaches();
-            ParseName(name, out string prefix, out string localName);
+            ParseName(name, out var prefix, out var localName);
             Prefix = prefix;
             LocalName = localName;
             OnPropertyChanged(nameof(Name));
@@ -311,10 +284,7 @@ namespace Meziantou.Framework.Html
 
         public string LocalName
         {
-            get
-            {
-                return _localName;
-            }
+            get => _localName;
             set
             {
                 if (value == null)
@@ -335,18 +305,12 @@ namespace Meziantou.Framework.Html
 
                 return _ownerDocument;
             }
-            private set
-            {
-                _ownerDocument = value;
-            }
+            private set => _ownerDocument = value;
         }
 
         public virtual string NamespaceURI
         {
-            get
-            {
-                return GetNamespaceOfPrefix(Prefix);
-            }
+            get => GetNamespaceOfPrefix(Prefix);
             set
             {
                 if (value == null)
@@ -362,10 +326,7 @@ namespace Meziantou.Framework.Html
 
         public virtual object Tag
         {
-            get
-            {
-                return _tag;
-            }
+            get => _tag;
             set
             {
                 if (Equals(_tag, value))
@@ -378,10 +339,7 @@ namespace Meziantou.Framework.Html
 
         public virtual string Value
         {
-            get
-            {
-                return null;
-            }
+            get => null;
             set
             {
                 //throw new InvalidOperationException();
@@ -413,10 +371,7 @@ namespace Meziantou.Framework.Html
 
         public HtmlNode ParentNode
         {
-            get
-            {
-                return _parentNode;
-            }
+            get => _parentNode;
             internal set
             {
                 if (_parentNode != value)
@@ -454,13 +409,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public string Id
-        {
-            get
-            {
-                return GetAttributeValue("id");
-            }
-        }
+        public string Id => GetAttributeValue("id");
 
         protected internal virtual void AddError(HtmlError error)
         {
@@ -480,13 +429,7 @@ namespace Meziantou.Framework.Html
             _errors = null;
         }
 
-        public virtual IEnumerable<HtmlError> Errors
-        {
-            get
-            {
-                return _errors ?? (_errors = new Collection<HtmlError>());
-            }
-        }
+        public virtual IEnumerable<HtmlError> Errors => _errors ?? (_errors = new Collection<HtmlError>());
 
         public virtual string OuterHtml
         {
@@ -521,7 +464,7 @@ namespace Meziantou.Framework.Html
                 if (value != _innerText)
                 {
                     ClearCaches();
-                    HtmlNode firstChild = FirstChild;
+                    var firstChild = FirstChild;
                     if (firstChild != null && firstChild.NextSibling == null && firstChild.NodeType == HtmlNodeType.Text)
                     {
                         firstChild.Value = value;
@@ -532,7 +475,7 @@ namespace Meziantou.Framework.Html
                             throw new ArgumentException(null, nameof(value));
 
                         RemoveAll();
-                        HtmlText text = OwnerDocument.CreateText();
+                        var text = OwnerDocument.CreateText();
                         text.Value = value;
                         ChildNodes.Add(text);
                     }
@@ -545,7 +488,7 @@ namespace Meziantou.Framework.Html
         {
             if (HasChildNodes)
             {
-                foreach (HtmlNode node in ChildNodes)
+                foreach (var node in ChildNodes)
                 {
                     if (node.NodeType == HtmlNodeType.Text)
                     {
@@ -573,10 +516,7 @@ namespace Meziantou.Framework.Html
                 }
                 return _innerHtml;
             }
-            set
-            {
-                throw new InvalidOperationException();
-            }
+            set => throw new InvalidOperationException();
         }
 
         public virtual string OuterXml
@@ -615,10 +555,7 @@ namespace Meziantou.Framework.Html
                 }
                 return _innerXml;
             }
-            set
-            {
-                throw new InvalidOperationException();
-            }
+            set => throw new InvalidOperationException();
         }
 
         public HtmlNode FirstChild
@@ -659,7 +596,7 @@ namespace Meziantou.Framework.Html
             if (namespaceURI == null)
                 throw new ArgumentNullException(nameof(namespaceURI));
 
-            HtmlAttribute att = Attributes[localName, namespaceURI];
+            var att = Attributes[localName, namespaceURI];
             if (att == null)
             {
                 att = Attributes.Add(prefix, localName, namespaceURI, value);
@@ -715,7 +652,7 @@ namespace Meziantou.Framework.Html
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            HtmlAttribute att = Attributes[name];
+            var att = Attributes[name];
             if (att == null)
             {
                 att = Attributes.Add(name, value);
@@ -727,21 +664,9 @@ namespace Meziantou.Framework.Html
             return att;
         }
 
-        public virtual bool HasAttributes
-        {
-            get
-            {
-                return _attributes?.Count > 0;
-            }
-        }
+        public virtual bool HasAttributes => _attributes?.Count > 0;
 
-        public virtual bool HasChildNodes
-        {
-            get
-            {
-                return _childNodes?.Count > 0;
-            }
-        }
+        public virtual bool HasChildNodes => _childNodes?.Count > 0;
 
         public bool HasAttribute(string localName, string namespaceURI)
         {
@@ -784,7 +709,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return null;
 
-            HtmlAttribute att = Attributes[name];
+            var att = Attributes[name];
             if (att == null)
                 return null;
 
@@ -799,7 +724,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return defaultValue;
 
-            HtmlAttribute att = Attributes[name];
+            var att = Attributes[name];
             if (att == null)
                 return defaultValue;
 
@@ -817,7 +742,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return defaultValue;
 
-            HtmlAttribute att = Attributes.FirstOrDefault(a => a.Prefix == prefix && a.LocalName.EqualsIgnoreCase(localName));
+            var att = Attributes.FirstOrDefault(a => a.Prefix == prefix && a.LocalName.EqualsIgnoreCase(localName));
             if (att == null)
                 return defaultValue;
 
@@ -832,7 +757,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return null;
 
-            HtmlAttribute att = Attributes[name];
+            var att = Attributes[name];
             if (att == null)
                 return null;
 
@@ -850,7 +775,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return null;
 
-            HtmlAttribute att = Attributes[localName, namespaceURI];
+            var att = Attributes[localName, namespaceURI];
             if (att == null)
                 return null;
 
@@ -868,7 +793,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return defaultValue;
 
-            HtmlAttribute att = Attributes[localName, namespaceURI];
+            var att = Attributes[localName, namespaceURI];
             if (att == null)
                 return defaultValue;
 
@@ -909,12 +834,12 @@ namespace Meziantou.Framework.Html
             if (newChild == refChild)
                 return;
 
-            int index = -1;
+            var index = -1;
             if (HasChildNodes)
             {
-                for (int i = 0; i < ChildNodes.Count; i++)
+                for (var i = 0; i < ChildNodes.Count; i++)
                 {
-                    HtmlNode node = ChildNodes[i];
+                    var node = ChildNodes[i];
                     if (node == refChild)
                     {
                         index = i;
@@ -934,7 +859,7 @@ namespace Meziantou.Framework.Html
             if (node == null)
                 throw new ArgumentNullException(nameof(node));
 
-            for (HtmlNode n = ParentNode; (n != null) && (n != this); n = n.ParentNode)
+            for (var n = ParentNode; (n != null) && (n != this); n = n.ParentNode)
             {
                 if (n == node)
                     return true;
@@ -965,12 +890,12 @@ namespace Meziantou.Framework.Html
             if (newChild == refChild)
                 return;
 
-            int index = -1;
+            var index = -1;
             if (HasChildNodes)
             {
-                for (int i = 0; i < ChildNodes.Count; i++)
+                for (var i = 0; i < ChildNodes.Count; i++)
                 {
-                    HtmlNode node = ChildNodes[i];
+                    var node = ChildNodes[i];
                     if (node == refChild)
                     {
                         index = i;
@@ -1032,13 +957,13 @@ namespace Meziantou.Framework.Html
             if (_childNodes == null)
                 return false;
 
-            int index = ChildNodes.IndexOf(oldChild);
+            var index = ChildNodes.IndexOf(oldChild);
             if (index < 0)
                 return false;
 
             if (keepGrandChildren)
             {
-                int oldIndex = oldChild.ParentIndex;
+                var oldIndex = oldChild.ParentIndex;
                 foreach (var child in oldChild.ChildNodes)
                 {
                     child._parentNode = null;
@@ -1070,7 +995,7 @@ namespace Meziantou.Framework.Html
             if (prefix.EqualsIgnoreCase(Prefix) && _namespaceURI != null)
                 return _namespaceURI;
 
-            foreach (HtmlAttribute att in Attributes)
+            foreach (var att in Attributes)
             {
                 if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix) && att.LocalName.EqualsIgnoreCase(prefix))
                     return att.Value;
@@ -1093,7 +1018,7 @@ namespace Meziantou.Framework.Html
             if (namespaceURI.EqualsIgnoreCase(NamespaceURI))
                 return Prefix;
 
-            foreach (HtmlAttribute att in Attributes)
+            foreach (var att in Attributes)
             {
                 if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix) && att.Value.EqualsIgnoreCase(namespaceURI))
                     return att.LocalName;
@@ -1134,7 +1059,7 @@ namespace Meziantou.Framework.Html
             if (namespaces == null)
                 throw new ArgumentNullException(nameof(namespaces));
 
-            foreach (HtmlAttribute att in Attributes)
+            foreach (var att in Attributes)
             {
                 if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix))
                 {
@@ -1145,13 +1070,7 @@ namespace Meziantou.Framework.Html
             ParentNode?.GetNamespaceAttributes(namespaces);
         }
 
-        public Uri BaseAddress
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public Uri BaseAddress => null;
 
         public abstract void WriteTo(TextWriter writer);
         public abstract void WriteContentTo(TextWriter writer);
@@ -1165,7 +1084,7 @@ namespace Meziantou.Framework.Html
 
         public HtmlNode Clone(HtmlCloneOptions options)
         {
-            HtmlNode clone = CreateNew();
+            var clone = CreateNew();
             CopyTo(clone, options);
             return clone;
         }
@@ -1188,7 +1107,7 @@ namespace Meziantou.Framework.Html
             }
             else
             {
-                string ns = NamespaceURI;
+                var ns = NamespaceURI;
                 if (!IsHtmlNs(ns))
                 {
                     target._namespaceURI = ns;
@@ -1197,7 +1116,7 @@ namespace Meziantou.Framework.Html
 
             if ((options & HtmlCloneOptions.Attributes) == HtmlCloneOptions.Attributes)
             {
-                foreach (HtmlAttribute att in Attributes)
+                foreach (var att in Attributes)
                 {
 #if DEBUG_HTML_ID
                     if (att.Name == HtmlElement.DebugIdAttributeName)
@@ -1218,9 +1137,9 @@ namespace Meziantou.Framework.Html
 
             if ((options & HtmlCloneOptions.Deep) == HtmlCloneOptions.Deep)
             {
-                foreach (HtmlNode node in ChildNodes)
+                foreach (var node in ChildNodes)
                 {
-                    HtmlNode cloneNode = node.Clone(options);
+                    var cloneNode = node.Clone(options);
                     target.AppendChild(cloneNode);
                 }
             }
@@ -1232,20 +1151,14 @@ namespace Meziantou.Framework.Html
         }
 
         // NOTE: the doc must have been loaded as an HtmlXPathDocument for this to be valid
-        public virtual string XPathExpression
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual string XPathExpression => null;
 
         [Conditional("DEBUG")]
         internal virtual void CheckParenting()
         {
             if (HasAttributes)
             {
-                foreach (HtmlAttribute att in Attributes)
+                foreach (var att in Attributes)
                 {
                     if (att.ParentNode != this)
                         throw new HtmlException("Internal error: node parenting is wrong. Attribute: " + att.Name);
@@ -1254,7 +1167,7 @@ namespace Meziantou.Framework.Html
 
             if (HasChildNodes)
             {
-                foreach (HtmlNode node in ChildNodes)
+                foreach (var node in ChildNodes)
                 {
                     if (node.ParentNode != this)
                         throw new HtmlException("Internal error: node parenting is wrong. Node: " + node.Clone(HtmlCloneOptions.Attributes).OuterHtml);
@@ -1438,17 +1351,17 @@ namespace Meziantou.Framework.Html
 
         protected virtual IEnumerable<HtmlNode> DoSelectNodes(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
         {
-            XPathNavigator navigator = CreateNavigator(options);
+            var navigator = CreateNavigator(options);
             if (navigator == null)
                 yield break;
 
-            XPathExpression expr = navigator.Compile(xpath);
+            var expr = navigator.Compile(xpath);
             if (nsmgr != null)
             {
                 expr.SetContext(nsmgr);
             }
 
-            object eval = navigator.Evaluate(expr);
+            var eval = navigator.Evaluate(expr);
             if (eval is XPathNodeIterator it)
             {
                 while (it.MoveNext())

@@ -140,7 +140,7 @@ namespace Meziantou.Framework.Utilities
         {
             if (random == null) throw new ArgumentNullException(nameof(random));
 
-            byte[] buffer = new byte[sizeof(long)];
+            var buffer = new byte[sizeof(long)];
             random.NextBytes(buffer);
             return (BitConverter.ToUInt64(buffer, 0) * (max - min) / ulong.MaxValue) + min;
         }

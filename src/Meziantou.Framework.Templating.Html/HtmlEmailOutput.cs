@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,9 +15,8 @@ namespace Meziantou.Framework.Templating
 
         private readonly IDictionary<string, string> _sections = new Dictionary<string, string>();
         private readonly IList<HtmlEmailSection> _currentSections = new List<HtmlEmailSection>();
-        private readonly IList<string> _contentIdentifiers = new List<string>();
 
-        public IList<string> ContentIdentifiers => _contentIdentifiers;
+        public IList<string> ContentIdentifiers { get; } = new List<string>();
 
         public HtmlEmailOutput(Template template, TextWriter writer) : base(template, writer)
         {
@@ -84,7 +83,7 @@ namespace Meziantou.Framework.Templating
         {
             if (cid == null) throw new ArgumentNullException(nameof(cid));
 
-            _contentIdentifiers.Add(cid);
+            ContentIdentifiers.Add(cid);
             Write("cid:");
             WriteUrlEncode(cid);
         }
@@ -115,7 +114,7 @@ namespace Meziantou.Framework.Templating
 
         public string GetSection(string name)
         {
-            if (_sections.TryGetValue(name, out string value))
+            if (_sections.TryGetValue(name, out var value))
             {
                 return HtmlDecode(value);
             }

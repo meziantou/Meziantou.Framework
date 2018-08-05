@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Versioning
     // https://github.com/semver/semver/blob/master/semver.svg
     public class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
     {
-        private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
+        private static readonly IReadOnlyList<string> s_emptyArray = Array.Empty<string>();
 
         public SemanticVersion(int major, int minor, int patch)
         {
@@ -91,11 +91,11 @@ namespace Meziantou.Framework.Versioning
         public int Minor { get; }
         public int Patch { get; }
 
-        public virtual IReadOnlyList<string> PrereleaseLabels { get; } = EmptyArray;
-        public virtual bool IsPrerelease => PrereleaseLabels != EmptyArray;
+        public virtual IReadOnlyList<string> PrereleaseLabels { get; } = s_emptyArray;
+        public virtual bool IsPrerelease => PrereleaseLabels != s_emptyArray;
 
-        public virtual IReadOnlyList<string> Metadata { get; } = EmptyArray;
-        public virtual bool HasMetadata => Metadata != EmptyArray;
+        public virtual IReadOnlyList<string> Metadata { get; } = s_emptyArray;
+        public virtual bool HasMetadata => Metadata != s_emptyArray;
 
         public virtual string ToString(string format, IFormatProvider formatProvider)
         {
@@ -275,7 +275,7 @@ namespace Meziantou.Framework.Versioning
                     break;
             }
 
-            return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
+            return result.Count == 0 ? s_emptyArray : ReadOnlyList.From(result);
         }
 
         private static bool TryReadMetadata(string versionString, ref int index, out IReadOnlyList<string> labels)
@@ -306,7 +306,7 @@ namespace Meziantou.Framework.Versioning
                     break;
             }
 
-            return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
+            return result.Count == 0 ? s_emptyArray : ReadOnlyList.From(result);
         }
 
         private static bool IsPrereleaseIdentifier(string label)
@@ -423,35 +423,17 @@ namespace Meziantou.Framework.Versioning
             return c == '-';
         }
 
-        public static bool operator ==(SemanticVersion left, SemanticVersion right)
-        {
-            return Equals(left, right);
-        }
+        public static bool operator ==(SemanticVersion left, SemanticVersion right) => Equals(left, right);
 
-        public static bool operator !=(SemanticVersion left, SemanticVersion right)
-        {
-            return !(left == right);
-        }
+        public static bool operator !=(SemanticVersion left, SemanticVersion right) => !(left == right);
 
-        public static bool operator <(SemanticVersion left, SemanticVersion right)
-        {
-            return SemanticVersionComparer.Instance.Compare(left, right) < 0;
-        }
+        public static bool operator <(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) < 0;
 
-        public static bool operator <=(SemanticVersion left, SemanticVersion right)
-        {
-            return SemanticVersionComparer.Instance.Compare(left, right) <= 0;
-        }
+        public static bool operator <=(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) <= 0;
 
-        public static bool operator >(SemanticVersion left, SemanticVersion right)
-        {
-            return SemanticVersionComparer.Instance.Compare(left, right) > 0;
-        }
+        public static bool operator >(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) > 0;
 
-        public static bool operator >=(SemanticVersion left, SemanticVersion right)
-        {
-            return SemanticVersionComparer.Instance.Compare(left, right) >= 0;
-        }
+        public static bool operator >=(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) >= 0;
 
         public SemanticVersion NextPathVersion()
         {

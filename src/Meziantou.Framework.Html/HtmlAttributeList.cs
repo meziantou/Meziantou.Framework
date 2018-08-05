@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>, IList, IReadOnlyList<HtmlAttribute>
     {
-        private readonly List<HtmlAttribute> _list = new List<HtmlAttribute>();
+        private readonly List<HtmlAttribute> _attributes = new List<HtmlAttribute>();
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
 
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Html
                 prefix = Parent.OwnerDocument.GetPrefixOfNamespace(namespaceURI);
             }
 
-            HtmlAttribute att = Parent.OwnerDocument.CreateAttribute(prefix, localName, namespaceURI);
+            var att = Parent.OwnerDocument.CreateAttribute(prefix, localName, namespaceURI);
             att.Value = value;
             Add(att);
             return att;
@@ -59,7 +59,7 @@ namespace Meziantou.Framework.Html
             if (Parent == null || Parent.OwnerDocument == null)
                 throw new InvalidOperationException();
 
-            HtmlAttribute att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
+            var att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
             att.Value = value;
             Add(att);
             return att;
@@ -78,7 +78,7 @@ namespace Meziantou.Framework.Html
             if (attribute.ParentNode != null)
                 throw new ArgumentException(null, nameof(attribute));
 
-            HtmlAttribute att = this[attribute.LocalName, attribute.NamespaceURI];
+            var att = this[attribute.LocalName, attribute.NamespaceURI];
             if (att != null)
             {
                 if (!replace)
@@ -95,7 +95,7 @@ namespace Meziantou.Framework.Html
             if (attribute == null)
                 throw new ArgumentNullException(nameof(attribute));
 
-            _list.Add(attribute);
+            _attributes.Add(attribute);
             attribute.ParentNode = Parent;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute));
         }
@@ -105,7 +105,7 @@ namespace Meziantou.Framework.Html
             if (namespaceURI == null)
                 throw new ArgumentNullException(nameof(namespaceURI));
 
-            foreach (HtmlAttribute att in _list)
+            foreach (var att in _attributes)
             {
                 if ((att.Name == HtmlNode.XmlnsPrefix || att.Prefix == HtmlNode.XmlnsPrefix) && att.Value == namespaceURI)
                     return att.LocalName;
@@ -116,14 +116,14 @@ namespace Meziantou.Framework.Html
 
         public void RemoveAll()
         {
-            foreach (HtmlAttribute att in _list)
+            foreach (var att in _attributes)
             {
                 if (att.ParentNode != Parent)
                     throw new ArgumentException();
 
                 att.ParentNode = null;
             }
-            _list.Clear();
+            _attributes.Clear();
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
@@ -135,7 +135,7 @@ namespace Meziantou.Framework.Html
             if (item.ParentNode != null)
                 throw new ArgumentException(null, nameof(item));
 
-            _list.Insert(index, item);
+            _attributes.Insert(index, item);
             item.ParentNode = Parent;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
@@ -147,7 +147,7 @@ namespace Meziantou.Framework.Html
 
         public void CopyTo(HtmlAttribute[] array, int arrayIndex)
         {
-            _list.CopyTo(array, arrayIndex);
+            _attributes.CopyTo(array, arrayIndex);
         }
 
         public int IndexOf(HtmlAttribute item)
@@ -155,7 +155,7 @@ namespace Meziantou.Framework.Html
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
 
-            return _list.IndexOf(item);
+            return _attributes.IndexOf(item);
         }
 
         public int IndexOf(string name)
@@ -163,7 +163,7 @@ namespace Meziantou.Framework.Html
             if (name == null)
                 return -1;
 
-            return _list.FindIndex(a => name.EqualsIgnoreCase(a.Name));
+            return _attributes.FindIndex(a => name.EqualsIgnoreCase(a.Name));
         }
 
         public int IndexOf(string localName, string namespaceURI)
@@ -171,21 +171,21 @@ namespace Meziantou.Framework.Html
             if (localName == null || namespaceURI == null)
                 return -1;
 
-            return _list.FindIndex(a =>
+            return _attributes.FindIndex(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
                 a.NamespaceURI != null && namespaceURI == a.NamespaceURI);
         }
 
         public bool RemoveAt(int index)
         {
-            if (index < 0 || index >= _list.Count)
+            if (index < 0 || index >= _attributes.Count)
                 return false;
 
-            HtmlAttribute att = _list[index];
+            var att = _attributes[index];
             if (att.ParentNode != Parent)
                 throw new ArgumentException(null, nameof(index));
 
-            _list.RemoveAt(index);
+            _attributes.RemoveAt(index);
             att.ParentNode = null;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, att, index));
             return true;
@@ -196,7 +196,7 @@ namespace Meziantou.Framework.Html
             if (attributes == null)
                 return;
 
-            foreach (HtmlAttribute att in attributes)
+            foreach (var att in attributes)
             {
                 Remove(att);
             }
@@ -210,7 +210,7 @@ namespace Meziantou.Framework.Html
             if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
 
-            HtmlAttribute att = _list.Find(a => localName.EqualsIgnoreCase(a.LocalName) && prefix == a.Prefix);
+            var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && prefix == a.Prefix);
             if (att == null)
                 return false;
 
@@ -225,7 +225,7 @@ namespace Meziantou.Framework.Html
             if (namespaceURI == null)
                 throw new ArgumentNullException(nameof(namespaceURI));
 
-            HtmlAttribute att = this[localName, namespaceURI];
+            var att = this[localName, namespaceURI];
             if (att == null)
                 return false;
 
@@ -237,7 +237,7 @@ namespace Meziantou.Framework.Html
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            HtmlAttribute att = this[name];
+            var att = this[name];
             if (att == null)
                 return false;
 
@@ -252,7 +252,7 @@ namespace Meziantou.Framework.Html
             if (attribute.ParentNode != Parent)
                 throw new ArgumentException(null, nameof(attribute));
 
-            if (!_list.Remove(attribute))
+            if (!_attributes.Remove(attribute))
                 throw new ArgumentException(null, nameof(attribute));
 
             attribute.ParentNode = null;
@@ -267,7 +267,7 @@ namespace Meziantou.Framework.Html
                 if (name == null)
                     throw new ArgumentNullException(nameof(name));
 
-                return _list.Find(a => name.EqualsIgnoreCase(a.Name));
+                return _attributes.Find(a => name.EqualsIgnoreCase(a.Name));
             }
             set
             {
@@ -277,7 +277,7 @@ namespace Meziantou.Framework.Html
                 if (value.ParentNode != null)
                     throw new ArgumentException(null, nameof(value));
 
-                int index = IndexOf(name);
+                var index = IndexOf(name);
                 if (index < 0)
                 {
                     AddNoCheck(value);
@@ -299,7 +299,7 @@ namespace Meziantou.Framework.Html
                 if (namespaceURI == null)
                     throw new ArgumentNullException(nameof(namespaceURI));
 
-                return _list.Find(a =>
+                return _attributes.Find(a =>
                     localName.EqualsIgnoreCase(a.LocalName) &&
                     a.NamespaceURI != null && namespaceURI == a.NamespaceURI);
             }
@@ -311,7 +311,7 @@ namespace Meziantou.Framework.Html
                 if (value.ParentNode != null)
                     throw new ArgumentException(null, nameof(value));
 
-                int index = IndexOf(localName, namespaceURI);
+                var index = IndexOf(localName, namespaceURI);
                 if (index < 0)
                 {
                     AddNoCheck(value);
@@ -325,117 +325,56 @@ namespace Meziantou.Framework.Html
 
         public HtmlAttribute this[int index]
         {
-            get
-            {
-                return _list[index];
-            }
+            get => _attributes[index];
             set
             {
-                if (value == _list[index])
+                if (value == _attributes[index])
                     return;
 
-                HtmlAttribute oldItem = _list[index];
-
-                _list[index] = value;
+                var oldItem = _attributes[index];
+                _attributes[index] = value;
                 OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
             }
         }
 
-        public int Count
-        {
-            get
-            {
-                return _list.Count;
-            }
-        }
+        public int Count => _attributes.Count;
 
-        public IEnumerator<HtmlAttribute> GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        public IEnumerator<HtmlAttribute> GetEnumerator() => _attributes.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        bool ICollection<HtmlAttribute>.IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool ICollection<HtmlAttribute>.IsReadOnly => false;
 
-        void ICollection<HtmlAttribute>.Clear()
-        {
-            RemoveAll();
-        }
+        void ICollection<HtmlAttribute>.Clear() => RemoveAll();
 
         int IList.Add(object value)
         {
-            int count = Count;
+            var count = Count;
             Add((HtmlAttribute)value);
             return count;
         }
 
-        void IList.Clear()
-        {
-            RemoveAll();
-        }
+        void IList.Clear() => RemoveAll();
 
-        bool IList.Contains(object value)
-        {
-            return Contains((HtmlAttribute)value);
-        }
+        bool IList.Contains(object value) => Contains((HtmlAttribute)value);
 
-        int IList.IndexOf(object value)
-        {
-            return IndexOf((HtmlAttribute)value);
-        }
+        int IList.IndexOf(object value) => IndexOf((HtmlAttribute)value);
 
-        void IList.Insert(int index, object value)
-        {
-            Insert(index, (HtmlAttribute)value);
-        }
+        void IList.Insert(int index, object value) => Insert(index, (HtmlAttribute)value);
 
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IList.IsFixedSize => false;
 
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IList.IsReadOnly => false;
 
-        void IList.Remove(object value)
-        {
-            Remove((HtmlAttribute)value);
-        }
+        void IList.Remove(object value) => Remove((HtmlAttribute)value);
 
-        void IList.RemoveAt(int index)
-        {
-            RemoveAt(index);
-        }
+        void IList.RemoveAt(int index) => RemoveAt(index);
 
-        void IList<HtmlAttribute>.RemoveAt(int index)
-        {
-            RemoveAt(index);
-        }
+        void IList<HtmlAttribute>.RemoveAt(int index) => RemoveAt(index);
 
         object IList.this[int index]
         {
-            get
-            {
-                return this[index];
-            }
+            get => this[index];
             set
             {
                 if (value == null)
@@ -445,25 +384,10 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        void ICollection.CopyTo(Array array, int index)
-        {
-            ((ICollection)_list).CopyTo(array, index);
-        }
+        void ICollection.CopyTo(Array array, int index) => ((ICollection)_attributes).CopyTo(array, index);
 
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return ((ICollection)_list).IsSynchronized;
-            }
-        }
+        bool ICollection.IsSynchronized => ((ICollection)_attributes).IsSynchronized;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return ((ICollection)_list).SyncRoot;
-            }
-        }
+        object ICollection.SyncRoot => ((ICollection)_attributes).SyncRoot;
     }
 }

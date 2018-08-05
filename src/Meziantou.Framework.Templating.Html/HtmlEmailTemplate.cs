@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -85,13 +85,14 @@ namespace Meziantou.Framework.Templating
 
         private static HtmlEmailMetadata GetMetadata(object[] parameters)
         {
-            HtmlEmailOutput htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
+            var htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
             if (htmlEmailOutput != null)
             {
-                var metadata = new HtmlEmailMetadata();
-                metadata.Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName);
-                metadata.ContentIdentifiers = htmlEmailOutput.ContentIdentifiers;
-                return metadata;
+                return new HtmlEmailMetadata
+                {
+                    Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName),
+                    ContentIdentifiers = htmlEmailOutput.ContentIdentifiers
+                };
             }
 
             return null;

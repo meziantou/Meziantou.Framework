@@ -15,9 +15,11 @@ namespace Meziantou.Framework.Win32.DialogsSamples
 
         private void ButtonOpenFolder_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFolderDialog();
-            dialog.Title = "Sample Open Folder dialog";
-            dialog.OkButtonLabel = "Test OK";
+            var dialog = new OpenFolderDialog
+            {
+                Title = "Sample Open Folder dialog",
+                OkButtonLabel = "Test OK"
+            };
             dialog.ShowDialog();
         }
     }

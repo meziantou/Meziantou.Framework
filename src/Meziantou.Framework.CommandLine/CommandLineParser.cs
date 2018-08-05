@@ -73,7 +73,7 @@ namespace Meziantou.Framework
 
         public string GetArgument(string name)
         {
-            if (_namedArguments.TryGetValue(name, out string value))
+            if (_namedArguments.TryGetValue(name, out var value))
                 return value;
 
             return null;
@@ -81,7 +81,7 @@ namespace Meziantou.Framework
 
         public string GetArgument(int position)
         {
-            if (_positionArguments.TryGetValue(position, out string value))
+            if (_positionArguments.TryGetValue(position, out var value))
                 return value;
 
             return null;

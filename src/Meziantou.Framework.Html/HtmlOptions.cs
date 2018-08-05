@@ -168,7 +168,7 @@ namespace Meziantou.Framework.Html
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            _readOptions.TryGetValue(name, out HtmlElementReadOptions options);
+            _readOptions.TryGetValue(name, out var options);
             return options;
         }
 
@@ -180,29 +180,11 @@ namespace Meziantou.Framework.Html
             _readOptions[name] = options;
         }
 
-        public virtual ISet<string> ParsedScriptTypes
-        {
-            get
-            {
-                return _parsedScriptTypes;
-            }
-        }
+        public virtual ISet<string> ParsedScriptTypes => _parsedScriptTypes;
 
-        public virtual ISet<string> EmptyNamespaces
-        {
-            get
-            {
-                return _emptyNamespaces;
-            }
-        }
+        public virtual ISet<string> EmptyNamespaces => _emptyNamespaces;
 
-        public virtual ISet<string> EmptyNamespacesForXPath
-        {
-            get
-            {
-                return _emptyNamespacesForXPath;
-            }
-        }
+        public virtual ISet<string> EmptyNamespacesForXPath => _emptyNamespacesForXPath;
 
         public virtual bool ReaderThrowsOnEncodingMismatch { get; set; }
         public virtual bool ReaderRestartsOnEncodingDetected { get; set; }

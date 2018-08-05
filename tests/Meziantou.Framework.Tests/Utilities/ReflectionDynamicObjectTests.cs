@@ -88,7 +88,10 @@ namespace Meziantou.Framework.Tests.Utilities
 
         private class Test
         {
+#pragma warning disable IDE0032 // Use auto property
             private int _privateField = 42;
+#pragma warning restore IDE0032 // Use auto property
+
             public int PrivateField { get => _privateField; set => _privateField = value; }
 
             private int PrivateProperty { get; set; } = 10;

@@ -18,45 +18,18 @@ namespace Meziantou.Framework.Html
         }
 
         [Browsable(false)]
-        public override HtmlAttributeList Attributes
-        {
-            get
-            {
-                return base.Attributes;
-            }
-        }
+        public override HtmlAttributeList Attributes => base.Attributes;
 
         [Browsable(false)]
-        public override HtmlNodeList ChildNodes
-        {
-            get
-            {
-                return base.ChildNodes;
-            }
-        }
+        public override HtmlNodeList ChildNodes => base.ChildNodes;
 
-        public override HtmlNodeType NodeType
-        {
-            get
-            {
-                return HtmlNodeType.Text;
-            }
-        }
+        public override HtmlNodeType NodeType => HtmlNodeType.Text;
 
-        public virtual bool IsWhitespace
-        {
-            get
-            {
-                return string.IsNullOrWhiteSpace(Value);
-            }
-        }
+        public virtual bool IsWhitespace => string.IsNullOrWhiteSpace(Value);
 
         public virtual bool IsCData
         {
-            get
-            {
-                return _cData;
-            }
+            get => _cData;
             set
             {
                 if (value != _cData)
@@ -69,10 +42,7 @@ namespace Meziantou.Framework.Html
 
         public override string Name
         {
-            get
-            {
-                return base.Name;
-            }
+            get => base.Name;
             set
             {
                 // do nothing
@@ -81,10 +51,7 @@ namespace Meziantou.Framework.Html
 
         public override string InnerText
         {
-            get
-            {
-                return Value;
-            }
+            get => Value;
             set
             {
                 if (value != Value)
@@ -97,10 +64,7 @@ namespace Meziantou.Framework.Html
 
         public override string InnerHtml
         {
-            get
-            {
-                return Value;
-            }
+            get => Value;
 
             set
             {
@@ -114,10 +78,7 @@ namespace Meziantou.Framework.Html
 
         public override string Value
         {
-            get
-            {
-                return _value;
-            }
+            get => _value;
             set
             {
                 if (value != _value)

@@ -24,10 +24,7 @@ namespace Meziantou.Framework.Html
 
                 return string.Format(CultureInfo.InvariantCulture, "{0}", Result);
             }
-            set
-            {
-                Result = value;
-            }
+            set => Result = value;
         }
 
         public override HtmlNodeType NodeType => HtmlNodeType.XPathResult;

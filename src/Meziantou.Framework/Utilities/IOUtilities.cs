@@ -124,7 +124,7 @@ namespace Meziantou.Framework.Utilities
                 return string.Format(reservedNameFormat, fileName);
             }
 
-            char[] invalid = Path.GetInvalidFileNameChars();
+            var invalid = Path.GetInvalidFileNameChars();
 
             var sb = new StringBuilder(fileName.Length);
             foreach (var c in fileName)

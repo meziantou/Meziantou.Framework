@@ -132,7 +132,7 @@ namespace Meziantou.Framework.Templating
                     friendlyName = friendlyName.Remove(iBacktick);
                 }
                 friendlyName += "<";
-                Type[] typeParameters = type.GetGenericArguments();
+                var typeParameters = type.GetGenericArguments();
                 for (var i = 0; i < typeParameters.Length; ++i)
                 {
                     var typeParamName = GetFriendlyTypeName(typeParameters[i]);
@@ -243,7 +243,7 @@ namespace Meziantou.Framework.Templating
                     if (blockDelimiterIndex >= nextDelimiter.Length) // end of delimiter
                     {
                         var text = currentBlock.ToString(0, currentBlock.Length - (blockDelimiterIndex - 1));
-                        ParsedBlock block = CreateBlock(isInBlock, text, blockIndex++, startLine, startColumn, reader.Line, reader.Column);
+                        var block = CreateBlock(isInBlock, text, blockIndex++, startLine, startColumn, reader.Line, reader.Column);
                         blocks.Add(block);
 
                         currentBlock.Clear();
@@ -278,7 +278,7 @@ namespace Meziantou.Framework.Templating
             // Create final parsed block if needed
             if (currentBlock.Length > 0)
             {
-                ParsedBlock block = CreateBlock(false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
+                var block = CreateBlock(false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
                 blocks.Add(block);
             }
 
@@ -288,7 +288,7 @@ namespace Meziantou.Framework.Templating
 
         private ParsedBlock CreateBlock(bool codeBlock, string text, int index, int startLine, int startColumn, int endLine, int endColumn)
         {
-            ParsedBlock block = codeBlock ? CreateCodeBlock(text, index) : CreateParsedBlock(text, index);
+            var block = codeBlock ? CreateCodeBlock(text, index) : CreateParsedBlock(text, index);
             block.StartLine = startLine;
             block.StartColumn = startColumn;
             block.EndLine = endLine;
@@ -522,7 +522,7 @@ namespace Meziantou.Framework.Templating
 
         public string Run(params object[] parameters)
         {
-            using (StringWriter writer = CreateStringWriter())
+            using (var writer = CreateStringWriter())
             {
                 Run(writer, parameters);
                 return writer.ToString();
@@ -543,7 +543,7 @@ namespace Meziantou.Framework.Templating
 
         protected virtual object[] CreateMethodParameters(TextWriter writer, object[] parameters)
         {
-            object[] p = new object[parameters?.Length + 1 ?? 1];
+            var p = new object[parameters?.Length + 1 ?? 1];
             p[0] = CreateOutput(writer);
             parameters?.CopyTo(p, 1);
             return p;
@@ -580,7 +580,7 @@ namespace Meziantou.Framework.Templating
             }
 
             var parameterInfos = _runMethodInfo.GetParameters();
-            object[] p = new object[parameterInfos.Length];
+            var p = new object[parameterInfos.Length];
             foreach (var pi in parameterInfos)
             {
                 if (pi.Name == OutputParameterName)
@@ -589,7 +589,7 @@ namespace Meziantou.Framework.Templating
                 }
                 else
                 {
-                    if (parameters.TryGetValue(pi.Name, out object value))
+                    if (parameters.TryGetValue(pi.Name, out var value))
                     {
                         p[pi.Position] = value;
                     }

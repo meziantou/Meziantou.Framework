@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Html.Tests
 
         protected virtual IXsltContextFunction CreateHtmlXsltFunction(string prefix, string name, XPathResultType[] ArgTypes)
         {
-            IXsltContextFunction fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, ArgTypes);
+            var fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, ArgTypes);
             if (fn == null)
                 throw new Exception("XPATH function '" + name + "' is unknown.");
 

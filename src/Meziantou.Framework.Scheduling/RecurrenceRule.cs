@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Scheduling
 
         public static RecurrenceRule Parse(string rrule)
         {
-            if (!TryParse(rrule, out RecurrenceRule recurrenceRule, out string error))
+            if (!TryParse(rrule, out var recurrenceRule, out var error))
                 throw new FormatException("RRule format is invalid: " + error);
 
             return recurrenceRule;
@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Scheduling
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule)
         {
-            return TryParse(rrule, out recurrenceRule, out string error);
+            return TryParse(rrule, out recurrenceRule, out var error);
         }
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule, out string error)

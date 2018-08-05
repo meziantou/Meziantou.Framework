@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Html
             if (ReferenceEquals(x, y))
                 return 0;
 
-            int comp = x.Depth.CompareTo(y.Depth);
+            var comp = x.Depth.CompareTo(y.Depth);
             return Direction == ListSortDirection.Ascending ? comp : -comp;
         }
     }

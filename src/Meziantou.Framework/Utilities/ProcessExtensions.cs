@@ -62,13 +62,15 @@ namespace Meziantou.Framework.Utilities
 
         private static void GetChildProcesses(Process process, List<Process> children)
         {
-            IntPtr snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
+            var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
             try
             {
-                var entry = new ProcessEntry32();
-                entry.dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32));
+                var entry = new ProcessEntry32
+                {
+                    dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32))
+                };
 
-                int result = Process32First(snapShotHandle, ref entry);
+                var result = Process32First(snapShotHandle, ref entry);
                 while (result != 0)
                 {
                     if (process.Id == entry.th32ParentProcessID)
@@ -229,6 +231,7 @@ namespace Meziantou.Framework.Utilities
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private struct ProcessEntry32
         {
+#pragma warning disable IDE1006 // Naming Styles
             public uint dwSize;
             public uint cntUsage;
             public uint th32ProcessID;
@@ -241,6 +244,7 @@ namespace Meziantou.Framework.Utilities
 
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH)]
             public string szExeFile;
+#pragma warning restore IDE1006 // Naming Styles
         }
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682489.aspx

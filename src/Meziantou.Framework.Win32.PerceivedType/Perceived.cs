@@ -11,12 +11,64 @@ namespace Meziantou.Framework.Win32
     /// </summary>
     public sealed class Perceived
     {
-        private static readonly Dictionary<string, Perceived> _perceivedTypes = new Dictionary<string, Perceived>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, Perceived> s_perceivedTypes = new Dictionary<string, Perceived>(StringComparer.OrdinalIgnoreCase);
 
         private static object SyncObject { get; } = new object();
 
         private Perceived()
         {
+        }
+
+        public static void AddDefaultPerceivedTypes()
+        {
+            AddPerceived(".appxmanifest", PerceivedType.Text);
+            AddPerceived(".asax", PerceivedType.Text);
+            AddPerceived(".ascx", PerceivedType.Text);
+            AddPerceived(".ashx", PerceivedType.Text);
+            AddPerceived(".asmx", PerceivedType.Text);
+            AddPerceived(".bat", PerceivedType.Text);
+            AddPerceived(".class", PerceivedType.Text);
+            AddPerceived(".cmd", PerceivedType.Text);
+            AddPerceived(".cs", PerceivedType.Text);
+            AddPerceived(".cshtml", PerceivedType.Text);
+            AddPerceived(".css", PerceivedType.Text);
+            AddPerceived(".cfxproj", PerceivedType.Text);
+            AddPerceived(".config", PerceivedType.Text);
+            AddPerceived(".csproj", PerceivedType.Text);
+            AddPerceived(".dll", PerceivedType.Application);
+            AddPerceived(".exe", PerceivedType.Application);
+            AddPerceived(".htm", PerceivedType.Text);
+            AddPerceived(".html", PerceivedType.Text);
+            AddPerceived(".iqy", PerceivedType.Text);
+            AddPerceived(".js", PerceivedType.Text);
+            AddPerceived(".master", PerceivedType.Text);
+            AddPerceived(".manifest", PerceivedType.Text);
+            AddPerceived(".rdl", PerceivedType.Text);
+            AddPerceived(".reg", PerceivedType.Text);
+            AddPerceived(".resx", PerceivedType.Text);
+            AddPerceived(".rtf", PerceivedType.Text);
+            AddPerceived(".rzt", PerceivedType.Text);
+            AddPerceived(".sln", PerceivedType.Text);
+            AddPerceived(".sql", PerceivedType.Text);
+            AddPerceived(".sqlproj", PerceivedType.Text);
+            AddPerceived(".snippet", PerceivedType.Text);
+            AddPerceived(".svc", PerceivedType.Text);
+            AddPerceived(".tpl", PerceivedType.Text);
+            AddPerceived(".tplxaml", PerceivedType.Text);
+            AddPerceived(".vb", PerceivedType.Text);
+            AddPerceived(".vbhtml", PerceivedType.Text);
+            AddPerceived(".vbproj", PerceivedType.Text);
+            AddPerceived(".vbs", PerceivedType.Text);
+            AddPerceived(".vdproj", PerceivedType.Text);
+            AddPerceived(".wsdl", PerceivedType.Text);
+            AddPerceived(".wxi", PerceivedType.Text);
+            AddPerceived(".wxl", PerceivedType.Text);
+            AddPerceived(".wxs", PerceivedType.Text);
+            AddPerceived(".wixlib", PerceivedType.Text);
+            AddPerceived(".xaml", PerceivedType.Text);
+            AddPerceived(".xsd", PerceivedType.Text);
+            AddPerceived(".xsl", PerceivedType.Text);
+            AddPerceived(".xslt", PerceivedType.Text);
         }
 
         /// <summary>
@@ -26,7 +78,8 @@ namespace Meziantou.Framework.Win32
         /// <param name="type">The perceived type.</param>
         public static Perceived AddPerceived(string extension, PerceivedType type)
         {
-            if (extension == null) throw new ArgumentNullException(nameof(extension));
+            if (extension == null)
+                throw new ArgumentNullException(nameof(extension));
 
             var perceived = new Perceived();
             perceived.Extension = extension;
@@ -34,7 +87,7 @@ namespace Meziantou.Framework.Win32
             perceived.PerceivedTypeSource = PerceivedTypeSource.HardCoded;
             lock (SyncObject)
             {
-                _perceivedTypes[perceived.Extension] = perceived;
+                s_perceivedTypes[perceived.Extension] = perceived;
             }
             return perceived;
         }
@@ -71,7 +124,8 @@ namespace Meziantou.Framework.Win32
         /// <returns>An instance of the PerceivedType type.</returns>
         public static Perceived GetPerceivedType(string fileName)
         {
-            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
 
             var extension = Path.GetExtension(fileName);
             if (extension == null)
@@ -79,12 +133,12 @@ namespace Meziantou.Framework.Win32
 
             extension = extension.ToLowerInvariant();
 
-            if (_perceivedTypes.TryGetValue(extension, out Perceived ptype))
+            if (s_perceivedTypes.TryGetValue(extension, out var ptype))
                 return ptype;
 
             lock (SyncObject)
             {
-                if (!_perceivedTypes.TryGetValue(extension, out ptype))
+                if (!s_perceivedTypes.TryGetValue(extension, out ptype))
                 {
                     ptype = new Perceived();
                     ptype.Extension = extension;
@@ -133,7 +187,7 @@ namespace Meziantou.Framework.Win32
                         }
                     }
 
-                    _perceivedTypes.Add(ptype.Extension, ptype);
+                    s_perceivedTypes.Add(ptype.Extension, ptype);
                 }
 
                 return ptype;

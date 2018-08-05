@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32
     {
         public static Credential ReadCredential(string applicationName)
         {
-            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out IntPtr nCredPtr);
+            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out var nCredPtr);
             if (read)
             {
                 using (var critCred = new CriticalCredentialHandle(nCredPtr))
@@ -81,10 +81,10 @@ namespace Meziantou.Framework.Win32
                     throw new ArgumentOutOfRangeException(nameof(comment), "The comment message has exceeded 256 characters.");
             }
 
-            IntPtr commentPtr = IntPtr.Zero;
-            IntPtr targetNamePtr = IntPtr.Zero;
-            IntPtr credentialBlobPtr = IntPtr.Zero;
-            IntPtr userNamePtr = IntPtr.Zero;
+            var commentPtr = IntPtr.Zero;
+            var targetNamePtr = IntPtr.Zero;
+            var credentialBlobPtr = IntPtr.Zero;
+            var userNamePtr = IntPtr.Zero;
             try
             {
                 commentPtr = comment != null ? Marshal.StringToCoTaskMemUni(comment) : IntPtr.Zero;
@@ -141,7 +141,7 @@ namespace Meziantou.Framework.Win32
         public static IReadOnlyList<Credential> EnumerateCrendentials(string filter)
         {
             var result = new List<Credential>();
-            var ret = Advapi32.CredEnumerate(filter, 0, out int count, out IntPtr pCredentials);
+            var ret = Advapi32.CredEnumerate(filter, 0, out var count, out var pCredentials);
             try
             {
                 if (ret)

@@ -31,29 +31,14 @@ namespace Meziantou.Framework.Html
         public const string DebugIdAttributeName = "__id";
         private static int _debugId;
 
-        public int DebugId
-        {
-            get
-            {
-                return GetAttributeValue(DebugIdAttributeName, -1);
-            }
-        }
+        public int DebugId => GetAttributeValue(DebugIdAttributeName, -1);
 #endif
 
-        public virtual bool IsDocumentType
-        {
-            get
-            {
-                return Name.EqualsIgnoreCase("!doctype");
-            }
-        }
+        public virtual bool IsDocumentType => Name.EqualsIgnoreCase("!doctype");
 
         public virtual char CloseChar
         {
-            get
-            {
-                return _closeChar;
-            }
+            get => _closeChar;
             set
             {
                 if (value != _closeChar)
@@ -66,10 +51,7 @@ namespace Meziantou.Framework.Html
 
         public virtual bool IsProcessingInstruction
         {
-            get
-            {
-                return _processingInstruction;
-            }
+            get => _processingInstruction;
             set
             {
                 if (value != _processingInstruction)
@@ -95,10 +77,7 @@ namespace Meziantou.Framework.Html
 
         public override string InnerHtml
         {
-            get
-            {
-                return base.InnerHtml;
-            }
+            get => base.InnerHtml;
             set
             {
                 if (value != base.InnerHtml)
@@ -106,11 +85,11 @@ namespace Meziantou.Framework.Html
                     RemoveAll();
                     if (value != null)
                     {
-                        HtmlDocument doc = OwnerDocument != null ? OwnerDocument.CreateDocument() : new HtmlDocument();
+                        var doc = OwnerDocument != null ? OwnerDocument.CreateDocument() : new HtmlDocument();
                         doc.LoadHtml(value);
                         if (doc.HasChildNodes)
                         {
-                            foreach (HtmlNode node in doc.ChildNodes)
+                            foreach (var node in doc.ChildNodes)
                             {
                                 ChildNodes.AddNoCheck(node);
                             }
@@ -124,10 +103,7 @@ namespace Meziantou.Framework.Html
 
         public virtual bool IsClosed
         {
-            get
-            {
-                return _closed;
-            }
+            get => _closed;
             set
             {
                 if (value != _closed)
@@ -167,13 +143,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override HtmlNodeType NodeType
-        {
-            get
-            {
-                return _nodeType;
-            }
-        }
+        public override HtmlNodeType NodeType => _nodeType;
 
         internal HtmlElement GetParentToClose(int indent, string name)
         {
@@ -202,10 +172,7 @@ namespace Meziantou.Framework.Html
 
                 return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.NoChild) == HtmlElementWriteOptions.NoChild;
             }
-            set
-            {
-                _noChild = value;
-            }
+            set => _noChild = value;
         }
 
         public virtual bool AlwaysClose
@@ -220,10 +187,7 @@ namespace Meziantou.Framework.Html
 
                 return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.AlwaysClose) == HtmlElementWriteOptions.AlwaysClose;
             }
-            set
-            {
-                _alwaysClose = value;
-            }
+            set => _alwaysClose = value;
         }
 
         public virtual bool DontCloseIfEmpty
@@ -238,10 +202,7 @@ namespace Meziantou.Framework.Html
 
                 return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.DontCloseIfEmpty) == HtmlElementWriteOptions.DontCloseIfEmpty;
             }
-            set
-            {
-                _dontCloseIfEmpty = value;
-            }
+            set => _dontCloseIfEmpty = value;
         }
 
         public override void WriteTo(TextWriter writer)
@@ -265,15 +226,15 @@ namespace Meziantou.Framework.Html
 
             if (HasAttributes)
             {
-                foreach (HtmlAttribute attribute in Attributes)
+                foreach (var attribute in Attributes)
                 {
                     writer.Write(' ');
                     attribute.WriteTo(writer);
                 }
             }
 
-            bool alwaysClose = AlwaysClose;
-            bool dontCloseIfEmpty = DontCloseIfEmpty;
+            var alwaysClose = AlwaysClose;
+            var dontCloseIfEmpty = DontCloseIfEmpty;
             if ((OwnerDocument?.IsXhtml == true) || alwaysClose)
             {
                 dontCloseIfEmpty = false;
@@ -328,7 +289,7 @@ namespace Meziantou.Framework.Html
             {
                 if (HasChildNodes)
                 {
-                    foreach (HtmlNode node in ChildNodes)
+                    foreach (var node in ChildNodes)
                     {
                         node.WriteTo(writer);
                     }
@@ -350,7 +311,7 @@ namespace Meziantou.Framework.Html
             writer.WriteStartElement(GetValidXmlName(Prefix), GetValidXmlName(LocalName), NamespaceURI);
             if (HasAttributes)
             {
-                foreach (HtmlAttribute attribute in Attributes)
+                foreach (var attribute in Attributes)
                 {
                     if (attribute.Prefix == XmlnsPrefix || attribute.Name == XmlnsPrefix)
                         continue;
@@ -382,7 +343,7 @@ namespace Meziantou.Framework.Html
             {
                 if (HasChildNodes)
                 {
-                    foreach (HtmlNode node in ChildNodes)
+                    foreach (var node in ChildNodes)
                     {
                         node.WriteTo(writer);
                     }

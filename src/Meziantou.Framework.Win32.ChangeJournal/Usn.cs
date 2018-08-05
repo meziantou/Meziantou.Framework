@@ -6,64 +6,28 @@ namespace Meziantou.Framework.Win32
     {
         public long Value { get; }
 
-        public Usn(long value)
-        {
-            Value = value;
-        }
+        public Usn(long value) => Value = value;
 
-        public override string ToString()
-        {
-            return Value.ToString();
-        }
+        public override string ToString() => Value.ToString();
 
-        public override bool Equals(object obj)
-        {
-            return obj is Usn usn && Equals(usn);
-        }
+        public override bool Equals(object obj) => obj is Usn usn && Equals(usn);
 
-        public bool Equals(Usn other)
-        {
-            return Value == other.Value;
-        }
+        public bool Equals(Usn other) => Value == other.Value;
 
-        public override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
+        public override int GetHashCode() => Value.GetHashCode();
 
-        public static bool operator ==(Usn usn1, Usn usn2)
-        {
-            return usn1.Equals(usn2);
-        }
+        public static bool operator ==(Usn usn1, Usn usn2) => usn1.Equals(usn2);
 
-        public static bool operator !=(Usn usn1, Usn usn2)
-        {
-            return !(usn1 == usn2);
-        }
+        public static bool operator !=(Usn usn1, Usn usn2) => !(usn1 == usn2);
 
-        public static bool operator <=(Usn usn1, Usn usn2)
-        {
-            return usn1.Value <= usn2.Value;
-        }
+        public static bool operator <=(Usn usn1, Usn usn2) => usn1.Value <= usn2.Value;
 
-        public static bool operator >=(Usn usn1, Usn usn2)
-        {
-            return usn1.Value >= usn2.Value;
-        }
+        public static bool operator >=(Usn usn1, Usn usn2) => usn1.Value >= usn2.Value;
 
-        public static bool operator <(Usn usn1, Usn usn2)
-        {
-            return usn1.Value < usn2.Value;
-        }
+        public static bool operator <(Usn usn1, Usn usn2) => usn1.Value < usn2.Value;
 
-        public static bool operator >(Usn usn1, Usn usn2)
-        {
-            return usn1.Value > usn2.Value;
-        }
+        public static bool operator >(Usn usn1, Usn usn2) => usn1.Value > usn2.Value;
 
-        public static implicit operator Usn(long value)
-        {
-            return new Usn(value);
-        }
+        public static implicit operator Usn(long value) => new Usn(value);
     }
 }

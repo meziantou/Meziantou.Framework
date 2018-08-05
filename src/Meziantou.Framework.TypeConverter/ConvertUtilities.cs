@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Utilities
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
 
-            var b = converter.TryChangeType(input, typeof(T), provider, out object v);
+            var b = converter.TryChangeType(input, typeof(T), provider, out var v);
             if (!b)
             {
                 if (v == null)
@@ -113,7 +113,7 @@ namespace Meziantou.Framework.Utilities
                 defaultValue = Activator.CreateInstance(conversionType);
             }
 
-            if (TryChangeType(converter, input, conversionType, provider, out object value))
+            if (TryChangeType(converter, input, conversionType, provider, out var value))
                 return value;
 
             return defaultValue;

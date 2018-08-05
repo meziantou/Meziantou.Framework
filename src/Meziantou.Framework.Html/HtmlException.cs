@@ -35,22 +35,16 @@ namespace Meziantou.Framework.Html
             if (!message.StartsWith(prefix, StringComparison.Ordinal))
                 return -1;
 
-            int pos = message.IndexOf(':', prefix.Length);
+            var pos = message.IndexOf(':', prefix.Length);
             if (pos < 0)
                 return -1;
 
-            if (int.TryParse(message.Substring(prefix.Length, pos - prefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out int i))
+            if (int.TryParse(message.Substring(prefix.Length, pos - prefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return -1;
         }
 
-        public int Code
-        {
-            get
-            {
-                return GetCode(Message);
-            }
-        }
+        public int Code => GetCode(Message);
     }
 }

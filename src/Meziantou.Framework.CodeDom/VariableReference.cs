@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class VariableReference : Expression
     {
@@ -35,9 +35,6 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator VariableReference(VariableDeclarationStatement variableDeclarationStatement)
-        {
-            return new VariableReference(variableDeclarationStatement);
-        }
+        public static implicit operator VariableReference(VariableDeclarationStatement variableDeclarationStatement) => new VariableReference(variableDeclarationStatement);
     }
 }

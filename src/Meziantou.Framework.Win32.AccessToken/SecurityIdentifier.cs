@@ -65,7 +65,7 @@ namespace Meziantou.Framework.Win32
 
         private static string ConvertSidToStringSid(IntPtr sid)
         {
-            if (NativeMethods.ConvertSidToStringSid(sid, out string result))
+            if (NativeMethods.ConvertSidToStringSid(sid, out var result))
                 return result;
 
             throw new Win32Exception(Marshal.GetLastWin32Error());

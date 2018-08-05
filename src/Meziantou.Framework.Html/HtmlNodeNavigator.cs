@@ -158,7 +158,7 @@ namespace Meziantou.Framework.Html
             if (attributes == null)
                 return null;
 
-            foreach (HtmlAttribute att in attributes)
+            foreach (var att in attributes)
             {
                 if (att.IsNamespace)
                     return att;
@@ -168,14 +168,14 @@ namespace Meziantou.Framework.Html
 
         private static HtmlAttribute MoveToFirstNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes)
         {
-            HtmlAttribute att = MoveToFirstNamespaceLocal(attributes);
+            var att = MoveToFirstNamespaceLocal(attributes);
             if (att != null)
                 return att;
 
             if (rootNode != null && attributes != null && attributes.Parent == rootNode)
                 return null;
 
-            HtmlElement element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
+            var element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
             while (element != null)
             {
                 if (rootNode != null && element.Equals(rootNode))
@@ -273,14 +273,14 @@ namespace Meziantou.Framework.Html
 
         private static HtmlAttribute MoveToNextNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes, HtmlAttribute att)
         {
-            HtmlAttribute next = MoveToNextNamespaceLocal(att);
+            var next = MoveToNextNamespaceLocal(att);
             if (next != null)
                 return next;
 
             if (rootNode != null && attributes != null && attributes.Parent == rootNode)
                 return null;
 
-            HtmlElement element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
+            var element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
             while (element != null)
             {
                 if (rootNode != null && element.Equals(rootNode))
@@ -305,7 +305,7 @@ namespace Meziantou.Framework.Html
                 return false;
 
             HtmlAttribute att;
-            HtmlAttributeList attributes = attribute.ParentNode.HasAttributes ? attribute.ParentNode.Attributes : null;
+            var attributes = attribute.ParentNode.HasAttributes ? attribute.ParentNode.Attributes : null;
             switch (namespaceScope)
             {
                 case XPathNamespaceScope.Local:
@@ -352,7 +352,7 @@ namespace Meziantou.Framework.Html
 
         public override bool MoveToNext()
         {
-            HtmlNode node = CurrentNode.NextSibling;
+            var node = CurrentNode.NextSibling;
             Trace("node:" + node);
             if (node == null)
                 return false;
@@ -395,7 +395,7 @@ namespace Meziantou.Framework.Html
 
         public override bool MoveToPrevious()
         {
-            HtmlNode node = CurrentNode.PreviousSibling;
+            var node = CurrentNode.PreviousSibling;
             Trace("PreviousSibling:" + node);
             if (node == null)
                 return false;
@@ -453,19 +453,13 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override XmlNameTable NameTable
-        {
-            get
-            {
-                return _nameTable;
-            }
-        }
+        public override XmlNameTable NameTable => _nameTable;
 
         public override string NamespaceURI
         {
             get
             {
-                string ns = CurrentNode.NamespaceURI;
+                var ns = CurrentNode.NamespaceURI;
                 if (Document?.Options.EmptyNamespacesForXPath.Contains(ns) == true)
                     return string.Empty;
 
@@ -554,7 +548,7 @@ namespace Meziantou.Framework.Html
                     return element.InnerText;
                 }
 
-                string value = CurrentNode.Value;
+                var value = CurrentNode.Value;
                 if (value != null)
                 {
                     if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)

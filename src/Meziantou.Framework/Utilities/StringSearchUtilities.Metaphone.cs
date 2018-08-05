@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Utilities
             if (s.Length == 1)
                 return s.ToUpper();
 
-            char[] inwd = s.ToUpper().ToCharArray();
+            var inwd = s.ToUpper().ToCharArray();
             var local = new StringBuilder(40); // manipulate
             var code = new StringBuilder(10); // output
 

@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello {{# \"Meziantou\" }}!");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("Hello Meziantou!", result);
@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello {{@begin section title}}{{# \"Meziantou\" }}{{@end section}}!");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("Hello Meziantou!", result);
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello {{#html \"<Meziantou>\" }}!");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("Hello &lt;Meziantou&gt;!", result);
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello <a href=\"http://www.localhost.com/{{#url \"Sample&Url\" }}\">Meziantou</a>!");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello <a href=\"{{#attr \"Sample&Sample\"}}\">Meziantou</a>!");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
@@ -85,7 +85,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("{{html for(int i = 0; i &lt; 3; i++) { }}{{#i}} {{ } }}");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("0 1 2 ", result);
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("<img src=\"{{cid test1.png}}\" /><img src=\"{{cid test2.png}}\" />");
 
             // Act 
-            var result = template.Run(out HtmlEmailMetadata metadata);
+            var result = template.Run(out var metadata);
 
             // Assert
             Assert.AreEqual("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);

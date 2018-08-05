@@ -12,14 +12,13 @@ namespace Meziantou.Framework.Html
         private string _currentElement;
         private string _typeAttribute; // only for <script type=""...> parsing
         private bool _attIsScriptType; // only for <script type=""...> parsing
-        private readonly Queue<HtmlReaderState> _parserStatesQueue = new Queue<HtmlReaderState>();
         private int _eatNext;
         private bool _eof;
 
-        internal char QuoteChar;
-        internal int Line = 1;
-        internal int Column = 1;
-        internal int Offset = -1;
+        internal char QuoteChar { get; set; }
+        internal int Line { get; set; } = 1;
+        internal int Column { get; set; } = 1;
+        internal int Offset { get; set; } = -1;
 
         public event EventHandler<HtmlReaderParseEventArgs> Parsing;
 
@@ -50,7 +49,7 @@ namespace Meziantou.Framework.Html
         public HtmlParserState ParserState { get; protected set; }
         public StringBuilder Value { get; private set; }
 
-        protected Queue<HtmlReaderState> ParserStatesQueue => _parserStatesQueue;
+        protected Queue<HtmlReaderState> ParserStatesQueue { get; } = new Queue<HtmlReaderState>();
 
         public virtual bool IsRestartable
         {
@@ -147,7 +146,7 @@ namespace Meziantou.Framework.Html
             {
                 _typeAttribute = state.Value;
             }
-            _parserStatesQueue.Enqueue(state);
+            ParserStatesQueue.Enqueue(state);
         }
 
         protected virtual void PushCurrentState()
@@ -162,9 +161,9 @@ namespace Meziantou.Framework.Html
 
         public virtual bool Read()
         {
-            if (_parserStatesQueue.Count > 0)
+            if (ParserStatesQueue.Count > 0)
             {
-                State = _parserStatesQueue.Dequeue();
+                State = ParserStatesQueue.Dequeue();
                 return true;
             }
 
@@ -173,9 +172,9 @@ namespace Meziantou.Framework.Html
 
             DoRead();
 
-            if (_parserStatesQueue.Count > 0)
+            if (ParserStatesQueue.Count > 0)
             {
-                State = _parserStatesQueue.Dequeue();
+                State = ParserStatesQueue.Dequeue();
                 return true;
             }
 
@@ -226,10 +225,10 @@ namespace Meziantou.Framework.Html
             _rawValue.Length = 0;
             Value.Length = 0;
 
-            char c = char.MaxValue;
+            var c = char.MaxValue;
             while (true)
             {
-                char prev = c;
+                var prev = c;
                 c = (char)TextReader.Read();
 
                 if (_eatNext > 0)
@@ -240,7 +239,7 @@ namespace Meziantou.Framework.Html
 
                 var peek = (char)TextReader.Peek();
 
-                if (!OnParsing(ref c, ref prev, ref peek, out bool cont))
+                if (!OnParsing(ref c, ref prev, ref peek, out var cont))
                     return;
 
                 if (cont)
@@ -307,7 +306,7 @@ namespace Meziantou.Framework.Html
                             (Value[Value.Length - _currentElement.Length - 1] == '/') &&
                             (Value.ToString(Value.Length - _currentElement.Length, _currentElement.Length).EqualsIgnoreCase(_currentElement)))
                         {
-                            string rawText = Value.ToString(0, Value.Length - _currentElement.Length - 2);
+                            var rawText = Value.ToString(0, Value.Length - _currentElement.Length - 2);
                             PushCurrentState(HtmlParserState.Text, rawText);
                             if (c == '>')
                             {
@@ -325,7 +324,7 @@ namespace Meziantou.Framework.Html
                     case HtmlParserState.CData:
                         if (c == '>' && Value.Length >= 2 && Value[Value.Length - 2] == ']' && Value[Value.Length - 1] == ']')
                         {
-                            string rawText = Value.ToString(0, Value.Length - 2);
+                            var rawText = Value.ToString(0, Value.Length - 2);
                             PushCurrentState(HtmlParserState.CDataText, rawText);
                             ParserState = HtmlParserState.Text;
                             return;

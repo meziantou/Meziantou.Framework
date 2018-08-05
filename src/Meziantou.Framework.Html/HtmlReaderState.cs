@@ -25,13 +25,7 @@ namespace Meziantou.Framework.Html
         public virtual string RawValue { get; protected set; }
         public virtual HtmlParserState RawParserState { get; protected set; }
 
-        public virtual HtmlFragmentType FragmentType
-        {
-            get
-            {
-                return (HtmlFragmentType)(int)ParserState;
-            }
-        }
+        public virtual HtmlFragmentType FragmentType => (HtmlFragmentType)(int)ParserState;
 
         public virtual HtmlParserState ParserState
         {
@@ -55,7 +49,7 @@ namespace Meziantou.Framework.Html
                     ((RawValue.StartsWith('\'') && RawValue.EndsWith('\'')) ||
                     (RawValue.StartsWith('"') && RawValue.EndsWith('"'))))
                 {
-                    char quote = RawValue[0];
+                    var quote = RawValue[0];
                     return RawValue.Substring(1, RawValue.Length - 2).Replace(quote + quote.ToString(), quote.ToString());
                 }
 

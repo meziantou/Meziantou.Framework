@@ -191,13 +191,13 @@ namespace Meziantou.Framework.Utilities
         {
             if (_originalObject == null)
             {
-                if (_typeCache.StaticProperties.TryGetValue(name, out PropertyInfo property))
+                if (_typeCache.StaticProperties.TryGetValue(name, out var property))
                 {
                     result = property.GetValue(null);
                     return true;
                 }
 
-                if (_typeCache.StaticFields.TryGetValue(name, out FieldInfo field))
+                if (_typeCache.StaticFields.TryGetValue(name, out var field))
                 {
                     result = field.GetValue(null);
                     return true;
@@ -205,13 +205,13 @@ namespace Meziantou.Framework.Utilities
             }
             else
             {
-                if (_typeCache.InstanceProperties.TryGetValue(name, out PropertyInfo property))
+                if (_typeCache.InstanceProperties.TryGetValue(name, out var property))
                 {
                     result = property.GetValue(_originalObject);
                     return true;
                 }
 
-                if (_typeCache.InstanceFields.TryGetValue(name, out FieldInfo field))
+                if (_typeCache.InstanceFields.TryGetValue(name, out var field))
                 {
                     result = field.GetValue(_originalObject);
                     return true;
@@ -226,13 +226,13 @@ namespace Meziantou.Framework.Utilities
         {
             if (_originalObject == null)
             {
-                if (_typeCache.StaticProperties.TryGetValue(name, out PropertyInfo property))
+                if (_typeCache.StaticProperties.TryGetValue(name, out var property))
                 {
                     property.SetValue(null, value);
                     return true;
                 }
 
-                if (_typeCache.StaticFields.TryGetValue(name, out FieldInfo field))
+                if (_typeCache.StaticFields.TryGetValue(name, out var field))
                 {
                     field.SetValue(null, value);
                     return true;
@@ -240,13 +240,13 @@ namespace Meziantou.Framework.Utilities
             }
             else
             {
-                if (_typeCache.InstanceProperties.TryGetValue(name, out PropertyInfo property))
+                if (_typeCache.InstanceProperties.TryGetValue(name, out var property))
                 {
                     property.SetValue(_originalObject, value);
                     return true;
                 }
 
-                if (_typeCache.InstanceFields.TryGetValue(name, out FieldInfo field))
+                if (_typeCache.InstanceFields.TryGetValue(name, out var field))
                 {
                     field.SetValue(_originalObject, value);
                     return true;

@@ -19,24 +19,12 @@ namespace Meziantou.Framework.Html
             _writeState = WriteState.Start;
         }
 
-        public HtmlDocument OwnerDocument
-        {
-            get
-            {
-                return Parent.OwnerDocument;
-            }
-        }
+        public HtmlDocument OwnerDocument => Parent.OwnerDocument;
 
         public HtmlNode Parent { get; }
         public HtmlNode Current { get; private set; }
 
-        public override WriteState WriteState
-        {
-            get
-            {
-                return _writeState;
-            }
-        }
+        public override WriteState WriteState => _writeState;
 
         public override void Flush()
         {
@@ -63,7 +51,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            HtmlText node = Parent.OwnerDocument.CreateText();
+            var node = Parent.OwnerDocument.CreateText();
             node.Value = text;
             Current.AppendChild(node);
         }
@@ -83,14 +71,14 @@ namespace Meziantou.Framework.Html
             if (text == null)
                 return;
 
-            HtmlComment node = Parent.OwnerDocument.CreateComment();
+            var node = Parent.OwnerDocument.CreateComment();
             node.Value = text;
             Current.AppendChild(node);
         }
 
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
-            string text = "<!DOCTYPE " +  name;
+            var text = "<!DOCTYPE " +  name;
             if (pubid != null)
             {
                 text += " PUBLIC \"" + pubid + "\" \"" + sysid + "\"";
@@ -149,7 +137,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            HtmlElement current = GetCurrentElement();
+            var current = GetCurrentElement();
             Current = current.Attributes.Add(prefix, localName, ns);
             _writeState = WriteState.Attribute;
         }
@@ -181,7 +169,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            HtmlElement element = OwnerDocument.CreateElement(prefix, localName, ns);
+            var element = OwnerDocument.CreateElement(prefix, localName, ns);
             Current.AppendChild(element);
             Current = element;
             _writeState = WriteState.Element;
@@ -199,7 +187,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            int c = CombineSurrogateChar(lowChar, highChar);
+            var c = CombineSurrogateChar(lowChar, highChar);
             WriteCData("&#x" + c.ToString("X", NumberFormatInfo.InvariantInfo) + ";");
         }
 

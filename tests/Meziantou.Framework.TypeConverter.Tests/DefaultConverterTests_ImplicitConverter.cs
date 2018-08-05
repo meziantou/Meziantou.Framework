@@ -9,10 +9,7 @@ namespace Meziantou.Framework.Tests.Utilities
     {
         private class ImplicitConverter
         {
-            public static implicit operator int(ImplicitConverter _)
-            {
-                return 1;
-            }
+            public static implicit operator int(ImplicitConverter _) => 1;
         }
 
         [TestMethod]

@@ -32,7 +32,8 @@ namespace Meziantou.Framework.CodeDom
 
         public void Add(Expression item)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
             _expressions.Add(item);
             SetParent(item);
         }
@@ -77,7 +78,8 @@ namespace Meziantou.Framework.CodeDom
 
         public void Insert(int index, Expression item)
         {
-            if (item == null) throw new ArgumentNullException(nameof(item));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
             _expressions.Insert(index, item);
             SetParent(item);
         }
@@ -97,7 +99,8 @@ namespace Meziantou.Framework.CodeDom
             get => _expressions[index];
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
 
                 var item = _expressions[index];
                 item.Parent = null;
@@ -106,11 +109,6 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator ExpressionCollectionStatement(Expression expression)
-        {
-            var collection = new ExpressionCollectionStatement();
-            collection.Add(expression);
-            return collection;
-        }
+        public static implicit operator ExpressionCollectionStatement(Expression expression) => new ExpressionCollectionStatement { expression };
     }
 }

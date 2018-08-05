@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -69,10 +70,7 @@ namespace Meziantou.Framework.Html
 
         public virtual string FilePath
         {
-            get
-            {
-                return _filePath;
-            }
+            get => _filePath;
             protected set
             {
                 _filePath = value;
@@ -82,10 +80,7 @@ namespace Meziantou.Framework.Html
 
         public virtual HtmlOptions Options
         {
-            get
-            {
-                return _options;
-            }
+            get => _options;
             set
             {
                 _options = value ?? throw new ArgumentNullException(nameof(value));
@@ -113,7 +108,7 @@ namespace Meziantou.Framework.Html
 
             Clear();
             FilePath = filePath;
-            using (StreamReader reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks, bufferSize))
+            using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks, bufferSize))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -121,9 +116,9 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
-            using (StreamReader reader = Utilities.OpenReader(filePath, streamEncoding, false, bufferSize))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding, false, bufferSize))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -140,7 +135,7 @@ namespace Meziantou.Framework.Html
             FilePath = filePath;
             if (detectEncodingFromByteOrderMarks)
             {
-                using (StreamReader reader = Utilities.OpenReader(filePath, true))
+                using (var reader = Utilities.OpenReader(filePath, true))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
@@ -151,7 +146,7 @@ namespace Meziantou.Framework.Html
             else
             {
                 // use ansi as the default encoding
-                using (StreamReader reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), false))
+                using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), false))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
@@ -160,9 +155,9 @@ namespace Meziantou.Framework.Html
                 }
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
-            using (StreamReader reader = Utilities.OpenReader(filePath, streamEncoding))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -177,7 +172,7 @@ namespace Meziantou.Framework.Html
 
             Clear();
             FilePath = filePath;
-            using (StreamReader reader = Utilities.OpenReader(filePath, encoding))
+            using (var reader = Utilities.OpenReader(filePath, encoding))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -185,9 +180,9 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
-            using (StreamReader reader = Utilities.OpenReader(filePath, streamEncoding))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -202,7 +197,7 @@ namespace Meziantou.Framework.Html
 
             Clear();
             FilePath = filePath;
-            using (StreamReader reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks))
+            using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -210,9 +205,9 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
-            using (StreamReader reader = Utilities.OpenReader(filePath, streamEncoding))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -227,7 +222,7 @@ namespace Meziantou.Framework.Html
 
             Clear();
             FilePath = filePath;
-            using (StreamReader reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding()))
+            using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding()))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -235,9 +230,9 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
-            using (StreamReader reader = Utilities.OpenReader(filePath, streamEncoding))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
@@ -272,7 +267,7 @@ namespace Meziantou.Framework.Html
                 }
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
             using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
@@ -296,7 +291,7 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
             using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
@@ -320,7 +315,7 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
             using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
@@ -344,7 +339,7 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
             using (var reader = new StreamReader(stream, streamEncoding, false, bufferSize, leaveOpen: true))
             {
@@ -368,7 +363,7 @@ namespace Meziantou.Framework.Html
                     return;
             }
 
-            Encoding streamEncoding = DetectedEncoding;
+            var streamEncoding = DetectedEncoding;
             Restart();
             using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
             {
@@ -411,7 +406,7 @@ namespace Meziantou.Framework.Html
                 if (prefix == null)
                     throw new ArgumentNullException(nameof(prefix));
 
-                _declaredNamespaces = _declaredNamespaces ?? new Dictionary<string, string>();
+                _declaredNamespaces = _declaredNamespaces ?? new Dictionary<string, string>(StringComparer.InvariantCulture);
                 _declaredNamespaces[uri] = prefix;
             }
         }
@@ -421,7 +416,7 @@ namespace Meziantou.Framework.Html
             if (_declaredPrefixes == null)
                 return string.Empty;
 
-            if (_declaredPrefixes.TryGetValue(prefix, out string namespaceURI))
+            if (_declaredPrefixes.TryGetValue(prefix, out var namespaceURI))
                 return namespaceURI;
 
             return string.Empty;
@@ -432,7 +427,7 @@ namespace Meziantou.Framework.Html
             if (_declaredNamespaces == null)
                 return string.Empty;
 
-            if (_declaredNamespaces.TryGetValue(namespaceURI, out string prefix))
+            if (_declaredNamespaces.TryGetValue(namespaceURI, out var prefix))
                 return prefix;
 
             return string.Empty;
@@ -458,25 +453,13 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public IReadOnlyDictionary<string, string> DeclaredNamespaces
-        {
-            get
-            {
-                return _declaredNamespaces ?? new Dictionary<string, string>();
-            }
-        }
+        public IReadOnlyDictionary<string, string> DeclaredNamespaces => _declaredNamespaces ?? new Dictionary<string, string>();
 
-        public IReadOnlyDictionary<string, string> DeclaredPrefixes
-        {
-            get
-            {
-                return _declaredPrefixes ?? new Dictionary<string, string>();
-            }
-        }
+        public IReadOnlyDictionary<string, string> DeclaredPrefixes => _declaredPrefixes ?? new Dictionary<string, string>();
 
         private HtmlAttribute CreateAttribute(string name)
         {
-            ParseName(name, out string prefix, out string localName);
+            ParseName(name, out var prefix, out var localName);
             return CreateAttribute(prefix, localName, null);
         }
 
@@ -511,7 +494,7 @@ namespace Meziantou.Framework.Html
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            ParseName(name, out string prefix, out string localName);
+            ParseName(name, out var prefix, out var localName);
             return CreateElement(prefix, localName, null);
         }
 
@@ -568,11 +551,11 @@ namespace Meziantou.Framework.Html
         // see http://stackoverflow.com/questions/4696499/meta-charset-utf-8-vs-meta-http-equiv-content-type
         private static string GetEncodingName(HtmlElement meta)
         {
-            string name = Utilities.Nullify(meta.GetAttributeValue("charset"), true);
+            var name = Utilities.Nullify(meta.GetAttributeValue("charset"), true);
             if (name != null)
                 return name;
 
-            string ct = meta.GetAttributeValue("http-equiv");
+            var ct = meta.GetAttributeValue("http-equiv");
             if (ct == null || !ct.EqualsIgnoreCase("content-type"))
                 return null;
 
@@ -587,7 +570,7 @@ namespace Meziantou.Framework.Html
             if (element == null || !element.Name.EqualsIgnoreCase("meta"))
                 return true;
 
-            string encodingName = GetEncodingName(element);
+            var encodingName = GetEncodingName(element);
             if (encodingName == null)
                 return true;
 
@@ -680,10 +663,10 @@ namespace Meziantou.Framework.Html
         {
             HtmlNode current = this;
             HtmlAttribute currentAtt = null;
-            HtmlReader htmlReader = CreateReader(reader);
+            var htmlReader = CreateReader(reader);
             while (htmlReader.Read())
             {
-                if (!OnParsing(htmlReader, ref current, ref currentAtt, out bool mustContinue))
+                if (!OnParsing(htmlReader, ref current, ref currentAtt, out var mustContinue))
                     break;
 
                 if (mustContinue)
@@ -695,7 +678,7 @@ namespace Meziantou.Framework.Html
                 {
                     case HtmlFragmentType.CDataText:
                     case HtmlFragmentType.Text:
-                        HtmlText text = CreateText();
+                        var text = CreateText();
                         text.StreamOrder = htmlReader.Offset;
                         text.IsCData = htmlReader.State.FragmentType == HtmlFragmentType.CDataText;
                         text.Value = htmlReader.State.Value;
@@ -768,7 +751,7 @@ namespace Meziantou.Framework.Html
                         {
                             if (element != null)
                             {
-                                bool canHaveChild = (htmlReader.Options.GetElementReadOptions(element.Name) & HtmlElementReadOptions.NoChild) != HtmlElementReadOptions.NoChild;
+                                var canHaveChild = (htmlReader.Options.GetElementReadOptions(element.Name) & HtmlElementReadOptions.NoChild) != HtmlElementReadOptions.NoChild;
                                 if (canHaveChild)
                                 {
                                     current = element;
@@ -794,7 +777,7 @@ namespace Meziantou.Framework.Html
                                 element.IsEmpty = false;
                             }
 
-                            HtmlElement parent = element.GetParentToClose(0, htmlReader.State.Value);
+                            var parent = element.GetParentToClose(0, htmlReader.State.Value);
                             if (parent != null)
                             {
                                 parent.IsClosed = true;
@@ -804,12 +787,8 @@ namespace Meziantou.Framework.Html
                                 }
 
                                 // check children closure
-                                foreach (HtmlNode child in parent.ChildNodes)
+                                foreach (var childElement in parent.ChildNodes.OfType<HtmlElement>())
                                 {
-                                    var childElement = child as HtmlElement;
-                                    if (childElement == null)
-                                        continue;
-
                                     if (!childElement.IsClosed)
                                     {
                                         if ((htmlReader.Options.GetElementReadOptions(childElement.Name) & HtmlElementReadOptions.AutoClosed) != HtmlElementReadOptions.AutoClosed)
@@ -848,11 +827,11 @@ namespace Meziantou.Framework.Html
                         if (htmlReader.State.Value == "?")
                             break;
 
-                        HtmlAttribute att = CreateAttribute(htmlReader.State.Value);
+                        var att = CreateAttribute(htmlReader.State.Value);
                         att.StreamOrder = htmlReader.Offset;
                         att.NameQuoteChar = htmlReader.State.QuoteChar;
 
-                        HtmlAttribute existingAtt = current?.Attributes[att.Name];
+                        var existingAtt = current?.Attributes[att.Name];
                         if (existingAtt != null)
                         {
                             error = new HtmlError(htmlReader.State, HtmlErrorType.DuplicateAttribute);
@@ -884,7 +863,7 @@ namespace Meziantou.Framework.Html
                         break;
 
                     case HtmlFragmentType.Comment:
-                        HtmlComment comment = CreateComment();
+                        var comment = CreateComment();
                         comment.StreamOrder = htmlReader.Offset;
                         comment.Value = htmlReader.State.Value;
                         if (current != null)
@@ -912,10 +891,7 @@ namespace Meziantou.Framework.Html
 
         public override string InnerHtml
         {
-            get
-            {
-                return base.InnerHtml;
-            }
+            get => base.InnerHtml;
             set
             {
                 if (value != base.InnerHtml)
@@ -923,12 +899,12 @@ namespace Meziantou.Framework.Html
                     RemoveAll();
                     if (value != null)
                     {
-                        HtmlDocument doc = CreateDocument();
+                        var doc = CreateDocument();
                         if (value != null)
                         {
                             doc.LoadHtml(value);
                         }
-                        foreach (HtmlNode node in doc.ChildNodes)
+                        foreach (var node in doc.ChildNodes)
                         {
                             ChildNodes.AddNoCheck(node);
                         }
@@ -939,20 +915,11 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override HtmlNodeType NodeType
-        {
-            get
-            {
-                return HtmlNodeType.Document;
-            }
-        }
+        public override HtmlNodeType NodeType => HtmlNodeType.Document;
 
         public override string Name
         {
-            get
-            {
-                return base.Name;
-            }
+            get => base.Name;
             set
             {
                 // do nothing
@@ -1014,14 +981,14 @@ namespace Meziantou.Framework.Html
 
             if (StreamEncoding != null)
             {
-                using (StreamWriter writer = Utilities.OpenWriter(filePath, false, StreamEncoding))
+                using (var writer = Utilities.OpenWriter(filePath, false, StreamEncoding))
                 {
                     Save(writer);
                 }
             }
             else
             {
-                using (StreamWriter writer = Utilities.OpenWriter(filePath))
+                using (var writer = Utilities.OpenWriter(filePath))
                 {
                     Save(writer);
                 }
@@ -1049,7 +1016,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            using (StreamWriter writer = Utilities.OpenWriter(filePath, false, encoding))
+            using (var writer = Utilities.OpenWriter(filePath, false, encoding))
             {
                 Save(writer);
             }
@@ -1100,7 +1067,7 @@ namespace Meziantou.Framework.Html
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            foreach (HtmlNode node in ChildNodes)
+            foreach (var node in ChildNodes)
             {
                 node.WriteTo(writer);
             }
@@ -1122,9 +1089,9 @@ namespace Meziantou.Framework.Html
             if (DocumentType == null)
                 return;
 
-            string name = DocumentType.Attributes.Count > 0 ? DocumentType.Attributes[0].Name : "html";
+            var name = DocumentType.Attributes.Count > 0 ? DocumentType.Attributes[0].Name : "html";
             string pubid = null;
-            HtmlAttribute att = DocumentType.Attributes["public"];
+            var att = DocumentType.Attributes["public"];
             if (att?.NextSibling != null)
             {
                 pubid = att.NextSibling.Name;
@@ -1147,17 +1114,14 @@ namespace Meziantou.Framework.Html
 
                 return HtmlElement?.Attributes.GetNamespacePrefixIfDefined(XhtmlNamespaceURI) != null;
             }
-            set
-            {
-                _xhtml = value;
-            }
+            set => _xhtml = value;
         }
 
         public bool IsValidXmlDocument
         {
             get
             {
-                foreach (HtmlNode node in ChildNodes)
+                foreach (var node in ChildNodes)
                 {
                     switch (node.NodeType)
                     {
@@ -1196,8 +1160,8 @@ namespace Meziantou.Framework.Html
 
             if (!IsValidXmlDocument)
             {
-                bool oneElementWritten = false;
-                foreach (HtmlNode node in ChildNodes)
+                var oneElementWritten = false;
+                foreach (var node in ChildNodes)
                 {
                     if (node == HtmlElement)
                     {
@@ -1215,7 +1179,7 @@ namespace Meziantou.Framework.Html
 
                 if (!oneElementWritten)
                 {
-                    foreach (HtmlNode node in ChildNodes)
+                    foreach (var node in ChildNodes)
                     {
                         if (node.NodeType == HtmlNodeType.Element)
                         {
@@ -1227,7 +1191,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            foreach (HtmlNode node in ChildNodes)
+            foreach (var node in ChildNodes)
             {
                 node.WriteTo(writer);
             }
@@ -1301,11 +1265,11 @@ namespace Meziantou.Framework.Html
             if (uri.IsAbsoluteUri)
                 return uri;
 
-            Uri baseAddress = BaseAddress;
-            HtmlElement baseElement = BaseElement;
+            var baseAddress = BaseAddress;
+            var baseElement = BaseElement;
             if (baseElement != null)
             {
-                string href = Utilities.Nullify(baseElement.GetAttributeValue("href"), true);
+                var href = Utilities.Nullify(baseElement.GetAttributeValue("href"), true);
                 if (href != null)
                 {
                     var address = new Uri(href, UriKind.RelativeOrAbsolute);

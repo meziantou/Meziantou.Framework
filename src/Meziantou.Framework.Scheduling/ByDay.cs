@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.Scheduling
 {
@@ -44,15 +44,9 @@ namespace Meziantou.Framework.Scheduling
             }
         }
 
-        public static bool operator ==(ByDay left, ByDay right)
-        {
-            return Equals(left, right);
-        }
+        public static bool operator ==(ByDay left, ByDay right) => Equals(left, right);
 
-        public static bool operator !=(ByDay left, ByDay right)
-        {
-            return !Equals(left, right);
-        }
+        public static bool operator !=(ByDay left, ByDay right) => !Equals(left, right);
 
         public override string ToString()
         {

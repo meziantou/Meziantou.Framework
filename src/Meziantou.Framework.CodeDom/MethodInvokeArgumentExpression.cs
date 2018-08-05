@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodInvokeArgumentExpression : Expression
     {
@@ -27,14 +27,8 @@ namespace Meziantou.Framework.CodeDom
             set => SetParent(ref _value, value);
         }
 
-        public static implicit operator MethodInvokeArgumentExpression(MethodArgumentDeclaration argument)
-        {
-            return new MethodInvokeArgumentExpression(new ArgumentReferenceExpression(argument));
-        }
+        public static implicit operator MethodInvokeArgumentExpression(MethodArgumentDeclaration argument) => new MethodInvokeArgumentExpression(new ArgumentReferenceExpression(argument));
 
-        public static implicit operator MethodInvokeArgumentExpression(VariableDeclarationStatement variable)
-        {
-            return new MethodInvokeArgumentExpression(new VariableReference(variable));
-        }
+        public static implicit operator MethodInvokeArgumentExpression(VariableDeclarationStatement variable) => new MethodInvokeArgumentExpression(new VariableReference(variable));
     }
 }

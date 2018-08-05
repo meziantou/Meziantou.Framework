@@ -119,15 +119,15 @@ namespace Meziantou.Framework.Html
             if (header == null)
                 return null;
 
-            int startIndex = 1;
+            var startIndex = 1;
             while (startIndex < header.Length)
             {
                 startIndex = CultureInfo.InvariantCulture.CompareInfo.IndexOf(header, name, startIndex, CompareOptions.IgnoreCase);
                 if (startIndex < 0 || (startIndex + name.Length) >= header.Length)
                     break;
 
-                char c1 = header[startIndex - 1];
-                char c2 = header[startIndex + name.Length];
+                var c1 = header[startIndex - 1];
+                var c2 = header[startIndex + name.Length];
                 if ((c1 == ';' || c1 == ',' || char.IsWhiteSpace(c1)) && (c2 == '=' || char.IsWhiteSpace(c2)))
                     break;
 
@@ -195,7 +195,7 @@ namespace Meziantou.Framework.Html
             {
                 sb.Append(GetXmlNameEscape(text[0]));
             }
-            for (int i = 1; i < text.Length; i++)
+            for (var i = 1; i < text.Length; i++)
             {
                 if (IsValidXmlNamePart(text[i]))
                 {
@@ -227,7 +227,7 @@ namespace Meziantou.Framework.Html
             if ((c > 0xF900) && (c < 0xFFFE))
                 return false;
 
-            UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+            var category = CharUnicodeInfo.GetUnicodeCategory(c);
             switch (category)
             {
                 case UnicodeCategory.UppercaseLetter://Lu
@@ -257,7 +257,7 @@ namespace Meziantou.Framework.Html
             if ((c > 0xF900) && (c < 0xFFFE))
                 return false;
 
-            UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
+            var category = CharUnicodeInfo.GetUnicodeCategory(c);
             switch (category)
             {
                 case UnicodeCategory.UppercaseLetter://Lu
@@ -298,14 +298,14 @@ namespace Meziantou.Framework.Html
             if (path[2] == Path.DirectorySeparatorChar)
                 return null;
 
-            int pos = path.IndexOf(Path.DirectorySeparatorChar, 3); // \\\ is invalid
+            var pos = path.IndexOf(Path.DirectorySeparatorChar, 3); // \\\ is invalid
             if (pos < 0)
             {
                 serverName = path.Substring(2);
                 return path;
             }
 
-            int pos2 = path.IndexOf(Path.DirectorySeparatorChar, pos + 2); // \\server\\ is invalid
+            var pos2 = path.IndexOf(Path.DirectorySeparatorChar, pos + 2); // \\server\\ is invalid
             if (pos2 < 0)
             {
                 serverName = path.Substring(2, pos - 2);
@@ -331,7 +331,7 @@ namespace Meziantou.Framework.Html
                 path = path.Substring(Prefix.Length);
             }
 
-            string spath = GetServerPath(path);
+            var spath = GetServerPath(path);
             if (spath != null)
                 return true;
 

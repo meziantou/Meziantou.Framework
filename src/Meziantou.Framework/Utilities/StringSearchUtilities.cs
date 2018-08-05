@@ -71,11 +71,11 @@ namespace Meziantou.Framework.Utilities
 
             var result = 0;
 
-            using (IEnumerator<T> enumerator1 = word1.GetEnumerator())
-            using (IEnumerator<T> enumerator2 = word2.GetEnumerator())
+            using (var enumerator1 = word1.GetEnumerator())
+            using (var enumerator2 = word2.GetEnumerator())
             {
                 bool firstMoveNext;
-                bool secondMoveNext = false;
+                var secondMoveNext = false;
 
                 while ((firstMoveNext = enumerator1.MoveNext()) && (secondMoveNext = enumerator2.MoveNext()))
                 {

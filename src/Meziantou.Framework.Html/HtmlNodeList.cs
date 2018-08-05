@@ -52,16 +52,13 @@ namespace Meziantou.Framework.Html
 
         public HtmlNode this[int index]
         {
-            get
-            {
-                return _list[index];
-            }
+            get => _list[index];
             set
             {
                 if (value == _list[index])
                     return;
 
-                HtmlNode oldItem = _list[index];
+                var oldItem = _list[index];
                 _list[index] = value;
                 OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
             }
@@ -78,7 +75,7 @@ namespace Meziantou.Framework.Html
             if (newChild.ParentNode != null)
                 throw new ArgumentException(null, nameof(newChild));
 
-            int index = _list.IndexOf(oldChild);
+            var index = _list.IndexOf(oldChild);
             if (index >= 0)
             {
                 if (oldChild.ParentNode != _parent)
@@ -106,7 +103,7 @@ namespace Meziantou.Framework.Html
 
         public void RemoveAll()
         {
-            foreach (HtmlNode node in _list)
+            foreach (var node in _list)
             {
                 HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
                 if (node.ParentNode != _parent)
@@ -136,7 +133,7 @@ namespace Meziantou.Framework.Html
             if (nodes == null)
                 return;
 
-            foreach (HtmlNode node in nodes)
+            foreach (var node in nodes)
             {
                 Add(node);
             }
@@ -165,7 +162,7 @@ namespace Meziantou.Framework.Html
             if (index < 0 || index >= _list.Count)
                 return false;
 
-            HtmlNode node = _list[index];
+            var node = _list[index];
             if (node.ParentNode != _parent)
                 throw new ArgumentException(null, nameof(index));
 
@@ -181,11 +178,11 @@ namespace Meziantou.Framework.Html
             if (item == null)
                 throw new ArgumentNullException("node");
 
-            int index = _list.IndexOf(item);
+            var index = _list.IndexOf(item);
             if (index < 0)
                 return false;
 
-            HtmlNode existing = _list[index];
+            var existing = _list[index];
             if (existing.ParentNode != _parent)
                 throw new ArgumentException(null, "node");
 
@@ -214,7 +211,7 @@ namespace Meziantou.Framework.Html
 
         int IList.Add(object value)
         {
-            int count = Count;
+            var count = Count;
             Add((HtmlNode)value);
             return count;
         }

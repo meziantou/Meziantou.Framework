@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class Statement : CodeObject, ICommentable
     {
@@ -11,9 +11,6 @@ namespace Meziantou.Framework.CodeDom
             CommentsAfter = new CommentCollection(this);
         }
 
-        public static implicit operator Statement(Expression expression)
-        {
-            return new ExpressionStatement(expression);
-        }
+        public static implicit operator Statement(Expression expression) => new ExpressionStatement(expression);
     }
 }

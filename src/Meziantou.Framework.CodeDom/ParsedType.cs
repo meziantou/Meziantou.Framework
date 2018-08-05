@@ -104,7 +104,7 @@ namespace Meziantou.Framework.CodeDom
                 typeName = typeName.Substring(3).Trim();
             }
 
-            if (!_parsedTypes.TryGetValue(typeName, out ParsedType pt))
+            if (!_parsedTypes.TryGetValue(typeName, out var pt))
             {
                 pt = Parse(typeName, "<", '>');
                 if (pt != null)
@@ -196,7 +196,7 @@ namespace Meziantou.Framework.CodeDom
                 {
                     if (c == ',')
                     {
-                        ParsedType spt = Parse(typeName.Substring(startPos, i - startPos));
+                        var spt = Parse(typeName.Substring(startPos, i - startPos));
                         pt._arguments.Add(spt);
                         startPos = i + 1;
                     }
@@ -237,7 +237,7 @@ namespace Meziantou.Framework.CodeDom
                 if (gt < startPos)
                     return null;
 
-                ParsedType spt = Parse(typeName.Substring(startPos, gt - startPos));
+                var spt = Parse(typeName.Substring(startPos, gt - startPos));
                 pt._arguments.Add(spt);
             }
 

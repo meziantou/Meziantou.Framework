@@ -129,7 +129,7 @@ namespace Meziantou.Framework.Win32
             if (s_perceivedTypes.TryGetValue(extension, out var ptype))
                 return ptype;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!IsSupportedPlatform())
                 throw new PlatformNotSupportedException("PerceivedType is only supported on Windows");
 
             lock (SyncObject)
@@ -199,6 +199,11 @@ namespace Meziantou.Framework.Win32
         public override string ToString()
         {
             return Extension + ":" + PerceivedType + " (" + PerceivedTypeSource + ")";
+        }
+
+        private static bool IsSupportedPlatform()
+        {
+            return Environment.OSVersion.Platform == PlatformID.Win32NT;
         }
 
         [DllImport("shlwapi.dll")]

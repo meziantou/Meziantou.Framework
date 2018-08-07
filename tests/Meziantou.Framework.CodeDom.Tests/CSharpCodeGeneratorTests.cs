@@ -837,12 +837,12 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Property_ExplicitImplementation()
         {
-            var method = new PropertyDeclaration("A", typeof(int));
-            method.PrivateImplementationType = new TypeReference("Foo.IBar");
-            method.Getter = new ReturnStatement(10);
+            var prop = new PropertyDeclaration("A", typeof(int));
+            prop.PrivateImplementationType = new TypeReference("Foo.IBar");
+            prop.Getter = new ReturnStatement(10);
 
             var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
+            var result = generator.Write(prop);
 
             Assert.That.StringEquals(@"int Foo.IBar.A
 {
@@ -853,6 +853,51 @@ void Sample()
 }
 ", result);
         }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Property_GetterModifiers()
+        {
+            var prop = new PropertyDeclaration("A", typeof(int));
+            prop.Getter = new PropertyMemberDeclaration
+            {
+                Modifiers = Modifiers.Private,
+                Statements = new ReturnStatement(10),
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(prop);
+
+            Assert.That.StringEquals(@"int A
+{
+    private get
+    {
+        return 10;
+    }
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Property_SetterModifiers()
+        {
+            var prop = new PropertyDeclaration("A", typeof(int));
+            prop.Setter = new PropertyMemberDeclaration
+            {
+                Modifiers = Modifiers.Internal
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(prop);
+
+            Assert.That.StringEquals(@"int A
+{
+    internal set
+    {
+    }
+}
+", result);
+        }
+
 
         [TestMethod]
         public void CSharpCodeGenerator_Event_ExplicitImplementation()

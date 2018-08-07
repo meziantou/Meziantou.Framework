@@ -475,14 +475,18 @@ namespace Meziantou.Framework.CodeDom
 
             if (member.Getter != null)
             {
+                Write(writer, member.Getter.CustomAttributes);
+                Write(writer, member.Getter.Modifiers);
                 writer.WriteLine("get");
-                WriteStatementsOrEmptyBlock(writer, member.Getter);
+                WriteStatementsOrEmptyBlock(writer, member.Getter.Statements);
             }
 
             if (member.Setter != null)
             {
+                Write(writer, member.Setter.CustomAttributes);
+                Write(writer, member.Setter.Modifiers);
                 writer.WriteLine("set");
-                WriteStatementsOrEmptyBlock(writer, member.Setter);
+                WriteStatementsOrEmptyBlock(writer, member.Setter.Statements);
             }
 
             writer.Indent--;

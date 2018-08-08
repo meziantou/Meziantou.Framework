@@ -1094,6 +1094,16 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
+        private void WriteGenericParameters(IndentedTextWriter writer, CodeObjectCollection<TypeReference> types)
+        {
+            if (types.Any())
+            {
+                writer.Write("<");
+                Write(writer, types, ", ");
+                writer.Write(">");
+            }
+        }
+        
         private void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
         {
             if (type.Parameters.Any())

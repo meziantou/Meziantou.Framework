@@ -982,6 +982,33 @@ void Sample()
         }
 
         [TestMethod]
+        public void CSharpCodeGenerator_MethodInvoke()
+        {
+            var expression = new MethodInvokeExpression(
+                new MemberReferenceExpression(new TypeReference("Console"), "Write"),
+                "test");
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Console.Write(""test"")", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_MethodInvokeWithGenericParameters()
+        {
+            var expression = new MethodInvokeExpression(
+                new MemberReferenceExpression(new TypeReference("Console"), "Write"),
+                "test");
+            expression.Parameters.Add(typeof(string));
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Console.Write<string>(""test"")", result);
+        }
+
+        [TestMethod]
         public void CSharpCodeGenerator_Iteration()
         {
             var statement = new IterationStatement();

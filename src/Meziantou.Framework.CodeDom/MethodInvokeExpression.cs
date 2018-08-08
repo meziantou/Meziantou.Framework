@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodInvokeExpression : Expression
     {
@@ -16,8 +16,10 @@ namespace Meziantou.Framework.CodeDom
 
         public MethodInvokeExpression(Expression method, params Expression[] arguments)
         {
-            Method = method;
+            Parameters = new CodeObjectCollection<TypeReference>();
             Arguments = new MethodInvokeExpressionCollection(this);
+            Method = method;
+
             if (arguments != null)
             {
                 foreach (var argument in arguments)
@@ -34,5 +36,7 @@ namespace Meziantou.Framework.CodeDom
         }
 
         public MethodInvokeExpressionCollection Arguments { get; }
+
+        public CodeObjectCollection<TypeReference> Parameters { get; }
     }
 }

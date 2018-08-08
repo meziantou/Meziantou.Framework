@@ -8,7 +8,8 @@ namespace Meziantou.Framework.CodeDom
     {
         protected virtual void Write(IndentedTextWriter writer, Expression expression)
         {
-            if (expression == null) throw new ArgumentNullException(nameof(expression));
+            if (expression == null)
+                throw new ArgumentNullException(nameof(expression));
 
             WriteBeforeComments(writer, expression);
             switch (expression)
@@ -117,6 +118,7 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, MethodInvokeExpression expression)
         {
             Write(writer, expression.Method);
+            WriteGenericParameters(writer, expression.Parameters);
             writer.Write("(");
             Write(writer, expression.Arguments, ", ");
             writer.Write(")");
@@ -510,23 +512,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(type.Name.Replace('+', '.'));
             }
 
-            if (type.Parameters.Any())
-            {
-                writer.Write('<');
-                var first = true;
-                foreach (var parameter in type.Parameters)
-                {
-                    if (!first)
-                    {
-                        writer.Write(',');
-                    }
-
-                    Write(writer, parameter);
-                    first = false;
-                }
-
-                writer.Write('>');
-            }
+            WriteGenericParameters(writer, type.Parameters);
         }
 
         protected virtual void Write(IndentedTextWriter writer, AwaitExpression expression)

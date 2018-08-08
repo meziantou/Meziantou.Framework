@@ -122,8 +122,8 @@ namespace Meziantou.Framework.CodeDom
         //    return new CodeUnaryExpression(UnaryOperator.PostDecrement, expression);
         //}
 
-        public Expression Invoke(params Expression[] arguments) => new MethodInvokeExpression(this, arguments);
+        public Expression InvokeMethod(params Expression[] arguments) => new MethodInvokeExpression(this, arguments);
 
-        public Expression Invoke(string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
+        public Expression InvokeMethod(string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
     }
 }

@@ -73,5 +73,21 @@ namespace Meziantou.Framework.CodeDom
             };
             return condition;
         }
+
+        public static MethodInvokeExpression InvokeMethod(this Expression expression, params Expression[] arguments) => new MethodInvokeExpression(expression, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this Expression expression, string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(expression, memberName), arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this Expression expression, TypeReference[] parameters, params Expression[] arguments) => new MethodInvokeExpression(expression, parameters, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this Expression expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(expression, memberName), parameters, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, params Expression[] arguments) => InvokeMethod((Expression)expression, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, string memberName, params Expression[] arguments) => InvokeMethod((Expression)expression, memberName, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, TypeReference[] parameters, params Expression[] arguments) => InvokeMethod((Expression)expression, parameters, arguments);
+
+        public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => InvokeMethod((Expression)expression, memberName, parameters, arguments);
     }
 }

@@ -29,9 +29,5 @@
             get => _initExpression;
             set => SetParent(ref _initExpression, value);
         }
-
-        public Expression InvokeMethod(params Expression[] arguments) => new MethodInvokeExpression(this, arguments);
-
-        public Expression InvokeMethod(string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(this, memberName), arguments);
     }
 }

@@ -15,6 +15,11 @@
         }
 
         public MethodInvokeExpression(Expression method, params Expression[] arguments)
+            : this(method, null, arguments)
+        {
+        }
+
+        public MethodInvokeExpression(Expression method, TypeReference[] parameters, params Expression[] arguments)
         {
             Parameters = new CodeObjectCollection<TypeReference>();
             Arguments = new MethodInvokeExpressionCollection(this);
@@ -22,10 +27,12 @@
 
             if (arguments != null)
             {
-                foreach (var argument in arguments)
-                {
-                    Arguments.Add(argument);
-                }
+                Arguments.AddRange(arguments);
+            }
+
+            if (parameters != null)
+            {
+                Parameters.AddRange(parameters);
             }
         }
 

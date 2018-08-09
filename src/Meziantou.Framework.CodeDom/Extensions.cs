@@ -58,7 +58,7 @@ namespace Meziantou.Framework.CodeDom
             return argument;
         }
 
-        public static T AddMember<T>(this ClassDeclaration c, T member) where T : MemberDeclaration
+        public static T AddMember<T>(this IMemberContainer c, T member) where T : MemberDeclaration
         {
             c.Members.Add(member);
             return member;

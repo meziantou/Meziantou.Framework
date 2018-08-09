@@ -1357,7 +1357,7 @@ void Sample()
         }
 
         [TestMethod]
-        public void CSharpCodeGenerator_OperatorReference_Implicit()
+        public void CSharpCodeGenerator_OperatorDeclaration_Implicit()
         {
             var member = new OperatorDeclaration()
             {
@@ -1384,7 +1384,35 @@ void Sample()
         }
 
         [TestMethod]
-        public void CSharpCodeGenerator_OperatorReference_Explicit()
+        public void CSharpCodeGenerator_OperatorDeclaration_Implicit_UseParentType()
+        {
+            var type = new ClassDeclaration("Test");
+            
+            var member = type.AddMember(new OperatorDeclaration()
+            {
+                Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Implicit,
+                Arguments =
+                {
+                    new MethodArgumentDeclaration(typeof(long), "value")
+                },
+                Statements =
+                {
+                    new ReturnStatement(new ArgumentReferenceExpression("value"))
+                }
+            });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(member);
+
+            Assert.That.StringEquals(@"public static implicit operator Test(long value)
+{
+    return value;
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_OperatorDeclaration_Explicit()
         {
             var member = new OperatorDeclaration()
             {
@@ -1411,7 +1439,7 @@ void Sample()
         }
 
         [TestMethod]
-        public void CSharpCodeGenerator_OperatorReference_Add()
+        public void CSharpCodeGenerator_OperatorDeclaration_Add()
         {
             var member = new OperatorDeclaration()
             {

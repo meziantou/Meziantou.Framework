@@ -334,6 +334,14 @@ namespace Meziantou.Framework.CodeDom
                 {
                     Write(writer, member.ReturnType);
                 }
+                else
+                {
+                    var declaringType = member.GetSelfOrParentOfType<TypeDeclaration>();
+                    if (declaringType != null)
+                    {
+                        WriteIdentifier(writer, declaringType.Name);
+                    }
+                }
             }
             else
             {

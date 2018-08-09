@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.CodeDom
 {
-    public class StructDeclaration : TypeDeclaration, IParametrableType, ITypeDeclarationContainer
+    public class StructDeclaration : TypeDeclaration, IParametrableType, ITypeDeclarationContainer, IMemberContainer
     {
         public StructDeclaration()
             : this(null)

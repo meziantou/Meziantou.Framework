@@ -90,16 +90,20 @@ namespace Meziantou.Framework.CodeDom
 
         public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => InvokeMethod((Expression)expression, memberName, parameters, arguments);
 
-        public static MemberReferenceExpression GetMember(this Expression expression, string name, params string[] names) 
+        public static MemberReferenceExpression GetMember(this Expression expression, string name, params string[] names)
         {
             var result = new MemberReferenceExpression(expression, name);
-            foreach(var n in names)
+            foreach (var n in names)
             {
                 result = new MemberReferenceExpression(result, name);
             }
 
             return result;
         }
+
+        public static MemberReferenceExpression GetMember(this VariableDeclarationStatement variable, string name, params string[] names) => GetMember(new VariableReference(variable), name, names);
+
+        public static MemberReferenceExpression GetMember(this MethodArgumentDeclaration argument, string name, params string[] names) => GetMember(new ArgumentReferenceExpression(argument), name, names);
 
         public static BinaryExpression IsNull(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, new TypeReference(typeof(object)).GetMember(nameof(object.ReferenceEquals)).InvokeMethod(expression), new LiteralExpression(true));
 

@@ -912,6 +912,23 @@ void Sample()
 ", result);
         }
 
+        [TestMethod]
+        public void CSharpCodeGenerator_Property_GenericType()
+        {
+            var prop = new PropertyDeclaration("A", new TypeReference(typeof(Nullable<>)).MakeGeneric(typeof(int)));
+            prop.Setter = new PropertyMemberDeclaration();
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(prop);
+
+            Assert.That.StringEquals(@"System.Nullable<int> A
+{
+    set
+    {
+    }
+}
+", result);
+        }
 
         [TestMethod]
         public void CSharpCodeGenerator_Event_ExplicitImplementation()

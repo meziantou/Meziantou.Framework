@@ -153,6 +153,14 @@ namespace Meziantou.Framework.CodeDom
             return clone;
         }
 
+        public TypeReference MakeGeneric(params TypeReference[] typeArguments)
+        {
+            var type = new TypeReference(ClrFullTypeName);
+            type.Parameters.Clear();
+            type.Parameters.AddRange(typeArguments);
+            return type;
+        }
+
         public static implicit operator TypeReference(TypeDeclaration typeDeclaration) => new TypeReference(typeDeclaration);
 
         public static implicit operator TypeReference(Type type) => new TypeReference(type);

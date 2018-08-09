@@ -89,5 +89,7 @@ namespace Meziantou.Framework.CodeDom
         public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, TypeReference[] parameters, params Expression[] arguments) => InvokeMethod((Expression)expression, parameters, arguments);
 
         public static MethodInvokeExpression InvokeMethod(this VariableDeclarationStatement expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => InvokeMethod((Expression)expression, memberName, parameters, arguments);
+
+        public static MemberReferenceExpression GetMember(this Expression expression, string name) => new MemberReferenceExpression(expression, name);
     }
 }

@@ -178,6 +178,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case StructDeclaration o:
+                    Write(writer, o);
+                    break;
+
                 case EnumerationDeclaration o:
                     Write(writer, o);
                     break;
@@ -500,6 +504,29 @@ namespace Meziantou.Framework.CodeDom
             WriteGenericParameters(writer, type);
 
             var baseTypes = GetBaseTypes(type);
+            if (baseTypes.Any())
+            {
+                writer.Write(" : ");
+                Write(writer, baseTypes, ", ");
+            }
+
+            writer.WriteLine();
+            WriteGenericParameterConstraints(writer, type);
+
+            writer.WriteLine("{");
+            writer.Indent++;
+            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), null);
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, StructDeclaration type)
+        {
+            writer.Write("struct ");
+            WriteIdentifier(writer, type.Name);
+            WriteGenericParameters(writer, type);
+
+            var baseTypes = type.Implements;
             if (baseTypes.Any())
             {
                 writer.Write(" : ");
@@ -1103,7 +1130,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(">");
             }
         }
-        
+
         private void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
         {
             if (type.Parameters.Any())

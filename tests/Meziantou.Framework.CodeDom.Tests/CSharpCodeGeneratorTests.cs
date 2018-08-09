@@ -115,6 +115,20 @@ namespace Meziantou.Framework.CodeDom.Tests
         }
 
         [TestMethod]
+        public void CSharpCodeGenerator_StructDeclaration()
+        {
+            var type = new StructDeclaration("Sample");
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            Assert.That.StringEquals(@"struct Sample
+{
+}
+", result);
+        }
+
+        [TestMethod]
         public void CSharpCodeGenerator_InterfaceDeclaration()
         {
             var type = new InterfaceDeclaration("Sample");

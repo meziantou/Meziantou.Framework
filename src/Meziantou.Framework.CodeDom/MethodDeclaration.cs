@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodDeclaration : MemberDeclaration, IParametrableType
     {

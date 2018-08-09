@@ -320,6 +320,40 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
+        protected virtual void Write(IndentedTextWriter writer, OperatorDeclaration member)
+        {
+            var isConversion = member.Modifiers.HasFlag(Modifiers.Implicit) || member.Modifiers.HasFlag(Modifiers.Explicit);
+
+            Write(writer, member.CustomAttributes);
+            Write(writer, member.Modifiers);
+            if (isConversion)
+            {
+                writer.Write("operator ");
+
+                if (member.ReturnType != null)
+                {
+                    Write(writer, member.ReturnType);
+                }
+            }
+            else
+            {
+                if (member.ReturnType != null)
+                {
+                    Write(writer, member.ReturnType);
+                    writer.Write(' ');
+                }
+
+                writer.Write("operator ");
+            }
+
+            WriteIdentifier(writer, member.Name);
+            writer.Write("(");
+            Write(writer, member.Arguments);
+            writer.Write(")");
+            writer.WriteLine();
+            Write(writer, member.Statements);
+        }
+
         protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<MethodArgumentDeclaration> args)
         {
             Write(writer, args, ", ");
@@ -636,8 +670,15 @@ namespace Meziantou.Framework.CodeDom
             {
                 writer.Write("volatile ");
             }
+            if ((modifiers & Modifiers.Implicit) == Modifiers.Implicit)
+            {
+                writer.Write("implicit ");
+            }
+            if ((modifiers & Modifiers.Explicit) == Modifiers.Explicit)
+            {
+                writer.Write("explicit ");
+            }
         }
-
         protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<CustomAttribute> attributes)
         {
             if (attributes.Count > 0)
@@ -695,6 +736,10 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case MethodDeclaration o:
+                    Write(writer, o);
+                    break;
+
+                case OperatorDeclaration o:
                     Write(writer, o);
                     break;
 

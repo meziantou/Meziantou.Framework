@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -21,6 +21,8 @@ namespace Meziantou.Framework.CodeDom
         Static = 0x1000,
         Unsafe = 0x2000,
         Virtual = 0x4000,
-        Volatile = 0x8000
+        Volatile = 0x8000,
+        Implicit = 0x10000,
+        Explicit = 0x20000,
     }
 }

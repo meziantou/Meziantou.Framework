@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
     {

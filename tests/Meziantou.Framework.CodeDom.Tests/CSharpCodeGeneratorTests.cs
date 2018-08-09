@@ -1356,6 +1356,89 @@ void Sample()
             Assert.That.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>", result);
         }
 
+        [TestMethod]
+        public void CSharpCodeGenerator_OperatorReference_Implicit()
+        {
+            var member = new OperatorDeclaration()
+            {
+                Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Implicit,
+                ReturnType = typeof(int),
+                Arguments = 
+                {
+                    new MethodArgumentDeclaration(typeof(long), "value")
+                },
+                Statements = 
+                {
+                    new ReturnStatement(new ArgumentReferenceExpression("value"))
+                }
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(member);
+
+            Assert.That.StringEquals(@"public static implicit operator int(long value)
+{
+    return value;
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_OperatorReference_Explicit()
+        {
+            var member = new OperatorDeclaration()
+            {
+                Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Explicit,
+                ReturnType = typeof(int),
+                Arguments =
+                {
+                    new MethodArgumentDeclaration(typeof(long), "value")
+                },
+                Statements =
+                {
+                    new ReturnStatement(new ArgumentReferenceExpression("value"))
+                }
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(member);
+
+            Assert.That.StringEquals(@"public static explicit operator int(long value)
+{
+    return value;
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_OperatorReference_Add()
+        {
+            var member = new OperatorDeclaration()
+            {
+                Modifiers = Modifiers.Public | Modifiers.Static,
+                ReturnType = typeof(int),
+                Name = "+",
+                Arguments =
+                {
+                    new MethodArgumentDeclaration(typeof(int), "a"),
+                    new MethodArgumentDeclaration(typeof(int), "b"),
+                },
+                Statements =
+                {
+                    new ReturnStatement(new ArgumentReferenceExpression("value"))
+                }
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(member);
+
+            Assert.That.StringEquals(@"public static int operator +(int a, int b)
+{
+    return value;
+}
+", result);
+        }
+
         private class Sample<T>
         {
         }

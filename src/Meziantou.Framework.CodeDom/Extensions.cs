@@ -95,7 +95,7 @@ namespace Meziantou.Framework.CodeDom
             var result = new MemberReferenceExpression(expression, name);
             foreach (var n in names)
             {
-                result = new MemberReferenceExpression(result, name);
+                result = new MemberReferenceExpression(result, n);
             }
 
             return result;

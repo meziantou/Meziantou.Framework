@@ -36,7 +36,7 @@ namespace Meziantou.Framework.RelativeDate
 
             var delta = now - DateTime;
             if (delta < TimeSpan.Zero)
-                throw new NotSupportedException("Dates in the future are not supported");
+                throw new NotSupportedException("Dates in the future are not supported. Value: " + DateTime.ToString("o"));
 
             var culture = formatProvider as CultureInfo;
 

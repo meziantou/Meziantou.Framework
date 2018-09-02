@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework.RelativeDate
 {
-    public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IFormattable
+    public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
     {
         private DateTime DateTime { get; }
 
@@ -12,17 +12,14 @@ namespace Meziantou.Framework.RelativeDate
             DateTime = dateTime;
         }
 
-        int IComparable.CompareTo(object obj)
+        public static RelativeDate Get(DateTime dateTime)
         {
-            if (obj is RelativeDate rd)
-                return CompareTo(rd);
-
-            return CompareTo(default);
+            return new RelativeDate(dateTime);
         }
 
-        public int CompareTo(RelativeDate other)
+        public static RelativeDate Get(DateTimeOffset dateTime)
         {
-            return DateTime.CompareTo(other.DateTime);
+            return new RelativeDate(dateTime.UtcDateTime);
         }
 
         public override string ToString()
@@ -90,6 +87,44 @@ namespace Meziantou.Framework.RelativeDate
         private string GetString(string name, CultureInfo culture, int value)
         {
             return string.Format(LocalizationProvider.Current.GetString(name, culture), value);
+        }
+
+        int IComparable.CompareTo(object obj)
+        {
+            if (obj is RelativeDate rd)
+                return CompareTo(rd);
+
+            return CompareTo(default);
+        }
+
+        public int CompareTo(RelativeDate other)
+        {
+            return DateTime.CompareTo(other.DateTime);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is RelativeDate && Equals((RelativeDate)obj);
+        }
+
+        public bool Equals(RelativeDate other)
+        {
+            return DateTime == other.DateTime;
+        }
+
+        public override int GetHashCode()
+        {
+            return -10323184 + DateTime.GetHashCode();
+        }
+
+        public static bool operator ==(RelativeDate date1, RelativeDate date2)
+        {
+            return date1.Equals(date2);
+        }
+
+        public static bool operator !=(RelativeDate date1, RelativeDate date2)
+        {
+            return !(date1 == date2);
         }
     }
 }

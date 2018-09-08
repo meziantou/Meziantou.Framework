@@ -872,7 +872,7 @@ void Sample()
         public void CSharpCodeGenerator_Property_GetterModifiers()
         {
             var prop = new PropertyDeclaration("A", typeof(int));
-            prop.Getter = new PropertyMemberDeclaration
+            prop.Getter = new PropertyAccessorDeclaration
             {
                 Modifiers = Modifiers.Private,
                 Statements = new ReturnStatement(10),
@@ -895,7 +895,7 @@ void Sample()
         public void CSharpCodeGenerator_Property_SetterModifiers()
         {
             var prop = new PropertyDeclaration("A", typeof(int));
-            prop.Setter = new PropertyMemberDeclaration
+            prop.Setter = new PropertyAccessorDeclaration
             {
                 Modifiers = Modifiers.Internal
             };
@@ -916,7 +916,7 @@ void Sample()
         public void CSharpCodeGenerator_Property_GenericType()
         {
             var prop = new PropertyDeclaration("A", new TypeReference(typeof(Nullable<>)).MakeGeneric(typeof(int)));
-            prop.Setter = new PropertyMemberDeclaration();
+            prop.Setter = new PropertyAccessorDeclaration();
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(prop);
@@ -1312,7 +1312,7 @@ code", result);
             var method = new MethodDeclaration("Sample");
             method.Statements = new StatementCollection();
 
-            method.CommentsBefore.Add("<summary>Test</summary>", CommentType.DocumentationComment);
+            method.XmlComments.AddSummary("Test");
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(method);
 

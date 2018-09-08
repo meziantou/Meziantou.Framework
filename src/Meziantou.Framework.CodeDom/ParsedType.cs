@@ -80,7 +80,7 @@ namespace Meziantou.Framework.CodeDom
                 throw new ArgumentNullException(nameof(typeName));
 
             TypeName = typeName.Trim();
-            if ((TypeName.StartsWith("[")) && (TypeName.EndsWith("]")))
+            if (TypeName.StartsWith("[") && TypeName.EndsWith("]"))
             {
                 TypeName = TypeName.Substring(1, TypeName.Length - 2).Trim();
             }

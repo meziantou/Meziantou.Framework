@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
+    public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable
     {
         protected MemberDeclaration()
             : this(null)
@@ -13,6 +13,7 @@
             Implements = new CodeObjectCollection<MemberReferenceExpression>(this);
             CommentsBefore = new CommentCollection(this);
             CommentsAfter = new CommentCollection(this);
+            XmlComments = new XmlCommentCollection(this);
             Name = name;
         }
 
@@ -21,5 +22,6 @@
         public CodeObjectCollection<MemberReferenceExpression> Implements { get; }
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
+        public XmlCommentCollection XmlComments { get; }
     }
 }

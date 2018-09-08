@@ -8,7 +8,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void GetMember()
         {
-            var member = new TypeReference(typeof(string)).GetMember("Test", "Name");
+            var member = new TypeReference(typeof(string)).CreateMemberReferenceExpression("Test", "Name");
 
             var csharp = new CSharpCodeGenerator().Write(member);
 

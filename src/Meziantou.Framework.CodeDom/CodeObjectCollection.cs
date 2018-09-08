@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -6,7 +6,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> where T : CodeObject
     {
-        private readonly IList<T> _list = new List<T>();
+        private readonly List<T> _list = new List<T>();
 
         public CodeObjectCollection()
         {
@@ -75,7 +75,7 @@ namespace Meziantou.Framework.CodeDom
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => _list.IsReadOnly;
+        public bool IsReadOnly => ((IList<T>)_list).IsReadOnly;
 
         public int IndexOf(T item)
         {
@@ -113,6 +113,11 @@ namespace Meziantou.Framework.CodeDom
                 }
                 value.Parent = Parent;
             }
+        }
+
+        public void Sort(IComparer<T> comparer)
+        {
+            _list.Sort(comparer);
         }
     }
 }

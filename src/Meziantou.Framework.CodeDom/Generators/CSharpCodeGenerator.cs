@@ -139,6 +139,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case XmlComment o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -169,6 +173,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, TypeDeclaration type)
         {
+            WriteXmlComments(writer, type);
             WriteBeforeComments(writer, type);
             Write(writer, type.CustomAttributes);
             Write(writer, type.Modifiers);
@@ -394,6 +399,10 @@ namespace Meziantou.Framework.CodeDom
 
                 case Direction.InOut:
                     writer.Write("ref ");
+                    break;
+
+                case Direction.ReadOnlyRef:
+                    writer.Write("in ");
                     break;
 
                 case Direction.In:
@@ -627,7 +636,6 @@ namespace Meziantou.Framework.CodeDom
             {
                 writer.Write("public ");
             }
-            
             if ((modifiers & Modifiers.Abstract) == Modifiers.Abstract)
             {
                 writer.Write("abstract ");
@@ -644,12 +652,10 @@ namespace Meziantou.Framework.CodeDom
             {
                 writer.Write("static ");
             }
-
             if ((modifiers & Modifiers.Partial) == Modifiers.Partial)
             {
                 writer.Write("partial ");
             }
-
             if ((modifiers & Modifiers.Async) == Modifiers.Async)
             {
                 writer.Write("async ");
@@ -661,6 +667,10 @@ namespace Meziantou.Framework.CodeDom
             if ((modifiers & Modifiers.New) == Modifiers.New)
             {
                 writer.Write("new ");
+            }
+            if ((modifiers & Modifiers.Ref) == Modifiers.Ref)
+            {
+                writer.Write("ref ");
             }
             if ((modifiers & Modifiers.ReadOnly) == Modifiers.ReadOnly)
             {
@@ -687,6 +697,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write("explicit ");
             }
         }
+
         protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<CustomAttribute> attributes)
         {
             if (attributes.Count > 0)
@@ -700,6 +711,12 @@ namespace Meziantou.Framework.CodeDom
         {
             WriteBeforeComments(writer, attribute);
             writer.Write("[");
+            if (attribute.Target.HasValue)
+            {
+                writer.Write(Write(attribute.Target.Value));
+                writer.Write(": ");
+            }
+
             Write(writer, attribute.Type);
 
             if (attribute.Arguments.Count > 0)
@@ -736,6 +753,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, MemberDeclaration member)
         {
+            WriteXmlComments(writer, member);
             WriteBeforeComments(writer, member);
             switch (member)
             {
@@ -867,6 +885,10 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
+                case UnmanagedTypeParameterConstraint o:
+                    Write(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -887,6 +909,11 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("struct");
         }
 
+        protected virtual void Write(IndentedTextWriter writer, UnmanagedTypeParameterConstraint constraint)
+        {
+            writer.Write("unmanaged");
+        }
+
         protected virtual void Write(IndentedTextWriter writer, ConstructorParameterConstraint constraint)
         {
             writer.Write("new()");
@@ -905,13 +932,14 @@ namespace Meziantou.Framework.CodeDom
                         return CommentType.InlineComment;
                     return CommentType.LineComment;
 
-                case CommentType.DocumentationComment:
-                    WriteDocumentationComment(writer, comment.Text);
-                    return CommentType.DocumentationComment;
-
                 default:
                     throw new ArgumentOutOfRangeException(nameof(comment));
             }
+        }
+
+        protected virtual void Write(IndentedTextWriter writer, XmlComment comment)
+        {
+            WriteDocumentationComment(writer, comment.Element.ToString());
         }
 
         protected virtual string Write(BinaryOperator op)
@@ -1010,6 +1038,34 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
+        protected virtual string Write(CustomAttributeTarget target)
+        {
+            switch (target)
+            {
+                case CustomAttributeTarget.Assembly:
+                    return "assembly";
+                case CustomAttributeTarget.Module:
+                    return "module";
+                case CustomAttributeTarget.Field:
+                    return "field";
+                case CustomAttributeTarget.Event:
+                    return "event";
+                case CustomAttributeTarget.Method:
+                    return "method";
+                case CustomAttributeTarget.Param:
+                    return "param";
+                case CustomAttributeTarget.Property:
+                    return "property";
+                case CustomAttributeTarget.Return:
+                    return "return";
+                case CustomAttributeTarget.Type:
+                    return "tyep";
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(target));
+            }
+        }
+
         protected virtual void WriteIdentifier(IndentedTextWriter writer, string name)
         {
             if (_keywords.Contains(name))
@@ -1049,11 +1105,11 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void WriteConstraints(IndentedTextWriter writer, TypeParameter parameter)
         {
-            // 1. class, struct
+            // 1. class, struct, unmanaged
             // 2. base
             // 3. new()
             var orderedConstraints = new List<TypeParameterConstraint>(parameter.Constraints.Count);
-            orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ValueTypeTypeParameterConstraint || p is ClassTypeParameterConstraint));
+            orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ValueTypeTypeParameterConstraint || p is ClassTypeParameterConstraint || p is UnmanagedTypeParameterConstraint));
             orderedConstraints.AddRange(parameter.Constraints.Where(p => p is BaseTypeParameterConstraint));
             orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ConstructorParameterConstraint));
 
@@ -1129,6 +1185,14 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(comment);
                 writer.Write(" */");
                 return true;
+            }
+        }
+
+        protected virtual void WriteXmlComments(IndentedTextWriter writer, IXmlCommentable commentable)
+        {
+            foreach (var comment in commentable.XmlComments)
+            {
+                Write(writer, comment);
             }
         }
 

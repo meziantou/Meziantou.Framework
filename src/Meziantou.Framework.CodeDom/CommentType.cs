@@ -4,6 +4,5 @@
     {
         LineComment,
         InlineComment,
-        DocumentationComment
     }
 }

@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class CustomAttribute : CodeObject, ICommentable
     {
@@ -23,6 +23,7 @@ namespace Meziantou.Framework.CodeDom
             set => SetParent(ref _type, value);
         }
 
+        public CustomAttributeTarget? Target { get; }
         public CodeObjectCollection<CustomAttributeArgument> Arguments { get; }
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }

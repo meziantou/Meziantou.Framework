@@ -24,5 +24,6 @@ namespace Meziantou.Framework.CodeDom
         Volatile = 0x8000,
         Implicit = 0x10000,
         Explicit = 0x20000,
+        Ref = 0x40000,
     }
 }

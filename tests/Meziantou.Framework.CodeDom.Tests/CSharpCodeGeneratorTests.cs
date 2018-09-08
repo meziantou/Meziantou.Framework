@@ -1,5 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
@@ -1363,11 +1363,11 @@ void Sample()
             {
                 Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Implicit,
                 ReturnType = typeof(int),
-                Arguments = 
+                Arguments =
                 {
                     new MethodArgumentDeclaration(typeof(long), "value")
                 },
-                Statements = 
+                Statements =
                 {
                     new ReturnStatement(new ArgumentReferenceExpression("value"))
                 }
@@ -1387,7 +1387,7 @@ void Sample()
         public void CSharpCodeGenerator_OperatorDeclaration_Implicit_UseParentType()
         {
             var type = new ClassDeclaration("Test");
-            
+
             var member = type.AddMember(new OperatorDeclaration()
             {
                 Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Implicit,
@@ -1578,6 +1578,86 @@ void Sample()
             var result = generator.Write(expression);
 
             Assert.That.StringEquals($"(1{symbol})", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Spaces_MultipleStatements()
+        {
+            var method = new MethodDeclaration("Test");
+            method.Statements = new StatementCollection()
+            {
+                new AssignStatement(new VariableReference("a") , 0),
+                new AssignStatement(new VariableReference("b") , 0),
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"void Test()
+{
+    a = 0;
+    b = 0;
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Spaces_MultipleMethods()
+        {
+            var c = new ClassDeclaration("Test");
+            c.Members.Add(new MethodDeclaration("A"));
+            c.Members.Add(new MethodDeclaration("B"));
+            
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(c);
+
+            Assert.That.StringEquals(@"class Test
+{
+    void A();
+
+    void B();
+}
+", result);
+        }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Spaces_Brackets()
+        {
+            var method = new MethodDeclaration("Test");
+            method.Statements = new StatementCollection()
+            {
+                new ConditionStatement()
+                {
+                    Condition = new LiteralExpression(true),
+                    TrueStatements = new StatementCollection()
+                    {
+                        new ConditionStatement()
+                        {
+                            Condition = new LiteralExpression(true),
+                            TrueStatements = new StatementCollection()
+                        }
+                    }
+                },
+                new AssignStatement(new VariableReference("a") , 0),
+                new AssignStatement(new VariableReference("b") , 0),
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(method);
+
+            Assert.That.StringEquals(@"void Test()
+{
+    if (true)
+    {
+        if (true)
+        {
+        }
+    }
+
+    a = 0;
+    b = 0;
+}
+", result);
         }
     }
 }

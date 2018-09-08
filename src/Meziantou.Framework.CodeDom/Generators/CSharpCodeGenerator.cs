@@ -96,7 +96,7 @@ namespace Meziantou.Framework.CodeDom
                     break;
 
                 case Statement o:
-                    Write(writer, o, _defaultWriteStatementOptions);
+                    Write(writer, o);
                     break;
 
                 case Directive o:
@@ -470,13 +470,13 @@ namespace Meziantou.Framework.CodeDom
                 if (member.AddAccessor != null)
                 {
                     writer.WriteLine("add");
-                    WriteStatementsOrEmptyBlock(writer, member.AddAccessor);
+                    Write(writer, member.AddAccessor);
                 }
 
                 if (member.RemoveAccessor != null)
                 {
                     writer.WriteLine("remove");
-                    WriteStatementsOrEmptyBlock(writer, member.RemoveAccessor);
+                    Write(writer, member.RemoveAccessor);
                 }
 
                 writer.Indent--;
@@ -506,7 +506,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Indent--;
             }
             writer.WriteLine();
-            WriteStatementsOrEmptyBlock(writer, member.Statements);
+            Write(writer, member.Statements);
         }
 
         protected virtual void Write(IndentedTextWriter writer, PropertyDeclaration member)
@@ -533,7 +533,7 @@ namespace Meziantou.Framework.CodeDom
                 Write(writer, member.Getter.CustomAttributes);
                 Write(writer, member.Getter.Modifiers);
                 writer.WriteLine("get");
-                WriteStatementsOrEmptyBlock(writer, member.Getter.Statements);
+                Write(writer, member.Getter.Statements);
             }
 
             if (member.Setter != null)
@@ -541,7 +541,7 @@ namespace Meziantou.Framework.CodeDom
                 Write(writer, member.Setter.CustomAttributes);
                 Write(writer, member.Setter.Modifiers);
                 writer.WriteLine("set");
-                WriteStatementsOrEmptyBlock(writer, member.Setter.Statements);
+                Write(writer, member.Setter.Statements);
             }
 
             writer.Indent--;
@@ -832,7 +832,7 @@ namespace Meziantou.Framework.CodeDom
             }
             writer.WriteLine();
 
-            WriteStatementsOrEmptyBlock(writer, catchClause.Body);
+            Write(writer, catchClause.Body);
             WriteAfterComments(writer, catchClause);
         }
 
@@ -1059,7 +1059,7 @@ namespace Meziantou.Framework.CodeDom
                 case CustomAttributeTarget.Return:
                     return "return";
                 case CustomAttributeTarget.Type:
-                    return "tyep";
+                    return "type";
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(target));
@@ -1076,31 +1076,38 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(name);
         }
 
-        private void WriteEmptyBlock(IndentedTextWriter writer)
-        {
-            writer.WriteLine("{");
-            writer.WriteLine("}");
-        }
-
-        private void WriteStatementsOrEmptyBlock(IndentedTextWriter writer, StatementCollection statements)
-        {
-            if (statements != null)
-            {
-                Write(writer, statements);
-            }
-            else
-            {
-                WriteEmptyBlock(writer);
-            }
-        }
-
         protected virtual void Write(IndentedTextWriter writer, StatementCollection statements)
         {
             writer.WriteLine("{");
             writer.Indent++;
-            Write(writer, statements, writer.NewLine);
+
+            if (statements != null)
+            {
+                var mustAddNewLine = false;
+                foreach (var statement in statements)
+                {
+                    if (mustAddNewLine)
+                    {
+                        writer.WriteLine();
+                        mustAddNewLine = false;
+                    }
+
+                    Write(writer, statement);
+                    mustAddNewLine = IsBlockStatement(statement);
+                }
+            }
+
             writer.Indent--;
             writer.WriteLine("}");
+
+            bool IsBlockStatement(Statement statement)
+            {
+                return statement is ConditionStatement
+                    || statement is IterationStatement
+                    || statement is TryCatchFinallyStatement
+                    || statement is UsingStatement
+                    || statement is WhileStatement;
+            }
         }
 
         protected virtual void WriteConstraints(IndentedTextWriter writer, TypeParameter parameter)
@@ -1308,7 +1315,7 @@ namespace Meziantou.Framework.CodeDom
             var first = true;
             foreach (var o in objects)
             {
-                if (!first)
+                if (!first && separator != null)
                 {
                     writer.Write(separator);
                 }

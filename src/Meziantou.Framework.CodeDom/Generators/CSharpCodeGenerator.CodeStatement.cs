@@ -20,6 +20,11 @@ namespace Meziantou.Framework.CodeDom
         protected readonly WriteStatementOptions _defaultWriteStatementOptions = new WriteStatementOptions();
         protected readonly WriteStatementOptions _inlineStatementWriteStatementOptions = new WriteStatementOptions() { EndStatement = false };
 
+        protected virtual void Write(IndentedTextWriter writer, Statement statement)
+        {
+            Write(writer, statement, _defaultWriteStatementOptions);
+        }
+
         protected virtual void Write(IndentedTextWriter writer, Statement statement, WriteStatementOptions options)
         {
             if (statement == null)
@@ -116,7 +121,7 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void Write(IndentedTextWriter writer, TryCatchFinallyStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("try");
-            WriteStatementsOrEmptyBlock(writer, statement.Try);
+            Write(writer, statement.Try);
 
             if (statement.Catch != null)
             {
@@ -177,7 +182,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("if (");
             Write(writer, statement.Condition);
             writer.WriteLine(")");
-            WriteStatementsOrEmptyBlock(writer, statement.TrueStatements);
+            Write(writer, statement.TrueStatements);
             if (statement.FalseStatements != null)
             {
                 writer.WriteLine("else");
@@ -216,7 +221,7 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, statement.Statement, _inlineStatementWriteStatementOptions);
             writer.Write(")");
             writer.WriteLine();
-            WriteStatementsOrEmptyBlock(writer, statement.Body);
+            Write(writer, statement.Body);
         }
 
         protected virtual void Write(IndentedTextWriter writer, VariableDeclarationStatement statement, WriteStatementOptions options)
@@ -248,7 +253,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
             writer.WriteLine();
 
-            WriteStatementsOrEmptyBlock(writer, statement.Body);
+            Write(writer, statement.Body);
         }
 
         protected virtual void Write(IndentedTextWriter writer, IterationStatement statement, WriteStatementOptions options)
@@ -270,7 +275,7 @@ namespace Meziantou.Framework.CodeDom
             }
             writer.Write(")");
             writer.WriteLine();
-            WriteStatementsOrEmptyBlock(writer, statement.Body);
+            Write(writer, statement.Body);
         }
 
         protected virtual void Write(IndentedTextWriter writer, AddEventHandlerStatement statement, WriteStatementOptions options)

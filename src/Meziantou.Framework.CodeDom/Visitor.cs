@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.CodeDom
 {
-    internal class Visitor
+    public class Visitor
     {
         public virtual void Visit(CodeObject codeObject)
         {

@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.CodeDom
 {
-    internal class DefaultFormatterVisitor : Visitor
+    public class DefaultFormatterVisitor : Visitor
     {
         public static DefaultFormatterVisitor Instance { get; } = new DefaultFormatterVisitor();
 
@@ -32,7 +32,11 @@ namespace Meziantou.Framework.CodeDom
             {
                 var sortOrderX = SortOrder(x);
                 var sortOrderY = SortOrder(y);
-                return sortOrderX.CompareTo(sortOrderY);
+                var result = sortOrderX.CompareTo(sortOrderY);
+                if (result != 0)
+                    return result;
+
+                return x.Name.CompareTo(y.Name);
             }
 
             private static int SortOrder(MemberDeclaration m)

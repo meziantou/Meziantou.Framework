@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.CodeDom
                 if (result != 0)
                     return result;
 
-                return x.Name.CompareTo(y.Name);
+                return StringComparer.Ordinal.Compare(x.Name, y.Name);
             }
 
             private static int SortOrder(MemberDeclaration m)

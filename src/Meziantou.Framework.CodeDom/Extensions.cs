@@ -101,7 +101,7 @@ namespace Meziantou.Framework.CodeDom
             return result;
         }
 
-        public static MemberReferenceExpression CreateMemberReferenceExpression(this VariableDeclarationStatement variable, string name, params string[] names) => CreateMemberReferenceExpression(new VariableReference(variable), name, names);
+        public static MemberReferenceExpression CreateMemberReferenceExpression(this VariableDeclarationStatement variable, string name, params string[] names) => CreateMemberReferenceExpression(new VariableReferenceExpression(variable), name, names);
 
         public static MemberReferenceExpression CreateMemberReferenceExpression(this MethodArgumentDeclaration argument, string name, params string[] names) => CreateMemberReferenceExpression(new ArgumentReferenceExpression(argument), name, names);
 

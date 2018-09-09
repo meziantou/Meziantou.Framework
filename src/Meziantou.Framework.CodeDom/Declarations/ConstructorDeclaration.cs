@@ -1,6 +1,6 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
-    public class ConstructorDeclaration : MemberDeclaration
+    public class ConstructorDeclaration : MemberDeclaration, IModifiers
     {
         private StatementCollection _statements;
         private ConstructorInitializer _initializer;

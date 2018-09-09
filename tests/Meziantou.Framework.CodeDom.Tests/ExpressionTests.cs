@@ -8,11 +8,11 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CodeExpression_Op_Binary_Add()
         {
-            var v = new VariableReference("a");
+            var v = new VariableReferenceExpression("a");
             var result = v + 1;
 
             Assert.AreEqual(BinaryOperator.Add, result.Operator);
-            Assert.AreEqual("a", ((VariableReference)result.LeftExpression).Name);
+            Assert.AreEqual("a", ((VariableReferenceExpression)result.LeftExpression).Name);
             Assert.AreEqual(1, ((LiteralExpression)result.RightExpression).Value);
         }
 
@@ -38,9 +38,9 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CodeExpression_Indexer_OneIndex()
         {
-            var result = new VariableReference("a")[1];
+            var result = new VariableReferenceExpression("a")[1];
 
-            Assert.AreEqual("a", ((VariableReference)result.ArrayExpression).Name);
+            Assert.AreEqual("a", ((VariableReferenceExpression)result.ArrayExpression).Name);
             Assert.AreEqual(1, result.Indices.Count);
             Assert.AreEqual(1, ((LiteralExpression)result.Indices[0]).Value);
         }
@@ -48,9 +48,9 @@ namespace Meziantou.Framework.CodeDom.Tests
         [TestMethod]
         public void CodeExpression_Indexer_MultipleIndices()
         {
-            var result = new VariableReference("a")[1, "test"];
+            var result = new VariableReferenceExpression("a")[1, "test"];
 
-            Assert.AreEqual("a", ((VariableReference)result.ArrayExpression).Name);
+            Assert.AreEqual("a", ((VariableReferenceExpression)result.ArrayExpression).Name);
             Assert.AreEqual(2, result.Indices.Count);
             Assert.AreEqual(1, ((LiteralExpression)result.Indices[0]).Value);
             Assert.AreEqual("test", ((LiteralExpression)result.Indices[1]).Value);

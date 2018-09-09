@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class OperatorDeclaration : MemberDeclaration
+    public class OperatorDeclaration : MemberDeclaration, IModifiers
     {
         private TypeReference _returnType;
 

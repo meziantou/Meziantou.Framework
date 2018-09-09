@@ -1,20 +1,20 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class VariableReference : Expression
+    public class VariableReferenceExpression : Expression
     {
         private VariableDeclarationStatement _variableDeclarationStatement;
         private string _name;
 
-        public VariableReference()
+        public VariableReferenceExpression()
         {
         }
 
-        public VariableReference(VariableDeclarationStatement variableDeclarationStatement)
+        public VariableReferenceExpression(VariableDeclarationStatement variableDeclarationStatement)
         {
             _variableDeclarationStatement = variableDeclarationStatement;
         }
 
-        public VariableReference(string name)
+        public VariableReferenceExpression(string name)
         {
             Name = name;
         }
@@ -35,6 +35,6 @@
             }
         }
 
-        public static implicit operator VariableReference(VariableDeclarationStatement variableDeclarationStatement) => new VariableReference(variableDeclarationStatement);
+        public static implicit operator VariableReferenceExpression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReferenceExpression(variableDeclarationStatement);
     }
 }

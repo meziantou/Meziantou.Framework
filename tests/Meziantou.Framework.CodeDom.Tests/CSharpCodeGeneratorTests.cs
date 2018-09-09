@@ -372,7 +372,7 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_ArrayIndexer()
         {
-            var array = new VariableReference("array");
+            var array = new VariableReferenceExpression("array");
             Expression expression = new ArrayIndexerExpression(array, 10);
 
             var generator = new CSharpCodeGenerator();
@@ -384,7 +384,7 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_ArrayIndexer_Multiple()
         {
-            var array = new VariableReference("array");
+            var array = new VariableReferenceExpression("array");
             Expression expression = new ArrayIndexerExpression(array, 10, "test");
 
             var generator = new CSharpCodeGenerator();
@@ -396,7 +396,7 @@ internal enum Sample : uint
         [TestMethod]
         public void CSharpCodeGenerator_Assign()
         {
-            var statement = new AssignStatement(new VariableReference("a"), 10);
+            var statement = new AssignStatement(new VariableReferenceExpression("a"), 10);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -582,7 +582,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Cast()
         {
-            var expr = new CastExpression(new VariableReference("a"), typeof(string));
+            var expr = new CastExpression(new VariableReferenceExpression("a"), typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -592,7 +592,7 @@ finally
         [TestMethod]
         public void CSharpCodeGenerator_Convert()
         {
-            var expr = new ConvertExpression(new VariableReference("a"), typeof(string));
+            var expr = new ConvertExpression(new VariableReferenceExpression("a"), typeof(string));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expr);
 
@@ -999,7 +999,7 @@ void Sample()
             var statement = new UsingStatement
             {
                 Statement = new VariableDeclarationStatement(null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
-                Body = (Statement)new MethodInvokeExpression(new VariableReference("disposable"))
+                Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable"))
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1153,7 +1153,7 @@ void Sample()
         [TestMethod]
         public void CSharpCodeGenerator_Await()
         {
-            var statement = new AwaitExpression(new VariableReference("awaitable"));
+            var statement = new AwaitExpression(new VariableReferenceExpression("awaitable"));
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
 
@@ -1586,8 +1586,8 @@ void Sample()
             var method = new MethodDeclaration("Test");
             method.Statements = new StatementCollection()
             {
-                new AssignStatement(new VariableReference("a") , 0),
-                new AssignStatement(new VariableReference("b") , 0),
+                new AssignStatement(new VariableReferenceExpression("a") , 0),
+                new AssignStatement(new VariableReferenceExpression("b") , 0),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1607,7 +1607,7 @@ void Sample()
             var c = new ClassDeclaration("Test");
             c.Members.Add(new MethodDeclaration("A"));
             c.Members.Add(new MethodDeclaration("B"));
-            
+
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(c);
 
@@ -1638,8 +1638,8 @@ void Sample()
                         }
                     }
                 },
-                new AssignStatement(new VariableReference("a") , 0),
-                new AssignStatement(new VariableReference("b") , 0),
+                new AssignStatement(new VariableReferenceExpression("a") , 0),
+                new AssignStatement(new VariableReferenceExpression("b") , 0),
             };
 
             var generator = new CSharpCodeGenerator();

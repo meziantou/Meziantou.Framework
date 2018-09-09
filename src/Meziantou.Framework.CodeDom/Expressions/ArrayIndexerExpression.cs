@@ -1,8 +1,13 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ArrayIndexerExpression : Expression
     {
         private Expression _arrayExpression;
+
+        public ArrayIndexerExpression()
+            : this(null)
+        {
+        }
 
         public ArrayIndexerExpression(Expression array, params Expression[] indices)
         {

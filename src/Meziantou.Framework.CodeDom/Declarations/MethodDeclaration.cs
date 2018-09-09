@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class MethodDeclaration : MemberDeclaration, IParametrableType
+    public class MethodDeclaration : MemberDeclaration, IParametrableType, IModifiers
     {
         private TypeReference _returnType;
         private TypeReference _privateImplementationType;

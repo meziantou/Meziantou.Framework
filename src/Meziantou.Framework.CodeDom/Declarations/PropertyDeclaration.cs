@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class PropertyDeclaration : MemberDeclaration
+    public class PropertyDeclaration : MemberDeclaration, IModifiers
     {
         private PropertyAccessorDeclaration _setter;
         private PropertyAccessorDeclaration _getter;

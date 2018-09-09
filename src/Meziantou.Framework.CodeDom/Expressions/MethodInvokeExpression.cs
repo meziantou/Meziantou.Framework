@@ -22,7 +22,7 @@
         public MethodInvokeExpression(Expression method, TypeReference[] parameters, params Expression[] arguments)
         {
             Parameters = new CodeObjectCollection<TypeReference>();
-            Arguments = new MethodInvokeExpressionCollection(this);
+            Arguments = new CodeObjectCollection<Expression>(this);
             Method = method;
 
             if (arguments != null)
@@ -42,7 +42,7 @@
             set => SetParent(ref _method, value);
         }
 
-        public MethodInvokeExpressionCollection Arguments { get; }
+        public CodeObjectCollection<Expression> Arguments { get; }
 
         public CodeObjectCollection<TypeReference> Parameters { get; }
     }

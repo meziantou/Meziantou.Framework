@@ -31,7 +31,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator Expression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReference(variableDeclarationStatement);
+        public static implicit operator Expression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReferenceExpression(variableDeclarationStatement);
 
         public static implicit operator Expression(MethodArgumentDeclaration argument) => new ArgumentReferenceExpression(argument);
 

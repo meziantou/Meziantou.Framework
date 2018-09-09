@@ -85,7 +85,7 @@ namespace Meziantou.Framework.CodeDom
                     Write(writer, o);
                     break;
 
-                case VariableReference o:
+                case VariableReferenceExpression o:
                     Write(writer, o);
                     break;
 
@@ -487,7 +487,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, VariableReference expression)
+        protected virtual void Write(IndentedTextWriter writer, VariableReferenceExpression expression)
         {
             WriteIdentifier(writer, expression.Name);
         }

@@ -1,6 +1,6 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
-    public class FieldDeclaration : MemberDeclaration
+    public class FieldDeclaration : MemberDeclaration, IModifiers
     {
         private Expression _initExpression;
         private TypeReference _type;

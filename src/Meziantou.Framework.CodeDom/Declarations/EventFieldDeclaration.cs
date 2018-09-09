@@ -1,6 +1,6 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
-    public class EventFieldDeclaration : MemberDeclaration
+    public class EventFieldDeclaration : MemberDeclaration, IModifiers
     {
         private TypeReference _type;
         private StatementCollection _removeAccessor;

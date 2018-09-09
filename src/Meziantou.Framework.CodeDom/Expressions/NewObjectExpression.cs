@@ -1,8 +1,12 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class NewObjectExpression : Expression
     {
         private TypeReference _type;
+
+        public NewObjectExpression()
+        {
+        }
 
         public NewObjectExpression(TypeReference type, params Expression[] arguments)
         {

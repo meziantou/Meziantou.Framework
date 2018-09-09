@@ -29,6 +29,6 @@
 
         public static implicit operator MethodInvokeArgumentExpression(MethodArgumentDeclaration argument) => new MethodInvokeArgumentExpression(new ArgumentReferenceExpression(argument));
 
-        public static implicit operator MethodInvokeArgumentExpression(VariableDeclarationStatement variable) => new MethodInvokeArgumentExpression(new VariableReference(variable));
+        public static implicit operator MethodInvokeArgumentExpression(VariableDeclarationStatement variable) => new MethodInvokeArgumentExpression(new VariableReferenceExpression(variable));
     }
 }

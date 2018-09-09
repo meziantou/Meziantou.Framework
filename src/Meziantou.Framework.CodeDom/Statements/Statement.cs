@@ -1,11 +1,11 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class Statement : CodeObject, ICommentable
+    public abstract class Statement : CodeObject, ICommentable
     {
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
 
-        public Statement()
+        protected Statement()
         {
             CommentsBefore = new CommentCollection(this);
             CommentsAfter = new CommentCollection(this);

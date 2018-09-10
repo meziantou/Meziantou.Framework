@@ -1659,5 +1659,19 @@ void Sample()
 }
 ", result);
         }
+
+        [TestMethod]
+        public void CSharpCodeGenerator_Modifiers_PartialReadOnlyStruct()
+        {
+            var type = new StructDeclaration("Test");
+            type.Modifiers = Modifiers.Partial | Modifiers.ReadOnly;
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            Assert.That.StringEquals(@"readonly partial struct Test
+{
+}
+", result);
+        }
     }
 }

@@ -652,10 +652,6 @@ namespace Meziantou.Framework.CodeDom
             {
                 writer.Write("static ");
             }
-            if ((modifiers & Modifiers.Partial) == Modifiers.Partial)
-            {
-                writer.Write("partial ");
-            }
             if ((modifiers & Modifiers.Async) == Modifiers.Async)
             {
                 writer.Write("async ");
@@ -675,6 +671,10 @@ namespace Meziantou.Framework.CodeDom
             if ((modifiers & Modifiers.ReadOnly) == Modifiers.ReadOnly)
             {
                 writer.Write("readonly ");
+            }
+            if ((modifiers & Modifiers.Partial) == Modifiers.Partial)
+            {
+                writer.Write("partial ");
             }
             if ((modifiers & Modifiers.Unsafe) == Modifiers.Unsafe)
             {

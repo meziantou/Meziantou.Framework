@@ -18,7 +18,7 @@
     <Features>strict</Features>
   </PropertyGroup>
 
-  <!-- sourcelink: https://github.com/dotnet/sourcelink/#using-sourcelink -->
+  <!-- sourcelink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
   <PropertyGroup>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>

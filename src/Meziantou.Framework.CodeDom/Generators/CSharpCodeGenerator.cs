@@ -376,6 +376,11 @@ namespace Meziantou.Framework.CodeDom
         {
             WriteBeforeComments(writer, arg);
             Write(writer, arg.CustomAttributes);
+            if (arg.IsExtension)
+            {
+                writer.Write("this ");
+            }
+
             Write(writer, arg.Direction);
             Write(writer, arg.Type);
             writer.Write(" ");

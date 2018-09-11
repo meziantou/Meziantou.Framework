@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
     {
@@ -24,6 +24,7 @@ namespace Meziantou.Framework.CodeDom
         public CommentCollection CommentsAfter { get; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
         public string Name { get; set; }
+        public bool IsExtension { get; set; }
 
         public TypeReference Type
         {

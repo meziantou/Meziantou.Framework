@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
-
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,10 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.PerceivedType\Meziantou.Framework.Win32.PerceivedType.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0-eap06" />
   </ItemGroup>
 
 </Project>

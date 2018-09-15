@@ -14,9 +14,9 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: Test
   inputs:
-    command: test
-    projects: 'tests/**/*.csproj'
-    arguments: '--configuration $(BuildConfiguration)'
+    command: custom
+    arguments: 'dotcover test --configuration $(BuildConfiguration) --dcReportType=XML'
+    projects: 'tests/**/*.csproj'    
     nobuild: true
 
 - task: DotNetCoreCLI@2

@@ -6,6 +6,12 @@ variables:
 steps:
 
 - task: DotNetCoreCLI@2
+  displayName: Restore
+  command: restore
+  inputs:
+    arguments: '$(solution)'
+
+- task: DotNetCoreCLI@2
   displayName: Build
   inputs:
     projects: 'src/**/*.csproj'

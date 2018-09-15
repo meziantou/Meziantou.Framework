@@ -15,7 +15,7 @@ steps:
   displayName: Test
   inputs:
     command: test
-    projects: '/tests/**/*.csproj'
+    projects: 'tests/**/*.csproj'
     arguments: '--configuration $(BuildConfiguration)'
     nobuild: true
 

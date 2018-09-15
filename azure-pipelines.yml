@@ -22,8 +22,8 @@ steps:
   displayName: Test
   inputs:
     command: custom
-    custom: dotcover
-    arguments: 'test --configuration $(BuildConfiguration) --dcReportType=XML'
+    custom: dotcover test
+    arguments: '--configuration $(BuildConfiguration) --dcReportType=XML'
     projects: 'tests/**/*.csproj'    
     nobuild: true
 

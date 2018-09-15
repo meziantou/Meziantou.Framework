@@ -7,8 +7,8 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: Restore
-  command: restore
   inputs:
+    command: restore
     arguments: '$(solution)'
 
 - task: DotNetCoreCLI@2

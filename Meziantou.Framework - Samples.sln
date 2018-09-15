@@ -45,6 +45,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeDom
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AccessToken", "src\Meziantou.Framework.Win32.AccessToken\Meziantou.Framework.Win32.AccessToken.csproj", "{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AccessTokenConsole", "Samples\Meziantou.Framework.Win32.AccessTokenConsole\Meziantou.Framework.Win32.AccessTokenConsole.csproj", "{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{DB679A70-C2CB-4CD1-9530-D31627343FC5}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CommandLine", "src\Meziantou.Framework.CommandLine\Meziantou.Framework.CommandLine.csproj", "{684E6D0F-25AE-4169-9A69-9B739F9FF71C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CommandLineTests", "tests\Meziantou.Framework.CommandLineTests\Meziantou.Framework.CommandLineTests.csproj", "{FE6AE531-9319-4E74-998E-76F04F6D4901}"
@@ -52,6 +56,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EchoArguments", "tests\EchoArguments\EchoArguments.csproj", "{85B252D5-BBE1-46ED-9D78-5E84125C2F80}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Dialogs", "src\Meziantou.Framework.Win32.Dialogs\Meziantou.Framework.Win32.Dialogs.csproj", "{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.DialogsSamples", "Samples\Meziantou.Framework.Win32.DialogsSamples\Meziantou.Framework.Win32.DialogsSamples.csproj", "{8ED9101B-5E85-49EB-A216-F542E8AD9F79}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Jobs", "src\Meziantou.Framework.Win32.Jobs\Meziantou.Framework.Win32.Jobs.csproj", "{A94CC207-257F-4E41-A575-C5FBF6B121BE}"
 EndProject
@@ -169,6 +175,10 @@ Global
 		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4B30F36-536B-4F7D-AA36-C8DD7CFC3E21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E9A01AC-4EC5-4CA5-8D03-B4735384725C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{684E6D0F-25AE-4169-9A69-9B739F9FF71C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{684E6D0F-25AE-4169-9A69-9B739F9FF71C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{684E6D0F-25AE-4169-9A69-9B739F9FF71C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -185,6 +195,10 @@ Global
 		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1515CCD5-14DF-46BA-9767-E5AFF6BF4C5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8ED9101B-5E85-49EB-A216-F542E8AD9F79}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A94CC207-257F-4E41-A575-C5FBF6B121BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A94CC207-257F-4E41-A575-C5FBF6B121BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A94CC207-257F-4E41-A575-C5FBF6B121BE}.Release|Any CPU.ActiveCfg = Release|Any CPU

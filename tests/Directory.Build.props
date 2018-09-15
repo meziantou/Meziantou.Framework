@@ -6,6 +6,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.0" />
+        <DotNetCliToolReference Include="JetBrains.dotCover.CommandLineTools" Version="2018.2.3" />
     </ItemGroup>
 </Project>

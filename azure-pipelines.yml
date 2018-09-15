@@ -9,8 +9,8 @@ steps:
   inputs:
     command: restore
     projects: |
-      **/src/*.csproj
-      **/tests/*.csproj
+      src/**/*.csproj
+      tests/**/*.csproj
 
 - task: DotNetCoreCLI@2
   displayName: Build

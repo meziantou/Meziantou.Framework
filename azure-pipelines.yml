@@ -1,0 +1,45 @@
+variables:
+  solution: Meziantou.Framework.sln
+  buildConfiguration: Release
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+steps:
+
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    projects: 'src/**/*.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: 'tests/**/*.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
+    nobuild: true
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet pack'
+  inputs:
+    command: pack
+    packagesToPack: 'src/**/*.csproj'
+    nobuild: true
+
+- powershell: |
+    Write-Host "Searching nupkg in folder: $(Build.ArtifactStagingDirectory)"
+    $files = Get-ChildItem $(Build.ArtifactStagingDirectory) -Filter *.nupkg
+    foreach($file in $files) {
+        Write-Host "Pushing NuGet package: $($file.FullName)"
+        & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output
+    }
+  workingDirectory: '$(Build.ArtifactStagingDirectory)'
+  ignoreLASTEXITCODE: true  
+  displayName: 'dotnet push'
+  continueOnError: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
+  condition: succeededOrFailed()

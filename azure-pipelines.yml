@@ -4,19 +4,15 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
 steps:
-- task: DotNetCoreCLI@2
-  displayName: Restore
-  inputs:
-    command: restore
-    projects: |
-      src/**/*.csproj
-      tests/**/*.csproj
+- script: dotnet restore $(solution)
 
 - task: DotNetCoreCLI@2
   displayName: Build
   inputs:
     projects: 'src/**/*.csproj'
     arguments: '--configuration $(BuildConfiguration)'
+
+- script: dotnet dotcover test
 
 - task: DotNetCoreCLI@2
   displayName: Test

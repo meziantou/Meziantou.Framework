@@ -4,7 +4,6 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
 steps:
-- script: dotnet restore $(solution)
 
 - task: DotNetCoreCLI@2
   displayName: Build
@@ -12,15 +11,12 @@ steps:
     projects: 'src/**/*.csproj'
     arguments: '--configuration $(BuildConfiguration)'
 
-- script: dotnet dotcover test
-
 - task: DotNetCoreCLI@2
   displayName: Test
   inputs:
-    command: custom
-    custom: dotcover test
-    arguments: '--configuration $(BuildConfiguration) --dcReportType=XML'
-    projects: 'tests/**/*.csproj'    
+    command: test
+    arguments: '--configuration $(BuildConfiguration)'
+    projects: 'tests/**/*.csproj'
     nobuild: true
 
 - task: DotNetCoreCLI@2

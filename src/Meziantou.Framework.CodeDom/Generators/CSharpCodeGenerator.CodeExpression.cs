@@ -125,6 +125,8 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, MethodInvokeArgumentExpression expression)
         {
+            Write(writer, expression.Direction);
+
             if (!string.IsNullOrEmpty(expression.Name))
             {
                 WriteIdentifier(writer, expression.Name);

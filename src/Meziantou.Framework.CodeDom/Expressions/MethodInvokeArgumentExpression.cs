@@ -20,6 +20,7 @@
         }
 
         public string Name { get; set; }
+        public Direction Direction { get; set; }
 
         public Expression Value
         {

@@ -1040,6 +1040,19 @@ void Sample()
         }
 
         [TestMethod]
+        public void CSharpCodeGenerator_MethodInvoke_OutArgument()
+        {
+            var expression = new MethodInvokeExpression(
+                new MemberReferenceExpression(new TypeReference("Console"), "Write"),
+                new MethodInvokeArgumentExpression(new VariableReferenceExpression("test")) { Direction = Direction.Out });
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(expression);
+
+            Assert.That.StringEquals(@"Console.Write(out test)", result);
+        }
+
+        [TestMethod]
         public void CSharpCodeGenerator_Iteration()
         {
             var statement = new IterationStatement();

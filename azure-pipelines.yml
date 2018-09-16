@@ -6,13 +6,13 @@ variables:
 steps:
 
 - task: DotNetCoreCLI@2
-  displayName: Build
+  displayName: dotnet build
   inputs:
     projects: 'src/**/*.csproj'
     arguments: '--configuration $(BuildConfiguration)'
 
 - task: DotNetCoreCLI@2
-  displayName: Test
+  displayName: dotnet test
   inputs:
     command: test
     arguments: '--configuration $(BuildConfiguration)'
@@ -20,7 +20,7 @@ steps:
     nobuild: true
 
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet pack'
+  displayName: dotnet pack
   inputs:
     command: pack
     packagesToPack: 'src/**/*.csproj'
@@ -35,7 +35,7 @@ steps:
     }
   workingDirectory: '$(Build.ArtifactStagingDirectory)'
   ignoreLASTEXITCODE: true  
-  displayName: 'dotnet push'
+  displayName: dotnet push
   continueOnError: true
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 

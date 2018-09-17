@@ -167,14 +167,14 @@ namespace Meziantou.Framework.Versioning.Tests
         public void NextPatchVersion_ShouldRemovePrereleaseTag()
         {
             var version = new SemanticVersion(1, 0, 0, "test");
-            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextPathVersion());
+            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextPatchVersion());
         }
 
         [TestMethod]
         public void NextPatchVersion_ShouldIncreasePatch()
         {
             var version = new SemanticVersion(1, 0, 1);
-            Assert.AreEqual(new SemanticVersion(1, 0, 2), version.NextPathVersion());
+            Assert.AreEqual(new SemanticVersion(1, 0, 2), version.NextPatchVersion());
         }
 
         [TestMethod]

@@ -54,12 +54,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0> args = default;
+            ValueTuple<T0> args = default;
 
             return (T0 arg0) =>
             {
 
-			    args = ValueTuple.Create(arg0);
+                args = ValueTuple.Create(arg0);
 
                 if (task != null)
                     return;
@@ -86,12 +86,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1> args = default;
+            ValueTuple<T0, T1> args = default;
 
             return (T0 arg0, T1 arg1) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1);
+                args = ValueTuple.Create(arg0, arg1);
 
                 if (task != null)
                     return;
@@ -118,12 +118,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2> args = default;
+            ValueTuple<T0, T1, T2> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2);
+                args = ValueTuple.Create(arg0, arg1, arg2);
 
                 if (task != null)
                     return;
@@ -150,12 +150,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3> args = default;
+            ValueTuple<T0, T1, T2, T3> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3);
 
                 if (task != null)
                     return;
@@ -182,12 +182,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4> args = default;
+            ValueTuple<T0, T1, T2, T3, T4> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4);
 
                 if (task != null)
                     return;
@@ -214,12 +214,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4, T5> args = default;
+            ValueTuple<T0, T1, T2, T3, T4, T5> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5);
 
                 if (task != null)
                     return;
@@ -246,12 +246,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4, T5, T6> args = default;
+            ValueTuple<T0, T1, T2, T3, T4, T5, T6> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
 
                 if (task != null)
                     return;
@@ -278,12 +278,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7> args = default;
+            ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 
                 if (task != null)
                     return;
@@ -310,12 +310,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8> args = default;
+            ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 
                 if (task != null)
                     return;
@@ -342,12 +342,12 @@ namespace Meziantou.Framework.Utilities
             Task task = null;
             var l = new object();
 
-			ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> args = default;
+            ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> args = default;
 
             return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) =>
             {
 
-			    args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
                 if (task != null)
                     return;
@@ -369,63 +369,63 @@ namespace Meziantou.Framework.Utilities
 
 
         private static class ValueTuple
-		{
+        {
 
-		    public static ValueTuple<T0> Create<T0>(T0 arg0)
-			{
-			    return new ValueTuple<T0>(arg0);
-			}
+            public static ValueTuple<T0> Create<T0>(T0 arg0)
+            {
+                return new ValueTuple<T0>(arg0);
+            }
 
-		    public static ValueTuple<T0, T1> Create<T0, T1>(T0 arg0, T1 arg1)
-			{
-			    return new ValueTuple<T0, T1>(arg0, arg1);
-			}
+            public static ValueTuple<T0, T1> Create<T0, T1>(T0 arg0, T1 arg1)
+            {
+                return new ValueTuple<T0, T1>(arg0, arg1);
+            }
 
-		    public static ValueTuple<T0, T1, T2> Create<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2)
-			{
-			    return new ValueTuple<T0, T1, T2>(arg0, arg1, arg2);
-			}
+            public static ValueTuple<T0, T1, T2> Create<T0, T1, T2>(T0 arg0, T1 arg1, T2 arg2)
+            {
+                return new ValueTuple<T0, T1, T2>(arg0, arg1, arg2);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3> Create<T0, T1, T2, T3>(T0 arg0, T1 arg1, T2 arg2, T3 arg3)
-			{
-			    return new ValueTuple<T0, T1, T2, T3>(arg0, arg1, arg2, arg3);
-			}
+            public static ValueTuple<T0, T1, T2, T3> Create<T0, T1, T2, T3>(T0 arg0, T1 arg1, T2 arg2, T3 arg3)
+            {
+                return new ValueTuple<T0, T1, T2, T3>(arg0, arg1, arg2, arg3);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4> Create<T0, T1, T2, T3, T4>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4>(arg0, arg1, arg2, arg3, arg4);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4> Create<T0, T1, T2, T3, T4>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4>(arg0, arg1, arg2, arg3, arg4);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4, T5> Create<T0, T1, T2, T3, T4, T5>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4, T5>(arg0, arg1, arg2, arg3, arg4, arg5);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4, T5> Create<T0, T1, T2, T3, T4, T5>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4, T5>(arg0, arg1, arg2, arg3, arg4, arg5);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4, T5, T6> Create<T0, T1, T2, T3, T4, T5, T6>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4, T5, T6>(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4, T5, T6> Create<T0, T1, T2, T3, T4, T5, T6>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4, T5, T6>(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7> Create<T0, T1, T2, T3, T4, T5, T6, T7>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7> Create<T0, T1, T2, T3, T4, T5, T6, T7>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8> Create<T0, T1, T2, T3, T4, T5, T6, T7, T8>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8> Create<T0, T1, T2, T3, T4, T5, T6, T7, T8>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            }
 
-		    public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Create<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
-			{
-			    return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-			}
+            public static ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Create<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+            {
+                return new ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            }
 
-		}
+        }
 
 
         private readonly struct ValueTuple<T0>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -435,11 +435,11 @@ namespace Meziantou.Framework.Utilities
                 Item0 = arg0;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -453,11 +453,11 @@ namespace Meziantou.Framework.Utilities
                 Item1 = arg1;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -475,11 +475,11 @@ namespace Meziantou.Framework.Utilities
                 Item2 = arg2;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -501,11 +501,11 @@ namespace Meziantou.Framework.Utilities
                 Item3 = arg3;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -531,11 +531,11 @@ namespace Meziantou.Framework.Utilities
                 Item4 = arg4;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4, T5>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -565,11 +565,11 @@ namespace Meziantou.Framework.Utilities
                 Item5 = arg5;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4, T5, T6>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -603,11 +603,11 @@ namespace Meziantou.Framework.Utilities
                 Item6 = arg6;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -645,11 +645,11 @@ namespace Meziantou.Framework.Utilities
                 Item7 = arg7;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -691,11 +691,11 @@ namespace Meziantou.Framework.Utilities
                 Item8 = arg8;
 
             }
-		}
+        }
 
 
         private readonly struct ValueTuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>
-		{
+        {
 
             public readonly T0 Item0;
 
@@ -741,7 +741,7 @@ namespace Meziantou.Framework.Utilities
                 Item9 = arg9;
 
             }
-		}
+        }
 
 
     }

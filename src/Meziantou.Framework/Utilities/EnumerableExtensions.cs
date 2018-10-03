@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Utilities
 {
@@ -8,7 +10,8 @@ namespace Meziantou.Framework.Utilities
     {
         public static void AddRange<T>(this ICollection<T> collection, params T[] items)
         {
-            if (collection == null) throw new ArgumentNullException(nameof(collection));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             if (items != null)
             {
@@ -21,7 +24,8 @@ namespace Meziantou.Framework.Utilities
 
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
         {
-            if (collection == null) throw new ArgumentNullException(nameof(collection));
+            if (collection == null)
+                throw new ArgumentNullException(nameof(collection));
 
             if (items != null)
             {
@@ -34,7 +38,8 @@ namespace Meziantou.Framework.Utilities
 
         public static void Replace<T>(this IList<T> list, T oldItem, T newItem)
         {
-            if (list == null) throw new ArgumentNullException(nameof(list));
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
 
             var index = list.IndexOf(oldItem);
             if (index < 0)
@@ -45,7 +50,8 @@ namespace Meziantou.Framework.Utilities
 
         public static void AddOrReplace<T>(this IList<T> list, T oldItem, T newItem)
         {
-            if (list == null) throw new ArgumentNullException(nameof(list));
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
 
             var index = list.IndexOf(oldItem);
             if (index < 0)
@@ -75,6 +81,16 @@ namespace Meziantou.Framework.Utilities
             return source.Where(p => hash.Add(keySelector(p)));
         }
 
+        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
+        {
+            return Sort(list, Comparer<T>.Default);
+        }
+
+        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T> comparer)
+        {
+            return list.OrderBy(item => item, comparer);
+        }
+
         public static int IndexOf<T>(this IEnumerable<T> list, T value)
         {
             return list.IndexOf(value, EqualityComparer<T>.Default);
@@ -82,8 +98,10 @@ namespace Meziantou.Framework.Utilities
 
         public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T> comparer)
         {
-            if (list == null) throw new ArgumentNullException(nameof(list));
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
 
             var index = 0;
             using (var enumerator = list.GetEnumerator())
@@ -107,8 +125,10 @@ namespace Meziantou.Framework.Utilities
 
         public static long LongIndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T> comparer)
         {
-            if (list == null) throw new ArgumentNullException(nameof(list));
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            if (list == null)
+                throw new ArgumentNullException(nameof(list));
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
 
             var index = 0L;
             using (var enumerator = list.GetEnumerator())
@@ -127,7 +147,8 @@ namespace Meziantou.Framework.Utilities
 
         public static bool ContainsIgnoreCase(this IEnumerable<string> str, string value)
         {
-            if (str == null) throw new ArgumentNullException(nameof(str));
+            if (str == null)
+                throw new ArgumentNullException(nameof(str));
 
             foreach (var s in str)
             {
@@ -149,6 +170,31 @@ namespace Meziantou.Framework.Utilities
                 {
                 }
             }
+        }
+
+        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
+        {
+            return ForEachAsync(source, Environment.ProcessorCount, action);
+        }
+
+        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
+                        select Task.Run(async () =>
+                        {
+                            using (partition)
+                            {
+                                while (partition.MoveNext())
+                                {
+                                    await action(partition.Current);
+                                }
+                            }
+                        });
+
+            return Task.WhenAll(tasks);
         }
     }
 }

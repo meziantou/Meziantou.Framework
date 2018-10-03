@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Utilities
         }
     }
 
-    public class AsyncLazy<T>
+    public class AsyncLazy<T> : IDisposable
     {
         private readonly Func<Task<T>> _valueFactory;
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
@@ -44,6 +44,11 @@ namespace Meziantou.Framework.Utilities
             {
                 _semaphoreSlim.Release();
             }
+        }
+        
+        public void Dipose()
+        {
+            _semaphoreSlim.Dispose();
         }
     }
 }

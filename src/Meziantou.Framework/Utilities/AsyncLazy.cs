@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Utilities
             }
         }
         
-        public void Dipose()
+        public void Dispose()
         {
             _semaphoreSlim.Dispose();
         }

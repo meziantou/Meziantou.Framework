@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     internal interface IClock
     {

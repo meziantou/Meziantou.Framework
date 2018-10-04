@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace Meziantou.Framework.Utilities
+namespace Meziantou.Framework
 {
     public interface IConverter
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Meziantou.Framework.Utilities
+namespace Meziantou.Framework
 {
     public static class DictionaryExtensions
     {

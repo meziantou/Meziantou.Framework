@@ -1,5 +1,4 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Meziantou.Framework.Utilities;
 using System.Collections.Generic;
 
 namespace Meziantou.Framework.Csv.Tests

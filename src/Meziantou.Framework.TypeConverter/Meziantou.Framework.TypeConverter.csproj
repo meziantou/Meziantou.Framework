@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>Convert object to an other type</Description>
-    <Version>1.3.1</Version>
+    <Version>2.0.0</Version>
     <DefineConstants>ReflectionUtilities_Interal;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\Meziantou.Framework\Utilities\ReflectionUtilities.cs" Link="ReflectionUtilities.cs" />
+    <Compile Include="..\Meziantou.Framework\ReflectionUtilities.cs" Link="ReflectionUtilities.cs" />
   </ItemGroup>
 
 </Project>

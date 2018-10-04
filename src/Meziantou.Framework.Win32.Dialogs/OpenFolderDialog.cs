@@ -1,7 +1,7 @@
 ﻿using System;
-using Meziantou.Framework.Win32.Dialogs.Natives;
+using Meziantou.Framework.Win32.Natives;
 
-namespace Meziantou.Framework.Win32.Dialogs
+namespace Meziantou.Framework.Win32
 {
     public class OpenFolderDialog
     {

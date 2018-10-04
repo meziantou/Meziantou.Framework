@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Utilities
+﻿namespace Meziantou.Framework
 {
     public enum ByteArrayToStringFormat
     {

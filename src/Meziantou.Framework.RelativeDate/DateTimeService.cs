@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     internal static class DateTimeService
     {

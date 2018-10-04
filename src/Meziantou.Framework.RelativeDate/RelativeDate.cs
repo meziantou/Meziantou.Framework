@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
     {

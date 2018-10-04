@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Dialogs
+namespace Meziantou.Framework.Win32
 {
     [ComVisible(true)]
     public enum DialogResult

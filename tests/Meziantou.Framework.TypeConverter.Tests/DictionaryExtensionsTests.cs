@@ -1,8 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.Generic;
-using Meziantou.Framework.Utilities;
+﻿using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.TypeConverter.Tests
+namespace Meziantou.Framework.Tests
 {
     [TestClass]
     public class DictionaryExtensionsTests

@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.RelativeDate.Tests
+namespace Meziantou.Framework.Tests
 {
     [TestClass]
     [DoNotParallelize] // because DateTimeService.Clock is static

@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     public interface ILocalizationProvider
     {

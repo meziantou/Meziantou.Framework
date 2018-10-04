@@ -1,10 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Globalization;
-using Meziantou.Framework.Utilities;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Meziantou.Framework.Tests.Utilities
+namespace Meziantou.Framework.Tests
 {
     [TestClass]
     public class DefaultConverterTests_TypeDescriptor

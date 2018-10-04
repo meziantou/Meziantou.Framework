@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Dialogs.Natives
+namespace Meziantou.Framework.Win32.Natives
 {
     internal static class NativeMethods
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     public class LocalizationProvider : ILocalizationProvider
     {

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Meziantou.Framework.RelativeDate.Tests")]
-
-namespace Meziantou.Framework.RelativeDate
+namespace Meziantou.Framework
 {
     internal class SystemClock : IClock
     {

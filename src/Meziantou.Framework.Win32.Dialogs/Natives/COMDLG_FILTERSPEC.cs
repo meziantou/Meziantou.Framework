@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Dialogs.Natives
+namespace Meziantou.Framework.Win32.Natives
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 4)]
     internal struct COMDLG_FILTERSPEC

@@ -45,5 +45,44 @@ namespace Meziantou.Framework.Tests
 
             Assert.AreEqual(100, bag.Count);
         }
+
+        [TestMethod]
+        public void MaxTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var max = list.Max(Comparer<int>.Default);
+
+            // Assert
+            Assert.AreEqual(10, max);
+        }
+
+        [TestMethod]
+        public void MaxByTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var max = list.MaxBy(i => i * 2);
+
+            // Assert
+            Assert.AreEqual(10, max);
+        }
+
+        [TestMethod]
+        public void MaxByTests_02()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var max = list.MaxBy(i => i * 2, Comparer<int>.Default);
+
+            // Assert
+            Assert.AreEqual(10, max);
+        }
     }
 }

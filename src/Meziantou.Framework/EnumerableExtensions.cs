@@ -195,5 +195,113 @@ namespace Meziantou.Framework
 
             return Task.WhenAll(tasks);
         }
+
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (selector == null)
+                throw new ArgumentNullException(nameof(selector));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var maxElem = enumerator.Current;
+                var maxVal = selector(maxElem);
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = selector(enumerator.Current);
+
+                    if (currVal.CompareTo(maxVal) > 0)
+                    {
+                        maxVal = currVal;
+                        maxElem = enumerator.Current;
+                    }
+                }
+
+                return maxElem;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
+
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector, IComparer<TValue> comparer)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (selector == null)
+                throw new ArgumentNullException(nameof(selector));
+
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var maxElem = enumerator.Current;
+                var maxVal = selector(maxElem);
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = selector(enumerator.Current);
+
+                    if (comparer.Compare(currVal, maxVal) > 0)
+                    {
+                        maxVal = currVal;
+                        maxElem = enumerator.Current;
+                    }
+                }
+
+                return maxElem;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
+
+        public static T Max<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var maxVal = enumerator.Current;
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = enumerator.Current;
+                    if (comparer.Compare(currVal, maxVal) > 0)
+                    {
+                        maxVal = currVal;
+                    }
+                }
+
+                return maxVal;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
     }
 }

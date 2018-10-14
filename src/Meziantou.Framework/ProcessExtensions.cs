@@ -182,27 +182,30 @@ namespace Meziantou.Framework
                 process.BeginErrorReadLine();
             }
 
-            cancellationToken.Register(() =>
+            if (cancellationToken.CanBeCanceled)
             {
-                if (process.HasExited)
-                    return;
+                cancellationToken.Register(() =>
+                {
+                    if (process.HasExited)
+                        return;
 
-                try
-                {
-                    if (IsWindows())
+                    try
                     {
-                        process.KillProcessTree();
+                        if (IsWindows())
+                        {
+                            process.KillProcessTree();
+                        }
+                        else
+                        {
+                            process.Kill();
+                        }
                     }
-                    else
+                    finally
                     {
-                        process.Kill();
+                        process.Dispose();
                     }
-                }
-                finally
-                {
-                    process.Dispose();
-                }
-            });
+                });
+            }
 
             if (psi.RedirectStandardInput)
             {

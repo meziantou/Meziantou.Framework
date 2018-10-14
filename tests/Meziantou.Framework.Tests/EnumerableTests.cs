@@ -84,5 +84,47 @@ namespace Meziantou.Framework.Tests
             // Assert
             Assert.AreEqual(10, max);
         }
+
+        /// <summary>
+        /// ////
+        /// </summary>
+        [TestMethod]
+        public void MinTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var min = list.Min(Comparer<int>.Default);
+
+            // Assert
+            Assert.AreEqual(1, min);
+        }
+
+        [TestMethod]
+        public void MinByTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var min = list.MinBy(i => i * 2);
+
+            // Assert
+            Assert.AreEqual(1, min);
+        }
+
+        [TestMethod]
+        public void MinByTests_02()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 10, 2, 3 };
+
+            // Act
+            var min = list.MinBy(i => i * 2, Comparer<int>.Default);
+
+            // Assert
+            Assert.AreEqual(1, min);
+        }
     }
 }

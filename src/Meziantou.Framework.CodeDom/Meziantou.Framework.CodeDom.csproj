@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>C# code generator</Description>
-    <Version>2.13.6</Version>    
+    <Version>2.13.7</Version>    
   </PropertyGroup>
 
 </Project>

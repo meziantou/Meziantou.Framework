@@ -303,5 +303,113 @@ namespace Meziantou.Framework
                 enumerator.Dispose();
             }
         }
+
+        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (selector == null)
+                throw new ArgumentNullException(nameof(selector));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var minElem = enumerator.Current;
+                var minVal = selector(minElem);
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = selector(enumerator.Current);
+
+                    if (currVal.CompareTo(minVal) < 0)
+                    {
+                        minVal = currVal;
+                        minElem = enumerator.Current;
+                    }
+                }
+
+                return minElem;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
+
+        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector, IComparer<TValue> comparer)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (selector == null)
+                throw new ArgumentNullException(nameof(selector));
+
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var minElem = enumerator.Current;
+                var minVal = selector(minElem);
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = selector(enumerator.Current);
+
+                    if (comparer.Compare(currVal, minVal) < 0)
+                    {
+                        minVal = currVal;
+                        minElem = enumerator.Current;
+                    }
+                }
+
+                return minElem;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
+
+        public static T Min<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)
+        {
+            if (enumerable == null)
+                throw new ArgumentNullException(nameof(enumerable));
+
+            if (comparer == null)
+                throw new ArgumentNullException(nameof(comparer));
+
+            var enumerator = enumerable.GetEnumerator();
+            try
+            {
+                if (!enumerator.MoveNext())
+                    throw new ArgumentException("Collection is empty");
+
+                var minVal = enumerator.Current;
+
+                while (enumerator.MoveNext())
+                {
+                    var currVal = enumerator.Current;
+                    if (comparer.Compare(currVal, minVal) < 0)
+                    {
+                        minVal = currVal;
+                    }
+                }
+
+                return minVal;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
     }
 }

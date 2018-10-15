@@ -4,7 +4,7 @@ using System.IO;
 
 namespace Meziantou.Framework
 {
-    public readonly struct FileLength : IEquatable<FileLength>, IComparable<FileLength>, IFormattable
+    public readonly struct FileLength : IEquatable<FileLength>, IComparable, IComparable<FileLength>, IFormattable
     {
         public FileLength(long length)
         {
@@ -25,6 +25,12 @@ namespace Meziantou.Framework
         public override int GetHashCode() => Length.GetHashCode();
 
         public int CompareTo(FileLength other) => Length.CompareTo(other.Length);
+
+        public int CompareTo(object obj)
+        {
+            var fileLength = (FileLength)obj;
+            return CompareTo(fileLength);
+        }
 
         public override string ToString() => ToString(null, null);
 
@@ -73,6 +79,14 @@ namespace Meziantou.Framework
         public static bool operator ==(FileLength length1, FileLength length2) => length1.Equals(length2);
 
         public static bool operator !=(FileLength length1, FileLength length2) => !(length1 == length2);
+
+        public static bool operator <=(FileLength length1, FileLength length2) => length1.CompareTo(length2) <= 0;
+
+        public static bool operator >=(FileLength length1, FileLength length2) => length1.CompareTo(length2) >= 0;
+
+        public static bool operator <(FileLength length1, FileLength length2) => length1.CompareTo(length2) < 0;
+
+        public static bool operator >(FileLength length1, FileLength length2) => length1.CompareTo(length2) > 0;
 
         public static implicit operator long(FileLength fileLength) => fileLength.Length;
 

@@ -155,13 +155,13 @@ namespace Meziantou.Framework.Tests
         }
 
         [TestMethod]
-        public void RemoveMilliseconds()
+        public void TruncateMilliseconds()
         {
             // Arrange
             var dt = new DateTime(2018, 2, 3, 4, 5, 6, 7, DateTimeKind.Utc);
 
             // Act
-            var actual = DateTimeUtilities.RemoveMilliseconds(dt);
+            var actual = DateTimeUtilities.TruncateMilliseconds(dt);
 
             // Assert
             var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);

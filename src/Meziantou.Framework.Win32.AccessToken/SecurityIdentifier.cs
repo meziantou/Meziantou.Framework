@@ -20,9 +20,9 @@ namespace Meziantou.Framework.Win32
 
             _sid = sid;
 
-            var name = LookupName(sid);
-            Domain = name.domain;
-            Name = name.name;
+            LookupName(sid, out var domain, out var name);
+            Domain = domain;
+            Name = name;
             Sid = ConvertSidToStringSid(sid);
         }
 
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.Win32
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        private static (string domain, string name) LookupName(IntPtr sid)
+        private static void LookupName(IntPtr sid, out string domain, out string name)
         {
             var userNameLen = 256;
             var domainNameLen = 256;
@@ -81,12 +81,18 @@ namespace Meziantou.Framework.Win32
 
             if (NativeMethods.LookupAccountSid(null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
             {
-                return (bufDomainName.ToString(), bufUserName.ToString());
+                domain = bufDomainName.ToString();
+                name = bufUserName.ToString();
+                return;
             }
 
             var error = Marshal.GetLastWin32Error();
             if (error == NativeMethods.ERROR_NONE_MAPPED)
-                return (null, null);
+            {
+                domain = default;
+                name = default;
+                return;
+            }
 
             throw new Win32Exception(error);
         }

@@ -6,4 +6,7 @@
     <Version>2.13.7</Version>    
   </PropertyGroup>
 
+  <ItemGroup Condition="$(TargetFramework) == 'net461'">
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" PrivateAssets="All" />
+  </ItemGroup>
 </Project>

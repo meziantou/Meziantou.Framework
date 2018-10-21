@@ -411,5 +411,29 @@ namespace Meziantou.Framework
                 enumerator.Dispose();
             }
         }
+
+        public static TimeSpan Sum(this IEnumerable<TimeSpan> enumerable)
+        {
+            var result = TimeSpan.Zero;
+            foreach (var item in enumerable)
+            {
+                result += item;
+            }
+
+            return result;
+        }
+
+        public static TimeSpan Average(this IEnumerable<TimeSpan> enumerable)
+        {
+            var result = 0L;
+            var count = 0;
+            foreach (var item in enumerable)
+            {
+                result += item.Ticks;
+                count++;
+            }
+
+            return TimeSpan.FromTicks(result / count);
+        }
     }
 }

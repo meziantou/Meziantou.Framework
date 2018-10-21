@@ -126,5 +126,31 @@ namespace Meziantou.Framework.Tests
             // Assert
             Assert.AreEqual(1, min);
         }
+
+        [TestMethod]
+        public void TimeSpan_Sum()
+        {
+            // Arrange
+            var list = new List<TimeSpan>() { TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(20) };
+
+            // Act
+            var sum = list.Sum();
+
+            // Assert
+            Assert.AreEqual(TimeSpan.FromSeconds(23), sum);
+        }
+
+        [TestMethod]
+        public void TimeSpan_Average()
+        {
+            // Arrange
+            var list = new List<TimeSpan>() { TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(20) };
+
+            // Act
+            var sum = list.Average();
+
+            // Assert
+            Assert.AreEqual(TimeSpan.FromSeconds(9), sum);
+        }
     }
 }

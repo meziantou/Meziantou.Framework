@@ -153,5 +153,19 @@ namespace Meziantou.Framework.Tests
             var expected = new DateTime(2009, 12, 28);
             Assert.AreEqual(expected, actual);
         }
+
+        [TestMethod]
+        public void RemoveMilliseconds()
+        {
+            // Arrange
+            var dt = new DateTime(2018, 2, 3, 4, 5, 6, 7, DateTimeKind.Utc);
+
+            // Act
+            var actual = DateTimeUtilities.RemoveMilliseconds(dt);
+
+            // Assert
+            var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

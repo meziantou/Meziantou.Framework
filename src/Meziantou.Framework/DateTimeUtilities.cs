@@ -86,5 +86,11 @@ namespace Meziantou.Framework
                 return new DateTime(dt.Year, 1, 1);
             }
         }
+
+        [Pure]
+        public static DateTime RemoveMilliseconds(this DateTime dt)
+        {
+            return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Kind);
+        }
     }
 }

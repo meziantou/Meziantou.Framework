@@ -48,7 +48,7 @@ namespace Meziantou.Framework.Threading
                 }
                 else
                 {
-                    var waiter = new TaskCompletionSource<Releaser>();
+                    var waiter = new TaskCompletionSource<Releaser>(TaskCreationOptions.RunContinuationsAsynchronously);
                     _waitingWriters.Enqueue(waiter);
                     return waiter.Task;
                 }

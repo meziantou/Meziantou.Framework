@@ -142,7 +142,7 @@ namespace Meziantou.Framework
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<ProcessResult>(cancellationToken);
 
-            var tcs = new TaskCompletionSource<ProcessResult>();
+            var tcs = new TaskCompletionSource<ProcessResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             var logs = new List<ProcessOutput>();
 
             var process = new Process();

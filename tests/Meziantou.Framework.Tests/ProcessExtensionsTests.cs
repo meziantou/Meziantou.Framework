@@ -82,7 +82,7 @@ namespace Meziantou.Framework.Tests
                     }
 
                     Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-                    Assert.IsTrue(processes.Any(p => p.ProcessName == "PING"), $"PING is not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
+                    Assert.IsTrue(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")), $"PING and CONHOST are not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
                 }
                 finally
                 {

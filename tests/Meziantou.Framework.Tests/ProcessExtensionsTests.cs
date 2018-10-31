@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -103,6 +104,30 @@ namespace Meziantou.Framework.Tests
             var descendants = grandParent.GetDescendantProcesses();
             Assert.IsTrue(descendants.Any(p => p.Id == current.Id), "Descendants must contains current process");
             Assert.IsTrue(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
+        }
+
+        [TestMethod]
+        public void GetAncestorProcessIds()
+        {
+            var current = Process.GetCurrentProcess();
+            var parents = current.GetAncestorProcessIds().ToList();
+
+            CollectionAssert.AllItemsAreUnique(parents);
+            bool hasParent = false;
+            foreach (var parentId in parents)
+            {
+                try
+                {
+                    var parent = Process.GetProcessById(parentId);
+                    hasParent = true;
+                    Assert.IsTrue(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), "Parent process must have the current process as descendant");
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+
+            Assert.IsTrue(hasParent, "The process has no parents");
         }
 
         [TestMethod]

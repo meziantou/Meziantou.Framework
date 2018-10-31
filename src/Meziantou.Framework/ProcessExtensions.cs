@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -75,7 +76,36 @@ namespace Meziantou.Framework
             return children;
         }
 
-        public static Process GetParentProcess(this Process process)
+        public static IEnumerable<int> GetAncestorProcessIds(this Process process)
+        {
+            if (process == null)
+                throw new ArgumentNullException(nameof(process));
+
+            if (!IsWindows())
+                throw new PlatformNotSupportedException("Only supported on Windows");
+
+            var processId = process.Id;
+            var processes = GetProcesses().ToList();
+            var found = true;
+            while (found)
+            {
+                found = false;
+                foreach (var entry in processes)
+                {
+                    if (entry.ProcessId == processId)
+                    {
+                        yield return entry.ParentProcessId;
+                        processId = entry.ParentProcessId;
+                        found = true;
+                    }
+                }
+
+                if (!found)
+                    yield break;
+            }
+        }
+
+        public static int? GetParentProcessId(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
@@ -88,11 +118,20 @@ namespace Meziantou.Framework
             {
                 if (entry.ProcessId == processId)
                 {
-                    return Process.GetProcessById(entry.ParentProcessId);
+                    return entry.ParentProcessId;
                 }
             }
 
             return null;
+        }
+
+        public static Process GetParentProcess(this Process process)
+        {
+            var parentProcessId = GetParentProcessId(process);
+            if (parentProcessId == null)
+                return null;
+
+            return Process.GetProcessById(parentProcessId.Value);
         }
 
         public static IEnumerable<ProcessEntry> GetProcesses()

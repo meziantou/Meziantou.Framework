@@ -67,7 +67,7 @@ namespace Meziantou.Framework.Tests
         }
 
         [TestMethod]
-        public void GetChildProcesses()
+        public void GetDescendantProcesses()
         {
             using (var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10"))
             {
@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Tests
                 {
                     // We need to wait for the process to be started by cmd
                     IReadOnlyCollection<Process> processes;
-                    while ((processes = process.GetChildProcesses()).Count == 0)
+                    while ((processes = process.GetDescendantProcesses()).Count == 0)
                     {
                         Thread.Sleep(100);
                         continue;

@@ -1,5 +1,4 @@
 ﻿using System.Windows;
-using Meziantou.Framework.Win32.Dialogs;
 
 namespace Meziantou.Framework.Win32.DialogsSamples
 {

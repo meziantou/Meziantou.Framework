@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Win32.Natives;
@@ -164,6 +165,169 @@ namespace Meziantou.Framework.Win32
             }
 
             return result;
+        }
+
+        public static NetworkCredential PromptForCredentialsConsole(string target, string userName = null, bool saveCredential = false)
+        {
+            var userId = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
+            var userPassword = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
+            if (!string.IsNullOrEmpty(userName))
+            {
+                userId.Append(userName);
+            }
+
+            var save = saveCredential;
+            var flags = CredentialUIFlags.CompleteUsername | CredentialUIFlags.ExcludeCertificates | CredentialUIFlags.GenericCredentials;
+            if (!saveCredential)
+            {
+                flags |= CredentialUIFlags.DoNotPersist;
+            }
+            else
+            {
+                flags |= CredentialUIFlags.Persist;
+            }
+
+            var returnCode = Credui.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
+
+            var userBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH + 1);
+            var domainBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH + 1);
+
+            returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
+            switch (returnCode)
+            {
+                case CredentialUIReturnCodes.Success:
+                    return new NetworkCredential(userBuilder.ToString(), userPassword.ToString(), domainBuilder.ToString());
+
+                case CredentialUIReturnCodes.InvalidAccountName:
+                    return new NetworkCredential(userId.ToString(), userPassword.ToString());
+
+                case CredentialUIReturnCodes.InsufficientBuffer:
+                    throw new OutOfMemoryException();
+
+                case CredentialUIReturnCodes.InvalidParameter:
+                    throw new ArgumentException();
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public static NetworkCredential PromptForCredentials(string target, IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, bool saveCredential = false)
+        {
+            var credUI = new CredentialUIInfo
+            {
+                hwndParent = owner,
+                pszMessageText = messageText,
+                pszCaptionText = captionText,
+                hbmBanner = IntPtr.Zero
+            };
+
+            var save = saveCredential;
+
+            // Setup the flags and variables
+            credUI.cbSize = Marshal.SizeOf(credUI);
+            int errorcode = 0;
+            uint authPackage = 0;
+
+            var outCredBuffer = IntPtr.Zero;
+            uint outCredSize;
+            var flags = PromptForWindowsCredentialsFlags.GenericCredentials | PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
+            if (saveCredential)
+            {
+                flags |= PromptForWindowsCredentialsFlags.ShowCheckbox;
+            }
+
+            // Prefill username
+            GetInputBuffer(userName, out var inCredBuffer, out var inCredSize);
+
+            // Setup the flags and variables
+            int result = Credui.CredUIPromptForWindowsCredentials(ref credUI,
+                errorcode,
+                ref authPackage,
+                inCredBuffer,
+                inCredSize,
+                out outCredBuffer,
+                out outCredSize,
+                ref save,
+                flags);
+
+            FreeCoTaskMem(inCredBuffer);
+
+            if (result == 0)
+            {
+                return GetCredentialsFromOutputBuffer(outCredBuffer, outCredSize);
+            }
+
+            return null;
+        }
+
+        private static void GetInputBuffer(string user, out IntPtr inCredBuffer, out int inCredSize)
+        {
+            if (!string.IsNullOrEmpty(user))
+            {
+                var usernameBuf = new StringBuilder(user);
+                var passwordBuf = new StringBuilder();
+
+                inCredSize = 1024;
+                inCredBuffer = Marshal.AllocCoTaskMem(inCredSize);
+                if (Credui.CredPackAuthenticationBuffer(0, usernameBuf, passwordBuf, inCredBuffer, ref inCredSize))
+                    return;
+            }
+
+            inCredBuffer = IntPtr.Zero;
+            inCredSize = 0;
+        }
+
+        private static NetworkCredential GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize)
+        {
+            int maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            int maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            int maxPassword = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            var usernameBuf = new StringBuilder(maxUserName);
+            var passwordBuf = new StringBuilder(maxDomain);
+            var domainBuf = new StringBuilder(maxPassword);
+            try
+            {
+                if (Credui.CredUnPackAuthenticationBuffer(0, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, ref maxDomain, passwordBuf, ref maxPassword))
+                {
+                    var user = usernameBuf.ToString();
+                    var password = passwordBuf.ToString();
+                    var domain = domainBuf.ToString();
+                    if (string.IsNullOrWhiteSpace(domain))
+                    {
+                        usernameBuf.Clear();
+                        domainBuf.Clear();
+
+                        var returnCode = Credui.CredUIParseUserName(user, usernameBuf, usernameBuf.Capacity, domainBuf, domainBuf.Capacity);
+                        switch (returnCode)
+                        {
+                            case CredentialUIReturnCodes.Success:
+                                return new NetworkCredential(usernameBuf.ToString(), password, domainBuf.ToString());
+
+                            case CredentialUIReturnCodes.InvalidAccountName:
+                                return new NetworkCredential(user, password);
+
+                            case CredentialUIReturnCodes.InsufficientBuffer:
+                                throw new OutOfMemoryException();
+
+                            case CredentialUIReturnCodes.InvalidParameter:
+                                throw new ArgumentException();
+
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                }
+
+                return null;
+            }
+            finally
+            {
+                //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
+                var zeroBytes = new byte[outCredSize];
+                Marshal.Copy(zeroBytes, 0, outCredBuffer, (int)outCredSize);
+                FreeCoTaskMem(outCredBuffer);
+            }
         }
 
         private static void FreeCoTaskMem(IntPtr ptr)

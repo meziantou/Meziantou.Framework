@@ -14,5 +14,4 @@ namespace Meziantou.Framework.Win32.Natives
         SecurePrompt = 0x1000,
         Pack32Wow = 0x10000000
     }
-
 }

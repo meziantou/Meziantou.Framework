@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 
 namespace Meziantou.Framework.Win32.CredentialManagerConsole
 {
@@ -7,12 +6,25 @@ namespace Meziantou.Framework.Win32.CredentialManagerConsole
     {
         private static void Main(string[] args)
         {
-            NetworkCredential creds;
+            CredentialResult creds;
 
-            creds = CredentialManager.PromptForCredentialsConsole("Test", saveCredential: false);
+            creds = CredentialManager.PromptForCredentialsConsole(
+                target: "test",
+                saveCredential: CredentialSaveOption.Hidden);
             Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
 
-            creds = CredentialManager.PromptForCredentials("Test", captionText: "My Caption", messageText: "My message", userName: "My Username", saveCredential: true);
+            creds = CredentialManager.PromptForCredentialsConsole(
+                target: "https://www.meziantou.net",
+                userName: "Meziantou", // Optional
+                saveCredential: CredentialSaveOption.Unselected);
+            Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
+
+            creds = CredentialManager.PromptForCredentials(
+                target: "https://www.meziantou.net",
+                captionText: "https://www.meziantou.net",
+                messageText: "This will allow SampleApp to authenticate to Meziantou's blog",
+                //userName: "Meziantou",
+                saveCredential: CredentialSaveOption.Unselected);
             Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
         }
     }

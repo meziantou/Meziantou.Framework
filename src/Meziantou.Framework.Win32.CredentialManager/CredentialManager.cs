@@ -1,13 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    public class CredentialResult
+    {
+        public CredentialResult(string userName, string password, string domain, CredentialSaveOption credentialSaved)
+        {
+            UserName = userName;
+            Password = password;
+            Domain = domain;
+            CredentialSaved = credentialSaved;
+        }
+
+        public string UserName { get; }
+        public string Password { get; }
+        public string Domain { get; }
+        public CredentialSaveOption CredentialSaved { get; }
+    }
+
     public static class CredentialManager
     {
         public static Credential ReadCredential(string applicationName)
@@ -167,7 +182,7 @@ namespace Meziantou.Framework.Win32
             return result;
         }
 
-        public static NetworkCredential PromptForCredentialsConsole(string target, string userName = null, bool saveCredential = false)
+        public static CredentialResult PromptForCredentialsConsole(string target, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
         {
             var userId = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
             var userPassword = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
@@ -176,30 +191,44 @@ namespace Meziantou.Framework.Win32
                 userId.Append(userName);
             }
 
-            var save = saveCredential;
+            var save = saveCredential == CredentialSaveOption.Selected ? true : false;
             var flags = CredentialUIFlags.CompleteUsername | CredentialUIFlags.ExcludeCertificates | CredentialUIFlags.GenericCredentials;
-            if (!saveCredential)
+            if (saveCredential == CredentialSaveOption.Unselected)
             {
-                flags |= CredentialUIFlags.DoNotPersist;
+                flags |= CredentialUIFlags.ShowSaveCheckBox | CredentialUIFlags.DoNotPersist;
+            }
+            else if (saveCredential == CredentialSaveOption.Selected)
+            {
+                flags |= CredentialUIFlags.ShowSaveCheckBox | CredentialUIFlags.Persist;
             }
             else
             {
-                flags |= CredentialUIFlags.Persist;
+                flags |= CredentialUIFlags.DoNotPersist;
             }
 
             var returnCode = Credui.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
 
-            var userBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH + 1);
-            var domainBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH + 1);
+            var userBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
+            var domainBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
 
-            returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, int.MaxValue, domainBuilder, int.MaxValue);
+            var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
+
+            returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
             switch (returnCode)
             {
                 case CredentialUIReturnCodes.Success:
-                    return new NetworkCredential(userBuilder.ToString(), userPassword.ToString(), domainBuilder.ToString());
+                    return new CredentialResult(
+                        userBuilder.ToString(),
+                        userPassword.ToString(),
+                        domainBuilder.ToString(),
+                        credentialSaved);
 
                 case CredentialUIReturnCodes.InvalidAccountName:
-                    return new NetworkCredential(userId.ToString(), userPassword.ToString());
+                    return new CredentialResult(
+                        userId.ToString(),
+                        userPassword.ToString(),
+                        null,
+                        credentialSaved);
 
                 case CredentialUIReturnCodes.InsufficientBuffer:
                     throw new OutOfMemoryException();
@@ -212,7 +241,7 @@ namespace Meziantou.Framework.Win32
             }
         }
 
-        public static NetworkCredential PromptForCredentials(string target, IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, bool saveCredential = false)
+        public static CredentialResult PromptForCredentials(string target, IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
         {
             var credUI = new CredentialUIInfo
             {
@@ -222,7 +251,7 @@ namespace Meziantou.Framework.Win32
                 hbmBanner = IntPtr.Zero
             };
 
-            var save = saveCredential;
+            var save = saveCredential == CredentialSaveOption.Selected ? true : false;
 
             // Setup the flags and variables
             credUI.cbSize = Marshal.SizeOf(credUI);
@@ -232,7 +261,7 @@ namespace Meziantou.Framework.Win32
             var outCredBuffer = IntPtr.Zero;
             uint outCredSize;
             var flags = PromptForWindowsCredentialsFlags.GenericCredentials | PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
-            if (saveCredential)
+            if (saveCredential != CredentialSaveOption.Hidden)
             {
                 flags |= PromptForWindowsCredentialsFlags.ShowCheckbox;
             }
@@ -253,9 +282,10 @@ namespace Meziantou.Framework.Win32
 
             FreeCoTaskMem(inCredBuffer);
 
-            if (result == 0)
+            if (result == 0 && GetCredentialsFromOutputBuffer(outCredBuffer, outCredSize, out userName, out var password, out var domain))
             {
-                return GetCredentialsFromOutputBuffer(outCredBuffer, outCredSize);
+                var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
+                return new CredentialResult(userName, password, domain, credentialSaved);
             }
 
             return null;
@@ -278,7 +308,7 @@ namespace Meziantou.Framework.Win32
             inCredSize = 0;
         }
 
-        private static NetworkCredential GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize)
+        private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, out string userName, out string password, out string domain)
         {
             int maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
             int maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;
@@ -290,22 +320,24 @@ namespace Meziantou.Framework.Win32
             {
                 if (Credui.CredUnPackAuthenticationBuffer(0, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, ref maxDomain, passwordBuf, ref maxPassword))
                 {
-                    var user = usernameBuf.ToString();
-                    var password = passwordBuf.ToString();
-                    var domain = domainBuf.ToString();
+                    userName = usernameBuf.ToString();
+                    password = passwordBuf.ToString();
+                    domain = domainBuf.ToString();
                     if (string.IsNullOrWhiteSpace(domain))
                     {
                         usernameBuf.Clear();
                         domainBuf.Clear();
 
-                        var returnCode = Credui.CredUIParseUserName(user, usernameBuf, usernameBuf.Capacity, domainBuf, domainBuf.Capacity);
+                        var returnCode = Credui.CredUIParseUserName(userName, usernameBuf, usernameBuf.Capacity, domainBuf, domainBuf.Capacity);
                         switch (returnCode)
                         {
                             case CredentialUIReturnCodes.Success:
-                                return new NetworkCredential(usernameBuf.ToString(), password, domainBuf.ToString());
+                                userName = usernameBuf.ToString();
+                                domain = domainBuf.ToString();
+                                break;
 
                             case CredentialUIReturnCodes.InvalidAccountName:
-                                return new NetworkCredential(user, password);
+                                return true;
 
                             case CredentialUIReturnCodes.InsufficientBuffer:
                                 throw new OutOfMemoryException();
@@ -319,7 +351,10 @@ namespace Meziantou.Framework.Win32
                     }
                 }
 
-                return null;
+                userName = null;
+                password = null;
+                domain = null;
+                return false;
             }
             finally
             {

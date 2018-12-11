@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Win32
                 };
 
                 var handle = ChangeJournal.ChangeJournalHandle;
-                var entryData = Win32DeviceControl.ControlWithInput(handle.Handle, Win32ControlCode.ReadUsnJournal, ref readData, BufferSize);
+                var entryData = Win32DeviceControl.ControlWithInput(handle, Win32ControlCode.ReadUsnJournal, ref readData, BufferSize);
                 if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
                 {
                     var bufferHandle = GCHandle.Alloc(entryData, GCHandleType.Pinned);

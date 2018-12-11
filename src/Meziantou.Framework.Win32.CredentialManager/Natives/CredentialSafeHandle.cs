@@ -1,14 +1,15 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Win32.Natives;
+using Microsoft.Win32.SafeHandles;
 
-namespace Meziantou.Framework.Win32
+namespace Meziantou.Framework.Win32.Natives
 {
-    internal sealed class CriticalCredentialHandle : CriticalHandleZeroOrMinusOneIsInvalid
+    internal sealed class CredentialSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        public CriticalCredentialHandle(IntPtr preexistingHandle)
+        public CredentialSafeHandle()
+            : base(ownsHandle: true)
         {
-            SetHandle(preexistingHandle);
         }
 
         public CREDENTIAL GetCredential()
@@ -23,14 +24,7 @@ namespace Meziantou.Framework.Win32
 
         protected override bool ReleaseHandle()
         {
-            if (!IsInvalid)
-            {
-                Advapi32.CredFree(handle);
-                SetHandleAsInvalid();
-                return true;
-            }
-
-            return false;
+            return Advapi32.CredFree(handle);
         }
     }
 }

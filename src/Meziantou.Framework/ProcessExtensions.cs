@@ -136,7 +136,7 @@ namespace Meziantou.Framework
 
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
-            using (var snapShotHandle = new SnapshotSafeHandle(CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0), ownHandle: true))
+            using (var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0))
             {
                 var entry = new ProcessEntry32
                 {
@@ -210,7 +210,7 @@ namespace Meziantou.Framework
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682489.aspx
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
+        private static extern SnapshotSafeHandle CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
         private const int MAX_PATH = 260;
 
@@ -247,10 +247,9 @@ namespace Meziantou.Framework
 
         private class SnapshotSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            public SnapshotSafeHandle(IntPtr handle, bool ownHandle)
-                : base(ownHandle)
+            public SnapshotSafeHandle()
+                : base(ownsHandle: true)
             {
-                SetHandle(handle);
             }
 
             protected override bool ReleaseHandle()

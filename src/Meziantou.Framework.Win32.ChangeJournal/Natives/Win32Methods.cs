@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport("Kernel32.dll", SetLastError = true)]
-        internal static extern IntPtr CreateFile(
+        internal static extern ChangeJournalSafeHandle CreateFile(
             string fileName,
             [MarshalAs(UnmanagedType.U4)] FileAccess fileAccess,
             [MarshalAs(UnmanagedType.U4)] FileShare fileShare,
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32.Natives
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern bool DeviceIoControl(
-            IntPtr hDevice,
+            ChangeJournalSafeHandle hDevice,
             uint dwIoControlCode,
             IntPtr lpInBuffer,
             uint nInBufferSize,

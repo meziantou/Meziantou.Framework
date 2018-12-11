@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Win32
                 throw new ArgumentNullException(nameof(driveInfo));
 
             var volume = VolumeHelper.GetValidVolumePath(driveInfo);
-            var handle = new ChangeJournalSafeHandle(Win32Methods.CreateFile(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero));
+            var handle = Win32Methods.CreateFile(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
             if (handle.IsInvalid)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -58,7 +58,7 @@ namespace Meziantou.Framework.Win32
             try
             {
                 var journalData = new USN_JOURNAL_DATA();
-                Win32DeviceControl.ControlWithOutput(ChangeJournalHandle.Handle, Win32ControlCode.QueryUsnJournal, ref journalData);
+                Win32DeviceControl.ControlWithOutput(ChangeJournalHandle, Win32ControlCode.QueryUsnJournal, ref journalData);
 
                 return new JournalData(journalData);
             }
@@ -81,7 +81,7 @@ namespace Meziantou.Framework.Win32
                 DeleteFlags = DeletionFlag.WaitUntilDeleteCompletes
             };
 
-            Win32DeviceControl.ControlWithInput(ChangeJournalHandle.Handle, Win32ControlCode.CreateUsnJournal, ref deletionData, 0);
+            Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, 0);
             ReadJournalData();
         }
 
@@ -93,7 +93,7 @@ namespace Meziantou.Framework.Win32
                 MaximumSize = maximumSize
             };
 
-            Win32DeviceControl.ControlWithInput(ChangeJournalHandle.Handle, Win32ControlCode.CreateUsnJournal, ref creationData, 0);
+            Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, 0);
             ReadJournalData();
         }
     }

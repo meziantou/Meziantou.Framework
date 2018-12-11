@@ -27,12 +27,12 @@ namespace Meziantou.Framework.Win32
     {
         public static Credential ReadCredential(string applicationName)
         {
-            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out var nCredPtr);
-            if (read)
+            var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out var handle);
+            using (handle)
             {
-                using (var critCred = new CriticalCredentialHandle(nCredPtr))
+                if (read)
                 {
-                    var cred = critCred.GetCredential();
+                    var cred = handle.GetCredential();
                     return ReadCredential(cred);
                 }
             }
@@ -158,13 +158,13 @@ namespace Meziantou.Framework.Win32
         {
             var result = new List<Credential>();
             var ret = Advapi32.CredEnumerate(filter, 0, out var count, out var pCredentials);
-            try
+            using (pCredentials)
             {
-                if (ret)
+                if (ret && !pCredentials.IsInvalid)
                 {
                     for (var n = 0; n < count; n++)
                     {
-                        var credential = Marshal.ReadIntPtr(pCredentials, n * Marshal.SizeOf<IntPtr>());
+                        var credential = Marshal.ReadIntPtr(pCredentials.DangerousGetHandle(), n * Marshal.SizeOf<IntPtr>());
                         result.Add(ReadCredential(Marshal.PtrToStructure<CREDENTIAL>(credential)));
                     }
                 }
@@ -173,10 +173,6 @@ namespace Meziantou.Framework.Win32
                     var lastError = Marshal.GetLastWin32Error();
                     throw new Win32Exception(lastError);
                 }
-            }
-            finally
-            {
-                Advapi32.CredFree(pCredentials);
             }
 
             return result;

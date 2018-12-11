@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Win32.Natives
 {
     internal static class Win32DeviceControl
     {
-        internal static byte[] ControlWithInput<TStructure>(IntPtr handle, Win32ControlCode code, ref TStructure structure, int bufferlen) where TStructure : struct
+        internal static byte[] ControlWithInput<TStructure>(ChangeJournalSafeHandle handle, Win32ControlCode code, ref TStructure structure, int bufferlen) where TStructure : struct
         {
             uint datalen;
             bool controlResult;
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.Win32.Natives
             return buffer;
         }
 
-        internal static void ControlWithOutput<TStructure>(IntPtr handle, Win32ControlCode code, ref TStructure structure) where TStructure : struct
+        internal static void ControlWithOutput<TStructure>(ChangeJournalSafeHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : struct
         {
             bool controlResult;
             GCHandle structureHandle;

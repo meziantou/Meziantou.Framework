@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Win32.AmsiTests
@@ -7,8 +8,16 @@ namespace Meziantou.Framework.Win32.AmsiTests
     [DoNotParallelize]
     public class AmsiSessionTests
     {
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext _)
+        {
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BUILD_DEFINITIONNAME")))
+            {
+                Assert.Inconclusive("The tests does not work on Azure pipeline");
+            }
+        }
+
         [TestMethod]
-        //[Ignore("The test doesn't work on CI")]
         public void AmsiShouldDetectMalware_Buffer()
         {
             using (var session = AmsiSession.Create("MyApplication"))
@@ -20,7 +29,6 @@ namespace Meziantou.Framework.Win32.AmsiTests
         }
 
         [TestMethod]
-        //[Ignore("The test doesn't work on CI")]
         public void AmsiShouldDetectMalware_String()
         {
             using (var session = AmsiSession.Create("MyApplication"))

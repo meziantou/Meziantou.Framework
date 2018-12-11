@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
     public class AmsiSessionTests
     {
         [TestMethod]
+        //[Ignore("The test doesn't work on CI")]
         public void AmsiShouldDetectMalware()
         {
             using (var session = AmsiSession.Create("MyApplication"))

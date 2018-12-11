@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Win32
         {
             int result = Amsi.AmsiInitialize(name, out var context);
             if (result != 0)
-                throw new Win32Exception(result, "Cannot initialize AMSI");
+                throw new Win32Exception(result);
 
             result = Amsi.AmsiOpenSession(context, out var session);
             session.Context = context;
@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Win32
             {
                 try
                 {
-                    throw new Win32Exception(result, "Cannot initialize AMSI session");
+                    throw new Win32Exception(result);
                 }
                 finally
                 {
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Win32
         {
             var returnValue = Amsi.AmsiScanString(_context, payload, contentName, _session, out var result);
             if (returnValue != 0)
-                throw new Win32Exception(returnValue, "Cannot scan the string");
+                throw new Win32Exception(returnValue);
 
             return Amsi.AmsiResultIsMalware(result);
         }
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Win32
         {
             var returnValue = Amsi.AmsiScanBuffer(_context, payload, (uint)payload.Length, contentName, _session, out var result);
             if (returnValue != 0)
-                throw new Win32Exception(returnValue, "Cannot scan the buffer");
+                throw new Win32Exception(returnValue);
 
             return Amsi.AmsiResultIsMalware(result);
         }

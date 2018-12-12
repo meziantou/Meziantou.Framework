@@ -8,34 +8,10 @@ namespace Meziantou.Framework.Win32
         private readonly AmsiContextSafeHandle _context;
         private readonly AmsiSessionSafeHandle _session;
 
-        private AmsiSession(AmsiContextSafeHandle context, AmsiSessionSafeHandle session)
+        internal AmsiSession(AmsiContextSafeHandle context, AmsiSessionSafeHandle session)
         {
             _context = context;
             _session = session;
-        }
-
-        public static AmsiSession Create(string name)
-        {
-            int result = Amsi.AmsiInitialize(name, out var context);
-            if (result != 0)
-                throw new Win32Exception(result);
-
-            result = Amsi.AmsiOpenSession(context, out var session);
-            session.Context = context;
-            if (result != 0)
-            {
-                try
-                {
-                    throw new Win32Exception(result);
-                }
-                finally
-                {
-                    session.Dispose();
-                    context.Dispose();
-                }
-            }
-
-            return new AmsiSession(context, session);
         }
 
         public bool IsMalware(string payload, string contentName)

@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
 {
     [TestClass]
     [DoNotParallelize]
-    public class AmsiSessionTests
+    public class AmsiApplicationTests
     {
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
@@ -20,7 +20,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
         [TestMethod]
         public void AmsiShouldDetectMalware_Buffer()
         {
-            using (var session = AmsiSession.Create("MyApplication"))
+            using (var application = AmsiApplication.Create("MyApplication"))
+            using (var session = application.CreateSession())
             {
                 // https://en.wikipedia.org/wiki/EICAR_test_file
                 Assert.IsTrue(session.IsMalware(Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"), "EICAR"));
@@ -31,7 +32,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
         [TestMethod]
         public void AmsiShouldDetectMalware_String()
         {
-            using (var session = AmsiSession.Create("MyApplication"))
+            using (var application = AmsiApplication.Create("MyApplication"))
+            using (var session = application.CreateSession())
             {
                 // https://en.wikipedia.org/wiki/EICAR_test_file
                 Assert.IsTrue(session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR"));

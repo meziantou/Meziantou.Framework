@@ -165,7 +165,7 @@ namespace Meziantou.Framework.Win32
                         }
                     }
 
-                    if (ptype.PerceivedType == PerceivedType.Unknown)
+                    if (type == PerceivedType.Unknown)
                     {
                         var text = IntPtr.Zero;
                         type = PerceivedType.Unknown;
@@ -178,8 +178,8 @@ namespace Meziantou.Framework.Win32
                         }
                     }
 
-
-                    s_perceivedTypes.Add(extension, new Perceived(extension, type, source));
+                    ptype = new Perceived(extension, type, source);
+                    s_perceivedTypes.Add(extension, ptype);
                 }
 
                 return ptype;

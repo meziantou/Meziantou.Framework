@@ -4,6 +4,7 @@
     <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <Description>.NET wrapper for the Antimalware Scan Interface (AMSI)</Description>
     <Version>1.0.3</Version>
+    <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
   </PropertyGroup>
 
 </Project>

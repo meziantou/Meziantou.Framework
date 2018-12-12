@@ -17,16 +17,6 @@ namespace Meziantou.Framework.Scheduling.Tests
             AssertOccurrences(occurrences, false, expectedOccurrences.Length, expectedOccurrences);
         }
 
-        private static void AssertOccurrences(IEnumerable<DateTime> occurrences, int maxOccurences, params DateTime[] expectedOccurrences)
-        {
-            AssertOccurrences(occurrences, false, maxOccurences, expectedOccurrences);
-        }
-
-        private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, params DateTime[] expectedOccurrences)
-        {
-            AssertOccurrences(occurrences, checkEnd, null, expectedOccurrences);
-        }
-
         private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, int? maxOccurences, params DateTime[] expectedOccurrences)
         {
             var occurrenceCount = 0;

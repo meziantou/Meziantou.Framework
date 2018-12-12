@@ -43,7 +43,9 @@ namespace Meziantou.Framework.Tests
             Assert.AreEqual(expectedValueFr, resultFr);
         }
 
+#pragma warning disable IDE0052 // Remove unread private members
         private static IEnumerable<object[]> RelativeDate_ToString_Data
+#pragma warning restore IDE0052 // Remove unread private members
         {
             get
             {

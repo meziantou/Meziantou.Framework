@@ -85,11 +85,11 @@ namespace Meziantou.Framework.Tests
             Assert.ThrowsException<ArgumentException>(() => rdo.CreateInstance("tests"));
         }
 
+#pragma warning disable IDE0051 // Remove unused private members
+#pragma warning disable IDE0032 // Use auto property
         private class Test
         {
-#pragma warning disable IDE0032 // Use auto property
             private int _privateField = 42;
-#pragma warning restore IDE0032 // Use auto property
 
             public int PrivateField { get => _privateField; set => _privateField = value; }
 

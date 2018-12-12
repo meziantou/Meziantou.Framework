@@ -251,11 +251,10 @@ namespace Meziantou.Framework.Win32
 
             // Setup the flags and variables
             credUI.cbSize = Marshal.SizeOf(credUI);
-            int errorcode = 0;
+            var errorcode = 0;
             uint authPackage = 0;
 
             var outCredBuffer = IntPtr.Zero;
-            uint outCredSize;
             var flags = PromptForWindowsCredentialsFlags.GenericCredentials | PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
             if (saveCredential != CredentialSaveOption.Hidden)
             {
@@ -266,13 +265,13 @@ namespace Meziantou.Framework.Win32
             GetInputBuffer(userName, out var inCredBuffer, out var inCredSize);
 
             // Setup the flags and variables
-            int result = Credui.CredUIPromptForWindowsCredentials(ref credUI,
+            var result = Credui.CredUIPromptForWindowsCredentials(ref credUI,
                 errorcode,
                 ref authPackage,
                 inCredBuffer,
                 inCredSize,
                 out outCredBuffer,
-                out outCredSize,
+                out var outCredSize,
                 ref save,
                 flags);
 
@@ -306,9 +305,9 @@ namespace Meziantou.Framework.Win32
 
         private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, out string userName, out string password, out string domain)
         {
-            int maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
-            int maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;
-            int maxPassword = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            var maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            var maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;
+            var maxPassword = Credui.CREDUI_MAX_USERNAME_LENGTH;
             var usernameBuf = new StringBuilder(maxUserName);
             var passwordBuf = new StringBuilder(maxDomain);
             var domainBuf = new StringBuilder(maxPassword);

@@ -5,19 +5,19 @@ namespace Meziantou.Framework.Html
     public static class HtmlMicroDataExtensions
     {
         // https://developers.google.com/structured-data/schema-org?hl=en&rd=1
-        private static readonly Func<string, string> SchemasOrgParser = (type) =>
-        {
-            if (type != null &&
-                (type.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                type.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
-            {
-                const string tok = ".org/"; // works for schema.org, auto.schema.org, data-vocabulary.org etc.
-                var pos = type.LastIndexOf(tok);
-                if (pos >= 0)
-                    return type.Substring(pos + tok.Length);
-            }
-            return type;
-        };
+        //private static readonly Func<string, string> s_schemasOrgParser = (type) =>
+        //{
+        //    if (type != null &&
+        //        (type.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+        //        type.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+        //    {
+        //        const string tok = ".org/"; // works for schema.org, auto.schema.org, data-vocabulary.org etc.
+        //        var pos = type.LastIndexOf(tok);
+        //        if (pos >= 0)
+        //            return type.Substring(pos + tok.Length);
+        //    }
+        //    return type;
+        //};
 
         public static string GetItemScopePath(this HtmlNode node, string separator)
         {

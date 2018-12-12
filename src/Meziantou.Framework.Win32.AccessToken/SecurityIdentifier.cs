@@ -11,14 +11,10 @@ namespace Meziantou.Framework.Win32
         private const byte MaxSubAuthorities = 15;
         private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
 
-        private readonly IntPtr _sid;
-
         internal SecurityIdentifier(IntPtr sid)
         {
             if (sid == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(sid));
-
-            _sid = sid;
 
             LookupName(sid, out var domain, out var name);
             Domain = domain;

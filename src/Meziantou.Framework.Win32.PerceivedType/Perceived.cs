@@ -15,8 +15,11 @@ namespace Meziantou.Framework.Win32
 
         private static object SyncObject { get; } = new object();
 
-        private Perceived()
+        private Perceived(string extension, PerceivedType perceivedType, PerceivedTypeSource perceivedTypeSource)
         {
+            Extension = extension;
+            PerceivedType = perceivedType;
+            PerceivedTypeSource = perceivedTypeSource;
         }
 
         public static void AddDefaultPerceivedTypes()
@@ -81,14 +84,12 @@ namespace Meziantou.Framework.Win32
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
 
-            var perceived = new Perceived();
-            perceived.Extension = extension;
-            perceived.PerceivedType = type;
-            perceived.PerceivedTypeSource = PerceivedTypeSource.HardCoded;
+            var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
             lock (SyncObject)
             {
                 s_perceivedTypes[perceived.Extension] = perceived;
             }
+
             return perceived;
         }
 
@@ -96,19 +97,19 @@ namespace Meziantou.Framework.Win32
         /// Gets the file's xtension.
         /// </summary>
         /// <value>The file's extension.</value>
-        public string Extension { get; set; }
+        public string Extension { get; }
 
         /// <summary>
         /// Indicates the normalized perceived type.
         /// </summary>
         /// <value>The normalized perceived type.</value>
-        public PerceivedType PerceivedType { get; private set; }
+        public PerceivedType PerceivedType { get; }
 
         /// <summary>
         /// Indicates the source of the perceived type information.
         /// </summary>
         /// <value>the source of the perceived type information.</value>
-        public PerceivedTypeSource PerceivedTypeSource { get; set; }
+        public PerceivedTypeSource PerceivedTypeSource { get; }
 
         /// <summary>
         /// Gets a file's perceived type based on its extension.
@@ -134,11 +135,10 @@ namespace Meziantou.Framework.Win32
 
             lock (SyncObject)
             {
+                var type = PerceivedType.Unknown;
+                var source = PerceivedTypeSource.Undefined;
                 if (!s_perceivedTypes.TryGetValue(extension, out ptype))
                 {
-                    ptype = new Perceived();
-                    ptype.Extension = extension;
-
                     using (var key = Registry.ClassesRoot.OpenSubKey(extension, writable: false))
                     {
                         if (key != null)
@@ -146,8 +146,8 @@ namespace Meziantou.Framework.Win32
                             var ct = key.GetStringValue("PerceivedType");
                             if (ct != null)
                             {
-                                ptype.PerceivedType = Extensions.GetEnumValue(ct, PerceivedType.Custom);
-                                ptype.PerceivedTypeSource = PerceivedTypeSource.SoftCoded;
+                                type = Extensions.GetEnumValue(ct, PerceivedType.Custom);
+                                source = PerceivedTypeSource.SoftCoded;
                             }
                             else
                             {
@@ -157,8 +157,8 @@ namespace Meziantou.Framework.Win32
                                     var pos = ct.IndexOf('/');
                                     if (pos > 0)
                                     {
-                                        ptype.PerceivedType = Extensions.GetEnumValue(ct.Substring(0, pos), PerceivedType.Custom);
-                                        ptype.PerceivedTypeSource = PerceivedTypeSource.Mime;
+                                        type = Extensions.GetEnumValue(ct.Substring(0, pos), PerceivedType.Custom);
+                                        source = PerceivedTypeSource.Mime;
                                     }
                                 }
                             }
@@ -168,22 +168,18 @@ namespace Meziantou.Framework.Win32
                     if (ptype.PerceivedType == PerceivedType.Unknown)
                     {
                         var text = IntPtr.Zero;
-                        var type = PerceivedType.Unknown;
-                        var source = PerceivedTypeSource.Undefined;
+                        type = PerceivedType.Unknown;
+                        source = PerceivedTypeSource.Undefined;
                         var hr = AssocGetPerceivedType(extension, ref type, ref source, ref text);
                         if (hr != 0)
                         {
-                            ptype.PerceivedType = PerceivedType.Unspecified;
-                            ptype.PerceivedTypeSource = PerceivedTypeSource.Undefined;
-                        }
-                        else
-                        {
-                            ptype.PerceivedType = type;
-                            ptype.PerceivedTypeSource = source;
+                            type = PerceivedType.Unspecified;
+                            source = PerceivedTypeSource.Undefined;
                         }
                     }
 
-                    s_perceivedTypes.Add(ptype.Extension, ptype);
+
+                    s_perceivedTypes.Add(extension, new Perceived(extension, type, source));
                 }
 
                 return ptype;

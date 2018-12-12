@@ -7,25 +7,13 @@ namespace Meziantou.Framework
     {
         private DateTime DateTime { get; }
 
-        public RelativeDate(DateTime dateTime)
-        {
-            DateTime = dateTime;
-        }
+        public RelativeDate(DateTime dateTime) => DateTime = dateTime;
 
-        public static RelativeDate Get(DateTime dateTime)
-        {
-            return new RelativeDate(dateTime);
-        }
+        public static RelativeDate Get(DateTime dateTime) => new RelativeDate(dateTime);
 
-        public static RelativeDate Get(DateTimeOffset dateTime)
-        {
-            return new RelativeDate(dateTime.UtcDateTime);
-        }
+        public static RelativeDate Get(DateTimeOffset dateTime) => new RelativeDate(dateTime.UtcDateTime);
 
-        public override string ToString()
-        {
-            return ToString(null, null);
-        }
+        public override string ToString() => ToString(null, null);
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
@@ -79,15 +67,9 @@ namespace Meziantou.Framework
             }
         }
 
-        private string GetString(string name, CultureInfo culture)
-        {
-            return LocalizationProvider.Current.GetString(name, culture);
-        }
+        private string GetString(string name, CultureInfo culture) => LocalizationProvider.Current.GetString(name, culture);
 
-        private string GetString(string name, CultureInfo culture, int value)
-        {
-            return string.Format(LocalizationProvider.Current.GetString(name, culture), value);
-        }
+        private string GetString(string name, CultureInfo culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
 
         int IComparable.CompareTo(object obj)
         {
@@ -97,34 +79,16 @@ namespace Meziantou.Framework
             return CompareTo(default);
         }
 
-        public int CompareTo(RelativeDate other)
-        {
-            return DateTime.CompareTo(other.DateTime);
-        }
+        public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
-        public override bool Equals(object obj)
-        {
-            return obj is RelativeDate && Equals((RelativeDate)obj);
-        }
+        public override bool Equals(object obj) => obj is RelativeDate && Equals((RelativeDate)obj);
 
-        public bool Equals(RelativeDate other)
-        {
-            return DateTime == other.DateTime;
-        }
+        public bool Equals(RelativeDate other) => DateTime == other.DateTime;
 
-        public override int GetHashCode()
-        {
-            return -10323184 + DateTime.GetHashCode();
-        }
+        public override int GetHashCode() => -10323184 + DateTime.GetHashCode();
 
-        public static bool operator ==(RelativeDate date1, RelativeDate date2)
-        {
-            return date1.Equals(date2);
-        }
+        public static bool operator ==(RelativeDate date1, RelativeDate date2) => date1.Equals(date2);
 
-        public static bool operator !=(RelativeDate date1, RelativeDate date2)
-        {
-            return !(date1 == date2);
-        }
+        public static bool operator !=(RelativeDate date1, RelativeDate date2) => !(date1 == date2);
     }
 }

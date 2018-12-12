@@ -12,7 +12,7 @@ namespace Meziantou.Framework
         private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static readonly ConcurrentDictionary<Type, TypeCache> _cache = new ConcurrentDictionary<Type, TypeCache>();
+        private static readonly ConcurrentDictionary<Type, TypeCache> s_cache = new ConcurrentDictionary<Type, TypeCache>();
 
         private readonly object _originalObject;
         private readonly TypeCache _typeCache;
@@ -22,7 +22,7 @@ namespace Meziantou.Framework
             _originalObject = obj ?? throw new ArgumentNullException(nameof(obj));
 
             var type = obj.GetType();
-            _typeCache = _cache.GetOrAdd(type, t => TypeCache.Create(t));
+            _typeCache = s_cache.GetOrAdd(type, t => TypeCache.Create(t));
         }
 
         public ReflectionDynamicObject(Type type)
@@ -30,7 +30,7 @@ namespace Meziantou.Framework
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            _typeCache = _cache.GetOrAdd(type, t => TypeCache.Create(t));
+            _typeCache = s_cache.GetOrAdd(type, t => TypeCache.Create(t));
         }
 
         public ReflectionDynamicObject CreateInstance(params object[] parameters)

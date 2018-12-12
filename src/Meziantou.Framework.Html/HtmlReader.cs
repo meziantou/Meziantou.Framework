@@ -91,14 +91,17 @@ namespace Meziantou.Framework.Html
 
         private bool OnParsing(ref char c, ref char prev, ref char peek, out bool cont)
         {
-            var e = new HtmlReaderParseEventArgs(Value, _rawValue);
-            e.Eof = _eof;
-            e.CurrentElement = _currentElement;
-            e.CurrentCharacter = c;
-            e.PreviousCharacter = prev;
-            e.PeekCharacter = peek;
-            e.EatNextCharacters = _eatNext;
-            e.State = ParserState;
+            var e = new HtmlReaderParseEventArgs(Value, _rawValue)
+            {
+                Eof = _eof,
+                CurrentElement = _currentElement,
+                CurrentCharacter = c,
+                PreviousCharacter = prev,
+                PeekCharacter = peek,
+                EatNextCharacters = _eatNext,
+                State = ParserState
+            };
+
             OnParsing(this, e);
             cont = e.Continue;
             _eof = e.Eof;

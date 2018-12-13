@@ -237,7 +237,7 @@ namespace Meziantou.Framework.Win32
             }
         }
 
-        public static CredentialResult PromptForCredentials(string target, IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+        public static CredentialResult PromptForCredentials(IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
         {
             var credUI = new CredentialUIInfo
             {

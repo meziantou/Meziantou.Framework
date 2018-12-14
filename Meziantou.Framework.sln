@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28407.52
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{70A3E965-3866-4D23-9626-8D70E0E8729C}"
 EndProject
@@ -82,12 +82,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E2871031-4703-4F07-93EC-AB1463BA2499}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		azure-pipelines.yml = azure-pipelines.yml
 		Directory.Build.props = Directory.Build.props
+		global.json = global.json
+		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.Amsi", "src\Meziantou.Framework.Win32.Amsi\Meziantou.Framework.Win32.Amsi.csproj", "{69E92501-AE8F-4179-95D7-119FF6990886}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.Amsi", "src\Meziantou.Framework.Win32.Amsi\Meziantou.Framework.Win32.Amsi.csproj", "{69E92501-AE8F-4179-95D7-119FF6990886}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AmsiTests", "tests\Meziantou.Framework.Win32.AmsiTests\Meziantou.Framework.Win32.AmsiTests.csproj", "{6270C5D8-FCE1-46EE-9E3F-FE1BDF874227}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AmsiTests", "tests\Meziantou.Framework.Win32.AmsiTests\Meziantou.Framework.Win32.AmsiTests.csproj", "{6270C5D8-FCE1-46EE-9E3F-FE1BDF874227}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -244,7 +244,7 @@ namespace Meziantou.Framework.Win32
                 hwndParent = owner,
                 pszMessageText = messageText,
                 pszCaptionText = captionText,
-                hbmBanner = IntPtr.Zero
+                hbmBanner = IntPtr.Zero,
             };
 
             var save = saveCredential == CredentialSaveOption.Selected ? true : false;

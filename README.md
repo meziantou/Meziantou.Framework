@@ -26,7 +26,22 @@
 | Meziantou.Framework.Win32.PerceivedType | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.PerceivedType.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.PerceivedType/) |
 | Meziantou.Framework.Win32.RestartManager | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RestartManager.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RestartManager/) |
 
-# Meziantou.Framework
+# How to contribute
+
+If you want to contribute to this repo, please [read the contributing guide](CONTRIBUTING.md) first.
+
+How to setup your development environment:
+
+1. Install the latest version of Visual Studio
+2. Install the latest version of .NET SDK
+3. Use the solution `Meziantou.Framework.sln`
+4. You can run unit tests using the Test explorer in Visual Studio or the command line `dotnet test`
+
+You can also use Visual Studio Code but you won't be able to run the WPF samples.
+
+# Documentation
+
+## Meziantou.Framework
 
 Lots of extensions methods and utilities
 
@@ -51,7 +66,7 @@ Slug.Create("My super blog post") // my-super-blog-post
 // And many more extensions/utilities
 ````
 
-# Meziantou.Framework.TypeConverter
+## Meziantou.Framework.TypeConverter
 
 A universal converter that supports lots of conversion.
 
@@ -60,7 +75,7 @@ ConvertUtilities.ChangeType("42", defaultValue: 0)
 ConvertUtilities.ChangeType("Value1, 2", defaultValue: MyEnum.Unknown)
 ````
 
-# Meziantou.Framework.Csv
+## Meziantou.Framework.Csv
 
 CSV reader and writer.
 
@@ -84,7 +99,7 @@ await writer.WriteValueAsync("C");
 await writer.WriteValueAsync("D");
 ````
 
-# Meziantou.Framework.Scheduling
+## Meziantou.Framework.Scheduling
 
 Recurrence Rule parser, and ICS generator
 
@@ -97,7 +112,7 @@ var occurrences = rrule.GetNextOccurrences(startDate);
 // 1997-09-04 09:00
 ````
 
-# Meziantou.Framework.Win32.PerceivedType
+## Meziantou.Framework.Win32.PerceivedType
 
 Get the perceived type of a file: Text, Audio, Video, Document, Application, etc. 
 
@@ -106,7 +121,7 @@ var perceived = Perceived.GetPerceivedType(".avi");
 Assert.AreEqual(PerceivedType.Video, perceived.PerceivedType);
 ````
 
-# Meziantou.Framework.Win32.CredentialManager
+## Meziantou.Framework.Win32.CredentialManager
 
 ````csharp
 CredentialManager.WriteCredential("ApplicationName", "username", "Pa$$w0rd", CredentialPersistence.Session);
@@ -118,7 +133,7 @@ Assert.AreEqual("Pa$$w0rd", cred.Password);
 CredentialManager.DeleteCredential("ApplicationName");
 ````
 
-# Meziantou.Framework.Templating
+## Meziantou.Framework.Templating
 
 ````csharp
 Template template = new Template();
@@ -128,7 +143,7 @@ template.AddArgument("Name", typeof(string));
 string result = template.Run("Meziantou"); // result= "Hello Meziantou!"
 ````
 
-# Meziantou.Framework.Templating.Html
+## Meziantou.Framework.Templating.Html
 
 Extensions for Templating to support the html format: Encoding text, url or attribute. For email, it extracts the list of cid.
 

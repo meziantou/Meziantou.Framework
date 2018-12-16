@@ -35,7 +35,6 @@ namespace Meziantou.Framework.Win32
         public void Dispose()
         {
             _session.Dispose();
-            _context.Dispose();
         }
     }
 }

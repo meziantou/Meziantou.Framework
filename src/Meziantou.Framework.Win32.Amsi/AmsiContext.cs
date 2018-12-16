@@ -31,6 +31,24 @@ namespace Meziantou.Framework.Win32
             return new AmsiSession(_context, session);
         }
 
+        public bool IsMalware(string payload, string contentName)
+        {
+            var returnValue = Amsi.AmsiScanString(_context, payload, contentName, session: new AmsiSessionSafeHandle(), out var result);
+            if (returnValue != 0)
+                throw new Win32Exception(returnValue);
+
+            return Amsi.AmsiResultIsMalware(result);
+        }
+
+        public bool IsMalware(byte[] payload, string contentName)
+        {
+            var returnValue = Amsi.AmsiScanBuffer(_context, payload, (uint)payload.Length, contentName, session: new AmsiSessionSafeHandle(), out var result);
+            if (returnValue != 0)
+                throw new Win32Exception(returnValue);
+
+            return Amsi.AmsiResultIsMalware(result);
+        }
+
         public void Dispose()
         {
             _context.Dispose();

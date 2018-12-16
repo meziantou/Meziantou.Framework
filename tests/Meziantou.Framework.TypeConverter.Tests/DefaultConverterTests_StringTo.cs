@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out int value);
 
-            Assert.IsTrue(converted);
+            Assert.IsFalse(converted);
         }
 
         [TestMethod]

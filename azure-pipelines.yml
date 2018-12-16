@@ -5,6 +5,11 @@ variables:
 
 steps:
 
+- task: DotNetCoreInstaller@0
+  displayName: 'Use .NET Core sdk 2.2.100'
+  inputs:
+    version: 2.2.100
+
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:

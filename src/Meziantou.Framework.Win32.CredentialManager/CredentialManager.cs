@@ -75,8 +75,8 @@ namespace Meziantou.Framework.Win32
             if (secret == null)
                 throw new ArgumentNullException(nameof(secret));
 
-            // CRED_MAX_CREDENTIAL_BLOB_SIZE 
-            // XP and Vista: 512; 
+            // CRED_MAX_CREDENTIAL_BLOB_SIZE
+            // XP and Vista: 512;
             // 7 and above: 5*512
             var secretLength = secret.Length * UnicodeEncoding.CharSize;
             if (Environment.OSVersion.Version < new Version(6, 1) /* Windows 7 */)
@@ -318,6 +318,7 @@ namespace Meziantou.Framework.Win32
                     userName = usernameBuf.ToString();
                     password = passwordBuf.ToString();
                     domain = domainBuf.ToString();
+
                     if (string.IsNullOrWhiteSpace(domain))
                     {
                         usernameBuf.Clear();
@@ -332,7 +333,7 @@ namespace Meziantou.Framework.Win32
                                 break;
 
                             case CredentialUIReturnCodes.InvalidAccountName:
-                                return true;
+                                break;
 
                             case CredentialUIReturnCodes.InsufficientBuffer:
                                 throw new OutOfMemoryException();
@@ -344,12 +345,16 @@ namespace Meziantou.Framework.Win32
                                 throw new ArgumentOutOfRangeException();
                         }
                     }
-                }
 
-                userName = null;
-                password = null;
-                domain = null;
-                return false;
+                    return true;
+                }
+                else
+                {
+                    userName = null;
+                    password = null;
+                    domain = null;
+                    return false;
+                }
             }
             finally
             {

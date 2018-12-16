@@ -201,7 +201,7 @@ namespace Meziantou.Framework.Win32
         public void DisableAllPrivileges()
         {
             uint returnSize = 0;
-            if (!NativeMethods.AdjustTokenPrivileges(_token, true, IntPtr.Zero, 0, IntPtr.Zero, ref returnSize))
+            if (!NativeMethods.AdjustTokenPrivileges(_token, disableAllPrivileges: true, IntPtr.Zero, 0, IntPtr.Zero, ref returnSize))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
@@ -215,7 +215,7 @@ namespace Meziantou.Framework.Win32
 
         private void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
         {
-            if (!NativeMethods.LookupPrivilegeValue(null, privilegeName, out var luid))
+            if (!NativeMethods.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             var tp = new NativeMethods.TOKEN_PRIVILEGES();
@@ -237,7 +237,7 @@ namespace Meziantou.Framework.Win32
             }
 
             uint returnSize = 0;
-            if (!NativeMethods.AdjustTokenPrivileges(_token, false, ref tp, 0, IntPtr.Zero, ref returnSize))
+            if (!NativeMethods.AdjustTokenPrivileges(_token, disableAllPrivileges: false, ref tp, 0, IntPtr.Zero, ref returnSize))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 

@@ -15,7 +15,7 @@
         public Modifiers Modifiers { get; set; }
 
         public OperatorDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

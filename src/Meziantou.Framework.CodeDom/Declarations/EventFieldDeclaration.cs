@@ -8,7 +8,7 @@
         private TypeReference _privateImplementationType;
 
         public EventFieldDeclaration()
-          : this(null, null)
+          : this(name: null, type: null)
         {
         }
 

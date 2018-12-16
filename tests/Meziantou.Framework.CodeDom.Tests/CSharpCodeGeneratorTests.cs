@@ -275,7 +275,7 @@ internal enum Sample : uint
         {
             var loop = new WhileStatement
             {
-                Condition = new LiteralExpression(true),
+                Condition = new LiteralExpression(value: true),
                 Body = new StatementCollection()
             };
 
@@ -409,7 +409,7 @@ internal enum Sample : uint
         public void CSharpCodeGenerator_If()
         {
             var statement = new ConditionStatement();
-            statement.Condition = new LiteralExpression(true);
+            statement.Condition = new LiteralExpression(value: true);
             statement.TrueStatements = new SnippetStatement("TrueSnippet");
 
             var generator = new CSharpCodeGenerator();
@@ -427,7 +427,7 @@ internal enum Sample : uint
         {
             var statement = new ConditionStatement
             {
-                Condition = new LiteralExpression(true),
+                Condition = new LiteralExpression(value: true),
                 TrueStatements = new SnippetStatement("TrueSnippet"),
                 FalseStatements = new SnippetStatement("FalseSnippet")
             };
@@ -450,7 +450,7 @@ else
         public void CSharpCodeGenerator_If_Empty()
         {
             var statement = new ConditionStatement();
-            statement.Condition = new LiteralExpression(true);
+            statement.Condition = new LiteralExpression(value: true);
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(statement);
@@ -998,7 +998,7 @@ void Sample()
         {
             var statement = new UsingStatement
             {
-                Statement = new VariableDeclarationStatement(null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
+                Statement = new VariableDeclarationStatement(type: null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
                 Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable"))
             };
 
@@ -1056,7 +1056,7 @@ void Sample()
         public void CSharpCodeGenerator_Iteration()
         {
             var statement = new IterationStatement();
-            var variable = new VariableDeclarationStatement(null, "i", 0);
+            var variable = new VariableDeclarationStatement(type: null, "i", 0);
             statement.Initialization = variable;
             statement.Condition = new BinaryExpression(BinaryOperator.LessThan, variable, 10);
             statement.IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, variable);
@@ -1641,12 +1641,12 @@ void Sample()
             {
                 new ConditionStatement()
                 {
-                    Condition = new LiteralExpression(true),
+                    Condition = new LiteralExpression(value: true),
                     TrueStatements = new StatementCollection()
                     {
                         new ConditionStatement()
                         {
-                            Condition = new LiteralExpression(true),
+                            Condition = new LiteralExpression(value: true),
                             TrueStatements = new StatementCollection()
                         }
                     }

@@ -14,8 +14,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int? value);
 
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(null, value);
+            Assert.IsTrue(converted);
+            Assert.IsNull(value);
         }
 
         [TestMethod]
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int value);
 
-            Assert.AreEqual(false, converted);
+            Assert.IsFalse(converted);
         }
 
         [TestMethod]
@@ -35,8 +35,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
 
-            Assert.AreEqual(true, converted);
-            Assert.AreEqual(null, value);
+            Assert.IsTrue(converted);
+            Assert.IsNull(value);
         }
     }
 }

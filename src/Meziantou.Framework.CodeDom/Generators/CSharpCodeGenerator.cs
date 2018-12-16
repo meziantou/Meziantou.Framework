@@ -62,7 +62,7 @@ namespace Meziantou.Framework.CodeDom
             if (codeObject == null)
                 throw new ArgumentNullException(nameof(codeObject));
 
-            using (var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, false))
+            using (var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, closeWriter: false))
             {
                 indentedTextWriter.NewLine = "\n";
 
@@ -571,7 +571,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine("{");
             writer.Indent++;
-            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), null);
+            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), endOfLine: null);
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -594,7 +594,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine("{");
             writer.Indent++;
-            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), null);
+            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), endOfLine: null);
             writer.Indent--;
             writer.WriteLine("}");
         }

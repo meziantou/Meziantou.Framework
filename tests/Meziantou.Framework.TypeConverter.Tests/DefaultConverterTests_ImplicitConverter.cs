@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new ImplicitConverter(), cultureInfo, out int value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual(1, value);
         }
     }

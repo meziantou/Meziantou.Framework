@@ -57,31 +57,31 @@ namespace Meziantou.Framework.Html
         public static StreamReader OpenReader(string filePath)
         {
             var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, Encoding.UTF8, true, 0x400, false);
+            return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, 0x400, leaveOpen: false);
         }
 
         public static StreamReader OpenReader(string filePath, Encoding encoding)
         {
             var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, encoding, true, 0x400, false);
+            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, 0x400, leaveOpen: false);
         }
 
         public static StreamReader OpenReader(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
         {
             var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, 0x400, false);
+            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, 0x400, leaveOpen: false);
         }
 
         public static StreamReader OpenReader(string filePath, bool detectEncodingFromByteOrderMarks)
         {
             var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, 0x400, false);
+            return new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks, 0x400, leaveOpen: false);
         }
 
         public static StreamReader OpenReader(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
         {
             var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, false);
+            return new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false);
         }
 
         public static StreamWriter OpenWriter(string filePath, bool append, Encoding encoding, int bufferSize)
@@ -91,7 +91,7 @@ namespace Meziantou.Framework.Html
             {
                 stream.Seek(0, SeekOrigin.End);
             }
-            return new StreamWriter(stream, encoding, bufferSize, false);
+            return new StreamWriter(stream, encoding, bufferSize, leaveOpen: false);
         }
 
         public static StreamWriter OpenWriter(string filePath, bool append, Encoding encoding)
@@ -101,13 +101,14 @@ namespace Meziantou.Framework.Html
             {
                 stream.Seek(0, SeekOrigin.End);
             }
-            return new StreamWriter(stream, encoding, 0x400, false);
+            return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
         }
 
         public static StreamWriter OpenWriter(string filePath)
         {
             var stream = File.Open(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-            return new StreamWriter(stream, new UTF8Encoding(false, true), 0x400, false);
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
         }
 
         public static string GetAttributeFromHeader(string header, string name)
@@ -292,7 +293,7 @@ namespace Meziantou.Framework.Html
             serverName = null;
             shareName = null;
             sharePath = null;
-            if (path.Length < 5 || !path.StartsWith(@"\\")) // min is \\x\y (5 chars)
+            if (path.Length < 5 || !path.StartsWith(@"\\", StringComparison.Ordinal)) // min is \\x\y (5 chars)
                 return null;
 
             if (path[2] == Path.DirectorySeparatorChar)
@@ -326,7 +327,7 @@ namespace Meziantou.Framework.Html
             if (path == null)
                 return false;
 
-            if (path.StartsWith(Prefix))
+            if (path.StartsWith(Prefix, StringComparison.Ordinal))
             {
                 path = path.Substring(Prefix.Length);
             }

@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Win32
         {
             ChangeJournalHandle = handle;
             Data = ReadJournalDataImpl();
-            Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, ChangeReason.All, false, TimeSpan.Zero));
+            Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero));
         }
 
         public static ChangeJournal Open(DriveInfo driveInfo)
@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Win32
 
         public IEnumerable<JournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
         {
-            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(null, reasonFilter, returnOnlyOnClose, timeout));
+            return new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, reasonFilter, returnOnlyOnClose, timeout));
         }
 
         public IEnumerable<JournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)

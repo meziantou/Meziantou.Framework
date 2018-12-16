@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Html
             Parent = parent ?? new HtmlDocument();
 
             if (Parent.OwnerDocument == null)
-                throw new ArgumentException(null, nameof(parent));
+                throw new ArgumentException(message: null, nameof(parent));
 
             Current = Parent;
             _writeState = WriteState.Start;
@@ -159,7 +159,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteStartDocument()
         {
-            WriteStartDocument(false);
+            WriteStartDocument(standalone: false);
         }
 
         public override void WriteEndDocument()

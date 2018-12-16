@@ -33,13 +33,13 @@ namespace Meziantou.Framework.Tests
 
             DateTimeService.Clock = new Clock(now);
             var relativeDate = new RelativeDate(dateTime);
-            var resultEn = relativeDate.ToString(null, CultureInfo.InvariantCulture);
+            var resultEn = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
             Assert.AreEqual(expectedValueEn, resultEn);
 
-            var resultEs = relativeDate.ToString(null, CultureInfo.GetCultureInfo("es-ES"));
+            var resultEs = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("es-ES"));
             Assert.AreEqual(expectedValueEn, resultEs);
 
-            var resultFr = relativeDate.ToString(null, CultureInfo.GetCultureInfo("fr"));
+            var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
             Assert.AreEqual(expectedValueFr, resultFr);
         }
 

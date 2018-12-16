@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Tests
         public void TryConvert_CultureInfoToString_UsingInvariantCulture()
         {
             var converter = new DefaultConverter();
-            var value = converter.ChangeType<string>(new CultureInfo("en"), null, CultureInfo.InvariantCulture);
+            var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
 
             Assert.AreEqual("en", value);
         }
@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Tests
         public void TryConvert_CultureInfoToString_UsingSpecificCulture()
         {
             var converter = new DefaultConverter();
-            var value = converter.ChangeType<string>(new CultureInfo("en"), null, new CultureInfo("en-US"));
+            var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, new CultureInfo("en-US"));
 
             Assert.AreEqual("en", value);
         }

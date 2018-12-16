@@ -458,7 +458,7 @@ namespace Meziantou.Framework.Scheduling
             var list = new List<Month>();
             foreach (var str in SplitToList(text))
             {
-                if (str.Length != 0 && Enum.TryParse<Month>(str, true, out var month))
+                if (str.Length != 0 && Enum.TryParse<Month>(str, ignoreCase: true, out var month))
                 {
                     list.Add(month);
                 }

@@ -1,3 +1,5 @@
+﻿using System;
+
 namespace Meziantou.Framework.Templating
 {
     public class CodeBlock : ParsedBlock
@@ -10,7 +12,7 @@ namespace Meziantou.Framework.Templating
 
         public override string BuildCode()
         {
-            if (Text.StartsWith(EvalPrefixString))
+            if (Text.StartsWith(EvalPrefixString, StringComparison.Ordinal))
             {
                 return Template.OutputParameterName + ".Write(\"{0}\", " + Text.Substring(EvalPrefixString.Length) + ");";
             }

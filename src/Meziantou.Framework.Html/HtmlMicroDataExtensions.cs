@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Html
 
         public static string GetItemScopePath(this HtmlNode node, string separator)
         {
-            return GetItemScopePath(node, separator, null);
+            return GetItemScopePath(node, separator, typeParser: null);
         }
 
         public static string GetItemScopePath(this HtmlNode node, string separator, Func<string, string> typeParser)

@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Html
     {
         private readonly Dictionary<string, HtmlElementReadOptions> _readOptions = new Dictionary<string, HtmlElementReadOptions>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, HtmlElementWriteOptions> _writeOptions = new Dictionary<string, HtmlElementWriteOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _emptyNamespacesForXPath = new HashSet<string>();
-        private readonly HashSet<string> _emptyNamespaces = new HashSet<string>();
+        private readonly HashSet<string> _emptyNamespacesForXPath = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> _emptyNamespaces = new HashSet<string>(StringComparer.Ordinal);
         private readonly HashSet<string> _parsedScriptTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public HtmlOptions()

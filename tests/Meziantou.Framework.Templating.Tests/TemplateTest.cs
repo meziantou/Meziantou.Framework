@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Templating.Tests
@@ -70,7 +71,7 @@ namespace Meziantou.Framework.Templating.Tests
             // Arrange
             var template = new Template();
             template.Load("Hello <%=Name%>!");
-            var arguments = new Dictionary<string, object>
+            var arguments = new Dictionary<string, object>(StringComparer.Ordinal)
             {
                 { "Name", "Meziantou" }
             };

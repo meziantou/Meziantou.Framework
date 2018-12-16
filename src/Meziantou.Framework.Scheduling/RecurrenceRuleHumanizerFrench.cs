@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -205,11 +205,11 @@ namespace Meziantou.Framework.Scheduling
                 case 1:
                     return "premier";
                 case 2:
-                    return "deuxième";
+                    return "deuxiÃ¨me";
                 case 3:
-                    return "troisième";
+                    return "troisiÃ¨me";
                 case 4:
-                    return "quatrième";
+                    return "quatriÃ¨me";
             }
 
             return Extensions.ToFrenchOrdinal(setPosition);
@@ -291,7 +291,7 @@ namespace Meziantou.Framework.Scheduling
                 case DayOfWeek.Saturday:
                     return "samedi";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, null);
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null);
             }
         }
 
@@ -302,7 +302,7 @@ namespace Meziantou.Framework.Scheduling
                 case Month.January:
                     return "janvier";
                 case Month.February:
-                    return "février";
+                    return "fÃ©vrier";
                 case Month.March:
                     return "mars";
                 case Month.April:
@@ -322,9 +322,9 @@ namespace Meziantou.Framework.Scheduling
                 case Month.November:
                     return "novembre";
                 case Month.December:
-                    return "décembre";
+                    return "dÃ©cembre";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(month), month, null);
+                    throw new ArgumentOutOfRangeException(nameof(month), month, message: null);
             }
         }
 

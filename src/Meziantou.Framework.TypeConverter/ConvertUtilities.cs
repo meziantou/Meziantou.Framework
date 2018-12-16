@@ -49,7 +49,7 @@ namespace Meziantou.Framework
         public static bool TryChangeType<T>(this IConverter converter, object input, out T value)
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
-            return TryChangeType(converter, input, null, out value);
+            return TryChangeType(converter, input, provider: null, out value);
         }
 
         public static bool TryChangeType(object input, Type conversionType, out object value)
@@ -60,7 +60,7 @@ namespace Meziantou.Framework
         public static bool TryChangeType(this IConverter converter, object input, Type conversionType, out object value)
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
-            return TryChangeType(converter, input, conversionType, null, out value);
+            return TryChangeType(converter, input, conversionType, provider: null, out value);
         }
 
         public static bool TryChangeType(object input, Type conversionType, IFormatProvider provider, out object value)
@@ -83,7 +83,7 @@ namespace Meziantou.Framework
         public static object ChangeType(this IConverter converter, object input, Type conversionType)
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
-            return ChangeType(converter, input, conversionType, null, null);
+            return ChangeType(converter, input, conversionType, defaultValue: null, provider: null);
         }
 
         public static object ChangeType(object input, Type conversionType, object defaultValue)
@@ -94,7 +94,7 @@ namespace Meziantou.Framework
         public static object ChangeType(this IConverter converter, object input, Type conversionType, object defaultValue)
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
-            return ChangeType(converter, input, conversionType, defaultValue, null);
+            return ChangeType(converter, input, conversionType, defaultValue, provider: null);
         }
 
         public static object ChangeType(object input, Type conversionType, object defaultValue, IFormatProvider provider)
@@ -138,7 +138,7 @@ namespace Meziantou.Framework
         public static T ChangeType<T>(this IConverter converter, object input, T defaultValue)
         {
             if (converter == null) throw new ArgumentNullException(nameof(converter));
-            return ChangeType(converter, input, defaultValue, null);
+            return ChangeType(converter, input, defaultValue, provider: null);
         }
 
         public static T ChangeType<T>(object input, T defaultValue, IFormatProvider provider)

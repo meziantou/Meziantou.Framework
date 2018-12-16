@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.CurrentCulture;
             var converted = converter.TryChangeType("6/12/2018 12:00:00 AM -05:00", cultureInfo, out DateTimeOffset value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual(new DateTimeOffset(2018, 06, 12, 0, 0, 0, TimeSpan.FromHours(-5)), value);
         }
     }

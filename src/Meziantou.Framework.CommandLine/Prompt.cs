@@ -10,16 +10,16 @@ namespace Meziantou.Framework
             {
                 if (defaultValue.Value)
                 {
-                    return YesNo(question, "Y", "n", true);
+                    return YesNo(question, "Y", "n", defaultValue: true);
                 }
                 else
                 {
-                    return YesNo(question, "y", "N", false);
+                    return YesNo(question, "y", "N", defaultValue: false);
                 }
             }
             else
             {
-                return YesNo(question, "y", "n", null);
+                return YesNo(question, "y", "n", defaultValue: null);
             }
         }
 

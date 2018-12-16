@@ -32,7 +32,7 @@ namespace Meziantou.Framework
             return CompareTo(fileLength);
         }
 
-        public override string ToString() => ToString(null, null);
+        public override string ToString() => ToString(format: null, formatProvider: null);
 
         public string ToString(string format, IFormatProvider formatProvider)
         {

@@ -241,8 +241,8 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            prefix = Utilities.Nullify(name.Substring(0, pos), true);
-            localName = Utilities.Nullify(name.Substring(pos + 1), true);
+            prefix = Utilities.Nullify(name.Substring(0, pos), trim: true);
+            localName = Utilities.Nullify(name.Substring(pos + 1), trim: true);
             if (prefix == null || localName == null)
             {
                 prefix = string.Empty;
@@ -472,7 +472,7 @@ namespace Meziantou.Framework.Html
                     else
                     {
                         if (OwnerDocument == null)
-                            throw new ArgumentException(null, nameof(value));
+                            throw new ArgumentException("The node is not owned by a document", nameof(value));
 
                         RemoveAll();
                         var text = OwnerDocument.CreateText();
@@ -761,7 +761,7 @@ namespace Meziantou.Framework.Html
             if (att == null)
                 return null;
 
-            return Utilities.Nullify(att.Value, true);
+            return Utilities.Nullify(att.Value, trim: true);
         }
 
         public string GetNullifiedAttributeValue(string localName, string namespaceURI)
@@ -779,7 +779,7 @@ namespace Meziantou.Framework.Html
             if (att == null)
                 return null;
 
-            return Utilities.Nullify(att.Value, true);
+            return Utilities.Nullify(att.Value, trim: true);
         }
 
         public string GetAttributeValue(string localName, string namespaceURI, string defaultValue)
@@ -803,7 +803,7 @@ namespace Meziantou.Framework.Html
         public virtual void AppendChild(HtmlNode newChild)
         {
             if (newChild is HtmlAttribute att)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException("Cannot append an attribute", nameof(newChild));
 
             ChildNodes.Add(newChild);
         }
@@ -814,13 +814,13 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(newChild));
 
             if (newChild is HtmlAttribute att)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException("Cannot insert an attribute", nameof(newChild));
 
             if (this == newChild || IsAncestor(newChild))
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             if (newChild.NodeType == HtmlNodeType.Document)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             if (OwnerDocument == null)
                 throw new InvalidOperationException();
@@ -849,7 +849,7 @@ namespace Meziantou.Framework.Html
             }
 
             if (index < 0)
-                throw new ArgumentException(null, nameof(refChild));
+                throw new ArgumentException(message: null, nameof(refChild));
 
             ChildNodes.Insert(index + 1, newChild);
         }
@@ -873,13 +873,13 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(newChild));
 
             if (newChild is HtmlAttribute att)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             if (this == newChild || IsAncestor(newChild))
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             if (newChild.NodeType == HtmlNodeType.Document)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             if (refChild == null)
             {
@@ -905,7 +905,7 @@ namespace Meziantou.Framework.Html
             }
 
             if (index < 0)
-                throw new ArgumentException(null, nameof(refChild));
+                throw new ArgumentException(message: null, nameof(refChild));
 
             ChildNodes.Insert(index, newChild);
         }
@@ -913,14 +913,14 @@ namespace Meziantou.Framework.Html
         public virtual void PrependChild(HtmlNode newChild)
         {
             if (newChild is HtmlAttribute att)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             ChildNodes.Insert(0, newChild);
         }
 
         public bool Remove()
         {
-            return Remove(false);
+            return Remove(keepChildren: false);
         }
 
         public virtual bool Remove(bool keepChildren)
@@ -941,7 +941,7 @@ namespace Meziantou.Framework.Html
 
         public bool RemoveChild(HtmlNode oldChild)
         {
-            return RemoveChild(oldChild, false);
+            return RemoveChild(oldChild, keepGrandChildren: false);
         }
 
         public virtual bool RemoveChild(HtmlNode oldChild, bool keepGrandChildren)
@@ -978,11 +978,11 @@ namespace Meziantou.Framework.Html
         public virtual void ReplaceChild(HtmlNode newChild, HtmlNode oldChild)
         {
             if (newChild is HtmlAttribute att)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             att = oldChild as HtmlAttribute;
             if (att != null)
-                throw new ArgumentException(null, nameof(oldChild));
+                throw new ArgumentException(message: null, nameof(oldChild));
 
             ChildNodes.Replace(newChild, oldChild);
         }
@@ -1049,7 +1049,7 @@ namespace Meziantou.Framework.Html
 
         public IReadOnlyDictionary<string, string> GetAllNamespaces()
         {
-            var namespaces = new Dictionary<string, string>();
+            var namespaces = new Dictionary<string, string>(StringComparer.Ordinal);
             GetNamespaceAttributes(namespaces);
             return namespaces;
         }
@@ -1245,7 +1245,7 @@ namespace Meziantou.Framework.Html
 
         public virtual IDictionary<string, string> GetNamespacesInScope(XmlNamespaceScope scope)
         {
-            var dic = new Dictionary<string, string>();
+            var dic = new Dictionary<string, string>(StringComparer.Ordinal);
             AddNamespacesInScope(scope, dic);
             return dic;
         }
@@ -1262,7 +1262,7 @@ namespace Meziantou.Framework.Html
 
         public XmlNode ImportAsXml(XmlDocument owner)
         {
-            return ImportAsXml(owner, true);
+            return ImportAsXml(owner, deep: true);
         }
 
         public virtual XmlNode ImportAsXml(XmlDocument owner, bool deep)
@@ -1284,7 +1284,7 @@ namespace Meziantou.Framework.Html
 
         public HtmlNode SelectSingleNode(string xpath)
         {
-            return SelectSingleNode(xpath, null);
+            return SelectSingleNode(xpath, nsmgr: null);
         }
 
         public HtmlNode SelectSingleNode(string xpath, XmlNamespaceManager nsmgr)
@@ -1294,7 +1294,7 @@ namespace Meziantou.Framework.Html
 
         public HtmlNode SelectSingleNode(string xpath, HtmlNodeNavigatorOptions options)
         {
-            return SelectSingleNode(xpath, null, options);
+            return SelectSingleNode(xpath, nsmgr: null, options);
         }
 
         public HtmlNode SelectSingleNode(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
@@ -1304,7 +1304,7 @@ namespace Meziantou.Framework.Html
 
         public IEnumerable<HtmlNode> SelectNodes(string xpath)
         {
-            return SelectNodes(xpath, null);
+            return SelectNodes(xpath, nsmgr: null);
         }
 
         public IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager nsmgr)
@@ -1314,7 +1314,7 @@ namespace Meziantou.Framework.Html
 
         public IEnumerable<HtmlNode> SelectNodes(string xpath, HtmlNodeNavigatorOptions options)
         {
-            return SelectNodes(xpath, null, options);
+            return SelectNodes(xpath, namespaceManager: null, options);
         }
 
         public virtual IXPathNavigable CreateNavigable(HtmlNodeNavigatorOptions options)
@@ -1332,15 +1332,15 @@ namespace Meziantou.Framework.Html
             return new HtmlNodeNavigator(OwnerDocument, this, options);
         }
 
-        public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
+        public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager namespaceManager, HtmlNodeNavigatorOptions options)
         {
             if (xpath == null)
                 throw new ArgumentNullException(nameof(xpath));
 
             if ((options & HtmlNodeNavigatorOptions.Dynamic) == HtmlNodeNavigatorOptions.Dynamic)
-                return DoSelectNodes(xpath, nsmgr, options);
+                return DoSelectNodes(xpath, namespaceManager, options);
 
-            var list = DoSelectNodes(xpath, nsmgr, options).ToList();
+            var list = DoSelectNodes(xpath, namespaceManager, options).ToList();
 
             if ((options & HtmlNodeNavigatorOptions.DepthFirst) == HtmlNodeNavigatorOptions.DepthFirst)
             {

@@ -1,16 +1,16 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class CustomAttributeArgument : CodeObject, ICommentable
     {
         private Expression _value;
 
         public CustomAttributeArgument()
-            : this(null, null)
+            : this(propertyName: null, value: null)
         {
         }
 
         public CustomAttributeArgument(Expression value)
-            : this(null, value)
+            : this(propertyName: null, value)
         {
         }
 

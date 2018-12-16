@@ -5,17 +5,17 @@
         private Expression _method;
 
         public MethodInvokeExpression()
-            : this(null)
+            : this(method: null)
         {
         }
 
         public MethodInvokeExpression(Expression method)
-            : this(method, null)
+            : this(method, parameters: null)
         {
         }
 
         public MethodInvokeExpression(Expression method, params Expression[] arguments)
-            : this(method, null, arguments)
+            : this(method, parameters: null, arguments)
         {
         }
 

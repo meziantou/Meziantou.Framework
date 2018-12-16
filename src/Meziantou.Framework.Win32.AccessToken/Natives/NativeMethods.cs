@@ -39,10 +39,10 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern bool DuplicateToken(IntPtr tokenHandle, SecurityImpersonationLevel ImpersonationLevel, out IntPtr duplicateTokenHandle);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
+        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool disableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool DisableAllPrivileges, IntPtr NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
+        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool disableAllPrivileges, IntPtr NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
 
         [DllImport("advapi32.dll", SetLastError = true)]
         internal static extern bool CheckTokenMembership(IntPtr TokenHandle, byte[] SidToCheck, ref bool IsMember);
@@ -74,9 +74,9 @@ namespace Meziantou.Framework.Win32.Natives
         internal static string LookupPrivilegeName(LUID luid)
         {
             var luidNameLen = 0;
-            LookupPrivilegeName(null, ref luid, null, ref luidNameLen);
+            LookupPrivilegeName(lpSystemName: null, ref luid, lpName: null, ref luidNameLen);
             var sb = new StringBuilder(luidNameLen);
-            if (LookupPrivilegeName(null, ref luid, sb, ref luidNameLen))
+            if (LookupPrivilegeName(lpSystemName: null, ref luid, sb, ref luidNameLen))
                 return sb.ToString();
 
             throw new Win32Exception(Marshal.GetLastWin32Error());

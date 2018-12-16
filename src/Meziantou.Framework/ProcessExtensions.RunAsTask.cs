@@ -10,7 +10,7 @@ namespace Meziantou.Framework
     {
         public static Task<ProcessResult> RunAsTask(string fileName, string arguments, CancellationToken cancellationToken = default)
         {
-            return RunAsTask(fileName, arguments, null, cancellationToken);
+            return RunAsTask(fileName, arguments, workingDirectory: null, cancellationToken);
         }
 
         public static Task<ProcessResult> RunAsTask(string fileName, string arguments, string workingDirectory, CancellationToken cancellationToken = default)

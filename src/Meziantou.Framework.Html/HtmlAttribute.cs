@@ -29,7 +29,7 @@ namespace Meziantou.Framework.Html
             set => base.NamespaceURI = value;
         }
 
-        public virtual bool IsNamespace => NamespaceURI?.Equals(XmlnsNamespaceURI) == true;
+        public virtual bool IsNamespace => NamespaceURI?.Equals(XmlnsNamespaceURI, StringComparison.Ordinal) == true;
 
         public virtual bool EscapeQuoteChar
         {

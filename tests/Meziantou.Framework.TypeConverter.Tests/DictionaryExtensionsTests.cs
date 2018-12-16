@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Tests
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.Tests
         public void GetValue_KeyExists()
         {
             // Arrange
-            var dictionary = new Dictionary<string, object>
+            var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
                 { "test", 42 }
             };
@@ -24,7 +25,7 @@ namespace Meziantou.Framework.Tests
         public void GetValue_KeyNotExists()
         {
             // Arrange
-            var dictionary = new Dictionary<string, object>
+            var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
                 { "test", 42 }
             };
@@ -39,7 +40,7 @@ namespace Meziantou.Framework.Tests
         public void GetValue_KeyNotConvertible()
         {
             // Arrange
-            var dictionary = new Dictionary<string, object>
+            var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
                 { "test", "aaa" }
             };

@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
@@ -50,11 +50,11 @@ namespace Meziantou.Framework.Win32.Tests
             using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
             {
                 var item = changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName);
-                Assert.AreEqual(null, item);
+                Assert.IsNull(item);
 
                 File.WriteAllText(file, "test");
-                Assert.AreEqual(null, changeJournal.GetEntries(ChangeReason.Close, false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && !entry.Reason.HasFlag(ChangeReason.Close)));
-                Assert.AreNotEqual(null, changeJournal.GetEntries(ChangeReason.Close, false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.Close)));
+                Assert.IsNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && !entry.Reason.HasFlag(ChangeReason.Close)));
+                Assert.IsNotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.Close)));
 
                 File.Delete(file);
             }

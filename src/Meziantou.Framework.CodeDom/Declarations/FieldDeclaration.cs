@@ -6,7 +6,7 @@
         private TypeReference _type;
 
         public FieldDeclaration()
-            : this(null, null)
+            : this(name: null, type: null)
         {
         }
 
@@ -16,7 +16,7 @@
         }
 
         public FieldDeclaration(string name, TypeReference type, Modifiers modifiers)
-            : this(name, type, modifiers, null)
+            : this(name, type, modifiers, initExpression: null)
         {
         }
 

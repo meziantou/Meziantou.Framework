@@ -23,7 +23,7 @@
         public Modifiers Modifiers { get; set; }
 
         public MethodDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

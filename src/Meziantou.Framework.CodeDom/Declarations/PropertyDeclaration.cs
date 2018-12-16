@@ -8,7 +8,7 @@
         private TypeReference _privateImplementationType;
 
         public PropertyDeclaration()
-            : this(null, null)
+            : this(name: null, type: null)
         {
         }
 

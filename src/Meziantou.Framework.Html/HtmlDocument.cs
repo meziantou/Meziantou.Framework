@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Html
         public event EventHandler<HtmlDocumentParseEventArgs> Parsed;
 
         public HtmlDocument()
-            : base(string.Empty, "#document", string.Empty, null)
+            : base(string.Empty, "#document", string.Empty, ownerDocument: null)
         {
         }
 
@@ -97,7 +97,7 @@ namespace Meziantou.Framework.Html
             using (var reader = new StringReader(html))
             {
                 StreamEncoding = Utilities.GetDefaultEncoding(); // This is arguable, but it's better for saves
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -112,17 +112,17 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
             var streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = Utilities.OpenReader(filePath, streamEncoding, false, bufferSize))
+            using (var reader = Utilities.OpenReader(filePath, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -135,22 +135,22 @@ namespace Meziantou.Framework.Html
             FilePath = filePath;
             if (detectEncodingFromByteOrderMarks)
             {
-                using (var reader = Utilities.OpenReader(filePath, true))
+                using (var reader = Utilities.OpenReader(filePath, detectEncodingFromByteOrderMarks: true))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, true))
+                    if (InternalLoad(reader, firstPass: true))
                         return;
                 }
             }
             else
             {
                 // use ansi as the default encoding
-                using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), false))
+                using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false))
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, true))
+                    if (InternalLoad(reader, firstPass: true))
                         return;
                 }
             }
@@ -161,7 +161,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -176,7 +176,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -186,7 +186,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -201,7 +201,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -211,7 +211,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -226,7 +226,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -236,7 +236,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -252,7 +252,7 @@ namespace Meziantou.Framework.Html
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, true))
+                    if (InternalLoad(reader, firstPass: true))
                         return;
                 }
             }
@@ -262,7 +262,7 @@ namespace Meziantou.Framework.Html
                 {
                     reader.Peek();
                     StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, true))
+                    if (InternalLoad(reader, firstPass: true))
                         return;
                 }
             }
@@ -273,7 +273,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -287,7 +287,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -297,7 +297,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -311,7 +311,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -321,7 +321,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -335,17 +335,17 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
             var streamEncoding = DetectedEncoding;
             Restart();
-            using (var reader = new StreamReader(stream, streamEncoding, false, bufferSize, leaveOpen: true))
+            using (var reader = new StreamReader(stream, streamEncoding, detectEncodingFromByteOrderMarks: false, bufferSize, leaveOpen: true))
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -359,7 +359,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                if (InternalLoad(reader, true))
+                if (InternalLoad(reader, firstPass: true))
                     return;
             }
 
@@ -369,7 +369,7 @@ namespace Meziantou.Framework.Html
             {
                 reader.Peek();
                 StreamEncoding = reader.CurrentEncoding;
-                InternalLoad(reader, false);
+                InternalLoad(reader, firstPass: false);
             }
         }
 
@@ -379,7 +379,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(reader));
 
             Clear();
-            InternalLoad(reader, false);
+            InternalLoad(reader, firstPass: false);
         }
 
         public virtual void AddNamespace(string prefix, string uri)
@@ -393,7 +393,7 @@ namespace Meziantou.Framework.Html
                 if (uri == null)
                     throw new ArgumentNullException(nameof(uri));
 
-                _declaredPrefixes = _declaredPrefixes ?? new Dictionary<string, string>();
+                _declaredPrefixes = _declaredPrefixes ?? new Dictionary<string, string>(StringComparer.Ordinal);
                 _declaredPrefixes[prefix] = uri;
             }
 
@@ -453,14 +453,14 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public IReadOnlyDictionary<string, string> DeclaredNamespaces => _declaredNamespaces ?? new Dictionary<string, string>();
+        public IReadOnlyDictionary<string, string> DeclaredNamespaces => _declaredNamespaces ?? new Dictionary<string, string>(StringComparer.Ordinal);
 
-        public IReadOnlyDictionary<string, string> DeclaredPrefixes => _declaredPrefixes ?? new Dictionary<string, string>();
+        public IReadOnlyDictionary<string, string> DeclaredPrefixes => _declaredPrefixes ?? new Dictionary<string, string>(StringComparer.Ordinal);
 
         private HtmlAttribute CreateAttribute(string name)
         {
             ParseName(name, out var prefix, out var localName);
-            return CreateAttribute(prefix, localName, null);
+            return CreateAttribute(prefix, localName, namespaceURI: null);
         }
 
         public virtual HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
@@ -469,7 +469,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(prefix));
 
             if (prefix.IndexOf(':') >= 0)
-                throw new ArgumentException(null, nameof(prefix));
+                throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
             if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
@@ -495,7 +495,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(name));
 
             ParseName(name, out var prefix, out var localName);
-            return CreateElement(prefix, localName, null);
+            return CreateElement(prefix, localName, namespaceURI: null);
         }
 
         public virtual HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
@@ -504,7 +504,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(prefix));
 
             if (prefix.IndexOf(':') >= 0)
-                throw new ArgumentException(null, nameof(prefix));
+                throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
             if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
@@ -551,7 +551,7 @@ namespace Meziantou.Framework.Html
         // see http://stackoverflow.com/questions/4696499/meta-charset-utf-8-vs-meta-http-equiv-content-type
         private static string GetEncodingName(HtmlElement meta)
         {
-            var name = Utilities.Nullify(meta.GetAttributeValue("charset"), true);
+            var name = Utilities.Nullify(meta.GetAttributeValue("charset"), trim: true);
             if (name != null)
                 return name;
 
@@ -559,7 +559,7 @@ namespace Meziantou.Framework.Html
             if (ct == null || !ct.EqualsIgnoreCase("content-type"))
                 return null;
 
-            return Utilities.GetAttributeFromHeader(Utilities.Nullify(meta.GetAttributeValue("content"), true), "charset");
+            return Utilities.GetAttributeFromHeader(Utilities.Nullify(meta.GetAttributeValue("content"), trim: true), "charset");
         }
 
         private bool DetectEncoding(HtmlReader reader, HtmlElement element, bool firstPass)
@@ -981,7 +981,7 @@ namespace Meziantou.Framework.Html
 
             if (StreamEncoding != null)
             {
-                using (var writer = Utilities.OpenWriter(filePath, false, StreamEncoding))
+                using (var writer = Utilities.OpenWriter(filePath, append: false, StreamEncoding))
                 {
                     Save(writer);
                 }
@@ -1016,7 +1016,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            using (var writer = Utilities.OpenWriter(filePath, false, encoding))
+            using (var writer = Utilities.OpenWriter(filePath, append: false, encoding))
             {
                 Save(writer);
             }
@@ -1102,7 +1102,7 @@ namespace Meziantou.Framework.Html
             {
                 sysid = att.NextSibling.NextSibling.Name;
             }
-            writer.WriteDocType(name, pubid, sysid, null);
+            writer.WriteDocType(name, pubid, sysid, subset: null);
         }
 
         public virtual bool IsXhtml
@@ -1269,7 +1269,7 @@ namespace Meziantou.Framework.Html
             var baseElement = BaseElement;
             if (baseElement != null)
             {
-                var href = Utilities.Nullify(baseElement.GetAttributeValue("href"), true);
+                var href = Utilities.Nullify(baseElement.GetAttributeValue("href"), trim: true);
                 if (href != null)
                 {
                     var address = new Uri(href, UriKind.RelativeOrAbsolute);

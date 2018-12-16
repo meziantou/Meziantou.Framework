@@ -14,7 +14,7 @@
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
 
         public DelegateDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

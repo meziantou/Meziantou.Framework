@@ -170,7 +170,7 @@ namespace Meziantou.Framework.Html.Tests
 
             public string Lowercase(object obj)
             {
-                return (string)new Lowercase(Context, "Lowercase").Invoke(null, new[] { obj }, null);
+                return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, new[] { obj }, docContext: null);
             }
 
             // add methods as needed
@@ -187,13 +187,13 @@ namespace Meziantou.Framework.Html.Tests
         public class Lowercase : HtmlXsltFunction
         {
             public Lowercase(HtmlXsltContext context, string name)
-                : base(context, null, name, null)
+                : base(context, prefix: null, name, argTypes: null)
             {
             }
 
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                return ConvertToString(args, false, null)?.ToLower();
+                return ConvertToString(args, outer: false, separator: null)?.ToLower();
             }
         }
     }

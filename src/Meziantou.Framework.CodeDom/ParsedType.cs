@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom
 {
     internal sealed class ParsedType
     {
-        private static readonly Dictionary<string, ParsedType> _parsedTypes = new Dictionary<string, ParsedType>();
+        private static readonly Dictionary<string, ParsedType> _parsedTypes = new Dictionary<string, ParsedType>(StringComparer.Ordinal);
 
         private readonly List<ParsedType> _arguments = new List<ParsedType>();
         private string _typeName;
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.CodeDom
                 throw new ArgumentNullException(nameof(typeName));
 
             TypeName = typeName.Trim();
-            if (TypeName.StartsWith("[") && TypeName.EndsWith("]"))
+            if (TypeName.StartsWith("[", StringComparison.Ordinal) && TypeName.EndsWith("]", StringComparison.Ordinal))
             {
                 TypeName = TypeName.Substring(1, TypeName.Length - 2).Trim();
             }
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.CodeDom
                 throw new ArgumentNullException(nameof(typeName));
 
             typeName = typeName.Trim();
-            if (typeName.StartsWith("Of "))
+            if (typeName.StartsWith("Of ", StringComparison.Ordinal))
             {
                 typeName = typeName.Substring(3).Trim();
             }
@@ -131,7 +131,7 @@ namespace Meziantou.Framework.CodeDom
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            if ((typeName.StartsWith("[")) && (typeName.EndsWith("]")))
+            if ((typeName.StartsWith("[", StringComparison.Ordinal)) && typeName.EndsWith("]", StringComparison.Ordinal))
             {
                 typeName = typeName.Substring(1, typeName.Length - 2).Trim();
             }
@@ -170,7 +170,7 @@ namespace Meziantou.Framework.CodeDom
             }
             else
             {
-                lt = typeName.IndexOf(start);
+                lt = typeName.IndexOf(start, StringComparison.Ordinal);
                 gt = typeName.LastIndexOf(end);
                 if ((lt < 0) || (gt < 0))
                     return null;

@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ConditionStatement : Statement
     {
@@ -28,7 +28,7 @@ namespace Meziantou.Framework.CodeDom
         {
             var condition = new ConditionStatement
             {
-                Condition = new BinaryExpression(BinaryOperator.NotEquals, leftExpression, new LiteralExpression(null))
+                Condition = new BinaryExpression(BinaryOperator.NotEquals, leftExpression, new LiteralExpression(value: null))
             };
             return condition;
         }

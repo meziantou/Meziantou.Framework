@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Scheduling
 
         public static string GetText(RecurrenceRule rrule)
         {
-            return GetText(rrule, null);
+            return GetText(rrule, cultureInfo: null);
         }
 
         public static string GetText(RecurrenceRule rrule, CultureInfo cultureInfo)

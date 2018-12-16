@@ -123,7 +123,7 @@ namespace Meziantou.Framework.Win32
 
             var extension = Path.GetExtension(fileName);
             if (extension == null)
-                throw new ArgumentException(null, nameof(fileName));
+                throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
 
             extension = extension.ToLowerInvariant();
 

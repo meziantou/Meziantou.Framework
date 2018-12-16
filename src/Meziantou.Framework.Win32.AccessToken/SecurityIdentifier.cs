@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Win32
             var bufDomainName = new StringBuilder(domainNameLen);
             var sidNameUse = 0;
 
-            if (NativeMethods.LookupAccountSid(null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
+            if (NativeMethods.LookupAccountSid(systemName: null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
             {
                 domain = bufDomainName.ToString();
                 name = bufUserName.ToString();

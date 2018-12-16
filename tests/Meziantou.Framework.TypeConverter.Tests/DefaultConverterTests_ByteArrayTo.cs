@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual("AQIDBA==", value);
         }
 
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual("0x01020304", value);
         }
 
@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual("01020304", value);
         }
     }

@@ -5,7 +5,7 @@
         private TypeReference _type;
 
         public CustomAttribute()
-            : this(null)
+            : this(typeReference: null)
         {
         }
 

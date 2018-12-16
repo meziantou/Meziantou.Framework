@@ -73,13 +73,13 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(oldChild));
 
             if (newChild.ParentNode != null)
-                throw new ArgumentException(null, nameof(newChild));
+                throw new ArgumentException(message: null, nameof(newChild));
 
             var index = _list.IndexOf(oldChild);
             if (index >= 0)
             {
                 if (oldChild.ParentNode != _parent)
-                    throw new ArgumentException(null, nameof(oldChild));
+                    throw new ArgumentException(message: null, nameof(oldChild));
 
                 HtmlDocument.RemoveIntrinsicElement(oldChild.OwnerDocument, oldChild as HtmlElement);
                 oldChild.ParentNode = null;
@@ -87,7 +87,7 @@ namespace Meziantou.Framework.Html
             }
             else
             {
-                throw new ArgumentException(null, nameof(oldChild));
+                throw new ArgumentException(message: null, nameof(oldChild));
             }
 
             _list.Insert(index, newChild);
@@ -120,7 +120,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(item));
 
             if (item.ParentNode != null)
-                throw new ArgumentException(null, nameof(item));
+                throw new ArgumentException(message: null, nameof(item));
 
             HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
             _list.Insert(index, item);
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(item));
 
             if (item.ParentNode != null)
-                throw new ArgumentException(null, nameof(item));
+                throw new ArgumentException(message: null, nameof(item));
 
             AddNoCheck(item);
         }
@@ -164,7 +164,7 @@ namespace Meziantou.Framework.Html
 
             var node = _list[index];
             if (node.ParentNode != _parent)
-                throw new ArgumentException(null, nameof(index));
+                throw new ArgumentException(message: null, nameof(index));
 
             HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
             node.ParentNode = null;
@@ -184,7 +184,7 @@ namespace Meziantou.Framework.Html
 
             var existing = _list[index];
             if (existing.ParentNode != _parent)
-                throw new ArgumentException(null, "node");
+                throw new ArgumentException(message: null, "node");
 
             _list.RemoveAt(index);
             HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);

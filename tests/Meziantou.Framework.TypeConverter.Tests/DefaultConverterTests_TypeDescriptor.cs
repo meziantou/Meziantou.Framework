@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Tests
     [TestClass]
     public class DefaultConverterTests_TypeDescriptor
     {
-        private class CustomTypeConverter : System.ComponentModel.TypeConverter
+        private class CustomTypeConverter : TypeConverter
         {
             public static Dummy Instance { get; } = new Dummy();
 
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new Dummy(), cultureInfo, out int value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual(10, value);
         }
 
@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(1, cultureInfo, out Dummy value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual(CustomTypeConverter.Instance, value);
         }
 
@@ -67,7 +67,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out Dummy value);
 
-            Assert.AreEqual(false, converted);
+            Assert.IsFalse(converted);
         }
     }
 }

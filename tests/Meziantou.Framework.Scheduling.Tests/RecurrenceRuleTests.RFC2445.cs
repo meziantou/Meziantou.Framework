@@ -9,12 +9,12 @@ namespace Meziantou.Framework.Scheduling.Tests
     {
         private static void AssertOccurrencesStartWith(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
         {
-            AssertOccurrences(occurrences, false, null, expectedOccurrences);
+            AssertOccurrences(occurrences, checkEnd: false, maxOccurences: null, expectedOccurrences);
         }
 
         private static void AssertOccurrences(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
         {
-            AssertOccurrences(occurrences, false, expectedOccurrences.Length, expectedOccurrences);
+            AssertOccurrences(occurrences, checkEnd: false, expectedOccurrences.Length, expectedOccurrences);
         }
 
         private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, int? maxOccurences, params DateTime[] expectedOccurrences)

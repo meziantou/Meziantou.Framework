@@ -13,7 +13,7 @@ namespace Meziantou.Framework.CommandLineTests
         {
             UsingConsole("\r\n", () =>
             {
-                var result = Prompt.YesNo("test?", true);
+                var result = Prompt.YesNo("test?", defaultValue: true);
                 Assert.AreEqual(true, result);
             });
         }
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.CommandLineTests
         {
             UsingConsole("\r\n", () =>
             {
-                var result = Prompt.YesNo("test?", false);
+                var result = Prompt.YesNo("test?", defaultValue: false);
                 Assert.AreEqual(false, result);
             });
         }
@@ -35,7 +35,7 @@ namespace Meziantou.Framework.CommandLineTests
         {
             UsingConsole("Y\r\n", () =>
             {
-                var result = Prompt.YesNo("test?", null);
+                var result = Prompt.YesNo("test?", defaultValue: null);
                 Assert.AreEqual(true, result);
             });
         }
@@ -46,7 +46,7 @@ namespace Meziantou.Framework.CommandLineTests
         {
             UsingConsole("no\r\n", () =>
             {
-                var result = Prompt.YesNo("test?", "Yes", "No", null);
+                var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
                 Assert.AreEqual(false, result);
             });
         }
@@ -57,12 +57,12 @@ namespace Meziantou.Framework.CommandLineTests
         {
             var output = UsingConsole("test\r\nYes\r\n", () =>
             {
-                var result = Prompt.YesNo("test?", "Yes", "No", null);
+                var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
                 Assert.AreEqual(true, result);
             });
 
-            Assert.AreEqual(0, output.IndexOf("test?"));
-            Assert.IsTrue(output.LastIndexOf("test?") > 0);
+            Assert.AreEqual(0, output.IndexOf("test?", StringComparison.Ordinal));
+            Assert.IsTrue(output.LastIndexOf("test?", StringComparison.Ordinal) > 0);
         }
 
         private string UsingConsole(string input, Action action)

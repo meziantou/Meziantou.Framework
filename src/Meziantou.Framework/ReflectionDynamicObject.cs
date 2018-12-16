@@ -96,7 +96,7 @@ namespace Meziantou.Framework
             {
                 foreach (var indexer in _typeCache.StaticIndexers)
                 {
-                    if (TrySetIndex(indexer, null, indexes, value))
+                    if (TrySetIndex(indexer, instance: null, indexes, value))
                         return true;
                 }
             }
@@ -122,7 +122,7 @@ namespace Meziantou.Framework
             {
                 try
                 {
-                    result = type.InvokeMember(binder.Name, flags, null, _originalObject, args);
+                    result = type.InvokeMember(binder.Name, flags, binder: null, _originalObject, args);
                     return true;
                 }
                 catch (MissingMethodException)
@@ -308,12 +308,12 @@ namespace Meziantou.Framework
 
             public List<ConstructorInfo> Constructors { get; } = new List<ConstructorInfo>();
 
-            public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>();
-            public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>();
+            public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
+            public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
             public List<PropertyInfo> InstanceIndexers { get; } = new List<PropertyInfo>();
 
-            public Dictionary<string, PropertyInfo> StaticProperties { get; } = new Dictionary<string, PropertyInfo>();
-            public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>();
+            public Dictionary<string, PropertyInfo> StaticProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
+            public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
             public List<PropertyInfo> StaticIndexers { get; } = new List<PropertyInfo>();
 
             public static TypeCache Create(Type type)

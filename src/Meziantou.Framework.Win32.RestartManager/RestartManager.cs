@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Win32
             if (path == null) throw new ArgumentNullException(nameof(path));
 
             string[] resources = { path };
-            var result = NativeMethods.RmRegisterResources(SessionHandle, 1, resources, 0, null, 0, null);
+            var result = NativeMethods.RmRegisterResources(SessionHandle, 1, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, "RmRegisterResources failed");
         }
@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Win32
         {
             if (paths == null) throw new ArgumentNullException(nameof(paths));
 
-            var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, null, 0, null);
+            var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, "RmRegisterResources failed");
         }
@@ -111,7 +111,7 @@ namespace Meziantou.Framework.Win32
 
         public void Shutdown(RmShutdownType action)
         {
-            Shutdown(action, null);
+            Shutdown(action, statusCallback: null);
         }
 
         public void Shutdown(RmShutdownType action, RmWriteStatusCallback statusCallback)
@@ -123,7 +123,7 @@ namespace Meziantou.Framework.Win32
 
         public void Restart()
         {
-            Restart(null);
+            Restart(statusCallback: null);
         }
 
         public void Restart(RmWriteStatusCallback statusCallback)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Scheduling
 
         public void ToIcs(Stream stream)
         {
-            var encoding = new UTF8Encoding(false);
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
             using (TextWriter writer = new StreamWriter(stream, encoding))
             {
                 ToIcs(writer);

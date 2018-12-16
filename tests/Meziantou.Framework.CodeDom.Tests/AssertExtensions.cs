@@ -7,7 +7,7 @@ namespace Meziantou.Framework.CodeDom.Tests
     {
         public static void StringEquals(this Assert _, string expected, string actual)
         {
-            StringEquals(_, expected, actual, true);
+            StringEquals(_, expected, actual, ignoreNewLines: true);
         }
 
         public static void StringEquals(this Assert _, string expected, string actual, bool ignoreNewLines)

@@ -176,7 +176,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(2);
 
             // Assert
-            Assert.AreEqual(true, result);
+            Assert.IsTrue(result);
             Assert.AreEqual(2, list.Count);
             Assert.AreEqual(1, list[0]);
             Assert.AreEqual(3, list[1]);
@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(4);
 
             // Assert
-            Assert.AreEqual(false, result);
+            Assert.IsFalse(result);
             Assert.AreEqual(1, list.Count);
             Assert.AreEqual(1, list[0]);
         }

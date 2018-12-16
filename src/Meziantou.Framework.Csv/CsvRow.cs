@@ -82,7 +82,7 @@ namespace Meziantou.Framework.Csv
         IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
         {
             if (Columns == null)
-                return Values.Select(v => new KeyValuePair<string, string>(null, v)).GetEnumerator();
+                return Values.Select(v => new KeyValuePair<string, string>(key: null, v)).GetEnumerator();
 
             return Columns.Select(c => new KeyValuePair<string, string>(c.Name, this[c])).GetEnumerator();
         }

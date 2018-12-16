@@ -23,22 +23,19 @@ namespace Meziantou.Framework.Html
         public event EventHandler<HtmlReaderParseEventArgs> Parsing;
 
         public HtmlReader(TextReader reader)
-            : this(reader, null)
+            : this(reader, options: null)
         {
         }
 
         public HtmlReader(TextReader reader, HtmlOptions options)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            TextReader = reader ?? throw new ArgumentNullException(nameof(reader));
 
             ParserState = HtmlParserState.Text;
             Value = new StringBuilder();
-
             FirstEncodingErrorOffset = -1;
             Errors = new Collection<HtmlError>();
             Options = options ?? new HtmlOptions();
-            TextReader = reader;
         }
 
         public TextReader TextReader { get; }
@@ -210,7 +207,7 @@ namespace Meziantou.Framework.Html
                         break;
 
                     PushCurrentState();
-                    PushCurrentState(HtmlParserState.AttValue, null);
+                    PushCurrentState(HtmlParserState.AttValue, value: null);
                     break;
 
                 case HtmlParserState.AttValue:
@@ -504,7 +501,7 @@ namespace Meziantou.Framework.Html
                             if (c == '>')
                             {
                                 PushCurrentState();
-                                PushCurrentState(HtmlParserState.AttValue, null);
+                                PushCurrentState(HtmlParserState.AttValue, value: null);
                                 PushCurrentState(HtmlParserState.TagEnd, _currentElement);
                                 if ((Options.GetElementReadOptions(_currentElement) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
                                 {
@@ -527,7 +524,7 @@ namespace Meziantou.Framework.Html
                             if (c == '/' && peek == '>')
                             {
                                 PushCurrentState();
-                                PushCurrentState(HtmlParserState.AttValue, null);
+                                PushCurrentState(HtmlParserState.AttValue, value: null);
                                 PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
                                 ParserState = HtmlParserState.Text;
                                 _eatNext = 1;
@@ -554,7 +551,7 @@ namespace Meziantou.Framework.Html
                         if (c == '>')
                         {
                             PushCurrentState();
-                            PushCurrentState(HtmlParserState.AttValue, null);
+                            PushCurrentState(HtmlParserState.AttValue, value: null);
                             PushCurrentState(HtmlParserState.TagEnd, _currentElement);
                             if ((Options.GetElementReadOptions(_currentElement) & HtmlElementReadOptions.InnerRaw) == HtmlElementReadOptions.InnerRaw)
                             {
@@ -577,7 +574,7 @@ namespace Meziantou.Framework.Html
                         if (c == '/' && peek == '>')
                         {
                             PushCurrentState();
-                            PushCurrentState(HtmlParserState.AttValue, null);
+                            PushCurrentState(HtmlParserState.AttValue, value: null);
                             PushCurrentState(HtmlParserState.TagEndClose, _currentElement);
                             ParserState = HtmlParserState.Text;
                             _eatNext = 1;
@@ -587,7 +584,7 @@ namespace Meziantou.Framework.Html
                         if (!IsWhiteSpace(c))
                         {
                             // send a null attribute
-                            PushCurrentState(HtmlParserState.AttValue, null);
+                            PushCurrentState(HtmlParserState.AttValue, value: null);
 
                             ParserState = HtmlParserState.AttName;
                             Value.Append(c);

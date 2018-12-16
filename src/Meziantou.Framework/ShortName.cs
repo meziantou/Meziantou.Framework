@@ -94,7 +94,7 @@ namespace Meziantou.Framework
             foreach (var name in names)
             {
                 if (name == null)
-                    throw new ArgumentException(null, nameof(names));
+                    throw new ArgumentException(message: null, nameof(names));
 
                 dict.Remove(name);
                 var shortName = Create(dict, maxLength, name);

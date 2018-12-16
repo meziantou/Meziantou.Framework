@@ -48,7 +48,7 @@ namespace Meziantou.Framework
         [Pure]
         public static DateTime StartOfMonth(this DateTime dt)
         {
-            return StartOfMonth(dt, false);
+            return StartOfMonth(dt, keepTime: false);
         }
 
         [Pure]
@@ -71,7 +71,7 @@ namespace Meziantou.Framework
         [Pure]
         public static DateTime StartOfYear(this DateTime dt)
         {
-            return StartOfYear(dt, false);
+            return StartOfYear(dt, keepTime: false);
         }
 
         [Pure]

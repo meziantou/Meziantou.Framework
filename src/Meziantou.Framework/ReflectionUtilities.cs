@@ -31,7 +31,7 @@ namespace Meziantou.Framework
             if (!type.IsEnum)
                 return false;
 
-            return type.IsDefined(typeof(FlagsAttribute), true);
+            return type.IsDefined(typeof(FlagsAttribute), inherit: true);
         }
 
         public static MethodInfo GetImplicitConversion(object value, Type targetType)

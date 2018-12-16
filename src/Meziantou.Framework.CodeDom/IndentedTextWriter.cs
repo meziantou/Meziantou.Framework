@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -42,7 +43,7 @@ namespace Meziantou.Framework.CodeDom
         }
 
         public IndentedTextWriter(TextWriter writer, string tabString)
-            : this(writer, tabString, true)
+            : this(writer, tabString, closeWriter: true)
         {
         }
 
@@ -88,7 +89,7 @@ namespace Meziantou.Framework.CodeDom
             }
 
             InnerWriter.Write(value);
-            if (value != null && value.EndsWith(NewLine))
+            if (value != null && value.EndsWith(NewLine, StringComparison.Ordinal))
             {
                 _tabsPending = true;
             }

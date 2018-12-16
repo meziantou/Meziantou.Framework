@@ -133,10 +133,10 @@ namespace Meziantou.Framework
                 return string.Empty;
 
             if (offset < 0)
-                throw new ArgumentException(null, nameof(offset));
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, message: null);
 
             if (count < 0)
-                throw new ArgumentException(null, nameof(count));
+                throw new ArgumentOutOfRangeException(nameof(count), count, message: null);
 
             if (offset >= bytes.Length)
                 return string.Empty;
@@ -875,13 +875,13 @@ namespace Meziantou.Framework
                 return false; // arguable...
 
             bools = bools.Trim().ToLowerInvariant();
-            if (bools == "y" || bools == "yes" || bools == "t" || bools.StartsWith("true"))
+            if (bools == "y" || bools == "yes" || bools == "t" || bools.StartsWith("true", StringComparison.Ordinal))
             {
                 value = true;
                 return true;
             }
 
-            return bools == "n" || bools == "no" || bools == "f" || bools.StartsWith("false");
+            return bools == "n" || bools == "no" || bools == "f" || bools.StartsWith("false", StringComparison.Ordinal);
         }
 
         protected virtual bool TryConvert(object input, Type conversionType, IFormatProvider provider, out object value)
@@ -1253,7 +1253,7 @@ namespace Meziantou.Framework
                 {
                     if (provider is CultureInfo cultureInfo)
                     {
-                        value = ctConverter.ConvertFrom(null, cultureInfo, input);
+                        value = ctConverter.ConvertFrom(context: null, cultureInfo, input);
                     }
                     else
                     {
@@ -1273,7 +1273,7 @@ namespace Meziantou.Framework
                 var inputConverter = TypeDescriptor.GetConverter(inputType);
                 if (inputConverter != null && inputConverter.CanConvertTo(conversionType))
                 {
-                    value = inputConverter.ConvertTo(null, provider as CultureInfo, input, conversionType);
+                    value = inputConverter.ConvertTo(context: null, provider as CultureInfo, input, conversionType);
                     return true;
                 }
             }
@@ -1287,7 +1287,7 @@ namespace Meziantou.Framework
             {
                 if (ctConverter != null && !(input is string) && ctConverter.CanConvertFrom(typeof(string)))
                 {
-                    value = ctConverter.ConvertFrom(null, provider as CultureInfo, Convert.ToString(input, provider));
+                    value = ctConverter.ConvertFrom(context: null, provider as CultureInfo, Convert.ToString(input, provider));
                     return true;
                 }
             }

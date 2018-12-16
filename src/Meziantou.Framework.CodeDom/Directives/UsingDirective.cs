@@ -3,7 +3,7 @@
     public class UsingDirective : Directive
     {
         public UsingDirective()
-            : this(null)
+            : this(ns: null)
         {
         }
 

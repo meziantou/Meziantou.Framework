@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class NamespaceDeclaration : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable
     {
@@ -11,7 +11,7 @@ namespace Meziantou.Framework.CodeDom
         public CommentCollection CommentsAfter { get; }
 
         public NamespaceDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

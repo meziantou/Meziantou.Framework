@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -39,7 +39,7 @@ namespace Meziantou.Framework.Versioning.Tests
         [DataRow("1.2.03")] // No leading 0
         [DataRow("1.0.0-01")] // No leading 0
         [DataRow("1.0.0-beta.01")] // No leading 0
-        [DataRow("1.0.0+�")] // Invalid character
+        [DataRow("1.0.0+é")] // Invalid character
         public void TryParse_ShouldNotParseVersion(string version)
         {
             Assert.IsFalse(SemanticVersion.TryParse(version, out _));
@@ -136,31 +136,31 @@ namespace Meziantou.Framework.Versioning.Tests
         [TestMethod]
         public void Constructor_WithInvalidPrerelease_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, new[] { "01" }, null));
+            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "01" }, metadata: null));
         }
 
         [TestMethod]
         public void Constructor_WithEmptyPrerelease_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, new[] { "" }, null));
+            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "" }, metadata: null));
         }
 
         [TestMethod]
         public void Constructor_WithEmptyMetadata_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, null, new[] { "" }));
+            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "" }));
         }
 
         [TestMethod]
         public void Constructor_WithInvalidMetadata_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, null, new[] { "/" }));
+            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "/" }));
         }
 
         [TestMethod]
         public void Constructor_WithInvalidMetadataString_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, null, "label./"));
+            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
         }
 
         [TestMethod]

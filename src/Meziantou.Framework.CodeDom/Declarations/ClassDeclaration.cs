@@ -1,9 +1,9 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ClassDeclaration : TypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer, IMemberContainer
     {
         public ClassDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

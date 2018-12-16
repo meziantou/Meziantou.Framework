@@ -406,7 +406,7 @@ namespace Meziantou.Framework.Html
 
         public override void MoveToRoot()
         {
-            Trace(null);
+            Trace(value: null);
             CurrentNode = Document ?? BaseNode;
         }
 

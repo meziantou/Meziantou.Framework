@@ -3,7 +3,7 @@
     public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable
     {
         protected MemberDeclaration()
-            : this(null)
+            : this(name: null)
         {
         }
 

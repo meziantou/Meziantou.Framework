@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Scheduling
                 case DayOfWeek.Saturday:
                     return "SA";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, null);
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Meziantou.Framework.Scheduling
                 case EventStatus.Cancelled:
                     return "CANCELLED";
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(status), status, null);
+                    throw new ArgumentOutOfRangeException(nameof(status), status, message: null);
             }
         }
     }

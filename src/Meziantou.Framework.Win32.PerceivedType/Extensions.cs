@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Win32
 
         public static T GetEnumValue<T>(string value, T defaultValue) where T : struct
         {
-            if (Enum.TryParse<T>(value, true, out var result))
+            if (Enum.TryParse<T>(value, ignoreCase: true, out var result))
                 return result;
 
             return defaultValue;

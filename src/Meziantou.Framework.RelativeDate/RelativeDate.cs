@@ -13,7 +13,7 @@ namespace Meziantou.Framework
 
         public static RelativeDate Get(DateTimeOffset dateTime) => new RelativeDate(dateTime.UtcDateTime);
 
-        public override string ToString() => ToString(null, null);
+        public override string ToString() => ToString(format: null, formatProvider: null);
 
         public string ToString(string format, IFormatProvider formatProvider)
         {

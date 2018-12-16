@@ -6,7 +6,7 @@
         private Expression _defaultValue;
 
         public MethodArgumentDeclaration()
-            : this(null, null)
+            : this(type: null, name: null)
         {
         }
 

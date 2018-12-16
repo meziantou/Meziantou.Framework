@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Html
 
         public HtmlAttribute Add(string prefix, string localName, string namespaceURI)
         {
-            return Add(prefix, localName, namespaceURI, null);
+            return Add(prefix, localName, namespaceURI, value: null);
         }
 
         public HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value)
@@ -67,7 +67,7 @@ namespace Meziantou.Framework.Html
 
         public void Add(HtmlAttribute attribute)
         {
-            Add(attribute, true);
+            Add(attribute, replace: true);
         }
 
         public void Add(HtmlAttribute attribute, bool replace)
@@ -76,7 +76,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(attribute));
 
             if (attribute.ParentNode != null)
-                throw new ArgumentException(null, nameof(attribute));
+                throw new ArgumentException(message: null, nameof(attribute));
 
             var att = this[attribute.LocalName, attribute.NamespaceURI];
             if (att != null)
@@ -133,7 +133,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(item));
 
             if (item.ParentNode != null)
-                throw new ArgumentException(null, nameof(item));
+                throw new ArgumentException(message: null, nameof(item));
 
             _attributes.Insert(index, item);
             item.ParentNode = Parent;
@@ -183,7 +183,7 @@ namespace Meziantou.Framework.Html
 
             var att = _attributes[index];
             if (att.ParentNode != Parent)
-                throw new ArgumentException(null, nameof(index));
+                throw new ArgumentException(message: null, nameof(index));
 
             _attributes.RemoveAt(index);
             att.ParentNode = null;
@@ -250,10 +250,10 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(attribute));
 
             if (attribute.ParentNode != Parent)
-                throw new ArgumentException(null, nameof(attribute));
+                throw new ArgumentException(message: null, nameof(attribute));
 
             if (!_attributes.Remove(attribute))
-                throw new ArgumentException(null, nameof(attribute));
+                throw new ArgumentException(message: null, nameof(attribute));
 
             attribute.ParentNode = null;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, attribute));
@@ -275,7 +275,7 @@ namespace Meziantou.Framework.Html
                     throw new ArgumentNullException(nameof(value));
 
                 if (value.ParentNode != null)
-                    throw new ArgumentException(null, nameof(value));
+                    throw new ArgumentException(message: null, nameof(value));
 
                 var index = IndexOf(name);
                 if (index < 0)
@@ -309,7 +309,7 @@ namespace Meziantou.Framework.Html
                     throw new ArgumentNullException(nameof(value));
 
                 if (value.ParentNode != null)
-                    throw new ArgumentException(null, nameof(value));
+                    throw new ArgumentException(message: null, nameof(value));
 
                 var index = IndexOf(localName, namespaceURI);
                 if (index < 0)

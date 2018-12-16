@@ -8,7 +8,7 @@ namespace Meziantou.Framework
     {
         public static string Create(string text)
         {
-            return Create(text, null);
+            return Create(text, options: null);
         }
 
         public static string Create(string text, SlugOptions options)
@@ -73,7 +73,7 @@ namespace Meziantou.Framework
                 text = text.Substring(0, options.MaximumLength);
             }
 
-            if (!options.CanEndWithSeparator && options.Separator != null && text.EndsWith(options.Separator))
+            if (!options.CanEndWithSeparator && options.Separator != null && text.EndsWith(options.Separator, StringComparison.Ordinal))
             {
                 text = text.Substring(0, text.Length - options.Separator.Length);
             }

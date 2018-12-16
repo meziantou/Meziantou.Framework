@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Scheduling
         {
             if (dict == null) throw new ArgumentNullException(nameof(dict));
 
-            if (dict.TryGetValue(key, out var value) && value != null && Enum.TryParse<Frequency>(value, true, out var enumValue))
+            if (dict.TryGetValue(key, out var value) && value != null && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
                 return enumValue;
 
             return defaultValue;
@@ -72,7 +72,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static DateTime StartOfMonth(DateTime dt)
         {
-            return StartOfMonth(dt, false);
+            return StartOfMonth(dt, keepTime: false);
         }
 
         [Pure]
@@ -89,7 +89,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static DateTime StartOfYear(DateTime dt)
         {
-            return StartOfYear(dt, false);
+            return StartOfYear(dt, keepTime: false);
         }
 
         [Pure]

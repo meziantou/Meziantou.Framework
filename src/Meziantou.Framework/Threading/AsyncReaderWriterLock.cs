@@ -71,7 +71,7 @@ namespace Meziantou.Framework.Threading
 
             if (toWake != null)
             {
-                toWake.SetResult(new Releaser(this, true));
+                toWake.SetResult(new Releaser(this, writer: true));
             }
         }
 

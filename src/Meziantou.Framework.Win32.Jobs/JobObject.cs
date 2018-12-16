@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Win32
         /// Initializes a new instance of the <see cref="JobObject"/> class. The associated job object will have no name.
         /// </summary>
         public JobObject()
-            : this(null)
+            : this(name: null)
         {
         }
 
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Win32
         /// </summary>
         /// <param name="name">The job object name. May be null.</param>
         public JobObject(string name)
-            : base(IntPtr.Zero, true)
+            : base(IntPtr.Zero, ownsHandle: true)
         {
             var atts = new SECURITY_ATTRIBUTES
             {

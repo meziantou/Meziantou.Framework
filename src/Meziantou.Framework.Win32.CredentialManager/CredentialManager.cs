@@ -61,7 +61,7 @@ namespace Meziantou.Framework.Win32
 
         public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence)
         {
-            WriteCredential(applicationName, userName, secret, null, persistence);
+            WriteCredential(applicationName, userName, secret, comment: null, persistence);
         }
 
         public static void WriteCredential(string applicationName, string userName, string secret, string comment, CredentialPersistence persistence)
@@ -151,7 +151,7 @@ namespace Meziantou.Framework.Win32
 
         public static IReadOnlyList<Credential> EnumerateCrendentials()
         {
-            return EnumerateCrendentials(null);
+            return EnumerateCrendentials(filter: null);
         }
 
         public static IReadOnlyList<Credential> EnumerateCrendentials(string filter)
@@ -223,7 +223,7 @@ namespace Meziantou.Framework.Win32
                     return new CredentialResult(
                         userId.ToString(),
                         userPassword.ToString(),
-                        null,
+                        domain: null,
                         credentialSaved);
 
                 case CredentialUIReturnCodes.InsufficientBuffer:

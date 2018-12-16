@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -78,7 +78,7 @@ namespace Meziantou.Framework.Templating
 
         public void AddUsing(string @namespace)
         {
-            AddUsing(@namespace, null);
+            AddUsing(@namespace, alias: null);
         }
 
         public void AddUsing(string @namespace, string alias)
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Templating
 
         public void AddUsing(Type type)
         {
-            AddUsing(type, null);
+            AddUsing(type, alias: null);
         }
 
         public void AddUsing(Type type, string alias)
@@ -151,7 +151,7 @@ namespace Meziantou.Framework.Templating
 
         public void AddArgument(string name)
         {
-            AddArgument(name, null);
+            AddArgument(name, type: null);
         }
 
         public void AddArgument<T>(string name)
@@ -278,7 +278,7 @@ namespace Meziantou.Framework.Templating
             // Create final parsed block if needed
             if (currentBlock.Length > 0)
             {
-                var block = CreateBlock(false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
+                var block = CreateBlock(codeBlock: false, currentBlock.ToString(), blockIndex, startLine, startColumn, reader.Line, reader.Column);
                 blocks.Add(block);
             }
 
@@ -433,7 +433,7 @@ namespace Meziantou.Framework.Templating
 
             var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + Guid.NewGuid().ToString("N");
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
-                .WithDeterministic(true)
+                .WithDeterministic(deterministic: true)
                 .WithOptimizationLevel(Debug ? OptimizationLevel.Debug : OptimizationLevel.Release)
                 .WithPlatform(Platform.AnyCpu);
 

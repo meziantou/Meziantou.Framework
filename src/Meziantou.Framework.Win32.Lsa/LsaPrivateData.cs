@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32
     {
         public static void RemoveValue(string key)
         {
-            SetValue(key, null);
+            SetValue(key, value: null);
         }
 
         public static void SetValue(string key, string value)

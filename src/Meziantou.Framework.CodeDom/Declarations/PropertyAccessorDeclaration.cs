@@ -5,7 +5,7 @@
         private StatementCollection _statements;
 
         public PropertyAccessorDeclaration()
-            : this(null)
+            : this(statements: null)
         {
         }
 

@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual("en-US", value.Name);
         }
 
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out long value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual(15L, value);
         }
 
@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out short value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual((short)15, value);
         }
 
@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out ushort value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             Assert.AreEqual((ushort)15, value);
         }
 
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
 
-            Assert.AreEqual(true, converted);
+            Assert.IsTrue(converted);
             CollectionAssert.AreEqual(new byte[] { 0x78, 0x56, 0x34, 0x12 }, value);
         }
     }

@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Versioning
         }
 
         public SemanticVersion(int major, int minor, int patch, string prereleaseLabel)
-            : this(major, minor, patch, prereleaseLabel, null)
+            : this(major, minor, patch, prereleaseLabel, metadata: null)
         {
         }
 
@@ -142,7 +142,7 @@ namespace Meziantou.Framework.Versioning
 
         public override string ToString()
         {
-            return ToString(null, null);
+            return ToString(format: null, formatProvider: null);
         }
 
         public override int GetHashCode()

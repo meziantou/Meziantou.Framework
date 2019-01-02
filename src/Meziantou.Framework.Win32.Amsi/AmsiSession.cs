@@ -5,18 +5,18 @@ namespace Meziantou.Framework.Win32
 {
     public class AmsiSession : IDisposable
     {
-        private readonly AmsiContextSafeHandle _context;
-        private readonly AmsiSessionSafeHandle _session;
+        private readonly AmsiContext _context;
+        private readonly AmsiSessionSafeHandle _sessionHandle;
 
-        internal AmsiSession(AmsiContextSafeHandle context, AmsiSessionSafeHandle session)
+        internal AmsiSession(AmsiContext context, AmsiSessionSafeHandle session)
         {
             _context = context;
-            _session = session;
+            _sessionHandle = session;
         }
 
         public bool IsMalware(string payload, string contentName)
         {
-            var returnValue = Amsi.AmsiScanString(_context, payload, contentName, _session, out var result);
+            var returnValue = Amsi.AmsiScanString(_context._handle, payload, contentName, _sessionHandle, out var result);
             if (returnValue != 0)
                 throw new Win32Exception(returnValue);
 
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Win32
 
         public bool IsMalware(byte[] payload, string contentName)
         {
-            var returnValue = Amsi.AmsiScanBuffer(_context, payload, (uint)payload.Length, contentName, _session, out var result);
+            var returnValue = Amsi.AmsiScanBuffer(_context._handle, payload, (uint)payload.Length, contentName, _sessionHandle, out var result);
             if (returnValue != 0)
                 throw new Win32Exception(returnValue);
 
@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Win32
 
         public void Dispose()
         {
-            _session.Dispose();
+            _sessionHandle.Dispose();
         }
     }
 }

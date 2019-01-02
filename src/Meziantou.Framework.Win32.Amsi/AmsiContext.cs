@@ -5,11 +5,13 @@ namespace Meziantou.Framework.Win32
 {
     public class AmsiContext : IDisposable
     {
-        private readonly AmsiContextSafeHandle _context;
+        internal readonly AmsiContextSafeHandle _handle;
+
+        private static readonly AmsiSessionSafeHandle s_defaultSession = new AmsiSessionSafeHandle();
 
         private AmsiContext(AmsiContextSafeHandle context)
         {
-            _context = context;
+            _handle = context;
         }
 
         public static AmsiContext Create(string applicationName)
@@ -23,17 +25,17 @@ namespace Meziantou.Framework.Win32
 
         public AmsiSession CreateSession()
         {
-            var result = Amsi.AmsiOpenSession(_context, out var session);
-            session.Context = _context;
+            var result = Amsi.AmsiOpenSession(_handle, out var session);
+            session.Context = _handle;
             if (result != 0)
                 throw new Win32Exception(result);
 
-            return new AmsiSession(_context, session);
+            return new AmsiSession(this, session);
         }
 
         public bool IsMalware(string payload, string contentName)
         {
-            var returnValue = Amsi.AmsiScanString(_context, payload, contentName, session: new AmsiSessionSafeHandle(), out var result);
+            var returnValue = Amsi.AmsiScanString(_handle, payload, contentName, s_defaultSession, out var result);
             if (returnValue != 0)
                 throw new Win32Exception(returnValue);
 
@@ -42,7 +44,7 @@ namespace Meziantou.Framework.Win32
 
         public bool IsMalware(byte[] payload, string contentName)
         {
-            var returnValue = Amsi.AmsiScanBuffer(_context, payload, (uint)payload.Length, contentName, session: new AmsiSessionSafeHandle(), out var result);
+            var returnValue = Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, s_defaultSession, out var result);
             if (returnValue != 0)
                 throw new Win32Exception(returnValue);
 
@@ -51,7 +53,7 @@ namespace Meziantou.Framework.Win32
 
         public void Dispose()
         {
-            _context.Dispose();
+            _handle.Dispose();
         }
     }
 }

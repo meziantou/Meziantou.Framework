@@ -40,9 +40,14 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _current = _enumerator.Current;
         }
 
-        public IEnumerable<VirtualFileSystemEntry> Entries { get; set; }
+        public IEnumerable<VirtualFileSystemEntry> Entries { get; }
 
         public void Dispose()
+        {
+            Reset();
+        }
+
+        internal void Reset()
         {
             _current = null;
             _enumerator?.Dispose();

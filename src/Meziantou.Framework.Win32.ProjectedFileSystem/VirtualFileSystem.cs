@@ -3,10 +3,57 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
+    public enum NotificationType
+    {
+        // TODO rename members
+        PRJ_NOTIFY_NONE,
+        PRJ_NOTIFY_SUPPRESS_NOTIFICATIONS,
+        PRJ_NOTIFY_FILE_OPENED,
+        PRJ_NOTIFY_NEW_FILE_CREATED,
+        PRJ_NOTIFY_FILE_OVERWRITTEN,
+        PRJ_NOTIFY_PRE_DELETE,
+        PRJ_NOTIFY_PRE_RENAME,
+        PRJ_NOTIFY_PRE_SET_HARDLINK,
+        PRJ_NOTIFY_FILE_RENAMED,
+        PRJ_NOTIFY_HARDLINK_CREATED,
+        PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION,
+        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED,
+        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED,
+        PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL,
+        PRJ_NOTIFY_USE_EXISTING_MASK,
+    }
+
+    public class StartOptions
+    {
+        public bool UseNegativePathCache { get; set; }
+
+        // https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/ns-projectedfslib-prj_notification_mapping
+        public IList<Notification> Notifications { get; } = new List<Notification>();
+    }
+
+    public class Notification
+    {
+        public Notification(NotificationType notificationType)
+            : this(path: null, notificationType)
+        {
+        }
+
+        public Notification(string path, NotificationType notificationType)
+        {
+            Path = path;
+            NotificationType = notificationType;
+        }
+
+        public string Path { get; }
+        public NotificationType NotificationType { get; }
+    }
+
+    // TODO rename to ProjectedFileSystem
     // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
     public abstract class VirtualFileSystem : IDisposable
     {
@@ -23,11 +70,15 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         private ProjFSSafeHandle _instanceHandle;
 
         private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new ConcurrentDictionary<Guid, DirectoryEnumerationSession>();
+        private long _context;
 
         public string RootFolder { get; }
 
         protected VirtualFileSystem(string rootFolder)
         {
+            if (!Environment.Is64BitProcess || IntPtr.Size == 4)
+                throw new NotSupportedException("Projected File System is only supported on 64-bit process");
+
             if (rootFolder == null)
                 throw new ArgumentNullException(nameof(rootFolder));
 
@@ -35,7 +86,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _virtualizationInstanceId = Guid.NewGuid();
         }
 
-        public void Initialize()
+        public void Start(StartOptions options)
         {
             if (_instanceHandle != null)
                 return;
@@ -52,14 +103,77 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 GetDirectoryEnumerationCallback = GetDirectoryEnumerationCallback,
                 GetPlaceholderInfoCallback = GetPlaceholderInfoCallback,
                 GetFileDataCallback = GetFileDataCallback,
-                // TODO implements
-                //CancelCommandCallback = CancelCommandCallback,
-                //NotificationCallback = NotificationCallback,
-                //QueryFileNameCallback = QueryFileNameCallback,
+                CancelCommandCallback = CancelCommandCallback,
+                NotificationCallback = NotificationCallback,
+                QueryFileNameCallback = QueryFileNameCallback,
             };
 
-            hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, IntPtr.Zero, IntPtr.Zero, out _instanceHandle);
-            hr.EnsureSuccess();
+            var opt = new NativeMethods.PRJ_STARTVIRTUALIZING_OPTIONS();
+            IntPtr notificationMappingsPtr = IntPtr.Zero;
+            try
+            {
+                if (false && options != null)
+                {
+                    opt.Flags = options.UseNegativePathCache ? NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
+
+                    // TODO extract to function
+                    var structureSize = Marshal.SizeOf<NativeMethods.PRJ_NOTIFICATION_MAPPING>();
+                    notificationMappingsPtr = Marshal.AllocHGlobal(structureSize * options.Notifications.Count);
+
+                    for (var i = 0; i < options.Notifications.Count; i++)
+                    {
+                        var copy = new NativeMethods.PRJ_NOTIFICATION_MAPPING()
+                        {
+                            NotificationBitMask = (NativeMethods.PRJ_NOTIFY_TYPES)options.Notifications[i].NotificationType,
+                            NotificationRoot = options.Notifications[i].Path ?? "",
+                        };
+
+                        Marshal.StructureToPtr(copy, IntPtr.Add(notificationMappingsPtr, structureSize * i), fDeleteOld: false);
+                    }
+
+                    opt.NotificationMappings = notificationMappingsPtr;
+                    opt.NotificationMappingsCount = (uint)options.Notifications.Count;
+                }
+
+                var context = ++_context;
+                hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, IntPtr.Zero /* TODO new IntPtr(context)*/, in opt, out _instanceHandle);
+                hr.EnsureSuccess();
+            }
+            finally
+            {
+                if (notificationMappingsPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(notificationMappingsPtr);
+                }
+            }
+        }
+
+        private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
+        {
+            Console.WriteLine($"QueryFileNameCallback {callbackData.FilePathName}");
+
+            var fileName = callbackData.FilePathName;
+            if (GetEntries(null).Any(e => e.Name == fileName))
+                return HResult.S_OK;
+
+            return HResult.E_FILENOTFOUND;
+        }
+
+        private HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
+        {
+            //Console.WriteLine($"{notification} {isDirectory} {destinationFileName}");
+            if (!isDirectory)
+            {
+                Console.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
+
+            }
+            return HResult.S_OK;
+        }
+
+        private HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
+        {
+            Console.WriteLine($"CancelCommandCallback {callbackData.FilePathName}");
+            return HResult.S_OK;
         }
 
         public void Stop()
@@ -96,7 +210,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
             if ((callbackData.Flags & NativeMethods.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN) == NativeMethods.PRJ_CALLBACK_DATA_FLAGS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)
             {
-                // TODO
+                session.Reset();
             }
 
             VirtualFileSystemEntry entry;
@@ -182,9 +296,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 if (writeBuffer == IntPtr.Zero)
                     return HResult.E_OUTOFMEMORY;
 
+                var data = new byte[writeLength];
                 do
                 {
-                    byte[] data = new byte[writeLength];
                     var read = stream.Read(data, 0, data.Length);
 
                     Marshal.Copy(data, 0, IntPtr.Add(writeBuffer, (int)writeStartOffset), read);
@@ -238,6 +352,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         protected abstract IEnumerable<VirtualFileSystemEntry> GetEntries(string path);
 
         // TODO handle not found
+        // TODO virtual with default implementation with CompareFileName
         protected abstract VirtualFileSystemEntry GetEntry(string path);
 
         protected abstract Stream OpenRead(string path);

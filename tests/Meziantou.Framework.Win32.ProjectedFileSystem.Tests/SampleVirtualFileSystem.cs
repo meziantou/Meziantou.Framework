@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
@@ -10,7 +12,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
     public class Tests
     {
         [TestMethod]
-        public void Test()
+        public async Task Test()
         {
             var guid = Guid.NewGuid();
             var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
@@ -18,25 +20,45 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
             using (var vfs = new SampleVirtualFileSystem(fullPath))
             {
-                vfs.Initialize();
-                var results = Directory.EnumerateFileSystemEntries(fullPath).ToList();
-                foreach (var result in results)
-                {
-                    var fi = new FileInfo(result);
-                    var length = fi.Length;
+                var options = new StartOptions();
+                options.UseNegativePathCache = false;
+                //options.Notifications.Add(new Notification(
+                //    NotificationType.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED |
+                //    NotificationType.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED |
+                //    NotificationType.PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION |
+                //    NotificationType.PRJ_NOTIFY_FILE_OPENED |
+                //    NotificationType.PRJ_NOTIFY_FILE_OVERWRITTEN |
+                //    NotificationType.PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL |
+                //    NotificationType.PRJ_NOTIFY_FILE_RENAMED |
+                //    NotificationType.PRJ_NOTIFY_HARDLINK_CREATED |
+                //    NotificationType.PRJ_NOTIFY_NEW_FILE_CREATED |
+                //    NotificationType.PRJ_NOTIFY_PRE_DELETE |
+                //    NotificationType.PRJ_NOTIFY_PRE_RENAME |
+                //    NotificationType.PRJ_NOTIFY_PRE_SET_HARDLINK
+                //    ));
 
-                }
+                vfs.Start(options);
+                //var results = Directory.EnumerateFileSystemEntries(fullPath).ToList();
+                //foreach (var result in results)
+                //{
+                //    var fi = new FileInfo(result);
+                //    var length = fi.Length;
 
-                var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-                Assert.IsFalse(fi2.Exists);
-                Assert.ThrowsException<FileNotFoundException>(() => fi2.Length);
+                //}
 
-                CollectionAssert.AreEqual(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
-                using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
-                {
-                    Assert.AreEqual(1, stream.ReadByte());
-                    Assert.AreEqual(2, stream.ReadByte());
-                }
+                //var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
+                //Assert.IsFalse(fi2.Exists);
+                //Assert.ThrowsException<FileNotFoundException>(() => fi2.Length);
+
+                //CollectionAssert.AreEqual(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
+                //using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
+                //{
+                //    Assert.AreEqual(1, stream.ReadByte());
+                //    Assert.AreEqual(2, stream.ReadByte());
+                //}
+
+                Console.Read();
+                await Task.Delay(TimeSpan.FromMinutes(2)).ConfigureAwait(false);
             }
         }
     }

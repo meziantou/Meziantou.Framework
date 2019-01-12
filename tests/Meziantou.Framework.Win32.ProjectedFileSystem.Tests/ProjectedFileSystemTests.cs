@@ -33,7 +33,14 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                     PRJ_NOTIFY_TYPES.PRE_SET_HARDLINK
                     ));
 
-                vfs.Start(options);
+                try
+                {
+                    vfs.Start(options);
+                }
+                catch (NotSupportedException ex)
+                {
+                    Assert.Inconclusive(ex.Message);
+                }
 
                 // Get content
                 var files = Directory.GetFiles(fullPath);

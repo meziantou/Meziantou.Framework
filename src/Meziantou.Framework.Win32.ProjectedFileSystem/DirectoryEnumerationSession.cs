@@ -5,15 +5,15 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     internal class DirectoryEnumerationSession : IDisposable
     {
-        private IEnumerator<VirtualFileSystemEntry> _enumerator;
-        private VirtualFileSystemEntry _current;
+        private IEnumerator<ProjectedFileSystemEntry> _enumerator;
+        private ProjectedFileSystemEntry _current;
 
-        public DirectoryEnumerationSession(IEnumerable<VirtualFileSystemEntry> entries)
+        public DirectoryEnumerationSession(IEnumerable<ProjectedFileSystemEntry> entries)
         {
             Entries = entries ?? throw new ArgumentNullException(nameof(entries));
         }
 
-        public VirtualFileSystemEntry GetNextEntry()
+        public ProjectedFileSystemEntry GetNextEntry()
         {
             if (_current != null)
             {
@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _current = _enumerator.Current;
         }
 
-        public IEnumerable<VirtualFileSystemEntry> Entries { get; }
+        public IEnumerable<ProjectedFileSystemEntry> Entries { get; }
 
         public void Dispose()
         {

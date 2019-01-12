@@ -1,9 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal readonly struct HResult
+    internal readonly struct HResult : IEquatable<HResult>
     {
         public int Value { get; }
 
@@ -16,8 +17,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         public static HResult S_OK => new HResult();
         public static HResult E_INVALIDARG => new HResult(unchecked((int)0x80070057));
-        public static HResult E_FILENOTFOUND => HRESULT_FROM_WIN32(2);
+        public static HResult E_FILENOTFOUND => new HResult(unchecked((int)0x80070002));
+        public static HResult E_PATHNOTFOUND => new HResult(unchecked((int)0x80070003));
         public static HResult E_OUTOFMEMORY => new HResult(unchecked((int)0x8007000E));
+        public static HResult ERROR_IO_PENDING => new HResult(unchecked((int)0x800703E5));
+        public static HResult ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION => new HResult(unchecked((int)0x80070181));
 
         public void EnsureSuccess()
         {
@@ -27,64 +31,29 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
         }
 
-        private const int FACILITY_WIN32 = 7;
-
-        private static HResult HRESULT_FROM_WIN32(int x)
+        public override bool Equals(object obj)
         {
-            //  return (((x) & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000);
-            int hr;
-            if (x <= 0)
-            {
-                hr = x;
-            }
-            else
-            {
-                hr = (int)(((uint)x & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000);
-            }
+            return obj is HResult && Equals((HResult)obj);
+        }
 
-            return new HResult(hr);
+        public bool Equals(HResult other)
+        {
+            return Value == other.Value;
+        }
+
+        public override int GetHashCode()
+        {
+            return -1937169414 + Value.GetHashCode();
+        }
+
+        public static bool operator ==(HResult result1, HResult result2)
+        {
+            return result1.Equals(result2);
+        }
+
+        public static bool operator !=(HResult result1, HResult result2)
+        {
+            return !(result1 == result2);
         }
     }
-
-    //class Program
-    //{
-    //    // TODO notification on rename/delete/... 
-
-    //    // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
-    //    static void Main(string[] args)
-    //    {
-    //        var guid = Guid.NewGuid();
-    //        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
-    //        Directory.CreateDirectory(fullPath);
-
-    //        using (var vfs = new SampleVirtualFileSystem(fullPath))
-    //        {
-    //            vfs.Initialize();
-    //            var results = Directory.EnumerateFileSystemEntries(fullPath).ToList();
-    //            foreach (var result in results)
-    //            {
-    //                var fi = new FileInfo(result);
-    //                var length = fi.Length;
-
-    //            }
-
-    //            try
-    //            {
-    //                var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-    //                var length2 = fi2.Length;
-    //                Debug.Fail("File does not exist");
-    //            }
-    //            catch (FileNotFoundException)
-    //            {
-    //            }
-
-    //            var bytes = File.ReadAllBytes(Path.Combine(fullPath, "a"));
-    //            using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
-    //            {
-    //                var b1 = stream.ReadByte();
-    //                var b2 = stream.ReadByte();
-    //            }
-    //        }
-    //    }
-    //}
 }

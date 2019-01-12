@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         internal static extern HResult PrjFillDirEntryBuffer(string fileName, in PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle);
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-        internal static extern HResult PrjWritePlaceholderInfo(IntPtr namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize);
+        internal static extern HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize);
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
         internal static extern int PrjFileNameCompare(string fileName1, string fileName2);
@@ -30,16 +30,28 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         internal static extern bool PrjFileNameMatch(string fileNameToCheck, string pattern);
 
         [DllImport("ProjectedFSLib.dll")]
-        internal static extern HResult PrjGetVirtualizationInstanceInfo(IntPtr namespaceVirtualizationContext, out PRJ_VIRTUALIZATION_INSTANCE_INFO virtualizationInstanceInfo);
+        internal static extern HResult PrjGetVirtualizationInstanceInfo(ProjFSSafeHandle namespaceVirtualizationContext, out PRJ_VIRTUALIZATION_INSTANCE_INFO virtualizationInstanceInfo);
 
         [DllImport("ProjectedFSLib.dll")]
-        internal static extern IntPtr PrjAllocateAlignedBuffer(IntPtr namespaceVirtualizationContext, uint size);
+        internal static extern IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size);
 
         [DllImport("ProjectedFSLib.dll")]
         internal static extern void PrjFreeAlignedBuffer(IntPtr buffer);
 
         [DllImport("ProjectedFSLib.dll")]
-        internal static extern HResult PrjWriteFileData(IntPtr namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length);
+        internal static extern HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length);
+
+        [DllImport("ProjectedFSLib.dll")]
+        internal static extern HResult PrjClearNegativePathCache(ProjFSSafeHandle namespaceVirtualizationContext, out uint totalEntryNumber);
+
+        [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+        internal static extern HResult PrjGetOnDiskFileState(string destinationFileName, out PRJ_FILE_STATE fileState);
+
+        [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+        internal static extern HResult PrjDeleteFile(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
+
+        [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+        internal static extern HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct PRJ_PLACEHOLDER_INFO
@@ -74,11 +86,14 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct PRJ_PLACEHOLDER_VERSION_INFO
+        internal struct PRJ_PLACEHOLDER_VERSION_INFO
         {
-            // TODO  [MarshalAs(UnmanagedType.ByValArray, SizeConst=128)] 
-            public fixed byte ProviderID[128];
-            public fixed byte ContentID[128];
+            public const int PRJ_PLACEHOLDER_ID_LENGTH = 128;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+            public byte[] ProviderID;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
+            public byte[] ContentID;
         }
 
         // Structure configuring the projection provider callbacks.
@@ -112,7 +127,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         {
             public uint Size;
             public PRJ_CALLBACK_DATA_FLAGS Flags;
-            public IntPtr NamespaceVirtualizationContext; // TODO
+            public IntPtr NamespaceVirtualizationContext;
             public int CommandId;
             public Guid FileId;
             public Guid DataStreamId;
@@ -179,26 +194,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             public string NotificationRoot;
         }
 
-        [Flags]
-        internal enum PRJ_NOTIFY_TYPES : uint
-        {
-            PRJ_NOTIFY_NONE = 0x00000000,
-            PRJ_NOTIFY_SUPPRESS_NOTIFICATIONS = 0x00000001,
-            PRJ_NOTIFY_FILE_OPENED = 0x00000002,
-            PRJ_NOTIFY_NEW_FILE_CREATED = 0x00000004,
-            PRJ_NOTIFY_FILE_OVERWRITTEN = 0x00000008,
-            PRJ_NOTIFY_PRE_DELETE = 0x00000010,
-            PRJ_NOTIFY_PRE_RENAME = 0x00000020,
-            PRJ_NOTIFY_PRE_SET_HARDLINK = 0x00000040,
-            PRJ_NOTIFY_FILE_RENAMED = 0x00000080,
-            PRJ_NOTIFY_HARDLINK_CREATED = 0x00000100,
-            PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION = 0x00000200,
-            PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED = 0x00000400,
-            PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED = 0x00000800,
-            PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL = 0x00001000,
-            PRJ_NOTIFY_USE_EXISTING_MASK = 0xFFFFFFFF
-        }
-
         internal enum PRJ_NOTIFICATION
         {
             PRJ_NOTIFICATION_FILE_OPENED = 0x00000002,
@@ -215,43 +210,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             PRJ_NOTIFICATION_FILE_PRE_CONVERT_TO_FULL = 0x00001000,
         }
 
-        [Flags]
-        internal enum PRJ_UPDATE_TYPES
-        {
-            PRJ_UPDATE_NONE = 0x00000000,
-            PRJ_UPDATE_ALLOW_DIRTY_METADATA = 0x00000001,
-            PRJ_UPDATE_ALLOW_DIRTY_DATA = 0x00000002,
-            PRJ_UPDATE_ALLOW_TOMBSTONE = 0x00000004,
-            PRJ_UPDATE_RESERVED1 = 0x00000008,
-            PRJ_UPDATE_RESERVED2 = 0x00000010,
-            PRJ_UPDATE_ALLOW_READ_ONLY = 0x00000020,
-            PRJ_UPDATE_MAX_VAL = (PRJ_UPDATE_ALLOW_READ_ONLY << 1)
-        }
-
-        [Flags]
-        internal enum PRJ_UPDATE_FAILURE_CAUSES
-        {
-            PRJ_UPDATE_FAILURE_CAUSE_NONE = 0x00000000,
-            PRJ_UPDATE_FAILURE_CAUSE_DIRTY_METADATA = 0x00000001,
-            PRJ_UPDATE_FAILURE_CAUSE_DIRTY_DATA = 0x00000002,
-            PRJ_UPDATE_FAILURE_CAUSE_TOMBSTONE = 0x00000004,
-            PRJ_UPDATE_FAILURE_CAUSE_READ_ONLY = 0x00000008,
-        }
-
-        [Flags]
-        internal enum PRJ_FILE_STATE
-        {
-            PRJ_FILE_STATE_PLACEHOLDER = 0x00000001,
-            PRJ_FILE_STATE_HYDRATED_PLACEHOLDER = 0x00000002,
-            PRJ_FILE_STATE_DIRTY_PLACEHOLDER = 0x00000004,
-            PRJ_FILE_STATE_FULL = 0x00000008,
-            PRJ_FILE_STATE_TOMBSTONE = 0x00000010,
-        }
-
         internal enum PRJ_COMPLETE_COMMAND_TYPE
         {
             PRJ_COMPLETE_COMMAND_TYPE_NOTIFICATION = 1,
             PRJ_COMPLETE_COMMAND_TYPE_ENUMERATION = 2
         }
     }
+
 }

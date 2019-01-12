@@ -8,63 +8,14 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    public enum NotificationType
-    {
-        // TODO rename members
-        PRJ_NOTIFY_NONE,
-        PRJ_NOTIFY_SUPPRESS_NOTIFICATIONS,
-        PRJ_NOTIFY_FILE_OPENED,
-        PRJ_NOTIFY_NEW_FILE_CREATED,
-        PRJ_NOTIFY_FILE_OVERWRITTEN,
-        PRJ_NOTIFY_PRE_DELETE,
-        PRJ_NOTIFY_PRE_RENAME,
-        PRJ_NOTIFY_PRE_SET_HARDLINK,
-        PRJ_NOTIFY_FILE_RENAMED,
-        PRJ_NOTIFY_HARDLINK_CREATED,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED,
-        PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL,
-        PRJ_NOTIFY_USE_EXISTING_MASK,
-    }
-
-    public class StartOptions
-    {
-        public bool UseNegativePathCache { get; set; }
-
-        // https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/ns-projectedfslib-prj_notification_mapping
-        public IList<Notification> Notifications { get; } = new List<Notification>();
-    }
-
-    public class Notification
-    {
-        public Notification(NotificationType notificationType)
-            : this(path: null, notificationType)
-        {
-        }
-
-        public Notification(string path, NotificationType notificationType)
-        {
-            Path = path;
-            NotificationType = notificationType;
-        }
-
-        public string Path { get; }
-        public NotificationType NotificationType { get; }
-    }
-
-    // TODO rename to ProjectedFileSystem
     // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
-    public abstract class VirtualFileSystem : IDisposable
+    public abstract class ProjectedFileSystem : IDisposable
     {
         // TODO
-        // * Expose PRJ_FLAG_USE_NEGATIVE_PATH_CACHE
-        // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjdeletefile
+        // * Version
+        // * FileNotFound
+        // * Async loading (https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand)
         // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjupdatefileifneeded
-        // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjdoesnamecontainwildcards
-        // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand
-        // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjclearnegativepathcache
-        // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjgetondiskfilestate
 
         private readonly Guid _virtualizationInstanceId;
         private ProjFSSafeHandle _instanceHandle;
@@ -74,9 +25,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         public string RootFolder { get; }
 
-        protected VirtualFileSystem(string rootFolder)
+        protected int BufferSize { get; set; } = 4096; // 4kB
+
+        protected ProjectedFileSystem(string rootFolder)
         {
-            if (!Environment.Is64BitProcess || IntPtr.Size == 4)
+            if (!Environment.Is64BitProcess)
                 throw new NotSupportedException("Projected File System is only supported on 64-bit process");
 
             if (rootFolder == null)
@@ -86,14 +39,20 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _virtualizationInstanceId = Guid.NewGuid();
         }
 
-        public void Start(StartOptions options)
+        public void Start(ProjectedFileSystemStartOptions options)
         {
             if (_instanceHandle != null)
                 return;
 
-            // TODO allow options and implement notification
-            var hr = NativeMethods.PrjMarkDirectoryAsPlaceholder(RootFolder, null, IntPtr.Zero, in _virtualizationInstanceId);
-            hr.EnsureSuccess();
+            try
+            {
+                var hr = NativeMethods.PrjMarkDirectoryAsPlaceholder(RootFolder, null, IntPtr.Zero, in _virtualizationInstanceId);
+                hr.EnsureSuccess();
+            }
+            catch (DllNotFoundException)
+            {
+                throw new NotSupportedException("ProjFS is not supported on this machine. Make sure the optional windows feature 'Projected File System' is installed.");
+            }
 
             // Set up the callback table for the projection provider.
             var callbackTable = new NativeMethods.PrjCallbacks
@@ -109,7 +68,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             };
 
             var opt = new NativeMethods.PRJ_STARTVIRTUALIZING_OPTIONS();
-            IntPtr notificationMappingsPtr = IntPtr.Zero;
+            var notificationMappingsPtr = IntPtr.Zero;
             try
             {
                 if (false && options != null)
@@ -124,7 +83,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                     {
                         var copy = new NativeMethods.PRJ_NOTIFICATION_MAPPING()
                         {
-                            NotificationBitMask = (NativeMethods.PRJ_NOTIFY_TYPES)options.Notifications[i].NotificationType,
+                            NotificationBitMask = options.Notifications[i].NotificationType,
                             NotificationRoot = options.Notifications[i].Path ?? "",
                         };
 
@@ -136,7 +95,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var context = ++_context;
-                hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, IntPtr.Zero /* TODO new IntPtr(context)*/, in opt, out _instanceHandle);
+                var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, new IntPtr(context), in opt, out _instanceHandle);
                 hr.EnsureSuccess();
             }
             finally
@@ -148,32 +107,27 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
         }
 
-        private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
+        public static PRJ_FILE_STATE GetOnDiskFileState(string path)
         {
-            Console.WriteLine($"QueryFileNameCallback {callbackData.FilePathName}");
-
-            var fileName = callbackData.FilePathName;
-            if (GetEntries(null).Any(e => e.Name == fileName))
-                return HResult.S_OK;
-
-            return HResult.E_FILENOTFOUND;
+            var hr = NativeMethods.PrjGetOnDiskFileState(path, out var state);
+            hr.EnsureSuccess();
+            return state;
         }
 
-        private HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
+        protected void ClearNegativePathCache()
         {
-            //Console.WriteLine($"{notification} {isDirectory} {destinationFileName}");
-            if (!isDirectory)
-            {
-                Console.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
-
-            }
-            return HResult.S_OK;
+            var result = NativeMethods.PrjClearNegativePathCache(_instanceHandle, out _);
+            result.EnsureSuccess();
         }
 
-        private HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
+        protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
         {
-            Console.WriteLine($"CancelCommandCallback {callbackData.FilePathName}");
-            return HResult.S_OK;
+            var hr = NativeMethods.PrjDeleteFile(_instanceHandle, relativePath, updateFlags, out failureReason);
+            if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
+                return false;
+
+            hr.EnsureSuccess();
+            return true;
         }
 
         public void Stop()
@@ -183,6 +137,57 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
             _instanceHandle.Dispose();
             _instanceHandle = null;
+        }
+
+        protected static bool FileNameMatch(string fileName, string pattern)
+        {
+            return NativeMethods.PrjFileNameMatch(fileName, pattern);
+        }
+
+        protected static bool AreFileNamesEqual(string fileName1, string fileName2)
+        {
+            return CompareFileName(fileName1, fileName2) == 0;
+        }
+
+        protected static int CompareFileName(string fileName1, string fileName2)
+        {
+            return FileNameComparer.Instance.Compare(fileName1, fileName2);
+        }
+
+        protected abstract IEnumerable<ProjectedFileSystemEntry> GetEntries(string path);
+
+        protected virtual ProjectedFileSystemEntry GetEntry(string path)
+        {
+            var directory = Path.GetDirectoryName(path);
+            return GetEntries(directory).FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
+        }
+
+        protected abstract Stream OpenRead(string path);
+
+        public void Dispose()
+        {
+            Stop();
+        }
+
+        private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
+        {
+            var fileName = callbackData.FilePathName;
+            if (GetEntry(fileName) != null)
+                return HResult.S_OK;
+
+            return HResult.E_FILENOTFOUND;
+        }
+
+        private HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
+        {
+            Debug.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
+            return HResult.S_OK;
+        }
+
+        private HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
+        {
+            Debug.WriteLine($"CancelCommandCallback {callbackData.FilePathName}");
+            return HResult.S_OK;
         }
 
         private HResult StartDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId)
@@ -213,7 +218,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 session.Reset();
             }
 
-            VirtualFileSystemEntry entry;
+            ProjectedFileSystemEntry entry;
             while ((entry = session.GetNextEntry()) != null)
             {
                 var info = new NativeMethods.PRJ_FILE_BASIC_INFO();
@@ -242,7 +247,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             info.FileBasicInfo.FileSize = entry.Length;
 
             var hr = NativeMethods.PrjWritePlaceholderInfo(
-                        callbackData.NamespaceVirtualizationContext,
+                        new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false),
                         entry.Name,
                         in info,
                         (uint)Marshal.SizeOf(info));
@@ -253,7 +258,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         private HResult GetFileDataCallback(in NativeMethods.PrjCallbackData callbackData, ulong byteOffset, uint length)
         {
-            // TODO test large file
             using (var stream = OpenRead(callbackData.FilePathName))
             {
                 if (stream == null)
@@ -262,8 +266,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 ulong writeStartOffset;
                 uint writeLength;
 
-                // TODO extract as property
-                const uint maxBufferSize = 1024 * 1024;
+                var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
+
+                var maxBufferSize = (uint)BufferSize;
                 if (length <= maxBufferSize)
                 {
                     // The range requested in the callback is less than the buffer size, so we can return
@@ -273,7 +278,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
                 else
                 {
-                    var hr = NativeMethods.PrjGetVirtualizationInstanceInfo(callbackData.NamespaceVirtualizationContext, out var instanceInfo);
+                    var hr = NativeMethods.PrjGetVirtualizationInstanceInfo(safeHandle, out var instanceInfo);
                     if (!hr.IsSuccess)
                         return hr;
 
@@ -282,8 +287,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                     writeStartOffset = byteOffset;
 
                     // Ensure our transfer size is aligned to the device alignment, and is
-                    // no larger than 1 MB (note this assumes the device alignment is less
-                    // than 1 MB).
+                    // no larger than buffer size (note this assumes the device alignment is less than buffer size).
                     ulong writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
                     Debug.Assert(writeEndOffset > 0);
                     Debug.Assert(writeEndOffset > writeStartOffset);
@@ -292,7 +296,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 // Allocate a buffer that adheres to the needed memory alignment.
-                IntPtr writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(callbackData.NamespaceVirtualizationContext, writeLength);
+                var writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(safeHandle, writeLength);
                 if (writeBuffer == IntPtr.Zero)
                     return HResult.E_OUTOFMEMORY;
 
@@ -304,7 +308,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                     Marshal.Copy(data, 0, IntPtr.Add(writeBuffer, (int)writeStartOffset), read);
 
                     // Write the data to the file in the local file system.
-                    var hr = NativeMethods.PrjWriteFileData(callbackData.NamespaceVirtualizationContext,
+                    var hr = NativeMethods.PrjWriteFileData(safeHandle,
                                           callbackData.DataStreamId,
                                           writeBuffer,
                                           writeStartOffset,
@@ -336,30 +340,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             // BlockAlignTruncate(): Aligns P on the previous V boundary (V must be != 0).
             // #define BlockAlignTruncate(P,V) ((P) & (0-((UINT64)(V))))
             return p & (0 - ((ulong)v));
-        }
-
-        protected static bool FileNameMatch(string fileName, string pattern)
-        {
-            return NativeMethods.PrjFileNameMatch(fileName, pattern);
-        }
-
-        protected static int CompareFileName(string fileName1, string fileName2)
-        {
-            return FileNameComparer.Instance.Compare(fileName1, fileName2);
-        }
-
-        // TODO handle not found
-        protected abstract IEnumerable<VirtualFileSystemEntry> GetEntries(string path);
-
-        // TODO handle not found
-        // TODO virtual with default implementation with CompareFileName
-        protected abstract VirtualFileSystemEntry GetEntry(string path);
-
-        protected abstract Stream OpenRead(string path);
-
-        public void Dispose()
-        {
-            Stop();
         }
     }
 }

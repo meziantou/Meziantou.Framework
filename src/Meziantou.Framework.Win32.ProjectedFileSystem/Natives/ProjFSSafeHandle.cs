@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32.SafeHandles;
+﻿using System;
+using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
@@ -7,6 +8,12 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         public ProjFSSafeHandle()
             : base(ownsHandle: true)
         {
+        }
+
+        public ProjFSSafeHandle(IntPtr handle, bool ownHandle)
+            : base(ownsHandle: ownHandle)
+        {
+            SetHandle(handle);
         }
 
         protected override bool ReleaseHandle()

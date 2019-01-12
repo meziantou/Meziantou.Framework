@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>.NET wrapper for Windows Projected File System (ProjFS)</Description>
   </PropertyGroup>
 
 </Project>

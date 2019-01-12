@@ -8,9 +8,11 @@
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework</RepositoryUrl>
+    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageLicenseUrl>https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE</PackageLicenseUrl>
+	
+	<!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup>

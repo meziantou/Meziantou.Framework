@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Csv
                 if (columnName == null)
                     throw new ArgumentNullException(nameof(columnName));
 
-                var column = Columns.FirstOrDefault(c => c.Name == columnName);
+                var column = Columns.FirstOrDefault(c => string.Equals(c.Name, columnName, StringComparison.Ordinal));
                 return this[column];
             }
         }
@@ -63,7 +63,7 @@ namespace Meziantou.Framework.Csv
 
         bool IReadOnlyDictionary<string, string>.ContainsKey(string key)
         {
-            return Columns.Any(c => c.Name == key);
+            return Columns.Any(c => string.Equals(c.Name, key, StringComparison.Ordinal));
         }
 
         bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value)

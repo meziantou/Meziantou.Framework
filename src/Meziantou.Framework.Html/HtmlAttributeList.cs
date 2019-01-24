@@ -107,8 +107,12 @@ namespace Meziantou.Framework.Html
 
             foreach (var att in _attributes)
             {
-                if ((att.Name == HtmlNode.XmlnsPrefix || att.Prefix == HtmlNode.XmlnsPrefix) && att.Value == namespaceURI)
+                if ((string.Equals(att.Name, HtmlNode.XmlnsPrefix, StringComparison.Ordinal) ||
+                    string.Equals(att.Prefix, HtmlNode.XmlnsPrefix, StringComparison.Ordinal)) &&
+                    string.Equals(att.Value, namespaceURI, StringComparison.Ordinal))
+                {
                     return att.LocalName;
+                }
             }
 
             return null;
@@ -173,7 +177,7 @@ namespace Meziantou.Framework.Html
 
             return _attributes.FindIndex(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
-                a.NamespaceURI != null && namespaceURI == a.NamespaceURI);
+                a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
         }
 
         public bool RemoveAt(int index)
@@ -210,7 +214,7 @@ namespace Meziantou.Framework.Html
             if (localName == null)
                 throw new ArgumentNullException(nameof(localName));
 
-            var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && prefix == a.Prefix);
+            var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
             if (att == null)
                 return false;
 
@@ -301,7 +305,7 @@ namespace Meziantou.Framework.Html
 
                 return _attributes.Find(a =>
                     localName.EqualsIgnoreCase(a.LocalName) &&
-                    a.NamespaceURI != null && namespaceURI == a.NamespaceURI);
+                    a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
             }
             set
             {

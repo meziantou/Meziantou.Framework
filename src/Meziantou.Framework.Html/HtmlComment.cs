@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Html
             get => Value;
             set
             {
-                if (value != Value)
+                if (!string.Equals(value, Value, StringComparison.Ordinal))
                 {
                     Value = value;
                     OnPropertyChanged();
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.Html
             get => _value;
             set
             {
-                if (value != _value)
+                if (!string.Equals(value, _value, StringComparison.Ordinal))
                 {
                     _value = value;
                     OnPropertyChanged();

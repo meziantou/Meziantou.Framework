@@ -80,7 +80,7 @@ namespace Meziantou.Framework.Html
             get => base.InnerHtml;
             set
             {
-                if (value != base.InnerHtml)
+                if (!string.Equals(value, base.InnerHtml, StringComparison.Ordinal))
                 {
                     RemoveAll();
                     if (value != null)
@@ -313,7 +313,7 @@ namespace Meziantou.Framework.Html
             {
                 foreach (var attribute in Attributes)
                 {
-                    if (attribute.Prefix == XmlnsPrefix || attribute.Name == XmlnsPrefix)
+                    if (string.Equals(attribute.Prefix, XmlnsPrefix, StringComparison.Ordinal) || string.Equals(attribute.Name, XmlnsPrefix, StringComparison.Ordinal))
                         continue;
 
                     attribute.WriteTo(writer);

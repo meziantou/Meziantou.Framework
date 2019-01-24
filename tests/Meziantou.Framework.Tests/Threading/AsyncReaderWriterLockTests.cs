@@ -9,8 +9,8 @@ namespace Meziantou.Framework.Threading.Tests
         [TestMethod]
         public async Task AsyncReaderWriterLock_ReaderWriter()
         {
-            int value = 0;
-            int count = 0;
+            var value = 0;
+            var count = 0;
 
             var l = new AsyncReaderWriterLock();
 
@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Threading.Tests
                 {
                     tasks[i] = Task.Run(async () =>
                     {
-                        using (await l.WriterLockAsync())
+                        using (await l.WriterLockAsync().ConfigureAwait(false))
                         {
                             count++;
                             Assert.AreEqual(1, count);
@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Threading.Tests
                 {
                     tasks[i] = Task.Run(async () =>
                     {
-                        using (await l.ReaderLockAsync())
+                        using (await l.ReaderLockAsync().ConfigureAwait(false))
                         {
                             Assert.AreEqual(0, count);
                             Assert.IsTrue(value <= 128);
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.Threading.Tests
                 }
             }
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
             Assert.AreEqual(64, value);
         }
     }

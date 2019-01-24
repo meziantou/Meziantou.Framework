@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
             try
             {
-                var hr = NativeMethods.PrjMarkDirectoryAsPlaceholder(RootFolder, null, IntPtr.Zero, in _virtualizationInstanceId);
+                var hr = NativeMethods.PrjMarkDirectoryAsPlaceholder(RootFolder, targetPathName: null, IntPtr.Zero, in _virtualizationInstanceId);
                 hr.EnsureSuccess();
             }
             catch (DllNotFoundException)

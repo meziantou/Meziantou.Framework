@@ -282,7 +282,7 @@ namespace Meziantou.Framework.Html
 
         public static string GetServerPath(string path)
         {
-            return GetServerPath(path, out var server, out var share, out var sharePath);
+            return GetServerPath(path, out _, out _, out _);
         }
 
         public static string GetServerPath(string path, out string serverName, out string shareName, out string sharePath)

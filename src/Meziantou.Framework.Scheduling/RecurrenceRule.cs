@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Scheduling
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule)
         {
-            return TryParse(rrule, out recurrenceRule, out var error);
+            return TryParse(rrule, out recurrenceRule, out _);
         }
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule, out string error)

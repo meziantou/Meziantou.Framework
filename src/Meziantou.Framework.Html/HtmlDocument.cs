@@ -596,7 +596,7 @@ namespace Meziantou.Framework.Html
                 StreamEncoding = sr.CurrentEncoding;
             }
 
-            if (DetectedEncoding != null && StreamEncoding != null && DetectedEncoding.EncodingName != StreamEncoding.EncodingName)
+            if (DetectedEncoding != null && StreamEncoding != null && !string.Equals(DetectedEncoding.EncodingName, StreamEncoding.EncodingName, StringComparison.Ordinal))
             {
                 if (firstPass && Options.ReaderRestartsOnEncodingDetected && reader.IsRestartable)
                 {
@@ -824,7 +824,7 @@ namespace Meziantou.Framework.Html
                         break;
 
                     case HtmlFragmentType.AttName:
-                        if (htmlReader.State.Value == "?")
+                        if (string.Equals(htmlReader.State.Value, "?", StringComparison.Ordinal))
                             break;
 
                         var att = CreateAttribute(htmlReader.State.Value);
@@ -894,7 +894,7 @@ namespace Meziantou.Framework.Html
             get => base.InnerHtml;
             set
             {
-                if (value != base.InnerHtml)
+                if (!string.Equals(value, base.InnerHtml, StringComparison.Ordinal))
                 {
                     RemoveAll();
                     if (value != null)

@@ -46,14 +46,8 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             return -1937169414 + Value.GetHashCode();
         }
 
-        public static bool operator ==(HResult result1, HResult result2)
-        {
-            return result1.Equals(result2);
-        }
+        public static bool operator ==(HResult result1, HResult result2) => result1.Equals(result2);
 
-        public static bool operator !=(HResult result1, HResult result2)
-        {
-            return !(result1 == result2);
-        }
+        public static bool operator !=(HResult result1, HResult result2) => !(result1 == result2);
     }
 }

@@ -583,7 +583,7 @@ namespace Meziantou.Framework.Templating
             var p = new object[parameterInfos.Length];
             foreach (var pi in parameterInfos)
             {
-                if (pi.Name == OutputParameterName)
+                if (string.Equals(pi.Name, OutputParameterName, StringComparison.Ordinal))
                 {
                     p[pi.Position] = CreateOutput(writer);
                 }

@@ -277,7 +277,7 @@ namespace Meziantou.Framework.Html
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            if (Prefix == XmlnsPrefix || Name == XmlnsPrefix)
+            if (string.Equals(Prefix, XmlnsPrefix, StringComparison.Ordinal) || string.Equals(Name, XmlnsPrefix, StringComparison.Ordinal))
                 return;
 
             writer.WriteStartAttribute(GetValidXmlName(Prefix), GetValidXmlName(LocalName), NamespaceURI);

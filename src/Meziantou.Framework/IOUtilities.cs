@@ -61,7 +61,6 @@ namespace Meziantou.Framework
             var fi = new FileInfo(path);
             if (fi.Exists)
             {
-                var attributes = fi.Attributes;
                 if (fi.IsReadOnly)
                 {
                     fi.IsReadOnly = false;

@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Html
 
                 return _list.Find(a =>
                     localName.EqualsIgnoreCase(a.LocalName) &&
-                    a.NamespaceURI != null && namespaceURI == a.NamespaceURI);
+                    a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
             }
         }
 

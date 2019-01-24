@@ -106,7 +106,7 @@ csharp_style_conditional_delegate_call = true : warning
 csharp_style_throw_expression = true : warning
 
 # Code block preferences
-#csharp_prefer_braces = true : suggestion # Disabled before it doesn't support no braces for control flow keywords (return, break, throw)
+csharp_prefer_braces = when_multiline : suggestion
 
 ## Formatting conventions
 # Dotnet formatting settings:

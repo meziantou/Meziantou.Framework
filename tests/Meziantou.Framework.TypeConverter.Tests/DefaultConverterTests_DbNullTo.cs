@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Tests
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int value);
+            var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int _);
 
             Assert.IsFalse(converted);
         }

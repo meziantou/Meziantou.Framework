@@ -79,7 +79,7 @@ namespace Meziantou.Framework.Html
 
         private void SetCurrentElement(string tag)
         {
-            if (_currentElement != tag)
+            if (!string.Equals(_currentElement, tag, StringComparison.Ordinal))
             {
                 _currentElement = tag;
                 _typeAttribute = null;
@@ -203,7 +203,7 @@ namespace Meziantou.Framework.Html
                     break;
 
                 case HtmlParserState.AttName:
-                    if (_rawValue.ToString().Trim() == ">")
+                    if (string.Equals(_rawValue.ToString().Trim(), ">", StringComparison.Ordinal))
                         break;
 
                     PushCurrentState();
@@ -399,12 +399,12 @@ namespace Meziantou.Framework.Html
 
                         Value.Append(c);
 
-                        if (Value.ToString() == "!--")
+                        if (string.Equals(Value.ToString(), "!--", StringComparison.Ordinal))
                         {
                             Value.Length = 0;
                             ParserState = HtmlParserState.CommentOpen;
                         }
-                        else if (Value.ToString() == "![CDATA[")
+                        else if (string.Equals(Value.ToString(), "![CDATA[", StringComparison.Ordinal))
                         {
                             Value.Length = 0;
                             ParserState = HtmlParserState.CData;

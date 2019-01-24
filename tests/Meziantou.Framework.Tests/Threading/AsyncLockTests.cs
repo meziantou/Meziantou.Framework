@@ -14,9 +14,9 @@ namespace Meziantou.Framework.Threading.Tests
             {
                 for (var i = 0; i < 2; i++)
                 {
-                    using (await asyncLock.LockAsync())
+                    using (await asyncLock.LockAsync().ConfigureAwait(false))
                     {
-                        if (await asyncLock.TryLockAsync(TimeSpan.Zero))
+                        if (await asyncLock.TryLockAsync(TimeSpan.Zero).ConfigureAwait(false))
                         {
                             Assert.Fail("Should not be able to acquire the lock");
                         }

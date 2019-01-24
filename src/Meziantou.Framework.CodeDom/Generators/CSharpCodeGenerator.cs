@@ -12,7 +12,7 @@ namespace Meziantou.Framework.CodeDom
 
         static CSharpCodeGenerator()
         {
-            _predefinedTypes = new Dictionary<string, string>
+            _predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [typeof(bool).FullName] = "bool",
                 [typeof(byte).FullName] = "byte",
@@ -852,11 +852,11 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(": ");
             switch (initializer)
             {
-                case ConstructorThisInitializer o:
+                case ConstructorThisInitializer _:
                     writer.Write("this");
                     break;
 
-                case ConstructorBaseInitializer o:
+                case ConstructorBaseInitializer _:
                     writer.Write("base");
                     break;
 

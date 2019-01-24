@@ -20,7 +20,7 @@ namespace Meziantou.Framework
         {
             _cultures = new Dictionary<CultureInfo, IReadOnlyDictionary<string, string>>
             {
-                [CultureInfo.InvariantCulture] = new Dictionary<string, string>
+                [CultureInfo.InvariantCulture] = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "Now", "now" },
                     { "OneSecondAgo", "one second ago" },
@@ -37,7 +37,7 @@ namespace Meziantou.Framework
                     { "ManyYearsAgo", "{0} years ago" },
                 },
 
-                [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>
+                [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "Now", "maintenant" },
                     { "OneSecondAgo", "il y a une seconde" },

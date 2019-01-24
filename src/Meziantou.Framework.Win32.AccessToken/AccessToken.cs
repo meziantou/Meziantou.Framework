@@ -26,8 +26,7 @@ namespace Meziantou.Framework.Win32
 
         public TokenType GetTokenType()
         {
-            var len = IntPtr.Size;
-            if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenType, out TokenType result, len, out len))
+            if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenType, out TokenType result, IntPtr.Size, out _))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return result;
@@ -35,8 +34,7 @@ namespace Meziantou.Framework.Win32
 
         public TokenElevationType GetElevationType()
         {
-            var len = IntPtr.Size;
-            if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenElevationType, out TokenElevationType result, len, out len))
+            if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenElevationType, out TokenElevationType result, IntPtr.Size, out _))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return result;

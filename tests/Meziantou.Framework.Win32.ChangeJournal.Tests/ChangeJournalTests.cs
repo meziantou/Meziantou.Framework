@@ -28,16 +28,16 @@ namespace Meziantou.Framework.Win32.Tests
             var drive = Path.GetPathRoot(file);
             using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
             {
-                var item = changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName);
+                var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
                 Assert.IsNull(item);
 
                 File.WriteAllText(file, "test");
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.FileCreate)));
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.DataExtend)));
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.Close)));
+                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)));
+                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)));
+                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
 
                 File.Delete(file);
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.FileDelete)));
+                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)));
             }
         }
 
@@ -49,12 +49,12 @@ namespace Meziantou.Framework.Win32.Tests
             var drive = Path.GetPathRoot(file);
             using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
             {
-                var item = changeJournal.Entries.FirstOrDefault(entry => entry.Name == fileName);
+                var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
                 Assert.IsNull(item);
 
                 File.WriteAllText(file, "test");
-                Assert.IsNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && !entry.Reason.HasFlag(ChangeReason.Close)));
-                Assert.IsNotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => entry.Name == fileName && entry.Reason.HasFlag(ChangeReason.Close)));
+                Assert.IsNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)));
+                Assert.IsNotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
 
                 File.Delete(file);
             }

@@ -202,14 +202,14 @@ namespace Meziantou.Framework.Win32
                 flags |= CredentialUIFlags.DoNotPersist;
             }
 
-            var returnCode = Credui.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
+            _ = Credui.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
 
             var userBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
             var domainBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
 
             var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
 
-            returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
+            var returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
             switch (returnCode)
             {
                 case CredentialUIReturnCodes.Success:
@@ -254,7 +254,6 @@ namespace Meziantou.Framework.Win32
             var errorcode = 0;
             uint authPackage = 0;
 
-            var outCredBuffer = IntPtr.Zero;
             var flags = PromptForWindowsCredentialsFlags.GenericCredentials | PromptForWindowsCredentialsFlags.EnumerateCurrentUser;
             if (saveCredential != CredentialSaveOption.Hidden)
             {
@@ -270,7 +269,7 @@ namespace Meziantou.Framework.Win32
                 ref authPackage,
                 inCredBuffer,
                 inCredSize,
-                out outCredBuffer,
+                out var outCredBuffer,
                 out var outCredSize,
                 ref save,
                 flags);

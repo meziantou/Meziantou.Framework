@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Templating
         private readonly HtmlEncoder _htmlEncoder;
         private readonly UrlEncoder _urlEncoder;
 
-        private readonly IDictionary<string, string> _sections = new Dictionary<string, string>();
+        private readonly IDictionary<string, string> _sections = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly IList<HtmlEmailSection> _currentSections = new List<HtmlEmailSection>();
 
         public IList<string> ContentIdentifiers { get; } = new List<string>();
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Templating
             HtmlEmailSection section;
             if (!string.IsNullOrEmpty(name))
             {
-                section = _currentSections.LastOrDefault(_ => _.Name == name);
+                section = _currentSections.LastOrDefault(_ => string.Equals(_.Name, name, StringComparison.Ordinal));
             }
             else
             {

@@ -44,7 +44,7 @@ namespace Meziantou.Framework
 
             bool IsImplicitOperator(MethodInfo mi)
             {
-                if (mi.Name != "op_Implicit")
+                if (!string.Equals(mi.Name, "op_Implicit", StringComparison.Ordinal))
                     return false;
 
                 if (!targetType.IsAssignableFrom(mi.ReturnType))

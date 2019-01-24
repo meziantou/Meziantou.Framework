@@ -18,7 +18,7 @@ namespace Meziantou.Framework.CodeDom.Tests
                 actual = actual.Replace("\r\n", "\n");
             }
 
-            if (expected == actual)
+            if (string.Equals(expected, actual, System.StringComparison.Ordinal))
                 return;
 
             var expectedFormat1 = Replace1(expected);

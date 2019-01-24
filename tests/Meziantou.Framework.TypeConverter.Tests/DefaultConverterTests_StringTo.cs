@@ -32,7 +32,7 @@ namespace Meziantou.Framework.Tests
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("", cultureInfo, out int value);
+            var converted = converter.TryChangeType("", cultureInfo, out int _);
 
             Assert.IsFalse(converted);
         }
@@ -141,7 +141,7 @@ namespace Meziantou.Framework.Tests
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo value);
+            var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo _);
 
             Assert.IsFalse(converted);
         }
@@ -267,7 +267,7 @@ namespace Meziantou.Framework.Tests
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] value);
+            var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] _);
 
             Assert.IsFalse(converted);
         }

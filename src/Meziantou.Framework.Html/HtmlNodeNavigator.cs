@@ -224,7 +224,7 @@ namespace Meziantou.Framework.Html
                     if (att == null)
                         return false;
 
-                    while (att.LocalName == HtmlNode.XmlPrefix)
+                    while (string.Equals(att.LocalName, HtmlNode.XmlPrefix, StringComparison.Ordinal))
                     {
                         att = MoveToNextNamespaceGlobal(_rootNode, ref attributes, att);
                         if (att == null)
@@ -324,7 +324,7 @@ namespace Meziantou.Framework.Html
                         if (att == null)
                             return false;
                     }
-                    while (att.LocalName == HtmlNode.XmlPrefix);
+                    while (string.Equals(att.LocalName, HtmlNode.XmlPrefix, StringComparison.Ordinal));
                     CurrentNode = att;
                     break;
 
@@ -343,7 +343,7 @@ namespace Meziantou.Framework.Html
                             return true;
                         }
                     }
-                    while (att.LocalName == HtmlNode.XmlPrefix);
+                    while (string.Equals(att.LocalName, HtmlNode.XmlPrefix, StringComparison.Ordinal));
                     CurrentNode = att;
                     break;
             }

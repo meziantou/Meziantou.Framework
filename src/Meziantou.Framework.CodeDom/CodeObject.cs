@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public abstract class CodeObject
     {
-        public IDictionary<string, object> Data { get; } = new Dictionary<string, object>();
+        public IDictionary<string, object> Data { get; } = new Dictionary<string, object>(StringComparer.Ordinal);
 
         public void SetData(string key, object value)
         {

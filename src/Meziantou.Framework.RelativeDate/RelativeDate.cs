@@ -29,9 +29,11 @@ namespace Meziantou.Framework
                 return GetString("Now", culture);
 
             if (delta < TimeSpan.FromMinutes(1))
+            {
                 return delta.Seconds <= 1 ?
                     GetString("OneSecondAgo", culture) :
                     GetString("ManySecondsAgo", culture, delta.Seconds);
+            }
 
             if (delta < TimeSpan.FromMinutes(2))
                 return GetString("AMinuteAgo", culture);

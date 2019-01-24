@@ -20,7 +20,7 @@ namespace Meziantou.Framework
             // Enum.TryParse<T>(string value, bool ignoreCase, out T value)
             return typeof(Enum)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .First(m => m.Name == nameof(Enum.TryParse) && m.IsGenericMethod && m.GetParameters().Length == 3);
+                .First(m => string.Equals(m.Name, nameof(Enum.TryParse), StringComparison.Ordinal) && m.IsGenericMethod && m.GetParameters().Length == 3);
         }
 
         public virtual bool TryChangeType(object input, Type conversionType, IFormatProvider provider, out object value)
@@ -542,11 +542,9 @@ namespace Meziantou.Framework
         {
             if (IsNullOrEmptyString(input))
             {
-                value = 0;
+                value = 0d;
                 return false;
             }
-
-            value = 0;
 
             if (!(input is string))
             {
@@ -826,7 +824,7 @@ namespace Meziantou.Framework
                 }
                 return false;
             }
-            
+
             if (!(input is string))
             {
                 if (input is IConvertible ic)
@@ -875,13 +873,19 @@ namespace Meziantou.Framework
                 return false; // arguable...
 
             bools = bools.Trim().ToLowerInvariant();
-            if (bools == "y" || bools == "yes" || bools == "t" || bools.StartsWith("true", StringComparison.Ordinal))
+            if (string.Equals(bools, "y", StringComparison.Ordinal) ||
+                string.Equals(bools, "yes", StringComparison.Ordinal) ||
+                string.Equals(bools, "t", StringComparison.Ordinal) ||
+                bools.StartsWith("true", StringComparison.Ordinal))
             {
                 value = true;
                 return true;
             }
 
-            return bools == "n" || bools == "no" || bools == "f" || bools.StartsWith("false", StringComparison.Ordinal);
+            return string.Equals(bools, "n", StringComparison.Ordinal) ||
+                string.Equals(bools, "no", StringComparison.Ordinal) ||
+                string.Equals(bools, "f", StringComparison.Ordinal) ||
+                bools.StartsWith("false", StringComparison.Ordinal);
         }
 
         protected virtual bool TryConvert(object input, Type conversionType, IFormatProvider provider, out object value)

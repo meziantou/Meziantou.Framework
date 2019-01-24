@@ -215,7 +215,7 @@ namespace Meziantou.Framework.Html
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (_prefix == value)
+                if (string.Equals(_prefix, value, StringComparison.Ordinal))
                     return;
 
                 ClearCaches();
@@ -272,7 +272,7 @@ namespace Meziantou.Framework.Html
 
         private void SetName(string name)
         {
-            if (name == Name)
+            if (string.Equals(name, Name, StringComparison.Ordinal))
                 return;
 
             ClearCaches();
@@ -316,7 +316,7 @@ namespace Meziantou.Framework.Html
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (_namespaceURI != value)
+                if (!string.Equals(_namespaceURI, value, StringComparison.Ordinal))
                 {
                     _namespaceURI = value;
                     OnPropertyChanged();
@@ -366,7 +366,7 @@ namespace Meziantou.Framework.Html
 
         internal static bool IsHtmlNs(string ns)
         {
-            return string.IsNullOrWhiteSpace(ns) || ns == XhtmlNamespaceURI;
+            return string.IsNullOrWhiteSpace(ns) || string.Equals(ns, XhtmlNamespaceURI, StringComparison.Ordinal);
         }
 
         public HtmlNode ParentNode
@@ -461,7 +461,7 @@ namespace Meziantou.Framework.Html
             }
             set
             {
-                if (value != _innerText)
+                if (!string.Equals(value, _innerText, StringComparison.Ordinal))
                 {
                     ClearCaches();
                     var firstChild = FirstChild;
@@ -742,7 +742,7 @@ namespace Meziantou.Framework.Html
             if (_attributes == null)
                 return defaultValue;
 
-            var att = Attributes.FirstOrDefault(a => a.Prefix == prefix && a.LocalName.EqualsIgnoreCase(localName));
+            var att = Attributes.FirstOrDefault(a => string.Equals(a.Prefix, prefix, StringComparison.Ordinal) && a.LocalName.EqualsIgnoreCase(localName));
             if (att == null)
                 return defaultValue;
 
@@ -802,7 +802,7 @@ namespace Meziantou.Framework.Html
 
         public virtual void AppendChild(HtmlNode newChild)
         {
-            if (newChild is HtmlAttribute att)
+            if (newChild is HtmlAttribute)
                 throw new ArgumentException("Cannot append an attribute", nameof(newChild));
 
             ChildNodes.Add(newChild);
@@ -813,7 +813,7 @@ namespace Meziantou.Framework.Html
             if (newChild == null)
                 throw new ArgumentNullException(nameof(newChild));
 
-            if (newChild is HtmlAttribute att)
+            if (newChild is HtmlAttribute)
                 throw new ArgumentException("Cannot insert an attribute", nameof(newChild));
 
             if (this == newChild || IsAncestor(newChild))
@@ -872,7 +872,7 @@ namespace Meziantou.Framework.Html
             if (newChild == null)
                 throw new ArgumentNullException(nameof(newChild));
 
-            if (newChild is HtmlAttribute att)
+            if (newChild is HtmlAttribute)
                 throw new ArgumentException(message: null, nameof(newChild));
 
             if (this == newChild || IsAncestor(newChild))
@@ -912,7 +912,7 @@ namespace Meziantou.Framework.Html
 
         public virtual void PrependChild(HtmlNode newChild)
         {
-            if (newChild is HtmlAttribute att)
+            if (newChild is HtmlAttribute)
                 throw new ArgumentException(message: null, nameof(newChild));
 
             ChildNodes.Insert(0, newChild);
@@ -977,10 +977,10 @@ namespace Meziantou.Framework.Html
 
         public virtual void ReplaceChild(HtmlNode newChild, HtmlNode oldChild)
         {
-            if (newChild is HtmlAttribute att)
+            if (newChild is HtmlAttribute)
                 throw new ArgumentException(message: null, nameof(newChild));
 
-            att = oldChild as HtmlAttribute;
+            var att = oldChild as HtmlAttribute;
             if (att != null)
                 throw new ArgumentException(message: null, nameof(oldChild));
 
@@ -1217,7 +1217,7 @@ namespace Meziantou.Framework.Html
 
             if (!string.IsNullOrWhiteSpace(NamespaceURI))
             {
-                if (Prefix != null && (scope != XmlNamespaceScope.ExcludeXml || NamespaceURI != XmlnsNamespaceURI))
+                if (Prefix != null && (scope != XmlNamespaceScope.ExcludeXml || !string.Equals(NamespaceURI, XmlnsNamespaceURI, StringComparison.Ordinal)))
                 {
                     dictionary[Prefix] = NamespaceURI;
                 }

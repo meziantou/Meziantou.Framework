@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Tests
             {
                 await Task.Yield();
                 bag.Add(i);
-            });
+            }).ConfigureAwait(false);
 
             Assert.AreEqual(100, bag.Count);
         }

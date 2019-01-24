@@ -83,7 +83,7 @@ namespace Meziantou.Framework.CodeDom
 
         public override void Write(string value)
         {
-            if (value != NewLine)
+            if (!string.Equals(value, NewLine, StringComparison.Ordinal))
             {
                 OutputTabs();
             }

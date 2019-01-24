@@ -389,7 +389,7 @@ namespace Meziantou.Framework.Versioning
             if (last > index)
             {
                 var str = versionString.Substring(index, last - index);
-                if (str == "0")
+                if (str.Length == 1 && str[0] == '0')
                 {
                     value = 0;
                     index = last;

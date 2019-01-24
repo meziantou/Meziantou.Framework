@@ -34,7 +34,7 @@ namespace Meziantou.Framework
                     pos++;
                 }
 
-                if ((number > 1) && (oldName == shortName))
+                if (number > 1 && string.Equals(oldName, shortName, StringComparison.Ordinal))
                     return null;
 
                 oldName = shortName;

@@ -65,7 +65,8 @@ namespace Meziantou.Framework.Tests
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
-            var converted = converter.TryChangeType("", cultureInfo, out Dummy value);
+
+            var converted = converter.TryChangeType("", cultureInfo, out Dummy _);
 
             Assert.IsFalse(converted);
         }

@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Versioning.Tests
                 new object[] { "1.0.0", new SemanticVersion(1, 0, 0) },
                 new object[] { "v1.2.3", new SemanticVersion(1, 2, 3) },
                 new object[] { "1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha") },
-                new object[] { "1.0.0-alpha.1", new SemanticVersion(1, 0, 0, new[] { "alpha", "1" }, new string[0]) },
+                new object[] { "1.0.0-alpha.1", new SemanticVersion(1, 0, 0, new[] { "alpha", "1" }, Array.Empty<string>()) },
                 new object[] { "1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha") },
                 new object[] { "1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, new[] { "alpha", "1" }, new[] { "label" }) },
             };

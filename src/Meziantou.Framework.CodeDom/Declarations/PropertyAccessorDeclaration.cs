@@ -24,10 +24,7 @@
             set => SetParent(ref _statements, value);
         }
 
-        public static implicit operator PropertyAccessorDeclaration(StatementCollection statements)
-        {
-            return new PropertyAccessorDeclaration(statements);
-        }
+        public static implicit operator PropertyAccessorDeclaration(StatementCollection statements) => new PropertyAccessorDeclaration(statements);
 
         public static implicit operator PropertyAccessorDeclaration(Statement statement)
         {

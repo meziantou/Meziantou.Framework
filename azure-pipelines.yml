@@ -24,6 +24,12 @@ steps:
     projects: 'tests/**/*.csproj'
     nobuild: true
 
+- task: PublishCodeCoverageResults@1
+  displayName: 'Publish code coverage from $(System.DefaultWorkingDirectory)/MyApp/**/site/cobertura/coverage.xml'
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(Build.SourcesDirectory)/TestResults/Coverage/**/coverage.xml'
+
 - task: DotNetCoreCLI@2
   displayName: dotnet pack
   inputs:

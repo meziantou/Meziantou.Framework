@@ -20,15 +20,15 @@ steps:
   displayName: dotnet test
   inputs:
     command: test
-    arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.SourcesDirectory)/TestResults/Coverage/'
+    arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=$(Build.ArtifactStagingDirectory)/TestResults/Coverage/'
     projects: 'tests/**/*.csproj'
     nobuild: true
 
 - task: PublishCodeCoverageResults@1
-  displayName: 'Publish code coverage from $(System.DefaultWorkingDirectory)/MyApp/**/site/cobertura/coverage.xml'
+  displayName: 'Publish code coverage'
   inputs:
     codeCoverageTool: Cobertura
-    summaryFileLocation: '$(Build.SourcesDirectory)/TestResults/Coverage/**/coverage.xml'
+    summaryFileLocation: '$(Build.ArtifactStagingDirectory)/TestResults/Coverage/**/*.xml'
 
 - task: DotNetCoreCLI@2
   displayName: dotnet pack

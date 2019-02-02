@@ -26,13 +26,14 @@ steps:
 
 - script: |
     dotnet tool install -g dotnet-reportgenerator-globaltool
-    reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/TestResults -reporttypes:Html,Cobertura
+    reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/TestResults -reporttypes:HtmlInline_AzurePipelines_Dark;Cobertura
+  displayName: Create Code coverage report
 
 - task: PublishCodeCoverageResults@1
   displayName: 'Publish code coverage'
   inputs:
     codeCoverageTool: Cobertura
-    summaryFileLocation: 'TestReport/html/summary.html'
+    summaryFileLocation: 'TestReport/index.html'
 
 - task: DotNetCoreCLI@2
   displayName: dotnet pack

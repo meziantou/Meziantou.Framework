@@ -3,8 +3,11 @@ variables:
   buildConfiguration: Release
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
-steps:
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml#use-a-microsoft-hosted-agent
+pool:
+  vmImage: 'vs2017-win2016'
 
+steps:
 - task: DotNetCoreInstaller@0
   displayName: 'Use .NET Core sdk 2.2.103'
   inputs:

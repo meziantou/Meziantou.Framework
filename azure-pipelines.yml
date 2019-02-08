@@ -5,7 +5,7 @@ variables:
 
 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml#use-a-microsoft-hosted-agent
 pool:
-  vmImage: 'win1803'
+  vmImage: 'vs2017-win2016'
 
 steps:
 - task: DotNetCoreInstaller@0

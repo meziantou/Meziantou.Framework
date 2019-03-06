@@ -147,7 +147,7 @@ namespace Meziantou.Framework.Csv.Tests
             {
                 var reader = new CsvReader(sr);
                 reader.Quote = '\'';
-                reader.Separator= '\t';
+                reader.Separator = '\t';
                 var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
                 Assert.AreEqual("ab", row1[0]);

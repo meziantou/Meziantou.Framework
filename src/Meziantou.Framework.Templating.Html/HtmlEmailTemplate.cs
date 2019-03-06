@@ -25,7 +25,8 @@ namespace Meziantou.Framework.Templating
 
         public virtual string Run(out HtmlEmailMetadata metadata, IDictionary<string, object> parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             using (var writer = new StringWriter())
             {
@@ -36,7 +37,8 @@ namespace Meziantou.Framework.Templating
 
         public virtual string Run(out HtmlEmailMetadata metadata, params object[] parameters)
         {
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             using (var writer = new StringWriter())
             {
@@ -56,8 +58,10 @@ namespace Meziantou.Framework.Templating
 
         public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, IReadOnlyDictionary<string, object> parameters)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             var p = CreateMethodParameters(writer, parameters);
             InvokeRunMethod(p);
@@ -66,8 +70,10 @@ namespace Meziantou.Framework.Templating
 
         public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, params object[] parameters)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
-            if (parameters == null) throw new ArgumentNullException(nameof(parameters));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
+            if (parameters == null)
+                throw new ArgumentNullException(nameof(parameters));
 
             var p = CreateMethodParameters(writer, parameters);
             InvokeRunMethod(p);
@@ -76,7 +82,8 @@ namespace Meziantou.Framework.Templating
 
         public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
 
             var p = CreateMethodParameters(writer, (object[])null);
             InvokeRunMethod(p);

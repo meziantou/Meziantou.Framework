@@ -45,7 +45,7 @@ namespace Meziantou.Framework
                 _semaphoreSlim.Release();
             }
         }
-        
+
         public void Dispose()
         {
             _semaphoreSlim.Dispose();

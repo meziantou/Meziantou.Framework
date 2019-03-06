@@ -81,7 +81,8 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteContentIdentifier(string cid)
         {
-            if (cid == null) throw new ArgumentNullException(nameof(cid));
+            if (cid == null)
+                throw new ArgumentNullException(nameof(cid));
 
             ContentIdentifiers.Add(cid);
             Write("cid:");

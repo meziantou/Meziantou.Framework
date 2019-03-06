@@ -19,8 +19,10 @@ namespace Meziantou.Framework
         [Pure]
         public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char> replace = null)
         {
-            if (s == null) throw new System.ArgumentNullException(nameof(s));
-            if (dic == null) throw new System.ArgumentNullException(nameof(dic));
+            if (s == null)
+                throw new System.ArgumentNullException(nameof(s));
+            if (dic == null)
+                throw new System.ArgumentNullException(nameof(dic));
 
             s = SoundexStringPrep(s, replace);
             if (s.Length == 0)
@@ -89,7 +91,8 @@ namespace Meziantou.Framework
         [Pure]
         public static string Soundex2(string s)
         {
-            if (s == null) throw new System.ArgumentNullException(nameof(s));
+            if (s == null)
+                throw new System.ArgumentNullException(nameof(s));
 
             var sb = new StringBuilder();
             foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
@@ -283,9 +286,12 @@ namespace Meziantou.Framework
 
         private static void ChangePrefixe(StringBuilder sb, string prefix, string replace)
         {
-            if (sb == null) throw new System.ArgumentNullException(nameof(sb));
-            if (prefix == null) throw new System.ArgumentNullException(nameof(prefix));
-            if (replace == null) throw new System.ArgumentNullException(nameof(replace));
+            if (sb == null)
+                throw new System.ArgumentNullException(nameof(sb));
+            if (prefix == null)
+                throw new System.ArgumentNullException(nameof(prefix));
+            if (replace == null)
+                throw new System.ArgumentNullException(nameof(replace));
 
             var i = 0;
             while (i < sb.Length && i < prefix.Length)
@@ -305,7 +311,8 @@ namespace Meziantou.Framework
         [Pure]
         private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char> replace = null)
         {
-            if (s == null) throw new System.ArgumentNullException(nameof(s));
+            if (s == null)
+                throw new System.ArgumentNullException(nameof(s));
 
             // takes only the first word of the string.
             var sb = new StringBuilder();

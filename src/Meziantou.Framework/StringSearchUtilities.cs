@@ -37,8 +37,10 @@ namespace Meziantou.Framework
         [Pure]
         public static int Hamming(string word1, string word2)
         {
-            if (word1 == null) throw new ArgumentNullException(nameof(word1));
-            if (word2 == null) throw new ArgumentNullException(nameof(word2));
+            if (word1 == null)
+                throw new ArgumentNullException(nameof(word1));
+            if (word2 == null)
+                throw new ArgumentNullException(nameof(word2));
 
             if (word1.Length != word2.Length)
                 throw new ArgumentException("Strings must have the same length.", nameof(word2));
@@ -66,8 +68,10 @@ namespace Meziantou.Framework
         [Pure]
         public static int Hamming<T>(IEnumerable<T> word1, IEnumerable<T> word2)
         {
-            if (word1 == null) throw new ArgumentNullException(nameof(word1));
-            if (word2 == null) throw new ArgumentNullException(nameof(word2));
+            if (word1 == null)
+                throw new ArgumentNullException(nameof(word1));
+            if (word2 == null)
+                throw new ArgumentNullException(nameof(word2));
 
             var result = 0;
 

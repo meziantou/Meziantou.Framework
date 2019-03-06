@@ -38,7 +38,8 @@ namespace Meziantou.Framework.Win32
 
         public void RegisterFile(string path)
         {
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
 
             string[] resources = { path };
             var result = NativeMethods.RmRegisterResources(SessionHandle, 1, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
@@ -48,7 +49,8 @@ namespace Meziantou.Framework.Win32
 
         public void RegisterFiles(string[] paths)
         {
-            if (paths == null) throw new ArgumentNullException(nameof(paths));
+            if (paths == null)
+                throw new ArgumentNullException(nameof(paths));
 
             var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)

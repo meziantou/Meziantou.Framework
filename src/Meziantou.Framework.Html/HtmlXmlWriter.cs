@@ -78,7 +78,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteDocType(string name, string pubid, string sysid, string subset)
         {
-            var text = "<!DOCTYPE " +  name;
+            var text = "<!DOCTYPE " + name;
             if (pubid != null)
             {
                 text += " PUBLIC \"" + pubid + "\" \"" + sysid + "\"";

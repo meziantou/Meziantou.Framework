@@ -13,7 +13,8 @@ namespace Meziantou.Framework
         [Pure]
         public static string Metaphone(string s)
         {
-            if (s == null) throw new ArgumentNullException(nameof(s));
+            if (s == null)
+                throw new ArgumentNullException(nameof(s));
 
             const string vowels = "AEIOU";
             const string frontv = "EIY";

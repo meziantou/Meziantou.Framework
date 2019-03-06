@@ -103,7 +103,8 @@ namespace Meziantou.Framework.CodeDom
             get => _list[index];
             set
             {
-                if (value == null) throw new ArgumentNullException(nameof(value));
+                if (value == null)
+                    throw new ArgumentNullException(nameof(value));
 
                 var item = this[index];
                 _list[index] = value;

@@ -23,7 +23,8 @@ namespace Meziantou.Framework.Scheduling
 
         public void ToIcs(TextWriter writer)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            if (writer == null)
+                throw new ArgumentNullException(nameof(writer));
             /*
             BEGIN:VCALENDAR
 

@@ -13,8 +13,10 @@ namespace Meziantou.Framework.Scheduling
 
         protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             var sb = new StringBuilder();
             sb.Append("tous les");
@@ -35,8 +37,10 @@ namespace Meziantou.Framework.Scheduling
 
         protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             var sb = new StringBuilder();
             sb.Append("toutes les");
@@ -63,8 +67,10 @@ namespace Meziantou.Framework.Scheduling
 
         protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             var sb = new StringBuilder();
             sb.Append("tous les");
@@ -103,8 +109,10 @@ namespace Meziantou.Framework.Scheduling
 
         protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             var sb = new StringBuilder();
             sb.Append("tous les");

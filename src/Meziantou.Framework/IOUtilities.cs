@@ -35,7 +35,8 @@ namespace Meziantou.Framework
         /// <param name="filePath">The file path. Note this is not to be confused with the directory path. May not be null.</param>
         public static void PathCreateDirectory(string filePath)
         {
-            if (filePath == null) throw new ArgumentNullException(nameof(filePath));
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
 
             if (!Path.IsPathRooted(filePath))
             {
@@ -70,8 +71,10 @@ namespace Meziantou.Framework
 
         public static bool ArePathEqual(string path1, string path2)
         {
-            if (path1 == null) throw new ArgumentNullException(nameof(path1));
-            if (path2 == null) throw new ArgumentNullException(nameof(path2));
+            if (path1 == null)
+                throw new ArgumentNullException(nameof(path1));
+            if (path2 == null)
+                throw new ArgumentNullException(nameof(path2));
 
             var uri1 = new Uri(path1);
             var uri2 = new Uri(path2);
@@ -81,8 +84,10 @@ namespace Meziantou.Framework
 
         public static bool IsChildPathOf(string parent, string child)
         {
-            if (parent == null) throw new ArgumentNullException(nameof(parent));
-            if (child == null) throw new ArgumentNullException(nameof(child));
+            if (parent == null)
+                throw new ArgumentNullException(nameof(parent));
+            if (child == null)
+                throw new ArgumentNullException(nameof(child));
 
             var parentUri = new Uri(parent);
             var childUri = new Uri(child);
@@ -92,8 +97,10 @@ namespace Meziantou.Framework
 
         public static string MakeRelativePath(string root, string path)
         {
-            if (root == null) throw new ArgumentNullException(nameof(root));
-            if (path == null) throw new ArgumentNullException(nameof(path));
+            if (root == null)
+                throw new ArgumentNullException(nameof(root));
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
 
             var parentUri = new Uri(root);
             var childUri = new Uri(path);
@@ -113,9 +120,12 @@ namespace Meziantou.Framework
         /// </returns>
         public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_")
         {
-            if (fileName == null) throw new ArgumentNullException(nameof(fileName));
-            if (reservedNameFormat == null) throw new ArgumentNullException(nameof(reservedNameFormat));
-            if (reservedCharFormat == null) throw new ArgumentNullException(nameof(reservedCharFormat));
+            if (fileName == null)
+                throw new ArgumentNullException(nameof(fileName));
+            if (reservedNameFormat == null)
+                throw new ArgumentNullException(nameof(reservedNameFormat));
+            if (reservedCharFormat == null)
+                throw new ArgumentNullException(nameof(reservedCharFormat));
 
             if (Array.IndexOf(ReservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
                 IsAllDots(fileName))

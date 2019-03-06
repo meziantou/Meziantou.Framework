@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static string GetValue(this IDictionary<string, string> dict, string key, string defaultValue)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             if (dict.TryGetValue(key, out var value))
                 return value;
@@ -21,7 +22,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
@@ -32,7 +34,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static int? GetValue(this IDictionary<string, string> dict, string key, int? defaultValue)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
@@ -43,7 +46,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static Frequency GetValue(this IDictionary<string, string> dict, string key, Frequency defaultValue)
         {
-            if (dict == null) throw new ArgumentNullException(nameof(dict));
+            if (dict == null)
+                throw new ArgumentNullException(nameof(dict));
 
             if (dict.TryGetValue(key, out var value) && value != null && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
                 return enumValue;
@@ -108,7 +112,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static string ToEnglishOrdinal(int num)
         {
-            if (num <= 0) return num.ToString(CultureInfo.CurrentCulture);
+            if (num <= 0)
+                return num.ToString(CultureInfo.CurrentCulture);
 
             switch (num % 100)
             {
@@ -134,7 +139,8 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static string ToFrenchOrdinal(int num)
         {
-            if (num <= 0) return num.ToString(CultureInfo.CurrentCulture);
+            if (num <= 0)
+                return num.ToString(CultureInfo.CurrentCulture);
 
             switch (num)
             {

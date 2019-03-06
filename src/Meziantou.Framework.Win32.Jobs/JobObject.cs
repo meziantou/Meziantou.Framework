@@ -149,7 +149,8 @@ namespace Meziantou.Framework.Win32
         /// </returns>
         public bool SetLimits(JobObjectLimits limits, bool throwOnError)
         {
-            if (limits == null) throw new ArgumentNullException(nameof(limits));
+            if (limits == null)
+                throw new ArgumentNullException(nameof(limits));
 
             var info = JOBOBJECT_INFO.From(limits);
             var length = Environment.Is64BitProcess ? Marshal.SizeOf(info.ExtendedLimits64) : Marshal.SizeOf(info.ExtendedLimits32);

@@ -11,7 +11,8 @@ namespace Meziantou.Framework
 
         public static string ToHexa(this byte[] bytes, HexaOptions options)
         {
-            if (bytes == null) throw new ArgumentNullException(nameof(bytes));
+            if (bytes == null)
+                throw new ArgumentNullException(nameof(bytes));
 
             if (bytes.Length == 0)
                 return string.Empty;
@@ -65,7 +66,8 @@ namespace Meziantou.Framework
 
         public static byte[] FromHexa(string str)
         {
-            if (str == null) throw new ArgumentNullException(nameof(str));
+            if (str == null)
+                throw new ArgumentNullException(nameof(str));
 
             if (str.Length % 2 != 0)
                 throw new ArgumentException("Invalid string length", nameof(str));

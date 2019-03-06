@@ -28,7 +28,8 @@ namespace Meziantou.Framework.Scheduling
 
         public static string GetText(RecurrenceRule rrule, CultureInfo cultureInfo)
         {
-            if (rrule == null) throw new ArgumentNullException(nameof(rrule));
+            if (rrule == null)
+                throw new ArgumentNullException(nameof(rrule));
 
             if (cultureInfo == null)
             {

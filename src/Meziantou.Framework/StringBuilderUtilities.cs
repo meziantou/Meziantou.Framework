@@ -69,5 +69,49 @@ namespace Meziantou.Framework
 
             return true;
         }
+
+        public static void TrimStart(this StringBuilder stringBuilder, char trimChar)
+        {
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+
+            for (int i = 0; i < stringBuilder.Length; i++)
+            {
+                if (stringBuilder[i] == trimChar)
+                    continue;
+
+                if (i > 0)
+                {
+                    stringBuilder.Remove(0, i);
+                }
+
+                return;
+            }
+        }
+
+        public static void TrimEnd(this StringBuilder stringBuilder, char trimChar)
+        {
+            if (stringBuilder == null)
+                throw new ArgumentNullException(nameof(stringBuilder));
+
+            for (int i = stringBuilder.Length - 1; i >= 0; i--)
+            {
+                if (stringBuilder[i] == trimChar)
+                    continue;
+
+                if (i != stringBuilder.Length - 1)
+                {
+                    stringBuilder.Remove(i + 1, stringBuilder.Length - i - 1);
+                }
+
+                return;
+            }
+        }
+
+        public static void Trim(this StringBuilder stringBuilder, char trimChar)
+        {
+            TrimEnd(stringBuilder, trimChar);
+            TrimStart(stringBuilder, trimChar);
+        }
     }
 }

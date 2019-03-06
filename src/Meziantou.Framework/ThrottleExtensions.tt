@@ -61,6 +61,7 @@ namespace Meziantou.Framework
 <# } #>
         }
 <# for (int i = 1; i < count; i++) { #>
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
         private readonly struct ValueTuple<#= GetTemplateString(i) #>
         {
 <# for (var j = 0; j < i; j++) { #>

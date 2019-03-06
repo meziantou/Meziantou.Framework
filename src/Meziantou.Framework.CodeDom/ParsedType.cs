@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -152,13 +153,13 @@ namespace Meziantou.Framework.CodeDom
                     if (asm < 0)
                     {
                         pt = new ParsedType(typeName.Substring(0, quot));
-                        args = int.Parse(typeName.Substring(quot + 1));
+                        args = int.Parse(typeName.Substring(quot + 1), CultureInfo.InvariantCulture);
                     }
                     else
                     {
                         pt = new ParsedType(typeName.Substring(0, quot));
                         pt.AssemblyName = typeName.Substring(asm + 1).Trim();
-                        args = int.Parse(typeName.Substring(quot + 1, asm - quot - 1));
+                        args = int.Parse(typeName.Substring(quot + 1, asm - quot - 1), CultureInfo.InvariantCulture);
                     }
                     for (var i = 0; i < args; i++)
                     {

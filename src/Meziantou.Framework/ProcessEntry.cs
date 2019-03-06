@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct ProcessEntry
     {
         internal ProcessEntry(int processId, int parentProcessId)

@@ -10,6 +10,6 @@ namespace Meziantou.Framework.Win32
         Enabled = NativeMethods.SE_PRIVILEGE_ENABLED,
         EnabledByDefault = NativeMethods.SE_PRIVILEGE_ENABLED_BY_DEFAULT,
         Removed = NativeMethods.SE_PRIVILEGE_REMOVED,
-        UsedForAccess = NativeMethods.SE_PRIVILEGE_USED_FOR_ACCESS
+        UsedForAccess = NativeMethods.SE_PRIVILEGE_USED_FOR_ACCESS,
     }
 }

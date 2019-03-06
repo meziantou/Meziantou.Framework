@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
@@ -10,6 +11,7 @@ namespace Meziantou.Framework
         }
     }
 
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct Range<T> : IEquatable<Range<T>> where T : IComparable<T>
     {
         public Range(T from, T to)

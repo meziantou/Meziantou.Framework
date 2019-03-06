@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Scheduling
             AbbrDays = 1,
             AbbrWeekdays = 2,
             AbbrWeekendDays = 4,
-            Plural = 8
+            Plural = 8,
         }
 
         private static string GetWeekdayHumanText(IList<ByDay> daysOfWeek, WeekdayHumanTextOptions options)

@@ -7,7 +7,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    public class ChangeJournal : IDisposable
+    public sealed class ChangeJournal : IDisposable
     {
         internal ChangeJournalSafeHandle ChangeJournalHandle { get; }
 
@@ -78,7 +78,7 @@ namespace Meziantou.Framework.Win32
             var deletionData = new DELETE_USN_JOURNAL_DATA
             {
                 UsnJournalID = Data.ID,
-                DeleteFlags = DeletionFlag.WaitUntilDeleteCompletes
+                DeleteFlags = DeletionFlag.WaitUntilDeleteCompletes,
             };
 
             Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, 0);
@@ -90,7 +90,7 @@ namespace Meziantou.Framework.Win32
             var creationData = new CREATE_USN_JOURNAL_DATA
             {
                 AllocationDelta = allocationDelta,
-                MaximumSize = maximumSize
+                MaximumSize = maximumSize,
             };
 
             Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, 0);

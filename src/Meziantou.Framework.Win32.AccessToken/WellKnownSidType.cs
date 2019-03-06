@@ -96,6 +96,6 @@
         WinCapabilityDocumentsLibrarySid = 91,
         WinCapabilitySharedUserCertificatesSid = 92,
         WinCapabilityEnterpriseAuthenticationSid = 93,
-        WinCapabilityRemovableStorageSid = 94
+        WinCapabilityRemovableStorageSid = 94,
     }
 }

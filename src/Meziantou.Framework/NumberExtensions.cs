@@ -39,42 +39,54 @@ namespace Meziantou.Framework
         [Pure]
         public static string ToEnglishOrdinal(int num)
         {
+            return ToEnglishOrdinal(num, CultureInfo.CurrentCulture);
+        }
+
+        [Pure]
+        public static string ToEnglishOrdinal(int num, IFormatProvider formatProvider)
+        {
             if (num <= 0)
-                return num.ToString();
+                return num.ToString(formatProvider);
 
             switch (num % 100)
             {
                 case 11:
                 case 12:
                 case 13:
-                    return num + "th";
+                    return string.Format(formatProvider, "{0}th", num);
             }
 
             switch (num % 10)
             {
                 case 1:
-                    return num + "st";
+                    return string.Format(formatProvider, "{0}st", num);
                 case 2:
-                    return num + "nd";
+                    return string.Format(formatProvider, "{0}nd", num);
                 case 3:
-                    return num + "rd";
+                    return string.Format(formatProvider, "{0}rd", num);
                 default:
-                    return num + "th";
+                    return string.Format(formatProvider, "{0}th", num);
             }
         }
 
         [Pure]
         public static string ToFrenchOrdinal(int num)
         {
+            return ToFrenchOrdinal(num, CultureInfo.CurrentCulture);
+        }
+
+        [Pure]
+        public static string ToFrenchOrdinal(int num, IFormatProvider formatProvider)
+        {
             if (num <= 0)
-                return num.ToString();
+                return num.ToString(formatProvider);
 
             switch (num)
             {
                 case 1:
-                    return num + "er";
+                    return string.Format(formatProvider, "{0}er", num);
                 default:
-                    return num + "e";
+                    return string.Format(formatProvider, "{0}e", num);
             }
         }
 

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32
 {
-    public class AccessToken : IDisposable
+    public sealed class AccessToken : IDisposable
     {
         private IntPtr _token;
 
@@ -287,7 +287,7 @@ namespace Meziantou.Framework.Win32
         {
             Enable,
             Disable,
-            Remove
+            Remove,
         }
     }
 }

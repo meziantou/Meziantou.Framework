@@ -212,7 +212,7 @@ namespace Meziantou.Framework.Html
 
         private static string GetXmlNameEscape(char c)
         {
-            return "_x" + ((int)c).ToString("x4") + "_";
+            return "_x" + ((int)c).ToString("x4", CultureInfo.InvariantCulture) + "_";
         }
 
         // http://www.w3.org/TR/REC-xml/#NT-Letter
@@ -348,7 +348,7 @@ namespace Meziantou.Framework.Html
         public static string EnsureTerminatingSeparator(string path)
         {
             if (string.IsNullOrEmpty(path))
-                return Path.DirectorySeparatorChar.ToString();
+                return Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture);
 
             if (path[path.Length - 1] != Path.DirectorySeparatorChar)
                 return path + Path.DirectorySeparatorChar;

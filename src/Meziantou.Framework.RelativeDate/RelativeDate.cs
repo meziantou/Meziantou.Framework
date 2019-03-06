@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
     {
         private DateTime DateTime { get; }
@@ -21,7 +23,7 @@ namespace Meziantou.Framework
 
             var delta = now - DateTime;
             if (delta < TimeSpan.Zero)
-                throw new NotSupportedException("Dates in the future are not supported. Value: " + DateTime.ToString("o"));
+                throw new NotSupportedException("Dates in the future are not supported. Value: " + DateTime.ToString("o", formatProvider));
 
             var culture = formatProvider as CultureInfo;
 

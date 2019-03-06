@@ -119,7 +119,7 @@ namespace Meziantou.Framework.Win32
                     CredentialBlobSize = (uint)secretLength,
                     TargetName = targetNamePtr,
                     CredentialBlob = credentialBlobPtr,
-                    UserName = userNamePtr
+                    UserName = userNamePtr,
                 };
 
                 var written = Advapi32.CredWrite(ref credential, 0);

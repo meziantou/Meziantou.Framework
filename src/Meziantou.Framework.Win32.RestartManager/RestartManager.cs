@@ -6,7 +6,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    public class RestartManager : IDisposable
+    public sealed class RestartManager : IDisposable
     {
         private int SessionHandle { get; }
         public string SessionKey { get; }

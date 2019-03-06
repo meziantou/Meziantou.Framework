@@ -13,6 +13,6 @@
         /// <summary>
         /// Shuts down applications if and only if all the applications have been registered for restart using the RegisterApplicationRestart function. If any processes or services cannot be restarted, then no processes or services are shut down.
         /// </summary>
-        RmShutdownOnlyRegistered = 0x10
+        RmShutdownOnlyRegistered = 0x10,
     }
 }

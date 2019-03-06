@@ -3,6 +3,6 @@
     public enum HexaOptions
     {
         LowerCase,
-        UpperCase
+        UpperCase,
     }
 }

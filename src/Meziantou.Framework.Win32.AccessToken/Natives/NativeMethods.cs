@@ -92,7 +92,7 @@ namespace Meziantou.Framework.Win32.Natives
             SidTypeDeletedAccount,
             SidTypeInvalid,
             SidTypeUnknown,
-            SidTypeComputer
+            SidTypeComputer,
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

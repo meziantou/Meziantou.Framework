@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Xml;
 
@@ -231,9 +232,9 @@ namespace Meziantou.Framework.Html
                 return null;
 
             if (quoteChar == '"')
-                return text.Replace("&quot;", quoteChar.ToString());
+                return text.Replace("&quot;", quoteChar.ToString(CultureInfo.InvariantCulture));
 
-            return text.Replace("&apos;", quoteChar.ToString());
+            return text.Replace("&apos;", quoteChar.ToString(CultureInfo.InvariantCulture));
         }
 
         protected virtual string GetValue(ref bool escapeQuoteChar)
@@ -261,11 +262,11 @@ namespace Meziantou.Framework.Html
                 {
                     if (QuoteChar == '"')
                     {
-                        s = s.Replace(QuoteChar.ToString(), "&quot;");
+                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&quot;");
                     }
                     else if (QuoteChar == '\'')
                     {
-                        s = s.Replace(QuoteChar.ToString(), "&apos;");
+                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&apos;");
                     }
                 }
                 writer.Write(s);

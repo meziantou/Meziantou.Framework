@@ -40,7 +40,7 @@ namespace Meziantou.Framework
                         case UnicodeCategory.UppercaseLetter:
                             if (options.ToLower)
                             {
-                                ch = options.Culture != null ? char.ToLower(ch) : char.ToLowerInvariant(ch);
+                                ch = options.Culture != null ? char.ToLower(ch, options.Culture) : char.ToLowerInvariant(ch);
                             }
                             sb.Append(options.Replace(ch));
                             break;
@@ -48,7 +48,7 @@ namespace Meziantou.Framework
                         case UnicodeCategory.LowercaseLetter:
                             if (options.ToUpper)
                             {
-                                ch = options.Culture != null ? char.ToUpper(ch) : char.ToUpperInvariant(ch);
+                                ch = options.Culture != null ? char.ToUpper(ch, options.Culture) : char.ToUpperInvariant(ch);
                             }
                             sb.Append(options.Replace(ch));
                             break;

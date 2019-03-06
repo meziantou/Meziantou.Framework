@@ -140,7 +140,7 @@ namespace Meziantou.Framework.Win32
             POLICY_AUDIT_LOG_ADMIN = 0x00000200L,
             POLICY_SERVER_ADMIN = 0x00000400L,
             POLICY_LOOKUP_NAMES = 0x00000800L,
-            POLICY_NOTIFICATION = 0x00001000L
+            POLICY_NOTIFICATION = 0x00001000L,
         }
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]

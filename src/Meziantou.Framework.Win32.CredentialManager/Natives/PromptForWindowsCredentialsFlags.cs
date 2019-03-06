@@ -12,6 +12,6 @@ namespace Meziantou.Framework.Win32.Natives
         EnumerateAdmins = 0x100,
         EnumerateCurrentUser = 0x200,
         SecurePrompt = 0x1000,
-        Pack32Wow = 0x10000000
+        Pack32Wow = 0x10000000,
     }
 }

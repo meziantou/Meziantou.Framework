@@ -8,6 +8,6 @@
         MediumHighIntegrity = MediumIntegrity + 0x100,
         HighIntegrity = 0X00003000,
         SystemIntegrity = 0x00004000,
-        ProtectedProcess = 0x00005000
+        ProtectedProcess = 0x00005000,
     }
 }

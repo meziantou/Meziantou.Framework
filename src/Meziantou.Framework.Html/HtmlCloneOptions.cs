@@ -12,6 +12,6 @@ namespace Meziantou.Framework.Html
         Attributes = 0x8,
         StreamOrder = 0x10,
 
-        All = Deep | OverwriteAttributes | Tag | Attributes | StreamOrder
+        All = Deep | OverwriteAttributes | Tag | Attributes | StreamOrder,
     }
 }

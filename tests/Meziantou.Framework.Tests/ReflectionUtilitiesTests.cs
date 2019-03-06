@@ -36,14 +36,14 @@ namespace Meziantou.Framework.Tests
         private enum NonFlagsEnum
         {
             A,
-            B
+            B,
         }
 
         [Flags]
         private enum FlagsEnum
         {
             A,
-            B
+            B,
         }
 
         private class MyNullable<T>

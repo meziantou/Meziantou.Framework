@@ -23,6 +23,6 @@
         /// <summary>
         /// Modifies the shutdown or restart actions for a service identified by a service short name.
         /// </summary>
-        RmFilterTriggerService = 3
+        RmFilterTriggerService = 3,
     }
 }

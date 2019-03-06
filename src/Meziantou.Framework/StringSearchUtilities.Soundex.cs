@@ -17,7 +17,7 @@ namespace Meziantou.Framework
         /// <returns> The soundex.</returns>
         /// <exception cref="ArgumentException">Dictionary does not contain character a character of the string <paramref name="s" /></exception>
         [Pure]
-        public static string Soundex(string s, Dictionary<char, byte> dic, Dictionary<string, char> replace = null)
+        public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char> replace = null)
         {
             if (s == null) throw new System.ArgumentNullException(nameof(s));
             if (dic == null) throw new System.ArgumentNullException(nameof(dic));
@@ -92,7 +92,7 @@ namespace Meziantou.Framework
             if (s == null) throw new System.ArgumentNullException(nameof(s));
 
             var sb = new StringBuilder();
-            foreach (var t in s.TrimStart().ToUpper().RemoveDiacritics())
+            foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
             {
                 if (t != ' ')
                 {
@@ -242,7 +242,7 @@ namespace Meziantou.Framework
                     {'L', 4},
                     {'M', 5},
                     {'N', 5},
-                    {'R', 6}
+                    {'R', 6},
                 };
 
             return Soundex(s, dic);
@@ -275,7 +275,7 @@ namespace Meziantou.Framework
                     {'X', 8},
                     {'Z', 8},
                     {'F', 9},
-                    {'V', 9}
+                    {'V', 9},
                 };
 
             return Soundex(s, dic);
@@ -303,13 +303,13 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        private static string SoundexStringPrep(string s, Dictionary<string, char> replace = null)
+        private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char> replace = null)
         {
             if (s == null) throw new System.ArgumentNullException(nameof(s));
 
             // takes only the first word of the string.
             var sb = new StringBuilder();
-            foreach (var t in s.TrimStart().ToUpper().RemoveDiacritics())
+            foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
             {
                 if (char.IsWhiteSpace(t))
                     break; // Exit after the first space
@@ -329,7 +329,7 @@ namespace Meziantou.Framework
             {
                 foreach (var pair in replace)
                 {
-                    sb = sb.Replace(pair.Key, pair.Value.ToString());
+                    sb = sb.Replace(pair.Key, pair.Value.ToString(CultureInfo.InvariantCulture));
                 }
             }
 

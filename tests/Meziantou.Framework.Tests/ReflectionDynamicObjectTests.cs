@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Tests
@@ -160,7 +161,7 @@ namespace Meziantou.Framework.Tests
 
             public Test3(string value)
             {
-                Value = int.Parse(value);
+                Value = int.Parse(value, CultureInfo.InvariantCulture);
             }
         }
     }

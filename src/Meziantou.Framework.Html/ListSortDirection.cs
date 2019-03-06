@@ -3,6 +3,6 @@
     public enum ListSortDirection
     {
         Ascending,
-        Descending
+        Descending,
     }
 }

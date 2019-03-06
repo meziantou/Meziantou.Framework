@@ -5,6 +5,6 @@
         CreateUsnJournal = 0x000900e7,
         DeleteUsnJournal = 0x000900f8,
         QueryUsnJournal = 0x000900f4,
-        ReadUsnJournal = 0x000900bb
+        ReadUsnJournal = 0x000900bb,
     }
 }

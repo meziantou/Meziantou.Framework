@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Scheduling
     public class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
     {
         //private static readonly char[] _vovels = { 'a', 'e', 'i', 'o', 'u', 'y' };
-        private static readonly char[] _precededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
+        private static readonly char[] s_precededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
 
         protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)
         {
@@ -185,7 +185,7 @@ namespace Meziantou.Framework.Scheduling
             if (string.IsNullOrEmpty(str))
                 return false;
 
-            return _precededByApostropheChars.Contains(str[0]);
+            return s_precededByApostropheChars.Contains(str[0]);
         }
 
         private static string GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
@@ -335,7 +335,7 @@ namespace Meziantou.Framework.Scheduling
             AbbrDays = 1,
             AbbrWeekdays = 2,
             AbbrWeekendDays = 4,
-            Plural = 8
+            Plural = 8,
         }
     }
 }

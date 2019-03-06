@@ -1,14 +1,17 @@
 ﻿using System;
+using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32
 {
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct Usn : IEquatable<Usn>
     {
         public long Value { get; }
 
         public Usn(long value) => Value = value;
 
-        public override string ToString() => Value.ToString();
+        public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 
         public override bool Equals(object obj) => obj is Usn usn && Equals(usn);
 

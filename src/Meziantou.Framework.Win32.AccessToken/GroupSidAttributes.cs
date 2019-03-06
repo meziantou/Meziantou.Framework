@@ -13,6 +13,6 @@ namespace Meziantou.Framework.Win32
         SE_GROUP_MANDATORY = 0x00000001,
         SE_GROUP_OWNER = 0x00000008,
         SE_GROUP_RESOURCE = 0x20000000,
-        SE_GROUP_USE_FOR_DENY_ONLY = 0x00000010
+        SE_GROUP_USE_FOR_DENY_ONLY = 0x00000010,
     }
 }

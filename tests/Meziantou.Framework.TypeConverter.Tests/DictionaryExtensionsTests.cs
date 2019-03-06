@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Tests
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
-                { "test", 42 }
+                { "test", 42 },
             };
 
             // Act
@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Tests
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
-                { "test", 42 }
+                { "test", 42 },
             };
 
             // Act
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Tests
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
             {
-                { "test", "aaa" }
+                { "test", "aaa" },
             };
 
             // Act

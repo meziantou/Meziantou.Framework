@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Meziantou.Framework.Html
 {
@@ -50,7 +51,7 @@ namespace Meziantou.Framework.Html
                     (RawValue.StartsWith('"') && RawValue.EndsWith('"'))))
                 {
                     var quote = RawValue[0];
-                    return RawValue.Substring(1, RawValue.Length - 2).Replace(quote + quote.ToString(), quote.ToString());
+                    return RawValue.Substring(1, RawValue.Length - 2).Replace(quote + quote.ToString(CultureInfo.CurrentCulture), quote.ToString(CultureInfo.CurrentCulture));
                 }
 
                 return RawValue;

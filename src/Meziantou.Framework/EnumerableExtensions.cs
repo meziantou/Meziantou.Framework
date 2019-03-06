@@ -109,15 +109,12 @@ namespace Meziantou.Framework
                 throw new ArgumentNullException(nameof(comparer));
 
             var index = 0;
-            using (var enumerator = list.GetEnumerator())
+            foreach (var item in list)
             {
-                while (enumerator.MoveNext())
-                {
-                    if (comparer.Equals(enumerator.Current, value))
-                        return index;
+                if (comparer.Equals(item, value))
+                    return index;
 
-                    index++;
-                }
+                index++;
             }
 
             return -1;
@@ -136,15 +133,12 @@ namespace Meziantou.Framework
                 throw new ArgumentNullException(nameof(comparer));
 
             var index = 0L;
-            using (var enumerator = list.GetEnumerator())
+            foreach (var item in list)
             {
-                while (enumerator.MoveNext())
-                {
-                    if (comparer.Equals(enumerator.Current, value))
-                        return index;
+                if (comparer.Equals(item, value))
+                    return index;
 
-                    index++;
-                }
+                index++;
             }
 
             return -1L;
@@ -208,7 +202,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var maxElem = enumerator.Current;
                 var maxVal = selector(maxElem);
@@ -247,7 +241,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var maxElem = enumerator.Current;
                 var maxVal = selector(maxElem);
@@ -283,7 +277,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var maxVal = enumerator.Current;
 
@@ -316,7 +310,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var minElem = enumerator.Current;
                 var minVal = selector(minElem);
@@ -355,7 +349,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var minElem = enumerator.Current;
                 var minVal = selector(minElem);
@@ -391,7 +385,7 @@ namespace Meziantou.Framework
             try
             {
                 if (!enumerator.MoveNext())
-                    throw new ArgumentException("Collection is empty");
+                    throw new ArgumentException("Collection is empty", nameof(enumerable));
 
                 var minVal = enumerator.Current;
 

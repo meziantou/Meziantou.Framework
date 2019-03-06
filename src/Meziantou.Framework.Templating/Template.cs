@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -71,7 +72,7 @@ namespace Meziantou.Framework.Templating
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             if (type.Assembly.Location == null)
-                throw new ArgumentException("Assembly has no location.");
+                throw new ArgumentException("Assembly has no location.", nameof(type));
 
             _referencePaths.Add(type.Assembly.Location);
         }
@@ -405,7 +406,6 @@ namespace Meziantou.Framework.Templating
                 Assembly.Load(new AssemblyName("System.Runtime")).Location,
                 Assembly.Load(new AssemblyName("System.Dynamic.Runtime")).Location,
                 Assembly.Load(new AssemblyName("netstandard")).Location,
-
             };
 
             if (OutputType != null)
@@ -421,7 +421,7 @@ namespace Meziantou.Framework.Templating
                 references.Add(reference);
             }
 
-            var result = references.Where(_ => _ != null).Distinct();
+            var result = references.Where(_ => _ != null).Distinct(StringComparer.Ordinal);
             //var str = string.Join("\r\n", result);            
             return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
         }
@@ -431,7 +431,7 @@ namespace Meziantou.Framework.Templating
             if (syntaxTree == null)
                 throw new ArgumentNullException(nameof(syntaxTree));
 
-            var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + Guid.NewGuid().ToString("N");
+            var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N");
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithDeterministic(deterministic: true)
                 .WithOptimizationLevel(Debug ? OptimizationLevel.Debug : OptimizationLevel.Release)

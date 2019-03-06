@@ -65,7 +65,7 @@ namespace Meziantou.Framework.Collections
 
                     i++;
                 }
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             set
             {

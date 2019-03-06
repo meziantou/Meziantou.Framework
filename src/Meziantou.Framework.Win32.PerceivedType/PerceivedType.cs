@@ -73,6 +73,6 @@
         /// <summary>
         /// The file's perceived type is "Contacts".
         /// </summary>
-        Contacts = 10
+        Contacts = 10,
     }
 }

@@ -91,7 +91,7 @@ namespace Meziantou.Framework.Templating
                 return new HtmlEmailMetadata
                 {
                     Title = htmlEmailOutput.GetSection(HtmlEmailOutput.TitleSectionName),
-                    ContentIdentifiers = htmlEmailOutput.ContentIdentifiers
+                    ContentIdentifiers = htmlEmailOutput.ContentIdentifiers,
                 };
             }
 

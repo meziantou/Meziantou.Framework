@@ -424,10 +424,10 @@ namespace Meziantou.Framework.Html
                 if (name != null)
                 {
                     if ((Options & HtmlNodeNavigatorOptions.UppercasedNames) == HtmlNodeNavigatorOptions.UppercasedNames)
-                        return name.ToUpper();
+                        return name.ToUpperInvariant();
 
                     if ((Options & HtmlNodeNavigatorOptions.LowercasedNames) == HtmlNodeNavigatorOptions.LowercasedNames)
-                        return name.ToLower();
+                        return name.ToLowerInvariant();
                 }
 
                 return name ?? string.Empty;
@@ -443,10 +443,10 @@ namespace Meziantou.Framework.Html
                 if (name != null)
                 {
                     if ((Options & HtmlNodeNavigatorOptions.UppercasedNames) == HtmlNodeNavigatorOptions.UppercasedNames)
-                        return name.ToUpper();
+                        return name.ToUpperInvariant();
 
                     if ((Options & HtmlNodeNavigatorOptions.LowercasedNames) == HtmlNodeNavigatorOptions.LowercasedNames)
-                        return name.ToLower();
+                        return name.ToLowerInvariant();
                 }
 
                 return name ?? string.Empty;
@@ -465,10 +465,10 @@ namespace Meziantou.Framework.Html
 
                 Debug.Assert(ns != null);
                 if ((Options & HtmlNodeNavigatorOptions.UppercasedNamespaceURIs) == HtmlNodeNavigatorOptions.UppercasedNamespaceURIs)
-                    return ns.ToUpper();
+                    return ns.ToUpperInvariant();
 
                 if ((Options & HtmlNodeNavigatorOptions.LowercasedNamespaceURIs) == HtmlNodeNavigatorOptions.LowercasedNamespaceURIs)
-                    return ns.ToLower();
+                    return ns.ToLowerInvariant();
 
                 Trace("=" + ns);
                 return ns ?? string.Empty;
@@ -523,10 +523,10 @@ namespace Meziantou.Framework.Html
                 var prefix = CurrentNode.Prefix;
                 Trace("=" + prefix);
                 if ((Options & HtmlNodeNavigatorOptions.UppercasedPrefixes) == HtmlNodeNavigatorOptions.UppercasedPrefixes)
-                    return prefix.ToUpper();
+                    return prefix.ToUpperInvariant();
 
                 if ((Options & HtmlNodeNavigatorOptions.LowercasedPrefixes) == HtmlNodeNavigatorOptions.LowercasedPrefixes)
-                    return prefix.ToLower();
+                    return prefix.ToLowerInvariant();
 
                 return prefix ?? string.Empty;
             }
@@ -540,10 +540,10 @@ namespace Meziantou.Framework.Html
                 if (CurrentNode is HtmlElement element)
                 {
                     if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)
-                        return element.InnerText.ToUpper();
+                        return element.InnerText.ToUpperInvariant();
 
                     if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) == HtmlNodeNavigatorOptions.LowercasedValues)
-                        return element.InnerText.ToLower();
+                        return element.InnerText.ToLowerInvariant();
 
                     return element.InnerText;
                 }
@@ -552,10 +552,10 @@ namespace Meziantou.Framework.Html
                 if (value != null)
                 {
                     if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)
-                        return value.ToUpper();
+                        return value.ToUpperInvariant();
 
                     if ((Options & HtmlNodeNavigatorOptions.LowercasedValues) == HtmlNodeNavigatorOptions.LowercasedValues)
-                        return value.ToLower();
+                        return value.ToLowerInvariant();
                 }
 
                 return value;

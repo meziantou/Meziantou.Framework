@@ -20,7 +20,9 @@ namespace Meziantou.Framework.Tests
         {
             CultureInfoUtilities.UseCulture(CultureInfo.GetCultureInfo("fr-FR"), () =>
             {
+#pragma warning disable MA0011 // IFormatProvider is missing
                 Assert.AreEqual("12,00", 12.ToString("F2"));
+#pragma warning restore MA0011 // IFormatProvider is missing
             });
         }
     }

@@ -22,5 +22,4 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             return true;
         }
     }
-
 }

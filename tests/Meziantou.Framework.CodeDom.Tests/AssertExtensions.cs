@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Linq;
 
 namespace Meziantou.Framework.CodeDom.Tests
@@ -14,8 +15,8 @@ namespace Meziantou.Framework.CodeDom.Tests
         {
             if (ignoreNewLines)
             {
-                expected = expected.Replace("\r\n", "\n");
-                actual = actual.Replace("\r\n", "\n");
+                expected = expected.Replace("\r\n", "\n", StringComparison.Ordinal);
+                actual = actual.Replace("\r\n", "\n", StringComparison.Ordinal);
             }
 
             if (string.Equals(expected, actual, System.StringComparison.Ordinal))
@@ -41,7 +42,7 @@ Actual: <{actualFormat2}>
                 return value
                     .Replace(' ', '·')
                     .Replace('\t', '→')
-                    .Replace("\r\n", "\\r\\n\r\n");
+                    .Replace("\r\n", "\\r\\n\r\n", StringComparison.Ordinal);
             }
 
             string Replace2(string value)
@@ -49,8 +50,8 @@ Actual: <{actualFormat2}>
                 return value
                     .Replace(' ', '·')
                     .Replace('\t', '→')
-                    .Replace("\r", "\\r")
-                    .Replace("\n", "\\n");
+                    .Replace("\r", "\\r", StringComparison.Ordinal)
+                    .Replace("\n", "\\n", StringComparison.Ordinal);
             }
         }
     }

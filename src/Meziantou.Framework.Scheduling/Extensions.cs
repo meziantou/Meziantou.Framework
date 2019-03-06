@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Scheduling
         {
             if (dict == null) throw new ArgumentNullException(nameof(dict));
 
-            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, out var i))
+            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return defaultValue;
@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Scheduling
         {
             if (dict == null) throw new ArgumentNullException(nameof(dict));
 
-            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, out var i))
+            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return defaultValue;
@@ -108,7 +108,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static string ToEnglishOrdinal(int num)
         {
-            if (num <= 0) return num.ToString();
+            if (num <= 0) return num.ToString(CultureInfo.CurrentCulture);
 
             switch (num % 100)
             {
@@ -134,7 +134,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static string ToFrenchOrdinal(int num)
         {
-            if (num <= 0) return num.ToString();
+            if (num <= 0) return num.ToString(CultureInfo.CurrentCulture);
 
             switch (num)
             {

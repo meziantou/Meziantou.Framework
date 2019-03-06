@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Win32
             {
                 bInheritHandle = true,
                 lpSecurityDescriptor = IntPtr.Zero,
-                nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES))
+                nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
             };
 
             base.SetHandle(NativeMethods.CreateJobObject(ref atts, name));

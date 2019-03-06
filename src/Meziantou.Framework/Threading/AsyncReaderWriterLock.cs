@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Threading
@@ -106,6 +107,7 @@ namespace Meziantou.Framework.Threading
             }
         }
 
+        [StructLayout(LayoutKind.Auto)]
         public readonly struct Releaser : IDisposable
         {
             private readonly AsyncReaderWriterLock _toRelease;

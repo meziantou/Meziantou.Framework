@@ -41,7 +41,7 @@ namespace Meziantou.Framework
             if (word2 == null) throw new ArgumentNullException(nameof(word2));
 
             if (word1.Length != word2.Length)
-                throw new ArgumentException("Strings must have the same length.");
+                throw new ArgumentException("Strings must have the same length.", nameof(word2));
 
             var result = 0;
             for (var i = 0; i < word1.Length; i++)
@@ -86,7 +86,7 @@ namespace Meziantou.Framework
                 }
 
                 if (firstMoveNext != secondMoveNext)
-                    throw new ArgumentException("Lists must have the same length.");
+                    throw new ArgumentException("Lists must have the same length.", nameof(word2));
 
                 return result;
             }

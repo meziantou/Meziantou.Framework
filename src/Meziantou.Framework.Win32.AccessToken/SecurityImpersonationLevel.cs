@@ -5,6 +5,6 @@
         SecurityAnonymous,
         SecurityIdentification,
         SecurityImpersonation,
-        SecurityDelegation
+        SecurityDelegation,
     }
 }

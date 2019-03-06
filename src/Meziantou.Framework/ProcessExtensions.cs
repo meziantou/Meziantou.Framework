@@ -84,24 +84,29 @@ namespace Meziantou.Framework
             if (!IsWindows())
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
-            var processId = process.Id;
-            var processes = GetProcesses().ToList();
-            var found = true;
-            while (found)
-            {
-                found = false;
-                foreach (var entry in processes)
-                {
-                    if (entry.ProcessId == processId)
-                    {
-                        yield return entry.ParentProcessId;
-                        processId = entry.ParentProcessId;
-                        found = true;
-                    }
-                }
+            return GetAncestorProcessIdsIterator();
 
-                if (!found)
-                    yield break;
+            IEnumerable<int> GetAncestorProcessIdsIterator()
+            {
+                var processId = process.Id;
+                var processes = GetProcesses().ToList();
+                var found = true;
+                while (found)
+                {
+                    found = false;
+                    foreach (var entry in processes)
+                    {
+                        if (entry.ProcessId == processId)
+                        {
+                            yield return entry.ParentProcessId;
+                            processId = entry.ParentProcessId;
+                            found = true;
+                        }
+                    }
+
+                    if (!found)
+                        yield break;
+                }
             }
         }
 
@@ -140,7 +145,7 @@ namespace Meziantou.Framework
             {
                 var entry = new ProcessEntry32
                 {
-                    dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32))
+                    dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32)),
                 };
 
                 var result = Process32First(snapShotHandle, ref entry);
@@ -242,7 +247,7 @@ namespace Meziantou.Framework
             TH32CS_SNAPTHREAD = 0x00000004,
             TH32CS_SNAPMODULE = 0x00000008,
             TH32CS_SNAPMODULE32 = 0x00000010,
-            TH32CS_INHERIT = 0x80000000
+            TH32CS_INHERIT = 0x80000000,
         }
 
         private class SnapshotSafeHandle : SafeHandleZeroOrMinusOneIsInvalid

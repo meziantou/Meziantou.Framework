@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Scheduling
             SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
             {
                 { EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish() },
-                { FrenchCultureInfo, new RecurrenceRuleHumanizerFrench() }
+                { FrenchCultureInfo, new RecurrenceRuleHumanizerFrench() },
             };
         }
 

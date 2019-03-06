@@ -30,7 +30,7 @@
         {
             return new PropertyAccessorDeclaration
             {
-                Statements = statement
+                Statements = statement,
             };
         }
     }

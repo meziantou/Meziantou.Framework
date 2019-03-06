@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 
 namespace Meziantou.Framework.Win32
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.Win32
 
             name = name
                 .Replace(":", "")
-                .Replace(Path.DirectorySeparatorChar.ToString(), "");
+                .Replace(Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture), "");
 
             return string.Format("\\\\.\\{0}:", name);
         }

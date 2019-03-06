@@ -14,6 +14,6 @@
         ///     Causes a ChangeJournal to be deleted and
         ///     specifies to wait until the process is complete
         /// </summary>
-        WaitUntilDeleteCompletes = 0x00000002
+        WaitUntilDeleteCompletes = 0x00000002,
     }
 }

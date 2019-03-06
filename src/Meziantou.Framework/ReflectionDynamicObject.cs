@@ -30,7 +30,7 @@ namespace Meziantou.Framework
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            _typeCache = s_cache.GetOrAdd(type, t => TypeCache.Create(t));
+            _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
         }
 
         public ReflectionDynamicObject CreateInstance(params object[] parameters)
@@ -54,7 +54,7 @@ namespace Meziantou.Framework
             }
 
             Exception exception = exceptions.Count == 0 ? null : new AggregateException(exceptions);
-            throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", exception);
+            throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", nameof(parameters), exception);
         }
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -137,7 +137,7 @@ namespace Meziantou.Framework
 
         public override IEnumerable<string> GetDynamicMemberNames()
         {
-            return GetAllMembers().Distinct();
+            return GetAllMembers().Distinct(StringComparer.Ordinal);
 
             IEnumerable<string> GetAllMembers()
             {

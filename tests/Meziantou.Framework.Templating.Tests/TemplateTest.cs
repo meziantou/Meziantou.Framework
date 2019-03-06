@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Templating.Tests
             template.Load("Hello <%=Name%>!");
             var arguments = new Dictionary<string, object>(StringComparer.Ordinal)
             {
-                { "Name", "Meziantou" }
+                { "Name", "Meziantou" },
             };
             template.AddArguments(arguments);
 

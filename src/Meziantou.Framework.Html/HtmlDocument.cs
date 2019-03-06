@@ -627,7 +627,7 @@ namespace Meziantou.Framework.Html
             {
                 DetectedEncoding = DetectedEncoding,
                 CurrentNode = currentNode,
-                CurrentAttribute = currentAttribute
+                CurrentAttribute = currentAttribute,
             };
 
             OnParsing(this, e);
@@ -644,7 +644,7 @@ namespace Meziantou.Framework.Html
             {
                 DetectedEncoding = DetectedEncoding,
                 CurrentNode = currentNode,
-                CurrentAttribute = currentAttribute
+                CurrentAttribute = currentAttribute,
             };
 
             OnParsed(this, e);

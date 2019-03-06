@@ -94,7 +94,7 @@ namespace Meziantou.Framework.Versioning
             {
                 for (var i = 0; i < obj.PrereleaseLabels.Count; i++)
                 {
-                    hash = (hash * 397) ^ obj.PrereleaseLabels[i].GetHashCode();
+                    hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(obj.PrereleaseLabels[i]);
                 }
             }
 

@@ -10,6 +10,6 @@
         PreIncrement,
         PreDecrement,
         PostIncrement,
-        PostDecrement
+        PostDecrement,
     }
 }

@@ -13,7 +13,7 @@ namespace Meziantou.Framework
         [Pure]
         public static string Metaphone(string s)
         {
-            if (s == null) throw new System.ArgumentNullException(nameof(s));
+            if (s == null) throw new ArgumentNullException(nameof(s));
 
             const string vowels = "AEIOU";
             const string frontv = "EIY";
@@ -24,9 +24,9 @@ namespace Meziantou.Framework
                 return string.Empty;
 
             if (s.Length == 1)
-                return s.ToUpper();
+                return s.ToUpperInvariant();
 
-            var inwd = s.ToUpper().ToCharArray();
+            var inwd = s.ToUpperInvariant().ToCharArray();
             var local = new StringBuilder(40); // manipulate
             var code = new StringBuilder(10); // output
 

@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Scheduling
                 "yyyy-MM-ddTHHzz",
                 "yyyy-MM-ddTHHZ",
                 // Accuracy reduced to date
-                "yyyyMMdd"
+                "yyyyMMdd",
                 };
 
             var dateTime = DateTime.ParseExact(str, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
@@ -68,10 +68,10 @@ namespace Meziantou.Framework.Scheduling
         {
             if (dt.Kind == DateTimeKind.Utc)
             {
-                return dt.ToString(UtcDateTimeFormat);
+                return dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
             }
 
-            return dt.ToString(DateTimeFormat);
+            return dt.ToString(DateTimeFormat, CultureInfo.InvariantCulture);
         }
 
         public static string StatusToString(EventStatus status)

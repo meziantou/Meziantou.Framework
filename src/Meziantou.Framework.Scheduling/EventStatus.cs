@@ -4,6 +4,6 @@ namespace Meziantou.Framework.Scheduling
     {
         Tentative,
         Confirmed,
-        Cancelled
+        Cancelled,
     }
 }

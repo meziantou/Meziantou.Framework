@@ -21,6 +21,6 @@ namespace Meziantou.Framework.Win32.Natives
         ExpectConfirmation = 0x20000,
         GenericCredentials = 0x40000,
         UsernameTargetCredentials = 0x80000,
-        KeepUsername = 0x100000
+        KeepUsername = 0x100000,
     }
 }

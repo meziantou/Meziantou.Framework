@@ -19,6 +19,5 @@
 
         public string Namespace => this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
 
-
     }
 }

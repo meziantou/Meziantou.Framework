@@ -57,13 +57,13 @@ namespace Meziantou.Framework
             {
                 UnicodeCategory.UppercaseLetter,
                 UnicodeCategory.LowercaseLetter,
-                UnicodeCategory.DecimalDigitNumber
+                UnicodeCategory.DecimalDigitNumber,
             };
             AllowedRanges = new List<Range<char>>
             {
                 Range.Create('a', 'z'),
                 Range.Create('A', 'Z'),
-                Range.Create('0', '9')
+                Range.Create('0', '9'),
             };
         }
 
@@ -86,7 +86,7 @@ namespace Meziantou.Framework
 
         public virtual string Replace(char character)
         {
-            return character.ToString();
+            return character.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

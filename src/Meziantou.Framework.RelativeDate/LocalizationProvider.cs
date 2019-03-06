@@ -52,7 +52,7 @@ namespace Meziantou.Framework
                     { "ManyMonthsAgo", "il y a {0} mois" },
                     { "OneYearAgo", "il y a un an" },
                     { "ManyYearsAgo", "il y a {0} ans" },
-                }
+                },
             };
         }
 

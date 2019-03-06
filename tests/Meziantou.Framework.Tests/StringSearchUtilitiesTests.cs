@@ -223,7 +223,7 @@ namespace Meziantou.Framework.Tests
                     "Kori",
                     "Korie",
                     "Korrie",
-                    "Korry" })
+                    "Korry", })
             {
                 yield return new object[] { "Gary", item };
             }
@@ -287,7 +287,7 @@ namespace Meziantou.Framework.Tests
                      "Juana",
                      "June",
                      "Junia",
-                     "Junie" })
+                     "Junie", })
             {
                 yield return new object[] { "John", item };
             }
@@ -313,7 +313,7 @@ namespace Meziantou.Framework.Tests
                     "Moyra",
                     "Muire",
                     "Myra",
-                    "Myrah" })
+                    "Myrah", })
             {
                 yield return new object[] { "Mary", item };
             }

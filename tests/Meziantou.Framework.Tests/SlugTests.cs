@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Tests
         {
             var options = new SlugOptions
             {
-                ToLower = true
+                ToLower = true,
             };
             var slug = Slug.Create(text, options);
 

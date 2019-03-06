@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,6 +46,7 @@ namespace Meziantou.Framework.Threading
             _semaphoreSlim.Dispose();
         }
 
+        [StructLayout(LayoutKind.Auto)]
         private readonly struct LockObject : IDisposable
         {
             private readonly AsyncLock _parent;

@@ -4,6 +4,6 @@ namespace Meziantou.Framework.Win32
     {
         Session = 1,
         LocalMachine,
-        Enterprise
+        Enterprise,
     }
 }

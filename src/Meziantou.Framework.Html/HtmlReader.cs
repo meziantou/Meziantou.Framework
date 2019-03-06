@@ -96,7 +96,7 @@ namespace Meziantou.Framework.Html
                 PreviousCharacter = prev,
                 PeekCharacter = peek,
                 EatNextCharacters = _eatNext,
-                State = ParserState
+                State = ParserState,
             };
 
             OnParsing(this, e);

@@ -24,7 +24,7 @@ namespace Meziantou.Framework.CodeDom.Tests
                 FalseStatements = new ReturnStatement(new BinaryExpression(
                     BinaryOperator.Multiply,
                     n,
-                    new MethodInvokeExpression(method, new BinaryExpression(BinaryOperator.Substract, n, 1))))
+                    new MethodInvokeExpression(method, new BinaryExpression(BinaryOperator.Substract, n, 1)))),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -99,8 +99,8 @@ namespace Meziantou.Framework.CodeDom.Tests
                 Constraints = {
                         new ConstructorParameterConstraint(),
                         new ClassTypeParameterConstraint(),
-                        new BaseTypeParameterConstraint(typeof(ICloneable))
-                }
+                        new BaseTypeParameterConstraint(typeof(ICloneable)),
+                },
             });
 
             var generator = new CSharpCodeGenerator();
@@ -152,8 +152,8 @@ namespace Meziantou.Framework.CodeDom.Tests
                 Constraints = {
                         new ConstructorParameterConstraint(),
                         new ClassTypeParameterConstraint(),
-                        new BaseTypeParameterConstraint(typeof(ICloneable))
-                }
+                        new BaseTypeParameterConstraint(typeof(ICloneable)),
+                },
             });
 
             var generator = new CSharpCodeGenerator();
@@ -276,7 +276,7 @@ internal enum Sample : uint
             var loop = new WhileStatement
             {
                 Condition = new LiteralExpression(value: true),
-                Body = new StatementCollection()
+                Body = new StatementCollection(),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -429,7 +429,7 @@ internal enum Sample : uint
             {
                 Condition = new LiteralExpression(value: true),
                 TrueStatements = new SnippetStatement("TrueSnippet"),
-                FalseStatements = new SnippetStatement("FalseSnippet")
+                FalseStatements = new SnippetStatement("FalseSnippet"),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -469,8 +469,8 @@ else
                 Try = new SnippetStatement("TrySnippet"),
                 Catch = new CatchClauseCollection
                 {
-                    new CatchClause() { Body = new SnippetStatement("Catch1") }
-                }
+                    new CatchClause() { Body = new SnippetStatement("Catch1") },
+                },
             };
 
             var generator = new CSharpCodeGenerator();
@@ -498,14 +498,14 @@ catch
                 {
                     ExceptionType = typeof(NotImplementedException),
                     ExceptionVariableName = "nie",
-                    Body = new SnippetStatement("Catch1")
+                    Body = new SnippetStatement("Catch1"),
                 },
                 new CatchClause()
                 {
                     ExceptionType = typeof(Exception),
                     ExceptionVariableName = "ex",
-                    Body = new ThrowStatement()
-                }
+                    Body = new ThrowStatement(),
+                },
             };
 
             var generator = new CSharpCodeGenerator();
@@ -532,7 +532,7 @@ catch (System.Exception ex)
             var statement = new TryCatchFinallyStatement
             {
                 Try = new SnippetStatement("TrySnippet"),
-                Finally = new SnippetStatement("FinallyStatement")
+                Finally = new SnippetStatement("FinallyStatement"),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -637,8 +637,8 @@ void Sample()
                 {
                     Arguments =
                     {
-                        new CustomAttributeArgument("arg1")
-                    }
+                        new CustomAttributeArgument("arg1"),
+                    },
                 });
 
             var generator = new CSharpCodeGenerator();
@@ -663,7 +663,7 @@ void Sample()
                     {
                         new CustomAttributeArgument("arg1"),
                         new CustomAttributeArgument("arg2"),
-                    }
+                    },
                 });
 
             var generator = new CSharpCodeGenerator();
@@ -686,8 +686,8 @@ void Sample()
                 {
                     Arguments =
                     {
-                        new CustomAttributeArgument("Name1", "arg1")
-                    }
+                        new CustomAttributeArgument("Name1", "arg1"),
+                    },
                 });
 
             var generator = new CSharpCodeGenerator();
@@ -711,8 +711,8 @@ void Sample()
                     Arguments =
                     {
                         new CustomAttributeArgument("Name1", "arg1"),
-                        new CustomAttributeArgument("Name2", "arg2")
-                    }
+                        new CustomAttributeArgument("Name2", "arg2"),
+                    },
                 });
 
             var generator = new CSharpCodeGenerator();
@@ -738,7 +738,7 @@ void Sample()
                         new CustomAttributeArgument("arg1"),
                         new CustomAttributeArgument("Name2", "arg2"),
                         new CustomAttributeArgument("arg3"),
-                    }
+                    },
                 });
 
             var generator = new CSharpCodeGenerator();
@@ -897,7 +897,7 @@ void Sample()
             var prop = new PropertyDeclaration("A", typeof(int));
             prop.Setter = new PropertyAccessorDeclaration
             {
-                Modifiers = Modifiers.Internal
+                Modifiers = Modifiers.Internal,
             };
 
             var generator = new CSharpCodeGenerator();
@@ -937,7 +937,7 @@ void Sample()
             {
                 PrivateImplementationType = new TypeReference("Foo.IBar"),
                 AddAccessor = new StatementCollection(),
-                RemoveAccessor = new StatementCollection()
+                RemoveAccessor = new StatementCollection(),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -999,7 +999,7 @@ void Sample()
             var statement = new UsingStatement
             {
                 Statement = new VariableDeclarationStatement(type: null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
-                Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable"))
+                Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable")),
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1049,7 +1049,7 @@ void Sample()
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
 
-            Assert.That.StringEquals(@"Console.Write(out test)", result);
+            Assert.That.StringEquals("Console.Write(out test)", result);
         }
 
         [TestMethod]
@@ -1378,12 +1378,12 @@ void Sample()
                 ReturnType = typeof(int),
                 Arguments =
                 {
-                    new MethodArgumentDeclaration(typeof(long), "value")
+                    new MethodArgumentDeclaration(typeof(long), "value"),
                 },
                 Statements =
                 {
-                    new ReturnStatement(new ArgumentReferenceExpression("value"))
-                }
+                    new ReturnStatement(new ArgumentReferenceExpression("value")),
+                },
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1406,12 +1406,12 @@ void Sample()
                 Modifiers = Modifiers.Public | Modifiers.Static | Modifiers.Implicit,
                 Arguments =
                 {
-                    new MethodArgumentDeclaration(typeof(long), "value")
+                    new MethodArgumentDeclaration(typeof(long), "value"),
                 },
                 Statements =
                 {
-                    new ReturnStatement(new ArgumentReferenceExpression("value"))
-                }
+                    new ReturnStatement(new ArgumentReferenceExpression("value")),
+                },
             });
 
             var generator = new CSharpCodeGenerator();
@@ -1433,12 +1433,12 @@ void Sample()
                 ReturnType = typeof(int),
                 Arguments =
                 {
-                    new MethodArgumentDeclaration(typeof(long), "value")
+                    new MethodArgumentDeclaration(typeof(long), "value"),
                 },
                 Statements =
                 {
-                    new ReturnStatement(new ArgumentReferenceExpression("value"))
-                }
+                    new ReturnStatement(new ArgumentReferenceExpression("value")),
+                },
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1466,8 +1466,8 @@ void Sample()
                 },
                 Statements =
                 {
-                    new ReturnStatement(new ArgumentReferenceExpression("value"))
-                }
+                    new ReturnStatement(new ArgumentReferenceExpression("value")),
+                },
             };
 
             var generator = new CSharpCodeGenerator();
@@ -1490,7 +1490,7 @@ void Sample()
             A = 1,
             B = 2,
             C = 4,
-            All = A | B | C
+            All = A | B | C,
         }
 
         [TestMethod]
@@ -1647,9 +1647,9 @@ void Sample()
                         new ConditionStatement()
                         {
                             Condition = new LiteralExpression(value: true),
-                            TrueStatements = new StatementCollection()
-                        }
-                    }
+                            TrueStatements = new StatementCollection(),
+                        },
+                    },
                 },
                 new AssignStatement(new VariableReferenceExpression("a") , 0),
                 new AssignStatement(new VariableReferenceExpression("b") , 0),

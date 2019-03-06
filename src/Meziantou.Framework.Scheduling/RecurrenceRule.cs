@@ -81,7 +81,7 @@ namespace Meziantou.Framework.Scheduling
                         {
                             ByMonthDays = ParseByMonthDays(values),
                             ByMonths = ParseByMonth(values),
-                            ByWeekDays = ParseByDay(values)
+                            ByWeekDays = ParseByDay(values),
                         };
                         recurrenceRule = dailyRecurrenceRule;
                         break;
@@ -89,7 +89,7 @@ namespace Meziantou.Framework.Scheduling
                         var weeklyRecurrence = new WeeklyRecurrenceRule
                         {
                             ByMonths = ParseByMonth(values),
-                            ByWeekDays = ParseByDay(values)
+                            ByWeekDays = ParseByDay(values),
                         };
                         recurrenceRule = weeklyRecurrence;
                         break;
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Scheduling
                         {
                             ByWeekDays = ParseByDayWithOffset(values),
                             ByMonthDays = ParseByMonthDays(values),
-                            ByMonths = ParseByMonth(values)
+                            ByMonths = ParseByMonth(values),
                         };
                         recurrenceRule = monthlyRecurrence;
                         break;
@@ -109,7 +109,7 @@ namespace Meziantou.Framework.Scheduling
                             ByMonthDays = ParseByMonthDays(values),
                             BySetPositions = ParseBySetPos(values),
                             ByMonths = ParseByMonth(values),
-                            ByYearDays = ParseByYearDay(values)
+                            ByYearDays = ParseByYearDay(values),
                         };
                         //yearlyRecurrence.ByWeekNo = ParseByWeekNo(values);
                         recurrenceRule = yearlyRecurrence;
@@ -258,7 +258,7 @@ namespace Meziantou.Framework.Scheduling
                 }
                 else
                 {
-                    return new ByDay(ParseDayOfWeek(str.Substring(i)), int.Parse(str.Substring(0, i)));
+                    return new ByDay(ParseDayOfWeek(str.Substring(i)), int.Parse(str.Substring(0, i), CultureInfo.InvariantCulture));
                 }
             }
 
@@ -341,7 +341,7 @@ namespace Meziantou.Framework.Scheduling
             return result;
         }
 
-        protected static List<DateTime> ResultByWeekDaysInMonth(DateTime startOfMonth, IList<ByDay> byWeekDays)
+        private protected static List<DateTime> ResultByWeekDaysInMonth(DateTime startOfMonth, IList<ByDay> byWeekDays)
         {
             List<DateTime> resultByDays = null;
             if (!IsEmpty(byWeekDays))
@@ -397,7 +397,7 @@ namespace Meziantou.Framework.Scheduling
             return resultByDays;
         }
 
-        protected static List<DateTime> ResultByMonthDays(DateTime startOfMonth, IList<int> byMonthDays)
+        private protected static List<DateTime> ResultByMonthDays(DateTime startOfMonth, IList<int> byMonthDays)
         {
             List<DateTime> resultByMonthDays = null;
             if (!IsEmpty(byMonthDays))

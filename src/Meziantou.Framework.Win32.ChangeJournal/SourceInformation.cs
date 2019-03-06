@@ -30,6 +30,6 @@ namespace Meziantou.Framework.Win32
         ///     The source is modifying the file to match the contents of
         ///     the same file, which exists in another member of the replica set.
         /// </summary>
-        ReplicationManagement = 0x00000004
+        ReplicationManagement = 0x00000004,
     }
 }

@@ -28,7 +28,7 @@
         {
             var condition = new ConditionStatement
             {
-                Condition = new BinaryExpression(BinaryOperator.NotEquals, leftExpression, new LiteralExpression(value: null))
+                Condition = new BinaryExpression(BinaryOperator.NotEquals, leftExpression, new LiteralExpression(value: null)),
             };
             return condition;
         }

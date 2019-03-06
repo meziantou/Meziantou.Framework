@@ -3,6 +3,6 @@
     public enum ProcessOutputType
     {
         StandardOutput,
-        StandardError
+        StandardError,
     }
 }

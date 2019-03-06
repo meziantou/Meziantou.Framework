@@ -27,6 +27,6 @@ namespace Meziantou.Framework.Win32
         SecurityChange = 0x00000800,
         StreamChange = 0x00200000,
 
-        All = BasicInfoChange | Close | CompressionChange | DataExtend | DataOverwrite | DataTruncation | ExtendedAttributesChange | EncryptionChange | FileCreate | FileDelete | HardLinkChange | IndexableChange | NamedDataExtend | NamedDataOverwrite | NamedDataTruncation | ObjectIDChange | RenameNewName | RenameOldName | ReparsePointChange | StreamChange | SecurityChange
+        All = BasicInfoChange | Close | CompressionChange | DataExtend | DataOverwrite | DataTruncation | ExtendedAttributesChange | EncryptionChange | FileCreate | FileDelete | HardLinkChange | IndexableChange | NamedDataExtend | NamedDataOverwrite | NamedDataTruncation | ObjectIDChange | RenameNewName | RenameOldName | ReparsePointChange | StreamChange | SecurityChange,
     }
 }

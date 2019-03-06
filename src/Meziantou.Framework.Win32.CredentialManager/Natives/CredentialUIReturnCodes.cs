@@ -9,6 +9,6 @@
         InvalidAccountName = 1315,
         InsufficientBuffer = 122,
         InvalidParameter = 87,
-        InvalidFlags = 1004
+        InvalidFlags = 1004,
     }
 }

@@ -5,6 +5,6 @@
         None,
         Base16,
         Base16Prefixed,
-        Base64
+        Base64,
     }
 }

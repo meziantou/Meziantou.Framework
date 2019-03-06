@@ -48,6 +48,6 @@
         /// <summary>
         /// The current operation is canceled by user.
         /// </summary>
-        ERROR_CANCELLED = 1223
+        ERROR_CANCELLED = 1223,
     }
 }

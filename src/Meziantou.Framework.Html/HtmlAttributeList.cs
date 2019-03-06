@@ -123,7 +123,7 @@ namespace Meziantou.Framework.Html
             foreach (var att in _attributes)
             {
                 if (att.ParentNode != Parent)
-                    throw new ArgumentException();
+                    throw new InvalidOperationException();
 
                 att.ParentNode = null;
             }

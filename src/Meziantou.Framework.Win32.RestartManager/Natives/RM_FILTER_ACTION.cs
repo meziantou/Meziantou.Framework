@@ -18,6 +18,6 @@
         /// <summary>
         /// Prevents the shut down and restart of the specified application or service.
         /// </summary>
-        RmNoShutdown = 2
+        RmNoShutdown = 2,
     }
 }

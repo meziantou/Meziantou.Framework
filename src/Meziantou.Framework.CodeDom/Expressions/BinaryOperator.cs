@@ -20,6 +20,6 @@ namespace Meziantou.Framework.CodeDom
         Modulo,
         ShiftLeft,
         ShiftRight,
-        Xor
+        Xor,
     }
 }

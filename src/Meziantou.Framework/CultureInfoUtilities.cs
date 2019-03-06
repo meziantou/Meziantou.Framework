@@ -8,7 +8,8 @@ namespace Meziantou.Framework
     {
         public static void SetCurrentThreadCulture(CultureInfo cultureInfo)
         {
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             var currentThread = Thread.CurrentThread;
             currentThread.CurrentCulture = cultureInfo;
@@ -17,8 +18,10 @@ namespace Meziantou.Framework
 
         public static void UseCulture(CultureInfo cultureInfo, Action action)
         {
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
-            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             var currentThread = Thread.CurrentThread;
             var currentCulture = currentThread.CurrentCulture;
@@ -40,7 +43,8 @@ namespace Meziantou.Framework
 
         public static void UseCulture(string cultureName, Action action)
         {
-            if (cultureName == null) throw new ArgumentNullException(nameof(cultureName));
+            if (cultureName == null)
+                throw new ArgumentNullException(nameof(cultureName));
 
             var culture = GetCulture(cultureName);
             if (culture == null)
@@ -51,8 +55,10 @@ namespace Meziantou.Framework
 
         public static T UseCulture<T>(CultureInfo cultureInfo, Func<T> action)
         {
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
-            if (action == null) throw new ArgumentNullException(nameof(action));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             var currentThread = Thread.CurrentThread;
             var currentCulture = currentThread.CurrentCulture;
@@ -74,7 +80,8 @@ namespace Meziantou.Framework
 
         public static T UseCulture<T>(string cultureName, Func<T> action)
         {
-            if (cultureName == null) throw new ArgumentNullException(nameof(cultureName));
+            if (cultureName == null)
+                throw new ArgumentNullException(nameof(cultureName));
 
             var culture = GetCulture(cultureName);
             if (culture == null)
@@ -96,7 +103,7 @@ namespace Meziantou.Framework
             {
             }
 
-            if (int.TryParse(name, out var i))
+            if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return CultureInfo.GetCultureInfo(i);
 
             return null;
@@ -104,7 +111,8 @@ namespace Meziantou.Framework
 
         public static CultureInfo GetNeutralCulture(this CultureInfo cultureInfo)
         {
-            if (cultureInfo == null) throw new ArgumentNullException(nameof(cultureInfo));
+            if (cultureInfo == null)
+                throw new ArgumentNullException(nameof(cultureInfo));
 
             if (cultureInfo.IsNeutralCulture)
                 return cultureInfo;

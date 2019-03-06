@@ -331,7 +331,7 @@ namespace Meziantou.Framework
                 {
                 }
 
-                if (int.TryParse(name, out var i))
+                if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 {
                     if (TryConvert(i, provider, out value))
                         return true;

@@ -113,6 +113,6 @@ namespace Meziantou.Framework.Win32.Natives
         /// <summary>
         /// Indicates that the caller is opening a file as a stream (BHID_Stream), so there is no need to download that file.
         /// </summary>
-        FOS_SUPPORTSTREAMABLEITEMS = 0x80000000
+        FOS_SUPPORTSTREAMABLEITEMS = 0x80000000,
     }
 }

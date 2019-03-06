@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Html.Tests
 
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                return ConvertToString(args, outer: false, separator: null)?.ToLower();
+                return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();
             }
         }
     }

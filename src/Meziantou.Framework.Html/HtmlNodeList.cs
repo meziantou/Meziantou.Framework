@@ -107,7 +107,7 @@ namespace Meziantou.Framework.Html
             {
                 HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
                 if (node.ParentNode != _parent)
-                    throw new ArgumentException();
+                    throw new InvalidOperationException();
 
                 node.ParentNode = null;
             }

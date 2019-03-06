@@ -92,6 +92,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
             public byte[] ProviderID;
+
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 128)]
             public byte[] ContentID;
         }
@@ -141,7 +142,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         internal enum PRJ_CALLBACK_DATA_FLAGS : uint
         {
             PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN = 1,
-            PRJ_CB_DATA_FLAG_ENUM_RETURN_SINGLE_ENTRY = 2
+            PRJ_CB_DATA_FLAG_ENUM_RETURN_SINGLE_ENTRY = 2,
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -213,8 +214,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         internal enum PRJ_COMPLETE_COMMAND_TYPE
         {
             PRJ_COMPLETE_COMMAND_TYPE_NOTIFICATION = 1,
-            PRJ_COMPLETE_COMMAND_TYPE_ENUMERATION = 2
+            PRJ_COMPLETE_COMMAND_TYPE_ENUMERATION = 2,
         }
     }
-
 }

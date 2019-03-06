@@ -9,6 +9,6 @@ namespace Meziantou.Framework.Scheduling
         Daily,
         Weekly,
         Monthly,
-        Yearly
+        Yearly,
     }
 }

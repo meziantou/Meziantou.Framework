@@ -11,6 +11,6 @@ namespace Meziantou.Framework.Html
 		None,
 		ProcessingInstruction,
         DocumentType,
-        XPathResult
+        XPathResult,
 	}
 }

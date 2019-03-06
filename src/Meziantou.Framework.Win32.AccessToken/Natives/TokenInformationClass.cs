@@ -42,6 +42,6 @@
         TokenRestrictedDeviceGroups,
         TokenSecurityAttributes,
         TokenIsRestricted,
-        MaxTokenInfoClass
+        MaxTokenInfoClass,
     }
 }

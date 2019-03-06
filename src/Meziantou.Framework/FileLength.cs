@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
+    [StructLayout(LayoutKind.Auto)]
     public readonly struct FileLength : IEquatable<FileLength>, IComparable, IComparable<FileLength>, IFormattable
     {
         public FileLength(long length)
@@ -62,13 +64,13 @@ namespace Meziantou.Framework
             var numberFormat = "G";
             if (index > 0)
             {
-                if (!int.TryParse(format.Substring(index), out var number))
+                if (!int.TryParse(format.Substring(index), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
                     throw new ArgumentException("format is invalid", nameof(format));
 
                 numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
             }
 
-            return GetLength(unit).ToString(numberFormat);
+            return GetLength(unit).ToString(numberFormat, formatProvider);
         }
 
         public double GetLength(FileLengthUnit unit)

@@ -23,7 +23,7 @@ namespace Meziantou.Framework
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 ErrorDialog = false,
-                UseShellExecute = false
+                UseShellExecute = false,
             };
 
             return RunAsTask(psi, cancellationToken);
@@ -57,7 +57,7 @@ namespace Meziantou.Framework
             var process = new Process
             {
                 StartInfo = psi,
-                EnableRaisingEvents = true
+                EnableRaisingEvents = true,
             };
 
             process.Exited += (sender, e) =>

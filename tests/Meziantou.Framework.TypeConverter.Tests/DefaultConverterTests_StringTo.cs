@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Tests
             None = 0x0,
             Option1 = 0x1,
             Option2 = 0x2,
-            Option3 = 0x4
+            Option3 = 0x4,
         }
 
         [TestMethod]

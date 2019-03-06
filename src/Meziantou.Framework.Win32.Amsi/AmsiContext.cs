@@ -3,7 +3,7 @@ using System.ComponentModel;
 
 namespace Meziantou.Framework.Win32
 {
-    public class AmsiContext : IDisposable
+    public sealed class AmsiContext : IDisposable
     {
         internal readonly AmsiContextSafeHandle _handle;
 

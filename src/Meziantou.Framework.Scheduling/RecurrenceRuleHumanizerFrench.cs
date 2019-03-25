@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" jours");
             }
@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" semaines");
             }
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" mois");
             }
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.Scheduling
                     sb.Append(" le ");
                     sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 }
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
             }
 
@@ -122,7 +122,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" ans");
             }
@@ -154,7 +154,7 @@ namespace Meziantou.Framework.Scheduling
                     ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(md => md.ToString(cultureInfo)).ToList(), ", ", " et ");
                     if (rrule.ByMonths != null && rrule.ByMonths.Any())
                     {
-                        sb.Append(" ");
+                        sb.Append(' ');
                         ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                     }
                 }
@@ -167,7 +167,7 @@ namespace Meziantou.Framework.Scheduling
                     sb.Append(" le ");
                     sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 }
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
                 if (rrule.ByMonths != null && rrule.ByMonths.Any())
                 {
@@ -235,7 +235,7 @@ namespace Meziantou.Framework.Scheduling
             if (rrule.EndDate.HasValue)
             {
                 sb.Append(" jusqu'au ");
-                sb.Append(rrule.EndDate.Value.ToString("d MMMM yyyy", FrenchCultureInfo));
+                sb.AppendFormat(FrenchCultureInfo, "{0:d MMMM yyyy}", rrule.EndDate.Value);
             }
         }
 

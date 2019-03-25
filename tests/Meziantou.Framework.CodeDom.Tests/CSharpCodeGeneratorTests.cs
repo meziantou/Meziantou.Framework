@@ -1480,7 +1480,7 @@ void Sample()
 ", result);
         }
 
-        private class Sample<T>
+        private static class Sample<T>
         {
         }
 

@@ -7,12 +7,12 @@ namespace Meziantou.Framework.CodeDom
 {
     public partial class CSharpCodeGenerator
     {
-        private static readonly IDictionary<string, string> _predefinedTypes;
-        private static readonly string[] _keywords;
+        private static readonly IDictionary<string, string> s_predefinedTypes;
+        private static readonly string[] s_keywords;
 
         static CSharpCodeGenerator()
         {
-            _predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+            s_predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [typeof(bool).FullName] = "bool",
                 [typeof(byte).FullName] = "byte",
@@ -32,7 +32,7 @@ namespace Meziantou.Framework.CodeDom
                 [typeof(void).FullName] = "void",
             };
 
-            _keywords = new string[]
+            s_keywords = new string[]
             {
                 "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float", "decimal",
                 "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if", "else", "while", "for", "foreach", "do", "switch",
@@ -1073,7 +1073,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void WriteIdentifier(IndentedTextWriter writer, string name)
         {
-            if (_keywords.Contains(name, StringComparer.Ordinal))
+            if (s_keywords.Contains(name, StringComparer.Ordinal))
             {
                 writer.Write("@");
             }
@@ -1260,7 +1260,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        private void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
+        private static void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
         {
             if (type.Parameters.Any())
             {
@@ -1284,7 +1284,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Indent--;
         }
 
-        private List<TypeReference> GetBaseTypes(IInheritanceParameters c)
+        private static List<TypeReference> GetBaseTypes(IInheritanceParameters c)
         {
             var list = new List<TypeReference>();
             if (c.BaseType != null)
@@ -1300,7 +1300,7 @@ namespace Meziantou.Framework.CodeDom
             return list;
         }
 
-        private void WriteValues<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator)
+        private static void WriteValues<T>(IndentedTextWriter writer, IEnumerable<T> objects, string separator)
         {
             var first = true;
             foreach (var o in objects)

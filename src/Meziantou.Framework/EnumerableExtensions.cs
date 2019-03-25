@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Meziantou.Framework
@@ -167,10 +168,20 @@ namespace Meziantou.Framework
 
         public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
         {
-            return ForEachAsync(source, Environment.ProcessorCount, action);
+            return ForEachAsync(source, action, CancellationToken.None);
+        }
+
+        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken)
+        {
+            return ForEachAsync(source, Environment.ProcessorCount, action, cancellationToken);
         }
 
         public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
+        {
+            return ForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
+        }
+
+        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -185,7 +196,7 @@ namespace Meziantou.Framework
                                     await action(partition.Current).ConfigureAwait(false);
                                 }
                             }
-                        });
+                        }, cancellationToken);
 
             return Task.WhenAll(tasks);
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Templating
@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Templating
             return Template.OutputParameterName + "." + nameof(TextWriter.Write) + "(@\"" + EscapeVerbatimString(Text) + "\");";
         }
 
-        protected string EscapeVerbatimString(string s)
+        protected static string EscapeVerbatimString(string s)
         {
             return s?.Replace("\"", "\"\"");
         }

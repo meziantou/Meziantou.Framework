@@ -496,7 +496,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, TypeReference type)
         {
-            if (_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
+            if (s_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
             {
                 writer.Write(keyword);
                 return;

@@ -124,7 +124,7 @@ namespace Meziantou.Framework.CodeDom
                 var sb = new StringBuilder();
                 if (!string.IsNullOrEmpty(Namespace))
                 {
-                    sb.Append(Namespace).Append(".");
+                    sb.Append(Namespace).Append('.');
                 }
 
                 sb.Append(Name);

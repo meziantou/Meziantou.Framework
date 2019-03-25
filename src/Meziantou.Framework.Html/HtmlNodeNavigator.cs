@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Html
         private readonly HtmlNode _rootNode;
 
         [Conditional("HTML_XPATH_TRACE")]
-        private void Trace(object value, [CallerMemberName] string methodName = null)
+        private static void Trace(object value, [CallerMemberName] string methodName = null)
         {
 #if HTML_XPATH_TRACE
             if (!EnableTrace)

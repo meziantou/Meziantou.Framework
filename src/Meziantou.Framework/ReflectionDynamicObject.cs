@@ -256,7 +256,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private bool TryGetIndex(PropertyInfo indexer, object instance, object[] indexes, out object result)
+        private static bool TryGetIndex(PropertyInfo indexer, object instance, object[] indexes, out object result)
         {
             try
             {
@@ -277,7 +277,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private bool TrySetIndex(PropertyInfo indexer, object instance, object[] indexes, object value)
+        private static bool TrySetIndex(PropertyInfo indexer, object instance, object[] indexes, object value)
         {
             try
             {

@@ -25,12 +25,14 @@ namespace Meziantou.Framework
 
         public bool HasValue { get; private set; }
 
-        public async Task<T> GetValueAsync()
+        public Task<T> GetValueAsync() => GetValueAsync(CancellationToken.None);
+
+        public async Task<T> GetValueAsync(CancellationToken cancellationToken)
         {
             if (HasValue)
                 return _value;
 
-            await _semaphoreSlim.WaitAsync().ConfigureAwait(false);
+            await _semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 if (HasValue)

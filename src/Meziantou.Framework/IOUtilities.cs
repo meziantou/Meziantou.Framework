@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -140,7 +141,7 @@ namespace Meziantou.Framework
             {
                 if (Array.IndexOf(invalid, c) >= 0)
                 {
-                    sb.AppendFormat(reservedCharFormat, (short)c);
+                    sb.AppendFormat(CultureInfo.InvariantCulture, reservedCharFormat, (short)c);
                 }
                 else
                 {

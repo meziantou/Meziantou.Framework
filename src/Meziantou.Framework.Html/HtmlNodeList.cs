@@ -176,7 +176,7 @@ namespace Meziantou.Framework.Html
         public bool Remove(HtmlNode item)
         {
             if (item == null)
-                throw new ArgumentNullException("node");
+                throw new ArgumentNullException(nameof(item));
 
             var index = _list.IndexOf(item);
             if (index < 0)
@@ -184,7 +184,7 @@ namespace Meziantou.Framework.Html
 
             var existing = _list[index];
             if (existing.ParentNode != _parent)
-                throw new ArgumentException(message: null, "node");
+                throw new ArgumentException(message: null, nameof(item));
 
             _list.RemoveAt(index);
             HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);

@@ -86,7 +86,7 @@ namespace Meziantou.Framework
                 index = str.IndexOf(oldValue, index, comparison);
             }
 
-            sb.Append(str.Substring(previousIndex));
+            sb.Append(str, previousIndex, str.Length - previousIndex);
             return sb.ToString();
         }
 

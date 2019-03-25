@@ -178,13 +178,13 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             return HResult.E_FILENOTFOUND;
         }
 
-        private HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
+        private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
         {
             Debug.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
             return HResult.S_OK;
         }
 
-        private HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
+        private static HResult CancelCommandCallback(in NativeMethods.PrjCallbackData callbackData)
         {
             Debug.WriteLine($"CancelCommandCallback {callbackData.FilePathName}");
             return HResult.S_OK;

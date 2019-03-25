@@ -74,7 +74,7 @@ namespace Meziantou.Framework.Templating
             return base.BuildCode();
         }
 
-        private string Nullify(string text)
+        private static string Nullify(string text)
         {
             if (text == null)
                 return null;

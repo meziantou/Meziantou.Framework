@@ -65,7 +65,7 @@ namespace Meziantou.Framework.CommandLineTests
             Assert.IsTrue(output.LastIndexOf("test?", StringComparison.Ordinal) > 0);
         }
 
-        private string UsingConsole(string input, Action action)
+        private static string UsingConsole(string input, Action action)
         {
             var initialInStream = Console.In;
             var initialOutStream = Console.Out;

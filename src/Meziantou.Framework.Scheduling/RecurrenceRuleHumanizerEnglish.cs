@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Scheduling
             if (rrule.EndDate.HasValue)
             {
                 sb.Append(" until ");
-                sb.Append(rrule.EndDate.Value.ToString("MMMM d, yyyy", EnglishCultureInfo));
+                sb.AppendFormat(EnglishCultureInfo, "{0:MMMM d, yyyy}", rrule.EndDate.Value);
             }
         }
 
@@ -128,7 +128,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else if (rrule.Interval > 2)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" days");
             }
@@ -155,7 +155,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else if (rrule.Interval > 2)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" weeks");
             }
@@ -189,7 +189,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else if (rrule.Interval > 2)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" months");
             }
@@ -214,7 +214,7 @@ namespace Meziantou.Framework.Scheduling
                 {
                     sb.Append("the ");
                     sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
-                    sb.Append(" ");
+                    sb.Append(' ');
                 }
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
             }
@@ -242,7 +242,7 @@ namespace Meziantou.Framework.Scheduling
             }
             else if (rrule.Interval > 2)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 sb.Append(rrule.Interval);
                 sb.Append(" years");
             }
@@ -280,7 +280,7 @@ namespace Meziantou.Framework.Scheduling
                 {
                     sb.Append("the ");
                     sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
-                    sb.Append(" ");
+                    sb.Append(' ');
                 }
                 sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
 

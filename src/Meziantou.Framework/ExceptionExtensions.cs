@@ -16,7 +16,7 @@ namespace Meziantou.Framework
             var sb = new StringBuilder();
             while (exception != null)
             {
-                sb.AppendLine(exception.ToString());
+                sb.Append(exception).AppendLine();
                 exception = exception.InnerException;
             }
 

@@ -71,9 +71,9 @@ namespace Meziantou.Framework
             }
         }
 
-        private string GetString(string name, CultureInfo culture) => LocalizationProvider.Current.GetString(name, culture);
+        private static string GetString(string name, CultureInfo culture) => LocalizationProvider.Current.GetString(name, culture);
 
-        private string GetString(string name, CultureInfo culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
+        private static string GetString(string name, CultureInfo culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
 
         int IComparable.CompareTo(object obj)
         {

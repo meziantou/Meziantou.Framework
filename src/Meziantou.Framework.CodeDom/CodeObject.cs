@@ -19,7 +19,7 @@ namespace Meziantou.Framework.CodeDom
             SetParent(this, ref field, value);
         }
 
-        protected void SetParent<T>(CodeObject parent, ref T field, T value) where T : CodeObject
+        protected static void SetParent<T>(CodeObject parent, ref T field, T value) where T : CodeObject
         {
             if (parent == null)
                 throw new ArgumentNullException(nameof(parent));
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.CodeDom
             return SetParent(this, value);
         }
 
-        protected T SetParent<T>(CodeObject parent, T value) where T : CodeObject
+        protected static T SetParent<T>(CodeObject parent, T value) where T : CodeObject
         {
             if (parent == null)
                 throw new ArgumentNullException(nameof(parent));

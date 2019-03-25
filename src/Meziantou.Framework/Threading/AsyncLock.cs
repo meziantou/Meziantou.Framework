@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Threading
 
         public bool TryLock()
         {
-            return _semaphoreSlim.Wait(TimeSpan.Zero);
+            return TryLock(TimeSpan.Zero);
         }
 
         public bool TryLock(TimeSpan timeout, CancellationToken cancellationToken = default)

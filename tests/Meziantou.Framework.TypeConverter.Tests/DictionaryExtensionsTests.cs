@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Tests
     [TestClass]
     public class DictionaryExtensionsTests
     {
-        public void GetValue_KeyExists()
+        public static void GetValue_KeyExists()
         {
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Tests
             Assert.AreEqual("42", actual);
         }
 
-        public void GetValue_KeyNotExists()
+        public static void GetValue_KeyNotExists()
         {
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)
@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Tests
             Assert.AreEqual("", actual);
         }
 
-        public void GetValue_KeyNotConvertible()
+        public static void GetValue_KeyNotConvertible()
         {
             // Arrange
             var dictionary = new Dictionary<string, object>(StringComparer.Ordinal)

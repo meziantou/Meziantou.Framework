@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Tests
             B,
         }
 
-        private class MyNullable<T>
+        private static class MyNullable<T>
         {
         }
     }

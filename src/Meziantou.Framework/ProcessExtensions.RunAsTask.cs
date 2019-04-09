@@ -62,9 +62,16 @@ namespace Meziantou.Framework
 
             process.Exited += (sender, e) =>
             {
-                process.WaitForExit();
-                tcs.SetResult(new ProcessResult(process.ExitCode, logs));
-                process.Dispose();
+                try
+                {
+                    process.WaitForExit();
+                    tcs.TrySetResult(new ProcessResult(process.ExitCode, logs));
+                    process.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    tcs.TrySetException(ex);
+                }
             };
 
             process.ErrorDataReceived += (sender, e) =>
@@ -102,15 +109,24 @@ namespace Meziantou.Framework
                     if (process.HasExited)
                         return;
 
+                    tcs.TrySetCanceled(cancellationToken);
+
                     try
                     {
-                        if (IsWindows())
+                        try
                         {
-                            process.Kill(entireProcessTree: true);
+                            if (IsWindows())
+                            {
+                                process.Kill(entireProcessTree: true);
+                            }
+                            else
+                            {
+                                process.Kill();
+                            }
                         }
-                        else
+                        catch (InvalidOperationException)
                         {
-                            process.Kill();
+                            // the process may already be killed
                         }
                     }
                     finally

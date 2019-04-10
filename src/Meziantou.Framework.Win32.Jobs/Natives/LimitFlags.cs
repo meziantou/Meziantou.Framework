@@ -20,5 +20,12 @@ namespace Meziantou.Framework.Win32.Natives
         SilentBreakawayOk = 0x00001000,
         KillOnJobClose = 0x00002000,
         SubsetAffinity = 0x00004000,
+        JobMemoryLow = 0x00008000,
+        JobReadBytes = 0x00010000,
+        JobWriteBytes = 0x00020000,
+        RateControl = 0x00040000,
+        CpuRateControl = 0x00040000,
+        IoRateControl = 0x00080000,
+        NetRateControl = 0x00100000,
     }
 }

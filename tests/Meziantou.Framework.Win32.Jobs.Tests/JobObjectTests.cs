@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests
@@ -65,6 +66,51 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
 
                     process.WaitForExit();
                 }
+            }
+        }
+
+        [TestMethod]
+        public void CreateAndOpenJobObject()
+        {
+            var objectName = Guid.NewGuid().ToString("N");
+            using (var job = new JobObject(objectName))
+            {
+                Assert.IsFalse(job.IsInvalid);
+
+                using (var openedJob = JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
+                {
+                    Assert.IsFalse(openedJob.IsInvalid);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void SetUILimits()
+        {
+            using (var job = new JobObject())
+            {
+                job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
+            }
+        }
+
+        [TestMethod]
+        public void IsAssignedToProcess_NotAssociated()
+        {
+            using (var job = new JobObject())
+            {
+                Assert.IsFalse(job.IsAssignedToProcess(Process.GetCurrentProcess()));
+            }
+        }
+
+        [TestMethod]
+        public void IsAssignedToProcess_Associated()
+        {
+            using (var job = new JobObject())
+            {
+                var process = Process.GetCurrentProcess();
+                job.AssignProcess(process);
+
+                Assert.IsTrue(job.IsAssignedToProcess(process));
             }
         }
     }

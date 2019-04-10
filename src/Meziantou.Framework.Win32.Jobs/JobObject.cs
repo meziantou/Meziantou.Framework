@@ -33,8 +33,14 @@ namespace Meziantou.Framework.Win32
                 nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
             };
 
-            base.SetHandle(NativeMethods.CreateJobObject(ref atts, name));
+            SetHandle(NativeMethods.CreateJobObject(ref atts, name));
         }
+
+        public static JobObject Open(JobObjectAccessRights desiredAccess, bool inherited, string name)
+        {
+            return NativeMethods.OpenJobObject(desiredAccess, inherited, name);
+        }
+
 
         /// <summary>
         /// When overridden in a derived class, gets a value indicating whether the handle value is invalid.
@@ -74,25 +80,9 @@ namespace Meziantou.Framework.Win32
         /// Assigns a process to an existing job object.
         /// </summary>
         /// <param name="process">The process.</param>
-        /// <returns>
-        /// true if the function succeeds; otherwise false.
-        /// </returns>
-        public bool AssignProcess(Process process)
+        public void AssignProcess(Process process)
         {
-            return AssignProcess(process, throwOnError: false);
-        }
-
-        /// <summary>
-        /// Assigns a process to an existing job object.
-        /// </summary>
-        /// <param name="process">The process.</param>
-        /// <param name="throwOnError">if set to <c>true</c> errors may be thrown.</param>
-        /// <returns>
-        /// true if the function succeeds; otherwise false.
-        /// </returns>
-        public bool AssignProcess(Process process, bool throwOnError)
-        {
-            return AssignProcess(process.Handle, throwOnError);
+            AssignProcess(process.Handle);
         }
 
         /// <summary>
@@ -102,52 +92,19 @@ namespace Meziantou.Framework.Win32
         /// <returns>
         /// true if the function succeeds; otherwise false.
         /// </returns>
-        public bool AssignProcess(IntPtr processHandle)
-        {
-            return AssignProcess(processHandle, throwOnError: false);
-        }
-
-        /// <summary>
-        /// Assigns a process to an existing job object.
-        /// </summary>
-        /// <param name="processHandle">The process handle.</param>
-        /// <param name="throwOnError">if set to <c>true</c> errors may be thrown.</param>
-        /// <returns>
-        /// true if the function succeeds; otherwise false.
-        /// </returns>
-        public bool AssignProcess(IntPtr processHandle, bool throwOnError)
+        public void AssignProcess(IntPtr processHandle)
         {
             if (!NativeMethods.AssignProcessToJobObject(this, processHandle))
             {
-                if (!throwOnError)
-                    return false;
-
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             }
-            return true;
-        }
-
-        /// <summary>
-        /// Sets limits to the job.
-        /// </summary>
-        /// <param name="limits">The limits. May not be null.</param>
-        /// <returns>
-        /// true if the function succeeds; otherwise false.
-        /// </returns>
-        public bool SetLimits(JobObjectLimits limits)
-        {
-            return SetLimits(limits, throwOnError: false);
         }
 
         /// <summary>
         /// Sets limits to the jhob.
         /// </summary>
         /// <param name="limits">The limits. May not be null.</param>
-        /// <param name="throwOnError">if set to <c>true</c> errors may be thrown.</param>
-        /// <returns>
-        /// <c>true</c> if the function succeeds; otherwise <c>false</c>.
-        /// </returns>
-        public bool SetLimits(JobObjectLimits limits, bool throwOnError)
+        public void SetLimits(JobObjectLimits limits)
         {
             if (limits == null)
                 throw new ArgumentNullException(nameof(limits));
@@ -156,14 +113,32 @@ namespace Meziantou.Framework.Win32
             var length = Environment.Is64BitProcess ? Marshal.SizeOf(info.ExtendedLimits64) : Marshal.SizeOf(info.ExtendedLimits32);
             if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.ExtendedLimitInformation, ref info, length))
             {
-                if (!throwOnError)
-                    return false;
-
                 var err = Marshal.GetLastWin32Error();
                 throw new Win32Exception(err);
             }
+        }
 
-            return true;
+        public void SetUIRestrictions(JobObjectUILimit limits)
+        {
+            var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
+            {
+                UIRestrictionsClass = limits
+            };
+
+            if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.BasicUIRestrictions, ref restriction, Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+        }
+
+        public bool IsAssignedToProcess(Process process)
+        {
+            if (NativeMethods.IsProcessInJob(process.Handle, this, out var result))
+                return result;
+
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
         }
     }
 }

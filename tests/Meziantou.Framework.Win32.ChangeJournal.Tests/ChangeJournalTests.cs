@@ -18,6 +18,11 @@ namespace Meziantou.Framework.Win32.Tests
             {
                 Assert.Inconclusive("Current user is not in the administator group");
             }
+
+            if (!string.IsNullOrEmpty(Environment.ExpandEnvironmentVariables("SYSTEM_DEFINITIONID")))
+            {
+                Assert.Inconclusive("Does not on CI");
+            }
         }
 
         [TestMethod]

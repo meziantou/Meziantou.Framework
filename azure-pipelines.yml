@@ -5,13 +5,13 @@ variables:
 
 # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml#use-a-microsoft-hosted-agent
 pool:
-  vmImage: 'vs2017-win2016'
+  vmImage: 'windows-2019'
 
 steps:
 - task: DotNetCoreInstaller@0
-  displayName: 'Use .NET Core sdk 2.2.103'
+  displayName: 'Use .NET Core sdk 2.2.203'
   inputs:
-    version: 2.2.103
+    version: 2.2.203
 
 - task: DotNetCoreCLI@2
   displayName: dotnet build

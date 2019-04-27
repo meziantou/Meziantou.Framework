@@ -20,7 +20,6 @@ namespace Meziantou.Framework.Win32.CredentialManagerConsole
             Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
 
             creds = CredentialManager.PromptForCredentials(
-                target: "https://www.meziantou.net",
                 captionText: "https://www.meziantou.net",
                 messageText: "This will allow SampleApp to authenticate to Meziantou's blog",
                 //userName: "Meziantou",

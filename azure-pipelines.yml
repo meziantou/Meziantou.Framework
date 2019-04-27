@@ -1,22 +1,25 @@
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml#use-a-microsoft-hosted-agent
+pool:
+  vmImage: 'windows-2019'
+
+trigger:
+- '*'
+
 variables:
   solution: Meziantou.Framework.sln
   buildConfiguration: Release
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
-# https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops&tabs=yaml#use-a-microsoft-hosted-agent
-pool:
-  vmImage: 'windows-2019'
-
 steps:
 - task: DotNetCoreInstaller@0
-  displayName: 'Use .NET Core sdk 2.2.203'
+  displayName: 'Use .NET Core sdk'
   inputs:
-    version: 2.2.203
+    version: 3.0.100-preview4-011223
 
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:
-    projects: 'src/**/*.csproj'
+    projects: '**/*.csproj'
     arguments: '--configuration $(BuildConfiguration)'
 
 - task: DotNetCoreCLI@2

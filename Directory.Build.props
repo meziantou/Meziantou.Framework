@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <LangVersion>latest</LangVersion>
+    <Deterministic>true</Deterministic>
+    <Features>strict</Features>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -11,13 +13,8 @@
     <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
 	
-	<!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Deterministic>true</Deterministic>
-    <Features>strict</Features>
+	  <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
 </Project>

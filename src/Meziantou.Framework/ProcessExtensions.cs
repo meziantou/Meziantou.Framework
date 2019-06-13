@@ -194,7 +194,7 @@ namespace Meziantou.Framework
 
         private static bool IsWindows()
         {
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NETCOREAPP2_1
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #elif NET461
             return true;

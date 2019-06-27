@@ -14,7 +14,7 @@ steps:
 - task: DotNetCoreInstaller@0
   displayName: 'Use .NET Core sdk'
   inputs:
-    version: 3.0.100-preview4-011223
+    version: 3.0.100-preview6-012264
 
 - task: DotNetCoreCLI@2
   displayName: dotnet build

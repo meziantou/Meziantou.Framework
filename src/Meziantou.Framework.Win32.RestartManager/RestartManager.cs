@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32
             var sessionKey = Guid.NewGuid().ToString();
             var result = NativeMethods.RmStartSession(out var handle, 0, strSessionKey: sessionKey);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmStartSession failed");
+                throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
 
             return new RestartManager(handle, sessionKey);
         }
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Win32
         {
             var result = NativeMethods.RmJoinSession(out var handle, sessionKey);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmStartSession failed");
+                throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
 
             return new RestartManager(handle, sessionKey);
         }
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.Win32
             string[] resources = { path };
             var result = NativeMethods.RmRegisterResources(SessionHandle, 1, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmRegisterResources failed");
+                throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
         }
 
         public void RegisterFiles(string[] paths)
@@ -54,7 +54,7 @@ namespace Meziantou.Framework.Win32
 
             var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmRegisterResources failed");
+                throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
         }
 
         public bool IsResourcesLocked()
@@ -70,7 +70,7 @@ namespace Meziantou.Framework.Win32
                 }
                 else
                 {
-                    throw new Win32Exception((int)result, "RmGetList failed");
+                    throw new Win32Exception((int)result, $"RmGetList failed ({result})");
                 }
             }
         }
@@ -106,7 +106,7 @@ namespace Meziantou.Framework.Win32
                 }
                 else
                 {
-                    throw new Win32Exception((int)result, "RmGetList failed");
+                    throw new Win32Exception((int)result, $"RmGetList failed ({result})");
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace Meziantou.Framework.Win32
         {
             var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmShutdown failed");
+                throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
         }
 
         public void Restart()
@@ -132,7 +132,7 @@ namespace Meziantou.Framework.Win32
         {
             var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, "RmShutdown failed");
+                throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
         }
 
         public void Dispose()
@@ -141,7 +141,7 @@ namespace Meziantou.Framework.Win32
             {
                 var result = NativeMethods.RmEndSession(SessionHandle);
                 if (result != RmResult.ERROR_SUCCESS)
-                    throw new Win32Exception((int)result, "RmEndSession failed");
+                    throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
             }
         }
 

@@ -62,7 +62,7 @@ namespace Meziantou.Framework.Tests
             using (var cts = new CancellationTokenSource())
             {
                 var task = ProcessExtensions.RunAsTask("cmd", "/C ping 127.0.0.1 -n 10", cts.Token);
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
                 cts.Cancel();
 
                 await  Assert.ThrowsExceptionAsync<TaskCanceledException>(() => task).ConfigureAwait(false);

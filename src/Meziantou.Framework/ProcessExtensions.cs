@@ -9,12 +9,14 @@ namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
-        // Mark as obsolete when merged https://github.com/dotnet/corefx/pull/31827
         public static void Kill(this Process process, bool entireProcessTree = false)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
+#if NETCOREAPP3_0
+            process.Kill(entireProcessTree);
+#else
             if (!entireProcessTree)
             {
                 process.Kill();
@@ -41,13 +43,7 @@ namespace Meziantou.Framework
                     }
                 }
             }
-
-            foreach (var childProcess in childProcesses)
-            {
-                childProcess.WaitForExit();
-            }
-
-            process.WaitForExit();
+#endif
         }
 
         public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
@@ -194,7 +190,7 @@ namespace Meziantou.Framework
 
         private static bool IsWindows()
         {
-#if NETSTANDARD2_0 || NETCOREAPP2_1
+#if NETSTANDARD2_0 || NETCOREAPP2_1 || NETCOREAPP3_0
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #elif NET461
             return true;

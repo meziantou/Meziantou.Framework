@@ -38,7 +38,7 @@ namespace Meziantou.Framework.Windows.Collections
             }
         }
 
-        public IReadOnlyObservableCollection<T> AsSafeBindable
+        public IReadOnlyObservableCollection<T> AsSafelyBindable
         {
             get
             {

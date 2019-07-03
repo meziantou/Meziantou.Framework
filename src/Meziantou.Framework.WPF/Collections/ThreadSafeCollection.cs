@@ -7,6 +7,9 @@ using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF.Collections
 {
+    /// <summary>
+    /// Thread-safe collection. You can safely bind it to a WPF control using the property <see cref="AsObservable"/>.
+    /// </summary>
     public sealed class ThreadSafeCollection<T> : IList<T>, IReadOnlyList<T>
     {
         private readonly Dispatcher _dispatcher;

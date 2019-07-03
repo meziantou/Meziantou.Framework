@@ -25,6 +25,7 @@
 | Meziantou.Framework.Win32.Lsa | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.Lsa.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.Lsa/) |
 | Meziantou.Framework.Win32.PerceivedType | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.PerceivedType.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.PerceivedType/) |
 | Meziantou.Framework.Win32.RestartManager | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Win32.RestartManager.svg)](https://www.nuget.org/packages/Meziantou.Framework.Win32.RestartManager/) |
+| Meziantou.Framework.WPF | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.WPF.svg)](https://www.nuget.org/packages/Meziantou.Framework.WPF/) |
 
 # How to contribute
 

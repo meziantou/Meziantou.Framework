@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Threading;
 
-namespace Meziantou.Framework.Windows.Collections
+namespace Meziantou.Framework.WPF.Collections
 {
-    public sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IList<T>, IReadOnlyObservableCollection<T>
+    internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>
     {
         private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new ConcurrentQueue<PendingEvent<T>>();
-
         private readonly Dispatcher _dispatcher;
-        private bool _isEventsWaitingToBeProcessed;
+
+        private bool _isDispatcherPending;
 
         public DispatchedObservableCollection(Dispatcher dispatcher)
             : this(null, dispatcher)
@@ -24,13 +25,59 @@ namespace Meziantou.Framework.Windows.Collections
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
-        public T this[int index]
+        private void AssertIsOnDispatcherThread()
         {
-            get => _items[index];
-            set => EnqueueEvent(PendingEvent.Replace(index, value));
+            if (!IsOnDispatcherThread())
+            {
+                throw new InvalidOperationException("Access to the collection must be from the dispatcher thread");
+            }
         }
 
-        bool ICollection<T>.IsReadOnly => ((ICollection<T>)_items).IsReadOnly;
+        public int Count
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return _items.Count;
+            }
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            AssertIsOnDispatcherThread();
+            return _items.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            AssertIsOnDispatcherThread();
+            _items.CopyTo(array, arrayIndex);
+        }
+
+        public int IndexOf(T item)
+        {
+            AssertIsOnDispatcherThread();
+            return _items.IndexOf(item);
+        }
+
+        public bool Contains(T item)
+        {
+            AssertIsOnDispatcherThread();
+            return _items.Contains(item);
+        }
+
+        public T this[int index]
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return _items[index];
+            }
+
+            set => EnqueueEvent(PendingEvent.Replace(index, value));
+        }
 
         public void Add(T item)
         {
@@ -68,15 +115,15 @@ namespace Meziantou.Framework.Windows.Collections
         {
             if (!IsOnDispatcherThread())
             {
-                if (!_isEventsWaitingToBeProcessed)
+                if (!_isDispatcherPending)
                 {
+                    _isDispatcherPending = true;
                     _dispatcher.BeginInvoke((Action)ProcessPendingEvents);
-                    _isEventsWaitingToBeProcessed = true;
                 }
                 return;
             }
 
-            _isEventsWaitingToBeProcessed = false;
+            _isDispatcherPending = false;
             while (_pendingEvents.TryDequeue(out var pendingEvent))
             {
                 switch (pendingEvent.Type)

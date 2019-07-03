@@ -1,7 +1,7 @@
 ﻿using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace Meziantou.Framework.Windows.Collections
+namespace Meziantou.Framework.WPF.Collections
 {
     internal static class EventArgsCache
     {

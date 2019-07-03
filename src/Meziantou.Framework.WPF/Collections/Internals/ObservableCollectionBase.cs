@@ -1,11 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace Meziantou.Framework.Windows.Collections
+namespace Meziantou.Framework.WPF.Collections
 {
-    public abstract class ObservableCollectionBase<T> : IEnumerable<T>, INotifyCollectionChanged, INotifyPropertyChanged
+    internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, INotifyPropertyChanged
     {
         public event NotifyCollectionChangedEventHandler CollectionChanged;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -28,21 +27,6 @@ namespace Meziantou.Framework.Windows.Collections
                 _items = new List<T>(items);
             }
         }
-
-        public int Count => _items.Count;
-
-        public IEnumerator<T> GetEnumerator() => _items.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            _items.CopyTo(array, arrayIndex);
-        }
-
-        public int IndexOf(T item) => _items.IndexOf(item);
-
-        public bool Contains(T item) => _items.Contains(item);
 
         protected void ReplaceItem(int index, T item)
         {

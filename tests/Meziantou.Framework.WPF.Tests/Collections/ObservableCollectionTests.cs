@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
-using System.Windows.Threading;
+using Meziantou.Framework.WPF.Collections;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Meziantou.Framework.Windows.Tests
@@ -15,10 +15,17 @@ namespace Meziantou.Framework.Windows.Tests
         {
             get
             {
-                yield return new object[] { new Meziantou.Framework.Windows.Collections.ObservableCollection<int>() };
-                yield return new object[] { new Meziantou.Framework.Windows.Collections.DispatchedObservableCollection<int>(Dispatcher.CurrentDispatcher) };
+                yield return new object[] { new ThreadSafeCollection<int>() };
                 yield return new object[] { new System.Collections.ObjectModel.ObservableCollection<int>() };
             }
+        }
+
+        private static object GetObservableCollection<T>(IList<T> collection)
+        {
+            if (collection is ThreadSafeCollection<T> result)
+                return result.AsObservable;
+
+            return collection;
         }
 
         [DataTestMethod]
@@ -26,7 +33,7 @@ namespace Meziantou.Framework.Windows.Tests
         public void Add(IList<int> collection)
         {
             // Arrange
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection.Add(1);
@@ -44,7 +51,7 @@ namespace Meziantou.Framework.Windows.Tests
             // Arrange       
             collection.Add(1);
             collection.Add(2);
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection.Remove(1);
@@ -63,7 +70,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add(1);
             collection.Add(2);
             collection.Add(3);
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection.RemoveAt(0);
@@ -79,7 +86,7 @@ namespace Meziantou.Framework.Windows.Tests
         public void Insert(IList<int> collection)
         {
             // Arrange       
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection.Insert(index: 0, item: 1);
@@ -98,7 +105,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add(1);
             collection.Add(2);
             collection.Add(3);
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection.Clear();
@@ -115,7 +122,7 @@ namespace Meziantou.Framework.Windows.Tests
         {
             // Arrange
             collection.Add(1);
-            using var eventAssert = new EventAssert(collection);
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
 
             // Act
             collection[0] = 2;

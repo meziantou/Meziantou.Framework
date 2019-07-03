@@ -10,19 +10,20 @@ namespace Meziantou.Framework.WPF.Collections
     /// <summary>
     /// Thread-safe collection. You can safely bind it to a WPF control using the property <see cref="AsObservable"/>.
     /// </summary>
-    public sealed class ThreadSafeCollection<T> : IList<T>, IReadOnlyList<T>
+    public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>
     {
         private readonly Dispatcher _dispatcher;
+        private readonly object _lock = new object();
 
         private ImmutableList<T> _items = ImmutableList<T>.Empty;
         private DispatchedObservableCollection<T> _observableCollection;
 
-        public ThreadSafeCollection()
+        public ConcurrentObservableCollection()
             : this(GetCurrentDispatcher())
         {
         }
 
-        public ThreadSafeCollection(Dispatcher dispatcher)
+        public ConcurrentObservableCollection(Dispatcher dispatcher)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
@@ -38,7 +39,7 @@ namespace Meziantou.Framework.WPF.Collections
             {
                 if (_observableCollection == null)
                 {
-                    lock (_items)
+                    lock (_lock)
                     {
                         if (_observableCollection == null)
                         {
@@ -60,7 +61,7 @@ namespace Meziantou.Framework.WPF.Collections
             get => _items[index];
             set
             {
-                lock (_items)
+                lock (_lock)
                 {
                     _items = _items.SetItem(index, value);
                     if (_observableCollection != null)
@@ -73,7 +74,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         public void Add(T item)
         {
-            lock (_items)
+            lock (_lock)
             {
                 _items = _items.Add(item);
                 _observableCollection?.Add(item);
@@ -82,7 +83,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         public void Clear()
         {
-            lock (_items)
+            lock (_lock)
             {
                 _items = _items.Clear();
                 _observableCollection?.Clear();
@@ -91,7 +92,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         public void Insert(int index, T item)
         {
-            lock (_items)
+            lock (_lock)
             {
                 _items = _items.Insert(index, item);
                 _observableCollection?.Insert(index, item);
@@ -100,7 +101,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         public bool Remove(T item)
         {
-            lock (_items)
+            lock (_lock)
             {
                 var newList = _items.Remove(item);
                 if (_items != newList)
@@ -116,7 +117,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         public void RemoveAt(int index)
         {
-            lock (_items)
+            lock (_lock)
             {
                 _items = _items.RemoveAt(index);
                 _observableCollection?.RemoveAt(index);

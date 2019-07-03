@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Globalization;
+using System.Threading.Tasks;
 using System.Windows;
 using Meziantou.Framework.WPF.Collections;
 
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.WPF.CollectionSamples
 {
     public partial class MainWindow : Window
     {
-        private readonly ThreadSafeCollection<string> _items = new ThreadSafeCollection<string>();
+        private readonly ConcurrentObservableCollection<string> _items = new ConcurrentObservableCollection<string>();
 
         public MainWindow()
         {
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.WPF.CollectionSamples
 
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await Task.Run(() => Parallel.For(_items.Count, _items.Count + 1000, i => _items.Add(i.ToString())));
+            await Task.Run(() => Parallel.For(_items.Count, _items.Count + 1000, i => _items.Add(i.ToString(CultureInfo.InvariantCulture))));
         }
     }
 }

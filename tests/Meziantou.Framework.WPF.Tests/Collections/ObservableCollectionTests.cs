@@ -15,14 +15,14 @@ namespace Meziantou.Framework.Windows.Tests
         {
             get
             {
-                yield return new object[] { new ThreadSafeCollection<int>() };
+                yield return new object[] { new ConcurrentObservableCollection<int>() };
                 yield return new object[] { new System.Collections.ObjectModel.ObservableCollection<int>() };
             }
         }
 
         private static object GetObservableCollection<T>(IList<T> collection)
         {
-            if (collection is ThreadSafeCollection<T> result)
+            if (collection is ConcurrentObservableCollection<T> result)
                 return result.AsObservable;
 
             return collection;

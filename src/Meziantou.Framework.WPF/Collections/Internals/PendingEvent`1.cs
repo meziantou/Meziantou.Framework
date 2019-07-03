@@ -1,15 +1,21 @@
-﻿namespace Meziantou.Framework.Windows.Collections
+﻿using System.Runtime.InteropServices;
+
+namespace Meziantou.Framework.WPF.Collections
 {
-    internal sealed class PendingEvent<T>
+    [StructLayout(LayoutKind.Auto)]
+    internal readonly struct PendingEvent<T>
     {
         public PendingEvent(PendingEventType type)
         {
             Type = type;
+            Item = default;
+            Index = -1;
         }
 
         public PendingEvent(PendingEventType type, int index)
         {
             Type = type;
+            Item = default;
             Index = index;
         }
 
@@ -17,6 +23,7 @@
         {
             Type = type;
             Item = item;
+            Index = -1;
         }
 
         public PendingEvent(PendingEventType type, T item, int index)

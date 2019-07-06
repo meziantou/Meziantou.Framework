@@ -71,15 +71,13 @@ namespace Meziantou.Framework.CommandLineTests
             var initialOutStream = Console.Out;
             try
             {
-                using (var inStream = new StringReader(input))
-                using (var outStream = new StringWriter())
-                {
-                    Console.SetIn(inStream);
-                    Console.SetOut(outStream);
+                using var inStream = new StringReader(input);
+                using var outStream = new StringWriter();
+                Console.SetIn(inStream);
+                Console.SetOut(outStream);
 
-                    action();
-                    return outStream.ToString();
-                }
+                action();
+                return outStream.ToString();
             }
             finally
             {

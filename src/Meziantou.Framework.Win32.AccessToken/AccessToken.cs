@@ -131,7 +131,7 @@ namespace Meziantou.Framework.Win32
         {
             return GetTokenInformation<T, T>(type, Identity);
 
-            T Identity(T arg) => arg;
+            static T Identity(T arg) => arg;
         }
 
         private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func) where T : struct
@@ -277,10 +277,8 @@ namespace Meziantou.Framework.Win32
 
         public static bool IsLimitedToken()
         {
-            using (var token = OpenCurrentProcessToken(TokenAccessLevels.Query))
-            {
-                return token.GetElevationType() == TokenElevationType.Limited;
-            }
+            using var token = OpenCurrentProcessToken(TokenAccessLevels.Query);
+            return token.GetElevationType() == TokenElevationType.Limited;
         }
 
         private enum PrivilegeOperation

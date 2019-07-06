@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Tests
         public async Task GetValueAsync()
         {
             var count = 0;
-            var lazy = AsyncLazy.Create(async () =>
+            using var lazy = AsyncLazy.Create(async () =>
             {
                 Interlocked.Increment(ref count);
                 await Task.Yield();

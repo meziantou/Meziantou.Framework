@@ -37,7 +37,7 @@ Expect: <{expectedFormat2}>
 Actual: <{actualFormat2}>
          {new string(' ', index)}^");
 
-            string Replace1(string value)
+            static string Replace1(string value)
             {
                 return value
                     .Replace(' ', '·')
@@ -45,7 +45,7 @@ Actual: <{actualFormat2}>
                     .Replace("\r\n", "\\r\\n\r\n", StringComparison.Ordinal);
             }
 
-            string Replace2(string value)
+            static string Replace2(string value)
             {
                 return value
                     .Replace(' ', '·')

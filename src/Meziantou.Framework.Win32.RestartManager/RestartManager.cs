@@ -147,20 +147,16 @@ namespace Meziantou.Framework.Win32
 
         public static bool IsFileLocked(string path)
         {
-            using (var restartManager = CreateSession())
-            {
-                restartManager.RegisterFile(path);
-                return restartManager.IsResourcesLocked();
-            }
+            using var restartManager = CreateSession();
+            restartManager.RegisterFile(path);
+            return restartManager.IsResourcesLocked();
         }
 
         public static IReadOnlyList<Process> GetProcessesLockingFile(string path)
         {
-            using (var restartManager = CreateSession())
-            {
-                restartManager.RegisterFile(path);
-                return restartManager.GetProcessesLockingResources();
-            }
+            using var restartManager = CreateSession();
+            restartManager.RegisterFile(path);
+            return restartManager.GetProcessesLockingResources();
         }
     }
 }

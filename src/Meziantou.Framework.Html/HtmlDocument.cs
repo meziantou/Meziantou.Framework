@@ -74,7 +74,7 @@ namespace Meziantou.Framework.Html
             protected set
             {
                 _filePath = value;
-                BaseAddress = BaseAddress ?? (Utilities.IsRooted(value) ? new Uri(value) : new Uri(Path.GetFullPath(value)));
+                BaseAddress ??= (Utilities.IsRooted(value) ? new Uri(value) : new Uri(Path.GetFullPath(value)));
             }
         }
 
@@ -94,11 +94,9 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(html));
 
             Clear();
-            using (var reader = new StringReader(html))
-            {
-                StreamEncoding = Utilities.GetDefaultEncoding(); // This is arguable, but it's better for saves
-                InternalLoad(reader, firstPass: false);
-            }
+            using var reader = new StringReader(html);
+            StreamEncoding = Utilities.GetDefaultEncoding(); // This is arguable, but it's better for saves
+            InternalLoad(reader, firstPass: false);
         }
 
         public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
@@ -135,24 +133,20 @@ namespace Meziantou.Framework.Html
             FilePath = filePath;
             if (detectEncodingFromByteOrderMarks)
             {
-                using (var reader = Utilities.OpenReader(filePath, detectEncodingFromByteOrderMarks: true))
-                {
-                    reader.Peek();
-                    StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, firstPass: true))
-                        return;
-                }
+                using var reader = Utilities.OpenReader(filePath, detectEncodingFromByteOrderMarks: true);
+                reader.Peek();
+                StreamEncoding = reader.CurrentEncoding;
+                if (InternalLoad(reader, firstPass: true))
+                    return;
             }
             else
             {
                 // use ansi as the default encoding
-                using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false))
-                {
-                    reader.Peek();
-                    StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, firstPass: true))
-                        return;
-                }
+                using var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false);
+                reader.Peek();
+                StreamEncoding = reader.CurrentEncoding;
+                if (InternalLoad(reader, firstPass: true))
+                    return;
             }
 
             var streamEncoding = DetectedEncoding;
@@ -248,23 +242,19 @@ namespace Meziantou.Framework.Html
             Clear();
             if (detectEncodingFromByteOrderMarks)
             {
-                using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
-                {
-                    reader.Peek();
-                    StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, firstPass: true))
-                        return;
-                }
+                using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true);
+                reader.Peek();
+                StreamEncoding = reader.CurrentEncoding;
+                if (InternalLoad(reader, firstPass: true))
+                    return;
             }
             else
             {
-                using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true))
-                {
-                    reader.Peek();
-                    StreamEncoding = reader.CurrentEncoding;
-                    if (InternalLoad(reader, firstPass: true))
-                        return;
-                }
+                using var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
+                reader.Peek();
+                StreamEncoding = reader.CurrentEncoding;
+                if (InternalLoad(reader, firstPass: true))
+                    return;
             }
 
             var streamEncoding = DetectedEncoding;
@@ -393,7 +383,7 @@ namespace Meziantou.Framework.Html
                 if (uri == null)
                     throw new ArgumentNullException(nameof(uri));
 
-                _declaredPrefixes = _declaredPrefixes ?? new Dictionary<string, string>(StringComparer.Ordinal);
+                _declaredPrefixes ??= new Dictionary<string, string>(StringComparer.Ordinal);
                 _declaredPrefixes[prefix] = uri;
             }
 
@@ -406,7 +396,7 @@ namespace Meziantou.Framework.Html
                 if (prefix == null)
                     throw new ArgumentNullException(nameof(prefix));
 
-                _declaredNamespaces = _declaredNamespaces ?? new Dictionary<string, string>(StringComparer.InvariantCulture);
+                _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.InvariantCulture);
                 _declaredNamespaces[uri] = prefix;
             }
         }
@@ -970,28 +960,22 @@ namespace Meziantou.Framework.Html
                 var xmlWriterSettings = new XmlWriterSettings();
                 xmlWriterSettings.Encoding = Encoding.UTF8;
 
-                using (var fs = File.OpenWrite(filePath))
-                using (var writer = XmlWriter.Create(fs, xmlWriterSettings))
-                {
-                    Save(writer);
-                }
+                using var fs = File.OpenWrite(filePath);
+                using var writer = XmlWriter.Create(fs, xmlWriterSettings);
+                Save(writer);
 
                 return;
             }
 
             if (StreamEncoding != null)
             {
-                using (var writer = Utilities.OpenWriter(filePath, append: false, StreamEncoding))
-                {
-                    Save(writer);
-                }
+                using var writer = Utilities.OpenWriter(filePath, append: false, StreamEncoding);
+                Save(writer);
             }
             else
             {
-                using (var writer = Utilities.OpenWriter(filePath))
-                {
-                    Save(writer);
-                }
+                using var writer = Utilities.OpenWriter(filePath);
+                Save(writer);
             }
         }
 
@@ -1002,16 +986,14 @@ namespace Meziantou.Framework.Html
 
             if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
             {
-                encoding = encoding ?? Encoding.UTF8;
+                encoding ??= Encoding.UTF8;
 
                 var xmlWriterSettings = new XmlWriterSettings();
                 xmlWriterSettings.Encoding = encoding;
 
-                using (var fs = File.OpenWrite(filePath))
-                using (var writer = XmlWriter.Create(fs, xmlWriterSettings))
-                {
-                    Save(writer);
-                }
+                using var fs = File.OpenWrite(filePath);
+                using var writer = XmlWriter.Create(fs, xmlWriterSettings);
+                Save(writer);
 
                 return;
             }
@@ -1029,17 +1011,13 @@ namespace Meziantou.Framework.Html
 
             if (StreamEncoding != null)
             {
-                using (var writer = new StreamWriter(outStream, StreamEncoding))
-                {
-                    Save(writer);
-                }
+                using var writer = new StreamWriter(outStream, StreamEncoding);
+                Save(writer);
             }
             else
             {
-                using (var writer = new StreamWriter(outStream))
-                {
-                    Save(writer);
-                }
+                using var writer = new StreamWriter(outStream);
+                Save(writer);
             }
         }
 
@@ -1048,10 +1026,8 @@ namespace Meziantou.Framework.Html
             if (outStream == null)
                 throw new ArgumentNullException(nameof(outStream));
 
-            using (var writer = new StreamWriter(outStream, encoding))
-            {
-                Save(writer);
-            }
+            using var writer = new StreamWriter(outStream, encoding);
+            Save(writer);
         }
 
         public override void WriteTo(TextWriter writer)

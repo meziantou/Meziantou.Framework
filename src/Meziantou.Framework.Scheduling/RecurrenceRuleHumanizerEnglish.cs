@@ -92,21 +92,15 @@ namespace Meziantou.Framework.Scheduling
 
         private static string GetBySetPosHumanText(int setPosition)
         {
-            switch (setPosition)
+            return setPosition switch
             {
-                case -1:
-                    return "last";
-                case 1:
-                    return "first";
-                case 2:
-                    return "second";
-                case 3:
-                    return "third";
-                case 4:
-                    return "fourth";
-            }
-
-            return Extensions.ToEnglishOrdinal(setPosition);
+                -1 => "last",
+                1 => "first",
+                2 => "second",
+                3 => "third",
+                4 => "fourth",
+                _ => Extensions.ToEnglishOrdinal(setPosition),
+            };
         }
 
         protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)

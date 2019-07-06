@@ -199,10 +199,8 @@ namespace Meziantou.Framework.Templating
             if (text == null)
                 throw new ArgumentNullException(nameof(text));
 
-            using (var reader = new StringReader(text))
-            {
-                Load(reader);
-            }
+            using var reader = new StringReader(text);
+            Load(reader);
         }
 
         public void Load(TextReader reader)
@@ -210,10 +208,8 @@ namespace Meziantou.Framework.Templating
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
 
-            using (var r = new TextReaderWithPosition(reader))
-            {
-                Load(r);
-            }
+            using var r = new TextReaderWithPosition(reader);
+            Load(r);
         }
 
         private void Load(TextReaderWithPosition reader)
@@ -310,62 +306,60 @@ namespace Meziantou.Framework.Templating
                 if (IsBuilt)
                     return;
 
-                using (var sw = new StringWriter())
+                using var sw = new StringWriter();
+                using (var tw = new IndentedTextWriter(sw))
                 {
-                    using (var tw = new IndentedTextWriter(sw))
+                    foreach (var @using in Usings)
                     {
-                        foreach (var @using in Usings)
-                        {
-                            if (string.IsNullOrEmpty(@using))
-                                continue;
-                            tw.WriteLine("using " + @using + ";");
-                        }
-
-                        tw.Write("public class " + ClassName);
-                        if (!string.IsNullOrEmpty(BaseClassFullTypeName))
-                        {
-                            tw.Write(" : " + BaseClassFullTypeName);
-                        }
-                        tw.WriteLine();
-                        tw.WriteLine("{");
-                        tw.Indent++;
-
-                        tw.Write("public static void " + RunMethodName);
-                        tw.Write("(");
-                        tw.Write(OutputType?.FullName ?? "dynamic");
-                        tw.Write(" " + OutputParameterName);
-
-                        foreach (var argument in Arguments)
-                        {
-                            if (argument == null)
-                                continue;
-
-                            tw.Write(", ");
-                            tw.Write(argument.Type?.FullName ?? "dynamic");
-                            tw.Write(" ");
-                            tw.Write(argument.Name);
-                        }
-
-                        tw.Write(")");
-                        tw.WriteLine();
-                        tw.WriteLine("{");
-                        tw.Indent++;
-
-                        foreach (var block in Blocks)
-                        {
-                            tw.WriteLine(block.BuildCode());
-                        }
-
-                        tw.Indent--;
-                        tw.WriteLine("}");
-                        tw.Indent--;
-                        tw.WriteLine("}");
+                        if (string.IsNullOrEmpty(@using))
+                            continue;
+                        tw.WriteLine("using " + @using + ";");
                     }
 
-                    var source = sw.ToString();
-                    SourceCode = source;
-                    Compile(source);
+                    tw.Write("public class " + ClassName);
+                    if (!string.IsNullOrEmpty(BaseClassFullTypeName))
+                    {
+                        tw.Write(" : " + BaseClassFullTypeName);
+                    }
+                    tw.WriteLine();
+                    tw.WriteLine("{");
+                    tw.Indent++;
+
+                    tw.Write("public static void " + RunMethodName);
+                    tw.Write("(");
+                    tw.Write(OutputType?.FullName ?? "dynamic");
+                    tw.Write(" " + OutputParameterName);
+
+                    foreach (var argument in Arguments)
+                    {
+                        if (argument == null)
+                            continue;
+
+                        tw.Write(", ");
+                        tw.Write(argument.Type?.FullName ?? "dynamic");
+                        tw.Write(" ");
+                        tw.Write(argument.Name);
+                    }
+
+                    tw.Write(")");
+                    tw.WriteLine();
+                    tw.WriteLine("{");
+                    tw.Indent++;
+
+                    foreach (var block in Blocks)
+                    {
+                        tw.WriteLine(block.BuildCode());
+                    }
+
+                    tw.Indent--;
+                    tw.WriteLine("}");
+                    tw.Indent--;
+                    tw.WriteLine("}");
                 }
+
+                var source = sw.ToString();
+                SourceCode = source;
+                Compile(source);
             }
         }
 
@@ -456,46 +450,22 @@ namespace Meziantou.Framework.Templating
             var syntaxTree = CreateSyntaxTree(source);
             var compilation = CreateCompilation(syntaxTree);
 
-            using (var dllStream = new MemoryStream())
-            using (var pdbStream = new MemoryStream())
+            using var dllStream = new MemoryStream();
+            using var pdbStream = new MemoryStream();
+            var emitResult = compilation.Emit(dllStream, pdbStream, options: CreateEmitOptions());
+            if (!emitResult.Success)
             {
-                var emitResult = compilation.Emit(dllStream, pdbStream, options: CreateEmitOptions());
-                if (!emitResult.Success)
-                {
-                    throw new TemplateException("Template file is not valid." + Environment.NewLine + string.Join(Environment.NewLine, emitResult.Diagnostics));
-                }
+                throw new TemplateException("Template file is not valid." + Environment.NewLine + string.Join(Environment.NewLine, emitResult.Diagnostics));
+            }
 
-                dllStream.Seek(0, SeekOrigin.Begin);
-                pdbStream.Seek(0, SeekOrigin.Begin);
+            dllStream.Seek(0, SeekOrigin.Begin);
+            pdbStream.Seek(0, SeekOrigin.Begin);
 
-                //if (GenerateFiles)
-                //{
-                //    var rootPath = Path.Combine(Path.GetTempPath(), "Meziantou.Templating");
-                //    Directory.CreateDirectory(rootPath);
-                //    string sourcePath = Path.Combine(rootPath, compilation.AssemblyName + ".cs");
-                //    string dllPath = Path.Combine(rootPath, compilation.AssemblyName + ".dll");
-                //    string pdbPath = Path.Combine(rootPath, compilation.AssemblyName + ".pdb");
-
-                //    File.WriteAllText(sourcePath, source);
-                //    using (var fs = new FileStream(dllPath, FileMode.Create, FileAccess.Write))
-                //    {
-                //        dllStream.CopyTo(fs);
-                //    }
-                //    using (var fs = new FileStream(pdbPath, FileMode.Create, FileAccess.Write))
-                //    {
-                //        pdbStream.CopyTo(fs);
-                //    }
-
-                //    dllStream.Seek(0, SeekOrigin.Begin);
-                //    pdbStream.Seek(0, SeekOrigin.Begin);
-                //}
-
-                var assembly = LoadAssembly(dllStream, pdbStream);
-                _runMethodInfo = FindMethod(assembly);
-                if (_runMethodInfo == null)
-                {
-                    throw new TemplateException("Run method not found in the generated assembly.");
-                }
+            var assembly = LoadAssembly(dllStream, pdbStream);
+            _runMethodInfo = FindMethod(assembly);
+            if (_runMethodInfo == null)
+            {
+                throw new TemplateException("Run method not found in the generated assembly.");
             }
         }
 
@@ -522,11 +492,9 @@ namespace Meziantou.Framework.Templating
 
         public string Run(params object[] parameters)
         {
-            using (var writer = CreateStringWriter())
-            {
-                Run(writer, parameters);
-                return writer.ToString();
-            }
+            using var writer = CreateStringWriter();
+            Run(writer, parameters);
+            return writer.ToString();
         }
 
         public virtual void Run(TextWriter writer, params object[] parameters)
@@ -554,11 +522,9 @@ namespace Meziantou.Framework.Templating
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
 
-            using (var writer = new StringWriter())
-            {
-                Run(writer, parameters);
-                return writer.ToString();
-            }
+            using var writer = new StringWriter();
+            Run(writer, parameters);
+            return writer.ToString();
         }
 
         public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object> parameters)

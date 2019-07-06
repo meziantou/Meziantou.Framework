@@ -58,7 +58,7 @@ namespace Meziantou.Framework
 
         public string GetString(string name, CultureInfo culture)
         {
-            culture = culture ?? CultureInfo.InvariantCulture;
+            culture ??= CultureInfo.InvariantCulture;
 
             if (!_cultures.TryGetValue(culture, out var values))
             {
@@ -79,10 +79,7 @@ namespace Meziantou.Framework
             if (culture == null)
                 throw new ArgumentNullException(nameof(culture));
 
-            if (values == null)
-                throw new ArgumentNullException(nameof(values));
-
-            _cultures[culture] = values;
+            _cultures[culture] = values ?? throw new ArgumentNullException(nameof(values));
         }
 
         public void Remove(CultureInfo culture)

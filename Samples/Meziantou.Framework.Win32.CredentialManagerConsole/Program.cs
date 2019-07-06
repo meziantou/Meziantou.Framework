@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Win32.CredentialManagerConsole
 {
     internal class Program
     {
-        private static void Main(string[] args)
+        private static void Main()
         {
             CredentialResult creds;
 

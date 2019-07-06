@@ -206,21 +206,15 @@ namespace Meziantou.Framework.Scheduling
 
         private static string GetBySetPosHumanText(int setPosition)
         {
-            switch (setPosition)
+            return setPosition switch
             {
-                case -1:
-                    return "dernier";
-                case 1:
-                    return "premier";
-                case 2:
-                    return "deuxième";
-                case 3:
-                    return "troisième";
-                case 4:
-                    return "quatrième";
-            }
-
-            return Extensions.ToFrenchOrdinal(setPosition);
+                -1 => "dernier",
+                1 => "premier",
+                2 => "deuxième",
+                3 => "troisième",
+                4 => "quatrième",
+                _ => Extensions.ToFrenchOrdinal(setPosition),
+            };
         }
 
         private static void GetHumanEnd(RecurrenceRule rrule, StringBuilder sb)
@@ -282,58 +276,37 @@ namespace Meziantou.Framework.Scheduling
 
         private static string DayOfWeekToString(DayOfWeek dayOfWeek)
         {
-            switch (dayOfWeek)
+            return dayOfWeek switch
             {
-                case DayOfWeek.Sunday:
-                    return "dimanche";
-                case DayOfWeek.Monday:
-                    return "lundi";
-                case DayOfWeek.Tuesday:
-                    return "mardi";
-                case DayOfWeek.Wednesday:
-                    return "mercredi";
-                case DayOfWeek.Thursday:
-                    return "jeudi";
-                case DayOfWeek.Friday:
-                    return "vendredi";
-                case DayOfWeek.Saturday:
-                    return "samedi";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null);
-            }
+                DayOfWeek.Sunday => "dimanche",
+                DayOfWeek.Monday => "lundi",
+                DayOfWeek.Tuesday => "mardi",
+                DayOfWeek.Wednesday => "mercredi",
+                DayOfWeek.Thursday => "jeudi",
+                DayOfWeek.Friday => "vendredi",
+                DayOfWeek.Saturday => "samedi",
+                _ => throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null),
+            };
         }
 
         private static string MonthToString(Month month)
         {
-            switch (month)
+            return month switch
             {
-                case Month.January:
-                    return "janvier";
-                case Month.February:
-                    return "février";
-                case Month.March:
-                    return "mars";
-                case Month.April:
-                    return "avril";
-                case Month.May:
-                    return "mai";
-                case Month.June:
-                    return "juin";
-                case Month.July:
-                    return "juillet";
-                case Month.August:
-                    return "aout";
-                case Month.September:
-                    return "septembre";
-                case Month.October:
-                    return "octobre";
-                case Month.November:
-                    return "novembre";
-                case Month.December:
-                    return "décembre";
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(month), month, message: null);
-            }
+                Month.January => "janvier",
+                Month.February => "février",
+                Month.March => "mars",
+                Month.April => "avril",
+                Month.May => "mai",
+                Month.June => "juin",
+                Month.July => "juillet",
+                Month.August => "aout",
+                Month.September => "septembre",
+                Month.October => "octobre",
+                Month.November => "novembre",
+                Month.December => "décembre",
+                _ => throw new ArgumentOutOfRangeException(nameof(month), month, message: null),
+            };
         }
 
         [Flags]

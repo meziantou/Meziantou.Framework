@@ -59,14 +59,12 @@ namespace Meziantou.Framework.Tests
         [TestMethod]
         public async Task RunAsTask_Cancel()
         {
-            using (var cts = new CancellationTokenSource())
-            {
-                var task = ProcessExtensions.RunAsTask("cmd", "/C ping 127.0.0.1 -n 10", cts.Token);
-                await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
-                cts.Cancel();
+            using var cts = new CancellationTokenSource();
+            var task = ProcessExtensions.RunAsTask("cmd", "/C ping 127.0.0.1 -n 10", cts.Token);
+            await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
+            cts.Cancel();
 
-                await  Assert.ThrowsExceptionAsync<TaskCanceledException>(() => task).ConfigureAwait(false);
-            }
+            await Assert.ThrowsExceptionAsync<TaskCanceledException>(() => task).ConfigureAwait(false);
         }
 
         [TestMethod]
@@ -82,26 +80,24 @@ namespace Meziantou.Framework.Tests
         [TestMethod]
         public void GetDescendantProcesses()
         {
-            using (var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10"))
+            using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+            try
             {
-                try
+                // We need to wait for the process to be started by cmd
+                IReadOnlyCollection<Process> processes;
+                while ((processes = process.GetDescendantProcesses()).Count == 0)
                 {
-                    // We need to wait for the process to be started by cmd
-                    IReadOnlyCollection<Process> processes;
-                    while ((processes = process.GetDescendantProcesses()).Count == 0)
-                    {
-                        Thread.Sleep(100);
-                        continue;
-                    }
+                    Thread.Sleep(100);
+                    continue;
+                }
 
-                    Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-                    Assert.IsTrue(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")), $"PING and CONHOST are not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
-                }
-                finally
-                {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit();
-                }
+                Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+                Assert.IsTrue(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")), $"PING and CONHOST are not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
+            }
+            finally
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit();
             }
         }
 
@@ -146,63 +142,59 @@ namespace Meziantou.Framework.Tests
         [TestMethod]
         public void KillProcess_EntireProcessTree_False()
         {
-            using (var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10"))
+            using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+            try
             {
-                try
+                // We need to wait for the process to be started by cmd
+                IReadOnlyCollection<Process> processes;
+                while ((processes = process.GetChildProcesses()).Count == 0)
                 {
-                    // We need to wait for the process to be started by cmd
-                    IReadOnlyCollection<Process> processes;
-                    while ((processes = process.GetChildProcesses()).Count == 0)
-                    {
-                        Thread.Sleep(100);
-                        continue;
-                    }
-
-                    Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-
-                    var childProcess = processes.First();
-
-                    process.Kill(entireProcessTree: false);
-
-                    Assert.IsFalse(childProcess.HasExited);
-                    childProcess.Kill();
-                    childProcess.WaitForExit();
+                    Thread.Sleep(100);
+                    continue;
                 }
-                finally
-                {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit();
-                }
+
+                Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+
+                var childProcess = processes.First();
+
+                process.Kill(entireProcessTree: false);
+
+                Assert.IsFalse(childProcess.HasExited);
+                childProcess.Kill();
+                childProcess.WaitForExit();
+            }
+            finally
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit();
             }
         }
 
         [TestMethod]
         public void KillProcess_EntireProcessTree_True()
         {
-            using (var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10"))
+            using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+            try
             {
-                try
+                // We need to wait for the process to be started by cmd
+                IReadOnlyCollection<Process> processes;
+                while ((processes = process.GetChildProcesses()).Count == 0)
                 {
-                    // We need to wait for the process to be started by cmd
-                    IReadOnlyCollection<Process> processes;
-                    while ((processes = process.GetChildProcesses()).Count == 0)
-                    {
-                        Thread.Sleep(100);
-                        continue;
-                    }
-
-                    Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-
-                    process.Kill(entireProcessTree: true);
-
-                    var childProcess = processes.First();
-                    Assert.IsTrue(childProcess.HasExited);
+                    Thread.Sleep(100);
+                    continue;
                 }
-                finally
-                {
-                    process.Kill(entireProcessTree: true);
-                    process.WaitForExit();
-                }
+
+                Assert.IsTrue(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+
+                process.Kill(entireProcessTree: true);
+
+                var childProcess = processes.First();
+                Assert.IsTrue(childProcess.HasExited);
+            }
+            finally
+            {
+                process.Kill(entireProcessTree: true);
+                process.WaitForExit();
             }
         }
     }

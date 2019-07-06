@@ -13,70 +13,60 @@ namespace Meziantou.Framework.Csv.Tests
         [TestMethod]
         public async Task CsvWriterAsync_NoEscape()
         {
-            using (var sw = new StringWriter())
-            {
-                var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
-                await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
+            await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-                Assert.AreEqual($"A,B{Environment.NewLine}C,D", sw.ToString());
-            }
+            Assert.AreEqual($"A,B{Environment.NewLine}C,D", sw.ToString());
         }
 
         [TestMethod]
         public async Task CsvWriterAsync_EscapeValueWithSeparator()
         {
-            using (var sw = new StringWriter())
-            {
-                var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
-                await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
+            await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-                Assert.AreEqual($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
-            }
+            Assert.AreEqual($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
         }
 
         [TestMethod]
         public async Task CsvWriterAsync_EscapeValueWithStartingQuote()
         {
-            using (var sw = new StringWriter())
-            {
-                var writer = new CsvWriter(sw);
-                await writer.WriteRowAsync("A", "\"B").ConfigureAwait(false);
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            await writer.WriteRowAsync("A", "\"B").ConfigureAwait(false);
 
-                Assert.AreEqual("A,\"\"\"B\"", sw.ToString());
-            }
+            Assert.AreEqual("A,\"\"\"B\"", sw.ToString());
         }
 
         [TestMethod]
         public async Task CsvWriterAsync_WriteValues()
         {
-            using (var sw = new StringWriter())
-            {
-                var writer = new CsvWriter(sw);
-                writer.EndOfLine = "\n";
-                await writer.BeginRowAsync().ConfigureAwait(false);
-                await writer.WriteValuesAsync("A", "B").ConfigureAwait(false);
-                await writer.WriteValuesAsync("C", "D").ConfigureAwait(false);
-                await writer.BeginRowAsync().ConfigureAwait(false);
-                await writer.WriteValuesAsync("E").ConfigureAwait(false);
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            writer.EndOfLine = "\n";
+            await writer.BeginRowAsync().ConfigureAwait(false);
+            await writer.WriteValuesAsync("A", "B").ConfigureAwait(false);
+            await writer.WriteValuesAsync("C", "D").ConfigureAwait(false);
+            await writer.BeginRowAsync().ConfigureAwait(false);
+            await writer.WriteValuesAsync("E").ConfigureAwait(false);
 
-                Assert.AreEqual("A,B,C,D\nE", sw.ToString());
-            }
+            Assert.AreEqual("A,B,C,D\nE", sw.ToString());
         }
 
         [TestMethod]
         public async Task CsvWriterAsync_NoQuoteCharacter()
         {
-            using (var sw = new StringWriter())
-            {
-                var writer = new CsvWriter(sw);
-                writer.Quote = null;
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            writer.Quote = null;
 
-                await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
+            await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
 
-                Assert.AreEqual("A\",B", sw.ToString());
-            }
+            Assert.AreEqual("A\",B", sw.ToString());
         }
 
         [TestMethod]
@@ -93,30 +83,26 @@ namespace Meziantou.Framework.Csv.Tests
                 rows.Add(new List<string>(row.Split(';')));
             }
 
-            using (var sw = new StringWriter())
+            using var sw = new StringWriter();
+            var writer = new CsvWriter(sw);
+            foreach (var row in rows)
             {
-                var writer = new CsvWriter(sw);
-                foreach (var row in rows)
-                {
-                    await writer.WriteRowAsync(row).ConfigureAwait(false);
-                }
-
-                var csv = sw.ToString();
-                using (var sr = new StringReader(csv))
-                {
-                    var reader = new CsvReader(sr);
-
-                    var rowIndex = -1;
-                    CsvRow csvRow;
-                    while ((csvRow = await reader.ReadRowAsync().ConfigureAwait(false)) != null)
-                    {
-                        rowIndex++;
-                        CollectionAssert.AreEqual(rows[rowIndex], csvRow.Values.ToList());
-                    }
-
-                    Assert.AreEqual(rows.Count - 1, rowIndex);
-                }
+                await writer.WriteRowAsync(row).ConfigureAwait(false);
             }
+
+            var csv = sw.ToString();
+            using var sr = new StringReader(csv);
+            var reader = new CsvReader(sr);
+
+            var rowIndex = -1;
+            CsvRow csvRow;
+            while ((csvRow = await reader.ReadRowAsync().ConfigureAwait(false)) != null)
+            {
+                rowIndex++;
+                CollectionAssert.AreEqual(rows[rowIndex], csvRow.Values.ToList());
+            }
+
+            Assert.AreEqual(rows.Count - 1, rowIndex);
         }
     }
 }

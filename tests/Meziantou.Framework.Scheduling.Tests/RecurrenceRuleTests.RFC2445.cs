@@ -20,35 +20,33 @@ namespace Meziantou.Framework.Scheduling.Tests
         private static void AssertOccurrences(IEnumerable<DateTime> occurrences, bool checkEnd, int? maxOccurences, params DateTime[] expectedOccurrences)
         {
             var occurrenceCount = 0;
-            using (var enumerator1 = occurrences.GetEnumerator())
+            using var enumerator1 = occurrences.GetEnumerator();
+            using (var enumerator2 = ((IEnumerable<DateTime>)expectedOccurrences).GetEnumerator())
             {
-                using (var enumerator2 = ((IEnumerable<DateTime>)expectedOccurrences).GetEnumerator())
+                while (enumerator1.MoveNext() && enumerator2.MoveNext())
                 {
-                    while (enumerator1.MoveNext() && enumerator2.MoveNext())
-                    {
-                        occurrenceCount++;
-                        Assert.AreEqual(enumerator2.Current, enumerator1.Current);
-                    }
+                    occurrenceCount++;
+                    Assert.AreEqual(enumerator2.Current, enumerator1.Current);
                 }
+            }
 
-                if (maxOccurences.HasValue)
+            if (maxOccurences.HasValue)
+            {
+                while (enumerator1.MoveNext())
                 {
-                    while (enumerator1.MoveNext())
-                    {
-                        if (maxOccurences > occurrenceCount)
-                        {
-                            Assert.Fail("There are more occurences than expected.");
-                        }
-
-                        occurrenceCount++;
-                    }
-                }
-                else
-                {
-                    if (checkEnd && !enumerator1.MoveNext())
+                    if (maxOccurences > occurrenceCount)
                     {
                         Assert.Fail("There are more occurences than expected.");
                     }
+
+                    occurrenceCount++;
+                }
+            }
+            else
+            {
+                if (checkEnd && !enumerator1.MoveNext())
+                {
+                    Assert.Fail("There are more occurences than expected.");
                 }
             }
         }

@@ -10,21 +10,19 @@ namespace Meziantou.Framework.Threading.Tests
         [TestMethod]
         public async Task Lock()
         {
-            using (var asyncLock = new AsyncLock())
+            using var asyncLock = new AsyncLock();
+            for (var i = 0; i < 2; i++)
             {
-                for (var i = 0; i < 2; i++)
+                using (await asyncLock.LockAsync().ConfigureAwait(false))
                 {
-                    using (await asyncLock.LockAsync().ConfigureAwait(false))
+                    if (await asyncLock.TryLockAsync(TimeSpan.Zero).ConfigureAwait(false))
                     {
-                        if (await asyncLock.TryLockAsync(TimeSpan.Zero).ConfigureAwait(false))
-                        {
-                            Assert.Fail("Should not be able to acquire the lock");
-                        }
+                        Assert.Fail("Should not be able to acquire the lock");
+                    }
 
-                        if (asyncLock.TryLock())
-                        {
-                            Assert.Fail("Should not be able to acquire the lock");
-                        }
+                    if (asyncLock.TryLock())
+                    {
+                        Assert.Fail("Should not be able to acquire the lock");
                     }
                 }
             }

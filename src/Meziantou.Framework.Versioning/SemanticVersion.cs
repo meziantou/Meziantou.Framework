@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Versioning
     /// </summary>
     // https://github.com/semver/semver/blob/master/semver.md
     // https://github.com/semver/semver/blob/master/semver.svg
-    public class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
+    public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
     {
         private static readonly IReadOnlyList<string> s_emptyArray = Array.Empty<string>();
 
@@ -91,13 +91,13 @@ namespace Meziantou.Framework.Versioning
         public int Minor { get; }
         public int Patch { get; }
 
-        public virtual IReadOnlyList<string> PrereleaseLabels { get; } = s_emptyArray;
-        public virtual bool IsPrerelease => PrereleaseLabels != s_emptyArray;
+        public IReadOnlyList<string> PrereleaseLabels { get; } = s_emptyArray;
+        public bool IsPrerelease => PrereleaseLabels != s_emptyArray;
 
-        public virtual IReadOnlyList<string> Metadata { get; } = s_emptyArray;
-        public virtual bool HasMetadata => Metadata != s_emptyArray;
+        public IReadOnlyList<string> Metadata { get; } = s_emptyArray;
+        public bool HasMetadata => Metadata != s_emptyArray;
 
-        public virtual string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string format, IFormatProvider formatProvider)
         {
             var sb = new StringBuilder();
             sb.Append(Major);
@@ -160,12 +160,12 @@ namespace Meziantou.Framework.Versioning
             return false;
         }
 
-        public virtual bool Equals(SemanticVersion other)
+        public bool Equals(SemanticVersion other)
         {
             return SemanticVersionComparer.Instance.Equals(this, other);
         }
 
-        public virtual int CompareTo(object obj)
+        public int CompareTo(object obj)
         {
             if (obj is SemanticVersion semver)
             {
@@ -175,7 +175,7 @@ namespace Meziantou.Framework.Versioning
             throw new ArgumentException("Argument must be an instance of " + nameof(SemanticVersion), nameof(obj));
         }
 
-        public virtual int CompareTo(SemanticVersion other)
+        public int CompareTo(SemanticVersion other)
         {
             return SemanticVersionComparer.Instance.Compare(this, other);
         }
@@ -348,7 +348,7 @@ namespace Meziantou.Framework.Versioning
             value = default;
             return false;
 
-            bool IsValidLabelCharacter(char c)
+            static bool IsValidLabelCharacter(char c)
             {
                 return IsLetter(c) || IsDigit(c) || IsDash(c);
             }
@@ -372,7 +372,7 @@ namespace Meziantou.Framework.Versioning
             value = default;
             return false;
 
-            bool IsValidLabelCharacter(char c)
+            static bool IsValidLabelCharacter(char c)
             {
                 return IsLetter(c) || IsDigit(c) || IsDash(c);
             }

@@ -267,25 +267,17 @@ namespace Meziantou.Framework.Scheduling
 
         private static DayOfWeek ParseDayOfWeek(string str)
         {
-            switch (str.ToUpperInvariant())
+            return str.ToUpperInvariant() switch
             {
-                case "SU":
-                    return DayOfWeek.Sunday;
-                case "MO":
-                    return DayOfWeek.Monday;
-                case "TU":
-                    return DayOfWeek.Tuesday;
-                case "WE":
-                    return DayOfWeek.Wednesday;
-                case "TH":
-                    return DayOfWeek.Thursday;
-                case "FR":
-                    return DayOfWeek.Friday;
-                case "SA":
-                    return DayOfWeek.Saturday;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(str));
-            }
+                "SU" => DayOfWeek.Sunday,
+                "MO" => DayOfWeek.Monday,
+                "TU" => DayOfWeek.Tuesday,
+                "WE" => DayOfWeek.Wednesday,
+                "TH" => DayOfWeek.Thursday,
+                "FR" => DayOfWeek.Friday,
+                "SA" => DayOfWeek.Saturday,
+                _ => throw new ArgumentOutOfRangeException(nameof(str)),
+            };
         }
 
         protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int> setPositions)

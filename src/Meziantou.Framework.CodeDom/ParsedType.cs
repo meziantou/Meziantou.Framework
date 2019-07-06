@@ -6,7 +6,7 @@ namespace Meziantou.Framework.CodeDom
 {
     internal sealed class ParsedType
     {
-        private static readonly Dictionary<string, ParsedType> _parsedTypes = new Dictionary<string, ParsedType>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, ParsedType> s_parsedTypes = new Dictionary<string, ParsedType>(StringComparer.Ordinal);
 
         private readonly List<ParsedType> _arguments = new List<ParsedType>();
         private string _typeName;
@@ -57,22 +57,22 @@ namespace Meziantou.Framework.CodeDom
 
         static ParsedType()
         {
-            _parsedTypes["string"] = new ParsedType(typeof(string).FullName);
-            _parsedTypes["bool"] = new ParsedType(typeof(bool).FullName);
-            _parsedTypes["int"] = new ParsedType(typeof(int).FullName);
-            _parsedTypes["uint"] = new ParsedType(typeof(uint).FullName);
-            _parsedTypes["long"] = new ParsedType(typeof(long).FullName);
-            _parsedTypes["ulong"] = new ParsedType(typeof(ulong).FullName);
-            _parsedTypes["short"] = new ParsedType(typeof(short).FullName);
-            _parsedTypes["ushort"] = new ParsedType(typeof(ushort).FullName);
-            _parsedTypes["byte"] = new ParsedType(typeof(byte).FullName);
-            _parsedTypes["sbyte"] = new ParsedType(typeof(sbyte).FullName);
-            _parsedTypes["float"] = new ParsedType(typeof(float).FullName);
-            _parsedTypes["double"] = new ParsedType(typeof(double).FullName);
-            _parsedTypes["decimal"] = new ParsedType(typeof(decimal).FullName);
-            _parsedTypes["object"] = new ParsedType(typeof(object).FullName);
-            _parsedTypes["char"] = new ParsedType(typeof(char).FullName);
-            _parsedTypes["void"] = new ParsedType(typeof(void).FullName);
+            s_parsedTypes["string"] = new ParsedType(typeof(string).FullName);
+            s_parsedTypes["bool"] = new ParsedType(typeof(bool).FullName);
+            s_parsedTypes["int"] = new ParsedType(typeof(int).FullName);
+            s_parsedTypes["uint"] = new ParsedType(typeof(uint).FullName);
+            s_parsedTypes["long"] = new ParsedType(typeof(long).FullName);
+            s_parsedTypes["ulong"] = new ParsedType(typeof(ulong).FullName);
+            s_parsedTypes["short"] = new ParsedType(typeof(short).FullName);
+            s_parsedTypes["ushort"] = new ParsedType(typeof(ushort).FullName);
+            s_parsedTypes["byte"] = new ParsedType(typeof(byte).FullName);
+            s_parsedTypes["sbyte"] = new ParsedType(typeof(sbyte).FullName);
+            s_parsedTypes["float"] = new ParsedType(typeof(float).FullName);
+            s_parsedTypes["double"] = new ParsedType(typeof(double).FullName);
+            s_parsedTypes["decimal"] = new ParsedType(typeof(decimal).FullName);
+            s_parsedTypes["object"] = new ParsedType(typeof(object).FullName);
+            s_parsedTypes["char"] = new ParsedType(typeof(char).FullName);
+            s_parsedTypes["void"] = new ParsedType(typeof(void).FullName);
         }
 
         private ParsedType(string typeName)
@@ -105,19 +105,19 @@ namespace Meziantou.Framework.CodeDom
                 typeName = typeName.Substring(3).Trim();
             }
 
-            if (!_parsedTypes.TryGetValue(typeName, out var pt))
+            if (!s_parsedTypes.TryGetValue(typeName, out var pt))
             {
                 pt = Parse(typeName, "<", '>');
                 if (pt != null)
                 {
-                    _parsedTypes.Add(typeName, pt);
+                    s_parsedTypes.Add(typeName, pt);
                     return pt;
                 }
 
                 pt = Parse(typeName, "(Of", ')');
                 if (pt != null)
                 {
-                    _parsedTypes.Add(typeName, pt);
+                    s_parsedTypes.Add(typeName, pt);
                     return pt;
                 }
 

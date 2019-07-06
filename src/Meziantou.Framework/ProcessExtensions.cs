@@ -137,19 +137,17 @@ namespace Meziantou.Framework
 
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
-            using (var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0))
+            using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
+            var entry = new ProcessEntry32
             {
-                var entry = new ProcessEntry32
-                {
-                    dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32)),
-                };
+                dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32)),
+            };
 
-                var result = Process32First(snapShotHandle, ref entry);
-                while (result != 0)
-                {
-                    yield return new ProcessEntry(entry.th32ProcessID, entry.th32ParentProcessID);
-                    result = Process32Next(snapShotHandle, ref entry);
-                }
+            var result = Process32First(snapShotHandle, ref entry);
+            while (result != 0)
+            {
+                yield return new ProcessEntry(entry.th32ProcessID, entry.th32ParentProcessID);
+                result = Process32Next(snapShotHandle, ref entry);
             }
         }
 

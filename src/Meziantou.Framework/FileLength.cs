@@ -44,7 +44,7 @@ namespace Meziantou.Framework
             var index = -1;
             for (var i = 0; i < format.Length; i++)
             {
-                char c = format[i];
+                var c = format[i];
                 if (c > '0' && c < '9')
                 {
                     index = i;

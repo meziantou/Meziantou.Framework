@@ -416,7 +416,7 @@ namespace Meziantou.Framework.Html
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
 
-            _errors = _errors ?? new Collection<HtmlError>();
+            _errors ??= new Collection<HtmlError>();
             _errors.Add(error);
         }
 
@@ -437,11 +437,9 @@ namespace Meziantou.Framework.Html
             {
                 if (_outerHtml == null)
                 {
-                    using (var w = new StringWriter(CultureInfo.InvariantCulture))
-                    {
-                        WriteTo(w);
-                        _outerHtml = w.ToString();
-                    }
+                    using var w = new StringWriter(CultureInfo.InvariantCulture);
+                    WriteTo(w);
+                    _outerHtml = w.ToString();
                 }
                 return _outerHtml;
             }
@@ -508,11 +506,9 @@ namespace Meziantou.Framework.Html
             {
                 if (_innerHtml == null)
                 {
-                    using (var w = new StringWriter(CultureInfo.InvariantCulture))
-                    {
-                        WriteContentTo(w);
-                        _innerHtml = w.ToString();
-                    }
+                    using var w = new StringWriter(CultureInfo.InvariantCulture);
+                    WriteContentTo(w);
+                    _innerHtml = w.ToString();
                 }
                 return _innerHtml;
             }
@@ -525,14 +521,12 @@ namespace Meziantou.Framework.Html
             {
                 if (_outerXml == null)
                 {
-                    using (var w = new StringWriter(CultureInfo.InvariantCulture))
+                    using var w = new StringWriter(CultureInfo.InvariantCulture);
+                    using (var writer = XmlWriter.Create(w))
                     {
-                        using (var writer = XmlWriter.Create(w))
-                        {
-                            WriteTo(writer);
-                        }
-                        _outerXml = w.ToString();
+                        WriteTo(writer);
                     }
+                    _outerXml = w.ToString();
                 }
                 return _outerXml;
             }
@@ -544,14 +538,12 @@ namespace Meziantou.Framework.Html
             {
                 if (_innerXml == null)
                 {
-                    using (var w = new StringWriter(CultureInfo.InvariantCulture))
+                    using var w = new StringWriter(CultureInfo.InvariantCulture);
+                    using (var writer = XmlWriter.Create(w))
                     {
-                        using (var writer = XmlWriter.Create(w))
-                        {
-                            WriteContentTo(writer);
-                        }
-                        _innerXml = w.ToString();
+                        WriteContentTo(writer);
                     }
+                    _innerXml = w.ToString();
                 }
                 return _innerXml;
             }
@@ -1270,16 +1262,13 @@ namespace Meziantou.Framework.Html
             if (owner == null)
                 throw new ArgumentNullException(nameof(owner));
 
-            using (var s = new StringWriter())
-            {
-                using (var writer = XmlWriter.Create(s))
-                {
-                    WriteTo(writer);
-                    var nodeDoc = new XmlDocument();
-                    nodeDoc.Load(new StringReader(s.ToString()));
-                    return owner.ImportNode(nodeDoc.DocumentElement, deep);
-                }
-            }
+            using var s = new StringWriter();
+            using var writer = XmlWriter.Create(s);
+            WriteTo(writer);
+            var nodeDoc = new XmlDocument();
+            using var txtReader = new StringReader(s.ToString());
+            nodeDoc.Load(txtReader);
+            return owner.ImportNode(nodeDoc.DocumentElement, deep);
         }
 
         public HtmlNode SelectSingleNode(string xpath)

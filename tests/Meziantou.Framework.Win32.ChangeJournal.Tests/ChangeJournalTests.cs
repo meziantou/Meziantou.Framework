@@ -31,19 +31,17 @@ namespace Meziantou.Framework.Win32.Tests
             var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
             var fileName = Path.GetFileName(file);
             var drive = Path.GetPathRoot(file);
-            using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
-            {
-                var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
-                Assert.IsNull(item);
+            using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
+            var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
+            Assert.IsNull(item);
 
-                File.WriteAllText(file, "test");
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)));
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)));
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
+            File.WriteAllText(file, "test");
+            Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)));
+            Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)));
+            Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
 
-                File.Delete(file);
-                Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)));
-            }
+            File.Delete(file);
+            Assert.IsNotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)));
         }
 
         [TestMethod]
@@ -52,17 +50,15 @@ namespace Meziantou.Framework.Win32.Tests
             var file = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".tmp");
             var fileName = Path.GetFileName(file);
             var drive = Path.GetPathRoot(file);
-            using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
-            {
-                var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
-                Assert.IsNull(item);
+            using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
+            var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
+            Assert.IsNull(item);
 
-                File.WriteAllText(file, "test");
-                Assert.IsNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)));
-                Assert.IsNotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
+            File.WriteAllText(file, "test");
+            Assert.IsNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)));
+            Assert.IsNotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
 
-                File.Delete(file);
-            }
+            File.Delete(file);
         }
 
         [TestMethod]
@@ -70,11 +66,9 @@ namespace Meziantou.Framework.Win32.Tests
         {
             var file = Path.GetTempFileName();
             var drive = Path.GetPathRoot(file);
-            using (var changeJournal = ChangeJournal.Open(new DriveInfo(drive)))
-            {
-                var entries = changeJournal.Entries.ToList();
-                Assert.IsTrue(entries.Count > 0);
-            }
+            using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
+            var entries = changeJournal.Entries.ToList();
+            Assert.IsTrue(entries.Count > 0);
         }
     }
 }

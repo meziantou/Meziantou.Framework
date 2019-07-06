@@ -97,36 +97,30 @@ namespace Meziantou.Framework.Html.Tests
         public void HtmlParser_ReadCharacterSet()
         {
             var html = "<html><head><meta charset='UTF-8'></head></html>";
-            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
-            {
-                var document = new HtmlDocument();
-                document.Load(memoryStream);
-                Assert.AreEqual(Encoding.UTF8, document.DetectedEncoding);
-            }
+            using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            var document = new HtmlDocument();
+            document.Load(memoryStream);
+            Assert.AreEqual(Encoding.UTF8, document.DetectedEncoding);
         }
 
         [TestMethod]
         public void HtmlParser_ReadCharacterSet2()
         {
             var html = "<html><head><meta charset='UTF-7'></head></html>";
-            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
-            {
-                var document = new HtmlDocument();
-                document.Load(memoryStream);
-                Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
-            }
+            using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            var document = new HtmlDocument();
+            document.Load(memoryStream);
+            Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
         }
 
         [TestMethod]
         public void HtmlParser_ReadCharacterSetFromMetaHttpEquiv()
         {
             var html = "<html><head><meta http-equiv='Content-Type' content='text/html; charset=UTF-7' /></head></html>";
-            using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html)))
-            {
-                var document = new HtmlDocument();
-                document.Load(memoryStream);
-                Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
-            }
+            using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            var document = new HtmlDocument();
+            document.Load(memoryStream);
+            Assert.AreEqual(Encoding.UTF7, document.DetectedEncoding);
         }
     }
 }

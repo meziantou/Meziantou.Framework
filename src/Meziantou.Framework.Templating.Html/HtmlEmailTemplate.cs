@@ -28,11 +28,9 @@ namespace Meziantou.Framework.Templating
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
 
-            using (var writer = new StringWriter())
-            {
-                Run(writer, out metadata, parameters);
-                return writer.ToString();
-            }
+            using var writer = new StringWriter();
+            Run(writer, out metadata, parameters);
+            return writer.ToString();
         }
 
         public virtual string Run(out HtmlEmailMetadata metadata, params object[] parameters)
@@ -40,20 +38,16 @@ namespace Meziantou.Framework.Templating
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
 
-            using (var writer = new StringWriter())
-            {
-                Run(writer, out metadata, parameters);
-                return writer.ToString();
-            }
+            using var writer = new StringWriter();
+            Run(writer, out metadata, parameters);
+            return writer.ToString();
         }
 
         public virtual string Run(out HtmlEmailMetadata metadata)
         {
-            using (var writer = new StringWriter())
-            {
-                Run(writer, out metadata);
-                return writer.ToString();
-            }
+            using var writer = new StringWriter();
+            Run(writer, out metadata);
+            return writer.ToString();
         }
 
         public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, IReadOnlyDictionary<string, object> parameters)

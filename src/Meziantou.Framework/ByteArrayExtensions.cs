@@ -17,15 +17,12 @@ namespace Meziantou.Framework
             if (bytes.Length == 0)
                 return string.Empty;
 
-            switch (options)
+            return options switch
             {
-                case HexaOptions.LowerCase:
-                    return ToHexaLowerCase(bytes);
-                case HexaOptions.UpperCase:
-                    return ToHexaUpperCase(bytes);
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(options));
-            }
+                HexaOptions.LowerCase => ToHexaLowerCase(bytes),
+                HexaOptions.UpperCase => ToHexaUpperCase(bytes),
+                _ => throw new ArgumentOutOfRangeException(nameof(options)),
+            };
         }
 
         private static string ToHexaUpperCase(this byte[] bytes)

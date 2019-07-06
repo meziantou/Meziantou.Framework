@@ -15,10 +15,8 @@ namespace Meziantou.Framework.Scheduling
         public void ToIcs(Stream stream)
         {
             var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-            using (TextWriter writer = new StreamWriter(stream, encoding))
-            {
-                ToIcs(writer);
-            }
+            using TextWriter writer = new StreamWriter(stream, encoding, bufferSize: 1024, leaveOpen: true);
+            ToIcs(writer);
         }
 
         public void ToIcs(TextWriter writer)
@@ -113,11 +111,9 @@ namespace Meziantou.Framework.Scheduling
 
         public string ToIcs()
         {
-            using (var writer = new StringWriter())
-            {
-                ToIcs(writer);
-                return writer.ToString();
-            }
+            using var writer = new StringWriter();
+            ToIcs(writer);
+            return writer.ToString();
         }
     }
 }

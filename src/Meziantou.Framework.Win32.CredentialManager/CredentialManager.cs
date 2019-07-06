@@ -194,31 +194,14 @@ namespace Meziantou.Framework.Win32
             var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
 
             var returnCode = Credui.CredUIParseUserName(userId.ToString(), userBuilder, userBuilder.Capacity, domainBuilder, domainBuilder.Capacity);
-            switch (returnCode)
+            return returnCode switch
             {
-                case CredentialUIReturnCodes.Success:
-                    return new CredentialResult(
-                        userBuilder.ToString(),
-                        userPassword.ToString(),
-                        domainBuilder.ToString(),
-                        credentialSaved);
-
-                case CredentialUIReturnCodes.InvalidAccountName:
-                    return new CredentialResult(
-                        userId.ToString(),
-                        userPassword.ToString(),
-                        domain: null,
-                        credentialSaved);
-
-                case CredentialUIReturnCodes.InsufficientBuffer:
-                    throw new OutOfMemoryException();
-
-                case CredentialUIReturnCodes.InvalidParameter:
-                    throw new ArgumentException();
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                CredentialUIReturnCodes.Success => new CredentialResult(userBuilder.ToString(), userPassword.ToString(), domainBuilder.ToString(), credentialSaved),
+                CredentialUIReturnCodes.InvalidAccountName => new CredentialResult(userId.ToString(), userPassword.ToString(), domain: null, credentialSaved),
+                CredentialUIReturnCodes.InsufficientBuffer => throw new OutOfMemoryException(),
+                CredentialUIReturnCodes.InvalidParameter => throw new ArgumentException(),
+                _ => throw new ArgumentOutOfRangeException(),
+            };
         }
 
         public static CredentialResult PromptForCredentials(IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)

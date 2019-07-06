@@ -123,17 +123,13 @@ namespace Meziantou.Framework.Scheduling
                     return num + "th";
             }
 
-            switch (num % 10)
+            return (num % 10) switch
             {
-                case 1:
-                    return num + "st";
-                case 2:
-                    return num + "nd";
-                case 3:
-                    return num + "rd";
-                default:
-                    return num + "th";
-            }
+                1 => num + "st",
+                2 => num + "nd",
+                3 => num + "rd",
+                _ => num + "th",
+            };
         }
 
         [Pure]
@@ -142,13 +138,11 @@ namespace Meziantou.Framework.Scheduling
             if (num <= 0)
                 return num.ToString(CultureInfo.CurrentCulture);
 
-            switch (num)
+            return num switch
             {
-                case 1:
-                    return num + "er";
-                default:
-                    return num + "e";
-            }
+                1 => num + "er",
+                _ => num + "e",
+            };
         }
     }
 }

@@ -75,25 +75,23 @@ namespace Meziantou.Framework
 
             var result = 0;
 
-            using (var enumerator1 = word1.GetEnumerator())
-            using (var enumerator2 = word2.GetEnumerator())
+            using var enumerator1 = word1.GetEnumerator();
+            using var enumerator2 = word2.GetEnumerator();
+            bool firstMoveNext;
+            var secondMoveNext = false;
+
+            while ((firstMoveNext = enumerator1.MoveNext()) && (secondMoveNext = enumerator2.MoveNext()))
             {
-                bool firstMoveNext;
-                var secondMoveNext = false;
-
-                while ((firstMoveNext = enumerator1.MoveNext()) && (secondMoveNext = enumerator2.MoveNext()))
+                if (!enumerator1.Current.Equals(enumerator2.Current))
                 {
-                    if (!enumerator1.Current.Equals(enumerator2.Current))
-                    {
-                        result++;
-                    }
+                    result++;
                 }
-
-                if (firstMoveNext != secondMoveNext)
-                    throw new ArgumentException("Lists must have the same length.", nameof(word2));
-
-                return result;
             }
+
+            if (firstMoveNext != secondMoveNext)
+                throw new ArgumentException("Lists must have the same length.", nameof(word2));
+
+            return result;
         }
 
         /// <summary>

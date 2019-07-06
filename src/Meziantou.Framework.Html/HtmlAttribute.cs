@@ -239,14 +239,12 @@ namespace Meziantou.Framework.Html
 
         protected virtual string GetValue(ref bool escapeQuoteChar)
         {
-            using (var sw = new StringWriter())
+            using var sw = new StringWriter();
+            foreach (var node in ChildNodes)
             {
-                foreach (var node in ChildNodes)
-                {
-                    node.WriteTo(sw);
-                }
-                return sw.ToString();
+                node.WriteTo(sw);
             }
+            return sw.ToString();
         }
 
         public override void WriteContentTo(TextWriter writer)

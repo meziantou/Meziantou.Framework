@@ -56,17 +56,13 @@ namespace Meziantou.Framework
                     return string.Format(formatProvider, "{0}th", num);
             }
 
-            switch (num % 10)
+            return (num % 10) switch
             {
-                case 1:
-                    return string.Format(formatProvider, "{0}st", num);
-                case 2:
-                    return string.Format(formatProvider, "{0}nd", num);
-                case 3:
-                    return string.Format(formatProvider, "{0}rd", num);
-                default:
-                    return string.Format(formatProvider, "{0}th", num);
-            }
+                1 => string.Format(formatProvider, "{0}st", num),
+                2 => string.Format(formatProvider, "{0}nd", num),
+                3 => string.Format(formatProvider, "{0}rd", num),
+                _ => string.Format(formatProvider, "{0}th", num),
+            };
         }
 
         [Pure]
@@ -81,13 +77,11 @@ namespace Meziantou.Framework
             if (num <= 0)
                 return num.ToString(formatProvider);
 
-            switch (num)
+            return num switch
             {
-                case 1:
-                    return string.Format(formatProvider, "{0}er", num);
-                default:
-                    return string.Format(formatProvider, "{0}e", num);
-            }
+                1 => string.Format(formatProvider, "{0}er", num),
+                _ => string.Format(formatProvider, "{0}e", num),
+            };
         }
 
         [Pure]

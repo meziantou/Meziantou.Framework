@@ -29,7 +29,7 @@ namespace Meziantou.Framework.WPF.Collections
         {
             if (!IsOnDispatcherThread())
             {
-                throw new InvalidOperationException("Access to the collection must be from the dispatcher thread");
+                throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + Thread.CurrentThread.ManagedThreadId);
             }
         }
 
@@ -108,10 +108,10 @@ namespace Meziantou.Framework.WPF.Collections
         private void EnqueueEvent(PendingEvent<T> @event)
         {
             _pendingEvents.Enqueue(@event);
-            ProcessPendingEvents();
+            ProcessPendingEventsOrDispatch();
         }
 
-        private void ProcessPendingEvents()
+        private void ProcessPendingEventsOrDispatch()
         {
             if (!IsOnDispatcherThread())
             {
@@ -120,9 +120,15 @@ namespace Meziantou.Framework.WPF.Collections
                     _isDispatcherPending = true;
                     _dispatcher.BeginInvoke((Action)ProcessPendingEvents);
                 }
+
                 return;
             }
 
+            ProcessPendingEvents();
+        }
+
+        private void ProcessPendingEvents()
+        {
             _isDispatcherPending = false;
             while (_pendingEvents.TryDequeue(out var pendingEvent))
             {

@@ -6,13 +6,11 @@
         xmlns:local="clr-namespace:Meziantou.Framework.WPF.CollectionSamples"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-
-        <Button Click="Button_Click">Add items</Button>
-        <ListBox x:Name="Lbx" Grid.Row="1" />
-    </Grid>
+    <Window.DataContext>
+        <local:SampleViewModel />
+    </Window.DataContext>
+    <StackPanel Orientation="Vertical">
+        <Button Command="{Binding AddItems}">Add items</Button>
+        <ListBox Grid.Row="1" ItemsSource="{Binding Items.AsObservable}" />
+    </StackPanel>
 </Window>

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.WPF.Collections
     /// <summary>
     /// Thread-safe collection. You can safely bind it to a WPF control using the property <see cref="AsObservable"/>.
     /// </summary>
-    public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>
+    public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
     {
         private readonly Dispatcher _dispatcher;
         private readonly object _lock = new object();
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.WPF.Collections
                     {
                         if (_observableCollection == null)
                         {
-                            _observableCollection = new DispatchedObservableCollection<T>(_items, _dispatcher);
+                            _observableCollection = new DispatchedObservableCollection<T>(this, _dispatcher);
                         }
                     }
                 }
@@ -56,6 +56,18 @@ namespace Meziantou.Framework.WPF.Collections
 
         public int Count => _items.Count;
 
+        bool IList.IsReadOnly => ((IList)_items).IsReadOnly;
+
+        bool IList.IsFixedSize => throw new NotImplementedException();
+
+        int ICollection.Count => throw new NotImplementedException();
+
+        object ICollection.SyncRoot => throw new NotImplementedException();
+
+        bool ICollection.IsSynchronized => throw new NotImplementedException();
+
+        object IList.this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public T this[int index]
         {
             get => _items[index];
@@ -66,7 +78,7 @@ namespace Meziantou.Framework.WPF.Collections
                     _items = _items.SetItem(index, value);
                     if (_observableCollection != null)
                     {
-                        _observableCollection[index] = value;
+                        _observableCollection.EnqueueReplace(index, value);
                     }
                 }
             }
@@ -77,7 +89,7 @@ namespace Meziantou.Framework.WPF.Collections
             lock (_lock)
             {
                 _items = _items.Add(item);
-                _observableCollection?.Add(item);
+                _observableCollection?.EnqueueAdd(item);
             }
         }
 
@@ -86,7 +98,7 @@ namespace Meziantou.Framework.WPF.Collections
             lock (_lock)
             {
                 _items = _items.Clear();
-                _observableCollection?.Clear();
+                _observableCollection?.EnqueueClear();
             }
         }
 
@@ -95,7 +107,7 @@ namespace Meziantou.Framework.WPF.Collections
             lock (_lock)
             {
                 _items = _items.Insert(index, item);
-                _observableCollection?.Insert(index, item);
+                _observableCollection?.EnqueueInsert(index, item);
             }
         }
 
@@ -107,7 +119,7 @@ namespace Meziantou.Framework.WPF.Collections
                 if (_items != newList)
                 {
                     _items = newList;
-                    _observableCollection?.Remove(item);
+                    _observableCollection?.EnqueueRemove(item);
                     return true;
                 }
 
@@ -120,7 +132,7 @@ namespace Meziantou.Framework.WPF.Collections
             lock (_lock)
             {
                 _items = _items.RemoveAt(index);
-                _observableCollection?.RemoveAt(index);
+                _observableCollection?.EnqueueRemoveAt(index);
             }
         }
 
@@ -147,6 +159,53 @@ namespace Meziantou.Framework.WPF.Collections
         public void CopyTo(T[] array, int arrayIndex)
         {
             _items.CopyTo(array, arrayIndex);
+        }
+
+        int IList.Add(object value)
+        {
+            var item = (T)value;
+            lock (_lock)
+            {
+                var index = _items.Count;
+                _items = _items.Add(item);
+                _observableCollection?.EnqueueAdd(item);
+                return index;
+            }
+        }
+
+        bool IList.Contains(object value)
+        {
+            return Contains((T)value);
+        }
+
+        void IList.Clear()
+        {
+            Clear();
+        }
+
+        int IList.IndexOf(object value)
+        {
+            return IndexOf((T)value);
+        }
+
+        void IList.Insert(int index, object value)
+        {
+            Insert(index, (T)value);
+        }
+
+        void IList.Remove(object value)
+        {
+            Remove((T)value);
+        }
+
+        void IList.RemoveAt(int index)
+        {
+            RemoveAt(index);
+        }
+
+        void ICollection.CopyTo(Array array, int index)
+        {
+            ((ICollection)_items).CopyTo(array, index);
         }
     }
 }

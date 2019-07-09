@@ -7,21 +7,18 @@ using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF.Collections
 {
-    internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>
+    internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>, IList<T>, IList
     {
         private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new ConcurrentQueue<PendingEvent<T>>();
+        private readonly ConcurrentObservableCollection<T> _collection;
         private readonly Dispatcher _dispatcher;
 
         private bool _isDispatcherPending;
 
-        public DispatchedObservableCollection(Dispatcher dispatcher)
-            : this(null, dispatcher)
+        public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, Dispatcher dispatcher)
+            : base(collection)
         {
-        }
-
-        public DispatchedObservableCollection(IEnumerable<T> items, Dispatcher dispatcher)
-            : base(items)
-        {
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         }
 
@@ -39,6 +36,91 @@ namespace Meziantou.Framework.WPF.Collections
             {
                 AssertIsOnDispatcherThread();
                 return _items.Count;
+            }
+        }
+
+        bool ICollection<T>.IsReadOnly
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return ((ICollection<T>)_collection).IsReadOnly;
+            }
+        }
+
+        int ICollection.Count
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return Count;
+            }
+        }
+
+        object ICollection.SyncRoot
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return ((ICollection)_items).SyncRoot;
+            }
+        }
+
+        bool ICollection.IsSynchronized
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return ((ICollection)_items).IsSynchronized;
+            }
+        }
+
+        bool IList.IsReadOnly
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return ((IList)_items).IsReadOnly;
+            }
+        }
+
+        bool IList.IsFixedSize
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return ((IList)_items).IsFixedSize;
+            }
+        }
+
+        object IList.this[int index]
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return this[index];
+            }
+
+            set
+            {
+                // it will immediatly modify both collections as we are on the dispatcher thread
+                AssertIsOnDispatcherThread();
+                _collection[index] = (T)value;
+            }
+        }
+
+        T IList<T>.this[int index]
+        {
+            get
+            {
+                AssertIsOnDispatcherThread();
+                return this[index];
+            }
+            set
+            {
+                // it will immediatly modify both collections as we are on the dispatcher thread
+                AssertIsOnDispatcherThread();
+                _collection[index] = value;
             }
         }
 
@@ -75,32 +157,35 @@ namespace Meziantou.Framework.WPF.Collections
                 AssertIsOnDispatcherThread();
                 return _items[index];
             }
-
-            set => EnqueueEvent(PendingEvent.Replace(index, value));
         }
 
-        public void Add(T item)
+        internal void EnqueueReplace(int index, T value)
+        {
+            EnqueueEvent(PendingEvent.Replace(index, value));
+        }
+
+        internal void EnqueueAdd(T item)
         {
             EnqueueEvent(PendingEvent.Add(item));
         }
 
-        public bool Remove(T item)
+        internal bool EnqueueRemove(T item)
         {
             EnqueueEvent(PendingEvent.Remove(item));
             return true;
         }
 
-        public void RemoveAt(int index)
+        internal void EnqueueRemoveAt(int index)
         {
             EnqueueEvent(PendingEvent.RemoveAt<T>(index));
         }
 
-        public void Clear()
+        internal void EnqueueClear()
         {
             EnqueueEvent(PendingEvent.Clear<T>());
         }
 
-        public void Insert(int index, T item)
+        internal void EnqueueInsert(int index, T item)
         {
             EnqueueEvent(PendingEvent.Insert(index, item));
         }
@@ -164,6 +249,95 @@ namespace Meziantou.Framework.WPF.Collections
         private bool IsOnDispatcherThread()
         {
             return _dispatcher.Thread == Thread.CurrentThread;
+        }
+
+        void IList<T>.Insert(int index, T item)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            _collection.Insert(index, item);
+        }
+
+        void IList<T>.RemoveAt(int index)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            _collection.RemoveAt(index);
+        }
+
+        void ICollection<T>.Add(T item)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            _collection.Add(item);
+        }
+
+        void ICollection<T>.Clear()
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            _collection.Clear();
+        }
+
+        bool ICollection<T>.Remove(T item)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            return _collection.Remove(item);
+        }
+
+        void ICollection.CopyTo(Array array, int index)
+        {
+            ((ICollection)_items).CopyTo(array, index);
+        }
+
+        int IList.Add(object value)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            return ((IList)_collection).Add(value);
+        }
+
+        bool IList.Contains(object value)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            return ((IList)_collection).Contains(value);
+        }
+
+        void IList.Clear()
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            ((IList)_collection).Clear();
+        }
+
+        int IList.IndexOf(object value)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            return _items.IndexOf((T)value);
+        }
+
+        void IList.Insert(int index, object value)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            ((IList)_collection).Insert(index, value);
+        }
+
+        void IList.Remove(object value)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            ((IList)_collection).Remove(value);
+        }
+
+        void IList.RemoveAt(int index)
+        {
+            // it will immediatly modify both collections as we are on the dispatcher thread
+            AssertIsOnDispatcherThread();
+            ((IList)_collection).RemoveAt(index);
         }
     }
 }

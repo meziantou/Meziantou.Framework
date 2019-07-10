@@ -58,15 +58,19 @@ namespace Meziantou.Framework.WPF.Collections
 
         bool IList.IsReadOnly => ((IList)_items).IsReadOnly;
 
-        bool IList.IsFixedSize => throw new NotImplementedException();
+        bool IList.IsFixedSize => ((IList)_items).IsFixedSize;
 
-        int ICollection.Count => throw new NotImplementedException();
+        int ICollection.Count => Count;
 
-        object ICollection.SyncRoot => throw new NotImplementedException();
+        object ICollection.SyncRoot => ((ICollection)_items).SyncRoot;
 
-        bool ICollection.IsSynchronized => throw new NotImplementedException();
+        bool ICollection.IsSynchronized => ((ICollection)_items).IsSynchronized;
 
-        object IList.this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        object IList.this[int index]
+        {
+            get => this[index];
+            set => this[index] = (T)value;
+        }
 
         public T this[int index]
         {

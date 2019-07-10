@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using System.Threading.Tasks;
-using System.Windows.Data;
 using System.Windows.Input;
 using Meziantou.Framework.WPF.Collections;
 

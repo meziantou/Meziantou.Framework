@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>2.7.2</Version>
+    <Version>2.7.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Scheduling
         public static DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
         public const string DefaultFirstDayOfWeekString = "MO";
 
-        protected static readonly CultureInfo EnglishCultureInfo = new CultureInfo("en-US");
-        protected static readonly CultureInfo FrenchCultureInfo = new CultureInfo("fr-FR");
+        protected static readonly CultureInfo EnglishCultureInfo = CultureInfo.GetCultureInfo("en-US");
+        protected static readonly CultureInfo FrenchCultureInfo = CultureInfo.GetCultureInfo("fr-FR");
 
         /// <summary>
         /// End date (inclusive)
@@ -39,10 +39,11 @@ namespace Meziantou.Framework.Scheduling
 
         public static bool TryParse(string rrule, out RecurrenceRule recurrenceRule, out string error)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
             recurrenceRule = null;
             error = null;
+            if (rrule == null)
+                return false;
+
             try
             {
                 // Extract parts
@@ -276,7 +277,7 @@ namespace Meziantou.Framework.Scheduling
                 "TH" => DayOfWeek.Thursday,
                 "FR" => DayOfWeek.Friday,
                 "SA" => DayOfWeek.Saturday,
-                _ => throw new ArgumentOutOfRangeException(nameof(str)),
+                _ => throw new FormatException($"Day of week '{str}' is invalid."),
             };
         }
 

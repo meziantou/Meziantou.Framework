@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Win32.Natives

@@ -1,11 +1,11 @@
 ﻿using System.Windows;
 
-namespace Meziantou.Framework.WPF.CollectionSamples
+namespace Meziantou.Framework.Scheduling.RecurrenceRuleSample
 {
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : Application
+    public sealed partial class App : Application
     {
     }
 }

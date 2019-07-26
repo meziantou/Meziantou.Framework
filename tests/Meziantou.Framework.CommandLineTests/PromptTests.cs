@@ -13,7 +13,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: true);
-                Assert.Equal(true, result);
+                Assert.True(result);
             });
         }
 
@@ -23,7 +23,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: false);
-                Assert.Equal(false, result);
+                Assert.False(result);
             });
         }
 
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("Y\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: null);
-                Assert.Equal(true, result);
+                Assert.True(result);
             });
         }
 
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("no\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.Equal(false, result);
+                Assert.False(result);
             });
         }
 
@@ -53,7 +53,7 @@ namespace Meziantou.Framework.CommandLineTests
             var output = UsingConsole("test\r\nYes\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.Equal(true, result);
+                Assert.True(result);
             });
 
             Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));

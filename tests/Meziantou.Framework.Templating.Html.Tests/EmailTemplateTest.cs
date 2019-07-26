@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Templating.Tests
 
             // Assert
             Assert.Equal("Hello Meziantou!", result);
-            Assert.Equal(null, metadata.Title);
+            Assert.Null(metadata.Title);
         }
 
         [Fact]

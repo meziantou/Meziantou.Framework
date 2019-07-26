@@ -40,7 +40,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var result = new VariableReferenceExpression("a")[1];
 
             Assert.Equal("a", ((VariableReferenceExpression)result.ArrayExpression).Name);
-            Assert.Equal(1, result.Indices.Count);
+            Assert.Single(result.Indices);
             Assert.Equal(1, ((LiteralExpression)result.Indices[0]).Value);
         }
 

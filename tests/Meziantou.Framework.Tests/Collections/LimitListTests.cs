@@ -127,7 +127,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(2);
 
             // Assert
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
 
         [Fact]
@@ -142,7 +142,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(3);
 
             // Assert
-            Assert.Equal(false, result);
+            Assert.False(result);
         }
 
         [Fact]
@@ -157,8 +157,8 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(1);
 
             // Assert
-            Assert.Equal(true, result);
-            Assert.Equal(1, list.Count);
+            Assert.True(result);
+            Assert.Single(list);
             Assert.Equal(2, list[0]);
         }
 
@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Tests.Collections
 
             // Assert
             Assert.False(result);
-            Assert.Equal(1, list.Count);
+            Assert.Single(list);
             Assert.Equal(1, list[0]);
         }
 
@@ -208,7 +208,7 @@ namespace Meziantou.Framework.Tests.Collections
             list[0] = 10;
 
             // Assert
-            Assert.Equal(1, list.Count);
+            Assert.Single(list);
             Assert.Equal(10, list[0]);
         }
 

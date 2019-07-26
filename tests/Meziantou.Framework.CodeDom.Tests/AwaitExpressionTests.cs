@@ -21,7 +21,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
             Assert.Equal(expression, configuredExpression);
-            Assert.Equal(null, configuredExpression.Expression);
+            Assert.Null(configuredExpression.Expression);
         }
     }
 }

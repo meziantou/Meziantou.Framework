@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("<p>def</p>");
-            Assert.Equal(null, doc.SelectSingleNode("/p").ParentElement);
+            Assert.Null(doc.SelectSingleNode("/p").ParentElement);
         }
 
         [Fact]

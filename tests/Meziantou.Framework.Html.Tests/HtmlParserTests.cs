@@ -67,7 +67,7 @@ namespace Meziantou.Framework.Html.Tests
 
             var errors = document.Errors.ToList();
 
-            Assert.Equal(1, errors.Count);
+            Assert.Single(errors);
             Assert.Equal(HtmlErrorType.TagNotOpened, errors[0].ErrorType);
         }
 
@@ -79,7 +79,7 @@ namespace Meziantou.Framework.Html.Tests
 
             var errors = document.Errors.ToList();
 
-            Assert.Equal(1, errors.Count);
+            Assert.Single(errors);
             Assert.Equal(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
         }
 

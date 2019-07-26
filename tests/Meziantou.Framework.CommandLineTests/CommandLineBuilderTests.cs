@@ -1,32 +1,31 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests
 {
-    [TestClass]
     public class CommandLineBuilderTests
     {
-        [DataTestMethod]
-        [DataRow("a", "a")]
-        [DataRow("arg 1", @"""arg 1""")]
-        [DataRow(@"\some\path with\spaces", @"""\some\path with\spaces""")]
-        [DataRow(@"a\\b", @"a\\b")]
-        [DataRow(@"a\\\\b", @"a\\\\b")]
-        [DataRow(@"""a", @"""\""a""")]
+        [Theory]
+        [InlineData("a", "a")]
+        [InlineData("arg 1", @"""arg 1""")]
+        [InlineData(@"\some\path with\spaces", @"""\some\path with\spaces""")]
+        [InlineData(@"a\\b", @"a\\b")]
+        [InlineData(@"a\\\\b", @"a\\\\b")]
+        [InlineData(@"""a", @"""\""a""")]
         public void WindowsQuotedArgument_Test(string value, string expected)
         {
             var args = CommandLineBuilder.WindowsQuotedArgument(value);
-            Assert.AreEqual(expected, args);
+            Assert.Equal(expected, args);
         }
 
-        [DataTestMethod]
-        [DataRow("a", "a")]
-        [DataRow("arg 1", @"""arg 1""")]
-        [DataRow("a^b", @"""a^^b""")]
-        [DataRow("a|b", @"""a^|b""")]
+        [Theory]
+        [InlineData("a", "a")]
+        [InlineData("arg 1", @"""arg 1""")]
+        [InlineData("a^b", @"""a^^b""")]
+        [InlineData("a|b", @"""a^|b""")]
         public void WindowsCmdArgument_Test(string value, string expected)
         {
             var args = CommandLineBuilder.WindowsCmdArgument(value);
-            Assert.AreEqual(expected, args);
+            Assert.Equal(expected, args);
         }
     }
 }

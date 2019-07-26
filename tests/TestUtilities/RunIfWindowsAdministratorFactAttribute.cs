@@ -10,11 +10,16 @@ namespace TestUtilities
     {
         public RunIfWindowsAdministratorFactAttribute()
         {
+#if NETSTANDARD2_0
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Skip = "Run only on Windows";
                 return;
             }
+#elif NET461
+#else
+#error Plateform not supported
+#endif
 
             var identity = WindowsIdentity.GetCurrent();
             var principal = new WindowsPrincipal(identity);

@@ -3,14 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class EnumerableTests
     {
-        [TestMethod]
+        [Fact]
         public void ReplaceTests_01()
         {
             // Arrange
@@ -20,20 +19,20 @@ namespace Meziantou.Framework.Tests
             list.Replace(2, 5);
 
             // Assert
-            CollectionAssert.AreEqual(new List<int> { 1, 5, 3 }, list);
+            Assert.Equal(new List<int> { 1, 5, 3 }, list);
         }
 
-        [TestMethod]
+        [Fact]
         public void ReplaceTests_02()
         {
             // Arrange
             var list = new List<int>() { 1, 2, 3 };
 
             // Act
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => list.Replace(10, 5));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.Replace(10, 5));
         }
 
-        [TestMethod]
+        [Fact]
         public async Task ForEachAsync()
         {
             var bag = new ConcurrentBag<int>();
@@ -43,10 +42,10 @@ namespace Meziantou.Framework.Tests
                 bag.Add(i);
             }).ConfigureAwait(false);
 
-            Assert.AreEqual(100, bag.Count);
+            Assert.Equal(100, bag.Count);
         }
 
-        [TestMethod]
+        [Fact]
         public void MaxTests_01()
         {
             // Arrange
@@ -56,10 +55,10 @@ namespace Meziantou.Framework.Tests
             var max = list.Max(Comparer<int>.Default);
 
             // Assert
-            Assert.AreEqual(10, max);
+            Assert.Equal(10, max);
         }
 
-        [TestMethod]
+        [Fact]
         public void MaxByTests_01()
         {
             // Arrange
@@ -69,10 +68,10 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i * 2);
 
             // Assert
-            Assert.AreEqual(10, max);
+            Assert.Equal(10, max);
         }
 
-        [TestMethod]
+        [Fact]
         public void MaxByTests_02()
         {
             // Arrange
@@ -82,13 +81,13 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i * 2, Comparer<int>.Default);
 
             // Assert
-            Assert.AreEqual(10, max);
+            Assert.Equal(10, max);
         }
 
         /// <summary>
         /// ////
         /// </summary>
-        [TestMethod]
+        [Fact]
         public void MinTests_01()
         {
             // Arrange
@@ -98,10 +97,10 @@ namespace Meziantou.Framework.Tests
             var min = list.Min(Comparer<int>.Default);
 
             // Assert
-            Assert.AreEqual(1, min);
+            Assert.Equal(1, min);
         }
 
-        [TestMethod]
+        [Fact]
         public void MinByTests_01()
         {
             // Arrange
@@ -111,10 +110,10 @@ namespace Meziantou.Framework.Tests
             var min = list.MinBy(i => i * 2);
 
             // Assert
-            Assert.AreEqual(1, min);
+            Assert.Equal(1, min);
         }
 
-        [TestMethod]
+        [Fact]
         public void MinByTests_02()
         {
             // Arrange
@@ -124,10 +123,10 @@ namespace Meziantou.Framework.Tests
             var min = list.MinBy(i => i * 2, Comparer<int>.Default);
 
             // Assert
-            Assert.AreEqual(1, min);
+            Assert.Equal(1, min);
         }
 
-        [TestMethod]
+        [Fact]
         public void TimeSpan_Sum()
         {
             // Arrange
@@ -137,10 +136,10 @@ namespace Meziantou.Framework.Tests
             var sum = list.Sum();
 
             // Assert
-            Assert.AreEqual(TimeSpan.FromSeconds(23), sum);
+            Assert.Equal(TimeSpan.FromSeconds(23), sum);
         }
 
-        [TestMethod]
+        [Fact]
         public void TimeSpan_Average()
         {
             // Arrange
@@ -150,7 +149,7 @@ namespace Meziantou.Framework.Tests
             var sum = list.Average();
 
             // Assert
-            Assert.AreEqual(TimeSpan.FromSeconds(9), sum);
+            Assert.Equal(TimeSpan.FromSeconds(9), sum);
         }
     }
 }

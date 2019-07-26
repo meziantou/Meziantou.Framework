@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests
 {
-    [TestClass]
     public class TemplateTest
     {
-        [TestMethod]
+        [Fact]
         public void Template_TextOnly()
         {
             // Arrange
@@ -19,10 +18,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Sample", result);
+            Assert.Equal("Sample", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_CodeOnly()
         {
             // Arrange
@@ -33,10 +32,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Sample", result);
+            Assert.Equal("Sample", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_CodeEval()
         {
             // Arrange
@@ -47,10 +46,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Sample", result);
+            Assert.Equal("Sample", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_CodeEvalParameter01()
         {
             // Arrange
@@ -62,10 +61,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run("Meziantou");
 
             // Assert
-            Assert.AreEqual("Hello Meziantou!", result);
+            Assert.Equal("Hello Meziantou!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_CodeEvalParameter02()
         {
             // Arrange
@@ -81,10 +80,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(arguments);
 
             // Assert
-            Assert.AreEqual("Hello Meziantou!", result);
+            Assert.Equal("Hello Meziantou!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_Loop01()
         {
             // Arrange
@@ -95,10 +94,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Hello 12345!", result);
+            Assert.Equal("Hello 12345!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_UntypedArgument()
         {
             // Arrange
@@ -110,10 +109,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run("John");
 
             // Assert
-            Assert.AreEqual("Hello John!", result);
+            Assert.Equal("Hello John!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_Debug()
         {
             // Arrange
@@ -133,10 +132,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Hello debug!", result);
+            Assert.Equal("Hello debug!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Template_Release()
         {
             // Arrange
@@ -156,7 +155,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.AreEqual("Hello release!", result);
+            Assert.Equal("Hello release!", result);
         }
     }
 }

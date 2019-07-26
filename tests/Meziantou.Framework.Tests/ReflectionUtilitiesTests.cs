@@ -1,36 +1,35 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class ReflectionUtilitiesTests
     {
-        [TestMethod]
+        [Fact]
         public void IsFlagsEnum_ShouldDetectNonEnumeration()
         {
-            Assert.IsFalse(ReflectionUtilities.IsFlagsEnum(typeof(ReflectionUtilitiesTests)));
+            Assert.False(ReflectionUtilities.IsFlagsEnum(typeof(ReflectionUtilitiesTests)));
         }
 
-        [TestMethod]
+        [Fact]
         public void IsFlagsEnum_ShouldDetectNonFlagsEnumeration()
         {
-            Assert.IsFalse(ReflectionUtilities.IsFlagsEnum(typeof(NonFlagsEnum)));
+            Assert.False(ReflectionUtilities.IsFlagsEnum(typeof(NonFlagsEnum)));
         }
 
-        [TestMethod]
+        [Fact]
         public void IsFlagsEnum_ShouldDetectFlagsEnumeration()
         {
-            Assert.IsTrue(ReflectionUtilities.IsFlagsEnum(typeof(FlagsEnum)));
+            Assert.True(ReflectionUtilities.IsFlagsEnum(typeof(FlagsEnum)));
         }
 
-        [DataTestMethod]
-        [DataRow(typeof(int), false)]
-        [DataRow(typeof(int?), true)]
-        [DataRow(typeof(MyNullable<int>), false)]
+        [Theory]
+        [InlineData(typeof(int), false)]
+        [InlineData(typeof(int?), true)]
+        [InlineData(typeof(MyNullable<int>), false)]
         public void IsNullableOf_ShouldDetectType(Type type, bool expectedResult)
         {
-            Assert.AreEqual(expectedResult, ReflectionUtilities.IsNullableOfT(type));
+            Assert.Equal(expectedResult, ReflectionUtilities.IsNullableOfT(type));
         }
 
         private enum NonFlagsEnum

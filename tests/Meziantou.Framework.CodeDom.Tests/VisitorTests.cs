@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
-    [TestClass]
     public class VisitorTests
     {
-        [TestMethod]
+        [Fact]
         public void DefaultVisitor_AcceptAnyCodeObject()
         {
             var types = typeof(CodeObject).Assembly.GetTypes()
@@ -28,7 +27,7 @@ namespace Meziantou.Framework.CodeDom.Tests
                 }
                 catch (Exception ex)
                 {
-                    Assert.Fail("Cannot visit " + type.FullName + ": " + ex);
+                    Assert.True(false, "Cannot visit " + type.FullName + ": " + ex);
                 }
             }
         }

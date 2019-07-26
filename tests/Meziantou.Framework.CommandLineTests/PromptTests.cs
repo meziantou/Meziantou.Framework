@@ -1,68 +1,63 @@
 ﻿using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests
 {
-    [TestClass]
+    [Collection("PromptTests")]
     public class PromptTests
     {
-        [TestMethod]
-        [DoNotParallelize]
+        [Fact]
         public void YesNo_ShouldUseDefaultValue1()
         {
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: true);
-                Assert.AreEqual(true, result);
+                Assert.Equal(true, result);
             });
         }
 
-        [TestMethod]
-        [DoNotParallelize]
+        [Fact]
         public void YesNo_ShouldUseDefaultValue2()
         {
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: false);
-                Assert.AreEqual(false, result);
+                Assert.Equal(false, result);
             });
         }
 
-        [TestMethod]
-        [DoNotParallelize]
+        [Fact]
         public void YesNo_ShouldUseParseYesValue()
         {
             UsingConsole("Y\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: null);
-                Assert.AreEqual(true, result);
+                Assert.Equal(true, result);
             });
         }
 
-        [TestMethod]
-        [DoNotParallelize]
+        [Fact]
         public void YesNo_ShouldUseParseNoValue()
         {
             UsingConsole("no\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.AreEqual(false, result);
+                Assert.Equal(false, result);
             });
         }
 
-        [TestMethod]
-        [DoNotParallelize]
+        [Fact]
         public void YesNo_ShouldAskAgainWhenValueIsInvalid()
         {
             var output = UsingConsole("test\r\nYes\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.AreEqual(true, result);
+                Assert.Equal(true, result);
             });
 
-            Assert.AreEqual(0, output.IndexOf("test?", StringComparison.Ordinal));
-            Assert.IsTrue(output.LastIndexOf("test?", StringComparison.Ordinal) > 0);
+            Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));
+            Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) > 0);
         }
 
         private static string UsingConsole(string input, Action action)

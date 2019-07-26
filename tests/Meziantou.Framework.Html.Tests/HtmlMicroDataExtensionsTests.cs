@@ -1,83 +1,82 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
-    [TestClass]
     public class HtmlMicroDataExtensionsTests
     {
-        [DataTestMethod]
-        [DataRow("a", "href")]
-        [DataRow("area", "href")]
-        [DataRow("audio", "src")]
-        [DataRow("data", "value")]
-        [DataRow("embed", "src")]
-        [DataRow("iframe", "src")]
-        [DataRow("img", "src")]
-        [DataRow("link", "href")]
-        [DataRow("meta", "content")]
-        [DataRow("meter", "value")]
-        [DataRow("object", "data")]
-        [DataRow("source", "src")]
-        [DataRow("time", "datetime")]
-        [DataRow("track", "src")]
-        [DataRow("video", "src")]
+        [Theory]
+        [InlineData("a", "href")]
+        [InlineData("area", "href")]
+        [InlineData("audio", "src")]
+        [InlineData("data", "value")]
+        [InlineData("embed", "src")]
+        [InlineData("iframe", "src")]
+        [InlineData("img", "src")]
+        [InlineData("link", "href")]
+        [InlineData("meta", "content")]
+        [InlineData("meter", "value")]
+        [InlineData("object", "data")]
+        [InlineData("source", "src")]
+        [InlineData("time", "datetime")]
+        [InlineData("track", "src")]
+        [InlineData("video", "src")]
         public void GetItemValue(string tagName, string attributeName)
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<{tagName} {attributeName}='test'>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.AreEqual("test", value);
+            Assert.Equal("test", value);
         }
 
-        [TestMethod()]
+        [Fact]
         public void GetItemValue_Time_InnerText()
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<time>test</time>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.AreEqual("test", value);
+            Assert.Equal("test", value);
         }
 
-        [TestMethod()]
+        [Fact]
         public void GetItemValue_Unknown_InnerText()
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<dummy>test</dummy>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.AreEqual("test", value);
+            Assert.Equal("test", value);
         }
 
-        [TestMethod()]
+        [Fact]
         public void GetItemValue_UnsetAttribute()
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<a>test</a>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.AreEqual(string.Empty, value);
+            Assert.Equal(string.Empty, value);
         }
 
-        [TestMethod()]
+        [Fact]
         public void GetItemScope_CurrentNode()
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'></a>");
 
             var value = document.FirstChild.GetItemScopeType();
-            Assert.AreEqual("https://schema.org/Recipe", value);
+            Assert.Equal("https://schema.org/Recipe", value);
         }
 
-        [TestMethod()]
+        [Fact]
         public void GetItemScope_ParentNode()
         {
             var document = new HtmlDocument();
             document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'><img/></a>");
 
             var value = document.SelectSingleNode("//img").GetItemScopeType();
-            Assert.AreEqual("https://schema.org/Recipe", value);
+            Assert.Equal("https://schema.org/Recipe", value);
         }
     }
 }

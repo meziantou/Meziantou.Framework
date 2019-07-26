@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace TestUtilities
@@ -9,11 +8,16 @@ namespace TestUtilities
     {
         public RunIfWindowsFactAttribute()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#if NETSTANDARD2_0
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
             {
                 Skip = "Run only on Windows";
                 return;
             }
+#elif NET461
+#else
+#error Plateform not supported
+#endif
         }
     }
 }

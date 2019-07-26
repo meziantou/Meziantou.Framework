@@ -1,11 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests
 {
-    [TestClass]
     public class EmailTemplateTest
     {
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_01()
         {
             // Arrange
@@ -16,11 +15,11 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.AreEqual("Hello Meziantou!", result);
-            Assert.AreEqual(null, metadata.Title);
+            Assert.Equal("Hello Meziantou!", result);
+            Assert.Equal(null, metadata.Title);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_Section_01()
         {
             // Arrange
@@ -31,11 +30,11 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.AreEqual("Hello Meziantou!", result);
-            Assert.AreEqual("Meziantou", metadata.Title);
+            Assert.Equal("Hello Meziantou!", result);
+            Assert.Equal("Meziantou", metadata.Title);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_HtmlEncode_01()
         {
             // Arrange
@@ -46,10 +45,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.AreEqual("Hello &lt;Meziantou&gt;!", result);
+            Assert.Equal("Hello &lt;Meziantou&gt;!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_UrlEncode_01()
         {
             // Arrange
@@ -60,10 +59,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.AreEqual("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
+            Assert.Equal("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_HtmlAttributeEncode_01()
         {
             // Arrange
@@ -74,10 +73,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.AreEqual("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
+            Assert.Equal("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_HtmlCode_01()
         {
             // Arrange
@@ -88,10 +87,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.AreEqual("0 1 2 ", result);
+            Assert.Equal("0 1 2 ", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void EmailTemplate_Cid_01()
         {
             // Arrange
@@ -102,10 +101,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.AreEqual("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
-            Assert.AreEqual(2, metadata.ContentIdentifiers.Count);
-            Assert.AreEqual("test1.png", metadata.ContentIdentifiers[0]);
-            Assert.AreEqual("test2.png", metadata.ContentIdentifiers[1]);
+            Assert.Equal("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
+            Assert.Equal(2, metadata.ContentIdentifiers.Count);
+            Assert.Equal("test1.png", metadata.ContentIdentifiers[0]);
+            Assert.Equal("test2.png", metadata.ContentIdentifiers[1]);
         }
     }
 }

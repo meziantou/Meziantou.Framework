@@ -1,34 +1,33 @@
 ﻿using System;
 using System.Linq.Expressions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class ExpressionExtensions
     {
-        [TestMethod]
+        [Fact]
         public void AndAlso()
         {
             Expression<Func<int, bool>> func1 = n => n > 0;
             Expression<Func<int, bool>> func2 = n => n < 10;
 
             var func = func1.AndAlso(func2).Compile();
-            Assert.IsTrue(func(1));
-            Assert.IsFalse(func(100));
-            Assert.IsFalse(func(0));
+            Assert.True(func(1));
+            Assert.False(func(100));
+            Assert.False(func(0));
         }
 
-        [TestMethod]
+        [Fact]
         public void OrElse()
         {
             Expression<Func<int, bool>> func1 = n => n < 0;
             Expression<Func<int, bool>> func2 = n => n > 10;
 
             var func = func1.OrElse(func2).Compile();
-            Assert.IsFalse(func(1));
-            Assert.IsTrue(func(100));
-            Assert.IsTrue(func(-1));
+            Assert.False(func(1));
+            Assert.True(func(100));
+            Assert.True(func(-1));
         }
     }
 }

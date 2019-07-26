@@ -1,66 +1,65 @@
 ﻿using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class StringBuilderExtensionsTests
     {
-        [DataTestMethod]
-        [DataRow("", 'a', false)]
-        [DataRow("abc", 'c', true)]
-        [DataRow("abc", 'd', false)]
+        [Theory]
+        [InlineData("", 'a', false)]
+        [InlineData("abc", 'c', true)]
+        [InlineData("abc", 'd', false)]
         public void EndsWith_Test(string str, char c, bool expected)
         {
             var actual = new StringBuilder(str).EndsWith(c);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [DataTestMethod]
-        [DataRow("", 'a', false)]
-        [DataRow("abc", 'a', true)]
-        [DataRow("abc", 'c', false)]
+        [Theory]
+        [InlineData("", 'a', false)]
+        [InlineData("abc", 'a', true)]
+        [InlineData("abc", 'c', false)]
         public void StartsWith_Test(string str, char c, bool expected)
         {
             var actual = new StringBuilder(str).StartsWith(c);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [DataTestMethod]
-        [DataRow("", 'a', "")]
-        [DataRow("abc", 'a', "bc")]
-        [DataRow("aaabc", 'a', "bc")]
-        [DataRow("abc", 'b', "abc")]
+        [Theory]
+        [InlineData("", 'a', "")]
+        [InlineData("abc", 'a', "bc")]
+        [InlineData("aaabc", 'a', "bc")]
+        [InlineData("abc", 'b', "abc")]
         public void TrimStart(string str, char c, string expected)
         {
             var actual = new StringBuilder(str);
             actual.TrimStart(c);
-            Assert.AreEqual(expected, actual.ToString());
+            Assert.Equal(expected, actual.ToString());
         }
 
-        [DataTestMethod]
-        [DataRow("", 'a', "")]
-        [DataRow("abc", 'c', "ab")]
-        [DataRow("abccc", 'c', "ab")]
-        [DataRow("abc", 'b', "abc")]
+        [Theory]
+        [InlineData("", 'a', "")]
+        [InlineData("abc", 'c', "ab")]
+        [InlineData("abccc", 'c', "ab")]
+        [InlineData("abc", 'b', "abc")]
         public void TrimEnd(string str, char c, string expected)
         {
             var actual = new StringBuilder(str);
             actual.TrimEnd(c);
-            Assert.AreEqual(expected, actual.ToString());
+            Assert.Equal(expected, actual.ToString());
         }
 
-        [DataTestMethod]
-        [DataRow("", 'a', "")]
-        [DataRow("abc", 'c', "ab")]
-        [DataRow("cccabccc", 'c', "ab")]
-        [DataRow("cccacbccc", 'c', "acb")]
-        [DataRow("abc", 'b', "abc")]
+        [Theory]
+        [InlineData("", 'a', "")]
+        [InlineData("abc", 'c', "ab")]
+        [InlineData("cccabccc", 'c', "ab")]
+        [InlineData("cccacbccc", 'c', "acb")]
+        [InlineData("abc", 'b', "abc")]
         public void Trim(string str, char c, string expected)
         {
             var actual = new StringBuilder(str);
             actual.Trim(c);
-            Assert.AreEqual(expected, actual.ToString());
+            Assert.Equal(expected, actual.ToString());
         }
     }
 }

@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests
 {
-    [TestClass]
+    [Collection("JobObjectTests")]
     public class JobObjectTests
     {
-        [TestMethod]
-        [Timeout(5000)]
+        [Fact(Timeout = 5000)]
         public void ShouldKillProcessOnTerminate()
         {
             using (var job = new JobObject())
@@ -28,7 +27,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
 
                 using (var process = Process.Start(psi))
                 {
-                    Assert.IsFalse(process.WaitForExit(500)); // Ensure process is started
+                    Assert.False(process.WaitForExit(500)); // Ensure process is started
 
                     job.AssignProcess(process);
                     job.Terminate();
@@ -38,8 +37,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             }
         }
 
-        [TestMethod]
-        [Timeout(5000)]
+        [Fact(Timeout = 5000)]
         public void KillOnJobClose_ShouldKillProcessOnClose()
         {
             using (var job = new JobObject())
@@ -59,7 +57,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
 
                 using (var process = Process.Start(psi))
                 {
-                    Assert.IsFalse(process.WaitForExit(500)); // Ensure process is started
+                    Assert.False(process.WaitForExit(500)); // Ensure process is started
 
                     job.AssignProcess(process);
                     job.Close();
@@ -69,22 +67,22 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void CreateAndOpenJobObject()
         {
             var objectName = Guid.NewGuid().ToString("N");
             using (var job = new JobObject(objectName))
             {
-                Assert.IsFalse(job.IsInvalid);
+                Assert.False(job.IsInvalid);
 
                 using (var openedJob = JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
                 {
-                    Assert.IsFalse(openedJob.IsInvalid);
+                    Assert.False(openedJob.IsInvalid);
                 }
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void SetUILimits()
         {
             using (var job = new JobObject())
@@ -93,16 +91,16 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void IsAssignedToProcess_NotAssociated()
         {
             using (var job = new JobObject())
             {
-                Assert.IsFalse(job.IsAssignedToProcess(Process.GetCurrentProcess()));
+                Assert.False(job.IsAssignedToProcess(Process.GetCurrentProcess()));
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void IsAssignedToProcess_Associated()
         {
             using (var job = new JobObject())
@@ -110,7 +108,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
                 var process = Process.GetCurrentProcess();
                 job.AssignProcess(process);
 
-                Assert.IsTrue(job.IsAssignedToProcess(process));
+                Assert.True(job.IsAssignedToProcess(process));
             }
         }
     }

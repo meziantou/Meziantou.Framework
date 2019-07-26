@@ -1,13 +1,12 @@
 ﻿using System;
 using System.IO;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    [TestClass]
     public class ProjectedFileSystemTests
     {
-        [TestMethod]
+        [Fact]
         public void Test()
         {
             var guid = Guid.NewGuid();
@@ -39,7 +38,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
                 catch (NotSupportedException ex)
                 {
-                    Assert.Inconclusive(ex.Message);
+                    Assert.True(false, ex.Message);
                 }
 
                 // Get content
@@ -51,20 +50,20 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var directories = Directory.GetDirectories(fullPath);
-                Assert.AreEqual(1, directories.Length);
-                Assert.AreEqual("folder", Path.GetFileName(directories[0]));
+                Assert.Single(directories);
+                Assert.Equal("folder", Path.GetFileName(directories[0]));
 
                 // Get unknown file
                 var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-                Assert.IsFalse(fi2.Exists);
-                Assert.ThrowsException<FileNotFoundException>(() => fi2.Length);
+                Assert.False(fi2.Exists);
+                Assert.Throws<FileNotFoundException>(() => fi2.Length);
 
                 // Get file content
-                CollectionAssert.AreEqual(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
+                Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
                 using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
                 {
-                    Assert.AreEqual(1, stream.ReadByte());
-                    Assert.AreEqual(2, stream.ReadByte());
+                    Assert.Equal(1, stream.ReadByte());
+                    Assert.Equal(2, stream.ReadByte());
                 }
             }
         }

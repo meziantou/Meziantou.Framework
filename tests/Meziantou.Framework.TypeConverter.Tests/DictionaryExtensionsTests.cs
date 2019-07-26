@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DictionaryExtensionsTests
     {
+        [Fact]
         public static void GetValue_KeyExists()
         {
             // Arrange
@@ -19,9 +19,10 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("test", "");
 
             // Assert
-            Assert.AreEqual("42", actual);
+            Assert.Equal("42", actual);
         }
 
+        [Fact]
         public static void GetValue_KeyNotExists()
         {
             // Arrange
@@ -34,9 +35,10 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("unknown", "");
 
             // Assert
-            Assert.AreEqual("", actual);
+            Assert.Equal("", actual);
         }
 
+        [Fact]
         public static void GetValue_KeyNotConvertible()
         {
             // Arrange
@@ -49,7 +51,7 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("test", 0);
 
             // Assert
-            Assert.AreEqual(0, actual);
+            Assert.Equal(0, actual);
         }
     }
 }

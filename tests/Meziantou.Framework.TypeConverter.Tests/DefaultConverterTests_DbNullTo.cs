@@ -1,42 +1,41 @@
 ﻿using System;
 using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DefaultConverterTests_DbNullTo
     {
-        [TestMethod]
+        [Fact]
         public void TryConvert_DbNullToNullableInt32()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int? value);
 
-            Assert.IsTrue(converted);
-            Assert.IsNull(value);
+            Assert.True(converted);
+            Assert.Null(value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_DbNullToInt32()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int _);
 
-            Assert.IsFalse(converted);
+            Assert.False(converted);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_DbNullToString()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
 
-            Assert.IsTrue(converted);
-            Assert.IsNull(value);
+            Assert.True(converted);
+            Assert.Null(value);
         }
     }
 }

@@ -1,27 +1,26 @@
 ﻿using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DefaultConverterTests_CultureInfoTo
     {
-        [TestMethod]
+        [Fact]
         public void TryConvert_CultureInfoToString_UsingInvariantCulture()
         {
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
 
-            Assert.AreEqual("en", value);
+            Assert.Equal("en", value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_CultureInfoToString_UsingSpecificCulture()
         {
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, new CultureInfo("en-US"));
 
-            Assert.AreEqual("en", value);
+            Assert.Equal("en", value);
         }
     }
 }

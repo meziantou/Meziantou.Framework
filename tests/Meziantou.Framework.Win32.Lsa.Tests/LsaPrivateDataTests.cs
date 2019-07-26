@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
     [Collection("LsaPrivateDataTests")]
     public sealed class LsaPrivateDataTests
     {
-        [RunIfAdminFact]
+        [RunIfWindowsAdministratorFact]
         public void LsaPrivateData_SetGetRemove()
         {
             // Set
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
             Assert.Equal("", value);
         }
 
-        [RunIfAdminFact]
+        [RunIfWindowsAdministratorFact]
         public void LsaPrivateData_GetUnsetValue()
         {
             // Get

@@ -1,28 +1,28 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using TestUtilities;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests
 {
-    [TestClass]
-    [DoNotParallelize]
-    public class CredentialManagerTests
+    [Collection("CredentialManagerTests")]
+    public sealed class CredentialManagerTests
     {
-        [TestMethod]
+        [RunIfWindowsFact]
         public void CredentialManager_01()
         {
             CredentialManager.WriteCredential("CredentialManagerTests", "John", "Doe", "Test", CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.AreEqual("CredentialManagerTests", cred.ApplicationName);
-            Assert.AreEqual("John", cred.UserName);
-            Assert.AreEqual("Doe", cred.Password);
-            Assert.AreEqual("Test", cred.Comment);
+            Assert.Equal("CredentialManagerTests", cred.ApplicationName);
+            Assert.Equal("John", cred.UserName);
+            Assert.Equal("Doe", cred.Password);
+            Assert.Equal("Test", cred.Comment);
 
             CredentialManager.DeleteCredential("CredentialManagerTests");
             cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.IsNull(cred);
+            Assert.Null(cred);
         }
 
-        [TestMethod]
+        [RunIfWindowsFact]
         public void CredentialManager_Enumerate()
         {
             CredentialManager.WriteCredential("CredentialManagerTests", "John", "Doe", "Test", CredentialPersistence.Session);
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Win32.Tests
             try
             {
                 var creds = CredentialManager.EnumerateCrendentials("CredentialManagerTests*");
-                Assert.AreEqual(2, creds.Count);
+                Assert.Equal(2, creds.Count);
             }
             finally
             {
@@ -39,35 +39,35 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [TestMethod]
+        [RunIfWindowsFact]
         public void CredentialManager_LimitComment()
         {
             var comment = new string('a', 255);
             CredentialManager.WriteCredential("CredentialManagerTests", "John", "Doe", comment, CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.AreEqual("CredentialManagerTests", cred.ApplicationName);
-            Assert.AreEqual("John", cred.UserName);
-            Assert.AreEqual("Doe", cred.Password);
-            Assert.AreEqual(comment, cred.Comment);
+            Assert.Equal("CredentialManagerTests", cred.ApplicationName);
+            Assert.Equal("John", cred.UserName);
+            Assert.Equal("Doe", cred.Password);
+            Assert.Equal(comment, cred.Comment);
 
             CredentialManager.DeleteCredential("CredentialManagerTests");
             cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.IsNull(cred);
+            Assert.Null(cred);
         }
 
-        [TestMethod]
+        [RunIfWindowsFact]
         public void CredentialManager_LimitSecret()
         {
             var secret = new string('a', 512 * 5 / 2);
             CredentialManager.WriteCredential("CredentialManagerTests", "John", secret, CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.AreEqual(secret, cred.Password);
+            Assert.Equal(secret, cred.Password);
 
             CredentialManager.DeleteCredential("CredentialManagerTests");
             cred = CredentialManager.ReadCredential("CredentialManagerTests");
-            Assert.IsNull(cred);
+            Assert.Null(cred);
         }
     }
 }

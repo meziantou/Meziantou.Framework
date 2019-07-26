@@ -6,9 +6,9 @@ using Xunit;
 namespace TestUtilities
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public sealed class RunIfAdminFactAttribute : FactAttribute
+    public sealed class RunIfWindowsAdministratorFactAttribute : FactAttribute
     {
-        public RunIfAdminFactAttribute()
+        public RunIfWindowsAdministratorFactAttribute()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

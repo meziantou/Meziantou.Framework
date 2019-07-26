@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Versioning.Tests
 {
-    [TestClass]
     public class SemanticVersionTests
     {
-        [DataTestMethod]
-        [DynamicData(nameof(TryParse_ShouldParseVersion_Data), DynamicDataSourceType.Method)]
+        [Theory]
+        [MemberData(nameof(TryParse_ShouldParseVersion_Data))]
         public void TryParse_ShouldParseVersion(string version, SemanticVersion expected)
         {
-            Assert.IsTrue(SemanticVersion.TryParse(version, out var actual));
-            Assert.AreEqual(expected, actual);
+            Assert.True(SemanticVersion.TryParse(version, out var actual));
+            Assert.Equal(expected, actual);
         }
 
         public static IEnumerable<object[]> TryParse_ShouldParseVersion_Data()
@@ -29,54 +28,54 @@ namespace Meziantou.Framework.Versioning.Tests
             };
         }
 
-        [DataTestMethod]
-        [DataRow("")]
-        [DataRow("1")] // Must contain 3 parameters
-        [DataRow("1.2")] // Must contain 3 parameters
-        [DataRow("1.2.3.4")] // Must contain 3 parameters
-        [DataRow("01.2.3")] // No leading 0
-        [DataRow("1.02.3")] // No leading 0
-        [DataRow("1.2.03")] // No leading 0
-        [DataRow("1.0.0-01")] // No leading 0
-        [DataRow("1.0.0-beta.01")] // No leading 0
-        [DataRow("1.0.0+é")] // Invalid character
+        [Theory]
+        [InlineData("")]
+        [InlineData("1")] // Must contain 3 parameters
+        [InlineData("1.2")] // Must contain 3 parameters
+        [InlineData("1.2.3.4")] // Must contain 3 parameters
+        [InlineData("01.2.3")] // No leading 0
+        [InlineData("1.02.3")] // No leading 0
+        [InlineData("1.2.03")] // No leading 0
+        [InlineData("1.0.0-01")] // No leading 0
+        [InlineData("1.0.0-beta.01")] // No leading 0
+        [InlineData("1.0.0+é")] // Invalid character
         public void TryParse_ShouldNotParseVersion(string version)
         {
-            Assert.IsFalse(SemanticVersion.TryParse(version, out _));
-            Assert.ThrowsException<ArgumentException>(() => SemanticVersion.Parse(version));
+            Assert.False(SemanticVersion.TryParse(version, out _));
+            Assert.Throws<ArgumentException>(() => SemanticVersion.Parse(version));
         }
 
-        [TestMethod]
+        [Fact]
         public void TryParse_ShouldNotParseNullVersion()
         {
-            Assert.IsFalse(SemanticVersion.TryParse(null, out _));
+            Assert.False(SemanticVersion.TryParse(null, out _));
         }
 
-        [TestMethod]
+        [Fact]
         public void Parse_ShouldNotParseNullVersion()
         {
-            Assert.ThrowsException<ArgumentNullException>(() => SemanticVersion.Parse(null));
+            Assert.Throws<ArgumentNullException>(() => SemanticVersion.Parse(null));
         }
 
-        [DataTestMethod]
-        [DynamicData(nameof(Operator_Data), DynamicDataSourceType.Method)]
+        [Theory]
+        [MemberData(nameof(Operator_Data))]
         public void Operator_DifferentValues(SemanticVersion left, SemanticVersion right)
         {
-            Assert.AreEqual(left.GetHashCode(), left.GetHashCode());
-            Assert.AreEqual(right.GetHashCode(), right.GetHashCode());
-            Assert.AreEqual(left, left);
-            Assert.AreEqual(right, right);
+            Assert.Equal(left.GetHashCode(), left.GetHashCode());
+            Assert.Equal(right.GetHashCode(), right.GetHashCode());
+            Assert.Equal(left, left);
+            Assert.Equal(right, right);
 
-            Assert.AreNotEqual(left, right);
-            Assert.AreNotEqual(left.GetHashCode(), right.GetHashCode());
-            Assert.IsFalse(left == right);
-            Assert.IsTrue(left != right);
+            Assert.NotEqual(left, right);
+            Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
+            Assert.False(left == right);
+            Assert.True(left != right);
 
-            Assert.IsTrue(left < right);
-            Assert.IsTrue(left <= right);
+            Assert.True(left < right);
+            Assert.True(left <= right);
 
-            Assert.IsFalse(left > right);
-            Assert.IsFalse(left >= right);
+            Assert.False(left > right);
+            Assert.False(left >= right);
         }
 
         public static IEnumerable<object[]> Operator_Data()
@@ -99,110 +98,110 @@ namespace Meziantou.Framework.Versioning.Tests
             return left.Zip(right, (l, r) => new[] { l, r });
         }
 
-        [DataTestMethod]
-        [DataRow("1.2.3", "1.2.3")]
-        [DataRow("1.0.0+left", "1.0.0+right")]
-        [DataRow("1.0.0-alpha+left", "1.0.0-alpha+right")]
-        [DataRow("1.0.0-alpha.1+left", "1.0.0-alpha.1+right")]
+        [Theory]
+        [InlineData("1.2.3", "1.2.3")]
+        [InlineData("1.0.0+left", "1.0.0+right")]
+        [InlineData("1.0.0-alpha+left", "1.0.0-alpha+right")]
+        [InlineData("1.0.0-alpha.1+left", "1.0.0-alpha.1+right")]
         public void Operator_SameValues(string leftString, string rightString)
         {
             var left = SemanticVersion.Parse(leftString);
             var right = SemanticVersion.Parse(rightString);
 
-            Assert.AreEqual(left.GetHashCode(), right.GetHashCode());
+            Assert.Equal(left.GetHashCode(), right.GetHashCode());
 
-            Assert.AreEqual(left, right);
-            Assert.IsTrue(left == right);
-            Assert.IsFalse(left != right);
+            Assert.Equal(left, right);
+            Assert.True(left == right);
+            Assert.False(left != right);
 
-            Assert.IsFalse(left < right);
-            Assert.IsTrue(left <= right);
-            Assert.IsFalse(left > right);
-            Assert.IsTrue(left >= right);
+            Assert.False(left < right);
+            Assert.True(left <= right);
+            Assert.False(left > right);
+            Assert.True(left >= right);
         }
 
-        [DataTestMethod]
-        [DataRow("1.2.3")]
-        [DataRow("1.0.0+ci1")]
-        [DataRow("1.0.0-alpha+label1.2")]
-        [DataRow("1.0.0-alpha.1+label1")]
-        [DataRow("1.0.0-alpha.1")]
-        public void ToString(string version)
+        [Theory]
+        [InlineData("1.2.3")]
+        [InlineData("1.0.0+ci1")]
+        [InlineData("1.0.0-alpha+label1.2")]
+        [InlineData("1.0.0-alpha.1+label1")]
+        [InlineData("1.0.0-alpha.1")]
+        public void Test_ToString(string version)
         {
             var semanticVersion = SemanticVersion.Parse(version);
-            Assert.AreEqual(version, semanticVersion.ToString());
+            Assert.Equal(version, semanticVersion.ToString());
         }
 
-        [TestMethod]
+        [Fact]
         public void Constructor_WithInvalidPrerelease_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "01" }, metadata: null));
+            Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "01" }, metadata: null));
         }
 
-        [TestMethod]
+        [Fact]
         public void Constructor_WithEmptyPrerelease_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "" }, metadata: null));
+            Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "" }, metadata: null));
         }
 
-        [TestMethod]
+        [Fact]
         public void Constructor_WithEmptyMetadata_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "" }));
+            Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "" }));
         }
 
-        [TestMethod]
+        [Fact]
         public void Constructor_WithInvalidMetadata_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "/" }));
+            Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "/" }));
         }
 
-        [TestMethod]
+        [Fact]
         public void Constructor_WithInvalidMetadataString_ShouldThrowException()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
+            Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
         }
 
-        [TestMethod]
+        [Fact]
         public void NextPatchVersion_ShouldRemovePrereleaseTag()
         {
             var version = new SemanticVersion(1, 0, 0, "test");
-            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextPatchVersion());
+            Assert.Equal(new SemanticVersion(1, 0, 0), version.NextPatchVersion());
         }
 
-        [TestMethod]
+        [Fact]
         public void NextPatchVersion_ShouldIncreasePatch()
         {
             var version = new SemanticVersion(1, 0, 1);
-            Assert.AreEqual(new SemanticVersion(1, 0, 2), version.NextPatchVersion());
+            Assert.Equal(new SemanticVersion(1, 0, 2), version.NextPatchVersion());
         }
 
-        [TestMethod]
+        [Fact]
         public void NextMinorVersion_ShouldRemovePrereleaseTag()
         {
             var version = new SemanticVersion(1, 0, 0, "test");
-            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextMinorVersion());
+            Assert.Equal(new SemanticVersion(1, 0, 0), version.NextMinorVersion());
         }
 
-        [TestMethod]
+        [Fact]
         public void NextMinorVersion_ShouldIncreaseMinor()
         {
             var version = new SemanticVersion(1, 0, 1);
-            Assert.AreEqual(new SemanticVersion(1, 1, 0), version.NextMinorVersion());
+            Assert.Equal(new SemanticVersion(1, 1, 0), version.NextMinorVersion());
         }
 
-        [TestMethod]
+        [Fact]
         public void NextMajorVersion_ShouldRemovePrereleaseTag()
         {
             var version = new SemanticVersion(1, 0, 0, "test");
-            Assert.AreEqual(new SemanticVersion(1, 0, 0), version.NextMajorVersion());
+            Assert.Equal(new SemanticVersion(1, 0, 0), version.NextMajorVersion());
         }
 
-        [TestMethod]
+        [Fact]
         public void NextMajorVersion_ShouldIncreaseMajor()
         {
             var version = new SemanticVersion(1, 2, 3);
-            Assert.AreEqual(new SemanticVersion(2, 0, 0), version.NextMajorVersion());
+            Assert.Equal(new SemanticVersion(2, 0, 0), version.NextMajorVersion());
         }
     }
 }

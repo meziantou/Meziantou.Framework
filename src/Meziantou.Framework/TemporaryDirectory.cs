@@ -130,6 +130,7 @@ namespace Meziantou.Framework
                 try
                 {
                     action();
+                    return;
                 }
                 catch (IOException ex) when (IOUtilities.IsSharingViolation(ex))
                 {

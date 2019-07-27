@@ -4,10 +4,10 @@ using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    public class ProjectedFileSystemTests
+    public sealed class ProjectedFileSystemTests
     {
         [AttributeUsage(AttributeTargets.All)]
-        public class ProjectedFileSystemFactAttribute : FactAttribute
+        public sealed class ProjectedFileSystemFactAttribute : FactAttribute
         {
             public ProjectedFileSystemFactAttribute()
             {
@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
         }
 
-        [Fact]
+        [ProjectedFileSystemFactAttribute]
         public void Test()
         {
             using var temporaryDirectory = TemporaryDirectory.Create();

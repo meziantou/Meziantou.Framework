@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
         }
 
-        [ProjectedFileSystemFactAttribute]
+        [ProjectedFileSystemFact]
         public void Test()
         {
             using var temporaryDirectory = TemporaryDirectory.Create();

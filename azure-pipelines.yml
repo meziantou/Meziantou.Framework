@@ -16,19 +16,17 @@ steps:
   inputs:
     version: 3.0.100-preview7-012821
 
-- task: DotNetCoreCLI@2
+- script: 'dotnet build --configuration $(BuildConfiguration)'
   displayName: dotnet build
-  inputs:
-    projects: '**/*.csproj'
-    arguments: '--configuration $(BuildConfiguration)'
 
-- task: DotNetCoreCLI@2
+- script: 'dotnet test --no-build --logger trx --configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude="[xunit.*]*"'
   displayName: dotnet test
+
+- task: PublishTestResults@2
+  condition: succeededOrFailed()
   inputs:
-    command: test
-    arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude="[xunit.*]*"'
-    projects: 'tests/**/*.csproj'
-    nobuild: true
+    testRunner: VSTest
+    testResultsFiles: '**/*.trx'
 
 - script: |
     dotnet tool install -g dotnet-reportgenerator-globaltool

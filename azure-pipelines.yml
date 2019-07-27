@@ -15,19 +15,20 @@ steps:
   displayName: 'Use .NET Core sdk'
   inputs:
     version: 3.0.100-preview7-012821
-
-- script: 'dotnet build --configuration $(BuildConfiguration)'
+    
+- task: DotNetCoreCLI@2
   displayName: dotnet build
-
-- script: 'dotnet test --no-build --logger trx --configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude="[xunit.*]*"'
-  displayName: dotnet test
-
-- task: PublishTestResults@2
-  condition: succeededOrFailed()
   inputs:
-    testRunner: VSTest
-    testResultsFiles: '**/*.trx'
+    projects: '**/*.csproj'
+    arguments: '--configuration $(BuildConfiguration)'
 
+- task: DotNetCoreCLI@2
+  displayName: dotnet test
+  inputs:
+    command: test
+    arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
+    projects: 'tests/**/*Tests.csproj'
+    nobuild: true
 - script: |
     dotnet tool install -g dotnet-reportgenerator-globaltool
     reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura

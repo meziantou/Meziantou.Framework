@@ -1,40 +1,39 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
-    [TestClass]
     public class HtmlNodeTests
     {
-        [TestMethod]
+        [Fact]
         public void HtmlNode_InnerText()
         {
             var doc = new HtmlDocument();
             doc.AppendChild(doc.CreateText("abc"));
-            Assert.AreEqual("abc", doc.InnerText);
+            Assert.Equal("abc", doc.InnerText);
         }
 
-        [TestMethod]
+        [Fact]
         public void HtmlNode_InnerText_CombineValues()
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("abc<p>def</p>");
-            Assert.AreEqual("abcdef", doc.InnerText);
+            Assert.Equal("abcdef", doc.InnerText);
         }
 
-        [TestMethod]
+        [Fact]
         public void HtmlNode_ParentElement_Null()
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("<p>def</p>");
-            Assert.AreEqual(null, doc.SelectSingleNode("/p").ParentElement);
+            Assert.Null(doc.SelectSingleNode("/p").ParentElement);
         }
 
-        [TestMethod]
+        [Fact]
         public void HtmlNode_ParentElement()
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("<p>def</p>");
-            Assert.AreEqual("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
+            Assert.Equal("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
         }
     }
 }

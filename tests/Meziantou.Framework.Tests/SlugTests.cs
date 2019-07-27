@@ -1,27 +1,26 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class SlugTests
     {
-        [DataTestMethod]
-        [DataRow("test", "test")]
-        [DataRow("TeSt", "TeSt")]
-        [DataRow("testé", "teste")]
-        [DataRow("TeSt test", "TeSt-test")]
-        [DataRow("TeSt test ", "TeSt-test")]
+        [Theory]
+        [InlineData("test", "test")]
+        [InlineData("TeSt", "TeSt")]
+        [InlineData("testé", "teste")]
+        [InlineData("TeSt test", "TeSt-test")]
+        [InlineData("TeSt test ", "TeSt-test")]
         public void Slug_WithDefaultOptions(string text, string expected)
         {
             var options = new SlugOptions();
             var slug = Slug.Create(text, options);
 
-            Assert.AreEqual(expected, slug);
+            Assert.Equal(expected, slug);
         }
 
-        [DataTestMethod]
-        [DataRow("test", "test")]
-        [DataRow("TeSt", "test")]
+        [Theory]
+        [InlineData("test", "test")]
+        [InlineData("TeSt", "test")]
         public void Slug_Lowercase(string text, string expected)
         {
             var options = new SlugOptions
@@ -30,7 +29,7 @@ namespace Meziantou.Framework.Tests
             };
             var slug = Slug.Create(text, options);
 
-            Assert.AreEqual(expected, slug);
+            Assert.Equal(expected, slug);
         }
     }
 }

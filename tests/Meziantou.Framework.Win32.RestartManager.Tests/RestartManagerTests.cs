@@ -1,14 +1,13 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests
 {
-    [TestClass]
     public class RestartManagerTests
     {
-        [TestMethod]
+        [Fact]
         public void GetProcessesLockingFile()
         {
             var path = Path.GetTempFileName();
@@ -16,8 +15,8 @@ namespace Meziantou.Framework.Win32.Tests
             {
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
-                    var processes = Meziantou.Framework.Win32.RestartManager.GetProcessesLockingFile(path);
-                    CollectionAssert.AreEquivalent(new[] { Process.GetCurrentProcess().Id }, processes.Select(p => p.Id).ToList());
+                    var processes = RestartManager.GetProcessesLockingFile(path);
+                    Assert.Equal(Process.GetCurrentProcess().Id, processes.Single().Id);
                 }
             }
             finally
@@ -26,7 +25,7 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void IsFileLocked_True()
         {
             var path = Path.GetTempFileName();
@@ -34,8 +33,8 @@ namespace Meziantou.Framework.Win32.Tests
             {
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
-                    var actual = Meziantou.Framework.Win32.RestartManager.IsFileLocked(path);
-                    Assert.IsTrue(actual);
+                    var actual = RestartManager.IsFileLocked(path);
+                    Assert.True(actual);
                 }
             }
             finally
@@ -44,14 +43,14 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void IsFileLocked_False()
         {
             var path = Path.GetTempFileName();
             try
             {
-                var actual = Meziantou.Framework.Win32.RestartManager.IsFileLocked(path);
-                Assert.IsFalse(actual);
+                var actual = RestartManager.IsFileLocked(path);
+                Assert.False(actual);
             }
             finally
             {

@@ -1,11 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests
 {
-    [TestClass]
     public class CommandLineParserTests
     {
-        [TestMethod]
+        [Fact]
         public void HasArgument_01()
         {
             // Arrange
@@ -19,12 +18,12 @@ namespace Meziantou.Framework.CommandLineTests
             var valueC = parser.HasArgument("c");
 
             // Assert
-            Assert.IsTrue(valueA);
-            Assert.IsTrue(valueB);
-            Assert.IsFalse(valueC);
+            Assert.True(valueA);
+            Assert.True(valueB);
+            Assert.False(valueC);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetArgument_01()
         {
             // Arrange
@@ -38,12 +37,12 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.AreEqual("value1", valueA);
-            Assert.AreEqual("value2", valueB);
-            Assert.IsFalse(helpRequested);
+            Assert.Equal("value1", valueA);
+            Assert.Equal("value2", valueB);
+            Assert.False(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetArgument_02()
         {
             // Arrange
@@ -57,12 +56,12 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.AreEqual("value1", valueA);
-            Assert.AreEqual("value2", valueB);
-            Assert.IsFalse(helpRequested);
+            Assert.Equal("value1", valueA);
+            Assert.Equal("value2", valueB);
+            Assert.False(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetArgument_TrailingWhitespace()
         {
             // Arrange
@@ -76,12 +75,12 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.AreEqual("value1 ", valueA);
-            Assert.AreEqual("value2", valueB);
-            Assert.IsFalse(helpRequested);
+            Assert.Equal("value1 ", valueA);
+            Assert.Equal("value2", valueB);
+            Assert.False(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetArgument_OnlyWhitespace()
         {
             // Arrange
@@ -94,11 +93,11 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.AreEqual("   ", valueA);
-            Assert.IsFalse(helpRequested);
+            Assert.Equal("   ", valueA);
+            Assert.False(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void HelpRequested_01()
         {
             // Arrange
@@ -110,10 +109,10 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.IsTrue(helpRequested);
+            Assert.True(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void HelpRequested_02()
         {
             // Arrange
@@ -125,10 +124,10 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.IsTrue(helpRequested);
+            Assert.True(helpRequested);
         }
 
-        [TestMethod]
+        [Fact]
         public void HelpRequested_03()
         {
             // Arrange
@@ -140,7 +139,7 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.IsFalse(helpRequested);
+            Assert.False(helpRequested);
         }
     }
 }

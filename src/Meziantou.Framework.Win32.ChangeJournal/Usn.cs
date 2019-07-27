@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32
 {
-    [StructLayout(LayoutKind.Auto)]
+    [StructLayout(LayoutKind.Sequential)]
     public readonly struct Usn : IEquatable<Usn>
     {
         public long Value { get; }

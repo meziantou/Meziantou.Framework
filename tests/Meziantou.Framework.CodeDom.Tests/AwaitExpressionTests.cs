@@ -1,28 +1,27 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
-    [TestClass]
     public class AwaitExpressionTests
     {
-        [TestMethod]
+        [Fact]
         public void CodeAwaitExpression_ConfigureAwait()
         {
             var expression = new AwaitExpression(new SnippetExpression("test"));
             var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            Assert.AreEqual(expression, configuredExpression);
-            Assert.AreEqual(true, configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value);
+            Assert.Equal(expression, configuredExpression);
+            Assert.Equal(true, configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value);
         }
 
-        [TestMethod]
+        [Fact]
         public void CodeAwaitExpression_ConfigureAwait_NullExpression()
         {
             var expression = new AwaitExpression();
             var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            Assert.AreEqual(expression, configuredExpression);
-            Assert.AreEqual(null, configuredExpression.Expression);
+            Assert.Equal(expression, configuredExpression);
+            Assert.Null(configuredExpression.Expression);
         }
     }
 }

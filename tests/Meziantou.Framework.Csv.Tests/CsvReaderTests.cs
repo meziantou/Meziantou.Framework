@@ -1,14 +1,13 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Csv.Tests
 {
-    [TestClass]
     public class CsvReaderTests
     {
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_RowWithoutHeader()
         {
             var sb = new StringBuilder();
@@ -23,18 +22,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.IsNull(row3);
+            Assert.Null(row3);
 
-            Assert.AreEqual("value1.1", row1[0]);
-            Assert.AreEqual("value1.2", row1[1]);
-            Assert.AreEqual("value1.3", row1[2]);
+            Assert.Equal("value1.1", row1[0]);
+            Assert.Equal("value1.2", row1[1]);
+            Assert.Equal("value1.3", row1[2]);
 
-            Assert.AreEqual("value2.1", row2[0]);
-            Assert.AreEqual("value2.2", row2[1]);
-            Assert.AreEqual("value2.3", row2[2]);
+            Assert.Equal("value2.1", row2[0]);
+            Assert.Equal("value2.2", row2[1]);
+            Assert.Equal("value2.3", row2[2]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_RowWithHeader()
         {
             var sb = new StringBuilder();
@@ -49,18 +48,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.IsNull(row3);
+            Assert.Null(row3);
 
-            Assert.AreEqual("value1.1", row1["column1"]);
-            Assert.AreEqual("value1.2", row1["column2"]);
-            Assert.AreEqual("value1.3", row1["column3"]);
+            Assert.Equal("value1.1", row1["column1"]);
+            Assert.Equal("value1.2", row1["column2"]);
+            Assert.Equal("value1.3", row1["column3"]);
 
-            Assert.AreEqual("value2.1", row2["column1"]);
-            Assert.AreEqual("value2.2", row2["column2"]);
-            Assert.AreEqual("value2.3", row2["column3"]);
+            Assert.Equal("value2.1", row2["column1"]);
+            Assert.Equal("value2.2", row2["column2"]);
+            Assert.Equal("value2.3", row2["column3"]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_MultiLineQuotedValue()
         {
             var sb = new StringBuilder();
@@ -75,18 +74,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.IsNull(row3);
+            Assert.Null(row3);
 
-            Assert.AreEqual("value1.1", row1["column1"]);
-            Assert.AreEqual("value1.2\r\nline2", row1["column2"]);
-            Assert.AreEqual("value1.3", row1["column3"]);
+            Assert.Equal("value1.1", row1["column1"]);
+            Assert.Equal("value1.2\r\nline2", row1["column2"]);
+            Assert.Equal("value1.3", row1["column3"]);
 
-            Assert.AreEqual("value2.1", row2["column1"]);
-            Assert.AreEqual("value2.2", row2["column2"]);
-            Assert.AreEqual("value2.3", row2["column3"]);
+            Assert.Equal("value2.1", row2["column1"]);
+            Assert.Equal("value2.2", row2["column2"]);
+            Assert.Equal("value2.3", row2["column3"]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_QuoteInTheMiddleOfAValue()
         {
             var sb = new StringBuilder();
@@ -96,10 +95,10 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.AreEqual("a\"c", row1[0]);
+            Assert.Equal("a\"c", row1[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_QuoteAtTheStartOfAValue()
         {
             var sb = new StringBuilder();
@@ -109,10 +108,10 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.AreEqual("\"bc", row1[0]);
+            Assert.Equal("\"bc", row1[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_QuoteAtTheEndOfAValue()
         {
             var sb = new StringBuilder();
@@ -122,10 +121,10 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.AreEqual("ab\"", row1[0]);
+            Assert.Equal("ab\"", row1[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public async Task CsvReader_QuoteAndSeparator()
         {
             var sb = new StringBuilder();
@@ -137,8 +136,8 @@ namespace Meziantou.Framework.Csv.Tests
             reader.Separator = '\t';
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.AreEqual("ab", row1[0]);
-            Assert.AreEqual("cd", row1[1]);
+            Assert.Equal("ab", row1[0]);
+            Assert.Equal("cd", row1[1]);
         }
     }
 }

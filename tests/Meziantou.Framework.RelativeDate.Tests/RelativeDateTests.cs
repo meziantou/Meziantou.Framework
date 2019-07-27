@@ -1,31 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
-    [DoNotParallelize] // because DateTimeService.Clock is static
+    [Collection("RelativeDateTests")] // because DateTimeService.Clock is static
     public class RelativeDateTests
     {
-        [TestMethod]
+        [Fact]
         public void DateInTheFuture_ThrowNotSupportedException()
         {
             DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
-            Assert.ThrowsException<NotSupportedException>(() => new RelativeDate(new DateTime(2018, 1, 2)).ToString());
+            Assert.Throws<NotSupportedException>(() => new RelativeDate(new DateTime(2018, 1, 2)).ToString());
         }
 
-        [TestMethod]
+        [Fact]
         public void DefaultDate_ToString()
         {
             DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
             var result = new RelativeDate(default).ToString();
-            Assert.AreEqual("2018 years ago", result);
+            Assert.Equal("2018 years ago", result);
         }
 
-        [DataTestMethod]
-        [DynamicData(nameof(RelativeDate_ToString_Data), DynamicDataSourceType.Property)]
+        [Theory]
+        [MemberData(nameof(RelativeDate_ToString_Data))]
         public void RelativeDate_ToString(string dateTimeStr, string nowStr, DateTimeKind kind, string expectedValueEn, string expectedValueFr)
         {
             var now = DateTime.SpecifyKind(DateTime.Parse(nowStr, CultureInfo.InvariantCulture), kind);
@@ -34,18 +33,16 @@ namespace Meziantou.Framework.Tests
             DateTimeService.Clock = new Clock(now);
             var relativeDate = new RelativeDate(dateTime);
             var resultEn = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
-            Assert.AreEqual(expectedValueEn, resultEn);
+            Assert.Equal(expectedValueEn, resultEn);
 
             var resultEs = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("es-ES"));
-            Assert.AreEqual(expectedValueEn, resultEs);
+            Assert.Equal(expectedValueEn, resultEs);
 
             var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
-            Assert.AreEqual(expectedValueFr, resultFr);
+            Assert.Equal(expectedValueFr, resultFr);
         }
 
-#pragma warning disable IDE0052 // Remove unread private members
-        private static IEnumerable<object[]> RelativeDate_ToString_Data
-#pragma warning restore IDE0052 // Remove unread private members
+        public static IEnumerable<object[]> RelativeDate_ToString_Data
         {
             get
             {

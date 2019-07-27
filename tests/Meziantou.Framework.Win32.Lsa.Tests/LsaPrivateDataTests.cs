@@ -1,24 +1,12 @@
-using System.Security.Principal;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using TestUtilities;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Lsa.Tests
 {
-    [TestClass]
-    [DoNotParallelize]
-    public class LsaPrivateDataTests
+    [Collection("LsaPrivateDataTests")]
+    public sealed class LsaPrivateDataTests
     {
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext _)
-        {
-            var identity = WindowsIdentity.GetCurrent();
-            var principal = new WindowsPrincipal(identity);
-            if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
-            {
-                Assert.Inconclusive("Current user is not in the administator group");
-            }
-        }
-
-        [TestMethod]
+        [RunIfWindowsAdministratorFact]
         public void LsaPrivateData_SetGetRemove()
         {
             // Set
@@ -26,20 +14,20 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
 
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            Assert.AreEqual("test", value);
+            Assert.Equal("test", value);
 
             // Remove
             LsaPrivateData.RemoveValue("LsaPrivateDataTests");
             value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            Assert.AreEqual("", value);
+            Assert.Equal("", value);
         }
 
-        [TestMethod]
+        [RunIfWindowsAdministratorFact]
         public void LsaPrivateData_GetUnsetValue()
         {
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
-            Assert.IsNull(value);
+            Assert.Null(value);
         }
     }
 }

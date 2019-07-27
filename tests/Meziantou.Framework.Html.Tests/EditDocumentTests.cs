@@ -1,11 +1,10 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
-    [TestClass]
     public class EditDocumentTests
     {
-        [TestMethod]
+        [Fact]
         public void EditDocument_ChangeTextNodeValue()
         {
             var document = new HtmlDocument();
@@ -14,10 +13,10 @@ namespace Meziantou.Framework.Html.Tests
             node.Value = "edited";
 
             var html = document.OuterHtml;
-            Assert.AreEqual("<div><p>edited</p><p>sample2</p></div>", html);
+            Assert.Equal("<div><p>edited</p><p>sample2</p></div>", html);
         }
 
-        [TestMethod]
+        [Fact]
         public void EditDocument_AddElement()
         {
             var document = new HtmlDocument();
@@ -29,7 +28,7 @@ namespace Meziantou.Framework.Html.Tests
             node.AppendChild(anchorElement);
 
             var html = document.OuterHtml;
-            Assert.AreEqual("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>", html);
+            Assert.Equal("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>", html);
         }
     }
 }

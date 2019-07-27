@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DebouceExtensionsTests
     {
-        [TestMethod]
-        [Ignore("Fails in CI")]
+        [Fact(Skip = "Fails in CI")]
         public async Task DebounceTests()
         {
             var count = 0;
@@ -17,7 +15,7 @@ namespace Meziantou.Framework.Tests
             debounced();
             debounced();
             await Task.Delay(70).ConfigureAwait(false);
-            Assert.AreEqual(1, count);
+            Assert.Equal(1, count);
 
             debounced();
             await Task.Delay(15).ConfigureAwait(false);
@@ -28,11 +26,10 @@ namespace Meziantou.Framework.Tests
             debounced();
 
             await Task.Delay(50).ConfigureAwait(false);
-            Assert.AreEqual(2, count);
+            Assert.Equal(2, count);
         }
 
-        [TestMethod]
-        [Ignore("Fails in CI")]
+        [Fact(Skip = "Fails in CI")]
         public async Task Debounce_CallActionsWithArgumentsOfTheLastCall()
         {
             int lastArg = default;
@@ -41,7 +38,7 @@ namespace Meziantou.Framework.Tests
             debounced(1);
             debounced(2);
             await Task.Delay(1).ConfigureAwait(false);
-            Assert.AreEqual(2, lastArg);
+            Assert.Equal(2, lastArg);
         }
     }
 }

@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Linq;
 using Meziantou.Framework.Collections;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections
 {
-    [TestClass]
     public class LimitListTests
     {
-        [TestMethod]
+        [Fact]
         public void AddFirst_01()
         {
             // Arrange
@@ -19,10 +18,10 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddFirst(2);
 
             // Assert
-            CollectionAssert.AreEquivalent(new int[] { 2, 1 }, list.ToList());
+            Assert.Equal(new int[] { 2, 1 }, list.ToList());
         }
 
-        [TestMethod]
+        [Fact]
         public void AddFirst_02()
         {
             // Arrange
@@ -35,10 +34,10 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddFirst(4);
 
             // Assert
-            CollectionAssert.AreEquivalent(new int[] { 4, 3, 2 }, list.ToList());
+            Assert.Equal(new int[] { 4, 3, 2 }, list.ToList());
         }
 
-        [TestMethod]
+        [Fact]
         public void AddLast_01()
         {
             // Arrange
@@ -49,10 +48,10 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddLast(2);
 
             // Assert
-            CollectionAssert.AreEquivalent(new int[] { 1, 2 }, list.ToList());
+            Assert.Equal(new int[] { 1, 2 }, list.ToList());
         }
 
-        [TestMethod]
+        [Fact]
         public void AddLast_02()
         {
             // Arrange
@@ -65,10 +64,10 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddLast(4);
 
             // Assert
-            CollectionAssert.AreEquivalent(new int[] { 2, 3, 4 }, list.ToList());
+            Assert.Equal(new int[] { 2, 3, 4 }, list.ToList());
         }
 
-        [TestMethod]
+        [Fact]
         public void IndexOf_01()
         {
             // Arrange
@@ -81,10 +80,10 @@ namespace Meziantou.Framework.Tests.Collections
             var index = list.IndexOf(2);
 
             // Assert
-            Assert.AreEqual(1, index);
+            Assert.Equal(1, index);
         }
 
-        [TestMethod]
+        [Fact]
         public void IndexOf_02()
         {
             // Arrange
@@ -98,10 +97,10 @@ namespace Meziantou.Framework.Tests.Collections
             var index = list.IndexOf(1);
 
             // Assert
-            Assert.AreEqual(-1, index);
+            Assert.Equal(-1, index);
         }
 
-        [TestMethod]
+        [Fact]
         public void Count_01()
         {
             // Arrange
@@ -113,10 +112,10 @@ namespace Meziantou.Framework.Tests.Collections
             var count = list.Count;
 
             // Assert
-            Assert.AreEqual(2, count);
+            Assert.Equal(2, count);
         }
 
-        [TestMethod]
+        [Fact]
         public void Contains_01()
         {
             // Arrange
@@ -128,10 +127,10 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(2);
 
             // Assert
-            Assert.AreEqual(true, result);
+            Assert.True(result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Contains_02()
         {
             // Arrange
@@ -143,10 +142,10 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(3);
 
             // Assert
-            Assert.AreEqual(false, result);
+            Assert.False(result);
         }
 
-        [TestMethod]
+        [Fact]
         public void Remove_01()
         {
             // Arrange
@@ -158,12 +157,12 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(1);
 
             // Assert
-            Assert.AreEqual(true, result);
-            Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(2, list[0]);
+            Assert.True(result);
+            Assert.Single(list);
+            Assert.Equal(2, list[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Remove_02()
         {
             // Arrange
@@ -176,13 +175,13 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(2);
 
             // Assert
-            Assert.IsTrue(result);
-            Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(1, list[0]);
-            Assert.AreEqual(3, list[1]);
+            Assert.True(result);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0]);
+            Assert.Equal(3, list[1]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Remove_03()
         {
             // Arrange
@@ -193,12 +192,12 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(4);
 
             // Assert
-            Assert.IsFalse(result);
-            Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(1, list[0]);
+            Assert.False(result);
+            Assert.Single(list);
+            Assert.Equal(1, list[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Indexer_01()
         {
             // Arrange
@@ -209,11 +208,11 @@ namespace Meziantou.Framework.Tests.Collections
             list[0] = 10;
 
             // Assert
-            Assert.AreEqual(1, list.Count);
-            Assert.AreEqual(10, list[0]);
+            Assert.Single(list);
+            Assert.Equal(10, list[0]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Indexer_02()
         {
             // Arrange
@@ -224,22 +223,22 @@ namespace Meziantou.Framework.Tests.Collections
             list[1] = 10;
 
             // Assert
-            Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(1, list[0]);
-            Assert.AreEqual(10, list[1]);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0]);
+            Assert.Equal(10, list[1]);
         }
 
-        [TestMethod]
+        [Fact]
         public void Indexer_03()
         {
             // Arrange
             var list = new LimitList<int>(3);
 
             // Act/Assert
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => list[1] = 10);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[1] = 10);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAt()
         {
             // Arrange
@@ -252,9 +251,9 @@ namespace Meziantou.Framework.Tests.Collections
             list.RemoveAt(1);
 
             // Assert
-            Assert.AreEqual(2, list.Count);
-            Assert.AreEqual(1, list[0]);
-            Assert.AreEqual(3, list[1]);
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0]);
+            Assert.Equal(3, list[1]);
         }
     }
 }

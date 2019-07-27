@@ -1,12 +1,11 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DateTimeUtilitiesTests
     {
-        [TestMethod]
+        [Fact]
         public void StartOfWeek_01()
         {
             // Arrange
@@ -17,10 +16,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2015, 05, 17);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void StartOfWeek_02()
         {
             // Arrange
@@ -31,10 +30,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2015, 05, 11);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_01()
         {
             // Arrange
@@ -46,10 +45,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2005, 01, 03);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_02()
         {
             // Arrange
@@ -61,10 +60,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2005, 12, 26);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_03()
         {
             // Arrange
@@ -76,10 +75,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2006, 1, 2);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_04()
         {
             // Arrange
@@ -91,10 +90,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2006, 12, 25);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_05()
         {
             // Arrange
@@ -106,10 +105,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2007, 12, 31);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_06()
         {
             // Arrange
@@ -121,10 +120,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2008, 12, 22);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_07()
         {
             // Arrange
@@ -136,10 +135,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2008, 12, 29);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void FirstDateOfWeekIso8601_08()
         {
             // Arrange
@@ -151,10 +150,10 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2009, 12, 28);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void TruncateMilliseconds()
         {
             // Arrange
@@ -165,7 +164,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
     }
 }

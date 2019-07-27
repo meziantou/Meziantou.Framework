@@ -1,64 +1,63 @@
 ﻿using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class DefaultConverterTests_Int32To
     {
-        [TestMethod]
+        [Fact]
         public void TryConvert_Int32ToCultureInfo_LcidAsInt()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual("en-US", value.Name);
+            Assert.True(converted);
+            Assert.Equal("en-US", value.Name);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_Int32ToInt64()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out long value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual(15L, value);
+            Assert.True(converted);
+            Assert.Equal(15L, value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_Int32ToInt16()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out short value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual((short)15, value);
+            Assert.True(converted);
+            Assert.Equal((short)15, value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_Int32ToUInt16()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out ushort value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual((ushort)15, value);
+            Assert.True(converted);
+            Assert.Equal((ushort)15, value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_Int32ToByteArray()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
 
-            Assert.IsTrue(converted);
-            CollectionAssert.AreEqual(new byte[] { 0x78, 0x56, 0x34, 0x12 }, value);
+            Assert.True(converted);
+            Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, value);
         }
     }
 }

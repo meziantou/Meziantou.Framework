@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests
 {
     public partial class RecurrenceRuleTests
     {
-        [TestMethod]
+        [Fact]
         public void Daily_EveryDayInJanuaryFor3years()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests
 {
-    [TestClass]
     public partial class RecurrenceRuleTests
     {
         private static void AssertOccurrencesStartWith(IEnumerable<DateTime> occurrences, params DateTime[] expectedOccurrences)
@@ -26,7 +25,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 while (enumerator1.MoveNext() && enumerator2.MoveNext())
                 {
                     occurrenceCount++;
-                    Assert.AreEqual(enumerator2.Current, enumerator1.Current);
+                    Assert.Equal(enumerator2.Current, enumerator1.Current);
                 }
             }
 
@@ -36,7 +35,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 {
                     if (maxOccurences > occurrenceCount)
                     {
-                        Assert.Fail("There are more occurences than expected.");
+                        Assert.True(false, "There are more occurences than expected.");
                     }
 
                     occurrenceCount++;
@@ -46,12 +45,12 @@ namespace Meziantou.Framework.Scheduling.Tests
             {
                 if (checkEnd && !enumerator1.MoveNext())
                 {
-                    Assert.Fail("There are more occurences than expected.");
+                    Assert.True(false, "There are more occurences than expected.");
                 }
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_For3ccurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;COUNT=3");
@@ -64,7 +63,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_WithUntil()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=19970904T070000Z");
@@ -77,7 +76,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_Forever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY");
@@ -90,7 +89,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_Interval()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;INTERVAL=2");
@@ -103,7 +102,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 06, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_WithInterval_Until1()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;INTERVAL=2;UNTIL=19970904T070000Z");
@@ -115,7 +114,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Daily_WithInterval_Until2()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;INTERVAL=2;UNTIL=19970905T070000Z");
@@ -127,7 +126,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 09, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_For10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;COUNT=10");
@@ -147,7 +146,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 11, 04, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_Until_1997_12_24()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=19971224T000000Z");
@@ -174,7 +173,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 12, 23, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_EveryOtherWeekForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;WKST=SU");
@@ -195,7 +194,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 01, 20, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_TuesdayAndThursdayFor5Weeks()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=19971007T000000Z;WKST=SU;BYDAY=TU,TH");
@@ -215,7 +214,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 10, 02, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_WeekStart01()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;COUNT=4;BYDAY=TU,SU;WKST=MO");
@@ -229,7 +228,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 08, 24, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Weekly_WeekStart02()
         {
             var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;INTERVAL=2;COUNT=4;BYDAY=TU,SU;WKST=SU");
@@ -243,7 +242,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 08, 31, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_1stFridayForTenOccurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=10;BYDAY=1FR");
@@ -263,7 +262,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 06, 05, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_1stFridayUntil1997_12_24()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;UNTIL=19971224T000000Z;BYDAY=1FR");
@@ -277,7 +276,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 12, 05, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_EveryOtherMonthOnThe1stAndLastSundayOfTheMonthFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=1SU,-1SU");
@@ -297,7 +296,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 05, 31, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_OnTheSecondToLastMondayOfTheMonthFor6Months()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=6;BYDAY=-2MO");
@@ -313,7 +312,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 02, 16, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_OnTheThirdToTheLastDayOfTheMonthForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYMONTHDAY=-3");
@@ -329,7 +328,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 02, 26, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_OnThe2ndAnd15thOfTheMonthFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=10;BYMONTHDAY=2,15");
@@ -349,7 +348,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 01, 15, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_OnTheFirstAndLastDayOfTheMonthFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=10;BYMONTHDAY=1,-1");
@@ -369,7 +368,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 02, 01, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_Every18MonthsOnThe10thThru15thOfTheMonthFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;INTERVAL=18;COUNT=10;BYMONTHDAY=10,11,12,13,14,15");
@@ -389,7 +388,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1999, 03, 13, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_EveryTuesdayEveryOtherMonth()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;INTERVAL=2;BYDAY=TU");
@@ -417,7 +416,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 03, 31, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_The3rdInstanceIntoTheMonthOfOneOfTuesdayWednesdayOrThursdayForTheNext3Months()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;COUNT=3;BYDAY=TU,WE,TH;BYSETPOS=3");
@@ -430,7 +429,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1997, 11, 06, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_The2ndToLastWeekdayOfTheMonth()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-2");
@@ -447,7 +446,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 03, 30, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_EveryFridayThe13thForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=FR;BYMONTHDAY=13");
@@ -462,7 +461,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(2000, 10, 13, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Monthly_TheFirstSaturdayThatFollowsTheFirstSundayOfTheMonthForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;BYDAY=SA;BYMONTHDAY=7,8,9,10,11,12,13");
@@ -482,7 +481,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1998, 06, 13, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EverydayInJanuaryFor3Years01()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;UNTIL=20000131T090000Z;BYMONTH=1;BYDAY=SU,MO,TU,WE,TH,FR,SA");
@@ -501,7 +500,7 @@ namespace Meziantou.Framework.Scheduling.Tests
             AssertOccurrences(occurrences, expectedDates.ToArray());
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EverydayInJanuaryFor3Years02()
         {
             var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T090000Z;BYMONTH=1");
@@ -520,7 +519,7 @@ namespace Meziantou.Framework.Scheduling.Tests
             AssertOccurrences(occurrences, expectedDates.ToArray());
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_InJuneAndJulyFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;COUNT=10;BYMONTH=6,7");
@@ -540,7 +539,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(2001, 07, 10, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EveryOtherYearOnJanuaryFebruaryAndMarchFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;INTERVAL=2;COUNT=10;BYMONTH=1,2,3");
@@ -560,7 +559,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(2003, 03, 10, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_Every3rdYearOnThe1st_100thAnd200thDayFor10Occurrences()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;INTERVAL=3;COUNT=10;BYYEARDAY=1,100,200");
@@ -580,7 +579,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(2006, 01, 01, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_Every20thMondayOfTheYearForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYDAY=20MO");
@@ -594,7 +593,7 @@ namespace Meziantou.Framework.Scheduling.Tests
         }
 
         // Currently we do not support BYWEEKNO
-        //[TestMethod]
+        //[Fact]
         //public void Yearly_MondayOfWeekNumber20Forever()
         //{
         //    RecurrenceRule rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYWEEKNO=20;BYDAY=MO");
@@ -607,7 +606,7 @@ namespace Meziantou.Framework.Scheduling.Tests
         //        new DateTime(1999, 05, 17, 09, 00, 00));
         //}
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EveryThursdayInMarchForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYMONTH=3;BYDAY=TH");
@@ -628,7 +627,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1999, 03, 25, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EveryThursdayButOnlyDuringJuneJulyAndAugustForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;BYDAY=TH;BYMONTH=6,7,8");
@@ -677,7 +676,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 new DateTime(1999, 08, 26, 09, 00, 00));
         }
 
-        [TestMethod]
+        [Fact]
         public void Yearly_EveryFourYearsTheFirstTuesdayAfterAMondayInNovemberForever()
         {
             var rrule = RecurrenceRule.Parse("FREQ=YEARLY;INTERVAL=4;BYMONTH=11;BYDAY=TU;BYMONTHDAY=2,3,4,5,6,7,8");

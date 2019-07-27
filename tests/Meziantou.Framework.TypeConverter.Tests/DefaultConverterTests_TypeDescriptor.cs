@@ -1,14 +1,13 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Globalization;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
-    public class DefaultConverterTests_TypeDescriptor
+    public sealed class DefaultConverterTests_TypeDescriptor
     {
-        private class CustomTypeConverter : TypeConverter
+        private sealed class CustomTypeConverter : TypeConverter
         {
             public static Dummy Instance { get; } = new Dummy();
 
@@ -38,29 +37,29 @@ namespace Meziantou.Framework.Tests
         {
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_TypeConverter_ConvertTo()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new Dummy(), cultureInfo, out int value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual(10, value);
+            Assert.True(converted);
+            Assert.Equal(10, value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_TypeConverter_ConvertFrom()
         {
             var converter = new DefaultConverter();
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(1, cultureInfo, out Dummy value);
 
-            Assert.IsTrue(converted);
-            Assert.AreEqual(CustomTypeConverter.Instance, value);
+            Assert.True(converted);
+            Assert.Equal(CustomTypeConverter.Instance, value);
         }
 
-        [TestMethod]
+        [Fact]
         public void TryConvert_TypeConverter_ConvertFrom_NoMatchingTypeConverter()
         {
             var converter = new DefaultConverter();
@@ -68,7 +67,7 @@ namespace Meziantou.Framework.Tests
 
             var converted = converter.TryChangeType("", cultureInfo, out Dummy _);
 
-            Assert.IsFalse(converted);
+            Assert.False(converted);
         }
     }
 }

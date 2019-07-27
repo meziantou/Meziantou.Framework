@@ -1,22 +1,21 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests
 {
-    [TestClass]
     public class PerceivedTests
     {
-        [TestMethod]
+        [Fact]
         public void GetPerceivedType01()
         {
             var perceived = Perceived.GetPerceivedType(".txt");
-            Assert.AreEqual(PerceivedType.Text, perceived.PerceivedType);
+            Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetPerceivedType02()
         {
             var perceived = Perceived.GetPerceivedType(".avi");
-            Assert.AreEqual(PerceivedType.Video, perceived.PerceivedType);
+            Assert.Equal(PerceivedType.Video, perceived.PerceivedType);
         }
     }
 }

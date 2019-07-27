@@ -14,8 +14,8 @@ steps:
 - task: DotNetCoreInstaller@0
   displayName: 'Use .NET Core sdk'
   inputs:
-    version: 3.0.100-preview6-012264
-
+    version: 3.0.100-preview7-012821
+    
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:
@@ -27,9 +27,8 @@ steps:
   inputs:
     command: test
     arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
-    projects: 'tests/**/*.csproj'
+    projects: 'tests/**/*Tests.csproj'
     nobuild: true
-
 - script: |
     dotnet tool install -g dotnet-reportgenerator-globaltool
     reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura

@@ -1,174 +1,172 @@
 ﻿using System.Collections.Generic;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    [TestClass]
     public class StringSearchUtilitiesTests
     {
-        [DataTestMethod]
-        [DataRow("", "", 0)]
-        [DataRow("aa", "", 2)]
-        [DataRow("", "aa", 2)]
-        [DataRow("test", "Test", 1)]
-        [DataRow("chien", "chienne", 2)]
-        [DataRow("Cat", "Cat", 0)]
-        [DataRow("Car", "Kart", 2)]
+        [Theory]
+        [InlineData("", "", 0)]
+        [InlineData("aa", "", 2)]
+        [InlineData("", "aa", 2)]
+        [InlineData("test", "Test", 1)]
+        [InlineData("chien", "chienne", 2)]
+        [InlineData("Cat", "Cat", 0)]
+        [InlineData("Car", "Kart", 2)]
         public void Levenshtein_Tests(string word1, string word2, int expected)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.Levenshtein(word1, word2));
+            Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1, word2));
         }
 
-        [DataTestMethod]
-        [DataRow(0b101010u, 0b101010u, 0u)]
-        [DataRow(0b010101u, 0b101010u, 6u)]
-        [DataRow(0b1111u, 0b0u, 4u)]
-        [DataRow(0b11111111u, 0b11110111u, 1u)]
-        public void Hamming_Tests(uint word1, uint word2, uint expected)
+        [Theory]
+        [InlineData(0b101010u, 0b101010u, 0u)]
+        [InlineData(0b010101u, 0b101010u, 6u)]
+        [InlineData(0b1111u, 0b0u, 4u)]
+        [InlineData(0b11111111u, 0b11110111u, 1u)]
+        public void Hamming_Uint32Tests(uint word1, uint word2, uint expected)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.Hamming(word1, word2));
+            Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
         }
 
-        [DataTestMethod]
-        [DataRow("ramer", "cases", 3u)]
-        public void Hamming_Tests(string word1, string word2, int expected)
+        [Theory]
+        [InlineData("ramer", "cases", 3u)]
+        public void Hamming_StringTests(string word1, string word2, int expected)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.Hamming(word1, word2));
+            Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
         }
 
-        [TestMethod]
+        [Fact]
         public void Soundex_Test()
         {
             var soundex = StringSearchUtilities.Soundex("", new Dictionary<char, byte>());
-            Assert.AreEqual("0000", soundex);
+            Assert.Equal("0000", soundex);
         }
 
-        [DataTestMethod]
-        [DataRow("R163", "Robert")]
-        [DataRow("R163", "Rupert")]
-        [DataRow("R150", "Rubin")]
-        [DataRow("H400", "Hello")]
-        [DataRow("E460", "Euler")]
-        [DataRow("E460", "Ellery")]
-        [DataRow("G200", "Gauss")]
-        [DataRow("G200", "Ghosh")]
-        [DataRow("H416", "Hilbert")]
-        [DataRow("H416", "Heilbronn")]
-        [DataRow("K530", "Knuth")]
-        [DataRow("K530", "Kant")]
-        [DataRow("L300", "Ladd")]
-        [DataRow("L300", "Lloyd")]
-        [DataRow("L222", "Lukasiewicz")]
-        [DataRow("L222", "Lissajous")]
-        [DataRow("L222", "Lishsajwjous")]
-        [DataRow("A462", "Allricht")]
-        [DataRow("E166", "Eberhard")]
-        [DataRow("E521", "Engebrethson")]
-        [DataRow("H512", "Heimbach")]
-        [DataRow("H524", "Hanselmann")]
-        [DataRow("H524", "Henzelmann")]
-        [DataRow("H431", "Hildebrand")]
-        [DataRow("K152", "Kavanagh")]
-        [DataRow("L530", " Lind, Van")]
-        [DataRow("L222", "Lukaschowsky")]
-        [DataRow("M235", "McDonnell")]
-        [DataRow("M200", "McGee")]
-        [DataRow("O165", "O'Brien")]
-        [DataRow("O155", "Opnian")]
-        [DataRow("O155", "Oppenheimer")]
-        [DataRow("S460", "Swhgler")]
-        [DataRow("R355", "Riedemanas")]
-        [DataRow("Z300", "Zita")]
-        [DataRow("Z325", "Zitzmeinn")]
+        [Theory]
+        [InlineData("R163", "Robert")]
+        [InlineData("R163", "Rupert")]
+        [InlineData("R150", "Rubin")]
+        [InlineData("H400", "Hello")]
+        [InlineData("E460", "Euler")]
+        [InlineData("E460", "Ellery")]
+        [InlineData("G200", "Gauss")]
+        [InlineData("G200", "Ghosh")]
+        [InlineData("H416", "Hilbert")]
+        [InlineData("H416", "Heilbronn")]
+        [InlineData("K530", "Knuth")]
+        [InlineData("K530", "Kant")]
+        [InlineData("L300", "Ladd")]
+        [InlineData("L300", "Lloyd")]
+        [InlineData("L222", "Lukasiewicz")]
+        [InlineData("L222", "Lissajous")]
+        [InlineData("L222", "Lishsajwjous")]
+        [InlineData("A462", "Allricht")]
+        [InlineData("E166", "Eberhard")]
+        [InlineData("E521", "Engebrethson")]
+        [InlineData("H512", "Heimbach")]
+        [InlineData("H524", "Hanselmann")]
+        [InlineData("H524", "Henzelmann")]
+        [InlineData("H431", "Hildebrand")]
+        [InlineData("K152", "Kavanagh")]
+        [InlineData("L530", " Lind, Van")]
+        [InlineData("L222", "Lukaschowsky")]
+        [InlineData("M235", "McDonnell")]
+        [InlineData("M200", "McGee")]
+        [InlineData("O165", "O'Brien")]
+        [InlineData("O155", "Opnian")]
+        [InlineData("O155", "Oppenheimer")]
+        [InlineData("S460", "Swhgler")]
+        [InlineData("R355", "Riedemanas")]
+        [InlineData("Z300", "Zita")]
+        [InlineData("Z325", "Zitzmeinn")]
         public void SoundexEnglish_Test(string expected, string value)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.SoundexEnglish(value));
+            Assert.Equal(expected, StringSearchUtilities.SoundexEnglish(value));
         }
 
-        [DataTestMethod]
-        [DataRow("    ", "")]
-        [DataRow("MRTN", "MARTIN")]
-        [DataRow("BRNR", "BERNARD")]
-        [DataRow("FR  ", "FAURE")]
-        [DataRow("PRZ ", "PEREZ")]
-        [DataRow("GR  ", "GROS")]
-        [DataRow("CHP ", "CHAPUIS ")]
-        [DataRow("BYR ", "BOYER")]
-        [DataRow("KTR ", "GAUTHIER")]
-        [DataRow("RY  ", "REY")]
-        [DataRow("BRTL", "BARTHELEMY")]
-        [DataRow("ANR ", "HENRY")]
-        [DataRow("MLN ", "MOULIN")]
-        [DataRow("RS  ", "ROUSSEAU")]
-        [DataRow("RS  ", "YROUSSYEAU")]
+        [Theory]
+        [InlineData("    ", "")]
+        [InlineData("MRTN", "MARTIN")]
+        [InlineData("BRNR", "BERNARD")]
+        [InlineData("FR  ", "FAURE")]
+        [InlineData("PRZ ", "PEREZ")]
+        [InlineData("GR  ", "GROS")]
+        [InlineData("CHP ", "CHAPUIS ")]
+        [InlineData("BYR ", "BOYER")]
+        [InlineData("KTR ", "GAUTHIER")]
+        [InlineData("RY  ", "REY")]
+        [InlineData("BRTL", "BARTHELEMY")]
+        [InlineData("ANR ", "HENRY")]
+        [InlineData("MLN ", "MOULIN")]
+        [InlineData("RS  ", "ROUSSEAU")]
+        [InlineData("RS  ", "YROUSSYEAU")]
         public void Soundex2_Test(string expected, string value)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.Soundex2(value));
+            Assert.Equal(expected, StringSearchUtilities.Soundex2(value));
         }
 
-        [DataTestMethod]
-        [DataRow("T830", "test")]
-        [DataRow("H560", "Henry")]
-        [DataRow("R000", "ray")]
-        [DataRow("R000", "rey")]
-        [DataRow("R000", "REY")]
-        [DataRow("R000", "RAY")]
+        [Theory]
+        [InlineData("T830", "test")]
+        [InlineData("H560", "Henry")]
+        [InlineData("R000", "ray")]
+        [InlineData("R000", "rey")]
+        [InlineData("R000", "REY")]
+        [InlineData("R000", "RAY")]
         public void SoundexFrench_Test(string expected, string value)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.SoundexFrench(value));
+            Assert.Equal(expected, StringSearchUtilities.SoundexFrench(value));
         }
 
-        [DataTestMethod]
-        [DataRow("TSTN", "testing")]
-        [DataRow("0", "The")]
-        [DataRow("KK", "quick")]
-        [DataRow("BRN", "brown")]
-        [DataRow("FKS", "fox")]
-        [DataRow("JMPT", "jumped")]
-        [DataRow("OFR", "over")]
-        [DataRow("LS", "lazy")]
-        [DataRow("TKS", "dogs")]
-        [DataRow("TMP", "dump")]
-        [DataRow("XFKS", "cheveux")]
-        [DataRow("SKFK", "scheveux")]
-        [DataRow("SFKS", "sciveux")]
-        [DataRow("SKKF", "sccuveux")]
-        [DataRow("KHLN", "khalens")]
-        [DataRow("SFKS", "scyveux")]
-        [DataRow("BSN", "buisson")]
-        [DataRow("BB", "bebe")]
-        [DataRow("LXS", "lacias")]
-        [DataRow("TJKS", "dijkstra")]
-        [DataRow("TJKS", "djikstra")]
-        [DataRow("JKST", "dgikstra")]
-        [DataRow("JKST", "dgekstra")]
-        [DataRow("TKKS", "dgakstra")]
-        [DataRow("KST", "ghost")]
-        [DataRow("0R", "through")]
-        [DataRow("NM", "gnome")]
-        [DataRow("KSK", "chzkou")]
-        [DataRow("BLKK", "blaggyguest")]
-        [DataRow("AXXX", "atiatiotch")]
+        [Theory]
+        [InlineData("TSTN", "testing")]
+        [InlineData("0", "The")]
+        [InlineData("KK", "quick")]
+        [InlineData("BRN", "brown")]
+        [InlineData("FKS", "fox")]
+        [InlineData("JMPT", "jumped")]
+        [InlineData("OFR", "over")]
+        [InlineData("LS", "lazy")]
+        [InlineData("TKS", "dogs")]
+        [InlineData("TMP", "dump")]
+        [InlineData("XFKS", "cheveux")]
+        [InlineData("SKFK", "scheveux")]
+        [InlineData("SFKS", "sciveux")]
+        [InlineData("SKKF", "sccuveux")]
+        [InlineData("KHLN", "khalens")]
+        [InlineData("SFKS", "scyveux")]
+        [InlineData("BSN", "buisson")]
+        [InlineData("BB", "bebe")]
+        [InlineData("LXS", "lacias")]
+        [InlineData("TJKS", "dijkstra")]
+        [InlineData("TJKS", "djikstra")]
+        [InlineData("JKST", "dgikstra")]
+        [InlineData("JKST", "dgekstra")]
+        [InlineData("TKKS", "dgakstra")]
+        [InlineData("KST", "ghost")]
+        [InlineData("0R", "through")]
+        [InlineData("NM", "gnome")]
+        [InlineData("KSK", "chzkou")]
+        [InlineData("BLKK", "blaggyguest")]
+        [InlineData("AXXX", "atiatiotch")]
         public void Metaphone_Test(string expected, string value)
         {
-            Assert.AreEqual(expected, StringSearchUtilities.Metaphone(value));
+            Assert.Equal(expected, StringSearchUtilities.Metaphone(value));
         }
 
-        [DataTestMethod]
-        [DataRow("Case", "case")]
-        [DataRow("CASE", "Case")]
-        [DataRow("caSe", "cAsE")]
-        [DataRow("cookie", "quick")]
-        [DataRow("T", "T")]
-        [DataRow("Lorenza", "Lawrence")]
-        [DataRow("Gary", "Cahra")]
-        [DataRow("Aero", "Eure")]
-        [DynamicData(nameof(MetaphoneList), DynamicDataSourceType.Method)]
+        [Theory]
+        [InlineData("Case", "case")]
+        [InlineData("CASE", "Case")]
+        [InlineData("caSe", "cAsE")]
+        [InlineData("cookie", "quick")]
+        [InlineData("T", "T")]
+        [InlineData("Lorenza", "Lawrence")]
+        [InlineData("Aero", "Eure")]
+        [MemberData(nameof(MetaphoneList))]
         public void Metaphone_Test2(string value, string otherValue)
         {
             var v1 = StringSearchUtilities.Metaphone(value);
             var v2 = StringSearchUtilities.Metaphone(otherValue);
-            Assert.AreEqual(v1, v2);
+            Assert.Equal(v1, v2);
         }
 
         public static IEnumerable<object[]> MetaphoneList()

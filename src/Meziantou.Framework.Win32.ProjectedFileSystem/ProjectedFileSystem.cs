@@ -49,9 +49,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 var hr = NativeMethods.PrjMarkDirectoryAsPlaceholder(RootFolder, targetPathName: null, IntPtr.Zero, in _virtualizationInstanceId);
                 hr.EnsureSuccess();
             }
-            catch (DllNotFoundException)
+            catch (DllNotFoundException ex)
             {
-                throw new NotSupportedException("ProjFS is not supported on this machine. Make sure the optional windows feature 'Projected File System' is installed.");
+                throw new NotSupportedException("ProjFS is not supported on this machine. Make sure the optional windows feature 'Projected File System' is installed.", ex);
             }
 
             // Set up the callback table for the projection provider.

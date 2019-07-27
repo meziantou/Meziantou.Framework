@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.ProjectedFileSystem\Meziantou.Framework.Win32.ProjectedFileSystem.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
   </ItemGroup>
 
 </Project>

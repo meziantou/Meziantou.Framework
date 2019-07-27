@@ -160,7 +160,6 @@ namespace Meziantou.Framework.Tests
         [InlineData("cookie", "quick")]
         [InlineData("T", "T")]
         [InlineData("Lorenza", "Lawrence")]
-        [InlineData("Gary", "Cahra")]
         [InlineData("Aero", "Eure")]
         [MemberData(nameof(MetaphoneList))]
         public void Metaphone_Test2(string value, string otherValue)

@@ -165,7 +165,16 @@ namespace Meziantou.Framework
                 {
                     if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     {
-                        await RetryOnSharingViolationAsync(() => childInfo.Delete()).ConfigureAwait(false);
+                        try
+                        {
+                            await RetryOnSharingViolationAsync(() => childInfo.Delete()).ConfigureAwait(false);
+                        }
+                        catch (FileNotFoundException)
+                        {
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                        }
                     }
                     else
                     {
@@ -174,8 +183,17 @@ namespace Meziantou.Framework
                 }
             }
 
-            await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal).ConfigureAwait(false);
-            await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete()).ConfigureAwait(false);
+            try
+            {
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete()).ConfigureAwait(false);
+            }
+            catch (FileNotFoundException)
+            {
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
         }
 
         private static async ValueTask RetryOnSharingViolationAsync(Action action)

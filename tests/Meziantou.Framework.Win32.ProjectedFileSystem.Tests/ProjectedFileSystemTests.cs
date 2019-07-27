@@ -11,10 +11,13 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         {
             public ProjectedFileSystemFactAttribute()
             {
-                using var temporaryDirectory = TemporaryDirectory.Create();
+                var guid = Guid.NewGuid();
+                var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+                Directory.CreateDirectory(fullPath);
+
                 try
                 {
-                    using (var vfs = new SampleVirtualFileSystem(temporaryDirectory.FullPath))
+                    using (var vfs = new SampleVirtualFileSystem(Path.GetTempPath()))
                     {
                         var options = new ProjectedFileSystemStartOptions();
                         try
@@ -36,9 +39,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         [ProjectedFileSystemFact]
         public void Test()
         {
-            using var temporaryDirectory = TemporaryDirectory.Create();
+            var guid = Guid.NewGuid();
+            var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+            Directory.CreateDirectory(fullPath);
 
-            using (var vfs = new SampleVirtualFileSystem(temporaryDirectory.FullPath))
+            using (var vfs = new SampleVirtualFileSystem(fullPath))
             {
                 var options = new ProjectedFileSystemStartOptions();
                 options.UseNegativePathCache = false;
@@ -67,25 +72,25 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 // Get content
-                var files = Directory.GetFiles(temporaryDirectory.FullPath);
+                var files = Directory.GetFiles(fullPath);
                 foreach (var result in files)
                 {
                     var fi = new FileInfo(result);
                     var length = fi.Length;
                 }
 
-                var directories = Directory.GetDirectories(temporaryDirectory.FullPath);
+                var directories = Directory.GetDirectories(fullPath);
                 Assert.Single(directories);
                 Assert.Equal("folder", Path.GetFileName(directories[0]));
 
                 // Get unknown file
-                var fi2 = new FileInfo(Path.Combine(temporaryDirectory.FullPath, "unknownfile.txt"));
+                var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
                 Assert.False(fi2.Exists);
                 Assert.Throws<FileNotFoundException>(() => fi2.Length);
 
                 // Get file content
-                Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(temporaryDirectory.FullPath, "a")));
-                using (var stream = File.OpenRead(Path.Combine(temporaryDirectory.FullPath, "b")))
+                Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
+                using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
                 {
                     Assert.Equal(1, stream.ReadByte());
                     Assert.Equal(2, stream.ReadByte());

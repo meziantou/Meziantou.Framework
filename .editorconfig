@@ -227,3 +227,8 @@ dotnet_naming_rule.members_should_be_pascal_case.style = pascal_case_style
 dotnet_naming_symbols.all_members.applicable_kinds = *
 
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+# Meziantou Analyzer
+MA0006.severity = Hidden
+MA0051.severity = Hidden
+MA0053.public_class_should_be_sealed = true

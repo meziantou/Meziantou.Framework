@@ -40,8 +40,6 @@ namespace Meziantou.Framework.Win32
         {
             uint size = MaxBinaryLength * sizeof(byte);
             var resultSid = Marshal.AllocHGlobal((int)size);
-            if (resultSid == IntPtr.Zero)
-                throw new OutOfMemoryException();
 
             try
             {

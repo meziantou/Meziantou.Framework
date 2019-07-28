@@ -25,6 +25,43 @@ namespace Meziantou.Framework
             };
         }
 
+#if NETCOREAPP2_1 || NETCOREAPP3_0
+        private static string ToHexaUpperCase(this byte[] bytes)
+        {
+            return string.Create(bytes.Length * 2, bytes, (span, state) =>
+            {
+                const int AddToAlpha = 55;
+                const int AddToDigit = -7;
+
+                for (var i = 0; i < state.Length; i++)
+                {
+                    var b = state[i] >> 4;
+                    span[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
+
+                    b = state[i] & 0xF;
+                    span[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
+                }
+            });
+        }
+
+        private static string ToHexaLowerCase(this byte[] bytes)
+        {
+            return string.Create(bytes.Length * 2, bytes, (span, state) =>
+            {
+                const int AddToAlpha = 87;
+                const int AddToDigit = -39;
+
+                for (var i = 0; i < state.Length; i++)
+                {
+                    var b = state[i] >> 4;
+                    span[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
+
+                    b = state[i] & 0xF;
+                    span[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
+                }
+            });
+        }
+#elif NET461 || NETSTANDARD2_0
         private static string ToHexaUpperCase(this byte[] bytes)
         {
             const int addToAlpha = 55;
@@ -60,7 +97,9 @@ namespace Meziantou.Framework
 
             return new string(c);
         }
-
+#else
+#error plateform not supported
+#endif
         [Obsolete("Use ParseHexa")]
         public static byte[] FromHexa(string str)
         {
@@ -175,7 +214,7 @@ namespace Meziantou.Framework
             }
         }
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETCOREAPP3_0
         public static string ToHexa(this ReadOnlySpan<byte> bytes)
         {
             return ToHexa(bytes, default);
@@ -285,6 +324,9 @@ namespace Meziantou.Framework
                 return true;
             }
         }
+#elif NETSTANDARD2_0 || NET461
+#else
+#error Platform not supported
 #endif
 
         private static bool TryGetHexValue(char c, out int value)

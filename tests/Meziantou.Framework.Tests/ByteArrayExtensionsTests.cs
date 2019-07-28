@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Tests
             Assert.Throws<ArgumentException>(() => ByteArrayExtensions.ParseHexa("000"));
         }
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETCOREAPP3_0
         [Fact]
         public void ToHexa_Span_UpperCase()
         {
@@ -260,6 +260,9 @@ namespace Meziantou.Framework.Tests
                 ByteArrayExtensions.ParseHexa("000");
             });
         }
+#elif NET461 || NETSTANDARD2_0
+#else
+#error Platform not supported
 #endif
     }
 }

@@ -152,9 +152,6 @@ namespace Meziantou.Framework.Win32
                         var handle = Marshal.AllocHGlobal((int)dwLength);
                         try
                         {
-                            if (handle == IntPtr.Zero)
-                                throw new OutOfMemoryException();
-
                             if (!NativeMethods.GetTokenInformation(_token, type, handle, dwLength, out dwLength))
                                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
@@ -170,7 +167,7 @@ namespace Meziantou.Framework.Win32
                         }
 
                     case NativeMethods.ERROR_INVALID_HANDLE:
-                        throw new ArgumentException("Argument_InvalidImpersonationToken");
+                        throw new ArgumentException("Invalid impersonation token");
 
                     default:
                         throw new Win32Exception(errorCode);

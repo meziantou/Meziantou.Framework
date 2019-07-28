@@ -13,6 +13,9 @@ namespace Meziantou.Framework
     public sealed class TemporaryDirectory : IDisposable
 #if NETCOREAPP3_0
         , IAsyncDisposable
+#elif NET461 || NETSTANDARD2_0 || NETCOREAPP2_1
+#else
+#error Platform not supported
 #endif
     {
         public string FullPath { get; }

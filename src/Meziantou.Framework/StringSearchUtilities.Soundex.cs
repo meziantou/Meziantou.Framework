@@ -144,12 +144,12 @@ namespace Meziantou.Framework
                 }
             }
 
-            ChangePrefixe(sb, "MAC", "MCC");
-            ChangePrefixe(sb, "ASA", "AZA");
-            ChangePrefixe(sb, "KN", "NN");
-            ChangePrefixe(sb, "PF", "FF");
-            ChangePrefixe(sb, "SCH", "SSS");
-            ChangePrefixe(sb, "PH", "FF");
+            ChangePrefix(sb, "MAC", "MCC");
+            ChangePrefix(sb, "ASA", "AZA");
+            ChangePrefix(sb, "KN", "NN");
+            ChangePrefix(sb, "PF", "FF");
+            ChangePrefix(sb, "SCH", "SSS");
+            ChangePrefix(sb, "PH", "FF");
 
             // Remove H except if the previous letter is a C or an S
             var cs = false;
@@ -284,7 +284,7 @@ namespace Meziantou.Framework
             return Soundex(s, dic);
         }
 
-        private static void ChangePrefixe(StringBuilder sb, string prefix, string replace)
+        private static void ChangePrefix(StringBuilder sb, string prefix, string replace)
         {
             if (sb == null)
                 throw new System.ArgumentNullException(nameof(sb));

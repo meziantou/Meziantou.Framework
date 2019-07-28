@@ -5,11 +5,7 @@ using System.Text;
 namespace Meziantou.Framework
 {
     public static partial class StringSearchUtilities
-    {        /// <summary>
-             ///     Compute Metaphone.
-             /// </summary>
-             /// <param name="s"> The string. </param>
-             /// <returns> The metaphone. </returns>
+    {
         [Pure]
         public static string Metaphone(string s)
         {

@@ -6,11 +6,11 @@ using System.Xml;
 namespace Meziantou.Framework.Html
 {
     [DebuggerDisplay("'{Value}'")]
-    public class HtmlComment : HtmlNode
+    public sealed class HtmlComment : HtmlNode
     {
         private string _value;
 
-        protected internal HtmlComment(HtmlDocument ownerDocument)
+        internal HtmlComment(HtmlDocument ownerDocument)
             : base(string.Empty, "#comment", string.Empty, ownerDocument)
         {
         }

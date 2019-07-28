@@ -10,7 +10,7 @@ using System.Xml;
 namespace Meziantou.Framework.Html
 {
     [DebuggerDisplay("{Name}")]
-    public class HtmlDocument : HtmlNode
+    public sealed class HtmlDocument : HtmlNode
     {
         private HtmlOptions _options = new HtmlOptions();
         private string _filePath;
@@ -29,14 +29,14 @@ namespace Meziantou.Framework.Html
         {
         }
 
-        public virtual Encoding StreamEncoding { get; private set; }
-        public virtual Encoding DetectedEncoding { get; private set; }
-        public new virtual Uri BaseAddress { get; set; }
-        public virtual bool ReaderWasRestarted { get; private set; }
-        public virtual HtmlElement DocumentType { get; private set; }
-        public virtual HtmlElement HtmlElement { get; private set; }
-        public virtual HtmlElement BodyElement { get; private set; }
-        public virtual HtmlElement HeadElement { get; private set; }
+        public Encoding StreamEncoding { get; private set; }
+        public Encoding DetectedEncoding { get; private set; }
+        public new Uri BaseAddress { get; set; }
+        public bool ReaderWasRestarted { get; private set; }
+        public HtmlElement DocumentType { get; private set; }
+        public HtmlElement HtmlElement { get; private set; }
+        public HtmlElement BodyElement { get; private set; }
+        public HtmlElement HeadElement { get; private set; }
 
         internal static void RemoveIntrinsicElement(HtmlDocument doc, HtmlElement element)
         {
@@ -68,17 +68,17 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual string FilePath
+        public string FilePath
         {
             get => _filePath;
-            protected set
+            private set
             {
                 _filePath = value;
                 BaseAddress ??= (Utilities.IsRooted(value) ? new Uri(value) : new Uri(Path.GetFullPath(value)));
             }
         }
 
-        public virtual HtmlOptions Options
+        public HtmlOptions Options
         {
             get => _options;
             set
@@ -372,7 +372,7 @@ namespace Meziantou.Framework.Html
             InternalLoad(reader, firstPass: false);
         }
 
-        public virtual void AddNamespace(string prefix, string uri)
+        public void AddNamespace(string prefix, string uri)
         {
             if (prefix == null)
             {
@@ -453,7 +453,7 @@ namespace Meziantou.Framework.Html
             return CreateAttribute(prefix, localName, namespaceURI: null);
         }
 
-        public virtual HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
+        public HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
         {
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
@@ -467,7 +467,7 @@ namespace Meziantou.Framework.Html
             return new HtmlAttribute(prefix, localName, namespaceURI, this);
         }
 
-        public virtual HtmlText CreateText()
+        public HtmlText CreateText()
         {
             return new HtmlText(this);
         }
@@ -488,7 +488,7 @@ namespace Meziantou.Framework.Html
             return CreateElement(prefix, localName, namespaceURI: null);
         }
 
-        public virtual HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
+        public HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
         {
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
@@ -502,12 +502,12 @@ namespace Meziantou.Framework.Html
             return new HtmlElement(prefix, localName, namespaceURI, this);
         }
 
-        public virtual HtmlDocument CreateDocument()
+        public HtmlDocument CreateDocument()
         {
             return new HtmlDocument();
         }
 
-        public virtual HtmlComment CreateComment()
+        public HtmlComment CreateComment()
         {
             return new HtmlComment(this);
         }
@@ -601,12 +601,12 @@ namespace Meziantou.Framework.Html
             return true;
         }
 
-        protected virtual void OnParsing(object sender, HtmlDocumentParseEventArgs e)
+        private void OnParsing(object sender, HtmlDocumentParseEventArgs e)
         {
             Parsing?.Invoke(sender, e);
         }
 
-        protected virtual void OnParsed(object sender, HtmlDocumentParseEventArgs e)
+        private void OnParsed(object sender, HtmlDocumentParseEventArgs e)
         {
             Parsed?.Invoke(sender, e);
         }
@@ -644,7 +644,7 @@ namespace Meziantou.Framework.Html
             return !e.Cancel;
         }
 
-        protected virtual HtmlReader CreateReader(TextReader reader)
+        private HtmlReader CreateReader(TextReader reader)
         {
             return new HtmlReader(reader, Options);
         }
@@ -916,7 +916,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual HtmlElement BaseElement
+        public HtmlElement BaseElement
         {
             get
             {
@@ -934,7 +934,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual void Save(TextWriter writer)
+        public void Save(TextWriter writer)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -942,7 +942,7 @@ namespace Meziantou.Framework.Html
             WriteTo(writer);
         }
 
-        public virtual void Save(XmlWriter writer)
+        public void Save(XmlWriter writer)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -950,7 +950,7 @@ namespace Meziantou.Framework.Html
             WriteTo(writer);
         }
 
-        public virtual void Save(string filePath)
+        public void Save(string filePath)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
@@ -979,7 +979,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual void Save(string filePath, Encoding encoding)
+        public void Save(string filePath, Encoding encoding)
         {
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
@@ -1004,7 +1004,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual void Save(Stream outStream)
+        public void Save(Stream outStream)
         {
             if (outStream == null)
                 throw new ArgumentNullException(nameof(outStream));
@@ -1021,7 +1021,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual void Save(Stream outStream, Encoding encoding)
+        public void Save(Stream outStream, Encoding encoding)
         {
             if (outStream == null)
                 throw new ArgumentNullException(nameof(outStream));
@@ -1057,7 +1057,7 @@ namespace Meziantou.Framework.Html
             WriteContentTo(writer);
         }
 
-        public virtual void WriteDocType(XmlWriter writer)
+        public void WriteDocType(XmlWriter writer)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -1081,7 +1081,7 @@ namespace Meziantou.Framework.Html
             writer.WriteDocType(name, pubid, sysid, subset: null);
         }
 
-        public virtual bool IsXhtml
+        public bool IsXhtml
         {
             get
             {
@@ -1191,7 +1191,7 @@ namespace Meziantou.Framework.Html
             return ImportNode(node, HtmlCloneOptions.All);
         }
 
-        public virtual HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
+        public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
         {
             if (node == null)
                 throw new ArgumentNullException(nameof(node));

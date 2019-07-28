@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Html
 {
-    public class HtmlReaderParseEventArgs : CancelEventArgs
+    public sealed class HtmlReaderParseEventArgs : CancelEventArgs
     {
         public HtmlReaderParseEventArgs(StringBuilder value, StringBuilder rawValue)
         {

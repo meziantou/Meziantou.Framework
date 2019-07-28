@@ -5,14 +5,14 @@ using System.Xml;
 
 namespace Meziantou.Framework.Html
 {
-    public class HtmlAttribute : HtmlNode
+    public sealed class HtmlAttribute : HtmlNode
     {
         private char _quoteChar;
         private char _nameQuoteChar;
         private bool _isValueDefined;
         private bool _escapeQuoteChar;
 
-        protected internal HtmlAttribute(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
+        internal HtmlAttribute(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
             : base(prefix, localName, namespaceURI, ownerDocument)
         {
             _escapeQuoteChar = true;
@@ -30,9 +30,9 @@ namespace Meziantou.Framework.Html
             set => base.NamespaceURI = value;
         }
 
-        public virtual bool IsNamespace => NamespaceURI?.Equals(XmlnsNamespaceURI, StringComparison.Ordinal) == true;
+        public bool IsNamespace => NamespaceURI?.Equals(XmlnsNamespaceURI, StringComparison.Ordinal) == true;
 
-        public virtual bool EscapeQuoteChar
+        public bool EscapeQuoteChar
         {
             get => _escapeQuoteChar;
             set
@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual bool IsValueDefined
+        public bool IsValueDefined
         {
             get => _isValueDefined;
             set
@@ -58,7 +58,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual char QuoteChar
+        public char QuoteChar
         {
             get => _quoteChar;
             set
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual char NameQuoteChar
+        public char NameQuoteChar
         {
             get => _nameQuoteChar;
             set
@@ -204,15 +204,15 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        protected virtual char GetQuoteChar()
+        private char GetQuoteChar()
         {
             return QuoteChar;
         }
 
-        public virtual void WriteContentToWhenUndefinedQuoteChar(TextWriter writer)
+        public void WriteContentToWhenUndefinedQuoteChar(TextWriter writer)
         {
             var eqc = EscapeQuoteChar;
-            var s = GetValue(ref eqc);
+            var s = GetValue();
             if (string.IsNullOrWhiteSpace(s) || s.IndexOf('"') < 0)
             {
                 writer.Write('"');
@@ -237,7 +237,7 @@ namespace Meziantou.Framework.Html
             return text.Replace("&apos;", quoteChar.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual string GetValue(ref bool escapeQuoteChar)
+        private string GetValue()
         {
             using var sw = new StringWriter();
             foreach (var node in ChildNodes)
@@ -253,7 +253,7 @@ namespace Meziantou.Framework.Html
                 throw new ArgumentNullException(nameof(writer));
 
             var eqc = EscapeQuoteChar;
-            var s = GetValue(ref eqc);
+            var s = GetValue();
             if (s != null)
             {
                 if (eqc)

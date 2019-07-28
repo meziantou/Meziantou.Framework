@@ -7,7 +7,7 @@ using System.Xml.XPath;
 
 namespace Meziantou.Framework.Html
 {
-    public class HtmlNodeNavigator : XPathNavigator
+    public sealed class HtmlNodeNavigator : XPathNavigator
     {
         private readonly NameTable _nameTable = new NameTable();
         private HtmlNode _currentNode;
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        protected HtmlNodeNavigator(HtmlNodeNavigator other)
+        private HtmlNodeNavigator(HtmlNodeNavigator other)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Html
 
         public override object UnderlyingObject => CurrentNode;
 
-        public virtual HtmlNode CurrentNode
+        public HtmlNode CurrentNode
         {
             get => _currentNode;
             set
@@ -70,7 +70,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual HtmlNodeNavigatorOptions Options { get; }
+        public HtmlNodeNavigatorOptions Options { get; }
         public HtmlDocument Document { get; }
         public HtmlNode BaseNode { get; }
 

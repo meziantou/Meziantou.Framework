@@ -6,7 +6,7 @@ using System.Xml;
 namespace Meziantou.Framework.Html
 {
     [DebuggerDisplay("{Name}")]
-    public class HtmlElement : HtmlNode
+    public sealed class HtmlElement : HtmlNode
     {
         private bool? _empty;
         private bool? _dontCloseIfEmpty;
@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Html
         private char _closeChar = '/';
         private HtmlNodeType _nodeType;
 
-        protected internal HtmlElement(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
+        internal HtmlElement(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
             : base(prefix, localName, namespaceURI, ownerDocument)
         {
             _nodeType = IsDocumentType ? HtmlNodeType.DocumentType : HtmlNodeType.Element;
@@ -34,9 +34,9 @@ namespace Meziantou.Framework.Html
         public int DebugId => GetAttributeValue(DebugIdAttributeName, -1);
 #endif
 
-        public virtual bool IsDocumentType => Name.EqualsIgnoreCase("!doctype");
+        public bool IsDocumentType => Name.EqualsIgnoreCase("!doctype");
 
-        public virtual char CloseChar
+        public char CloseChar
         {
             get => _closeChar;
             set
@@ -49,7 +49,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual bool IsProcessingInstruction
+        public bool IsProcessingInstruction
         {
             get => _processingInstruction;
             set
@@ -101,7 +101,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual bool IsClosed
+        public bool IsClosed
         {
             get => _closed;
             set
@@ -114,7 +114,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual bool IsEmpty
+        public bool IsEmpty
         {
             get
             {
@@ -160,7 +160,7 @@ namespace Meziantou.Framework.Html
             return null;
         }
 
-        public virtual bool NoChild
+        public bool NoChild
         {
             get
             {
@@ -175,7 +175,7 @@ namespace Meziantou.Framework.Html
             set => _noChild = value;
         }
 
-        public virtual bool AlwaysClose
+        public bool AlwaysClose
         {
             get
             {
@@ -190,7 +190,7 @@ namespace Meziantou.Framework.Html
             set => _alwaysClose = value;
         }
 
-        public virtual bool DontCloseIfEmpty
+        public bool DontCloseIfEmpty
         {
             get
             {

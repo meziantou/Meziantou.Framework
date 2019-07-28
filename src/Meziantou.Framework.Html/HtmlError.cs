@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.Html
 {
-    public class HtmlError
+    public sealed class HtmlError
     {
         public HtmlError(HtmlReaderState state, HtmlErrorType errorType)
         {
@@ -18,11 +18,11 @@
             ErrorType = errorType;
         }
 
-        public virtual HtmlNode Node { get; internal set; }
-        public virtual HtmlErrorType ErrorType { get; }
-        public virtual int Offset { get; }
-        public virtual int Line { get; }
-        public virtual int Column { get; }
+        public HtmlNode Node { get; internal set; }
+        public HtmlErrorType ErrorType { get; }
+        public int Offset { get; }
+        public int Line { get; }
+        public int Column { get; }
 
         public override string ToString()
         {

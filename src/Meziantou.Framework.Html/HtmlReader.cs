@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Html
 {
-    public class HtmlReader
+    public sealed class HtmlReader
     {
         private readonly StringBuilder _rawValue = new StringBuilder();
         private string _currentElement;
@@ -40,15 +40,15 @@ namespace Meziantou.Framework.Html
 
         public TextReader TextReader { get; }
         public HtmlOptions Options { get; }
-        public virtual ICollection<HtmlError> Errors { get; }
-        public virtual HtmlReaderState State { get; private set; }
-        public virtual int FirstEncodingErrorOffset { get; private set; }
-        public HtmlParserState ParserState { get; protected set; }
+        public ICollection<HtmlError> Errors { get; }
+        public HtmlReaderState State { get; private set; }
+        public int FirstEncodingErrorOffset { get; private set; }
+        public HtmlParserState ParserState { get; private set; }
         public StringBuilder Value { get; private set; }
 
-        protected Queue<HtmlReaderState> ParserStatesQueue { get; } = new Queue<HtmlReaderState>();
+        private Queue<HtmlReaderState> ParserStatesQueue { get; } = new Queue<HtmlReaderState>();
 
-        public virtual bool IsRestartable
+        public bool IsRestartable
         {
             get
             {
@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual bool Restart()
+        public bool Restart()
         {
             if (!IsRestartable)
                 throw new InvalidOperationException();
@@ -72,7 +72,7 @@ namespace Meziantou.Framework.Html
             return sr.BaseStream.Seek(0, SeekOrigin.Begin) == 0;
         }
 
-        protected virtual void OnParsing(object sender, HtmlReaderParseEventArgs e)
+        private void OnParsing(object sender, HtmlReaderParseEventArgs e)
         {
             Parsing?.Invoke(sender, e);
         }
@@ -114,27 +114,27 @@ namespace Meziantou.Framework.Html
             return true;
         }
 
-        public virtual bool IsAnyQuote(int character)
+        public bool IsAnyQuote(int character)
         {
             return character == '"' || character == '\'';
         }
 
-        public virtual bool IsWhiteSpace(int character)
+        public bool IsWhiteSpace(int character)
         {
             return character == 10 || character == 13 || character == 32 || character == 9;
         }
 
-        public virtual HtmlReaderState CreateState(HtmlParserState rawParserState, string rawValue)
+        public HtmlReaderState CreateState(HtmlParserState rawParserState, string rawValue)
         {
             return new HtmlReaderState(this, rawParserState, rawValue);
         }
 
-        protected virtual void PushCurrentState(HtmlParserState fragmentType, string value)
+        private void PushCurrentState(HtmlParserState fragmentType, string value)
         {
             PushState(CreateState(fragmentType, value));
         }
 
-        protected virtual void PushState(HtmlReaderState state)
+        private void PushState(HtmlReaderState state)
         {
             if (state.ParserState == HtmlParserState.AttName)
             {
@@ -149,17 +149,17 @@ namespace Meziantou.Framework.Html
             ParserStatesQueue.Enqueue(state);
         }
 
-        protected virtual void PushCurrentState()
+        private void PushCurrentState()
         {
             PushState(CreateState(ParserState, Value.ToString()));
         }
 
-        protected virtual void AddError(HtmlErrorType type)
+        private void AddError(HtmlErrorType type)
         {
             Errors.Add(new HtmlError(State.Line, State.Column, State.Offset, type));
         }
 
-        public virtual bool Read()
+        public bool Read()
         {
             if (ParserStatesQueue.Count > 0)
             {
@@ -181,7 +181,7 @@ namespace Meziantou.Framework.Html
             return false;
         }
 
-        protected virtual void PushEndOfFile()
+        private void PushEndOfFile()
         {
             switch (ParserState)
             {
@@ -220,7 +220,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        protected virtual void DoRead()
+        private void DoRead()
         {
             _rawValue.Length = 0;
             Value.Length = 0;

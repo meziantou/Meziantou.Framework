@@ -5,7 +5,7 @@ using System.Globalization;
 namespace Meziantou.Framework.Html
 {
     [DebuggerDisplay("{Line}x{Column}x{Offset} {ParserState} '{RawValue}'")]
-    public class HtmlReaderState
+    public sealed class HtmlReaderState
     {
         public HtmlReaderState(HtmlReader reader, HtmlParserState rawParserState, string rawValue)
         {
@@ -19,16 +19,16 @@ namespace Meziantou.Framework.Html
         }
 
         public HtmlReader Reader { get; }
-        public virtual char QuoteChar { get; protected set; }
-        public virtual int Offset { get; protected set; }
-        public virtual int Line { get; protected set; }
-        public virtual int Column { get; protected set; }
-        public virtual string RawValue { get; protected set; }
-        public virtual HtmlParserState RawParserState { get; protected set; }
+        public char QuoteChar { get; private set; }
+        public int Offset { get; private set; }
+        public int Line { get; private set; }
+        public int Column { get; private set; }
+        public string RawValue { get; private set; }
+        public HtmlParserState RawParserState { get; private set; }
 
-        public virtual HtmlFragmentType FragmentType => (HtmlFragmentType)(int)ParserState;
+        public HtmlFragmentType FragmentType => (HtmlFragmentType)(int)ParserState;
 
-        public virtual HtmlParserState ParserState
+        public HtmlParserState ParserState
         {
             get
             {
@@ -39,7 +39,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual string Value
+        public string Value
         {
             get
             {

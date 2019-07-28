@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework.Html
 {
-    public class HtmlNodeDepthComparer : IComparer<HtmlNode>
+    public sealed class HtmlNodeDepthComparer : IComparer<HtmlNode>
     {
         public ListSortDirection Direction { get; set; }
 

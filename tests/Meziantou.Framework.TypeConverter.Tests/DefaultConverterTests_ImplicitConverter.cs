@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Tests
 {
     public class DefaultConverterTests_ImplicitConverter
     {
-        private class ImplicitConverter
+        private sealed class ImplicitConverter
         {
             public static implicit operator int(ImplicitConverter _) => 1;
         }

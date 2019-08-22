@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    internal class ReadChangeJournalOptions
+    internal sealed class ReadChangeJournalOptions
     {
         public ReadChangeJournalOptions(Usn? initialUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
         {

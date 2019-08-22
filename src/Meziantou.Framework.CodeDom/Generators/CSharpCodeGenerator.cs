@@ -60,8 +60,10 @@ namespace Meziantou.Framework.CodeDom
             if (codeObject == null)
                 throw new ArgumentNullException(nameof(codeObject));
 
-            using var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, closeWriter: false);
-            indentedTextWriter.NewLine = "\n";
+            using var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, closeWriter: false)
+            {
+                NewLine = "\n",
+            };
 
             Write(indentedTextWriter, codeObject);
         }

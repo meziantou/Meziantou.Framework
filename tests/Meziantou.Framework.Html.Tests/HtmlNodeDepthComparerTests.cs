@@ -24,8 +24,10 @@ namespace Meziantou.Framework.Html.Tests
             var element1 = document.SelectSingleNode("//span[@id='id1']");
             var element2 = document.SelectSingleNode("//span[@id='id2']");
 
-            var comparer = new HtmlNodeDepthComparer();
-            comparer.Direction = ListSortDirection.Ascending;
+            var comparer = new HtmlNodeDepthComparer
+            {
+                Direction = ListSortDirection.Ascending,
+            };
             Assert.Equal(-1, comparer.Compare(element1, element2));
             Assert.Equal(1, comparer.Compare(element2, element1));
         }
@@ -38,8 +40,10 @@ namespace Meziantou.Framework.Html.Tests
             var element1 = document.SelectSingleNode("//span[@id='id1']");
             var element2 = document.SelectSingleNode("//span[@id='id2']");
 
-            var comparer = new HtmlNodeDepthComparer();
-            comparer.Direction = ListSortDirection.Descending;
+            var comparer = new HtmlNodeDepthComparer
+            {
+                Direction = ListSortDirection.Descending,
+            };
             Assert.Equal(1, comparer.Compare(element1, element2));
             Assert.Equal(-1, comparer.Compare(element2, element1));
         }

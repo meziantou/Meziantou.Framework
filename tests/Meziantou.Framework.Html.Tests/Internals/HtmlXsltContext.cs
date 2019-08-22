@@ -5,7 +5,7 @@ using System.Xml.Xsl;
 
 namespace Meziantou.Framework.Html.Tests
 {
-    internal class HtmlXsltContext : XsltContext
+    internal sealed class HtmlXsltContext : XsltContext
     {
         public HtmlXsltContext(IXmlNamespaceResolver resolver)
             : base(new NameTable())
@@ -25,18 +25,18 @@ namespace Meziantou.Framework.Html.Tests
             throw new NotSupportedException();
         }
 
-        protected virtual IXsltContextFunction CreateHtmlXsltFunction(string prefix, string name, XPathResultType[] ArgTypes)
+        private IXsltContextFunction CreateHtmlXsltFunction(string prefix, string name, XPathResultType[] argTypes)
         {
-            var fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, ArgTypes);
+            var fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, argTypes);
             if (fn == null)
                 throw new Exception("XPATH function '" + name + "' is unknown.");
 
             return fn;
         }
 
-        public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] ArgTypes)
+        public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
         {
-            return CreateHtmlXsltFunction(prefix, name, ArgTypes);
+            return CreateHtmlXsltFunction(prefix, name, argTypes);
         }
 
         public override IXsltContextVariable ResolveVariable(string prefix, string name)

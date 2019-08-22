@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework.Versioning
 {
-    internal class SemanticVersionComparer : IComparer<SemanticVersion>, IEqualityComparer<SemanticVersion>
+    internal sealed class SemanticVersionComparer : IComparer<SemanticVersion>, IEqualityComparer<SemanticVersion>
     {
         public static SemanticVersionComparer Instance { get; } = new SemanticVersionComparer();
 

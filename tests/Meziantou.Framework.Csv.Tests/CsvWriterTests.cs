@@ -45,8 +45,10 @@ namespace Meziantou.Framework.Csv.Tests
         public async Task CsvWriterAsync_WriteValues()
         {
             using var sw = new StringWriter();
-            var writer = new CsvWriter(sw);
-            writer.EndOfLine = "\n";
+            var writer = new CsvWriter(sw)
+            {
+                EndOfLine = "\n",
+            };
             await writer.BeginRowAsync().ConfigureAwait(false);
             await writer.WriteValuesAsync("A", "B").ConfigureAwait(false);
             await writer.WriteValuesAsync("C", "D").ConfigureAwait(false);
@@ -60,8 +62,10 @@ namespace Meziantou.Framework.Csv.Tests
         public async Task CsvWriterAsync_NoQuoteCharacter()
         {
             using var sw = new StringWriter();
-            var writer = new CsvWriter(sw);
-            writer.Quote = null;
+            var writer = new CsvWriter(sw)
+            {
+                Quote = null,
+            };
 
             await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
 

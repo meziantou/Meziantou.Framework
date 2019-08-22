@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -502,6 +503,7 @@ namespace Meziantou.Framework.Html
             return new HtmlElement(prefix, localName, namespaceURI, this);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
         public HtmlDocument CreateDocument()
         {
             return new HtmlDocument();
@@ -957,8 +959,10 @@ namespace Meziantou.Framework.Html
 
             if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
             {
-                var xmlWriterSettings = new XmlWriterSettings();
-                xmlWriterSettings.Encoding = Encoding.UTF8;
+                var xmlWriterSettings = new XmlWriterSettings
+                {
+                    Encoding = Encoding.UTF8,
+                };
 
                 using var fs = File.OpenWrite(filePath);
                 using var writer = XmlWriter.Create(fs, xmlWriterSettings);
@@ -988,8 +992,10 @@ namespace Meziantou.Framework.Html
             {
                 encoding ??= Encoding.UTF8;
 
-                var xmlWriterSettings = new XmlWriterSettings();
-                xmlWriterSettings.Encoding = encoding;
+                var xmlWriterSettings = new XmlWriterSettings
+                {
+                    Encoding = encoding,
+                };
 
                 using var fs = File.OpenWrite(filePath);
                 using var writer = XmlWriter.Create(fs, xmlWriterSettings);
@@ -1191,6 +1197,7 @@ namespace Meziantou.Framework.Html
             return ImportNode(node, HtmlCloneOptions.All);
         }
 
+        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
         public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
         {
             if (node == null)

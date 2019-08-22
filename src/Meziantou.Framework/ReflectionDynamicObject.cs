@@ -297,7 +297,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private class TypeCache
+        private sealed class TypeCache
         {
             private TypeCache(Type type)
             {

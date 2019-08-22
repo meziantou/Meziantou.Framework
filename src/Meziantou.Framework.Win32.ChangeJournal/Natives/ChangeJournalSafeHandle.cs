@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32.Natives
 {
-    internal class ChangeJournalSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class ChangeJournalSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         public ChangeJournalSafeHandle()
             : base(ownsHandle: true)

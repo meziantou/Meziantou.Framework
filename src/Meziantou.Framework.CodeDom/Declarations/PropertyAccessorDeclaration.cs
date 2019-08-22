@@ -26,12 +26,6 @@
 
         public static implicit operator PropertyAccessorDeclaration(StatementCollection statements) => new PropertyAccessorDeclaration(statements);
 
-        public static implicit operator PropertyAccessorDeclaration(Statement statement)
-        {
-            return new PropertyAccessorDeclaration
-            {
-                Statements = statement,
-            };
-        }
+        public static implicit operator PropertyAccessorDeclaration(Statement statement) => new PropertyAccessorDeclaration { Statements = statement };
     }
 }

@@ -122,7 +122,7 @@ namespace Meziantou.Framework.Win32
         {
             var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
             {
-                UIRestrictionsClass = limits
+                UIRestrictionsClass = limits,
             };
 
             if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.BasicUIRestrictions, ref restriction, Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))

@@ -15,8 +15,10 @@ namespace Meziantou.Framework.Csv.Tests
             sb.Append("value2.1,value2.2,value2.3");
 
             using var sr = new StringReader(sb.ToString());
-            var reader = new CsvReader(sr);
-            reader.HasHeaderRow = false;
+            var reader = new CsvReader(sr)
+            {
+                HasHeaderRow = false,
+            };
 
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
@@ -42,8 +44,10 @@ namespace Meziantou.Framework.Csv.Tests
             sb.Append("value2.1,value2.2,value2.3");
 
             using var sr = new StringReader(sb.ToString());
-            var reader = new CsvReader(sr);
-            reader.HasHeaderRow = true;
+            var reader = new CsvReader(sr)
+            {
+                HasHeaderRow = true,
+            };
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
@@ -68,8 +72,10 @@ namespace Meziantou.Framework.Csv.Tests
             sb.Append("value2.1,value2.2,value2.3");
 
             using var sr = new StringReader(sb.ToString());
-            var reader = new CsvReader(sr);
-            reader.HasHeaderRow = true;
+            var reader = new CsvReader(sr)
+            {
+                HasHeaderRow = true,
+            };
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
@@ -131,9 +137,11 @@ namespace Meziantou.Framework.Csv.Tests
             sb.Append("'ab'\t'cd'");
 
             using var sr = new StringReader(sb.ToString());
-            var reader = new CsvReader(sr);
-            reader.Quote = '\'';
-            reader.Separator = '\t';
+            var reader = new CsvReader(sr)
+            {
+                Quote = '\'',
+                Separator = '\t',
+            };
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
             Assert.Equal("ab", row1[0]);

@@ -6,6 +6,7 @@ namespace Meziantou.Framework.Win32.Natives
     [ComImport]
     [ClassInterface(ClassInterfaceType.None)]
     [Guid(CLSIDGuid.FileSaveDialog)]
-    internal class FileSaveDialogRCW
-    { }
+    internal sealed class FileSaveDialogRCW
+    {
+    }
 }

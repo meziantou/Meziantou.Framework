@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32.CredentialManagerConsole
 {
-    internal class Program
+    internal static class Program
     {
         private static void Main()
         {

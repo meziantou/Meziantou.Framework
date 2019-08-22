@@ -114,12 +114,12 @@ namespace Meziantou.Framework.Html
             return true;
         }
 
-        public bool IsAnyQuote(int character)
+        public static bool IsAnyQuote(int character)
         {
             return character == '"' || character == '\'';
         }
 
-        public bool IsWhiteSpace(int character)
+        public static bool IsWhiteSpace(int character)
         {
             return character == 10 || character == 13 || character == 32 || character == 9;
         }

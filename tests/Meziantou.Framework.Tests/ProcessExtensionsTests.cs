@@ -25,9 +25,11 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_RedirectOutput()
         {
-            var psi = new ProcessStartInfo();
-            psi.FileName = "cmd.exe";
-            psi.Arguments = "/C echo test";
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/C echo test",
+            };
 
             var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
@@ -39,9 +41,11 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_DoNotRedirectOutput()
         {
-            var psi = new ProcessStartInfo();
-            psi.FileName = "cmd.exe";
-            psi.Arguments = "/C echo test";
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/C echo test",
+            };
 
             var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);

@@ -152,11 +152,14 @@ namespace Meziantou.Framework.CodeDom
 
         public TypeReference Clone()
         {
-            var clone = new TypeReference();
-            clone._name = _name;
-            clone._namespace = _namespace;
-            clone._typeDeclaration = _typeDeclaration;
-            clone._typeParameter = _typeParameter;
+            var clone = new TypeReference
+            {
+                _name = _name,
+                _namespace = _namespace,
+                _typeDeclaration = _typeDeclaration,
+                _typeParameter = _typeParameter,
+            };
+
             if (_parameters != null)
             {
                 clone._parameters = new CodeObjectCollection<TypeReference>(clone);

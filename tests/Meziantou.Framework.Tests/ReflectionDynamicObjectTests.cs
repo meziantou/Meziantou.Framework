@@ -136,7 +136,7 @@ namespace Meziantou.Framework.Tests
             private static int StaticProperty { get; set; } = 12;
         }
 
-        private class Test2 : Test
+        private sealed class Test2 : Test
         {
             private int PrivateProperty { get; set; } = 11;
 
@@ -146,7 +146,7 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-        private class Test3
+        private sealed class Test3
         {
             public int Value { get; set; }
 

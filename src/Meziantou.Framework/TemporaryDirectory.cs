@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -125,6 +126,7 @@ namespace Meziantou.Framework
             }
         }
 
+        [SuppressMessage("Design", "MA0045:Do not use blocking call (make method async)", Justification = "This method is intended to be sync")]
         private static void RetryOnSharingViolation(Action action)
         {
             var attempt = 0;

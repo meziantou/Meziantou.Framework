@@ -41,7 +41,7 @@ namespace Meziantou.Framework
             return Expression.Lambda<Func<T, bool>>(Expression.OrElse(left, right), parameter);
         }
 
-        private class ReplaceExpressionVisitor : ExpressionVisitor
+        private sealed class ReplaceExpressionVisitor : ExpressionVisitor
         {
             private readonly Expression _oldValue;
             private readonly Expression _newValue;

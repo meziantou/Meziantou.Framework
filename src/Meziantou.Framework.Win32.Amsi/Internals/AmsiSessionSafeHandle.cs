@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    internal class AmsiSessionSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class AmsiSessionSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal AmsiContextSafeHandle Context { get; set; }
 

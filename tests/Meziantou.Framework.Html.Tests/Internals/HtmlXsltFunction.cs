@@ -159,7 +159,7 @@ namespace Meziantou.Framework.Html.Tests
             return false;
         }
 
-        private class XsltArgument
+        private sealed class XsltArgument
         {
             public XsltArgument(HtmlXsltContext context)
             {
@@ -184,7 +184,7 @@ namespace Meziantou.Framework.Html.Tests
             return null;
         }
 
-        public class Lowercase : HtmlXsltFunction
+        public sealed class Lowercase : HtmlXsltFunction
         {
             public Lowercase(HtmlXsltContext context, string name)
                 : base(context, prefix: null, name, argTypes: null)

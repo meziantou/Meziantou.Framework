@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Templating
 {
-    internal class TextReaderWithPosition : TextReader
+    internal sealed class TextReaderWithPosition : TextReader
     {
         private readonly TextReader _reader;
         private bool _previousIsCarriageReturn = false;

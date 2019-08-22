@@ -6,7 +6,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    internal class ChangeJournalEntries : IEnumerable<JournalEntry>
+    internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
     {
         private readonly ChangeJournal _changeJournal;
         private readonly ReadChangeJournalOptions _options;
@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Win32
             return GetEnumerator();
         }
 
-        private class ChangeJournalEntriesEnumerator : IEnumerator<JournalEntry>
+        private sealed class ChangeJournalEntriesEnumerator : IEnumerator<JournalEntry>
         {
             private const int BufferSize = 8192;
 

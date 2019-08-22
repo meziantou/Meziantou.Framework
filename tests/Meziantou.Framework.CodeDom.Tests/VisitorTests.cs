@@ -10,10 +10,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         public void DefaultVisitor_AcceptAnyCodeObject()
         {
             var types = typeof(CodeObject).Assembly.GetTypes()
-                .Where(t => t.IsPublic && !t.IsAbstract && !t.ContainsGenericParameters)
-                .Where(t => typeof(CodeObject).IsAssignableFrom(t))
-                .Where(t => t != typeof(CommentCollection))
-                .Where(t => t != typeof(XmlCommentCollection))
+                .Where(t => t.IsPublic && !t.IsAbstract && !t.ContainsGenericParameters && typeof(CodeObject).IsAssignableFrom(t) && t != typeof(CommentCollection) && t != typeof(XmlCommentCollection))
                 .OrderBy(t => t.FullName)
                 .ToList();
 

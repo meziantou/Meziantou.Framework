@@ -19,8 +19,10 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void TryConvert_ByteArrayToString_Base16WithPrefix()
         {
-            var converter = new DefaultConverter();
-            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
+            var converter = new DefaultConverter
+            {
+                ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed,
+            };
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
@@ -31,8 +33,10 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void TryConvert_ByteArrayToString_Base16WithoutPrefix()
         {
-            var converter = new DefaultConverter();
-            converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16;
+            var converter = new DefaultConverter
+            {
+                ByteArrayToStringFormat = ByteArrayToStringFormat.Base16,
+            };
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 

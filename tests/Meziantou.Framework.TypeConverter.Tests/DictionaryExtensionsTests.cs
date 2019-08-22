@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    public class DictionaryExtensionsTests
+    public static class DictionaryExtensionsTests
     {
         [Fact]
         public static void GetValue_KeyExists()

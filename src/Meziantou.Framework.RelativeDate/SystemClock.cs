@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework
 {
-    internal class SystemClock : IClock
+    internal sealed class SystemClock : IClock
     {
         public DateTime Now => DateTime.Now;
 

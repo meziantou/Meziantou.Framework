@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Templating
 {
-    internal class HtmlEmailSection
+    internal sealed class HtmlEmailSection
     {
         public string Name { get; }
         public StringWriter Writer { get; }

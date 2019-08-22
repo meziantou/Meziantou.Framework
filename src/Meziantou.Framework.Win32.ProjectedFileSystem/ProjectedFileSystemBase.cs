@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
-    public abstract class ProjectedFileSystem : IDisposable
+    public abstract class ProjectedFileSystemBase : IDisposable
     {
         // TODO
         // * Version
@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         protected int BufferSize { get; set; } = 4096; // 4kB
 
-        protected ProjectedFileSystem(string rootFolder)
+        protected ProjectedFileSystemBase(string rootFolder)
         {
             if (!Environment.Is64BitProcess)
                 throw new NotSupportedException("Projected File System is only supported on 64-bit process");
@@ -95,7 +95,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var context = ++_context;
+#pragma warning disable IDE0067 // Dispose objects before losing scope: _instanceHandle is disposed in Dispose
                 var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, new IntPtr(context), in opt, out _instanceHandle);
+#pragma warning restore IDE0067
                 hr.EnsureSuccess();
             }
             finally
@@ -221,9 +223,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             ProjectedFileSystemEntry entry;
             while ((entry = session.GetNextEntry()) != null)
             {
-                var info = new NativeMethods.PRJ_FILE_BASIC_INFO();
-                info.FileSize = entry.Length;
-                info.IsDirectory = entry.IsDirectory;
+                var info = new NativeMethods.PRJ_FILE_BASIC_INFO
+                {
+                    FileSize = entry.Length,
+                    IsDirectory = entry.IsDirectory,
+                };
 
                 var result = NativeMethods.PrjFillDirEntryBuffer(entry.Name, in info, dirEntryBufferHandle);
                 if (!result.IsSuccess)
@@ -258,81 +262,79 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         private HResult GetFileDataCallback(in NativeMethods.PrjCallbackData callbackData, ulong byteOffset, uint length)
         {
-            using (var stream = OpenRead(callbackData.FilePathName))
+            using var stream = OpenRead(callbackData.FilePathName);
+            if (stream == null)
+                return HResult.E_FILENOTFOUND;
+
+            ulong writeStartOffset;
+            uint writeLength;
+
+            var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
+
+            var maxBufferSize = (uint)BufferSize;
+            if (length <= maxBufferSize)
             {
-                if (stream == null)
-                    return HResult.E_FILENOTFOUND;
+                // The range requested in the callback is less than the buffer size, so we can return
+                // the data in a single call, without doing any alignment calculations.
+                writeStartOffset = byteOffset;
+                writeLength = length;
+            }
+            else
+            {
+                var hr = NativeMethods.PrjGetVirtualizationInstanceInfo(safeHandle, out var instanceInfo);
+                if (!hr.IsSuccess)
+                    return hr;
 
-                ulong writeStartOffset;
-                uint writeLength;
+                // The first transfer will start at the beginning of the requested range,
+                // which is guaranteed to have the correct alignment.
+                writeStartOffset = byteOffset;
 
-                var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
+                // Ensure our transfer size is aligned to the device alignment, and is
+                // no larger than buffer size (note this assumes the device alignment is less than buffer size).
+                ulong writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
+                Debug.Assert(writeEndOffset > 0);
+                Debug.Assert(writeEndOffset > writeStartOffset);
 
-                var maxBufferSize = (uint)BufferSize;
-                if (length <= maxBufferSize)
+                writeLength = (uint)(writeEndOffset - writeStartOffset);
+            }
+
+            // Allocate a buffer that adheres to the needed memory alignment.
+            var writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(safeHandle, writeLength);
+            if (writeBuffer == IntPtr.Zero)
+                return HResult.E_OUTOFMEMORY;
+
+            var data = new byte[writeLength];
+            do
+            {
+                var read = stream.Read(data, 0, data.Length);
+
+                Marshal.Copy(data, 0, IntPtr.Add(writeBuffer, (int)writeStartOffset), read);
+
+                // Write the data to the file in the local file system.
+                var hr = NativeMethods.PrjWriteFileData(safeHandle,
+                                      callbackData.DataStreamId,
+                                      writeBuffer,
+                                      writeStartOffset,
+                                      writeLength);
+
+                if (!hr.IsSuccess)
                 {
-                    // The range requested in the callback is less than the buffer size, so we can return
-                    // the data in a single call, without doing any alignment calculations.
-                    writeStartOffset = byteOffset;
+                    NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
+                    return hr;
+                }
+
+                // The length parameter to the callback is guaranteed to be either
+                // correctly aligned or to result in a write to the end of the file.
+                length -= writeLength;
+                if (length < writeLength)
+                {
                     writeLength = length;
                 }
-                else
-                {
-                    var hr = NativeMethods.PrjGetVirtualizationInstanceInfo(safeHandle, out var instanceInfo);
-                    if (!hr.IsSuccess)
-                        return hr;
-
-                    // The first transfer will start at the beginning of the requested range,
-                    // which is guaranteed to have the correct alignment.
-                    writeStartOffset = byteOffset;
-
-                    // Ensure our transfer size is aligned to the device alignment, and is
-                    // no larger than buffer size (note this assumes the device alignment is less than buffer size).
-                    ulong writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
-                    Debug.Assert(writeEndOffset > 0);
-                    Debug.Assert(writeEndOffset > writeStartOffset);
-
-                    writeLength = (uint)(writeEndOffset - writeStartOffset);
-                }
-
-                // Allocate a buffer that adheres to the needed memory alignment.
-                var writeBuffer = NativeMethods.PrjAllocateAlignedBuffer(safeHandle, writeLength);
-                if (writeBuffer == IntPtr.Zero)
-                    return HResult.E_OUTOFMEMORY;
-
-                var data = new byte[writeLength];
-                do
-                {
-                    var read = stream.Read(data, 0, data.Length);
-
-                    Marshal.Copy(data, 0, IntPtr.Add(writeBuffer, (int)writeStartOffset), read);
-
-                    // Write the data to the file in the local file system.
-                    var hr = NativeMethods.PrjWriteFileData(safeHandle,
-                                          callbackData.DataStreamId,
-                                          writeBuffer,
-                                          writeStartOffset,
-                                          writeLength);
-
-                    if (!hr.IsSuccess)
-                    {
-                        NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
-                        return hr;
-                    }
-
-                    // The length parameter to the callback is guaranteed to be either
-                    // correctly aligned or to result in a write to the end of the file.
-                    length -= writeLength;
-                    if (length < writeLength)
-                    {
-                        writeLength = length;
-                    }
-                }
-                while (writeLength > 0);
-
-                NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
-                return HResult.S_OK;
             }
+            while (writeLength > 0);
+
+            NativeMethods.PrjFreeAlignedBuffer(writeBuffer);
+            return HResult.S_OK;
         }
 
         private static ulong BlockAlignTruncate(ulong p, uint v)

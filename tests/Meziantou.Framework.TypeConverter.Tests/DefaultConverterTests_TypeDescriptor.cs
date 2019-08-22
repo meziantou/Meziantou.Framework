@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Tests
         }
 
         [TypeConverter(typeof(CustomTypeConverter))]
-        private class Dummy
+        private sealed class Dummy
         {
         }
 

@@ -244,7 +244,7 @@ namespace Meziantou.Framework
             TH32CS_INHERIT = 0x80000000,
         }
 
-        private class SnapshotSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+        private sealed class SnapshotSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
             public SnapshotSafeHandle()
                 : base(ownsHandle: true)

@@ -46,6 +46,7 @@ namespace Meziantou.Framework
             return RunAsTask(psi, cancellationToken);
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "Disposed in Exited event")]
         public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)

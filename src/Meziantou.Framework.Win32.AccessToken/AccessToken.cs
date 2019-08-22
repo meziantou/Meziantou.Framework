@@ -213,10 +213,17 @@ namespace Meziantou.Framework.Win32
             if (!NativeMethods.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
-            var tp = new NativeMethods.TOKEN_PRIVILEGES();
-            tp.PrivilegeCount = 1;
-            tp.Privileges = new NativeMethods.LUID_AND_ATTRIBUTES[1];
-            tp.Privileges[0].Luid = luid;
+            var tp = new NativeMethods.TOKEN_PRIVILEGES
+            {
+                PrivilegeCount = 1,
+                Privileges = new NativeMethods.LUID_AND_ATTRIBUTES[1]
+                {
+                    new NativeMethods.LUID_AND_ATTRIBUTES
+                    {
+                        Luid = luid,
+                    },
+                },
+            };
 
             switch (operation)
             {

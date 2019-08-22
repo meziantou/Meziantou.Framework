@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Win32
                 throw new ArgumentNullException(nameof(path));
 
             string[] resources = { path };
-            var result = NativeMethods.RmRegisterResources(SessionHandle, 1, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
+            var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
         }

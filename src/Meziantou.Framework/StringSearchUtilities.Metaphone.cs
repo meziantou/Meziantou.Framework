@@ -12,10 +12,10 @@ namespace Meziantou.Framework
             if (s == null)
                 throw new ArgumentNullException(nameof(s));
 
-            const string vowels = "AEIOU";
-            const string frontv = "EIY";
-            const string varson = "CSPTG";
-            const int maxCodeLen = 4;
+            const string Vowels = "AEIOU";
+            const string Frontv = "EIY";
+            const string Varson = "CSPTG";
+            const int MaxCodeLen = 4;
 
             if (s.Length == 0)
                 return string.Empty;
@@ -86,7 +86,7 @@ namespace Meziantou.Framework
             var wdsz = local.Length;
             var mtsz = 0;
             var n = 0;
-            while ((mtsz < maxCodeLen) && // max code size of 4 works well
+            while ((mtsz < MaxCodeLen) && // max code size of 4 works well
                    (n < wdsz))
             {
                 var symb = local[n];
@@ -127,7 +127,7 @@ namespace Meziantou.Framework
                         case 'C': // lots of C special cases
                             /* discard if SCI, SCE or SCY */
                             if ((n > 0) && (local[n - 1] == 'S') && (n + 1 < wdsz)
-                                && (frontv.IndexOf(local[n + 1]) >= 0))
+                                && (Frontv.IndexOf(local[n + 1]) >= 0))
                             {
                                 break;
                             }
@@ -142,7 +142,7 @@ namespace Meziantou.Framework
                                 break;
                             }
 
-                            if ((n + 1 < wdsz) && (frontv.IndexOf(local[n + 1]) >= 0))
+                            if ((n + 1 < wdsz) && (Frontv.IndexOf(local[n + 1]) >= 0))
                             {
                                 code.Append('S');
                                 mtsz++;
@@ -161,7 +161,7 @@ namespace Meziantou.Framework
                             {
                                 // detect CH
                                 if ((n == 0) && (wdsz >= 3) && // CH consonant -> K consonant
-                                    (vowels.IndexOf(local[2]) < 0))
+                                    (Vowels.IndexOf(local[2]) < 0))
                                 {
                                     code.Append('K');
                                 }
@@ -182,7 +182,7 @@ namespace Meziantou.Framework
 
                         case 'D':
                             if ((n + 2 < wdsz) && // DGE DGI DGY -> J
-                                (local[n + 1] == 'G') && (frontv.IndexOf(local[n + 2]) >= 0))
+                                (local[n + 1] == 'G') && (Frontv.IndexOf(local[n + 2]) >= 0))
                             {
                                 code.Append('J');
                                 n += 2;
@@ -199,7 +199,7 @@ namespace Meziantou.Framework
                             if ((n + 2 == wdsz) && (local[n + 1] == 'H'))
                                 break;
 
-                            if ((n + 2 < wdsz) && (local[n + 1] == 'H') && (vowels.IndexOf(local[n + 2]) < 0))
+                            if ((n + 2 < wdsz) && (local[n + 1] == 'H') && (Vowels.IndexOf(local[n + 2]) < 0))
                                 break;
 
                             tmpS = local.ToString();
@@ -210,7 +210,7 @@ namespace Meziantou.Framework
                             // if ((n > 0) &&
                             // (local[n - 1] == 'G')) hard = true;//totest
                             // else hard = false;
-                            if ((n + 1 < wdsz) && (frontv.IndexOf(local[n + 1]) >= 0) /*&& !hard*/)
+                            if ((n + 1 < wdsz) && (Frontv.IndexOf(local[n + 1]) >= 0) /*&& !hard*/)
                             {
                                 code.Append('J');
                             }
@@ -226,10 +226,10 @@ namespace Meziantou.Framework
                             if (n + 1 == wdsz)
                                 break; // terminal H
 
-                            if (n > 0 && varson.IndexOf(local[n - 1]) >= 0)
+                            if (n > 0 && Varson.IndexOf(local[n - 1]) >= 0)
                                 break;
 
-                            if (vowels.IndexOf(local[n + 1]) >= 0)
+                            if (Vowels.IndexOf(local[n + 1]) >= 0)
                             {
                                 code.Append('H');
                                 mtsz++; // Hvowel
@@ -324,7 +324,7 @@ namespace Meziantou.Framework
 
                         case 'W':
                         case 'Y': // silent if not followed by vowel
-                            if ((n + 1 < wdsz) && (vowels.IndexOf(local[n + 1]) >= 0))
+                            if ((n + 1 < wdsz) && (Vowels.IndexOf(local[n + 1]) >= 0))
                             {
                                 code.Append(symb);
                                 mtsz++;

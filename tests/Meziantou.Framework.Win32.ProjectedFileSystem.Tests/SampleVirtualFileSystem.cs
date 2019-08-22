@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    internal class SampleVirtualFileSystem : ProjectedFileSystem
+    internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
     {
         public SampleVirtualFileSystem(string rootFolder)
             : base(rootFolder)

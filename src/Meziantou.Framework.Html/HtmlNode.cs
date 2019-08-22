@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace Meziantou.Framework.Html
 {
     public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNamespaceResolver
     {
-        private const int _maxRecursion = 300; // TODO configurable
+        private const int MaxRecursion = 300; // TODO configurable
 
         public const string XmlnsPrefix = "xmlns";
         public const string XmlnsNamespaceURI = "http://www.w3.org/2000/xmlns/";
@@ -85,8 +86,8 @@ namespace Meziantou.Framework.Html
         private void ClearCaches(int index)
         {
             // deep recursion testing. incurred because of xslt in general
-            if (index > _maxRecursion)
-                throw new HtmlException($"HTML0005: Maximum recursion depth ({_maxRecursion}) exceeded. This may be caused by a recursive XSLT.");
+            if (index > MaxRecursion)
+                throw new HtmlException($"HTML0005: Maximum recursion depth ({MaxRecursion}) exceeded. This may be caused by a recursive XSLT.");
 
             _innerHtml = null;
             _innerText = null;
@@ -1062,6 +1063,7 @@ namespace Meziantou.Framework.Html
             ParentNode?.GetNamespaceAttributes(namespaces);
         }
 
+        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
         public Uri BaseAddress => null;
 
         public abstract void WriteTo(TextWriter writer);
@@ -1366,7 +1368,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        private class Navigable : IXPathNavigable
+        private sealed class Navigable : IXPathNavigable
         {
             private readonly HtmlDocument _ownerDocument;
             private readonly HtmlNode _node;

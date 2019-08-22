@@ -157,8 +157,10 @@ namespace Meziantou.Framework.CodeDom
                     }
                     else
                     {
-                        pt = new ParsedType(typeName.Substring(0, quot));
-                        pt.AssemblyName = typeName.Substring(asm + 1).Trim();
+                        pt = new ParsedType(typeName.Substring(0, quot))
+                        {
+                            AssemblyName = typeName.Substring(asm + 1).Trim(),
+                        };
                         args = int.Parse(typeName.Substring(quot + 1, asm - quot - 1), CultureInfo.InvariantCulture);
                     }
                     for (var i = 0; i < args; i++)

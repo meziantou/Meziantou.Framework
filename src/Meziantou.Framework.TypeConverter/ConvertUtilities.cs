@@ -140,7 +140,7 @@ namespace Meziantou.Framework
 
         public static T ChangeType<T>(object input, T defaultValue)
         {
-            return ChangeType<T>(DefaultConverter, input, defaultValue);
+            return ChangeType(DefaultConverter, input, defaultValue);
         }
 
         public static T ChangeType<T>(this IConverter converter, object input, T defaultValue)
@@ -152,7 +152,7 @@ namespace Meziantou.Framework
 
         public static T ChangeType<T>(object input, T defaultValue, IFormatProvider provider)
         {
-            return ChangeType<T>(DefaultConverter, input, defaultValue, provider);
+            return ChangeType(DefaultConverter, input, defaultValue, provider);
         }
 
         public static T ChangeType<T>(this IConverter converter, object input, T defaultValue, IFormatProvider provider)

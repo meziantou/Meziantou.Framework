@@ -15,8 +15,11 @@ namespace Meziantou.Framework.Win32.Natives
 
         public static RM_UNIQUE_PROCESS GetProcesses(Process process)
         {
-            var rp = new RM_UNIQUE_PROCESS();
-            rp.dwProcessId = process.Id;
+            var rp = new RM_UNIQUE_PROCESS
+            {
+                dwProcessId = process.Id,
+            };
+
             NativeMethods.GetProcessTimes(process.Handle, out var creationTime, out _, out _, out _);
             rp.ProcessStartTime = creationTime;
             return rp;

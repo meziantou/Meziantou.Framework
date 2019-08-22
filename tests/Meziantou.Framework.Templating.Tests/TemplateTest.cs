@@ -116,8 +116,10 @@ namespace Meziantou.Framework.Templating.Tests
         public void Template_Debug()
         {
             // Arrange
-            var template = new Template();
-            template.Debug = true;
+            var template = new Template
+            {
+                Debug = true,
+            };
             template.Load(@"Hello <%= 
 #if DEBUG
 ""debug""
@@ -139,8 +141,10 @@ namespace Meziantou.Framework.Templating.Tests
         public void Template_Release()
         {
             // Arrange
-            var template = new Template();
-            template.Debug = false;
+            var template = new Template
+            {
+                Debug = false,
+            };
             template.Load(@"Hello <%= 
 #if DEBUG
 ""debug""

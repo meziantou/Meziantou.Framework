@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    internal class DirectoryEnumerationSession : IDisposable
+    internal sealed class DirectoryEnumerationSession : IDisposable
     {
         private IEnumerator<ProjectedFileSystemEntry> _enumerator;
         private ProjectedFileSystemEntry _current;

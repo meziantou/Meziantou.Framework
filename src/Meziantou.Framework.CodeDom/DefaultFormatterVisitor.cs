@@ -25,7 +25,7 @@ namespace Meziantou.Framework.CodeDom
             base.VisitInterfaceDeclaration(interfaceDeclaration);
         }
 
-        private class MemberComparer : IComparer<MemberDeclaration>
+        private sealed class MemberComparer : IComparer<MemberDeclaration>
         {
             public static MemberComparer Instance { get; } = new MemberComparer();
 

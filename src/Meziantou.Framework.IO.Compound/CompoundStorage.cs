@@ -258,16 +258,14 @@ namespace Meziantou.Framework.IO.Compound
         private void LoadPropertySet(IPropertySetStorage propertySetStorage, Guid fmtid)
         {
             var guid = fmtid;
-            IPropertyStorage propertyStorage;
-            var hr = propertySetStorage.Open(ref guid, STGM.STGM_READ | STGM.STGM_SHARE_EXCLUSIVE, out propertyStorage);
+            var hr = propertySetStorage.Open(ref guid, STGM.STGM_READ | STGM.STGM_SHARE_EXCLUSIVE, out var propertyStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_ACCESSDENIED)
                 return;
 
             if (hr != 0)
                 throw new Win32Exception((int)hr);
 
-            IEnumSTATPROPSTG es;
-            propertyStorage.Enum(out es);
+            propertyStorage.Enum(out var es);
             if (es == null)
                 return;
 
@@ -498,11 +496,10 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>A list of guids.</returns>
         public IEnumerable<Guid> EnumerateFormats()
         {
-            IPropertySetStorage propertySetStorage;
             var guid = typeof(IPropertySetStorage).GUID;
             var mode = GetMode(IsReadOnly);
 
-            var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out propertySetStorage);
+            var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
                 throw new FileNotFoundException(null, FilePath);
 
@@ -555,11 +552,10 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="formatId">The format id.</param>
         public void LoadProperties(Guid formatId)
         {
-            IPropertySetStorage propertySetStorage;
             var guid = typeof(IPropertySetStorage).GUID;
             var mode = GetMode(IsReadOnly);
 
-            var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out propertySetStorage);
+            var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
                 throw new FileNotFoundException(null, FilePath);
 

@@ -83,52 +83,54 @@ namespace Meziantou.Framework.IO.Compound
 
         static CompoundProperty()
         {
-            var list = new List<CompoundProperty>();
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "ApplicationName", PIDSI_APPNAME));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Author", PIDSI_AUTHOR));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Characters", PIDSI_CHARCOUNT));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Comments", PIDSI_COMMENTS));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "CreateDate", PIDSI_CREATE_DTM));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Security", PIDSI_DOC_SECURITY));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "TotalEditingTime", PIDSI_EDITTIME));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Keywords", PIDSI_KEYWORDS));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "LastSavedBy", PIDSI_LASTAUTHOR));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "LastPrintedDate", PIDSI_LASTPRINTED));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "LastSavedDate", PIDSI_LASTSAVE_DTM));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Pages", PIDSI_PAGECOUNT));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "RevisionNumber", PIDSI_REVNUMBER));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Subject", PIDSI_SUBJECT));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Template", PIDSI_TEMPLATE));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "ThumbNail", PIDSI_THUMBNAIL));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Title", PIDSI_TITLE));
-            list.Add(new CompoundProperty(SummaryInformationFormatId, "Words", PIDSI_WORDCOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Bytes", PIDDSI_BYTECOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Category", PIDDSI_CATEGORY));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "CharactersWithSpace", PIDDSI_CCHWITHSPACES));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Company", PIDDSI_COMPANY));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "DigitalSignature", PIDDSI_DIGSIG));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "ContentType", PIDDSI_CONTENTTYPE));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "ContentStatus", PIDDSI_CONTENTSTATUS));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "DocParts", PIDDSI_DOCPARTS));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "DocVersion", PIDDSI_DOCVERSION));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Guid", PIDDSI_GUID));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "HeadingPair", PIDDSI_HEADINGPAIR));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "HiddenSlides", PIDDSI_HIDDENCOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "HyperLinks", PIDDSI_HLINKS));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "HyperLinksChanged", PIDDSI_HYPERLINKSCHANGED));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Language", PIDDSI_LANGUAGE));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Lines", PIDDSI_LINECOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "LinkBase", PIDDSI_LINKBASE));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "LinksUpToDate", PIDDSI_LINKSDIRTY));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Manager", PIDDSI_MANAGER));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "MMClips", PIDDSI_MMCLIPCOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Notes", PIDDSI_NOTECOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Paragraphs", PIDDSI_PARCOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "PresentationTarget", PIDDSI_PRESFORMAT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "ScaleCrop", PIDDSI_SCALE));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "SharedDoc", PIDDSI_SHAREDDOC));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Slides", PIDDSI_SLIDECOUNT));
-            list.Add(new CompoundProperty(DocSummaryInformationFormatId, "Version", PIDDSI_VERSION));
+            var list = new List<CompoundProperty>
+            {
+                new CompoundProperty(SummaryInformationFormatId, "ApplicationName", PIDSI_APPNAME),
+                new CompoundProperty(SummaryInformationFormatId, "Author", PIDSI_AUTHOR),
+                new CompoundProperty(SummaryInformationFormatId, "Characters", PIDSI_CHARCOUNT),
+                new CompoundProperty(SummaryInformationFormatId, "Comments", PIDSI_COMMENTS),
+                new CompoundProperty(SummaryInformationFormatId, "CreateDate", PIDSI_CREATE_DTM),
+                new CompoundProperty(SummaryInformationFormatId, "Security", PIDSI_DOC_SECURITY),
+                new CompoundProperty(SummaryInformationFormatId, "TotalEditingTime", PIDSI_EDITTIME),
+                new CompoundProperty(SummaryInformationFormatId, "Keywords", PIDSI_KEYWORDS),
+                new CompoundProperty(SummaryInformationFormatId, "LastSavedBy", PIDSI_LASTAUTHOR),
+                new CompoundProperty(SummaryInformationFormatId, "LastPrintedDate", PIDSI_LASTPRINTED),
+                new CompoundProperty(SummaryInformationFormatId, "LastSavedDate", PIDSI_LASTSAVE_DTM),
+                new CompoundProperty(SummaryInformationFormatId, "Pages", PIDSI_PAGECOUNT),
+                new CompoundProperty(SummaryInformationFormatId, "RevisionNumber", PIDSI_REVNUMBER),
+                new CompoundProperty(SummaryInformationFormatId, "Subject", PIDSI_SUBJECT),
+                new CompoundProperty(SummaryInformationFormatId, "Template", PIDSI_TEMPLATE),
+                new CompoundProperty(SummaryInformationFormatId, "ThumbNail", PIDSI_THUMBNAIL),
+                new CompoundProperty(SummaryInformationFormatId, "Title", PIDSI_TITLE),
+                new CompoundProperty(SummaryInformationFormatId, "Words", PIDSI_WORDCOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "Bytes", PIDDSI_BYTECOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "Category", PIDDSI_CATEGORY),
+                new CompoundProperty(DocSummaryInformationFormatId, "CharactersWithSpace", PIDDSI_CCHWITHSPACES),
+                new CompoundProperty(DocSummaryInformationFormatId, "Company", PIDDSI_COMPANY),
+                new CompoundProperty(DocSummaryInformationFormatId, "DigitalSignature", PIDDSI_DIGSIG),
+                new CompoundProperty(DocSummaryInformationFormatId, "ContentType", PIDDSI_CONTENTTYPE),
+                new CompoundProperty(DocSummaryInformationFormatId, "ContentStatus", PIDDSI_CONTENTSTATUS),
+                new CompoundProperty(DocSummaryInformationFormatId, "DocParts", PIDDSI_DOCPARTS),
+                new CompoundProperty(DocSummaryInformationFormatId, "DocVersion", PIDDSI_DOCVERSION),
+                new CompoundProperty(DocSummaryInformationFormatId, "Guid", PIDDSI_GUID),
+                new CompoundProperty(DocSummaryInformationFormatId, "HeadingPair", PIDDSI_HEADINGPAIR),
+                new CompoundProperty(DocSummaryInformationFormatId, "HiddenSlides", PIDDSI_HIDDENCOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "HyperLinks", PIDDSI_HLINKS),
+                new CompoundProperty(DocSummaryInformationFormatId, "HyperLinksChanged", PIDDSI_HYPERLINKSCHANGED),
+                new CompoundProperty(DocSummaryInformationFormatId, "Language", PIDDSI_LANGUAGE),
+                new CompoundProperty(DocSummaryInformationFormatId, "Lines", PIDDSI_LINECOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "LinkBase", PIDDSI_LINKBASE),
+                new CompoundProperty(DocSummaryInformationFormatId, "LinksUpToDate", PIDDSI_LINKSDIRTY),
+                new CompoundProperty(DocSummaryInformationFormatId, "Manager", PIDDSI_MANAGER),
+                new CompoundProperty(DocSummaryInformationFormatId, "MMClips", PIDDSI_MMCLIPCOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "Notes", PIDDSI_NOTECOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "Paragraphs", PIDDSI_PARCOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "PresentationTarget", PIDDSI_PRESFORMAT),
+                new CompoundProperty(DocSummaryInformationFormatId, "ScaleCrop", PIDDSI_SCALE),
+                new CompoundProperty(DocSummaryInformationFormatId, "SharedDoc", PIDDSI_SHAREDDOC),
+                new CompoundProperty(DocSummaryInformationFormatId, "Slides", PIDDSI_SLIDECOUNT),
+                new CompoundProperty(DocSummaryInformationFormatId, "Version", PIDDSI_VERSION),
+            };
             KnownProperties = list.ToArray();
         }
 

@@ -173,10 +173,8 @@ namespace Meziantou.Framework.IO.Compound
             if (filePath == null)
                 throw new ObjectDisposedException(nameof(filePath));
 
-            using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None))
-            {
-                Load(file);
-            }
+            using var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None);
+            Load(file);
         }
 
         private void AddDirectoryEntry(DirectoryEntry entry)
@@ -250,10 +248,8 @@ namespace Meziantou.Framework.IO.Compound
             if (filePath == null)
                 throw new ObjectDisposedException("filePath");
 
-            using (var file = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            {
-                Save(file);
-            }
+            using var file = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            Save(file);
         }
 
         /// <summary>
@@ -365,8 +361,6 @@ namespace Meziantou.Framework.IO.Compound
             var currentFatSector = new FatSector(this);
             AddPhysicalSector(currentFatSector, AUTOINDEX);
 
-            var index = currentFatSector.Index;
-
             foreach (var sr in _sectors)
             {
                 var sector = GetSector(sr.Value);
@@ -428,29 +422,16 @@ namespace Meziantou.Framework.IO.Compound
 
         private Sector GetSector(SectorRef sr)
         {
-            switch (sr.SectorType)
+            return sr.SectorType switch
             {
-                case SectorType.Fat:
-                    return _fatSectors[sr.Index];
-
-                case SectorType.MiniFat:
-                    return _miniFatSectors[sr.Index];
-
-                case SectorType.Directory:
-                    return _directorySectors[sr.Index];
-
-                case SectorType.MiniStream:
-                    return _miniStreamSectors[sr.Index];
-
-                case SectorType.Storage:
-                    return _storageSectors[sr.Index];
-
-                case SectorType.DiFat:
-                    return _diFatSectors[sr.Index];
-
-                default:
-                    throw new NotSupportedException();
-            }
+                SectorType.Fat => _fatSectors[sr.Index],
+                SectorType.MiniFat => _miniFatSectors[sr.Index],
+                SectorType.Directory => _directorySectors[sr.Index],
+                SectorType.MiniStream => _miniStreamSectors[sr.Index],
+                SectorType.Storage => _storageSectors[sr.Index],
+                SectorType.DiFat => _diFatSectors[sr.Index],
+                _ => throw new NotSupportedException(),
+            };
         }
 
         private void AddDiFatSectors()
@@ -480,11 +461,11 @@ namespace Meziantou.Framework.IO.Compound
                 var diFatSector = new DiFatSector(this);
                 AddPhysicalSector(diFatSector, AUTOINDEX);
 
-                var df = GetSector(diFatSector.PhysicalIndex);
-
                 if (last != null)
+                {
                     // chain DI fat sectors
                     last.Sectors.Add(diFatSector.PhysicalIndex);
+                }
 
                 // only 127 entries to be able to chain
                 var fatSectorCount = Math.Min(FatEntriesPerSector - 1, _fatSectors.Count - firstFatIndex);
@@ -493,6 +474,7 @@ namespace Meziantou.Framework.IO.Compound
                     var sector = _fatSectors[firstFatIndex++];
                     diFatSector.Sectors.Add(sector.PhysicalIndex);
                 }
+
                 last = diFatSector;
             }
         }
@@ -797,8 +779,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="value">The value.</param>
         public void SetProperty(Guid fmtid, int id, object value)
         {
-            Dictionary<int, object> values;
-            if (!_properties.TryGetValue(fmtid, out values))
+            if (!_properties.TryGetValue(fmtid, out var values))
             {
                 values = new Dictionary<int, object>();
                 _properties.Add(fmtid, values);
@@ -816,12 +797,10 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>The property value.</returns>
         public T GetProperty<T>(Guid fmtid, int id, T defaultValue)
         {
-            Dictionary<int, object> values;
-            if (!_properties.TryGetValue(fmtid, out values))
+            if (!_properties.TryGetValue(fmtid, out var values))
                 return defaultValue;
 
-            object value;
-            if (!values.TryGetValue(id, out value))
+            if (!values.TryGetValue(id, out var value))
                 return defaultValue;
 
             return ConvertUtilities.ChangeType(value, defaultValue);
@@ -1200,8 +1179,7 @@ namespace Meziantou.Framework.IO.Compound
             if (stream == null)
                 return;
 
-            Dictionary<int, object> values;
-            if (!_properties.TryGetValue(fmtid, out values))
+            if (!_properties.TryGetValue(fmtid, out var values))
             {
                 values = new Dictionary<int, object>();
                 _properties.Add(fmtid, values);
@@ -1229,7 +1207,8 @@ namespace Meziantou.Framework.IO.Compound
                 reader.ReadBytes(16); // FMTID1
                 reader.ReadInt32(); // Offset1
             }
-            var size = reader.ReadInt32();
+
+            _ = reader.ReadInt32();
             var count = reader.ReadInt32();
 
             var props = new List<(int propKey, int propOffset)>();
@@ -1255,7 +1234,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private object LoadPropertyValue(BinaryReader reader, Encoding cpEncoding)
+        private static object LoadPropertyValue(BinaryReader reader, Encoding cpEncoding)
         {
             if (cpEncoding == null)
                 cpEncoding = Encoding.Default;
@@ -1385,7 +1364,7 @@ namespace Meziantou.Framework.IO.Compound
             stream.Stream.SetLength(stream.Stream.Position);
         }
 
-        private void WritePropertySet(BinaryWriter writer, Dictionary<int, object> values)
+        private static void WritePropertySet(BinaryWriter writer, Dictionary<int, object> values)
         {
             var offsets = new List<int>();
             var size = sizeof(int) // Size
@@ -1422,8 +1401,8 @@ namespace Meziantou.Framework.IO.Compound
 
         private static int GetPropertyValueSize(object value)
         {
-            const int typeAndPaddingSize = 4;
-            var size = typeAndPaddingSize;
+            const int TypeAndPaddingSize = 4;
+            var size = TypeAndPaddingSize;
             if (value != null)
             {
                 switch (Type.GetTypeCode(value.GetType()))
@@ -1702,7 +1681,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private class FatSector : Sector
+        private sealed class FatSector : Sector
         {
             public readonly Dictionary<int, uint> Sectors = new Dictionary<int, uint>();
 
@@ -1738,7 +1717,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private class MiniFatSector : Sector
+        private sealed class MiniFatSector : Sector
         {
             public readonly List<uint> Entries = new List<uint>();
 
@@ -1775,7 +1754,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private class DiFatSector : Sector
+        private sealed class DiFatSector : Sector
         {
             public List<uint> Sectors = new List<uint>();
 
@@ -1831,7 +1810,7 @@ namespace Meziantou.Framework.IO.Compound
             Black = 1,
         }
 
-        private class DirectoryEntryComparer : IComparer<DirectoryEntry>
+        private sealed class DirectoryEntryComparer : IComparer<DirectoryEntry>
         {
             public int Compare(DirectoryEntry x, DirectoryEntry y)
             {
@@ -1845,7 +1824,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        internal class DirectoryStorage : DirectoryEntry
+        internal sealed class DirectoryStorage : DirectoryEntry
         {
             private readonly List<DirectoryEntry> Entries = new List<DirectoryEntry>();
 
@@ -1981,7 +1960,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private class DirectorySector : Sector
+        private sealed class DirectorySector : Sector
         {
             public readonly List<DirectoryEntry> Entries = new List<DirectoryEntry>();
 

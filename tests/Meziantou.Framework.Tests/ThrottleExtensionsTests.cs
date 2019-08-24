@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.Tests
     public class ThrottleExtensionsTests
     {
         [Fact]
-        public async Task Throttle_CallActionsWithArgumentsOfTheLastCall()
+        public void Throttle_CallActionsWithArgumentsOfTheLastCall()
         {
             using var resetEvent = new ManualResetEventSlim(false);
             int lastArg = default;

@@ -1327,8 +1327,7 @@ namespace Meziantou.Framework.IO.Compound
         {
             // [MS-OLEPS]: Object Linking and Embedding (OLE) Property Set Data Structures
             // http://msdn.microsoft.com/en-us/library/dd942421.aspx
-            Dictionary<int, object> values;
-            if (!_properties.TryGetValue(fmtid, out values))
+            if (!_properties.TryGetValue(fmtid, out var values))
                 return;
 
             string streamName;

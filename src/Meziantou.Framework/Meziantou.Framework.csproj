@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.IO.Pipes.AccessControl" Version="4.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="DebounceExtensions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>DebounceExtensions.cs</LastGenOutput>

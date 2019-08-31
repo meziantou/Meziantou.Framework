@@ -12,6 +12,7 @@
 | Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |
 | Meziantou.Framework.RelativeDate | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.RelativeDate.svg)](https://www.nuget.org/packages/Meziantou.Framework.RelativeDate/) |
 | Meziantou.Framework.Scheduling | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Scheduling.svg)](https://www.nuget.org/packages/Meziantou.Framework.Scheduling/) |
+| Meziantou.Framework.SingleInstance | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SingleInstance.svg)](https://www.nuget.org/packages/Meziantou.Framework.SingleInstance/) |
 | Meziantou.Framework.Templating | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating/) |
 | Meziantou.Framework.Templating.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating.Html/) |
 | Meziantou.Framework.TypeConverter | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TypeConverter.svg)](https://www.nuget.org/packages/Meziantou.Framework.TypeConverter/) |

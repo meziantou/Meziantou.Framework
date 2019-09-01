@@ -42,8 +42,6 @@ namespace Meziantou.Framework
 
         private void StartNamedPipeServer()
         {
-            _server?.Dispose();
-
             if (!StartServer)
                 return;
 
@@ -78,32 +76,54 @@ namespace Meziantou.Framework
                            pipeSecurity);
             }
 #endif
-            _server.BeginWaitForConnection(Listen, null);
+            try
+            {
+                _server.BeginWaitForConnection(Listen, null);
+            }
+            catch (ObjectDisposedException)
+            {
+                // The server was disposed before getting a connection
+            }
         }
 
         private void Listen(IAsyncResult ar)
         {
-            _server.EndWaitForConnection(ar);
-
-            using var binaryReader = new BinaryReader(_server);
-            if (binaryReader.ReadByte() == NotifyInstanceMessageType)
+            var server = _server;
+            try
             {
-                var processId = binaryReader.ReadInt32();
-                var argCount = binaryReader.ReadInt32();
-                if (argCount >= 0)
+                try
                 {
-                    var args = new string[argCount];
-                    for (var i = 0; i < argCount; i++)
-                    {
-                        args[i] = binaryReader.ReadString();
-                    }
+                    _server.EndWaitForConnection(ar);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return;
+                }
 
-                    NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
+                // Start a new server as soon as possible
+                StartNamedPipeServer();
+
+                using var binaryReader = new BinaryReader(server);
+                if (binaryReader.ReadByte() == NotifyInstanceMessageType)
+                {
+                    var processId = binaryReader.ReadInt32();
+                    var argCount = binaryReader.ReadInt32();
+                    if (argCount >= 0)
+                    {
+                        var args = new string[argCount];
+                        for (var i = 0; i < argCount; i++)
+                        {
+                            args[i] = binaryReader.ReadString();
+                        }
+
+                        NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
+                    }
                 }
             }
-
-            // Start a new server
-            StartNamedPipeServer();
+            finally
+            {
+                server.Dispose();
+            }
         }
 
         private bool TryAcquireMutex()

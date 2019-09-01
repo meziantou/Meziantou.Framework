@@ -100,7 +100,6 @@ namespace Meziantou.Framework
                     return;
                 }
 
-                // Start a new server as soon as possible
                 StartNamedPipeServer();
 
                 using var binaryReader = new BinaryReader(server);

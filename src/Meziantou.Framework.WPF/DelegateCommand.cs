@@ -1,59 +1,56 @@
 ﻿using System;
-using System.Windows.Input;
-using System.Windows.Threading;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework.WPF
 {
-    public sealed class DelegateCommand : ICommand
+    public static class DelegateCommand
     {
-        private readonly Action<object> _execute;
-        private readonly Func<object, bool> _canExecute;
-        private readonly Dispatcher _dispatcher;
-
-        public event EventHandler CanExecuteChanged;
-
-        public DelegateCommand(Action execute)
-            : this(WrapAction(execute))
+        public static IDelegateCommand Create(Action execute)
         {
+            return new SyncDelegateCommand(WrapAction(execute), null);
         }
 
-        public DelegateCommand(Action execute, Func<bool> canExecute)
-            : this(WrapAction(execute), WrapAction(canExecute))
+        public static IDelegateCommand Create(Action<object> execute)
         {
+            return new SyncDelegateCommand(execute, null);
         }
 
-        public DelegateCommand(Action<object> execute)
-            : this(execute, canExecute: null)
+        public static IDelegateCommand Create(Action execute, Func<bool> canExecute)
         {
+            return new SyncDelegateCommand(WrapAction(execute), WrapAction(canExecute));
         }
 
-        public DelegateCommand(Action<object> execute, Func<object, bool> canExecute)
+        public static IDelegateCommand Create(Action<object> execute, Func<object, bool> canExecute)
         {
-            _execute = execute;
-            _canExecute = canExecute;
-            _dispatcher = Dispatcher.CurrentDispatcher;
+            return new SyncDelegateCommand(execute, canExecute);
         }
 
-        public bool CanExecute(object parameter)
+        public static IDelegateCommand Create(Func<Task> execute)
         {
-            return _canExecute?.Invoke(parameter) ?? true;
+            return new AsyncDelegateCommand(WrapAction(execute), null);
         }
 
-        public void Execute(object parameter)
+        public static IDelegateCommand Create(Func<object, Task> execute)
         {
-            _execute?.Invoke(parameter);
+            return new AsyncDelegateCommand(execute, null);
         }
 
-        public void RaiseCanExecuteChanged()
+        public static IDelegateCommand Create(Func<Task> execute, Func<bool> canExecute)
         {
-            if (_dispatcher != null)
-            {
-                _dispatcher.Invoke(() => CanExecuteChanged?.Invoke(this, EventArgs.Empty));
-            }
-            else
-            {
-                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-            }
+            return new AsyncDelegateCommand(WrapAction(execute), WrapAction(canExecute));
+        }
+
+        public static IDelegateCommand Create(Func<object, Task> execute, Func<object, bool> canExecute)
+        {
+            return new AsyncDelegateCommand(execute, canExecute);
+        }
+
+        private static Func<object, Task> WrapAction(Func<Task> action)
+        {
+            if (action == null)
+                return null;
+
+            return _ => action();
         }
 
         private static Action<object> WrapAction(Action action)

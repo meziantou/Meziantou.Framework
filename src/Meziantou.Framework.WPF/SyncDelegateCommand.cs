@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF
 {
-    internal sealed class AsyncDelegateCommand : IDelegateCommand
+    internal sealed class SyncDelegateCommand : IDelegateCommand
     {
-        private readonly Func<object, Task> _execute;
+        private readonly Action<object> _execute;
         private readonly Func<object, bool> _canExecute;
         private readonly Dispatcher _dispatcher;
-        private bool _isExecuting;
 
         public event EventHandler CanExecuteChanged;
 
-        public AsyncDelegateCommand(Func<object, Task> execute, Func<object, bool> canExecute)
+        public SyncDelegateCommand(Action<object> execute, Func<object, bool> canExecute)
         {
             _execute = execute;
             _canExecute = canExecute;
@@ -22,26 +20,12 @@ namespace Meziantou.Framework.WPF
 
         public bool CanExecute(object parameter)
         {
-            return !_isExecuting && (_canExecute?.Invoke(parameter) ?? true);
+            return _canExecute?.Invoke(parameter) ?? true;
         }
 
-        public async void Execute(object parameter)
+        public void Execute(object parameter)
         {
-            if (_isExecuting)
-                return;
-
-            try
-            {
-                _isExecuting = true;
-                RaiseCanExecuteChanged();
-                await _execute?.Invoke(parameter);
-            }
-            finally
-            {
-                _isExecuting = false;
-                RaiseCanExecuteChanged();
-            }
-
+            _execute?.Invoke(parameter);
         }
 
         public void RaiseCanExecuteChanged()
@@ -55,5 +39,6 @@ namespace Meziantou.Framework.WPF
                 CanExecuteChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+
     }
 }

@@ -5,11 +5,11 @@ using Meziantou.Framework.WPF.Collections;
 
 namespace Meziantou.Framework.WPF.CollectionSamples
 {
-    public class SampleViewModel
+    public sealed class SampleViewModel
     {
         public SampleViewModel()
         {
-            AddItems = new DelegateCommand(AddItemsImpl);
+            AddItems = DelegateCommand.Create(AddItemsImpl);
         }
 
         public ConcurrentObservableCollection<string> Items { get; } = new ConcurrentObservableCollection<string>();

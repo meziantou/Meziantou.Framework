@@ -73,7 +73,7 @@ namespace Meziantou.Framework
 
                 using (var file = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    file.Read(bytes, 0, bytes.Length);
+                    file.ReadUntilCountOrEnd(bytes, 0, bytes.Length);
                 }
 
                 var headerPos = BitConverter.ToInt32(bytes, PeHeaderOffset);

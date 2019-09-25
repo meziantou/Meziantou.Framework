@@ -11,11 +11,6 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
 steps:
-- task: UseDotNet@2
-  inputs:
-    packageType: 'sdk'
-    version: '3.0.100'
-    
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:
@@ -44,9 +39,11 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: dotnet pack
   inputs:
-    command: pack
+    command: 'pack'
     packagesToPack: 'src/**/*.csproj'
     nobuild: true
+    includesymbols: true
+    versioningScheme: 'off'
 
 - powershell: |
     Write-Host "Searching nupkg in folder: $(Build.ArtifactStagingDirectory)"

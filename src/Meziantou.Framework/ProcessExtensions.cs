@@ -16,7 +16,7 @@ namespace Meziantou.Framework
 
 #if NETCOREAPP3_0
             process.Kill(entireProcessTree);
-#else
+#elif NETSTANDARD2_0 || NET461 || NETCOREAPP2_1
             if (!entireProcessTree)
             {
                 process.Kill();
@@ -43,6 +43,8 @@ namespace Meziantou.Framework
                     }
                 }
             }
+#else
+#error Platform not supported
 #endif
         }
 

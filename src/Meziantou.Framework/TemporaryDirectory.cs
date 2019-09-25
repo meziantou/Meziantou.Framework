@@ -220,6 +220,9 @@ namespace Meziantou.Framework
                 await Task.Delay(50).ConfigureAwait(false);
             }
         }
+#elif NET461 || NETSTANDARD2_0 || NETCOREAPP2_1
+#else
+#error Platform not supported
 #endif
     }
 }

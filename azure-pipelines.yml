@@ -11,6 +11,11 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
 
 steps:
+- task: DotNetCoreInstaller@0
+  displayName: 'Use .NET Core sdk'
+  inputs:
+    version: 3.0.100
+
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:

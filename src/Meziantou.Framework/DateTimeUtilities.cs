@@ -7,6 +7,12 @@ namespace Meziantou.Framework
     public static class DateTimeUtilities
     {
         [Pure]
+#if NETCOREAPP3_0
+        [Obsolete("Use System.Globalization.ISOWeek")]
+#elif NET461 || NETCOREAPP2_1 || NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
         public static DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, DayOfWeek weekStart = DayOfWeek.Monday)
         {
             var jan1 = new DateTime(year, 1, 1);

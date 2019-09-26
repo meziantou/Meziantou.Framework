@@ -88,7 +88,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		azure-pipelines.yml = azure-pipelines.yml
 		Directory.Build.props = Directory.Build.props
-		global.json = global.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.CredentialManagerConsole", "Samples\Meziantou.Framework.Win32.CredentialManagerConsole\Meziantou.Framework.Win32.CredentialManagerConsole.csproj", "{5CD15C59-CE65-4A91-BAB9-076C65A4E5E6}"
@@ -113,13 +112,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AmsiTests", "tests\Meziantou.Framework.Win32.AmsiTests\Meziantou.Framework.Win32.AmsiTests.csproj", "{074D52E6-647D-4740-B134-1AF2BBA00839}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.IO.Compound", "src\Meziantou.Framework.IO.Compound\Meziantou.Framework.IO.Compound.csproj", "{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.IO.Compound", "src\Meziantou.Framework.IO.Compound\Meziantou.Framework.IO.Compound.csproj", "{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingleInstanceConsoleAppSample", "Samples\SingleInstanceConsoleAppSample\SingleInstanceConsoleAppSample.csproj", "{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SingleInstanceConsoleAppSample", "Samples\SingleInstanceConsoleAppSample\SingleInstanceConsoleAppSample.csproj", "{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.SingleInstance", "src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj", "{A91E3590-C919-48E4-AFF2-2A2C346B22EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SingleInstance", "src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj", "{A91E3590-C919-48E4-AFF2-2A2C346B22EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.SingleInstance.Tests", "tests\Meziantou.Framework.SingleInstance.Tests\Meziantou.Framework.SingleInstance.Tests.csproj", "{A227849F-66A8-4F99-956A-7BFDB54165E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SingleInstance.Tests", "tests\Meziantou.Framework.SingleInstance.Tests\Meziantou.Framework.SingleInstance.Tests.csproj", "{A227849F-66A8-4F99-956A-7BFDB54165E0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

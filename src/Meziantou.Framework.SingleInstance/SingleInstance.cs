@@ -75,6 +75,8 @@ namespace Meziantou.Framework
                            0,
                            pipeSecurity);
             }
+#else
+#error Platform not supported
 #endif
             try
             {

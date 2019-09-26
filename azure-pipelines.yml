@@ -14,8 +14,8 @@ steps:
 - task: DotNetCoreInstaller@0
   displayName: 'Use .NET Core sdk'
   inputs:
-    version: 3.0.100-preview8-013656
-    
+    version: 3.0.100
+
 - task: DotNetCoreCLI@2
   displayName: dotnet build
   inputs:
@@ -44,9 +44,11 @@ steps:
 - task: DotNetCoreCLI@2
   displayName: dotnet pack
   inputs:
-    command: pack
+    command: 'pack'
     packagesToPack: 'src/**/*.csproj'
     nobuild: true
+    includesymbols: true
+    versioningScheme: 'off'
 
 - powershell: |
     Write-Host "Searching nupkg in folder: $(Build.ArtifactStagingDirectory)"

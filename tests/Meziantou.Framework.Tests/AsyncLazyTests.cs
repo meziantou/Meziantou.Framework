@@ -19,6 +19,7 @@ namespace Meziantou.Framework.Tests
 
             var a = lazy.GetValueAsync();
             var value = await lazy.GetValueAsync().ConfigureAwait(false);
+            await a.ConfigureAwait(false);
 
             Assert.Equal(1, value);
             Assert.Equal(1, count);

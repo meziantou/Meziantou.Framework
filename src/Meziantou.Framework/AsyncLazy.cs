@@ -1,5 +1,5 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,7 +17,7 @@ namespace Meziantou.Framework
     {
         private readonly Func<Task<T>> _valueFactory;
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
-        private Task<T> _value;
+        private Task<T>? _value;
 
         public AsyncLazy(Func<Task<T>> valueFactory)
         {
@@ -31,7 +31,10 @@ namespace Meziantou.Framework
         public Task<T> GetValueAsync(CancellationToken cancellationToken)
         {
             if (HasValue)
+            {
+                Debug.Assert(_value != null);
                 return _value;
+            }
 
             return GetValueCoreAsync(cancellationToken);
         }
@@ -42,7 +45,10 @@ namespace Meziantou.Framework
             try
             {
                 if (HasValue)
+                {
+                    Debug.Assert(_value != null);
                     return await _value.ConfigureAwait(false);
+                }
 
                 var value = await _valueFactory().ConfigureAwait(false);
                 _value = Task.FromResult(value);

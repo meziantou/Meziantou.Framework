@@ -1,5 +1,5 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework
 {
@@ -163,7 +163,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public static bool TryParseHexa(string str, out byte[] result)
+        public static bool TryParseHexa(string? str, [NotNullWhen(returnValue: true)]out byte[]? result)
         {
             if (str == null || str.Length % 2 != 0)
             {
@@ -269,7 +269,7 @@ namespace Meziantou.Framework
             return new string(c);
         }
 
-        public static bool TryParseHexa(string str, Span<byte> bytes)
+        public static bool TryParseHexa(string? str, Span<byte> bytes)
         {
             if (str == null || str.Length % 2 != 0)
                 return false;

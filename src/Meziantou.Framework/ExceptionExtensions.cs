@@ -1,12 +1,13 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Meziantou.Framework
 {
     public static class ExceptionExtensions
     {
-        public static string ToString(this Exception exception, bool includeInnerException)
+        [return: NotNullIfNotNull(parameterName: "exception")]
+        public static string? ToString(this Exception? exception, bool includeInnerException)
         {
             if (exception == null)
                 return null;

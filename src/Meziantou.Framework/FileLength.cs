@@ -20,7 +20,7 @@ namespace Meziantou.Framework
 
         public long Length { get; }
 
-        public override bool Equals(object obj) => obj is FileLength fileLength && Equals(fileLength);
+        public override bool Equals(object? obj) => obj is FileLength fileLength && Equals(fileLength);
 
         public bool Equals(FileLength other) => Length == other.Length;
 

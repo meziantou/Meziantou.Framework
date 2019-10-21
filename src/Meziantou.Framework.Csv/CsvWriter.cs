@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -34,12 +33,12 @@ namespace Meziantou.Framework.Csv
             return Task.CompletedTask;
         }
 
-        public Task WriteValueAsync(string value)
+        public Task WriteValueAsync(string? value)
         {
             return WriteEscapedValue(value);
         }
 
-        public async Task WriteValuesAsync(IEnumerable<string> values)
+        public async Task WriteValuesAsync(IEnumerable<string?> values)
         {
             foreach (var value in values)
             {
@@ -47,23 +46,23 @@ namespace Meziantou.Framework.Csv
             }
         }
 
-        public Task WriteValuesAsync(params string[] values)
+        public Task WriteValuesAsync(params string?[] values)
         {
-            return WriteValuesAsync((IEnumerable<string>)values);
+            return WriteValuesAsync((IEnumerable<string?>)values);
         }
 
-        public Task WriteRowAsync(params string[] values)
+        public Task WriteRowAsync(params string?[] values)
         {
-            return WriteRowAsync((IEnumerable<string>)values);
+            return WriteRowAsync((IEnumerable<string?>)values);
         }
 
-        public async Task WriteRowAsync(IEnumerable<string> values)
+        public async Task WriteRowAsync(IEnumerable<string?> values)
         {
             await BeginRowAsync().ConfigureAwait(false);
             await WriteValuesAsync(values).ConfigureAwait(false);
         }
 
-        private async Task WriteEscapedValue(string value)
+        private async Task WriteEscapedValue(string? value)
         {
             var writer = BaseWriter;
             if (!_isFirstRowValue)

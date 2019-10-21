@@ -32,16 +32,19 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool Contains(this string? str, string value, StringComparison stringComparison)
+        public static bool Contains(this string? str, string? value, StringComparison stringComparison)
         {
             if (str == null)
+                return value == null;
+
+            if (value == null)
                 return false;
 
             return str.IndexOf(value, stringComparison) >= 0;
         }
 
         [Pure]
-        public static bool ContainsIgnoreCase(this string? str, string value)
+        public static bool ContainsIgnoreCase(this string? str, string? value)
         {
             return Contains(str, value, StringComparison.OrdinalIgnoreCase);
         }

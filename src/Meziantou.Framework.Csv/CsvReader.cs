@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,7 +12,7 @@ namespace Meziantou.Framework.Csv
         public const char DefaultSeparatorCharacter = ',';
         public const char DefaultQuoteCharacter = '"';
 
-        private CsvColumn[] _columns;
+        private CsvColumn[]? _columns;
         private readonly char[] _readBuffer = new char[1];
 
         public char Separator { get; set; } = DefaultSeparatorCharacter;

@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32.Natives
+#nullable disable
+namespace Meziantou.Framework.Win32.Natives
 {
     internal enum Win32ErrorCode
     {

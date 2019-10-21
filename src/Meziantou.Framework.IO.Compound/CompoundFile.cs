@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -281,7 +282,7 @@ namespace Meziantou.Framework.IO.Compound
             {
                 _rootEntry = new DirectoryStorage { Name = RootEntry, ObjectType = DirectoryObjectType.RootStorage };
                 AddDirectoryEntry(_rootEntry);
-                _rootStorage = new CompoundFileStorage(this, null, _rootEntry, true);
+                _rootStorage = new CompoundFileStorage(this, parent: null, _rootEntry, isRoot: true);
             }
             else
             {
@@ -496,7 +497,7 @@ namespace Meziantou.Framework.IO.Compound
         {
             var entry = new DirectoryStorage { Name = name, ObjectType = DirectoryObjectType.Storage };
             AddDirectoryEntry(entry);
-            var child = new CompoundFileStorage(this, storage, entry, false);
+            var child = new CompoundFileStorage(this, storage, entry, isRoot: false);
             storage._entry.AddEntry(entry);
             return child;
         }
@@ -666,7 +667,7 @@ namespace Meziantou.Framework.IO.Compound
                 {
                     _rootEntry = new DirectoryStorage { Name = RootEntry, ObjectType = DirectoryObjectType.RootStorage };
                     AddDirectoryEntry(_rootEntry);
-                    _rootStorage = new CompoundFileStorage(this, null, _rootEntry, true);
+                    _rootStorage = new CompoundFileStorage(this, parent: null, _rootEntry, isRoot: true);
                 }
                 return _rootStorage;
             }
@@ -688,7 +689,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Author
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_AUTHOR, null);
+            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_AUTHOR, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_AUTHOR, value);
         }
 
@@ -700,7 +701,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Company
         {
-            get => GetProperty<string>(DocSummaryInformationFormatId, PIDDSI_COMPANY, null);
+            get => GetProperty<string>(DocSummaryInformationFormatId, PIDDSI_COMPANY, defaultValue: null);
             set => SetProperty(DocSummaryInformationFormatId, PIDDSI_COMPANY, value);
         }
 
@@ -712,7 +713,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Title
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_TITLE, null);
+            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_TITLE, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_TITLE, value);
         }
 
@@ -724,7 +725,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Subject
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_SUBJECT, null);
+            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_SUBJECT, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_SUBJECT, value);
         }
 
@@ -736,7 +737,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Keywords
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_KEYWORDS, null);
+            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_KEYWORDS, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_KEYWORDS, value);
         }
 
@@ -748,7 +749,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </value>
         public string Comments
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_COMMENTS, null);
+            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_COMMENTS, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_COMMENTS, value);
         }
 
@@ -943,7 +944,7 @@ namespace Meziantou.Framework.IO.Compound
             }
 
             // create storage hierarchy
-            CreateStorage(null, _rootEntry, true);
+            CreateStorage(parent: null, _rootEntry, isRoot: true);
 
             // load data
             LoadStreams(RootStorage, reader);

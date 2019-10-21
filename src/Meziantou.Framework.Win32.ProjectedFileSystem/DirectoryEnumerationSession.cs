@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
@@ -53,46 +54,4 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _enumerator?.Dispose();
         }
     }
-
-    //class Program
-    //{
-    //    // TODO notification on rename/delete/... 
-
-    //    // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
-    //    static void Main(string[] args)
-    //    {
-    //        var guid = Guid.NewGuid();
-    //        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
-    //        Directory.CreateDirectory(fullPath);
-
-    //        using (var vfs = new SampleVirtualFileSystem(fullPath))
-    //        {
-    //            vfs.Initialize();
-    //            var results = Directory.EnumerateFileSystemEntries(fullPath).ToList();
-    //            foreach (var result in results)
-    //            {
-    //                var fi = new FileInfo(result);
-    //                var length = fi.Length;
-
-    //            }
-
-    //            try
-    //            {
-    //                var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-    //                var length2 = fi2.Length;
-    //                Debug.Fail("File does not exist");
-    //            }
-    //            catch (FileNotFoundException)
-    //            {
-    //            }
-
-    //            var bytes = File.ReadAllBytes(Path.Combine(fullPath, "a"));
-    //            using (var stream = File.OpenRead(Path.Combine(fullPath, "b")))
-    //            {
-    //                var b1 = stream.ReadByte();
-    //                var b2 = stream.ReadByte();
-    //            }
-    //        }
-    //    }
-    //}
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using Meziantou.Framework.Win32.Natives;

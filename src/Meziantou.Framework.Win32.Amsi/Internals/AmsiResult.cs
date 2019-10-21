@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32
+﻿#nullable disable
+namespace Meziantou.Framework.Win32
 {
     // https://www.magnumdb.com/search?q=parent:AMSI_RESULT
     internal enum AmsiResult

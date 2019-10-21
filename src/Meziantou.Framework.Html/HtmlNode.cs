@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -1063,7 +1064,7 @@ namespace Meziantou.Framework.Html
             ParentNode?.GetNamespaceAttributes(namespaces);
         }
 
-        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
+        [SuppressMessage("Design", "MA0041:Make method static", Justification = "By design")]
         public Uri BaseAddress => null;
 
         public abstract void WriteTo(TextWriter writer);

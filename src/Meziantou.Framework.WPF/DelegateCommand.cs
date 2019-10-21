@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Threading.Tasks;
 
 namespace Meziantou.Framework.WPF
@@ -7,12 +8,12 @@ namespace Meziantou.Framework.WPF
     {
         public static IDelegateCommand Create(Action execute)
         {
-            return new SyncDelegateCommand(WrapAction(execute), null);
+            return new SyncDelegateCommand(WrapAction(execute), canExecute: null);
         }
 
         public static IDelegateCommand Create(Action<object> execute)
         {
-            return new SyncDelegateCommand(execute, null);
+            return new SyncDelegateCommand(execute, canExecute: null);
         }
 
         public static IDelegateCommand Create(Action execute, Func<bool> canExecute)
@@ -27,12 +28,12 @@ namespace Meziantou.Framework.WPF
 
         public static IDelegateCommand Create(Func<Task> execute)
         {
-            return new AsyncDelegateCommand(WrapAction(execute), null);
+            return new AsyncDelegateCommand(WrapAction(execute), canExecute: null);
         }
 
         public static IDelegateCommand Create(Func<object, Task> execute)
         {
-            return new AsyncDelegateCommand(execute, null);
+            return new AsyncDelegateCommand(execute, canExecute: null);
         }
 
         public static IDelegateCommand Create(Func<Task> execute, Func<bool> canExecute)

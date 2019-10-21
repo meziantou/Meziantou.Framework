@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Versioning
+﻿#nullable disable
+namespace Meziantou.Framework.Versioning
 {
     public static class SemanticVersionExtensions
     {

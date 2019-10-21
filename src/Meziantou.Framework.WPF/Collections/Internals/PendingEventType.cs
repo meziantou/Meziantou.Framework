@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.WPF.Collections
+﻿#nullable disable
+namespace Meziantou.Framework.WPF.Collections
 {
     internal enum PendingEventType
     {

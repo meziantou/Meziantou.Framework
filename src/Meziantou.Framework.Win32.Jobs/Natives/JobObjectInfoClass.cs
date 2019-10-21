@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32.Natives
+﻿#nullable disable
+namespace Meziantou.Framework.Win32.Natives
 {
     // https://docs.microsoft.com/en-us/windows/desktop/api/jobapi2/nf-jobapi2-queryinformationjobobject
     internal enum JobObjectInfoClass

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem

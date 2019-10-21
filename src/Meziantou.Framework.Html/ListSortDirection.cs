@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Html
+﻿#nullable disable
+namespace Meziantou.Framework.Html
 {
     public enum ListSortDirection
     {

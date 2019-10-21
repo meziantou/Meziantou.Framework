@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -340,7 +341,7 @@ namespace Meziantou.Framework.IO.Compound
 
                                 case VARTYPE.VT_DECIMAL:
                                     var dec = IntPtr.Zero;
-                                    Marshal.StructureToPtr(vars[0], dec, false);
+                                    Marshal.StructureToPtr(vars[0], dec, fDeleteOld: false);
                                     value = Marshal.PtrToStructure(dec, typeof(decimal));
                                     break;
 
@@ -471,7 +472,7 @@ namespace Meziantou.Framework.IO.Compound
 
             var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
-                throw new FileNotFoundException(null, FilePath);
+                throw new FileNotFoundException(message: null, FilePath);
 
             if (hr != 0)
                 throw new Win32Exception((int)hr);
@@ -501,7 +502,7 @@ namespace Meziantou.Framework.IO.Compound
 
             var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
-                throw new FileNotFoundException(null, FilePath);
+                throw new FileNotFoundException(message: null, FilePath);
 
             if (hr != 0)
                 throw new Win32Exception((int)hr);
@@ -557,7 +558,7 @@ namespace Meziantou.Framework.IO.Compound
 
             var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
-                throw new FileNotFoundException(null, FilePath);
+                throw new FileNotFoundException(message: null, FilePath);
 
             if (hr != 0)
                 throw new Win32Exception((int)hr);
@@ -745,7 +746,7 @@ namespace Meziantou.Framework.IO.Compound
             var guid = typeof(IPropertySetStorage).GUID;
             var hr = StgOpenStorageEx(FilePath, mode, STGFMT.STGFMT_ANY, 0, IntPtr.Zero, IntPtr.Zero, ref guid, out var propertySetStorage);
             if (hr == STG_E_FILENOTFOUND || hr == STG_E_PATHNOTFOUND)
-                throw new FileNotFoundException(null, FilePath);
+                throw new FileNotFoundException(message: null, FilePath);
 
             if (hr != 0)
                 throw new Win32Exception((int)hr);

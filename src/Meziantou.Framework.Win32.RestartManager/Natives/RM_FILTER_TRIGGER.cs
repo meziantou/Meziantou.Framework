@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32.Natives
+﻿#nullable disable
+namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     /// Describes the restart or shutdown actions for an application or service.

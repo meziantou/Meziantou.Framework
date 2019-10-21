@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -80,7 +81,7 @@ namespace Meziantou.Framework
 #endif
             try
             {
-                _server.BeginWaitForConnection(Listen, null);
+                _server.BeginWaitForConnection(Listen, state: null);
             }
             catch (ObjectDisposedException)
             {

@@ -1,3 +1,4 @@
+#nullable disable
 using System;
 
 namespace Meziantou.Framework.Scheduling

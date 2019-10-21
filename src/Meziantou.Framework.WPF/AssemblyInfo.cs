@@ -1,3 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+﻿#nullable disable
+using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.WPF.Tests")]

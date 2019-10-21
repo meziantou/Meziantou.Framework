@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32
+﻿#nullable disable
+namespace Meziantou.Framework.Win32
 {
     /// <summary>
     /// Configures the shut down of applications.

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
@@ -7,5 +8,6 @@ namespace Meziantou.Framework.Win32.Natives
     [Guid(IIDGuid.IFileSaveDialog)]
     [CoClass(typeof(FileSaveDialogRCW))]
     internal interface NativeFileSaveDialog : IFileSaveDialog
-    { }
+    {
+    }
 }

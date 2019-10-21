@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32

@@ -1,3 +1,4 @@
+#nullable disable
 namespace Meziantou.Framework.Win32
 {
     public class Credential

@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿#nullable disable
+namespace Meziantou.Framework.CodeDom
 {
     public abstract class Directive : CodeObject, ICommentable
     {

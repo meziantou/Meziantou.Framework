@@ -1,4 +1,5 @@
-﻿
+﻿#nullable disable
+
 namespace Meziantou.Framework.Html
 {
     // NOTE: keep in sync with HtmlParserState

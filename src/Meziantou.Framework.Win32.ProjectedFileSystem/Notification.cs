@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿#nullable disable
+namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     public class Notification
     {

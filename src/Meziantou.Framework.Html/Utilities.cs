@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;

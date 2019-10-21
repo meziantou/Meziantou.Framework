@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.Csv
+﻿#nullable disable
+namespace Meziantou.Framework.Csv
 {
     public class CsvColumn
     {

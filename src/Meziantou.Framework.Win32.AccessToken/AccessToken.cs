@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.Win32.Natives;
+﻿#nullable disable
+using Meziantou.Framework.Win32.Natives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

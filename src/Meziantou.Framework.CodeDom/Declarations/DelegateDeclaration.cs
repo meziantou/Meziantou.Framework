@@ -1,4 +1,5 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿#nullable disable
+namespace Meziantou.Framework.CodeDom
 {
     public class DelegateDeclaration : TypeDeclaration, IParametrableType
     {

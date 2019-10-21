@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿#nullable disable
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
 {

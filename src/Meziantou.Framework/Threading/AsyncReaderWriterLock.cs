@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -59,7 +58,7 @@ namespace Meziantou.Framework.Threading
 
         private void ReaderRelease()
         {
-            TaskCompletionSource<Releaser> toWake = null;
+            TaskCompletionSource<Releaser>? toWake = null;
 
             lock (_waitingWriters)
             {
@@ -79,7 +78,7 @@ namespace Meziantou.Framework.Threading
 
         private void WriterRelease()
         {
-            TaskCompletionSource<Releaser> toWake = null;
+            TaskCompletionSource<Releaser>? toWake = null;
             var toWakeIsWriter = false;
 
             lock (_waitingWriters)

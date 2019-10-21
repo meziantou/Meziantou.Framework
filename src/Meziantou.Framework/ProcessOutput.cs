@@ -1,9 +1,8 @@
-﻿#nullable disable
-using System;
+﻿using System;
 
 namespace Meziantou.Framework
 {
-    public class ProcessOutput
+    public sealed class ProcessOutput
     {
         public ProcessOutput(ProcessOutputType type, string text)
         {

@@ -1,12 +1,11 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Meziantou.Framework.Collections
 {
-    public class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
+    public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
     {
         private readonly List<T> _list = new List<T>();
 

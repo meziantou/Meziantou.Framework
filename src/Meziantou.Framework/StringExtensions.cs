@@ -1,5 +1,5 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
@@ -9,7 +9,7 @@ namespace Meziantou.Framework
     public static class StringExtensions
     {
         [Pure]
-        public static string Nullify(this string str, bool trim)
+        public static string? Nullify(this string? str, bool trim)
         {
             if (str == null)
                 return null;
@@ -26,28 +26,29 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool EqualsIgnoreCase(this string str1, string str2)
+        public static bool EqualsIgnoreCase(this string? str1, string? str2)
         {
             return string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
         }
 
         [Pure]
-        public static bool Contains(this string str, string value, StringComparison stringComparison)
+        public static bool Contains(this string? str, string value, StringComparison stringComparison)
         {
             if (str == null)
-                return value == null;
+                return false;
 
             return str.IndexOf(value, stringComparison) >= 0;
         }
 
         [Pure]
-        public static bool ContainsIgnoreCase(this string str, string value)
+        public static bool ContainsIgnoreCase(this string? str, string value)
         {
             return Contains(str, value, StringComparison.OrdinalIgnoreCase);
         }
 
         [Pure]
-        public static string RemoveDiacritics(this string str)
+        [return: NotNullIfNotNull(parameterName: "str")]
+        public static string? RemoveDiacritics(this string? str)
         {
             if (str == null)
                 return null;
@@ -68,7 +69,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static string Replace(this string str, string oldValue, string newValue, StringComparison comparison)
+        [return: NotNullIfNotNull(parameterName: "str")]
+        public static string? Replace(this string? str, string oldValue, string newValue, StringComparison comparison)
         {
             if (str == null)
                 return null;
@@ -92,7 +94,7 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool EndsWith(this string str, char c)
+        public static bool EndsWith(this string? str, char c)
         {
             if (string.IsNullOrEmpty(str))
                 return false;
@@ -101,7 +103,7 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool StartsWith(this string str, char c)
+        public static bool StartsWith(this string? str, char c)
         {
             if (string.IsNullOrEmpty(str))
                 return false;

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Dynamic;
@@ -15,7 +14,7 @@ namespace Meziantou.Framework
 
         private static readonly ConcurrentDictionary<Type, TypeCache> s_cache = new ConcurrentDictionary<Type, TypeCache>();
 
-        private readonly object _originalObject;
+        private readonly object? _originalObject;
         private readonly TypeCache _typeCache;
 
         public ReflectionDynamicObject(object obj)
@@ -54,21 +53,21 @@ namespace Meziantou.Framework
                 }
             }
 
-            Exception exception = exceptions.Count == 0 ? null : new AggregateException(exceptions);
-            throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", nameof(parameters), exception);
+            Exception? innerException = exceptions.Count == 0 ? null : new AggregateException(exceptions);
+            throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", nameof(parameters), innerException);
         }
 
-        public override bool TryGetMember(GetMemberBinder binder, out object result)
+        public override bool TryGetMember(GetMemberBinder binder, out object? result)
         {
             return TryGetMemberValue(binder.Name, out result);
         }
 
-        public override bool TrySetMember(SetMemberBinder binder, object value)
+        public override bool TrySetMember(SetMemberBinder binder, object? value)
         {
             return TrySetMemberValue(binder.Name, value);
         }
 
-        public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
+        public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
         {
             if (_originalObject == null)
             {
@@ -91,7 +90,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value)
+        public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object? value)
         {
             if (_originalObject == null)
             {
@@ -113,9 +112,9 @@ namespace Meziantou.Framework
             return false;
         }
 
-        public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object[]? args, out object? result)
         {
-            var type = _typeCache.Type;
+            Type? type = _typeCache.Type;
             var flags = _originalObject == null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
             flags |= BindingFlags.InvokeMethod;
 
@@ -174,13 +173,13 @@ namespace Meziantou.Framework
             }
         }
 
-        public override bool TryConvert(ConvertBinder binder, out object result)
+        public override bool TryConvert(ConvertBinder binder, out object? result)
         {
             result = Convert.ChangeType(_originalObject, binder.Type);
             return true;
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_originalObject != null)
                 return _originalObject.ToString();
@@ -188,7 +187,7 @@ namespace Meziantou.Framework
             return null;
         }
 
-        private bool TryGetMemberValue(string name, out object result)
+        private bool TryGetMemberValue(string name, out object? result)
         {
             if (_originalObject == null)
             {
@@ -223,7 +222,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private bool TrySetMemberValue(string name, object value)
+        private bool TrySetMemberValue(string name, object? value)
         {
             if (_originalObject == null)
             {
@@ -257,7 +256,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private static bool TryGetIndex(PropertyInfo indexer, object instance, object[] indexes, out object result)
+        private static bool TryGetIndex(PropertyInfo indexer, object? instance, object[] indexes, out object? result)
         {
             try
             {
@@ -278,7 +277,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private static bool TrySetIndex(PropertyInfo indexer, object instance, object[] indexes, object value)
+        private static bool TrySetIndex(PropertyInfo indexer, object? instance, object[] indexes, object? value)
         {
             try
             {
@@ -322,10 +321,11 @@ namespace Meziantou.Framework
                 var typeCache = new TypeCache(type);
                 typeCache.Constructors.AddRange(type.GetConstructors());
 
-                while (type != null)
+                Type? currentType = type;
+                while (currentType != null)
                 {
                     // Instances
-                    foreach (var propertyInfo in type.GetProperties(InstanceDefaultBindingFlags))
+                    foreach (var propertyInfo in currentType.GetProperties(InstanceDefaultBindingFlags))
                     {
                         if (propertyInfo.GetIndexParameters().Any())
                         {
@@ -340,7 +340,7 @@ namespace Meziantou.Framework
                         }
                     }
 
-                    foreach (var fieldInfo in type.GetFields(InstanceDefaultBindingFlags))
+                    foreach (var fieldInfo in currentType.GetFields(InstanceDefaultBindingFlags))
                     {
                         if (!typeCache.InstanceFields.ContainsKey(fieldInfo.Name))
                         {
@@ -349,7 +349,7 @@ namespace Meziantou.Framework
                     }
 
                     // Static
-                    foreach (var propertyInfo in type.GetProperties(StaticDefaultBindingFlags))
+                    foreach (var propertyInfo in currentType.GetProperties(StaticDefaultBindingFlags))
                     {
                         if (propertyInfo.GetIndexParameters().Any())
                         {
@@ -364,7 +364,7 @@ namespace Meziantou.Framework
                         }
                     }
 
-                    foreach (var fieldInfo in type.GetFields(StaticDefaultBindingFlags))
+                    foreach (var fieldInfo in currentType.GetFields(StaticDefaultBindingFlags))
                     {
                         if (!typeCache.StaticFields.ContainsKey(fieldInfo.Name))
                         {
@@ -372,7 +372,7 @@ namespace Meziantou.Framework
                         }
                     }
 
-                    type = type.BaseType;
+                    currentType = currentType.BaseType;
                 }
 
                 return typeCache;

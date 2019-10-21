@@ -1,5 +1,5 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -7,12 +7,14 @@ namespace Meziantou.Framework
 {
     public static class Slug
     {
-        public static string Create(string text)
+        [return: NotNullIfNotNull(parameterName: "text")]
+        public static string? Create(string? text)
         {
             return Create(text, options: null);
         }
 
-        public static string Create(string text, SlugOptions options)
+        [return: NotNullIfNotNull(parameterName: "text")]
+        public static string? Create(string? text, SlugOptions? options)
         {
             if (text == null)
                 return null;

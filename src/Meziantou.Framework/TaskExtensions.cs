@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {

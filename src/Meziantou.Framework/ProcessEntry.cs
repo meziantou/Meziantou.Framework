@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
@@ -16,7 +15,7 @@ namespace Meziantou.Framework
         public int ProcessId { get; }
         public int ParentProcessId { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ProcessEntry entry)
             {

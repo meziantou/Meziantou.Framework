@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 
@@ -68,6 +67,7 @@ namespace Meziantou.Framework
         /// <returns> The hamming distance.</returns>
         [Pure]
         public static int Hamming<T>(IEnumerable<T> word1, IEnumerable<T> word2)
+            where T : notnull
         {
             if (word1 == null)
                 throw new ArgumentNullException(nameof(word1));
@@ -104,10 +104,10 @@ namespace Meziantou.Framework
         [Pure]
         public static int Levenshtein(string word1, string word2)
         {
-            Contract.Requires(word1 != null);
-            Contract.Requires(word2 != null);
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= Math.Max(word1.Length, word2.Length));
+            if (word1 is null)
+                throw new ArgumentNullException(nameof(word1));
+            if (word2 is null)
+                throw new ArgumentNullException(nameof(word2));
 
             if (word1.Length == 0)
             {

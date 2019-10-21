@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
@@ -20,7 +19,7 @@ namespace Meziantou.Framework
 
         public string Separator { get; set; }
 
-        public CultureInfo Culture { get; set; }
+        public CultureInfo? Culture { get; set; }
 
         public bool CanEndWithSeparator { get; set; }
 

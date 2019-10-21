@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
@@ -18,7 +17,7 @@ namespace Meziantou.Framework.Threading
         {
         }
 
-        public MonoThreadedTaskScheduler(string threadName)
+        public MonoThreadedTaskScheduler(string? threadName)
         {
             Thread = new Thread(SafeThreadExecute)
             {
@@ -32,7 +31,7 @@ namespace Meziantou.Framework.Threading
             WaitTimeout = TimeSpan.FromMilliseconds(100);
         }
 
-        private Thread Thread { get; set; }
+        private Thread? Thread { get; set; }
         public bool DequeueOnDispose { get; set; }
         public TimeSpan DisposeThreadJoinTimeout { get; set; }
         public TimeSpan WaitTimeout { get; set; }

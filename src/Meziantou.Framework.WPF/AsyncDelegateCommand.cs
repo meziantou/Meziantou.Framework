@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 
@@ -12,7 +11,7 @@ namespace Meziantou.Framework.WPF
         private readonly Dispatcher _dispatcher;
         private bool _isExecuting;
 
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged;
 
         public AsyncDelegateCommand(Func<object, Task> execute, Func<object, bool> canExecute)
         {
@@ -23,7 +22,7 @@ namespace Meziantou.Framework.WPF
 
         public bool CanExecute(object parameter)
         {
-            return !_isExecuting && (_canExecute?.Invoke(parameter) ?? true);
+            return !_isExecuting && _canExecute.Invoke(parameter);
         }
 
         public async void Execute(object parameter)
@@ -35,7 +34,7 @@ namespace Meziantou.Framework.WPF
             {
                 _isExecuting = true;
                 RaiseCanExecuteChanged();
-                await _execute?.Invoke(parameter);
+                await _execute.Invoke(parameter);
             }
             finally
             {
@@ -47,13 +46,17 @@ namespace Meziantou.Framework.WPF
 
         public void RaiseCanExecuteChanged()
         {
-            if (_dispatcher != null)
+            var canExecuteChanged = CanExecuteChanged;
+            if (canExecuteChanged != null)
             {
-                _dispatcher.Invoke(() => CanExecuteChanged?.Invoke(this, EventArgs.Empty));
-            }
-            else
-            {
-                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+                if (_dispatcher != null)
+                {
+                    _dispatcher.Invoke(() => canExecuteChanged.Invoke(this, EventArgs.Empty));
+                }
+                else
+                {
+                    canExecuteChanged.Invoke(this, EventArgs.Empty);
+                }
             }
         }
     }

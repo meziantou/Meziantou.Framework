@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +6,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
+    public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
     {
         [Flags]
         private enum WeekdayHumanTextOptions
@@ -19,7 +18,7 @@ namespace Meziantou.Framework.Scheduling
             Plural = 8,
         }
 
-        private static string GetWeekdayHumanText(IList<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
+        private static string? GetWeekdayHumanText(IList<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
         {
             if (daysOfWeek.Count == 0)
                 return null;
@@ -76,7 +75,7 @@ namespace Meziantou.Framework.Scheduling
             return ListToHumanText(EnglishCultureInfo, daysOfWeek, separator, lastSeparator);
         }
 
-        private static string GetByMonthdayHumanText(int monthday)
+        private static string? GetByMonthdayHumanText(int monthday)
         {
             if (monthday > 0)
             {
@@ -138,6 +137,7 @@ namespace Meziantou.Framework.Scheduling
                 throw new ArgumentNullException(nameof(rrule));
             if (cultureInfo == null)
                 throw new ArgumentNullException(nameof(cultureInfo));
+
             var sb = new StringBuilder();
             sb.Append("every");
             if (rrule.Interval == 1)

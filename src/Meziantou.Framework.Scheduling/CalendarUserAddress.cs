@@ -1,9 +1,8 @@
-#nullable disable
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class CalendarUserAddress
+    public sealed class CalendarUserAddress
     {
         // RFC2445 - 4.3.3 Calendar User Address
 

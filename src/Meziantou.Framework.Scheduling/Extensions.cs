@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -9,7 +8,7 @@ namespace Meziantou.Framework.Scheduling
     internal static class Extensions
     {
         [Pure]
-        public static string GetValue(this IDictionary<string, string> dict, string key, string defaultValue)
+        public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
         {
             if (dict == null)
                 throw new ArgumentNullException(nameof(dict));

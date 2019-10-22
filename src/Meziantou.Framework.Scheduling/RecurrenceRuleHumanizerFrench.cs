@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,9 +6,8 @@ using System.Text;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
+    public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
     {
-        //private static readonly char[] _vovels = { 'a', 'e', 'i', 'o', 'u', 'y' };
         private static readonly char[] s_precededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
 
         protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)
@@ -197,7 +195,7 @@ namespace Meziantou.Framework.Scheduling
             return s_precededByApostropheChars.Contains(str[0]);
         }
 
-        private static string GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
+        private static string? GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)
         {
             if (!daysOfWeek.Any())
                 return null;
@@ -234,7 +232,7 @@ namespace Meziantou.Framework.Scheduling
             }
         }
 
-        private static string GetByMonthdayOrdinalHumanText(int monthday)
+        private static string? GetByMonthdayOrdinalHumanText(int monthday)
         {
             if (monthday > 0)
             {

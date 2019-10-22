@@ -1,6 +1,6 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -23,12 +23,12 @@ namespace Meziantou.Framework.Versioning
             Patch = patch;
         }
 
-        public SemanticVersion(int major, int minor, int patch, string prereleaseLabel)
+        public SemanticVersion(int major, int minor, int patch, string? prereleaseLabel)
             : this(major, minor, patch, prereleaseLabel, metadata: null)
         {
         }
 
-        public SemanticVersion(int major, int minor, int patch, string prereleaseLabel, string metadata)
+        public SemanticVersion(int major, int minor, int patch, string? prereleaseLabel, string? metadata)
             : this(major, minor, patch)
         {
             if (prereleaseLabel != null)
@@ -48,7 +48,7 @@ namespace Meziantou.Framework.Versioning
             }
         }
 
-        public SemanticVersion(int major, int minor, int patch, IEnumerable<string> prereleaseLabel, IEnumerable<string> metadata)
+        public SemanticVersion(int major, int minor, int patch, IEnumerable<string>? prereleaseLabel, IEnumerable<string>? metadata)
             : this(major, minor, patch)
         {
             if (prereleaseLabel != null)
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Versioning
         public IReadOnlyList<string> Metadata { get; } = s_emptyArray;
         public bool HasMetadata => Metadata != s_emptyArray;
 
-        public string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
             var sb = new StringBuilder();
             sb.Append(Major);
@@ -151,7 +151,7 @@ namespace Meziantou.Framework.Versioning
             return SemanticVersionComparer.Instance.GetHashCode(this);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is SemanticVersion semver)
             {
@@ -161,12 +161,12 @@ namespace Meziantou.Framework.Versioning
             return false;
         }
 
-        public bool Equals(SemanticVersion other)
+        public bool Equals(SemanticVersion? other)
         {
             return SemanticVersionComparer.Instance.Equals(this, other);
         }
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             if (obj is SemanticVersion semver)
             {
@@ -176,7 +176,7 @@ namespace Meziantou.Framework.Versioning
             throw new ArgumentException("Argument must be an instance of " + nameof(SemanticVersion), nameof(obj));
         }
 
-        public int CompareTo(SemanticVersion other)
+        public int CompareTo(SemanticVersion? other)
         {
             return SemanticVersionComparer.Instance.Compare(this, other);
         }
@@ -192,7 +192,7 @@ namespace Meziantou.Framework.Versioning
             throw new ArgumentException("The value is not a valid semantic version", nameof(versionString));
         }
 
-        public static bool TryParse(string versionString, out SemanticVersion version)
+        public static bool TryParse(string versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
         {
             // 1.2.3
             // v1.2.3
@@ -248,7 +248,7 @@ namespace Meziantou.Framework.Versioning
             return false;
         }
 
-        private static bool TryReadPrerelease(string versionString, ref int index, out IReadOnlyList<string> labels)
+        private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)]out IReadOnlyList<string>? labels)
         {
             if (index < versionString.Length && versionString[index] == '-')
             {
@@ -279,7 +279,7 @@ namespace Meziantou.Framework.Versioning
             return result.Count == 0 ? s_emptyArray : ReadOnlyList.From(result);
         }
 
-        private static bool TryReadMetadata(string versionString, ref int index, out IReadOnlyList<string> labels)
+        private static bool TryReadMetadata(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
         {
             if (index < versionString.Length && versionString[index] == '+')
             {
@@ -295,11 +295,16 @@ namespace Meziantou.Framework.Versioning
 
         private static IReadOnlyList<string> TryReadMetadataIdentifiers(string versionString, ref int index)
         {
-            var result = new List<string>();
+            List<string>? result = null;
             while (true)
             {
                 if (TryReadMetadataIdentifier(versionString, ref index, out var label))
                 {
+                    if (result == null)
+                    {
+                        result = new List<string>();
+                    }
+
                     result.Add(label);
                 }
 
@@ -307,7 +312,7 @@ namespace Meziantou.Framework.Versioning
                     break;
             }
 
-            return result.Count == 0 ? s_emptyArray : ReadOnlyList.From(result);
+            return result == null ? s_emptyArray : ReadOnlyList.From(result);
         }
 
         private static bool IsPrereleaseIdentifier(string label)
@@ -328,7 +333,7 @@ namespace Meziantou.Framework.Versioning
             return TryReadMetadataIdentifier(label, ref index, out _) && index == label.Length;
         }
 
-        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, out string value)
+        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)]out string? value)
         {
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
@@ -355,7 +360,7 @@ namespace Meziantou.Framework.Versioning
             }
         }
 
-        private static bool TryReadMetadataIdentifier(string versionString, ref int index, out string value)
+        private static bool TryReadMetadataIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
         {
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
@@ -424,16 +429,16 @@ namespace Meziantou.Framework.Versioning
             return c == '-';
         }
 
-        public static bool operator ==(SemanticVersion left, SemanticVersion right) => Equals(left, right);
+        public static bool operator ==(SemanticVersion? left, SemanticVersion? right) => Equals(left, right);
 
-        public static bool operator !=(SemanticVersion left, SemanticVersion right) => !(left == right);
+        public static bool operator !=(SemanticVersion? left, SemanticVersion? right) => !(left == right);
 
-        public static bool operator <(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) < 0;
+        public static bool operator <(SemanticVersion? left, SemanticVersion? right) => SemanticVersionComparer.Instance.Compare(left, right) < 0;
 
-        public static bool operator <=(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) <= 0;
+        public static bool operator <=(SemanticVersion? left, SemanticVersion? right) => SemanticVersionComparer.Instance.Compare(left, right) <= 0;
 
-        public static bool operator >(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) > 0;
+        public static bool operator >(SemanticVersion? left, SemanticVersion? right) => SemanticVersionComparer.Instance.Compare(left, right) > 0;
 
-        public static bool operator >=(SemanticVersion left, SemanticVersion right) => SemanticVersionComparer.Instance.Compare(left, right) >= 0;
+        public static bool operator >=(SemanticVersion? left, SemanticVersion? right) => SemanticVersionComparer.Instance.Compare(left, right) >= 0;
     }
 }

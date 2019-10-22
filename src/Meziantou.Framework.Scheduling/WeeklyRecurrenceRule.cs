@@ -1,24 +1,24 @@
-#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class WeeklyRecurrenceRule : RecurrenceRule
+    public sealed class WeeklyRecurrenceRule : RecurrenceRule
     {
         public IList<Month> ByMonths { get; set; } = new List<Month>();
         public IList<DayOfWeek> ByWeekDays { get; set; } = new List<DayOfWeek>();
 
         protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
         {
-            if (IsEmpty(ByWeekDays))
+            var byWeekDays = ByWeekDays?.ToList();
+            if (IsEmpty(byWeekDays))
             {
-                ByWeekDays = new List<DayOfWeek> { startDate.DayOfWeek };
+                byWeekDays = new List<DayOfWeek> { DefaultFirstDayOfWeek };
             }
 
-            var dayOffsets = ByWeekDays.Select(day => ((day - WeekStart) + 7) % 7).Distinct().OrderBy(a => a).ToList();
+            var dayOffsets = byWeekDays.Select(day => ((day - WeekStart) + 7) % 7).Distinct().OrderBy(a => a).ToList();
             var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
 
             while (true)
@@ -44,8 +44,6 @@ namespace Meziantou.Framework.Scheduling
 
                 startOfWeek = startOfWeek.AddDays(7 * Interval);
             }
-
-            // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
         }
 
         public override string Text

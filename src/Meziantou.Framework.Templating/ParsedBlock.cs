@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Templating
@@ -27,7 +26,7 @@ namespace Meziantou.Framework.Templating
             return Template.OutputParameterName + "." + nameof(TextWriter.Write) + "(@\"" + EscapeVerbatimString(Text) + "\");";
         }
 
-        protected static string EscapeVerbatimString(string s)
+        protected static string? EscapeVerbatimString(string? s)
         {
             return s?.Replace("\"", "\"\"");
         }
@@ -40,7 +39,7 @@ namespace Meziantou.Framework.Templating
             return Index.CompareTo(other.Index);
         }
 
-        int IComparable.CompareTo(object obj)
+        int IComparable.CompareTo(object? obj)
         {
             return ((IComparable<ParsedBlock>)this).CompareTo(obj as ParsedBlock);
         }

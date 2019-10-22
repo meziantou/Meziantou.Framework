@@ -21,5 +21,9 @@
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp2.1'">
     <NoWarn>$(NoWarn);8600;8601;8602;8603;8604</NoWarn>
   </PropertyGroup>
-  
+
+  <!-- Ensure .NET Core 3.0 is a target of the project to support nullable -->
+  <Target Name="CheckNetCoreApp3_0" BeforeTargets="Build" Condition="$(TargetFrameworks.Contains('netcoreapp3.0')) == false">
+    <Error Text="The project must target netcoreapp3.0" />
+  </Target>  
 </Project>

@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.Scheduling
+﻿namespace Meziantou.Framework.Scheduling
 {
     public enum Month
     {

@@ -1,10 +1,9 @@
-#nullable disable
-namespace Meziantou.Framework.Scheduling
+﻿namespace Meziantou.Framework.Scheduling
 {
-    public class Attendee
+    public sealed class Attendee
     {
         //RFC2445 - 4.8.4.1 Attendee
 
-        public CalendarUserAddress Address { get; set; }
+        public CalendarUserAddress? Address { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
@@ -14,10 +13,10 @@ namespace Meziantou.Framework
         private const byte NotifyInstanceMessageType = 1;
 
         private readonly Guid _applicationId;
-        private NamedPipeServerStream _server;
-        private Mutex _mutex;
+        private NamedPipeServerStream? _server;
+        private Mutex? _mutex;
 
-        public event EventHandler<SingleInstanceEventArgs> NewInstance;
+        public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
         public SingleInstance(Guid applicationId)
         {
@@ -46,7 +45,7 @@ namespace Meziantou.Framework
             if (!StartServer)
                 return;
 
-#if NETCOREAPP2_1
+#if NETCOREAPP2_1 || NETCOREAPP3_0
             _server = new NamedPipeServerStream(
                        PipeName,
                        PipeDirection.In,
@@ -92,11 +91,14 @@ namespace Meziantou.Framework
         private void Listen(IAsyncResult ar)
         {
             var server = _server;
+            if (server == null)
+                return;
+
             try
             {
                 try
                 {
-                    _server.EndWaitForConnection(ar);
+                    server.EndWaitForConnection(ar);
                 }
                 catch (ObjectDisposedException)
                 {

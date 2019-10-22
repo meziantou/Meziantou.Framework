@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Windows.Input;
+﻿using System.Windows.Input;
 
 namespace Meziantou.Framework.WPF
 {

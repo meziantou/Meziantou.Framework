@@ -1,18 +1,17 @@
-#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class YearlyRecurrenceRule : RecurrenceRule
+    public sealed class YearlyRecurrenceRule : RecurrenceRule
     {
-        public IList<int> ByMonthDays { get; set; }
-        public IList<ByDay> ByWeekDays { get; set; }
-        public IList<Month> ByMonths { get; set; }
+        public IList<int>? ByMonthDays { get; set; }
+        public IList<ByDay>? ByWeekDays { get; set; }
+        public IList<Month>? ByMonths { get; set; }
         //public IList<int> ByWeekNo { get; set; }
-        public IList<int> ByYearDays { get; set; }
+        public IList<int>? ByYearDays { get; set; }
 
         protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
         {
@@ -32,7 +31,7 @@ namespace Meziantou.Framework.Scheduling
                 var resultByWeekDays = ResultByWeekDays(startOfYear);
                 var resultByYearDays = ResultByYearDays(startOfYear);
                 var resultByMonths = ResultByMonths(startOfYear);
-                List<DateTime> resultByWeekNo = null;// ResultByWeekNo(startDate, startOfYear);
+                List<DateTime>? resultByWeekNo = null;// ResultByWeekNo(startDate, startOfYear);
 
                 var result = Intersect(resultByMonths, resultByWeekNo, resultByYearDays, resultByMonthDays, resultByWeekDays);
                 result = FilterBySetPosition(result.Distinct().OrderBy(d => d).ToList(), BySetPositions);
@@ -44,13 +43,11 @@ namespace Meziantou.Framework.Scheduling
 
                 startOfYear = startOfYear.AddYears(Interval);
             }
-
-            // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
         }
 
-        private List<DateTime> ResultByWeekDays(DateTime startOfYear)
+        private List<DateTime>? ResultByWeekDays(DateTime startOfYear)
         {
-            List<DateTime> result = null;
+            List<DateTime>? result = null;
             if (!IsEmpty(ByWeekDays))
             {
                 result = new List<DateTime>();
@@ -105,7 +102,11 @@ namespace Meziantou.Framework.Scheduling
                 {
                     for (var dt = startOfYear; dt.Year == startOfYear.Year; dt = dt.AddMonths(1))
                     {
-                        result.AddRange(ResultByWeekDaysInMonth(dt, ByWeekDays));
+                        var resultByWeekDaysInMonth = ResultByWeekDaysInMonth(dt, ByWeekDays);
+                        if (resultByWeekDaysInMonth != null)
+                        {
+                            result.AddRange(resultByWeekDaysInMonth);
+                        }
                     }
                 }
 
@@ -114,9 +115,9 @@ namespace Meziantou.Framework.Scheduling
             return result;
         }
 
-        private List<DateTime> ResultByMonthDays(DateTime startDate, DateTime startOfYear)
+        private List<DateTime>? ResultByMonthDays(DateTime startDate, DateTime startOfYear)
         {
-            List<DateTime> result = null;
+            List<DateTime>? result = null;
 
             var monthDays = ByMonthDays;
             if (IsEmpty(ByMonthDays) && IsEmpty(ByWeekDays) && /*IsEmpty(ByWeekNo) &&*/ IsEmpty(ByYearDays))
@@ -147,12 +148,13 @@ namespace Meziantou.Framework.Scheduling
                 result.Sort();
                 //result = FilterBySetPosition(result, BySetPositions).ToList();
             }
+
             return result;
         }
 
-        private List<DateTime> ResultByYearDays(DateTime startOfYear)
+        private List<DateTime>? ResultByYearDays(DateTime startOfYear)
         {
-            List<DateTime> result = null;
+            List<DateTime>? result = null;
             if (!IsEmpty(ByYearDays))
             {
                 result = new List<DateTime>();
@@ -172,12 +174,13 @@ namespace Meziantou.Framework.Scheduling
                 result.Sort();
                 //result = FilterBySetPosition(result, BySetPositions).ToList();
             }
+
             return result;
         }
 
-        private List<DateTime> ResultByMonths(DateTime startOfYear)
+        private List<DateTime>? ResultByMonths(DateTime startOfYear)
         {
-            List<DateTime> result = null;
+            List<DateTime>? result = null;
             if (!IsEmpty(ByMonths))
             {
                 result = new List<DateTime>();
@@ -195,6 +198,7 @@ namespace Meziantou.Framework.Scheduling
                 //result.Sort();
                 //result = FilterBySetPosition(result, BySetPositions).ToList();
             }
+
             return result;
         }
 

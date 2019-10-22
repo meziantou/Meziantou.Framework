@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -7,12 +6,12 @@ namespace Meziantou.Framework
 {
     public class LocalizationProvider : ILocalizationProvider
     {
-        private static ILocalizationProvider _current = new LocalizationProvider();
+        private static ILocalizationProvider s_current = new LocalizationProvider();
 
         public static ILocalizationProvider Current
         {
-            get => _current;
-            set => _current = value ?? throw new ArgumentNullException(nameof(value));
+            get => s_current;
+            set => s_current = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         private readonly Dictionary<CultureInfo, IReadOnlyDictionary<string, string>> _cultures;
@@ -57,7 +56,7 @@ namespace Meziantou.Framework
             };
         }
 
-        public string GetString(string name, CultureInfo culture)
+        public string GetString(string name, CultureInfo? culture)
         {
             culture ??= CultureInfo.InvariantCulture;
 
@@ -72,7 +71,7 @@ namespace Meziantou.Framework
             if (values.TryGetValue(name, out var value))
                 return value;
 
-            return null;
+            throw new ArgumentException($"'{name}' is not supported", nameof(name));
         }
 
         public void Set(CultureInfo culture, IReadOnlyDictionary<string, string> values)

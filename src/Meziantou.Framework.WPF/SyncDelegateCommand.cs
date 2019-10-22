@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF
@@ -10,7 +9,7 @@ namespace Meziantou.Framework.WPF
         private readonly Func<object, bool> _canExecute;
         private readonly Dispatcher _dispatcher;
 
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged;
 
         public SyncDelegateCommand(Action<object> execute, Func<object, bool> canExecute)
         {
@@ -21,12 +20,12 @@ namespace Meziantou.Framework.WPF
 
         public bool CanExecute(object parameter)
         {
-            return _canExecute?.Invoke(parameter) ?? true;
+            return _canExecute.Invoke(parameter);
         }
 
         public void Execute(object parameter)
         {
-            _execute?.Invoke(parameter);
+            _execute.Invoke(parameter);
         }
 
         public void RaiseCanExecuteChanged()

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.ComponentModel;
 
 namespace Meziantou.Framework.Win32

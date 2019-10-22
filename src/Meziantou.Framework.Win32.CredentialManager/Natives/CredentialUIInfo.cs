@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
@@ -9,8 +8,8 @@ namespace Meziantou.Framework.Win32.Natives
     {
         public int cbSize;
         public IntPtr hwndParent;
-        public string pszMessageText;
-        public string pszCaptionText;
+        public string? pszMessageText;
+        public string? pszCaptionText;
         public IntPtr hbmBanner;
     }
 }

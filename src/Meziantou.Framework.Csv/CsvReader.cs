@@ -50,7 +50,7 @@ namespace Meziantou.Framework.Csv
             return buffer[0];
         }
 
-        public async Task<CsvRow> ReadRowAsync()
+        public async Task<CsvRow?> ReadRowAsync()
         {
             var endOfStream = false;
             var rowValues = new List<string>();
@@ -169,13 +169,15 @@ namespace Meziantou.Framework.Csv
             if (rowValues.Count == 0 && endOfStream)
                 return null;
 
-            if (HasHeaderRow && _columns == null)
+            var columns = _columns;
+            if (HasHeaderRow && columns == null)
             {
-                _columns = rowValues.Select(CreateColumn).ToArray();
+                columns = rowValues.Select(CreateColumn).ToArray();
+                _columns = columns;
                 return await ReadRowAsync().ConfigureAwait(false); // Read the first row with data
             }
 
-            return CreateRow(_columns, rowValues);
+            return CreateRow(columns, rowValues);
         }
 
         protected virtual CsvColumn CreateColumn(string name, int index)
@@ -183,7 +185,7 @@ namespace Meziantou.Framework.Csv
             return new CsvColumn(name, index);
         }
 
-        protected virtual CsvRow CreateRow(IReadOnlyList<CsvColumn> columns, IReadOnlyList<string> values)
+        protected virtual CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
         {
             return new CsvRow(columns, values);
         }

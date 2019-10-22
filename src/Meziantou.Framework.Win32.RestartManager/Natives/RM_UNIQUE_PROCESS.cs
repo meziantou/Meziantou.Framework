@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives

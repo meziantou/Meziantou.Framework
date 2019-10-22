@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,7 +23,7 @@ namespace Meziantou.Framework.Templating
             return new HtmlEmailOutput(this, writer);
         }
 
-        public virtual string Run(out HtmlEmailMetadata metadata, IDictionary<string, object> parameters)
+        public virtual string Run(out HtmlEmailMetadata? metadata, IDictionary<string, object?> parameters)
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
@@ -34,7 +33,7 @@ namespace Meziantou.Framework.Templating
             return writer.ToString();
         }
 
-        public virtual string Run(out HtmlEmailMetadata metadata, params object[] parameters)
+        public virtual string Run(out HtmlEmailMetadata? metadata, params object?[] parameters)
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
@@ -44,14 +43,14 @@ namespace Meziantou.Framework.Templating
             return writer.ToString();
         }
 
-        public virtual string Run(out HtmlEmailMetadata metadata)
+        public virtual string Run(out HtmlEmailMetadata? metadata)
         {
             using var writer = new StringWriter();
             Run(writer, out metadata);
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, IReadOnlyDictionary<string, object> parameters)
+        public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, IReadOnlyDictionary<string, object?> parameters)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -63,7 +62,7 @@ namespace Meziantou.Framework.Templating
             metadata = GetMetadata(p);
         }
 
-        public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata, params object[] parameters)
+        public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, params object?[] parameters)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -75,17 +74,17 @@ namespace Meziantou.Framework.Templating
             metadata = GetMetadata(p);
         }
 
-        public virtual void Run(TextWriter writer, out HtmlEmailMetadata metadata)
+        public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
 
-            var p = CreateMethodParameters(writer, (object[])null);
+            var p = CreateMethodParameters(writer, (object[]?)null);
             InvokeRunMethod(p);
             metadata = GetMetadata(p);
         }
 
-        private static HtmlEmailMetadata GetMetadata(object[] parameters)
+        private static HtmlEmailMetadata? GetMetadata(object?[] parameters)
         {
             var htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
             if (htmlEmailOutput != null)

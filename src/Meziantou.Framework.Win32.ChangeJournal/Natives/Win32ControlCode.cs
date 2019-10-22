@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     internal enum Win32ControlCode : uint
     {

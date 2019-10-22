@@ -1,9 +1,10 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Win32
 {
     [Flags]
+    [SuppressMessage("Design", "MA0062:Non-flags enums should not be marked with \"FlagsAttribute\"", Justification = "<Pending>")]
     public enum TokenAccessLevels
     {
         AssignPrimary = 0x00000001,

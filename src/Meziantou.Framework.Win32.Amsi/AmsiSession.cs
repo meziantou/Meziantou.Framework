@@ -1,10 +1,9 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.ComponentModel;
 
 namespace Meziantou.Framework.Win32
 {
-    public class AmsiSession : IDisposable
+    public sealed class AmsiSession : IDisposable
     {
         private readonly AmsiContext _context;
         private readonly AmsiSessionSafeHandle _sessionHandle;

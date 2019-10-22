@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -7,8 +6,8 @@ namespace Meziantou.Framework.WPF.Collections
 {
     internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, INotifyPropertyChanged
     {
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event NotifyCollectionChangedEventHandler? CollectionChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         private protected readonly List<T> _items;
 

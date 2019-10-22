@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +24,7 @@ namespace Meziantou.Framework.Templating
             _urlEncoder = UrlEncoder.Default;
         }
 
-        public override void Write(string format, params object[] args)
+        public override void Write(string format, params object?[] args)
         {
             foreach (var currentSection in _currentSections)
             {
@@ -34,47 +33,47 @@ namespace Meziantou.Framework.Templating
             base.Write(format, args);
         }
 
-        public virtual void WriteHtmlEncode(object value)
+        public virtual void WriteHtmlEncode(object? value)
         {
             WriteHtmlEncode("{0}", value);
         }
 
-        public virtual void WriteHtmlEncode(string value)
+        public virtual void WriteHtmlEncode(string? value)
         {
             WriteHtmlEncode("{0}", value);
         }
 
-        public virtual void WriteHtmlEncode(string format, params object[] args)
+        public virtual void WriteHtmlEncode(string format, params object?[] args)
         {
             Write(_htmlEncoder.Encode(string.Format(format, args)));
         }
 
-        public virtual void WriteHtmlAttributeEncode(object value)
+        public virtual void WriteHtmlAttributeEncode(object? value)
         {
             WriteHtmlAttributeEncode("{0}", value);
         }
 
-        public virtual void WriteHtmlAttributeEncode(string value)
+        public virtual void WriteHtmlAttributeEncode(string? value)
         {
             WriteHtmlAttributeEncode("{0}", value);
         }
 
-        public virtual void WriteHtmlAttributeEncode(string format, params object[] args)
+        public virtual void WriteHtmlAttributeEncode(string format, params object?[] args)
         {
             Write(_htmlEncoder.Encode(string.Format(format, args)));
         }
 
-        public virtual void WriteUrlEncode(object value)
+        public virtual void WriteUrlEncode(object? value)
         {
             WriteUrlEncode("{0}", value);
         }
 
-        public virtual void WriteUrlEncode(string value)
+        public virtual void WriteUrlEncode(string? value)
         {
             WriteUrlEncode("{0}", value);
         }
 
-        public virtual void WriteUrlEncode(string format, params object[] args)
+        public virtual void WriteUrlEncode(string format, params object?[] args)
         {
             var urlEncode = _urlEncoder.Encode(string.Format(format, args));
             Write(urlEncode);
@@ -114,7 +113,7 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public string GetSection(string name)
+        public string? GetSection(string name)
         {
             if (_sections.TryGetValue(name, out var value))
             {
@@ -124,7 +123,7 @@ namespace Meziantou.Framework.Templating
             return null;
         }
 
-        protected virtual string HtmlDecode(string html)
+        protected virtual string? HtmlDecode(string html)
         {
             if (html == null)
                 return null;

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -10,7 +9,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         // C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um\projectedfslib.h
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-        internal static extern HResult PrjMarkDirectoryAsPlaceholder(string rootPathName, string targetPathName, IntPtr versionInfo, in Guid virtualizationInstanceID);
+        internal static extern HResult PrjMarkDirectoryAsPlaceholder(string rootPathName, string? targetPathName, IntPtr versionInfo, in Guid virtualizationInstanceID);
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
         internal static extern HResult PrjStartVirtualizing(string virtualizationRootPath, in PrjCallbacks callbacks, IntPtr instanceContext, in PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext);

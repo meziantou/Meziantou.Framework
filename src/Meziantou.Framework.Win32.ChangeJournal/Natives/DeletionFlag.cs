@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     ///     Flags to be used in conjunction with Usn structures

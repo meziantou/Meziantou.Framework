@@ -1,5 +1,5 @@
-﻿#nullable disable
-using System;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 
 namespace Meziantou.Framework.Templating
@@ -14,12 +14,14 @@ namespace Meziantou.Framework.Templating
         private const string HtmlEncodedCodePrefixString = "html ";
         private const string CidPrefixString = "cid ";
 
-        public HtmlEmailCodeBlock(Template template, string text, int index) : base(template, text, index)
+        public HtmlEmailCodeBlock(Template template, string text, int index)
+            : base(template, text, index)
         {
             EvalPrefixString = "#"; // Visual Studio colorizes "{{# Name }}" in HTML file in html file :)
         }
 
-        protected virtual string HtmlDecode(string html)
+        [return: NotNullIfNotNull(parameterName: "html")]
+        protected virtual string? HtmlDecode(string? html)
         {
             if (html == null)
                 return null;
@@ -75,7 +77,7 @@ namespace Meziantou.Framework.Templating
             return base.BuildCode();
         }
 
-        private static string Nullify(string text)
+        private static string? Nullify(string? text)
         {
             if (text == null)
                 return null;

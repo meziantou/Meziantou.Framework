@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjupdatefileifneeded
 
         private readonly Guid _virtualizationInstanceId;
-        private ProjFSSafeHandle _instanceHandle;
+        private ProjFSSafeHandle? _instanceHandle;
 
         private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new ConcurrentDictionary<Guid, DirectoryEnumerationSession>();
         private long _context;
@@ -40,7 +39,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             _virtualizationInstanceId = Guid.NewGuid();
         }
 
-        public void Start(ProjectedFileSystemStartOptions options)
+        public void Start(ProjectedFileSystemStartOptions? options)
         {
             if (_instanceHandle != null)
                 return;
@@ -119,12 +118,18 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         protected void ClearNegativePathCache()
         {
+            if (_instanceHandle == null)
+                throw new InvalidOperationException("The service is not started");
+
             var result = NativeMethods.PrjClearNegativePathCache(_instanceHandle, out _);
             result.EnsureSuccess();
         }
 
         protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
         {
+            if (_instanceHandle == null)
+                throw new InvalidOperationException("The service is not started");
+
             var hr = NativeMethods.PrjDeleteFile(_instanceHandle, relativePath, updateFlags, out failureReason);
             if (hr == HResult.ERROR_FILE_SYSTEM_VIRTUALIZATION_INVALID_OPERATION)
                 return false;
@@ -162,7 +167,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         protected virtual ProjectedFileSystemEntry GetEntry(string path)
         {
             var directory = Path.GetDirectoryName(path);
-            return GetEntries(directory).FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
+            return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
         }
 
         protected abstract Stream OpenRead(string path);
@@ -221,7 +226,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 session.Reset();
             }
 
-            ProjectedFileSystemEntry entry;
+            ProjectedFileSystemEntry? entry;
             while ((entry = session.GetNextEntry()) != null)
             {
                 var info = new NativeMethods.PRJ_FILE_BASIC_INFO

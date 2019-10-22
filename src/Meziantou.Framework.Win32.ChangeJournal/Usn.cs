@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 
@@ -14,7 +13,7 @@ namespace Meziantou.Framework.Win32
 
         public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
 
-        public override bool Equals(object obj) => obj is Usn usn && Equals(usn);
+        public override bool Equals(object? obj) => obj is Usn usn && Equals(usn);
 
         public bool Equals(Usn other) => Value == other.Value;
 

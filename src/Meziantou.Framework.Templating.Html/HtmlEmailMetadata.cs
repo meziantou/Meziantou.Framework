@@ -1,11 +1,10 @@
-#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Meziantou.Framework.Templating
 {
     public class HtmlEmailMetadata
     {
-        public string Title { get; set; }
-        public IList<string> ContentIdentifiers { get; set; }
+        public string? Title { get; set; }
+        public IList<string>? ContentIdentifiers { get; set; }
     }
 }

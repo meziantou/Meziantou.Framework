@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
 using Meziantou.Framework.Win32.Natives;
@@ -24,7 +23,7 @@ namespace Meziantou.Framework.Win32
         /// Initializes a new instance of the <see cref="JobObject"/> class.
         /// </summary>
         /// <param name="name">The job object name. May be null.</param>
-        public JobObject(string name)
+        public JobObject(string? name)
             : base(IntPtr.Zero, ownsHandle: true)
         {
             var atts = new SECURITY_ATTRIBUTES
@@ -83,6 +82,9 @@ namespace Meziantou.Framework.Win32
         /// <param name="process">The process.</param>
         public void AssignProcess(Process process)
         {
+            if (process is null)
+                throw new ArgumentNullException(nameof(process));
+
             AssignProcess(process.Handle);
         }
 
@@ -135,6 +137,9 @@ namespace Meziantou.Framework.Win32
 
         public bool IsAssignedToProcess(Process process)
         {
+            if (process is null)
+                throw new ArgumentNullException(nameof(process));
+
             if (NativeMethods.IsProcessInJob(process.Handle, this, out var result))
                 return result;
 

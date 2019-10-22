@@ -1,7 +1,7 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Win32.Natives;
 
@@ -105,7 +105,7 @@ namespace Meziantou.Framework.Win32
                     var bufferHandle = GCHandle.Alloc(entryData, GCHandleType.Pinned);
                     var bufferPointer = bufferHandle.AddrOfPinnedObject();
 
-                    _currentUSN = Marshal.ReadInt64(entryData, 0);
+                    _currentUSN = Marshal.ReadInt64(bufferPointer);
 
                     // Enumerate entries
                     _entries.Clear();
@@ -133,7 +133,9 @@ namespace Meziantou.Framework.Win32
                 var entryPointer = bufferPointer + offset;
                 var nativeEntry = Marshal.PtrToStructure<USN_RECORD_V2>(entryPointer);
                 var filenamePointer = bufferPointer + offset + nativeEntry.FileNameOffset;
-                return new JournalEntry(nativeEntry, Marshal.PtrToStringAuto(filenamePointer));
+                var name = Marshal.PtrToStringAuto(filenamePointer);
+                Debug.Assert(name != null);
+                return new JournalEntry(nativeEntry, name);
             }
         }
     }

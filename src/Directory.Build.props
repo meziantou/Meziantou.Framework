@@ -15,5 +15,10 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/Nullable.cs" />
   </ItemGroup>
+    
+  <!-- Ensure .NET Core 3.0 is a target of the project to support nullable -->
+  <Target Name="CheckNetCoreApp3_0" BeforeTargets="Build" Condition="$(TargetFrameworks.Contains('netcoreapp3.0')) == false">
+    <Error Text="The project must target netcoreapp3.0" />
+  </Target>  
   
 </Project>

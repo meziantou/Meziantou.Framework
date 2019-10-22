@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     public class Notification
     {
@@ -8,13 +7,13 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         {
         }
 
-        public Notification(string path, PRJ_NOTIFY_TYPES notificationType)
+        public Notification(string? path, PRJ_NOTIFY_TYPES notificationType)
         {
             Path = path;
             NotificationType = notificationType;
         }
 
-        public string Path { get; }
+        public string? Path { get; }
         public PRJ_NOTIFY_TYPES NotificationType { get; }
     }
 }

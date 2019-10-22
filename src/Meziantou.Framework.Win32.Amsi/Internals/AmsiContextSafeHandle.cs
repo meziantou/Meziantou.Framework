@@ -1,5 +1,4 @@
-﻿#nullable disable
-using Microsoft.Win32.SafeHandles;
+﻿using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework.Win32
 {

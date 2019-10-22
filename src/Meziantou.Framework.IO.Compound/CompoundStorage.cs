@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -206,7 +205,7 @@ namespace Meziantou.Framework.IO.Compound
             [PreserveSig]
             uint DeleteMultiple(uint cpspec, [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] PROPSPEC[] rgpspec);
             [PreserveSig]
-            uint ReadPropertyNames(uint cpropid, [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] uint[] rgpropid, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 0)] string[] rglpwstrName);
+            uint ReadPropertyNames(uint cpropid, [In, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] uint[] rgpropid, [Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr, SizeParamIndex = 0)] string?[] rglpwstrName);
             [PreserveSig]
             uint NotDeclared1();
             [PreserveSig]
@@ -235,14 +234,14 @@ namespace Meziantou.Framework.IO.Compound
             uint Enum(out IEnumSTATPROPSETSTG ppenum);
         }
 
-        private static string GetPropertyName(Guid fmtid, IPropertyStorage propertyStorage, STATPROPSTG stg)
+        private static string? GetPropertyName(Guid fmtid, IPropertyStorage propertyStorage, STATPROPSTG stg)
         {
             if (!string.IsNullOrEmpty(stg.lpwstrName))
                 return stg.lpwstrName;
 
             var propids = new uint[1];
             propids[0] = stg.propid;
-            var names = new string[1];
+            var names = new string?[1];
             names[0] = null;
             var hr = propertyStorage.ReadPropertyNames(1, propids, names);
             if (hr == 0)
@@ -318,7 +317,7 @@ namespace Meziantou.Framework.IO.Compound
                                 Marshal.FreeCoTaskMem(lpwstr);
                         }
 
-                        object value;
+                        object? value;
                         try
                         {
                             switch (vars[0].vt)
@@ -644,7 +643,7 @@ namespace Meziantou.Framework.IO.Compound
                 case TypeCode.Decimal:
                     var dec = IntPtr.Zero;
                     Marshal.StructureToPtr((decimal)prop.Value, dec, fDeleteOld: false);
-                    var = (PROPVARIANT)Marshal.PtrToStructure(dec, typeof(PROPVARIANT));
+                    var = (PROPVARIANT)Marshal.PtrToStructure(dec, typeof(PROPVARIANT))!;
                     var.vt = VARTYPE.VT_DECIMAL;
                     break;
 

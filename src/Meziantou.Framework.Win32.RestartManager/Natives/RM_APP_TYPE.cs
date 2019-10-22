@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     /// Specifies the type of application that is described by the RM_PROCESS_INFO structure.

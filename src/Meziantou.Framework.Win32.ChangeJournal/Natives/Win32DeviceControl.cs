@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 

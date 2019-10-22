@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
 {
@@ -7,9 +6,9 @@ namespace Meziantou.Framework.Win32.Natives
     internal struct COMDLG_FILTERSPEC
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pszName;
+        internal string? pszName;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string pszSpec;
+        internal string? pszSpec;
     }
 }

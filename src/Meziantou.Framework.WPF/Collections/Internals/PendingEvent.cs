@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.WPF.Collections
+﻿namespace Meziantou.Framework.WPF.Collections
 {
     internal static class PendingEvent
     {

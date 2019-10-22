@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -94,7 +93,7 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -106,7 +105,7 @@ namespace Meziantou.Framework.WPF.Collections
             {
                 // it will immediatly modify both collections as we are on the dispatcher thread
                 AssertIsOnDispatcherThread();
-                _collection[index] = (T)value;
+                _collection[index] = (T)value!;
             }
         }
 
@@ -292,14 +291,14 @@ namespace Meziantou.Framework.WPF.Collections
             ((ICollection)_items).CopyTo(array, index);
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
             return ((IList)_collection).Add(value);
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
@@ -313,21 +312,21 @@ namespace Meziantou.Framework.WPF.Collections
             ((IList)_collection).Clear();
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
-            return _items.IndexOf((T)value);
+            return _items.IndexOf((T)value!);
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
             ((IList)_collection).Insert(index, value);
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();

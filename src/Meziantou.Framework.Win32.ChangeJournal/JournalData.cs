@@ -1,9 +1,8 @@
-#nullable disable
-using Meziantou.Framework.Win32.Natives;
+﻿using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    public class JournalData
+    public sealed class JournalData
     {
         internal JournalData()
         {

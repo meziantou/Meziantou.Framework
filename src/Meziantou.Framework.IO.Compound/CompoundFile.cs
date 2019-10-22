@@ -1,6 +1,6 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -79,7 +79,7 @@ namespace Meziantou.Framework.IO.Compound
             VT_FILETIME = 64,
         }
 
-        private const string RootEntry = "Root Entry";
+        private const string RootEntryName = "Root Entry";
 
         /// <summary>
         /// Defines the number of integrated DiFat sectors.
@@ -137,12 +137,12 @@ namespace Meziantou.Framework.IO.Compound
         private readonly List<DirectoryEntry> _entries = new List<DirectoryEntry>();
 
         // OLE-PS properties
-        private readonly Dictionary<Guid, Dictionary<int, object>> _properties = new Dictionary<Guid, Dictionary<int, object>>();
+        private readonly Dictionary<Guid, Dictionary<int, object?>> _properties = new Dictionary<Guid, Dictionary<int, object?>>();
 
         // write variables
-        private CompoundFileStorage _rootStorage;
+        private CompoundFileStorage? _rootStorage;
         private uint _miniStreamNextId;
-        private DirectoryStorage _rootEntry;
+        private DirectoryStorage? _rootEntry;
 
         // read variables
         private int _fatSectorsCount;
@@ -280,7 +280,7 @@ namespace Meziantou.Framework.IO.Compound
 
             if (_rootEntry == null)
             {
-                _rootEntry = new DirectoryStorage { Name = RootEntry, ObjectType = DirectoryObjectType.RootStorage };
+                _rootEntry = new DirectoryStorage(RootEntryName) { ObjectType = DirectoryObjectType.RootStorage };
                 AddDirectoryEntry(_rootEntry);
                 _rootStorage = new CompoundFileStorage(this, parent: null, _rootEntry, isRoot: true);
             }
@@ -390,7 +390,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private Sector GetNextSector(Sector sector)
+        private Sector? GetNextSector(Sector sector)
         {
             switch (sector.SectorType)
             {
@@ -446,7 +446,7 @@ namespace Meziantou.Framework.IO.Compound
                 neededDiFatSectors++;
 
             var firstFatIndex = DiFatHeaderCount;
-            DiFatSector last = null;
+            DiFatSector? last = null;
             for (var i = 0; i < neededDiFatSectors; i++)
             {
                 // add to fat
@@ -495,7 +495,7 @@ namespace Meziantou.Framework.IO.Compound
 
         internal CompoundFileStorage AddStorage(CompoundFileStorage storage, string name)
         {
-            var entry = new DirectoryStorage { Name = name, ObjectType = DirectoryObjectType.Storage };
+            var entry = new DirectoryStorage(name) { ObjectType = DirectoryObjectType.Storage };
             AddDirectoryEntry(entry);
             var child = new CompoundFileStorage(this, storage, entry, isRoot: false);
             storage._entry.AddEntry(entry);
@@ -504,7 +504,7 @@ namespace Meziantou.Framework.IO.Compound
 
         internal CompoundFileStream AddStream(CompoundFileStorage storage, string name)
         {
-            var entry = new DirectoryEntry { Name = name, ObjectType = DirectoryObjectType.Stream };
+            var entry = new DirectoryEntry(name) { ObjectType = DirectoryObjectType.Stream };
             AddDirectoryEntry(entry);
             var child = new CompoundFileStream(storage, entry);
             storage._entry.AddEntry(entry);
@@ -623,14 +623,10 @@ namespace Meziantou.Framework.IO.Compound
                 sectorsCount++;
 
             long offset = 0;
-            StorageSector prev = null;
+            StorageSector? prev = null;
             for (var i = 0; i < sectorsCount; i++)
             {
-                var sector = new StorageSector(this)
-                {
-                    Stream = stream,
-                    Offset = offset,
-                };
+                var sector = new StorageSector(this, stream, offset);
 
                 offset += SectorSize;
                 AddPhysicalSector(sector, AUTOINDEX);
@@ -665,7 +661,7 @@ namespace Meziantou.Framework.IO.Compound
             {
                 if (_rootStorage == null)
                 {
-                    _rootEntry = new DirectoryStorage { Name = RootEntry, ObjectType = DirectoryObjectType.RootStorage };
+                    _rootEntry = new DirectoryStorage(RootEntryName) { ObjectType = DirectoryObjectType.RootStorage };
                     AddDirectoryEntry(_rootEntry);
                     _rootStorage = new CompoundFileStorage(this, parent: null, _rootEntry, isRoot: true);
                 }
@@ -687,9 +683,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The author.
         /// </value>
-        public string Author
+        public string? Author
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_AUTHOR, defaultValue: null);
+            get => GetProperty<string?>(SummaryInformationFormatId, PIDSI_AUTHOR, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_AUTHOR, value);
         }
 
@@ -699,9 +695,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The company.
         /// </value>
-        public string Company
+        public string? Company
         {
-            get => GetProperty<string>(DocSummaryInformationFormatId, PIDDSI_COMPANY, defaultValue: null);
+            get => GetProperty<string?>(DocSummaryInformationFormatId, PIDDSI_COMPANY, defaultValue: null);
             set => SetProperty(DocSummaryInformationFormatId, PIDDSI_COMPANY, value);
         }
 
@@ -711,9 +707,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The title.
         /// </value>
-        public string Title
+        public string? Title
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_TITLE, defaultValue: null);
+            get => GetProperty<string?>(SummaryInformationFormatId, PIDSI_TITLE, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_TITLE, value);
         }
 
@@ -723,9 +719,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The subject.
         /// </value>
-        public string Subject
+        public string? Subject
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_SUBJECT, defaultValue: null);
+            get => GetProperty<string?>(SummaryInformationFormatId, PIDSI_SUBJECT, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_SUBJECT, value);
         }
 
@@ -735,9 +731,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The keywords.
         /// </value>
-        public string Keywords
+        public string? Keywords
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_KEYWORDS, defaultValue: null);
+            get => GetProperty<string?>(SummaryInformationFormatId, PIDSI_KEYWORDS, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_KEYWORDS, value);
         }
 
@@ -747,9 +743,9 @@ namespace Meziantou.Framework.IO.Compound
         /// <value>
         /// The comments.
         /// </value>
-        public string Comments
+        public string? Comments
         {
-            get => GetProperty<string>(SummaryInformationFormatId, PIDSI_COMMENTS, defaultValue: null);
+            get => GetProperty<string?>(SummaryInformationFormatId, PIDSI_COMMENTS, defaultValue: null);
             set => SetProperty(SummaryInformationFormatId, PIDSI_COMMENTS, value);
         }
 
@@ -766,10 +762,12 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         /// <param name="fmtid">The property set id.</param>
         /// <returns>A list of properties in the set.</returns>
-        public IDictionary<int, object> GetPropertySet(Guid fmtid)
+        public IDictionary<int, object?>? GetPropertySet(Guid fmtid)
         {
-            _properties.TryGetValue(fmtid, out var values);
-            return values;
+            if (_properties.TryGetValue(fmtid, out var values))
+                return values;
+
+            return null;
         }
 
         /// <summary>
@@ -778,11 +776,11 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="fmtid">The property fmtid.</param>
         /// <param name="id">The property id.</param>
         /// <param name="value">The value.</param>
-        public void SetProperty(Guid fmtid, int id, object value)
+        public void SetProperty(Guid fmtid, int id, object? value)
         {
             if (!_properties.TryGetValue(fmtid, out var values))
             {
-                values = new Dictionary<int, object>();
+                values = new Dictionary<int, object?>();
                 _properties.Add(fmtid, values);
             }
             values[id] = value;
@@ -944,6 +942,7 @@ namespace Meziantou.Framework.IO.Compound
             }
 
             // create storage hierarchy
+            Debug.Assert(_rootEntry != null);
             CreateStorage(parent: null, _rootEntry, isRoot: true);
 
             // load data
@@ -991,7 +990,7 @@ namespace Meziantou.Framework.IO.Compound
             return sector.Sectors[(int)(physicalIndex % FatEntriesPerSector)];
         }
 
-        private void CreateStorage(CompoundFileStorage parent, DirectoryStorage entry, bool isRoot)
+        private void CreateStorage(CompoundFileStorage? parent, DirectoryStorage entry, bool isRoot)
         {
             var storage = new CompoundFileStorage(this, parent, entry, isRoot);
             if (entry.ObjectType == DirectoryObjectType.RootStorage)
@@ -1000,6 +999,7 @@ namespace Meziantou.Framework.IO.Compound
             }
             else
             {
+                Debug.Assert(parent != null);
                 parent._storages.Add(storage);
             }
 
@@ -1175,14 +1175,14 @@ namespace Meziantou.Framework.IO.Compound
         }
 
         // NOTE: we don't support user-defined properties
-        private void LoadPropertySet(Guid fmtid, CompoundFileStream stream)
+        private void LoadPropertySet(Guid fmtid, CompoundFileStream? stream)
         {
             if (stream == null)
                 return;
 
             if (!_properties.TryGetValue(fmtid, out var values))
             {
-                values = new Dictionary<int, object>();
+                values = new Dictionary<int, object?>();
                 _properties.Add(fmtid, values);
             }
 
@@ -1221,7 +1221,7 @@ namespace Meziantou.Framework.IO.Compound
                 props.Add((propKey, propOffset));
             }
 
-            Encoding cpEncoding = null;
+            Encoding? cpEncoding = null;
             for (var i = 0; i < count; i++)
             {
                 stream.Stream.Seek(baseOffset + props[i].propOffset, SeekOrigin.Begin);
@@ -1235,10 +1235,12 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private static object LoadPropertyValue(BinaryReader reader, Encoding cpEncoding)
+        private static object LoadPropertyValue(BinaryReader reader, Encoding? cpEncoding)
         {
             if (cpEncoding == null)
+            {
                 cpEncoding = Encoding.Default;
+            }
 
             var vt = (VARTYPE)reader.ReadUInt16();
             reader.ReadUInt16(); // Padding
@@ -1364,7 +1366,7 @@ namespace Meziantou.Framework.IO.Compound
             stream.Stream.SetLength(stream.Stream.Position);
         }
 
-        private static void WritePropertySet(BinaryWriter writer, Dictionary<int, object> values)
+        private static void WritePropertySet(BinaryWriter writer, Dictionary<int, object?> values)
         {
             var offsets = new List<int>();
             var size = sizeof(int) // Size
@@ -1399,7 +1401,7 @@ namespace Meziantou.Framework.IO.Compound
             }
         }
 
-        private static int GetPropertyValueSize(object value)
+        private static int GetPropertyValueSize(object? value)
         {
             const int TypeAndPaddingSize = 4;
             var size = TypeAndPaddingSize;
@@ -1451,7 +1453,7 @@ namespace Meziantou.Framework.IO.Compound
             return size;
         }
 
-        private static void WritePropertyValue(BinaryWriter writer, object value)
+        private static void WritePropertyValue(BinaryWriter writer, object? value)
         {
             if (value != null)
             {
@@ -1594,7 +1596,7 @@ namespace Meziantou.Framework.IO.Compound
         {
             public readonly List<CompoundFileStream> Streams = new List<CompoundFileStream>();
             public int FirstStreamOffset;
-            public MiniStreamSector Next;
+            public MiniStreamSector? Next;
 
             public MiniStreamSector(CompoundFile file)
                 : base(file)
@@ -1659,11 +1661,13 @@ namespace Meziantou.Framework.IO.Compound
         {
             public CompoundFileStream Stream;
             public long Offset;
-            public StorageSector Next;
+            public StorageSector? Next;
 
-            public StorageSector(CompoundFile file)
+            public StorageSector(CompoundFile file, CompoundFileStream stream, long offset)
                 : base(file)
             {
+                Stream = stream;
+                Offset = offset;
             }
 
             public override SectorType SectorType => SectorType.Storage;
@@ -1828,6 +1832,11 @@ namespace Meziantou.Framework.IO.Compound
         {
             private readonly List<DirectoryEntry> Entries = new List<DirectoryEntry>();
 
+            public DirectoryStorage(string name)
+                : base(name)
+            {
+            }
+
             public void AddEntry(DirectoryEntry entry)
             {
                 if (Entries.Count == 0)
@@ -1880,7 +1889,7 @@ namespace Meziantou.Framework.IO.Compound
 
             public virtual int TotalEntriesCount => 1;
 
-            public DirectoryEntry()
+            public DirectoryEntry(string name)
             {
                 // about red-black-trees, from official spec:
                 // "The simplest implementation of the above invariants would be to mark every node as black, in which case the tree is simply a binary tree."
@@ -1891,9 +1900,10 @@ namespace Meziantou.Framework.IO.Compound
                 LeftSiblingId = NOSTREAM;
                 RightSiblingId = NOSTREAM;
                 ChildId = NOSTREAM;
+                Name = name;
             }
 
-            public static DirectoryEntry Read(BinaryReader reader)
+            public static DirectoryEntry? Read(BinaryReader reader)
             {
                 var nameBytes = reader.ReadBytes(64);
                 var len = reader.ReadInt16();
@@ -1908,15 +1918,14 @@ namespace Meziantou.Framework.IO.Compound
                 {
                     case DirectoryObjectType.RootStorage:
                     case DirectoryObjectType.Storage:
-                        entry = new DirectoryStorage();
+                        entry = new DirectoryStorage(name);
                         break;
 
                     default:
-                        entry = new DirectoryEntry();
+                        entry = new DirectoryEntry(name);
                         break;
                 }
 
-                entry.Name = name;
                 entry.ObjectType = objectType;
                 entry.Color = (DirectoryColor)reader.ReadByte();
                 entry.LeftSiblingId = reader.ReadUInt32();

@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
@@ -8,5 +7,6 @@ namespace Meziantou.Framework.Win32.Natives
     [Guid(IIDGuid.IFileOpenDialog)]
     [CoClass(typeof(FileOpenDialogRCW))]
     internal interface NativeFileOpenDialog : IFileOpenDialog
-    { }
+    {
+    }
 }

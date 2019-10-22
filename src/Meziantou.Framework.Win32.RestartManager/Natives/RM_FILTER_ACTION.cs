@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     /// Specifies the type of modification that is applied to restart or shutdown actions.

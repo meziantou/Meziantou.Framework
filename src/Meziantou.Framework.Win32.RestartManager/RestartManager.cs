@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -117,7 +116,7 @@ namespace Meziantou.Framework.Win32
             Shutdown(action, statusCallback: null);
         }
 
-        public void Shutdown(RmShutdownType action, RmWriteStatusCallback statusCallback)
+        public void Shutdown(RmShutdownType action, RmWriteStatusCallback? statusCallback)
         {
             var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
             if (result != RmResult.ERROR_SUCCESS)
@@ -129,7 +128,7 @@ namespace Meziantou.Framework.Win32
             Restart(statusCallback: null);
         }
 
-        public void Restart(RmWriteStatusCallback statusCallback)
+        public void Restart(RmWriteStatusCallback? statusCallback)
         {
             var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
             if (result != RmResult.ERROR_SUCCESS)

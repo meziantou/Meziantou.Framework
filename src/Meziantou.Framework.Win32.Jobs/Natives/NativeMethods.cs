@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives
@@ -7,7 +6,7 @@ namespace Meziantou.Framework.Win32.Natives
     internal static class NativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern IntPtr CreateJobObject(ref SECURITY_ATTRIBUTES lpJobAttributes, string lpName);
+        internal static extern IntPtr CreateJobObject(ref SECURITY_ATTRIBUTES lpJobAttributes, string? lpName);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern JobObject OpenJobObject(JobObjectAccessRights desiredAccess, bool inheritHandle, string lpName);

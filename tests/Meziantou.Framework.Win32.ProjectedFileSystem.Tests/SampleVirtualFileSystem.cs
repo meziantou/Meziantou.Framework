@@ -14,13 +14,13 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         {
             if (AreFileNamesEqual(path, ""))
             {
-                yield return new ProjectedFileSystemEntry() { Name = "folder", IsDirectory = true };
-                yield return new ProjectedFileSystemEntry() { Name = "a", Length = 1 };
-                yield return new ProjectedFileSystemEntry() { Name = "b", Length = 2 };
+                yield return ProjectedFileSystemEntry.Directory("folder");
+                yield return ProjectedFileSystemEntry.File("a", 1);
+                yield return ProjectedFileSystemEntry.File("b", 2);
             }
             else if (AreFileNamesEqual(path, "folder"))
             {
-                yield return new ProjectedFileSystemEntry() { Name = "c", Length = 3 };
+                yield return ProjectedFileSystemEntry.File("c", 3);
             }
         }
 

@@ -7,10 +7,10 @@ namespace Meziantou.Framework.Csv
 {
     public class CsvRow : IReadOnlyDictionary<string, string?>
     {
-        public IReadOnlyList<CsvColumn> Columns { get; }
+        public IReadOnlyList<CsvColumn>? Columns { get; }
         public IReadOnlyList<string> Values { get; }
 
-        public CsvRow(IReadOnlyList<CsvColumn> columns, IReadOnlyList<string> values)
+        public CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
         {
             Values = values ?? throw new ArgumentNullException(nameof(values));
             Columns = columns;
@@ -84,7 +84,7 @@ namespace Meziantou.Framework.Csv
             if (Columns == null)
                 return Values.Select(v => new KeyValuePair<string, string?>(key: "", v)).GetEnumerator();
 
-            return Columns.Select(c => new KeyValuePair<string, string?>(c.Name, this[c])).GetEnumerator();
+            return Columns.Select(c => new KeyValuePair<string, string?>(c.Name ?? "", this[c])).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

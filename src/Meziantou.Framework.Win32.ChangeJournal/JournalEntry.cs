@@ -1,11 +1,10 @@
-#nullable disable
-using System;
+﻿using System;
 using System.IO;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    public class JournalEntry
+    public sealed class JournalEntry
     {
         /// <summary>
         ///     Copy constructor.
@@ -14,7 +13,7 @@ namespace Meziantou.Framework.Win32
         /// <param name="name"></param>
         internal JournalEntry(USN_RECORD_V2 nativeEntry, string name)
         {
-            Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Length = (int)nativeEntry.RecordLength;
             Version = new Version(nativeEntry.MajorVersion, nativeEntry.MinorVersion);
             ReferenceNumber = nativeEntry.FileReferenceNumber;

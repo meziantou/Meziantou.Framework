@@ -71,7 +71,7 @@ namespace Meziantou.Framework
             return _namedArguments.ContainsKey(name);
         }
 
-        public string GetArgument(string name)
+        public string? GetArgument(string name)
         {
             if (_namedArguments.TryGetValue(name, out var value))
                 return value;
@@ -79,7 +79,7 @@ namespace Meziantou.Framework
             return null;
         }
 
-        public string GetArgument(int position)
+        public string? GetArgument(int position)
         {
             if (_positionArguments.TryGetValue(position, out var value))
                 return value;

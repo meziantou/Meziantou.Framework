@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -506,14 +505,14 @@ namespace Meziantou.Framework.Templating
             return new Output(this, writer);
         }
 
-        public string Run(params object[] parameters)
+        public string Run(params object?[] parameters)
         {
             using var writer = CreateStringWriter();
             Run(writer, parameters);
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, params object[] parameters)
+        public virtual void Run(TextWriter writer, params object?[] parameters)
         {
             if (!IsBuilt)
             {
@@ -525,7 +524,7 @@ namespace Meziantou.Framework.Templating
             InvokeRunMethod(p);
         }
 
-        protected virtual object[] CreateMethodParameters(TextWriter writer, object[] parameters)
+        protected virtual object[] CreateMethodParameters(TextWriter writer, object?[]? parameters)
         {
             var p = new object[parameters?.Length + 1 ?? 1];
             p[0] = CreateOutput(writer);
@@ -533,7 +532,7 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        public string Run(IReadOnlyDictionary<string, object> parameters)
+        public string Run(IReadOnlyDictionary<string, object?> parameters)
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
@@ -543,7 +542,7 @@ namespace Meziantou.Framework.Templating
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
+        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -554,7 +553,7 @@ namespace Meziantou.Framework.Templating
             InvokeRunMethod(p);
         }
 
-        protected virtual object[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
+        protected virtual object?[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
         {
             if (!IsBuilt)
             {
@@ -562,7 +561,7 @@ namespace Meziantou.Framework.Templating
             }
 
             var parameterInfos = _runMethodInfo!.GetParameters();
-            var p = new object[parameterInfos.Length];
+            var p = new object?[parameterInfos.Length];
             foreach (var pi in parameterInfos)
             {
                 if (string.Equals(pi.Name, OutputParameterName, StringComparison.Ordinal))
@@ -580,7 +579,7 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        protected virtual void InvokeRunMethod(object[] p)
+        protected virtual void InvokeRunMethod(object?[] p)
         {
             if (!IsBuilt)
             {

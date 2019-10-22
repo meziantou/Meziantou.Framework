@@ -1,20 +1,19 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     internal sealed class DirectoryEnumerationSession : IDisposable
     {
-        private IEnumerator<ProjectedFileSystemEntry> _enumerator;
-        private ProjectedFileSystemEntry _current;
+        private IEnumerator<ProjectedFileSystemEntry>? _enumerator;
+        private ProjectedFileSystemEntry? _current;
 
         public DirectoryEnumerationSession(IEnumerable<ProjectedFileSystemEntry> entries)
         {
             Entries = entries ?? throw new ArgumentNullException(nameof(entries));
         }
 
-        public ProjectedFileSystemEntry GetNextEntry()
+        public ProjectedFileSystemEntry? GetNextEntry()
         {
             if (_current != null)
             {
@@ -38,6 +37,9 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         public void Reenqueue()
         {
+            if (_enumerator == null)
+                throw new InvalidOperationException("No item dequeued");
+
             _current = _enumerator.Current;
         }
 

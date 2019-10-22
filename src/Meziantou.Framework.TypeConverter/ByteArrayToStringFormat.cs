@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public enum ByteArrayToStringFormat
     {

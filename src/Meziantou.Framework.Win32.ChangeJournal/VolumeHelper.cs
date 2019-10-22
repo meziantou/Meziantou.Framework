@@ -1,11 +1,10 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Globalization;
 using System.IO;
 
 namespace Meziantou.Framework.Win32
 {
-    public static class VolumeHelper
+    internal static class VolumeHelper
     {
         internal static string GetValidVolumePath(DriveInfo driveInfo)
         {

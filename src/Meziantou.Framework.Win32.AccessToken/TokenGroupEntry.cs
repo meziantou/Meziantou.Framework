@@ -1,9 +1,8 @@
-﻿#nullable disable
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.Win32
 {
-    public class TokenGroupEntry
+    public sealed class TokenGroupEntry
     {
         public TokenGroupEntry(SecurityIdentifier sid, GroupSidAttributes attributes)
         {

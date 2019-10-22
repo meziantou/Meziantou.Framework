@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
@@ -30,10 +29,10 @@ namespace Meziantou.Framework.Win32
             return DialogResult.OK;
         }
 
-        public string Title { get; set; }
-        public string OkButtonLabel { get; set; }
-        public string InitialDirectory { get; set; }
-        public string SelectedPath { get; set; }
+        public string? Title { get; set; }
+        public string? OkButtonLabel { get; set; }
+        public string? InitialDirectory { get; set; }
+        public string? SelectedPath { get; set; }
         public bool ChangeCurrentDirectory { get; set; }
 
         private void Configure(IFileOpenDialog dialog)

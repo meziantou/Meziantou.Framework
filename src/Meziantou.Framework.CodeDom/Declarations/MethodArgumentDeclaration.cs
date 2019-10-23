@@ -1,17 +1,16 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
     {
-        private TypeReference _type;
-        private Expression _defaultValue;
+        private TypeReference? _type;
+        private Expression? _defaultValue;
 
         public MethodArgumentDeclaration()
             : this(type: null, name: null)
         {
         }
 
-        public MethodArgumentDeclaration(TypeReference type, string name)
+        public MethodArgumentDeclaration(TypeReference? type, string? name)
         {
             CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
             CommentsBefore = new CommentCollection(this);
@@ -24,16 +23,16 @@ namespace Meziantou.Framework.CodeDom
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public bool IsExtension { get; set; }
 
-        public TypeReference Type
+        public TypeReference? Type
         {
             get => _type;
             set => SetParent(ref _type, value);
         }
 
-        public Expression DefaultValue
+        public Expression? DefaultValue
         {
             get => _defaultValue;
             set => SetParent(ref _defaultValue, value);

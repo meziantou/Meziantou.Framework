@@ -1,5 +1,4 @@
-#nullable disable
-using System.Linq;
+﻿using System.Linq;
 
 namespace Meziantou.Framework.CodeDom
 {

@@ -1,10 +1,9 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class VariableReferenceExpression : Expression
     {
-        private VariableDeclarationStatement _variableDeclarationStatement;
-        private string _name;
+        private VariableDeclarationStatement? _variableDeclarationStatement;
+        private string? _name;
 
         public VariableReferenceExpression()
         {
@@ -20,7 +19,7 @@ namespace Meziantou.Framework.CodeDom
             Name = name;
         }
 
-        public string Name
+        public string? Name
         {
             get
             {

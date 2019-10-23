@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class Comment : CodeObject
     {
@@ -7,13 +6,13 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public Comment(string text, CommentType type)
+        public Comment(string? text, CommentType type)
         {
             Text = text;
             Type = type;
         }
 
-        public string Text { get; set; }
+        public string? Text { get; set; }
         public CommentType Type { get; set; }
     }
 }

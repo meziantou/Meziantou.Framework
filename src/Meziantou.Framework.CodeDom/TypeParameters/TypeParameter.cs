@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class TypeParameter : CodeObject
     {
@@ -8,13 +7,13 @@ namespace Meziantou.Framework.CodeDom
             Constraints = new TypeParameterConstraintCollection();
         }
 
-        public TypeParameter(string name)
+        public TypeParameter(string? name)
             : this()
         {
             Name = name;
         }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public TypeParameterConstraintCollection Constraints { get; }
     }
 }

@@ -1,7 +1,7 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -12,7 +12,7 @@ namespace Meziantou.Framework
     public class DefaultConverter : IConverter
     {
         private const string HexaChars = "0123456789ABCDEF";
-        private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
+        private static readonly MethodInfo s_enumTryParseMethodInfo = GetEnumTryParseMethodInfo();
 
         public ByteArrayToStringFormat ByteArrayToStringFormat { get; set; } = ByteArrayToStringFormat.Base64;
 
@@ -24,7 +24,7 @@ namespace Meziantou.Framework
                 .First(m => string.Equals(m.Name, nameof(Enum.TryParse), StringComparison.Ordinal) && m.IsGenericMethod && m.GetParameters().Length == 3);
         }
 
-        public virtual bool TryChangeType(object input, Type conversionType, IFormatProvider provider, out object value)
+        public virtual bool TryChangeType(object? input, Type conversionType, IFormatProvider? provider, out object? value)
         {
             return TryConvert(input, conversionType, provider, out value);
         }
@@ -43,7 +43,7 @@ namespace Meziantou.Framework
             return 0xFF;
         }
 
-        private static bool NormalizeHexString(ref string s)
+        private static bool NormalizeHexString(ref string? s)
         {
             if (s == null)
                 return false;
@@ -100,7 +100,7 @@ namespace Meziantou.Framework
                    type == typeof(decimal) || type == typeof(byte) || type == typeof(sbyte);
         }
 
-        private static bool IsNullOrEmptyString(object input)
+        private static bool IsNullOrEmptyString(object? input)
         {
             if (input == null)
                 return true;
@@ -111,24 +111,24 @@ namespace Meziantou.Framework
             return false;
         }
 
-        private static bool EnumTryParse(Type type, string input, out object value)
+        private static bool EnumTryParse(Type type, string? input, out object? value)
         {
-            var mi = EnumTryParseMethodInfo.MakeGenericMethod(type);
-            object[] args = { input, true, Enum.ToObject(type, 0) };
-            var b = (bool)mi.Invoke(null, args);
+            var mi = s_enumTryParseMethodInfo.MakeGenericMethod(type);
+            object?[] args = { input, true, Enum.ToObject(type, 0) };
+            var b = (bool)mi.Invoke(null, args)!;
             value = args[2];
             return b;
         }
 
-        private static string ToHexa(byte[] bytes)
+        private static string ToHexa(byte[]? bytes)
         {
             if (bytes == null)
-                return null;
+                return string.Empty;
 
             return ToHexa(bytes, 0, bytes.Length);
         }
 
-        private static string ToHexa(byte[] bytes, int offset, int count)
+        private static string ToHexa(byte[]? bytes, int offset, int count)
         {
             if (bytes == null)
                 return string.Empty;
@@ -153,7 +153,7 @@ namespace Meziantou.Framework
             return sb.ToString();
         }
 
-        private static byte[] FromHexa(string hex)
+        private static byte[]? FromHexa(string hex)
         {
             var list = new List<byte>();
             var lo = false;
@@ -168,9 +168,7 @@ namespace Meziantou.Framework
 
                 var b = GetHexaByte(c);
                 if (b == 0xFF)
-                {
                     return null;
-                }
 
                 if (lo)
                 {
@@ -187,7 +185,7 @@ namespace Meziantou.Framework
             return list.ToArray();
         }
 
-        protected virtual bool TryConvert(byte[] input, IFormatProvider provider, out string value)
+        protected virtual bool TryConvert(byte[] input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out string? value)
         {
             switch (ByteArrayToStringFormat)
             {
@@ -208,25 +206,25 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(TimeSpan input, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(TimeSpan input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
             value = BitConverter.GetBytes(input.Ticks);
             return true;
         }
 
-        protected virtual bool TryConvert(Guid input, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(Guid input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
             value = input.ToByteArray();
             return true;
         }
 
-        protected virtual bool TryConvert(DateTime input, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(DateTime input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
             value = BitConverter.GetBytes((input).ToBinary());
             return true;
         }
 
-        protected virtual bool TryConvert(decimal input, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(decimal input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
             var decBytes = new byte[16];
             GetBytes(input, decBytes);
@@ -234,9 +232,9 @@ namespace Meziantou.Framework
             return true;
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
-            byte[] bytes;
+            byte[]? bytes;
             if (input is Guid guid)
             {
                 if (TryConvert(guid, provider, out bytes))
@@ -251,7 +249,7 @@ namespace Meziantou.Framework
 
             if (input is DateTimeOffset dateTimeOffset && TryConvert((dateTimeOffset).DateTime, typeof(byte[]), provider, out var result))
             {
-                value = (byte[])result;
+                value = (byte[]?)result;
                 return true;
             }
 
@@ -271,12 +269,12 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvertEnum(object input, Type conversionType, IFormatProvider provider, out object value)
+        protected virtual bool TryConvertEnum(object? input, Type conversionType, IFormatProvider? provider, out object? value)
         {
             return EnumTryParse(conversionType, Convert.ToString(input, provider), out value);
         }
 
-        protected virtual bool TryConvert(string text, IFormatProvider provider, out byte[] value)
+        protected virtual bool TryConvert(string? text, IFormatProvider? provider, out byte[]? value)
         {
             if (text == null)
             {
@@ -313,7 +311,7 @@ namespace Meziantou.Framework
             return text.Length >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out CultureInfo value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out CultureInfo? value)
         {
             if (input == null)
             {
@@ -349,7 +347,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(int lcid, IFormatProvider provider, out CultureInfo value)
+        protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out CultureInfo? value)
         {
             try
             {
@@ -364,7 +362,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out DateTimeOffset value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out DateTimeOffset value)
         {
             if (DateTimeOffset.TryParse(Convert.ToString(input, provider), provider, DateTimeStyles.None, out value))
                 return true;
@@ -379,7 +377,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out TimeSpan value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out TimeSpan value)
         {
             if (TimeSpan.TryParse(Convert.ToString(input, provider), provider, out value))
                 return true;
@@ -388,7 +386,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out Guid value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out Guid value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -411,7 +409,7 @@ namespace Meziantou.Framework
             return Guid.TryParse(Convert.ToString(input, provider), out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out ulong value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out ulong value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -443,7 +441,7 @@ namespace Meziantou.Framework
             return ulong.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out ushort value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out ushort value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -475,7 +473,7 @@ namespace Meziantou.Framework
             return ushort.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out decimal value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out decimal value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -507,7 +505,7 @@ namespace Meziantou.Framework
             return decimal.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out float value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out float value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -539,7 +537,7 @@ namespace Meziantou.Framework
             return float.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out double value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out double value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -571,7 +569,7 @@ namespace Meziantou.Framework
             return double.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out char value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out char value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -598,7 +596,7 @@ namespace Meziantou.Framework
             return char.TryParse(s, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out DateTime value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out DateTime value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -625,7 +623,7 @@ namespace Meziantou.Framework
             return DateTime.TryParse(s, provider, DateTimeStyles.None, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out uint value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out uint value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -657,7 +655,7 @@ namespace Meziantou.Framework
             return uint.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out byte value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out byte value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -689,7 +687,7 @@ namespace Meziantou.Framework
             return byte.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out sbyte value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out sbyte value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -721,7 +719,7 @@ namespace Meziantou.Framework
             return sbyte.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out short value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out short value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -764,7 +762,7 @@ namespace Meziantou.Framework
             return short.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out int value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out int value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -807,7 +805,7 @@ namespace Meziantou.Framework
             return int.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out long value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out long value)
         {
             if (IsNullOrEmptyString(input))
             {
@@ -850,7 +848,7 @@ namespace Meziantou.Framework
             return long.TryParse(s, styles, provider, out value);
         }
 
-        protected virtual bool TryConvert(object input, IFormatProvider provider, out bool value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, out bool value)
         {
             value = false;
             if (input is byte[] inputBytes)
@@ -865,7 +863,7 @@ namespace Meziantou.Framework
 
             if (TryConvert(input, typeof(long), provider, out var b))
             {
-                value = (long)b != 0;
+                value = (long)b! != 0;
                 return true;
             }
 
@@ -889,7 +887,7 @@ namespace Meziantou.Framework
                 bools.StartsWith("false", StringComparison.Ordinal);
         }
 
-        protected virtual bool TryConvert(object input, Type conversionType, IFormatProvider provider, out object value)
+        protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)
         {
             if (conversionType == null)
                 throw new ArgumentNullException(nameof(conversionType));
@@ -936,12 +934,13 @@ namespace Meziantou.Framework
                 }
 
                 var vtType = Nullable.GetUnderlyingType(conversionType);
-                if (TryConvert(input, vtType, provider, out var vtValue))
+                if (vtType != null && TryConvert(input, vtType, provider, out var vtValue))
                 {
                     var nt = typeof(Nullable<>).MakeGenericType(vtType);
                     value = Activator.CreateInstance(nt, vtValue);
                     return true;
                 }
+
                 value = null;
                 return false;
             }
@@ -1122,7 +1121,7 @@ namespace Meziantou.Framework
                     }
                     else if (conversionType == typeof(CultureInfo))
                     {
-                        if (TryConvert(input, provider, out CultureInfo cultureInfo))
+                        if (TryConvert(input, provider, out CultureInfo? cultureInfo))
                         {
                             value = cultureInfo;
                             return true;
@@ -1146,7 +1145,7 @@ namespace Meziantou.Framework
                     }
                     else if (conversionType == typeof(byte[]))
                     {
-                        byte[] bytes;
+                        byte[]? bytes;
                         var inputCode = Type.GetTypeCode(inputType);
                         switch (inputCode)
                         {
@@ -1250,7 +1249,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            TypeConverter ctConverter = null;
+            TypeConverter? ctConverter = null;
             try
             {
                 ctConverter = TypeDescriptor.GetConverter(conversionType);
@@ -1308,7 +1307,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvertUsingImplicitConverter(object input, Type conversionType, IFormatProvider provider, out object value)
+        protected virtual bool TryConvertUsingImplicitConverter(object? input, Type conversionType, IFormatProvider? provider, out object? value)
         {
             var op = ReflectionUtilities.GetImplicitConversion(input, conversionType);
             if (op == null)
@@ -1317,7 +1316,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            value = op.Invoke(null, new object[] { input });
+            value = op.Invoke(null, new object?[] { input });
             return true;
         }
     }

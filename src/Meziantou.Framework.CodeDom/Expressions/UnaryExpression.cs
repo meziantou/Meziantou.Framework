@@ -1,15 +1,14 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class UnaryExpression : Expression
     {
-        private Expression _expression;
+        private Expression? _expression;
 
         public UnaryExpression()
         {
         }
 
-        public UnaryExpression(UnaryOperator op, Expression expression)
+        public UnaryExpression(UnaryOperator op, Expression? expression)
         {
             Operator = op;
             Expression = expression;
@@ -17,7 +16,7 @@ namespace Meziantou.Framework.CodeDom
 
         public UnaryOperator Operator { get; set; }
 
-        public Expression Expression
+        public Expression? Expression
         {
             get => _expression;
             set => SetParent(ref _expression, value);

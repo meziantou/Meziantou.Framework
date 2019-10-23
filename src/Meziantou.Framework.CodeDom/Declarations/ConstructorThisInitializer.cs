@@ -1,5 +1,4 @@
-#nullable disable
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -13,7 +12,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public ConstructorThisInitializer(IEnumerable<Expression> codeExpressions) : base(codeExpressions)
+        public ConstructorThisInitializer(IEnumerable<Expression>? codeExpressions) : base(codeExpressions)
         {
         }
     }

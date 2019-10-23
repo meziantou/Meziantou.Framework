@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -9,11 +8,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public XmlComment(XElement element)
+        public XmlComment(XElement? element)
         {
             Element = element;
         }
 
-        public XElement Element { get; set; }
+        public XElement? Element { get; set; }
     }
 }

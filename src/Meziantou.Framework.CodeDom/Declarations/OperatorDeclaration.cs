@@ -1,11 +1,10 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class OperatorDeclaration : MemberDeclaration, IModifiers
     {
-        private TypeReference _returnType;
+        private TypeReference? _returnType;
 
-        public TypeReference ReturnType
+        public TypeReference? ReturnType
         {
             get => _returnType;
             set => SetParent(ref _returnType, value);
@@ -20,7 +19,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public OperatorDeclaration(string name)
+        public OperatorDeclaration(string? name)
         {
             Statements = new StatementCollection(this);
             Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);

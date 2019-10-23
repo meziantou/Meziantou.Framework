@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable
     {
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        protected MemberDeclaration(string name)
+        protected MemberDeclaration(string? name)
         {
             CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
             Implements = new CodeObjectCollection<MemberReferenceExpression>(this);
@@ -18,7 +17,7 @@ namespace Meziantou.Framework.CodeDom
             Name = name;
         }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
         public CodeObjectCollection<MemberReferenceExpression> Implements { get; }
         public CommentCollection CommentsBefore { get; }

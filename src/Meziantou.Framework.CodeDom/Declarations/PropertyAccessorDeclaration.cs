@@ -1,16 +1,15 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class PropertyAccessorDeclaration : CodeObject
     {
-        private StatementCollection _statements;
+        private StatementCollection? _statements;
 
         public PropertyAccessorDeclaration()
             : this(statements: null)
         {
         }
 
-        public PropertyAccessorDeclaration(StatementCollection statements)
+        public PropertyAccessorDeclaration(StatementCollection? statements)
         {
             Statements = statements ?? new StatementCollection();
             CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
@@ -19,7 +18,7 @@ namespace Meziantou.Framework.CodeDom
         public Modifiers Modifiers { get; set; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
 
-        public StatementCollection Statements
+        public StatementCollection? Statements
         {
             get => _statements;
             set => SetParent(ref _statements, value);

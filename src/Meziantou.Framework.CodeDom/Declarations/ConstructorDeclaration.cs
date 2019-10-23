@@ -1,10 +1,9 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ConstructorDeclaration : MemberDeclaration, IModifiers
     {
-        private StatementCollection _statements;
-        private ConstructorInitializer _initializer;
+        private StatementCollection? _statements;
+        private ConstructorInitializer? _initializer;
 
         public ConstructorDeclaration()
         {
@@ -14,13 +13,13 @@ namespace Meziantou.Framework.CodeDom
 
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
 
-        public StatementCollection Statements
+        public StatementCollection? Statements
         {
             get => _statements;
             set => SetParent(ref _statements, value);
         }
 
-        public ConstructorInitializer Initializer
+        public ConstructorInitializer? Initializer
         {
             get => _initializer;
             set => SetParent(ref _initializer, value);
@@ -28,6 +27,6 @@ namespace Meziantou.Framework.CodeDom
 
         public Modifiers Modifiers { get; set; }
 
-        public TypeDeclaration ParentType => Parent.GetSelfOrParentOfType<TypeDeclaration>();
+        public TypeDeclaration? ParentType => Parent.GetSelfOrParentOfType<TypeDeclaration>();
     }
 }

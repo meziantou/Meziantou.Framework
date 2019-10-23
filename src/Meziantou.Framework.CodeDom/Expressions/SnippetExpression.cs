@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class SnippetExpression : Expression
     {
@@ -7,11 +6,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public SnippetExpression(string expression)
+        public SnippetExpression(string? expression)
         {
             Expression = expression;
         }
 
-        public string Expression { get; set; }
+        public string? Expression { get; set; }
     }
 }

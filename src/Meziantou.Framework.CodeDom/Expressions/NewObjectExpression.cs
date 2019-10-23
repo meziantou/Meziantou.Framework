@@ -1,15 +1,15 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class NewObjectExpression : Expression
     {
-        private TypeReference _type;
+        private TypeReference? _type;
 
         public NewObjectExpression()
         {
+            Arguments = new CodeObjectCollection<Expression>(this);
         }
 
-        public NewObjectExpression(TypeReference type, params Expression[] arguments)
+        public NewObjectExpression(TypeReference? type, params Expression[] arguments)
         {
             Arguments = new CodeObjectCollection<Expression>(this);
 
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public TypeReference Type
+        public TypeReference? Type
         {
             get => _type;
             set => SetParent(ref _type, value);

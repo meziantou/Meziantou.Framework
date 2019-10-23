@@ -34,7 +34,7 @@ namespace Meziantou.Framework
             return type.IsDefined(typeof(FlagsAttribute), inherit: true);
         }
 
-        public static MethodInfo? GetImplicitConversion(object value, Type targetType)
+        public static MethodInfo? GetImplicitConversion(object? value, Type targetType)
         {
             if (value == null)
                 return null;

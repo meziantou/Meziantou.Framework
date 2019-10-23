@@ -1,11 +1,10 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class DelegateDeclaration : TypeDeclaration, IParametrableType
     {
-        private TypeReference _returnType;
+        private TypeReference? _returnType;
 
-        public TypeReference ReturnType
+        public TypeReference? ReturnType
         {
             get => _returnType;
             set => SetParent(ref _returnType, value);
@@ -19,7 +18,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public DelegateDeclaration(string name)
+        public DelegateDeclaration(string? name)
         {
             Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
             Parameters = new CodeObjectCollection<TypeParameter>(this);

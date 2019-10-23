@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class SnippetStatement : Statement
     {
@@ -7,11 +6,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public SnippetStatement(string statement)
+        public SnippetStatement(string? statement)
         {
             Statement = statement;
         }
 
-        public string Statement { get; set; }
+        public string? Statement { get; set; }
     }
 }

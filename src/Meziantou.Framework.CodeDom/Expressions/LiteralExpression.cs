@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class LiteralExpression : Expression
     {
@@ -7,11 +6,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public LiteralExpression(object value)
+        public LiteralExpression(object? value)
         {
             Value = value;
         }
 
-        public object Value { get; set; }
+        public object? Value { get; set; }
     }
 }

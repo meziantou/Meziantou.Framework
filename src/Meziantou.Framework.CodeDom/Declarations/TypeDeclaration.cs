@@ -1,9 +1,8 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public Modifiers Modifiers { get; set; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
         public CommentCollection CommentsBefore { get; }
@@ -18,7 +17,6 @@ namespace Meziantou.Framework.CodeDom
             XmlComments = new XmlCommentCollection(this);
         }
 
-        public string Namespace => this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
-
+        public string? Namespace => this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
     }
 }

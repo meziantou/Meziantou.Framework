@@ -15,10 +15,10 @@ namespace Meziantou.Framework.Scheduling
             var byWeekDays = ByWeekDays?.ToList();
             if (IsEmpty(byWeekDays))
             {
-                byWeekDays = new List<DayOfWeek> { DefaultFirstDayOfWeek };
+                byWeekDays = new List<DayOfWeek> { startDate.DayOfWeek };
             }
 
-            var dayOffsets = byWeekDays.Select(day => ((day - WeekStart) + 7) % 7).Distinct().OrderBy(a => a).ToList();
+            var dayOffsets = byWeekDays.Select(day => (day - WeekStart + 7) % 7).Distinct().OrderBy(a => a).ToList();
             var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
 
             while (true)

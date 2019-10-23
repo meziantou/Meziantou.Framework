@@ -1,9 +1,8 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     internal interface IInheritanceParameters
     {
-        TypeReference BaseType { get; set; }
+        TypeReference? BaseType { get; set; }
         CodeObjectCollection<TypeReference> Implements { get; }
     }
 }

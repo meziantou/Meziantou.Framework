@@ -1,35 +1,34 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MemberReferenceExpression : Expression
     {
-        private MemberDeclaration _memberDeclaration;
-        private string _name;
-        private Expression _targetObject;
+        private MemberDeclaration? _memberDeclaration;
+        private string? _name;
+        private Expression? _targetObject;
 
         public MemberReferenceExpression()
         {
         }
 
-        public MemberReferenceExpression(MemberDeclaration memberDeclaration)
+        public MemberReferenceExpression(MemberDeclaration? memberDeclaration)
         {
             TargetObject = new ThisExpression();
             _memberDeclaration = memberDeclaration;
         }
 
-        public MemberReferenceExpression(Expression targetObject, MemberDeclaration memberDeclaration)
+        public MemberReferenceExpression(Expression? targetObject, MemberDeclaration? memberDeclaration)
         {
             TargetObject = targetObject;
             _memberDeclaration = memberDeclaration;
         }
 
-        public MemberReferenceExpression(Expression targetObject, string memberName)
+        public MemberReferenceExpression(Expression? targetObject, string? memberName)
         {
             TargetObject = targetObject;
             Name = memberName;
         }
 
-        public string Name
+        public string? Name
         {
             get
             {
@@ -45,7 +44,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public Expression TargetObject
+        public Expression? TargetObject
         {
             get => _targetObject;
             set => SetParent(ref _targetObject, value);

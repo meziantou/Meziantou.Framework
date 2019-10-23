@@ -1,15 +1,14 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Globalization;
 
 namespace Meziantou.Framework.CodeDom
 {
     public partial class CSharpCodeGenerator
     {
-        protected virtual void Write(IndentedTextWriter writer, Expression expression)
+        protected virtual void Write(IndentedTextWriter writer, Expression? expression)
         {
             if (expression == null)
-                throw new ArgumentNullException(nameof(expression));
+                return;
 
             WriteBeforeComments(writer, expression);
             switch (expression)
@@ -495,8 +494,11 @@ namespace Meziantou.Framework.CodeDom
             WriteIdentifier(writer, expression.Name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TypeReference type)
+        protected virtual void Write(IndentedTextWriter writer, TypeReference? type)
         {
+            if (type == null)
+                return;
+
             if (s_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
             {
                 writer.Write(keyword);

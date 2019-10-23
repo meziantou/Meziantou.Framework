@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ClassDeclaration : TypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer, IMemberContainer
     {
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public ClassDeclaration(string name)
+        public ClassDeclaration(string? name)
         {
             Name = name;
             Implements = new CodeObjectCollection<TypeReference>(this);
@@ -17,7 +16,7 @@ namespace Meziantou.Framework.CodeDom
             Types = new CodeObjectCollection<TypeDeclaration>(this);
         }
 
-        public TypeReference BaseType { get; set; }
+        public TypeReference? BaseType { get; set; }
         public CodeObjectCollection<TypeReference> Implements { get; }
         public CodeObjectCollection<TypeParameter> Parameters { get; }
         public CodeObjectCollection<MemberDeclaration> Members { get; }

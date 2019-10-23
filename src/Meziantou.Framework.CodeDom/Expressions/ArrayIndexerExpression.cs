@@ -1,16 +1,15 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ArrayIndexerExpression : Expression
     {
-        private Expression _arrayExpression;
+        private Expression? _arrayExpression;
 
         public ArrayIndexerExpression()
             : this(array: null)
         {
         }
 
-        public ArrayIndexerExpression(Expression array, params Expression[] indices)
+        public ArrayIndexerExpression(Expression? array, params Expression[] indices)
         {
             Indices = new CodeObjectCollection<Expression>(this);
 
@@ -24,7 +23,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public Expression ArrayExpression
+        public Expression? ArrayExpression
         {
             get => _arrayExpression;
             set => SetParent(ref _arrayExpression, value);

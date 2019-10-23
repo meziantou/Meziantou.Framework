@@ -1,10 +1,9 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class ArgumentReferenceExpression : Expression
     {
-        private MethodArgumentDeclaration _argumentDeclaration;
-        private string _name;
+        private MethodArgumentDeclaration? _argumentDeclaration;
+        private string? _name;
 
         public ArgumentReferenceExpression()
         {
@@ -20,7 +19,7 @@ namespace Meziantou.Framework.CodeDom
             Name = name;
         }
 
-        public string Name
+        public string? Name
         {
             get
             {

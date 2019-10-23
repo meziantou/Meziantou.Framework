@@ -1,5 +1,4 @@
-#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class BaseTypeParameterConstraint : TypeParameterConstraint
     {
@@ -7,11 +6,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public BaseTypeParameterConstraint(TypeReference type)
+        public BaseTypeParameterConstraint(TypeReference? type)
         {
             Type = type;
         }
 
-        public TypeReference Type { get; set; }
+        public TypeReference? Type { get; set; }
     }
 }

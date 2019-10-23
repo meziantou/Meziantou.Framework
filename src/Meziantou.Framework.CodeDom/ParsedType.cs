@@ -1,5 +1,4 @@
-﻿#nullable disable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 
@@ -18,7 +17,7 @@ namespace Meziantou.Framework.CodeDom
             private set => _typeName = value ?? throw new ArgumentNullException(nameof(value));
         }
 
-        public string Namespace
+        public string? Namespace
         {
             get
             {
@@ -34,7 +33,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public string Name
+        public string? Name
         {
             get
             {
@@ -50,7 +49,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public string AssemblyName { get; private set; }
+        public string? AssemblyName { get; private set; }
 
         public bool IsGeneric { get; private set; }
 
@@ -58,22 +57,22 @@ namespace Meziantou.Framework.CodeDom
 
         static ParsedType()
         {
-            s_parsedTypes["string"] = new ParsedType(typeof(string).FullName);
-            s_parsedTypes["bool"] = new ParsedType(typeof(bool).FullName);
-            s_parsedTypes["int"] = new ParsedType(typeof(int).FullName);
-            s_parsedTypes["uint"] = new ParsedType(typeof(uint).FullName);
-            s_parsedTypes["long"] = new ParsedType(typeof(long).FullName);
-            s_parsedTypes["ulong"] = new ParsedType(typeof(ulong).FullName);
-            s_parsedTypes["short"] = new ParsedType(typeof(short).FullName);
-            s_parsedTypes["ushort"] = new ParsedType(typeof(ushort).FullName);
-            s_parsedTypes["byte"] = new ParsedType(typeof(byte).FullName);
-            s_parsedTypes["sbyte"] = new ParsedType(typeof(sbyte).FullName);
-            s_parsedTypes["float"] = new ParsedType(typeof(float).FullName);
-            s_parsedTypes["double"] = new ParsedType(typeof(double).FullName);
-            s_parsedTypes["decimal"] = new ParsedType(typeof(decimal).FullName);
-            s_parsedTypes["object"] = new ParsedType(typeof(object).FullName);
-            s_parsedTypes["char"] = new ParsedType(typeof(char).FullName);
-            s_parsedTypes["void"] = new ParsedType(typeof(void).FullName);
+            s_parsedTypes["string"] = new ParsedType(typeof(string).FullName!);
+            s_parsedTypes["bool"] = new ParsedType(typeof(bool).FullName!);
+            s_parsedTypes["int"] = new ParsedType(typeof(int).FullName!);
+            s_parsedTypes["uint"] = new ParsedType(typeof(uint).FullName!);
+            s_parsedTypes["long"] = new ParsedType(typeof(long).FullName!);
+            s_parsedTypes["ulong"] = new ParsedType(typeof(ulong).FullName!);
+            s_parsedTypes["short"] = new ParsedType(typeof(short).FullName!);
+            s_parsedTypes["ushort"] = new ParsedType(typeof(ushort).FullName!);
+            s_parsedTypes["byte"] = new ParsedType(typeof(byte).FullName!);
+            s_parsedTypes["sbyte"] = new ParsedType(typeof(sbyte).FullName!);
+            s_parsedTypes["float"] = new ParsedType(typeof(float).FullName!);
+            s_parsedTypes["double"] = new ParsedType(typeof(double).FullName!);
+            s_parsedTypes["decimal"] = new ParsedType(typeof(decimal).FullName!);
+            s_parsedTypes["object"] = new ParsedType(typeof(object).FullName!);
+            s_parsedTypes["char"] = new ParsedType(typeof(char).FullName!);
+            s_parsedTypes["void"] = new ParsedType(typeof(void).FullName!);
         }
 
         private ParsedType(string typeName)
@@ -81,7 +80,7 @@ namespace Meziantou.Framework.CodeDom
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            TypeName = typeName.Trim();
+            _typeName = typeName.Trim();
             if (TypeName.StartsWith("[", StringComparison.Ordinal) && TypeName.EndsWith("]", StringComparison.Ordinal))
             {
                 TypeName = TypeName.Substring(1, TypeName.Length - 2).Trim();
@@ -128,7 +127,7 @@ namespace Meziantou.Framework.CodeDom
             return pt;
         }
 
-        private static ParsedType Parse(string typeName, string start, char end)
+        private static ParsedType? Parse(string typeName, string start, char end)
         {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));

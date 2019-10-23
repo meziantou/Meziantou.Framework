@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class AddEventHandlerStatement : EventHandlerStatement
     {
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public AddEventHandlerStatement(Expression leftExpression, Expression rightExpression)
+        public AddEventHandlerStatement(Expression? leftExpression, Expression? rightExpression)
             : base(leftExpression, rightExpression)
         {
         }

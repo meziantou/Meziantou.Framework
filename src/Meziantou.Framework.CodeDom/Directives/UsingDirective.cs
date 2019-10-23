@@ -1,5 +1,4 @@
-﻿#nullable disable
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class UsingDirective : Directive
     {
@@ -8,11 +7,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public UsingDirective(string ns)
+        public UsingDirective(string? ns)
         {
             Namespace = ns;
         }
 
-        public string Namespace { get; set; }
+        public string? Namespace { get; set; }
     }
 }

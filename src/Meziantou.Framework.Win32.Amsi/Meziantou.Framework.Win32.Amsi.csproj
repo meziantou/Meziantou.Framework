@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461;netcoreapp3.0</TargetFrameworks>
     <Description>.NET wrapper for the Antimalware Scan Interface (AMSI)</Description>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
   </PropertyGroup>
 

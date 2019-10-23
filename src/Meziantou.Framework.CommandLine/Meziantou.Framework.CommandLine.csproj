@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net461;netcoreapp3.0</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.2.4</Version>
+    <Version>2.2.3</Version>
   </PropertyGroup>
 
 </Project>

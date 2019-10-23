@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -17,49 +18,52 @@ namespace Meziantou.Framework.Templating
         private const string DefaultRunMethodName = "Run";
         private const string DefaultWriterParameterName = "__output__";
 
-        private static readonly object _lock = new object();
-        private static readonly Type _defaultWriterType = null; // dynamic by default
+        private static readonly object s_lock = new object();
+        private static readonly Type? s_defaultWriterType = null; // dynamic by default
 
-        private MethodInfo _runMethodInfo = null;
-        private string _className;
-        private string _runMethodName;
-        private string _writerParameterName;
-        private Type _writerType;
+        private MethodInfo? _runMethodInfo = null;
+        private string? _className;
+        private string? _runMethodName;
+        private string? _writerParameterName;
+        private Type? _writerType;
         private readonly List<TemplateArgument> _arguments = new List<TemplateArgument>();
         private readonly List<string> _usings = new List<string>();
         private readonly List<string> _referencePaths = new List<string>();
 
-        private string ClassName
+        [NotNull]
+        private string? ClassName
         {
             get => string.IsNullOrEmpty(_className) ? DefaultClassName : _className;
             set => _className = value;
         }
 
-        private string RunMethodName
+        [NotNull]
+        private string? RunMethodName
         {
             get => string.IsNullOrEmpty(_runMethodName) ? DefaultRunMethodName : _runMethodName;
             set => _runMethodName = value;
         }
 
-        public string OutputParameterName
+        [NotNull]
+        public string? OutputParameterName
         {
             get => string.IsNullOrEmpty(_writerParameterName) ? DefaultWriterParameterName : _writerParameterName;
             set => _writerParameterName = value;
         }
 
-        public Type OutputType
+        public Type? OutputType
         {
-            get => _writerType ?? _defaultWriterType;
+            get => _writerType ?? s_defaultWriterType;
             set => _writerType = value;
         }
 
-        public string BaseClassFullTypeName { get; set; }
+        public string? BaseClassFullTypeName { get; set; }
 
         public string StartCodeBlockDelimiter { get; set; } = "<%";
         public string EndCodeBlockDelimiter { get; set; } = "%>";
-        public IList<ParsedBlock> Blocks { get; private set; }
+        public IList<ParsedBlock>? Blocks { get; private set; }
         public bool IsBuilt => _runMethodInfo != null;
-        public string SourceCode { get; private set; }
+        public string? SourceCode { get; private set; }
 
         public IReadOnlyList<TemplateArgument> Arguments => _arguments;
         public IReadOnlyList<string> Usings => _usings;
@@ -82,7 +86,7 @@ namespace Meziantou.Framework.Templating
             AddUsing(@namespace, alias: null);
         }
 
-        public void AddUsing(string @namespace, string alias)
+        public void AddUsing(string @namespace, string? alias)
         {
             if (@namespace == null)
                 throw new ArgumentNullException(nameof(@namespace));
@@ -102,7 +106,7 @@ namespace Meziantou.Framework.Templating
             AddUsing(type, alias: null);
         }
 
-        public void AddUsing(Type type, string alias)
+        public void AddUsing(Type type, string? alias)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -113,7 +117,10 @@ namespace Meziantou.Framework.Templating
             }
             else
             {
-                _usings.Add(type.Namespace);
+                if (type.Namespace != null)
+                {
+                    _usings.Add(type.Namespace);
+                }
             }
 
             AddReference(type);
@@ -144,6 +151,9 @@ namespace Meziantou.Framework.Templating
             }
             else
             {
+                if (type.FullName == null)
+                    throw new ArgumentException("type has no FullName", nameof(type));
+
                 friendlyName = type.FullName;
             }
 
@@ -160,7 +170,7 @@ namespace Meziantou.Framework.Templating
             AddArgument(name, typeof(T));
         }
 
-        public void AddArgument(string name, Type type)
+        public void AddArgument(string name, Type? type)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -172,7 +182,7 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public void AddArguments(IReadOnlyDictionary<string, object> arguments)
+        public void AddArguments(IReadOnlyDictionary<string, object?> arguments)
         {
             if (arguments == null)
                 throw new ArgumentNullException(nameof(arguments));
@@ -301,7 +311,7 @@ namespace Meziantou.Framework.Templating
             if (IsBuilt)
                 return;
 
-            lock (_lock)
+            lock (s_lock)
             {
                 if (IsBuilt)
                     return;
@@ -477,7 +487,12 @@ namespace Meziantou.Framework.Templating
         protected virtual MethodInfo FindMethod(Assembly assembly)
         {
             var type = assembly.GetType(ClassName);
-            return type.GetMethod(RunMethodName);
+            System.Diagnostics.Debug.Assert(type != null);
+
+            var methodInfo = type.GetMethod(RunMethodName);
+            System.Diagnostics.Debug.Assert(methodInfo != null);
+
+            return methodInfo;
         }
 
         protected virtual StringWriter CreateStringWriter()
@@ -490,14 +505,14 @@ namespace Meziantou.Framework.Templating
             return new Output(this, writer);
         }
 
-        public string Run(params object[] parameters)
+        public string Run(params object?[] parameters)
         {
             using var writer = CreateStringWriter();
             Run(writer, parameters);
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, params object[] parameters)
+        public virtual void Run(TextWriter writer, params object?[] parameters)
         {
             if (!IsBuilt)
             {
@@ -509,7 +524,7 @@ namespace Meziantou.Framework.Templating
             InvokeRunMethod(p);
         }
 
-        protected virtual object[] CreateMethodParameters(TextWriter writer, object[] parameters)
+        protected virtual object[] CreateMethodParameters(TextWriter writer, object?[]? parameters)
         {
             var p = new object[parameters?.Length + 1 ?? 1];
             p[0] = CreateOutput(writer);
@@ -517,7 +532,7 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        public string Run(IReadOnlyDictionary<string, object> parameters)
+        public string Run(IReadOnlyDictionary<string, object?> parameters)
         {
             if (parameters == null)
                 throw new ArgumentNullException(nameof(parameters));
@@ -527,7 +542,7 @@ namespace Meziantou.Framework.Templating
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
+        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
@@ -538,15 +553,15 @@ namespace Meziantou.Framework.Templating
             InvokeRunMethod(p);
         }
 
-        protected virtual object[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object> parameters)
+        protected virtual object?[] CreateMethodParameters(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
         {
             if (!IsBuilt)
             {
                 Build();
             }
 
-            var parameterInfos = _runMethodInfo.GetParameters();
-            var p = new object[parameterInfos.Length];
+            var parameterInfos = _runMethodInfo!.GetParameters();
+            var p = new object?[parameterInfos.Length];
             foreach (var pi in parameterInfos)
             {
                 if (string.Equals(pi.Name, OutputParameterName, StringComparison.Ordinal))
@@ -555,7 +570,7 @@ namespace Meziantou.Framework.Templating
                 }
                 else
                 {
-                    if (parameters.TryGetValue(pi.Name, out var value))
+                    if (parameters.TryGetValue(pi.Name!, out var value))
                     {
                         p[pi.Position] = value;
                     }
@@ -564,14 +579,14 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        protected virtual void InvokeRunMethod(object[] p)
+        protected virtual void InvokeRunMethod(object?[] p)
         {
             if (!IsBuilt)
             {
                 Build();
             }
 
-            _runMethodInfo.Invoke(null, p);
+            _runMethodInfo!.Invoke(null, p);
         }
     }
 }

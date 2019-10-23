@@ -6,11 +6,11 @@
         {
         }
 
-        public BaseTypeParameterConstraint(TypeReference type)
+        public BaseTypeParameterConstraint(TypeReference? type)
         {
             Type = type;
         }
 
-        public TypeReference Type { get; set; }
+        public TypeReference? Type { get; set; }
     }
 }

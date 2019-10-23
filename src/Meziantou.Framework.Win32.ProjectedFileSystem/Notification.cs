@@ -7,13 +7,13 @@
         {
         }
 
-        public Notification(string path, PRJ_NOTIFY_TYPES notificationType)
+        public Notification(string? path, PRJ_NOTIFY_TYPES notificationType)
         {
             Path = path;
             NotificationType = notificationType;
         }
 
-        public string Path { get; }
+        public string? Path { get; }
         public PRJ_NOTIFY_TYPES NotificationType { get; }
     }
 }

@@ -27,9 +27,9 @@ namespace Meziantou.Framework.Win32.Natives
             uint nFiles,
             string[] rgsFilenames,
             uint nApplications,
-            [In] RM_UNIQUE_PROCESS[] rgApplications,
+            [In] RM_UNIQUE_PROCESS[]? rgApplications,
             uint nServices,
-            string[] rgsServiceNames);
+            string[]? rgsServiceNames);
 
         /// <summary>
         /// Starts a new Restart Manager session.
@@ -104,7 +104,7 @@ namespace Meziantou.Framework.Win32.Natives
         /// <param name="fnStatus">A pointer to an RM_WRITE_STATUS_CALLBACK function that is used to communicate detailed status while this function is executing. If NULL, no status is provided.</param>
         /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
         [DllImport("rstrtmgr.dll")]
-        public static extern RmResult RmShutdown(int pSessionHandle, RmShutdownType lActionFlags, RmWriteStatusCallback fnStatus);
+        public static extern RmResult RmShutdown(int pSessionHandle, RmShutdownType lActionFlags, RmWriteStatusCallback? fnStatus);
 
         /// <summary>
         /// Restarts applications and services that have been shut down by the RmShutdown function and that have been registered to be restarted using the RegisterApplicationRestart function. This function can only be called by the primary installer that called the RmStartSession function to start the Restart Manager session.
@@ -114,7 +114,7 @@ namespace Meziantou.Framework.Win32.Natives
         /// <param name="fnStatus">A pointer to a status message callback function that is used to communicate status while the RmRestart function is running. If NULL, no status is provided.</param>
         /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
         [DllImport("rstrtmgr.dll")]
-        public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RmWriteStatusCallback fnStatus);
+        public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RmWriteStatusCallback? fnStatus);
 
         [DllImport("kernel32.dll")]
         public static extern bool GetProcessTimes(IntPtr hProcess, out FILETIME lpCreationTime, out FILETIME lpExitTime, out FILETIME lpKernelTime, out FILETIME lpUserTime);

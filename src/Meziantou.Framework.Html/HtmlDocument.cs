@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -503,7 +504,7 @@ namespace Meziantou.Framework.Html
             return new HtmlElement(prefix, localName, namespaceURI, this);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
+        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
         public HtmlDocument CreateDocument()
         {
             return new HtmlDocument();

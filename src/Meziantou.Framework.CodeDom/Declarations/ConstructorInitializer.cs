@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom
     public abstract class ConstructorInitializer : CodeObject, ICommentable
     {
         protected ConstructorInitializer()
-            : this((IEnumerable<Expression>)null)
+            : this((IEnumerable<Expression>?)null)
         {
         }
 
@@ -14,7 +14,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        protected ConstructorInitializer(IEnumerable<Expression> codeExpressions)
+        protected ConstructorInitializer(IEnumerable<Expression>? codeExpressions)
         {
             CommentsBefore = new CommentCollection(this);
             CommentsAfter = new CommentCollection(this);

@@ -7,7 +7,7 @@
         {
         }
 
-        public AddEventHandlerStatement(Expression leftExpression, Expression rightExpression)
+        public AddEventHandlerStatement(Expression? leftExpression, Expression? rightExpression)
             : base(leftExpression, rightExpression)
         {
         }

@@ -11,7 +11,7 @@ namespace Meziantou.Framework
         /// </summary>
         /// <param name="assembly">The assembly. May not be null.</param>
         /// <returns>The version represented as a string. May not be null.</returns>
-        public static string GetInformationalVersion(this Assembly assembly)
+        public static string? GetInformationalVersion(this Assembly assembly)
         {
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));

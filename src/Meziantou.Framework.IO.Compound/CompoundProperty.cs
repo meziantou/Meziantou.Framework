@@ -25,7 +25,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         public static readonly Guid UserDefinedPropertiesId = new Guid("{D5CDD505-2E9C-101B-9397-08002B2CF9AE}");
 
-        private object _value;
+        private object? _value;
 
         // SummaryInformation Property Set
         private const uint PIDSI_TITLE = 0x00000002;  // VT_LPSTR
@@ -139,10 +139,10 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         /// <param name="formatId">The format id.</param>
         /// <param name="name">The name.</param>
-        public CompoundProperty(Guid formatId, string name)
+        public CompoundProperty(Guid formatId, string? name)
         {
             // determine id
-            CompoundProperty kp = null;
+            CompoundProperty? kp = null;
             foreach (var property in KnownProperties)
             {
                 if (property.FormatId == formatId &&
@@ -173,7 +173,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="formatId">The format id.</param>
         /// <param name="name">The name.</param>
         /// <param name="id">The id.</param>
-        public CompoundProperty(Guid formatId, string name, uint id)
+        public CompoundProperty(Guid formatId, string? name, uint id)
         {
             FormatId = formatId;
             Name = name;
@@ -191,7 +191,7 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets the name.
         /// </summary>
         /// <value>The name.</value>
-        public string Name { get; private set; }
+        public string? Name { get; private set; }
 
         /// <summary>
         /// Gets the id.
@@ -223,7 +223,7 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the value.
         /// </summary>
         /// <value>The value.</value>
-        public object Value
+        public object? Value
         {
             get => _value;
             set
@@ -239,6 +239,6 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>
         /// A <see cref="string"/> that represents this instance.
         /// </returns>
-        public override string ToString() => Name;
+        public override string? ToString() => Name;
     }
 }

@@ -7,7 +7,7 @@
         {
         }
 
-        public ClassDeclaration(string name)
+        public ClassDeclaration(string? name)
         {
             Name = name;
             Implements = new CodeObjectCollection<TypeReference>(this);
@@ -16,7 +16,7 @@
             Types = new CodeObjectCollection<TypeDeclaration>(this);
         }
 
-        public TypeReference BaseType { get; set; }
+        public TypeReference? BaseType { get; set; }
         public CodeObjectCollection<TypeReference> Implements { get; }
         public CodeObjectCollection<TypeParameter> Parameters { get; }
         public CodeObjectCollection<MemberDeclaration> Members { get; }

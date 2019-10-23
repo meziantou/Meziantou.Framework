@@ -1,21 +1,21 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class EnumerationDeclaration : TypeDeclaration
     {
-        private TypeReference _baseType;
+        private TypeReference? _baseType;
 
         public EnumerationDeclaration()
         {
             Members = new CodeObjectCollection<EnumerationMember>(this);
         }
 
-        public EnumerationDeclaration(string name)
+        public EnumerationDeclaration(string? name)
         {
             Members = new CodeObjectCollection<EnumerationMember>(this);
             Name = name;
         }
 
-        public TypeReference BaseType
+        public TypeReference? BaseType
         {
             get => _baseType;
             set => SetParent(ref _baseType, value);

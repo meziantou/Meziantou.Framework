@@ -2,16 +2,16 @@
 {
     public class MethodDeclaration : MemberDeclaration, IParametrableType, IModifiers
     {
-        private TypeReference _returnType;
-        private TypeReference _privateImplementationType;
+        private TypeReference? _returnType;
+        private TypeReference? _privateImplementationType;
 
-        public TypeReference ReturnType
+        public TypeReference? ReturnType
         {
             get => _returnType;
             set => SetParent(ref _returnType, value);
         }
 
-        public TypeReference PrivateImplementationType
+        public TypeReference? PrivateImplementationType
         {
             get => _privateImplementationType;
             set => SetParent(ref _privateImplementationType, value);
@@ -19,7 +19,7 @@
 
         public CodeObjectCollection<TypeParameter> Parameters { get; }
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
-        public StatementCollection Statements { get; set; }
+        public StatementCollection? Statements { get; set; }
         public Modifiers Modifiers { get; set; }
 
         public MethodDeclaration()
@@ -27,7 +27,7 @@
         {
         }
 
-        public MethodDeclaration(string name)
+        public MethodDeclaration(string? name)
         {
             Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
             Parameters = new CodeObjectCollection<TypeParameter>(this);

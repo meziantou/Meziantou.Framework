@@ -8,11 +8,11 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public XmlComment(XElement element)
+        public XmlComment(XElement? element)
         {
             Element = element;
         }
 
-        public XElement Element { get; set; }
+        public XElement? Element { get; set; }
     }
 }

@@ -2,7 +2,7 @@
 {
     internal interface IInheritanceParameters
     {
-        TypeReference BaseType { get; set; }
+        TypeReference? BaseType { get; set; }
         CodeObjectCollection<TypeReference> Implements { get; }
     }
 }

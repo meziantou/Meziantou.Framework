@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
@@ -17,12 +18,12 @@ namespace Meziantou.Framework
         /// <returns> The soundex.</returns>
         /// <exception cref="ArgumentException">Dictionary does not contain character a character of the string <paramref name="s" /></exception>
         [Pure]
-        public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char> replace = null)
+        public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char>? replace = null)
         {
             if (s == null)
-                throw new System.ArgumentNullException(nameof(s));
+                throw new ArgumentNullException(nameof(s));
             if (dic == null)
-                throw new System.ArgumentNullException(nameof(dic));
+                throw new ArgumentNullException(nameof(dic));
 
             s = SoundexStringPrep(s, replace);
             if (s.Length == 0)
@@ -92,7 +93,7 @@ namespace Meziantou.Framework
         public static string Soundex2(string s)
         {
             if (s == null)
-                throw new System.ArgumentNullException(nameof(s));
+                throw new ArgumentNullException(nameof(s));
 
             var sb = new StringBuilder();
             foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
@@ -287,11 +288,11 @@ namespace Meziantou.Framework
         private static void ChangePrefix(StringBuilder sb, string prefix, string replace)
         {
             if (sb == null)
-                throw new System.ArgumentNullException(nameof(sb));
+                throw new ArgumentNullException(nameof(sb));
             if (prefix == null)
-                throw new System.ArgumentNullException(nameof(prefix));
+                throw new ArgumentNullException(nameof(prefix));
             if (replace == null)
-                throw new System.ArgumentNullException(nameof(replace));
+                throw new ArgumentNullException(nameof(replace));
 
             var i = 0;
             while (i < sb.Length && i < prefix.Length)
@@ -309,10 +310,10 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char> replace = null)
+        private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char>? replace = null)
         {
             if (s == null)
-                throw new System.ArgumentNullException(nameof(s));
+                throw new ArgumentNullException(nameof(s));
 
             // takes only the first word of the string.
             var sb = new StringBuilder();

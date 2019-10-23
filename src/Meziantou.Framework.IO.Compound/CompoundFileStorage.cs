@@ -13,7 +13,7 @@ namespace Meziantou.Framework.IO.Compound
         private readonly CompoundFile _file;
         internal readonly List<CompoundFileStorage> _storages = new List<CompoundFileStorage>();
 
-        internal CompoundFileStorage(CompoundFile file, CompoundFileStorage parent, CompoundFile.DirectoryStorage entry, bool isRoot)
+        internal CompoundFileStorage(CompoundFile file, CompoundFileStorage? parent, CompoundFile.DirectoryStorage entry, bool isRoot)
         {
             Parent = parent;
             _file = file;
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <summary>
         /// Gets the parent file.
         /// </summary>
-        public CompoundFileStorage Parent { get; private set; }
+        public CompoundFileStorage? Parent { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether this instance is the root storage.
@@ -40,7 +40,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>
         /// A <see cref="string"/> that represents this instance.
         /// </returns>
-        public override string ToString()
+        public override string? ToString()
         {
             return Name;
         }
@@ -48,7 +48,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <summary>
         /// Gets the storage path.
         /// </summary>
-        public string Path
+        public string? Path
         {
             get
             {
@@ -62,7 +62,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <summary>
         /// Gets the storage name.
         /// </summary>
-        public string Name
+        public string? Name
         {
             get
             {
@@ -78,12 +78,12 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         /// <param name="name">The name. May not be null.</param>
         /// <returns>An instance of the CompoundFileStorage class or null if not found.</returns>
-        public CompoundFileStorage GetChildStorage(string name)
+        public CompoundFileStorage? GetChildStorage(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            return _storages.Find(s => string.Compare(s.Name, name, StringComparison.OrdinalIgnoreCase) == 0);
+            return _storages.Find(s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>
         /// An instance of the CompoundFileStream class or null if not found.
         /// </returns>
-        public CompoundFileStream GetChildStream(string name)
+        public CompoundFileStream? GetChildStream(string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));

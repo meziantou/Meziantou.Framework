@@ -146,13 +146,12 @@ namespace Meziantou.Framework
             }
         }
 
-#pragma warning disable IDE0051 // Remove unused private members, // Can be used from the debugger
+        [SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Can be used from the debugger")]
         private void OpenInExplorer()
 
         {
             Process.Start(FullPath);
         }
-#pragma warning restore IDE0051 // Remove unused private members
 
 #if NETCOREAPP3_0
         public async ValueTask DisposeAsync()

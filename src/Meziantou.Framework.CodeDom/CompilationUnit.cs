@@ -1,16 +1,16 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer
     {
-        private CodeObjectCollection<TypeDeclaration> _types;
-        private CodeObjectCollection<NamespaceDeclaration> _namespaces;
-        private CodeObjectCollection<UsingDirective> _usings;
+        private CodeObjectCollection<TypeDeclaration>? _types;
+        private CodeObjectCollection<NamespaceDeclaration>? _namespaces;
+        private CodeObjectCollection<UsingDirective>? _usings;
 
         public CompilationUnit()
         {
         }
 
-        public CompilationUnit(TypeDeclaration typeDeclaration)
+        public CompilationUnit(TypeDeclaration? typeDeclaration)
         {
             if (typeDeclaration != null)
             {
@@ -18,7 +18,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public CompilationUnit(NamespaceDeclaration namespaceDeclaration)
+        public CompilationUnit(NamespaceDeclaration? namespaceDeclaration)
         {
             if (namespaceDeclaration != null)
             {

@@ -7,7 +7,7 @@ namespace Meziantou.Framework
 {
     public static class IOUtilities
     {
-        private static readonly string[] ReservedFileNames = new[]
+        private static readonly string[] s_reservedFileNames = new[]
          {
             "con", "prn", "aux", "nul",
             "com0", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
@@ -128,7 +128,7 @@ namespace Meziantou.Framework
             if (reservedCharFormat == null)
                 throw new ArgumentNullException(nameof(reservedCharFormat));
 
-            if (Array.IndexOf(ReservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
+            if (Array.IndexOf(s_reservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
                 IsAllDots(fileName))
             {
                 return string.Format(reservedNameFormat, fileName);

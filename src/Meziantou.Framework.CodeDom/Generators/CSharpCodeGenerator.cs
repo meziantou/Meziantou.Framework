@@ -14,22 +14,22 @@ namespace Meziantou.Framework.CodeDom
         {
             s_predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                [typeof(bool).FullName] = "bool",
-                [typeof(byte).FullName] = "byte",
-                [typeof(char).FullName] = "char",
-                [typeof(decimal).FullName] = "decimal",
-                [typeof(double).FullName] = "double",
-                [typeof(float).FullName] = "float",
-                [typeof(int).FullName] = "int",
-                [typeof(long).FullName] = "long",
-                [typeof(object).FullName] = "object",
-                [typeof(sbyte).FullName] = "sbyte",
-                [typeof(short).FullName] = "short",
-                [typeof(string).FullName] = "string",
-                [typeof(uint).FullName] = "uint",
-                [typeof(ulong).FullName] = "ulong",
-                [typeof(ushort).FullName] = "ushort",
-                [typeof(void).FullName] = "void",
+                [typeof(bool).FullName!] = "bool",
+                [typeof(byte).FullName!] = "byte",
+                [typeof(char).FullName!] = "char",
+                [typeof(decimal).FullName!] = "decimal",
+                [typeof(double).FullName!] = "double",
+                [typeof(float).FullName!] = "float",
+                [typeof(int).FullName!] = "int",
+                [typeof(long).FullName!] = "long",
+                [typeof(object).FullName!] = "object",
+                [typeof(sbyte).FullName!] = "sbyte",
+                [typeof(short).FullName!] = "short",
+                [typeof(string).FullName!] = "string",
+                [typeof(uint).FullName!] = "uint",
+                [typeof(ulong).FullName!] = "ulong",
+                [typeof(ushort).FullName!] = "ushort",
+                [typeof(void).FullName!] = "void",
             };
 
             s_keywords = new string[]
@@ -942,7 +942,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, XmlComment comment)
         {
-            WriteDocumentationComment(writer, comment.Element.ToString());
+            WriteDocumentationComment(writer, comment.Element?.ToString());
         }
 
         protected virtual string Write(BinaryOperator op)
@@ -1037,8 +1037,11 @@ namespace Meziantou.Framework.CodeDom
             };
         }
 
-        protected virtual void WriteIdentifier(IndentedTextWriter writer, string name)
+        protected virtual void WriteIdentifier(IndentedTextWriter writer, string? name)
         {
+            if (name == null)
+                return;
+
             if (s_keywords.Contains(name, StringComparer.Ordinal))
             {
                 writer.Write("@");
@@ -1047,7 +1050,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, StatementCollection statements)
+        protected virtual void Write(IndentedTextWriter writer, StatementCollection? statements)
         {
             writer.WriteLine("{");
             writer.Indent++;
@@ -1097,13 +1100,13 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, orderedConstraints, ", ");
         }
 
-        protected virtual void WriteDocumentationComment(IndentedTextWriter writer, string comment)
+        protected virtual void WriteDocumentationComment(IndentedTextWriter writer, string? comment)
         {
             if (comment == null)
                 return;
 
             using var sr = new StringReader(comment);
-            string line;
+            string? line;
             while ((line = sr.ReadLine()) != null)
             {
                 if (string.IsNullOrEmpty(line))
@@ -1117,7 +1120,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void WriteLineComment(IndentedTextWriter writer, string comment)
+        protected virtual void WriteLineComment(IndentedTextWriter writer, string? comment)
         {
             if (comment == null)
             {
@@ -1126,7 +1129,7 @@ namespace Meziantou.Framework.CodeDom
             }
 
             using var sr = new StringReader(comment);
-            string line;
+            string? line;
             while ((line = sr.ReadLine()) != null)
             {
                 if (string.IsNullOrEmpty(line))
@@ -1140,7 +1143,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual bool TryWriteInlineComment(IndentedTextWriter writer, string comment)
+        protected virtual bool TryWriteInlineComment(IndentedTextWriter writer, string? comment)
         {
             if (comment == null)
             {
@@ -1292,7 +1295,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string endOfLine) where T : CodeObject
+        private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string? endOfLine) where T : CodeObject
         {
             var first = true;
             foreach (var o in objects)

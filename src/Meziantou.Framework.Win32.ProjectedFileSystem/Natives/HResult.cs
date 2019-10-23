@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is HResult && Equals((HResult)obj);
         }

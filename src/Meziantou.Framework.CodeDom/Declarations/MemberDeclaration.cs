@@ -7,7 +7,7 @@
         {
         }
 
-        protected MemberDeclaration(string name)
+        protected MemberDeclaration(string? name)
         {
             CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
             Implements = new CodeObjectCollection<MemberReferenceExpression>(this);
@@ -17,7 +17,7 @@
             Name = name;
         }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
         public CodeObjectCollection<MemberReferenceExpression> Implements { get; }
         public CommentCollection CommentsBefore { get; }

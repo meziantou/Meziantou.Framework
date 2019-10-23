@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public static class Extensions
     {
-        public static T GetSelfOrParentOfType<T>(this CodeObject codeObject) where T : CodeObject
+        public static T? GetSelfOrParentOfType<T>(this CodeObject? codeObject) where T : CodeObject
         {
             while (codeObject != null)
             {

@@ -2,18 +2,18 @@
 {
     public class TypeOfExpression : Expression
     {
-        private TypeReference _type;
+        private TypeReference? _type;
 
         public TypeOfExpression()
         {
         }
 
-        public TypeOfExpression(TypeReference type)
+        public TypeOfExpression(TypeReference? type)
         {
             Type = type;
         }
 
-        public TypeReference Type
+        public TypeReference? Type
         {
             get => _type;
             set => SetParent(ref _type, value);

@@ -1,9 +1,9 @@
-namespace Meziantou.Framework.Scheduling
+﻿namespace Meziantou.Framework.Scheduling
 {
-    public class Organizer
+    public sealed class Organizer
     {
         //RFC2445 - 4.8.4.3 Organizer
 
-        public CalendarUserAddress Address { get; set; }
+        public CalendarUserAddress? Address { get; set; }
     }
 }

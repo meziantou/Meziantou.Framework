@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class MethodExitStatement : Statement
     {

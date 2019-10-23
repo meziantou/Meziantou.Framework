@@ -1,15 +1,15 @@
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class BinaryExpression : Expression
     {
-        private Expression _rightExpression;
-        private Expression _leftExpression;
+        private Expression? _rightExpression;
+        private Expression? _leftExpression;
 
         public BinaryExpression()
         {
         }
 
-        public BinaryExpression(BinaryOperator op, Expression leftExpression, Expression rightExpression)
+        public BinaryExpression(BinaryOperator op, Expression? leftExpression, Expression? rightExpression)
         {
             Operator = op;
             LeftExpression = leftExpression;
@@ -18,13 +18,13 @@ namespace Meziantou.Framework.CodeDom
 
         public BinaryOperator Operator { get; set; }
 
-        public Expression LeftExpression
+        public Expression? LeftExpression
         {
             get => _leftExpression;
             set => SetParent(ref _leftExpression, value);
         }
 
-        public Expression RightExpression
+        public Expression? RightExpression
         {
             get => _rightExpression;
             set => SetParent(ref _rightExpression, value);

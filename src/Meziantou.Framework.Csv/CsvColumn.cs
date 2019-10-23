@@ -7,13 +7,13 @@
             Index = index;
         }
 
-        public CsvColumn(string name, int index)
+        public CsvColumn(string? name, int index)
         {
             Index = index;
             Name = name;
         }
 
-        public string Name { get; }
+        public string? Name { get; }
         public int Index { get; }
     }
 }

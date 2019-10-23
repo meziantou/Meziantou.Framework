@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace Meziantou.Framework.Templating
@@ -14,17 +14,17 @@ namespace Meziantou.Framework.Templating
             Writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
-        public virtual void Write(object value)
+        public virtual void Write(object? value)
         {
             Write("{0}", value);
         }
 
-        public virtual void Write(string value)
+        public virtual void Write(string? value)
         {
             Write("{0}", value);
         }
 
-        public virtual void Write(string format, params object[] args)
+        public virtual void Write(string format, params object?[] args)
         {
             Writer.Write(format, args);
         }

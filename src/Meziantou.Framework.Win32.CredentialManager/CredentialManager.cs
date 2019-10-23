@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Win32.Natives;
@@ -9,7 +11,7 @@ namespace Meziantou.Framework.Win32
 {
     public static class CredentialManager
     {
-        public static Credential ReadCredential(string applicationName)
+        public static Credential? ReadCredential(string applicationName)
         {
             var read = Advapi32.CredRead(applicationName, CredentialType.Generic, 0, out var handle);
             using (handle)
@@ -27,14 +29,15 @@ namespace Meziantou.Framework.Win32
         private static Credential ReadCredential(CREDENTIAL credential)
         {
             var applicationName = Marshal.PtrToStringUni(credential.TargetName);
-            var userName = Marshal.PtrToStringUni(credential.UserName);
-            string secret = null;
-            if (credential.CredentialBlob != IntPtr.Zero)
-            {
-                secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
-            }
+            Debug.Assert(applicationName != null);
 
-            string comment = null;
+            var userName = Marshal.PtrToStringUni(credential.UserName);
+            Debug.Assert(userName != null);
+
+            string? secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
+            Debug.Assert(secret != null);
+
+            string? comment = null;
             if (credential.Comment != IntPtr.Zero)
             {
                 comment = Marshal.PtrToStringUni(credential.Comment);
@@ -48,7 +51,7 @@ namespace Meziantou.Framework.Win32
             WriteCredential(applicationName, userName, secret, comment: null, persistence);
         }
 
-        public static void WriteCredential(string applicationName, string userName, string secret, string comment, CredentialPersistence persistence)
+        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
         {
             if (applicationName == null)
                 throw new ArgumentNullException(nameof(applicationName));
@@ -138,7 +141,7 @@ namespace Meziantou.Framework.Win32
             return EnumerateCrendentials(filter: null);
         }
 
-        public static IReadOnlyList<Credential> EnumerateCrendentials(string filter)
+        public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter)
         {
             var result = new List<Credential>();
             var ret = Advapi32.CredEnumerate(filter, 0, out var count, out var pCredentials);
@@ -162,7 +165,7 @@ namespace Meziantou.Framework.Win32
             return result;
         }
 
-        public static CredentialResult PromptForCredentialsConsole(string target, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+        public static CredentialResult PromptForCredentialsConsole(string target, string? userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
         {
             var userId = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
             var userPassword = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
@@ -204,7 +207,7 @@ namespace Meziantou.Framework.Win32
             };
         }
 
-        public static CredentialResult PromptForCredentials(IntPtr owner = default, string messageText = null, string captionText = null, string userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+        public static CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
         {
             var credUI = new CredentialUIInfo
             {
@@ -252,7 +255,7 @@ namespace Meziantou.Framework.Win32
             return null;
         }
 
-        private static void GetInputBuffer(string user, out IntPtr inCredBuffer, out int inCredSize)
+        private static void GetInputBuffer(string? user, out IntPtr inCredBuffer, out int inCredSize)
         {
             if (!string.IsNullOrEmpty(user))
             {
@@ -269,7 +272,7 @@ namespace Meziantou.Framework.Win32
             inCredSize = 0;
         }
 
-        private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, out string userName, out string password, out string domain)
+        private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, [NotNullWhen(returnValue: true)] out string? userName, [NotNullWhen(returnValue: true)]out string? password, [NotNullWhen(returnValue: true)]out string? domain)
         {
             var maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
             var maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;

@@ -15,3 +15,4 @@ namespace Meziantou.Framework.CodeDom
         }
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    public class ProjectedFileSystemStartOptions
+    public sealed class ProjectedFileSystemStartOptions
     {
         public bool UseNegativePathCache { get; set; }
 

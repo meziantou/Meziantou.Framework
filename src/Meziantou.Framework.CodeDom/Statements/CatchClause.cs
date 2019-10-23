@@ -2,8 +2,8 @@
 {
     public class CatchClause : CodeObject, ICommentable
     {
-        private TypeReference _exceptionType;
-        private StatementCollection _body;
+        private TypeReference? _exceptionType;
+        private StatementCollection? _body;
 
         public CatchClause()
         {
@@ -13,15 +13,15 @@
 
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
-        public string ExceptionVariableName { get; set; }
+        public string? ExceptionVariableName { get; set; }
 
-        public TypeReference ExceptionType
+        public TypeReference? ExceptionType
         {
             get => _exceptionType;
             set => SetParent(ref _exceptionType, value);
         }
 
-        public StatementCollection Body
+        public StatementCollection? Body
         {
             get => _body;
             set => SetParent(ref _body, value);

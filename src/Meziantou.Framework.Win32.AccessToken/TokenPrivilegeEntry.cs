@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    public class TokenPrivilegeEntry
+    public sealed class TokenPrivilegeEntry
     {
         public TokenPrivilegeEntry(string name, PrivilegeAttribute attributes)
         {

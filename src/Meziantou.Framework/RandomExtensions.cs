@@ -181,6 +181,8 @@ namespace Meziantou.Framework
         {
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
+            if (chars == null)
+                throw new ArgumentNullException(nameof(chars));
 
             var length = minLength + random.Next(0, maxLength - minLength + 1); // length of the string
 

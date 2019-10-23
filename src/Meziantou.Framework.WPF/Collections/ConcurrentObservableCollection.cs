@@ -16,7 +16,7 @@ namespace Meziantou.Framework.WPF.Collections
         private readonly object _lock = new object();
 
         private ImmutableList<T> _items = ImmutableList<T>.Empty;
-        private DispatchedObservableCollection<T> _observableCollection;
+        private DispatchedObservableCollection<T>? _observableCollection;
 
         public ConcurrentObservableCollection()
             : this(GetCurrentDispatcher())
@@ -66,10 +66,10 @@ namespace Meziantou.Framework.WPF.Collections
 
         bool ICollection.IsSynchronized => ((ICollection)_items).IsSynchronized;
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get => this[index];
-            set => this[index] = (T)value;
+            set => this[index] = (T)value!;
         }
 
         public T this[int index]
@@ -165,9 +165,9 @@ namespace Meziantou.Framework.WPF.Collections
             _items.CopyTo(array, arrayIndex);
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
-            var item = (T)value;
+            var item = (T)value!;
             lock (_lock)
             {
                 var index = _items.Count;
@@ -177,9 +177,9 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
-            return Contains((T)value);
+            return Contains((T)value!);
         }
 
         void IList.Clear()
@@ -187,19 +187,19 @@ namespace Meziantou.Framework.WPF.Collections
             Clear();
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
-            return IndexOf((T)value);
+            return IndexOf((T)value!);
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
-            Insert(index, (T)value);
+            Insert(index, (T)value!);
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
-            Remove((T)value);
+            Remove((T)value!);
         }
 
         void IList.RemoveAt(int index)

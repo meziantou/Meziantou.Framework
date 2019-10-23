@@ -15,7 +15,7 @@ namespace Meziantou.Framework
         public int ProcessId { get; }
         public int ParentProcessId { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ProcessEntry entry)
             {

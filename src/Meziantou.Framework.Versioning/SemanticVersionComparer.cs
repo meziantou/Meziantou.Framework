@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Versioning
     {
         public static SemanticVersionComparer Instance { get; } = new SemanticVersionComparer();
 
-        public int Compare(SemanticVersion x, SemanticVersion y)
+        public int Compare(SemanticVersion? x, SemanticVersion? y)
         {
             if (ReferenceEquals(x, y))
                 return 0;
@@ -77,12 +77,12 @@ namespace Meziantou.Framework.Versioning
             return 0;
         }
 
-        public bool Equals(SemanticVersion x, SemanticVersion y)
+        public bool Equals(SemanticVersion? x, SemanticVersion? y)
         {
             return Compare(x, y) == 0;
         }
 
-        public int GetHashCode(SemanticVersion obj)
+        public int GetHashCode(SemanticVersion? obj)
         {
             if (obj == null)
                 return 0;

@@ -7,13 +7,13 @@
             Constraints = new TypeParameterConstraintCollection();
         }
 
-        public TypeParameter(string name)
+        public TypeParameter(string? name)
             : this()
         {
             Name = name;
         }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public TypeParameterConstraintCollection Constraints { get; }
     }
 }

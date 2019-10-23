@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Win32
             SetValue(key, value: null);
         }
 
-        public static void SetValue(string key, string value)
+        public static void SetValue(string key, string? value)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -36,7 +36,7 @@ namespace Meziantou.Framework.Win32
                 throw new Win32Exception(winErrorCode, "StorePrivateData failed: " + winErrorCode);
         }
 
-        public static string GetValue(string key)
+        public static string? GetValue(string key)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -65,7 +65,7 @@ namespace Meziantou.Framework.Win32
                 return null;
 
             var lusSecretData = Marshal.PtrToStructure<LSA_UNICODE_STRING>(privateData);
-            var value = Marshal.PtrToStringAuto(lusSecretData.Buffer).Substring(0, lusSecretData.Length / UnicodeEncoding.CharSize);
+            var value = Marshal.PtrToStringAuto(lusSecretData.Buffer)?.Substring(0, lusSecretData.Length / UnicodeEncoding.CharSize);
 
             FreeMemory(privateData);
 
@@ -82,17 +82,17 @@ namespace Meziantou.Framework.Win32
             return lsaPolicyHandle;
         }
 
-        private static void ReleaseLsaPolicy(IntPtr LsaPolicyHandle)
+        private static void ReleaseLsaPolicy(IntPtr lsaPolicyHandle)
         {
-            var ntsResult = LsaClose(LsaPolicyHandle);
+            var ntsResult = LsaClose(lsaPolicyHandle);
             var winErrorCode = LsaNtStatusToWinError(ntsResult);
             if (winErrorCode != 0)
                 throw new Win32Exception(winErrorCode, "LsaClose failed: " + winErrorCode);
         }
 
-        private static void FreeMemory(IntPtr Buffer)
+        private static void FreeMemory(IntPtr buffer)
         {
-            var ntsResult = LsaFreeMemory(Buffer);
+            var ntsResult = LsaFreeMemory(buffer);
             var winErrorCode = LsaNtStatusToWinError(ntsResult);
             if (winErrorCode != 0)
                 throw new Win32Exception(winErrorCode, "LsaFreeMemory failed: " + winErrorCode);

@@ -8,12 +8,12 @@ namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
-        public static Task<ProcessResult> RunAsTask(string fileName, string arguments, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, CancellationToken cancellationToken = default)
         {
             return RunAsTask(fileName, arguments, workingDirectory: null, cancellationToken);
         }
 
-        public static Task<ProcessResult> RunAsTask(string fileName, string arguments, string workingDirectory, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
         {
             var psi = new ProcessStartInfo
             {

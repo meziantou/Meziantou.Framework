@@ -90,7 +90,7 @@ namespace Meziantou.Framework
             return UseCulture(culture, action);
         }
 
-        public static CultureInfo GetCulture(string name)
+        public static CultureInfo? GetCulture(string? name)
         {
             if (name == null)
                 return null;

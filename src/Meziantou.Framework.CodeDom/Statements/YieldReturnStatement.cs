@@ -2,18 +2,18 @@
 {
     public class YieldReturnStatement : Statement
     {
-        private Expression _expression;
+        private Expression? _expression;
 
         public YieldReturnStatement()
         {
         }
 
-        public YieldReturnStatement(Expression expression)
+        public YieldReturnStatement(Expression? expression)
         {
             Expression = expression;
         }
 
-        public Expression Expression
+        public Expression? Expression
         {
             get => _expression;
             set => SetParent(ref _expression, value);

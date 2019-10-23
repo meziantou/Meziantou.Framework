@@ -7,7 +7,7 @@
         {
         }
 
-        public RemoveEventHandlerStatement(Expression leftExpression, Expression rightExpression)
+        public RemoveEventHandlerStatement(Expression? leftExpression, Expression? rightExpression)
             : base(leftExpression, rightExpression)
         {
         }

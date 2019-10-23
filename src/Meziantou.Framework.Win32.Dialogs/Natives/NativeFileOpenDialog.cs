@@ -7,5 +7,6 @@ namespace Meziantou.Framework.Win32.Natives
     [Guid(IIDGuid.IFileOpenDialog)]
     [CoClass(typeof(FileOpenDialogRCW))]
     internal interface NativeFileOpenDialog : IFileOpenDialog
-    { }
+    {
+    }
 }

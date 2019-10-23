@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Win32.Natives
         public static extern bool CredWrite([In] ref CREDENTIAL userCredential, [In] uint flags);
 
         [DllImport("advapi32", SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern bool CredEnumerate(string filter, int flag, out int count, out CredentialSafeHandle pCredentials);
+        public static extern bool CredEnumerate(string? filter, int flag, out int count, out CredentialSafeHandle pCredentials);
 
         [DllImport("Advapi32.dll", EntryPoint = "CredFree", SetLastError = true)]
         public static extern bool CredFree([In] IntPtr cred);

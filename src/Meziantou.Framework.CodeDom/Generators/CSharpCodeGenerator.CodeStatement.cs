@@ -25,12 +25,13 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, statement, _defaultWriteStatementOptions);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, Statement statement, WriteStatementOptions options)
+        protected virtual void Write(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options)
         {
-            if (statement == null)
-                throw new ArgumentNullException(nameof(statement));
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
+
+            if (statement == null)
+                return;
 
             WriteBeforeComments(writer, statement);
             switch (statement)

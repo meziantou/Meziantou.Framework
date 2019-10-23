@@ -7,11 +7,11 @@
         {
         }
 
-        public UsingDirective(string ns)
+        public UsingDirective(string? ns)
         {
             Namespace = ns;
         }
 
-        public string Namespace { get; set; }
+        public string? Namespace { get; set; }
     }
 }

@@ -12,7 +12,7 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public ConstructorThisInitializer(IEnumerable<Expression> codeExpressions) : base(codeExpressions)
+        public ConstructorThisInitializer(IEnumerable<Expression>? codeExpressions) : base(codeExpressions)
         {
         }
     }

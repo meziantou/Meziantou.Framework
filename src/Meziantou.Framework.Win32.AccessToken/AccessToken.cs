@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32
@@ -45,28 +46,28 @@ namespace Meziantou.Framework.Win32
             return GetTokenInformation<NativeMethods.TOKEN_ELEVATION>(TokenInformationClass.TokenElevation).TokenIsElevated;
         }
 
-        public AccessToken GetLinkedToken()
+        public AccessToken? GetLinkedToken()
         {
             return GetTokenInformation<NativeMethods.TOKEN_LINKED_TOKEN, AccessToken>(
                 TokenInformationClass.TokenElevation,
                 linkedToken => new AccessToken(linkedToken.LinkedToken));
         }
 
-        public TokenEntry GetMandatoryIntegrityLevel()
+        public TokenEntry? GetMandatoryIntegrityLevel()
         {
             return GetTokenInformation<NativeMethods.TOKEN_MANDATORY_LABEL, TokenEntry>(
                 TokenInformationClass.TokenIntegrityLevel,
                 mandatoryLabel => new TokenEntry(new SecurityIdentifier(mandatoryLabel.Label.Sid)));
         }
 
-        public SecurityIdentifier GetOwner()
+        public SecurityIdentifier? GetOwner()
         {
             return GetTokenInformation<NativeMethods.TOKEN_OWNER, SecurityIdentifier>(
                 TokenInformationClass.TokenOwner,
                 owner => new SecurityIdentifier(owner.Owner));
         }
 
-        public IEnumerable<TokenGroupEntry> EnumerateGroups()
+        public IEnumerable<TokenGroupEntry>? EnumerateGroups()
         {
             return GetTokenInformation<NativeMethods.TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
                 TokenInformationClass.TokenGroups,
@@ -82,7 +83,7 @@ namespace Meziantou.Framework.Win32
                 });
         }
 
-        public IEnumerable<TokenGroupEntry> EnumerateRestrictedSid()
+        public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
         {
             return GetTokenInformation<NativeMethods.TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
                 TokenInformationClass.TokenRestrictedSids,
@@ -98,7 +99,7 @@ namespace Meziantou.Framework.Win32
                 });
         }
 
-        public IEnumerable<TokenPrivilegeEntry> EnumeratePrivileges()
+        public IEnumerable<TokenPrivilegeEntry>? EnumeratePrivileges()
         {
             return GetTokenInformation<NativeMethods.TOKEN_PRIVILEGES, IReadOnlyList<TokenPrivilegeEntry>>(
                 TokenInformationClass.TokenPrivileges,
@@ -123,7 +124,7 @@ namespace Meziantou.Framework.Win32
             var basePtr = new IntPtr(handle.ToInt64() + offset.ToInt64());
             for (var i = 0; i < count; i++)
             {
-                yield return Marshal.PtrToStructure<TItem>(basePtr + (i * size));
+                yield return Marshal.PtrToStructure<TItem>(basePtr + (i * size))!;
             }
         }
 
@@ -134,12 +135,16 @@ namespace Meziantou.Framework.Win32
             static T Identity(T arg) => arg;
         }
 
-        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func) where T : struct
+        [return: MaybeNull]
+        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func)
+            where T : struct
         {
-            return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg));
+            return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg))!;
         }
 
-        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<IntPtr, T, TResult> func) where T : struct
+        [return: MaybeNull]
+        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<IntPtr, T, TResult> func)
+            where T : struct
         {
             if (!NativeMethods.GetTokenInformation(_token, type, IntPtr.Zero, 0, out var dwLength))
             {
@@ -174,7 +179,7 @@ namespace Meziantou.Framework.Win32
                 }
             }
 
-            return default;
+            return default!;
         }
 
         public void EnablePrivilege(string privilegeName)

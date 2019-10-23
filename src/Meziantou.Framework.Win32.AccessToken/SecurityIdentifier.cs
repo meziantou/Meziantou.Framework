@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Win32
 {
-    public class SecurityIdentifier
+    public sealed class SecurityIdentifier
     {
         private const byte MaxSubAuthorities = 15;
         private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
@@ -22,8 +22,8 @@ namespace Meziantou.Framework.Win32
             Sid = ConvertSidToStringSid(sid);
         }
 
-        public string Domain { get; }
-        public string Name { get; }
+        public string? Domain { get; }
+        public string? Name { get; }
         public string Sid { get; }
 
         public string FullName => Domain + "\\" + Name;
@@ -65,7 +65,7 @@ namespace Meziantou.Framework.Win32
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        private static void LookupName(IntPtr sid, out string domain, out string name)
+        private static void LookupName(IntPtr sid, out string? domain, out string? name)
         {
             var userNameLen = 256;
             var domainNameLen = 256;

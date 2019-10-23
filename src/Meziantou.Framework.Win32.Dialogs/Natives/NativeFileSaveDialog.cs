@@ -7,5 +7,6 @@ namespace Meziantou.Framework.Win32.Natives
     [Guid(IIDGuid.IFileSaveDialog)]
     [CoClass(typeof(FileSaveDialogRCW))]
     internal interface NativeFileSaveDialog : IFileSaveDialog
-    { }
+    {
+    }
 }

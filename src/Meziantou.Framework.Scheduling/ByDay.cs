@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class ByDay : IEquatable<ByDay>
+    public sealed class ByDay : IEquatable<ByDay>
     {
         public ByDay()
         {
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Scheduling
             return DayOfWeek == other.DayOfWeek && Ordinal == other.Ordinal;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is null)
                 return false;

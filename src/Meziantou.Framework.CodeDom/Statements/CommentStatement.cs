@@ -6,11 +6,11 @@
         {
         }
 
-        public CommentStatement(string content)
+        public CommentStatement(string? content)
         {
             Content = content;
         }
 
-        public string Content { get; set; }
+        public string? Content { get; set; }
     }
 }

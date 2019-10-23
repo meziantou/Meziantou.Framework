@@ -2,8 +2,8 @@
 {
     public class VariableReferenceExpression : Expression
     {
-        private VariableDeclarationStatement _variableDeclarationStatement;
-        private string _name;
+        private VariableDeclarationStatement? _variableDeclarationStatement;
+        private string? _name;
 
         public VariableReferenceExpression()
         {
@@ -19,7 +19,7 @@
             Name = name;
         }
 
-        public string Name
+        public string? Name
         {
             get
             {

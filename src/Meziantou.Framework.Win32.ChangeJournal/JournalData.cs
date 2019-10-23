@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    public class JournalData
+    public sealed class JournalData
     {
         internal JournalData()
         {

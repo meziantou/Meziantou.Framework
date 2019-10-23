@@ -4,18 +4,18 @@ namespace Meziantou.Framework.CodeDom
 {
     public class AwaitExpression : Expression
     {
-        private Expression _expression;
+        private Expression? _expression;
 
         public AwaitExpression()
         {
         }
 
-        public AwaitExpression(Expression expression)
+        public AwaitExpression(Expression? expression)
         {
             Expression = expression;
         }
 
-        public Expression Expression
+        public Expression? Expression
         {
             get => _expression;
             set => SetParent(ref _expression, value);

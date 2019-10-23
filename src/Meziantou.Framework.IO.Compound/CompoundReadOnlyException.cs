@@ -21,7 +21,7 @@ namespace Meziantou.Framework.IO.Compound
         /// Initializes a new instance of the <see cref="CompoundReadOnlyException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        public CompoundReadOnlyException(string message)
+        public CompoundReadOnlyException(string? message)
             : base(message)
         {
         }
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="innerException">The inner exception.</param>
-        public CompoundReadOnlyException(string message, Exception innerException)
+        public CompoundReadOnlyException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }

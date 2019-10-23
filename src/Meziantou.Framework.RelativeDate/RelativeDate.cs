@@ -17,7 +17,7 @@ namespace Meziantou.Framework
 
         public override string ToString() => ToString(format: null, formatProvider: null);
 
-        public string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
             var now = DateTime.Kind == DateTimeKind.Utc ? DateTimeService.UtcNow : DateTimeService.Now;
 
@@ -71,11 +71,11 @@ namespace Meziantou.Framework
             }
         }
 
-        private static string GetString(string name, CultureInfo culture) => LocalizationProvider.Current.GetString(name, culture);
+        private static string GetString(string name, CultureInfo? culture) => LocalizationProvider.Current.GetString(name, culture);
 
-        private static string GetString(string name, CultureInfo culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
+        private static string GetString(string name, CultureInfo? culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
 
-        int IComparable.CompareTo(object obj)
+        int IComparable.CompareTo(object? obj)
         {
             if (obj is RelativeDate rd)
                 return CompareTo(rd);
@@ -85,7 +85,7 @@ namespace Meziantou.Framework
 
         public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
-        public override bool Equals(object obj) => obj is RelativeDate && Equals((RelativeDate)obj);
+        public override bool Equals(object? obj) => obj is RelativeDate && Equals((RelativeDate)obj);
 
         public bool Equals(RelativeDate other) => DateTime == other.DateTime;
 

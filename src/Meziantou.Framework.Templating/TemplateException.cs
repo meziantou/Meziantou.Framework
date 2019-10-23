@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace Meziantou.Framework.Templating
 {
@@ -8,15 +8,18 @@ namespace Meziantou.Framework.Templating
         {
         }
 
-        public TemplateException(string message) : base(message)
+        public TemplateException(string message)
+            : base(message)
         {
         }
 
-        public TemplateException(string message, Exception innerException) : base(message, innerException)
+        public TemplateException(string message, Exception innerException)
+            : base(message, innerException)
         {
         }
 
-        protected TemplateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context)
+        protected TemplateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
+            : base(info, context)
         {
         }
     }

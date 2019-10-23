@@ -21,7 +21,7 @@ namespace Meziantou.Framework.IO.Compound
         /// Initializes a new instance of the <see cref="CompoundFileException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        public CompoundFileException(string message)
+        public CompoundFileException(string? message)
             : base(message)
         {
         }
@@ -31,7 +31,7 @@ namespace Meziantou.Framework.IO.Compound
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="innerException">The inner exception.</param>
-        public CompoundFileException(string message, Exception innerException)
+        public CompoundFileException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }

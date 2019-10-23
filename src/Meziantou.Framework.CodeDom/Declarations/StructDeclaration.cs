@@ -7,7 +7,7 @@
         {
         }
 
-        public StructDeclaration(string name)
+        public StructDeclaration(string? name)
         {
             Name = name;
             Implements = new CodeObjectCollection<TypeReference>(this);

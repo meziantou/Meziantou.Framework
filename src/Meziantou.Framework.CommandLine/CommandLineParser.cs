@@ -6,7 +6,7 @@ namespace Meziantou.Framework
 {
     public class CommandLineParser
     {
-        private static readonly string[] HelpArguments = { "-?", "/?", "-help", "/help", "--help" };
+        private static readonly string[] s_helpArguments = { "-?", "/?", "-help", "/help", "--help" };
 
         private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
@@ -71,7 +71,7 @@ namespace Meziantou.Framework
             return _namedArguments.ContainsKey(name);
         }
 
-        public string GetArgument(string name)
+        public string? GetArgument(string name)
         {
             if (_namedArguments.TryGetValue(name, out var value))
                 return value;
@@ -79,7 +79,7 @@ namespace Meziantou.Framework
             return null;
         }
 
-        public string GetArgument(int position)
+        public string? GetArgument(int position)
         {
             if (_positionArguments.TryGetValue(position, out var value))
                 return value;
@@ -89,7 +89,7 @@ namespace Meziantou.Framework
 
         private static bool IsHelpArgument(string arg)
         {
-            return HelpArguments.Contains(arg, StringComparer.OrdinalIgnoreCase);
+            return s_helpArguments.Contains(arg, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

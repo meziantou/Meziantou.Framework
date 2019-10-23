@@ -128,7 +128,7 @@ namespace Meziantou.Framework
             return null;
         }
 
-        public static Process GetParentProcess(this Process process)
+        public static Process? GetParentProcess(this Process process)
         {
             var parentProcessId = GetParentProcessId(process);
             if (parentProcessId == null)

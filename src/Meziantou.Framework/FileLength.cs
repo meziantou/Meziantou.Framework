@@ -20,7 +20,7 @@ namespace Meziantou.Framework
 
         public long Length { get; }
 
-        public override bool Equals(object obj) => obj is FileLength fileLength && Equals(fileLength);
+        public override bool Equals(object? obj) => obj is FileLength fileLength && Equals(fileLength);
 
         public bool Equals(FileLength other) => Length == other.Length;
 
@@ -28,15 +28,18 @@ namespace Meziantou.Framework
 
         public int CompareTo(FileLength other) => Length.CompareTo(other.Length);
 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
+            if (obj == null)
+                return 1;
+
             var fileLength = (FileLength)obj;
             return CompareTo(fileLength);
         }
 
         public override string ToString() => ToString(format: null, formatProvider: null);
 
-        public string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
             if (string.IsNullOrEmpty(format))
                 return Length.ToString(formatProvider);

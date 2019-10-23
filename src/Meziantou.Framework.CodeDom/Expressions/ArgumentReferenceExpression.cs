@@ -2,8 +2,8 @@
 {
     public class ArgumentReferenceExpression : Expression
     {
-        private MethodArgumentDeclaration _argumentDeclaration;
-        private string _name;
+        private MethodArgumentDeclaration? _argumentDeclaration;
+        private string? _name;
 
         public ArgumentReferenceExpression()
         {
@@ -19,7 +19,7 @@
             Name = name;
         }
 
-        public string Name
+        public string? Name
         {
             get
             {

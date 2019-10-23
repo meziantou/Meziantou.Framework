@@ -6,13 +6,13 @@
         {
         }
 
-        public Comment(string text, CommentType type)
+        public Comment(string? text, CommentType type)
         {
             Text = text;
             Type = type;
         }
 
-        public string Text { get; set; }
+        public string? Text { get; set; }
         public CommentType Type { get; set; }
     }
 }

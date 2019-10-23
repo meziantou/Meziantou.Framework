@@ -2,23 +2,23 @@
 {
     public class TryCatchFinallyStatement : Statement
     {
-        private StatementCollection _try;
-        private CatchClauseCollection _catch;
-        private StatementCollection _finally;
+        private StatementCollection? _try;
+        private CatchClauseCollection? _catch;
+        private StatementCollection? _finally;
 
-        public StatementCollection Try
+        public StatementCollection? Try
         {
             get => _try;
             set => SetParent(ref _try, value);
         }
 
-        public CatchClauseCollection Catch
+        public CatchClauseCollection? Catch
         {
             get => _catch;
             set => SetParent(ref _catch, value);
         }
 
-        public StatementCollection Finally
+        public StatementCollection? Finally
         {
             get => _finally;
             set => SetParent(ref _finally, value);

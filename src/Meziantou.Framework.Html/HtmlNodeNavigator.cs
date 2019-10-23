@@ -1,4 +1,5 @@
-﻿//#define HTML_XPATH_TRACE
+﻿#nullable disable
+//#define HTML_XPATH_TRACE
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;

@@ -8,14 +8,14 @@ namespace Meziantou.Framework.WPF.Collections
         public PendingEvent(PendingEventType type)
         {
             Type = type;
-            Item = default;
+            Item = default!;
             Index = -1;
         }
 
         public PendingEvent(PendingEventType type, int index)
         {
             Type = type;
-            Item = default;
+            Item = default!;
             Index = index;
         }
 

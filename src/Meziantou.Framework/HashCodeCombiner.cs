@@ -18,7 +18,7 @@ namespace Meziantou.Framework
             _hash = (_hash * 397) ^ i;
         }
 
-        public void Add(object o)
+        public void Add(object? o)
         {
             var hashCode = o != null ? o.GetHashCode() : 0;
             Add(hashCode);
@@ -30,7 +30,7 @@ namespace Meziantou.Framework
             Add(hashCode);
         }
 
-        public void Add(IEnumerable e)
+        public void Add(IEnumerable? e)
         {
             if (e == null)
             {

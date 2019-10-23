@@ -35,7 +35,7 @@ namespace Meziantou.Framework.IO.Compound
 
         internal void InternalAdd(CompoundProperty item)
         {
-            CompoundProperty existing = null;
+            CompoundProperty? existing = null;
             foreach (var property in this)
             {
                 if (property.FormatId == item.FormatId &&
@@ -97,7 +97,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="formatId">The format id.</param>
         /// <param name="name">The name. May be null.</param>
         /// <param name="value">The value. May be null.</param>
-        public void SetValue(Guid formatId, string name, object value)
+        public void SetValue(Guid formatId, string? name, object? value)
         {
             if (_readOnly)
                 throw new CompoundReadOnlyException();
@@ -118,7 +118,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="name">The name. May be null.</param>
         /// <param name="defaultValue">The default value to use if the property was not found.</param>
         /// <returns>The property value.</returns>
-        public object GetValue(Guid formatId, string name, object defaultValue)
+        public object? GetValue(Guid formatId, string? name, object? defaultValue)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -137,7 +137,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <param name="name">The name. May be null.</param>
         /// <param name="defaultValue">The default value to use if the property was not found.</param>
         /// <returns>The property value.</returns>
-        public T GetValue<T>(Guid formatId, string name, T defaultValue)
+        public T GetValue<T>(Guid formatId, string? name, T defaultValue)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -153,13 +153,10 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets the <see cref="CompoundProperty"/> with the specified format id and name.
         /// </summary>
         /// <value></value>
-        public CompoundProperty this[Guid formatId, string name]
+        public CompoundProperty? this[Guid formatId, string? name]
         {
             get
             {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
-
                 return _list.Find(p => p.Name == name && p.FormatId == formatId);
             }
         }
@@ -280,9 +277,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the category.
         /// </summary>
         /// <value>The category.</value>
-        public string Category
+        public string? Category
         {
-            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Category", (string)null);
+            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Category", (string?)null);
             set => SetValue(CompoundProperty.DocSummaryInformationFormatId, "Category", value);
         }
 
@@ -290,9 +287,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the presentation target.
         /// </summary>
         /// <value>The presentation target.</value>
-        public string PresentationTarget
+        public string? PresentationTarget
         {
-            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "PresentationTarget", (string)null);
+            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "PresentationTarget", (string?)null);
             set => SetValue(CompoundProperty.DocSummaryInformationFormatId, "PresentationTarget", value);
         }
 
@@ -300,9 +297,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the manager.
         /// </summary>
         /// <value>The manager.</value>
-        public string Manager
+        public string? Manager
         {
-            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Manager", (string)null);
+            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Manager", (string?)null);
             set => SetValue(CompoundProperty.DocSummaryInformationFormatId, "Manager", value);
         }
 
@@ -310,9 +307,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the company.
         /// </summary>
         /// <value>The company.</value>
-        public string Company
+        public string? Company
         {
-            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Company", (string)null);
+            get => GetValue(CompoundProperty.DocSummaryInformationFormatId, "Company", (string?)null);
             set => SetValue(CompoundProperty.DocSummaryInformationFormatId, "Company", value);
         }
 
@@ -430,9 +427,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the author.
         /// </summary>
         /// <value>The author.</value>
-        public string Author
+        public string? Author
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Author", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Author", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "Author", value);
         }
 
@@ -440,9 +437,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the name of the last author.
         /// </summary>
         /// <value>The name of the last author.</value>
-        public string LastSavedBy
+        public string? LastSavedBy
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "LastSavedBy", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "LastSavedBy", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "LastSavedBy", value);
         }
 
@@ -450,9 +447,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the revision number.
         /// </summary>
         /// <value>The revision number.</value>
-        public string RevisionNumber
+        public string? RevisionNumber
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "RevisionNumber", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "RevisionNumber", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "RevisionNumber", value);
         }
 
@@ -460,9 +457,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the title.
         /// </summary>
         /// <value>The title.</value>
-        public string Title
+        public string? Title
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Title", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Title", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "Title", value);
         }
 
@@ -470,9 +467,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the subject.
         /// </summary>
         /// <value>The subject.</value>
-        public string Subject
+        public string? Subject
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Subject", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Subject", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "Subject", value);
         }
 
@@ -480,9 +477,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the name of the application.
         /// </summary>
         /// <value>The name of the application.</value>
-        public string ApplicationName
+        public string? ApplicationName
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "ApplicationName", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "ApplicationName", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "ApplicationName", value);
         }
 
@@ -490,9 +487,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the comments.
         /// </summary>
         /// <value>The comments.</value>
-        public string Comments
+        public string? Comments
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Comments", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Comments", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "Comments", value);
         }
 
@@ -500,9 +497,9 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets or sets the template.
         /// </summary>
         /// <value>The template.</value>
-        public string Template
+        public string? Template
         {
-            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Template", (string)null);
+            get => GetValue(CompoundProperty.SummaryInformationFormatId, "Template", (string?)null);
             set => SetValue(CompoundProperty.SummaryInformationFormatId, "Template", value);
         }
 

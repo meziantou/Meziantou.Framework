@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32
 {
-    public class TokenEntry
+    public sealed class TokenEntry
     {
         public TokenEntry(SecurityIdentifier sid)
         {

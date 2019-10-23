@@ -8,7 +8,7 @@ namespace Meziantou.Framework.IO.Compound
     public sealed class CompoundFileStream
     {
         internal CompoundFile.DirectoryEntry _entry;
-        private MemoryStream _stream;
+        private readonly MemoryStream _stream;
 
         internal CompoundFileStream(CompoundFileStorage parent, CompoundFile.DirectoryEntry entry)
         {
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <summary>
         /// Gets the stream path.
         /// </summary>
-        public string Path
+        public string? Path
         {
             get
             {
@@ -40,7 +40,7 @@ namespace Meziantou.Framework.IO.Compound
         {
             _stream.Position = offset;
             var bytes = new byte[size];
-            int read = _stream.Read(bytes, 0, bytes.Length);
+            var read = _stream.Read(bytes, 0, bytes.Length);
             if (read > 0)
             {
                 output.Write(bytes, 0, read);
@@ -55,7 +55,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <returns>
         /// A <see cref="string"/> that represents this instance.
         /// </returns>
-        public override string ToString()
+        public override string? ToString()
         {
             return Name;
         }
@@ -63,7 +63,7 @@ namespace Meziantou.Framework.IO.Compound
         /// <summary>
         /// Gets the stream name.
         /// </summary>
-        public string Name
+        public string? Name
         {
             get
             {
@@ -98,7 +98,6 @@ namespace Meziantou.Framework.IO.Compound
             if (_stream != null)
             {
                 _stream.Dispose();
-                _stream = null;
             }
         }
     }

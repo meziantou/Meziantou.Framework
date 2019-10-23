@@ -21,12 +21,12 @@ namespace Meziantou.Framework.Scheduling
             };
         }
 
-        public static string GetText(RecurrenceRule rrule)
+        public static string? GetText(RecurrenceRule rrule)
         {
             return GetText(rrule, cultureInfo: null);
         }
 
-        public static string GetText(RecurrenceRule rrule, CultureInfo cultureInfo)
+        public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
         {
             if (rrule == null)
                 throw new ArgumentNullException(nameof(rrule));

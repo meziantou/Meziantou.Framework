@@ -5,18 +5,18 @@ using System.Linq;
 
 namespace Meziantou.Framework.Csv
 {
-    public class CsvRow : IReadOnlyDictionary<string, string>
+    public class CsvRow : IReadOnlyDictionary<string, string?>
     {
-        public IReadOnlyList<CsvColumn> Columns { get; }
+        public IReadOnlyList<CsvColumn>? Columns { get; }
         public IReadOnlyList<string> Values { get; }
 
-        public CsvRow(IReadOnlyList<CsvColumn> columns, IReadOnlyList<string> values)
+        public CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
         {
             Values = values ?? throw new ArgumentNullException(nameof(values));
             Columns = columns;
         }
 
-        public virtual string this[int index]
+        public virtual string? this[int index]
         {
             get
             {
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Csv
             }
         }
 
-        public virtual string this[string columnName]
+        public virtual string? this[string columnName]
         {
             get
             {
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Csv
             }
         }
 
-        public virtual string this[CsvColumn column]
+        public virtual string? this[CsvColumn column]
         {
             get
             {
@@ -53,20 +53,20 @@ namespace Meziantou.Framework.Csv
             }
         }
 
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Keys => Columns == null ? Enumerable.Empty<string>() : Columns.Select(c => c.Name);
+        IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => Columns == null ? Enumerable.Empty<string>() : Columns.Where(c => c.Name != null).Select(c => c.Name!);
 
-        IEnumerable<string> IReadOnlyDictionary<string, string>.Values => Values;
+        IEnumerable<string> IReadOnlyDictionary<string, string?>.Values => Values;
 
-        int IReadOnlyCollection<KeyValuePair<string, string>>.Count => Values.Count;
+        int IReadOnlyCollection<KeyValuePair<string, string?>>.Count => Values.Count;
 
-        string IReadOnlyDictionary<string, string>.this[string key] => this[key];
+        string? IReadOnlyDictionary<string, string?>.this[string key] => this[key];
 
-        bool IReadOnlyDictionary<string, string>.ContainsKey(string key)
+        bool IReadOnlyDictionary<string, string?>.ContainsKey(string key)
         {
             return Columns.Any(c => string.Equals(c.Name, key, StringComparison.Ordinal));
         }
 
-        bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value)
+        bool IReadOnlyDictionary<string, string?>.TryGetValue(string key, out string? value)
         {
             var v = this[key];
             if (v != null)
@@ -79,12 +79,12 @@ namespace Meziantou.Framework.Csv
             return false;
         }
 
-        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
+        IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator()
         {
             if (Columns == null)
-                return Values.Select(v => new KeyValuePair<string, string>(key: null, v)).GetEnumerator();
+                return Values.Select(v => new KeyValuePair<string, string?>(key: "", v)).GetEnumerator();
 
-            return Columns.Select(c => new KeyValuePair<string, string>(c.Name, this[c])).GetEnumerator();
+            return Columns.Select(c => new KeyValuePair<string, string?>(c.Name ?? "", this[c])).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

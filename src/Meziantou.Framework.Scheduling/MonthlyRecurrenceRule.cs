@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class MonthlyRecurrenceRule : RecurrenceRule
+    public sealed class MonthlyRecurrenceRule : RecurrenceRule
     {
         public IList<ByDay> ByWeekDays { get; set; } = new List<ByDay>();
         public IList<int> ByMonthDays { get; set; } = new List<int>();

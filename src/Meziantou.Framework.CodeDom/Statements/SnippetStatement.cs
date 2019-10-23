@@ -6,11 +6,11 @@
         {
         }
 
-        public SnippetStatement(string statement)
+        public SnippetStatement(string? statement)
         {
             Statement = statement;
         }
 
-        public string Statement { get; set; }
+        public string? Statement { get; set; }
     }
 }

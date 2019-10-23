@@ -5,9 +5,10 @@ namespace Meziantou.Framework.IO
 {
     public class TeeTextWriter : TextWriter
     {
+        private readonly object _lock = new object();
+
         public TextWriter Stream1 { get; }
         public TextWriter Stream2 { get; }
-        private readonly object _lock = new object();
 
         public TeeTextWriter(TextWriter stream1, TextWriter stream2)
         {
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.IO
             }
         }
 
-        public override void Write(string value)
+        public override void Write(string? value)
         {
             lock (_lock)
             {

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public class Visitor
     {
-        public virtual void Visit(CodeObject codeObject)
+        public virtual void Visit(CodeObject? codeObject)
         {
             if (codeObject == null)
                 return;

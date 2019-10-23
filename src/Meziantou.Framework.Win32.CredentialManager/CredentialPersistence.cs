@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32
 {
     public enum CredentialPersistence : uint
     {

@@ -151,7 +151,7 @@ namespace Meziantou.Framework.Html.Tests
 
             if (arg is IEnumerable e)
             {
-                foreach (var o in e)
+                foreach (var _ in e)
                     return false;
 
                 return true;

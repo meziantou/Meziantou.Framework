@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Threading
 {
-    public class AsyncLock : IDisposable
+    public sealed class AsyncLock : IDisposable
     {
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 

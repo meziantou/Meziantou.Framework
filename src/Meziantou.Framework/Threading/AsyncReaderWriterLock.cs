@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Threading
 {
-    public class AsyncReaderWriterLock
+    public sealed class AsyncReaderWriterLock
     {
         private readonly Task<Releaser> _readerReleaser;
         private readonly Task<Releaser> _writerReleaser;

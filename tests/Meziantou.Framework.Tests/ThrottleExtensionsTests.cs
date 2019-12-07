@@ -9,9 +9,9 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void Throttle_CallActionsWithArgumentsOfTheLastCall()
         {
-            using var resetEvent = new ManualResetEventSlim(false);
+            using var resetEvent = new ManualResetEventSlim(initialState: false);
             int lastArg = default;
-            int count = 0;
+            var count = 0;
             var debounced = ThrottleExtensions.Throttle<int>(i =>
             {
                 lastArg = i;

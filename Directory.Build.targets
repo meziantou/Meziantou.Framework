@@ -1,0 +1,12 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFrameworks>$(TargetFrameworks);netcoreapp3.1</TargetFrameworks>
+  </PropertyGroup>
+  
+  <!-- Ensure .NET Core 3.1 is a target of the project to support nullable -->
+  <Target Name="CheckNetCoreApp3_1" BeforeTargets="Build" Condition="$(TargetFrameworks.Contains('netcoreapp3.1')) == false">
+    <Error Text="The project must target netcoreapp3.1" />
+  </Target>  
+  
+</Project>

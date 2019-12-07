@@ -126,7 +126,7 @@ namespace Meziantou.Framework.Tests
             Assert.Throws<ArgumentException>(() => ByteArrayExtensions.ParseHexa("000"));
         }
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0
+#if NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
         [Fact]
         public void ToHexa_Span_UpperCase()
         {

@@ -26,7 +26,7 @@ namespace Meziantou.Framework
             };
         }
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0
+#if NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
         private static string ToHexaUpperCase(this byte[] bytes)
         {
             return string.Create(bytes.Length * 2, bytes, (span, state) =>
@@ -211,7 +211,7 @@ namespace Meziantou.Framework
             }
         }
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0
+#if NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
         public static string ToHexa(this ReadOnlySpan<byte> bytes)
         {
             return ToHexa(bytes, default);

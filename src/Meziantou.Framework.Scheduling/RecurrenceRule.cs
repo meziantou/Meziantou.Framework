@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Scheduling
 {
     public abstract class RecurrenceRule
     {
-        public static DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
+        public static readonly DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
         public const string DefaultFirstDayOfWeekString = "MO";
 
         protected static readonly CultureInfo EnglishCultureInfo = CultureInfo.GetCultureInfo("en-US");

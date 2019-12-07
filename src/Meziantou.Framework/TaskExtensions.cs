@@ -4,6 +4,7 @@ namespace Meziantou.Framework
 {
     public static class TaskExtensions
     {
+        // https://www.meziantou.net/fire-and-forget-a-task-in-dotnet.htm
         public static void Forget(this Task task)
         {
             // Only care about tasks that may fault or are faulted,

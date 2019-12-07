@@ -2,9 +2,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Threading;
+
+#if NET461
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Threading;
+#endif
 
 namespace Meziantou.Framework
 {
@@ -45,7 +48,7 @@ namespace Meziantou.Framework
             if (!StartServer)
                 return;
 
-#if NETCOREAPP2_1 || NETCOREAPP3_0
+#if NETCOREAPP2_1 || NETCOREAPP3_1
             _server = new NamedPipeServerStream(
                        PipeName,
                        PipeDirection.In,

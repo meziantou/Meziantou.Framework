@@ -10,7 +10,7 @@ namespace TestUtilities
     {
         public RunIfWindowsAdministratorFactAttribute()
         {
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NETCOREAPP3_1
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Skip = "Run only on Windows";

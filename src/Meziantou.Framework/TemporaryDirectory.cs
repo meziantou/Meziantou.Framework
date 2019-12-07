@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1
 using System.Threading.Tasks;
 #endif
 
@@ -12,7 +12,7 @@ namespace Meziantou.Framework
 {
     [DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryDirectory : IDisposable
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1
         , IAsyncDisposable
 #elif NET461 || NETSTANDARD2_0 || NETCOREAPP2_1
 #else
@@ -153,7 +153,7 @@ namespace Meziantou.Framework
             Process.Start(FullPath);
         }
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_0 || NETCOREAPP3_1
         public async ValueTask DisposeAsync()
         {
             await DeleteFileSystemEntryAsync(new DirectoryInfo(FullPath)).ConfigureAwait(false);

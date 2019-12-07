@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using System.Xml.XPath;
@@ -176,6 +177,7 @@ namespace Meziantou.Framework.Html.Tests
             // add methods as needed
         }
 
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "They may be needed later")]
         public static IXsltContextFunction GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
         {
             if (string.Equals(name, "lowercase", StringComparison.Ordinal))

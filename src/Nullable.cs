@@ -1,6 +1,6 @@
 ﻿#pragma warning disable MA0048 // File name must match type name
 #define INTERNAL_NULLABLE_ATTRIBUTES
-#if NETSTANDARD2_0 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETSTANDARD2_0 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
 // https://github.com/dotnet/corefx/blob/48363ac826ccf66fbe31a5dcb1dc2aab9a7dd768/src/Common/src/CoreLib/System/Diagnostics/CodeAnalysis/NullableAttributes.cs
 
 // Licensed to the .NET Foundation under one or more agreements.

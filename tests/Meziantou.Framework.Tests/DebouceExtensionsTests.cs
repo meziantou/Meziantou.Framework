@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -10,9 +9,9 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void Debounce_CallActionsWithArgumentsOfTheLastCall()
         {
-            using var resetEvent = new ManualResetEventSlim(false);
+            using var resetEvent = new ManualResetEventSlim(initialState: false);
             int lastArg = default;
-            int count = 0;
+            var count = 0;
             var debounced = DebounceExtensions.Debounce<int>(i =>
             {
                 lastArg = i;

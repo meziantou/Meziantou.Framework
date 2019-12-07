@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -98,6 +99,7 @@ namespace Meziantou.Framework.CodeDom
             item.Parent = null;
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public T this[int index]
         {
             get => _list[index];

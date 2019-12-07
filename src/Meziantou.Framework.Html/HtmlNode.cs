@@ -33,7 +33,6 @@ namespace Meziantou.Framework.Html
         private HtmlNode _parentNode;
         private HtmlDocument _ownerDocument;
         private string _prefix;
-        private string _namespaceURI;
         private string _localName;
         private object _tag;
 
@@ -60,7 +59,7 @@ namespace Meziantou.Framework.Html
 
             _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
             _localName = localName ?? throw new ArgumentNullException(nameof(localName));
-            _namespaceURI = namespaceURI;
+            DeclaredNamespaceURI = namespaceURI;
             OwnerDocument = ownerDocument;
         }
 
@@ -115,7 +114,7 @@ namespace Meziantou.Framework.Html
             PropertyChanged?.Invoke(this, e);
         }
 
-        protected string DeclaredNamespaceURI => _namespaceURI;
+        protected string DeclaredNamespaceURI { get; private set; }
 
         public virtual int ParentIndex
         {
@@ -318,9 +317,9 @@ namespace Meziantou.Framework.Html
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
 
-                if (!string.Equals(_namespaceURI, value, StringComparison.Ordinal))
+                if (!string.Equals(DeclaredNamespaceURI, value, StringComparison.Ordinal))
                 {
-                    _namespaceURI = value;
+                    DeclaredNamespaceURI = value;
                     OnPropertyChanged();
                 }
             }
@@ -986,8 +985,8 @@ namespace Meziantou.Framework.Html
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
 
-            if (prefix.EqualsIgnoreCase(Prefix) && _namespaceURI != null)
-                return _namespaceURI;
+            if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI != null)
+                return DeclaredNamespaceURI;
 
             foreach (var att in Attributes)
             {
@@ -1096,16 +1095,16 @@ namespace Meziantou.Framework.Html
                 target.StreamOrder = StreamOrder;
             }
 
-            if (!IsHtmlNs(_namespaceURI))
+            if (!IsHtmlNs(DeclaredNamespaceURI))
             {
-                target._namespaceURI = _namespaceURI;
+                target.DeclaredNamespaceURI = DeclaredNamespaceURI;
             }
             else
             {
                 var ns = NamespaceURI;
                 if (!IsHtmlNs(ns))
                 {
-                    target._namespaceURI = ns;
+                    target.DeclaredNamespaceURI = ns;
                 }
             }
 

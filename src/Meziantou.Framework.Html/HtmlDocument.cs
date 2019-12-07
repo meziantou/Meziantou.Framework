@@ -101,6 +101,7 @@ namespace Meziantou.Framework.Html
             InternalLoad(reader, firstPass: false);
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
         {
             if (filePath == null)
@@ -126,6 +127,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void Load(string filePath, bool detectEncodingFromByteOrderMarks)
         {
             if (filePath == null)
@@ -161,6 +163,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void Load(string filePath, Encoding encoding)
         {
             if (filePath == null)
@@ -186,6 +189,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
         {
             if (filePath == null)
@@ -211,6 +215,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void Load(string filePath)
         {
             if (filePath == null)
@@ -374,6 +379,7 @@ namespace Meziantou.Framework.Html
             InternalLoad(reader, firstPass: false);
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
         public void AddNamespace(string prefix, string uri)
         {
             if (prefix == null)

@@ -153,13 +153,7 @@ namespace Meziantou.Framework.IO.Compound
         /// Gets the <see cref="CompoundProperty"/> with the specified format id and name.
         /// </summary>
         /// <value></value>
-        public CompoundProperty? this[Guid formatId, string? name]
-        {
-            get
-            {
-                return _list.Find(p => p.Name == name && p.FormatId == formatId);
-            }
-        }
+        public CompoundProperty? this[Guid formatId, string? name] => _list.Find(p => p.Name == name && p.FormatId == formatId);
 
         /// <summary>
         /// Gets or sets the <see cref="CompoundProperty"/> at the specified index.

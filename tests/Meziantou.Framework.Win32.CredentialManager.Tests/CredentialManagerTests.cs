@@ -69,5 +69,18 @@ namespace Meziantou.Framework.Win32.Tests
             cred = CredentialManager.ReadCredential("CredentialManagerTests");
             Assert.Null(cred);
         }
+
+        [RunIfWindowsFact]
+        [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/32")]
+        public void CredentialManager_EnumerateCredential()
+        {
+            var credentials = CredentialManager.EnumerateCrendentials();
+            foreach (var credential in credentials)
+            {
+                _ = credential.UserName;
+            }
+
+            Assert.NotEmpty(credentials);
+        }
     }
 }

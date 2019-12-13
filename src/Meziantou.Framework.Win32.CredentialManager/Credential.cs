@@ -1,14 +1,14 @@
 ﻿namespace Meziantou.Framework.Win32
 {
-    public class Credential
+    public sealed class Credential
     {
         public CredentialType CredentialType { get; }
         public string ApplicationName { get; }
-        public string UserName { get; }
-        public string Password { get; }
+        public string? UserName { get; }
+        public string? Password { get; }
         public string? Comment { get; }
 
-        public Credential(CredentialType credentialType, string applicationName, string userName, string password, string? comment)
+        public Credential(CredentialType credentialType, string applicationName, string? userName, string? password, string? comment)
         {
             ApplicationName = applicationName;
             UserName = userName;

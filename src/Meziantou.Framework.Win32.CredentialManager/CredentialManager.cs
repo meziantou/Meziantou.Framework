@@ -31,18 +31,14 @@ namespace Meziantou.Framework.Win32
             var applicationName = Marshal.PtrToStringUni(credential.TargetName);
             Debug.Assert(applicationName != null);
 
-            var userName = Marshal.PtrToStringUni(credential.UserName);
-            Debug.Assert(userName != null);
-
-            string? secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
-            Debug.Assert(secret != null);
-
-            string? comment = null;
-            if (credential.Comment != IntPtr.Zero)
+            string? userName = Marshal.PtrToStringUni(credential.UserName);
+            string? secret = null;
+            if (credential.CredentialBlob != IntPtr.Zero)
             {
-                comment = Marshal.PtrToStringUni(credential.Comment);
+                secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
             }
 
+            string? comment = Marshal.PtrToStringUni(credential.Comment);
             return new Credential(credential.Type, applicationName, userName, secret, comment);
         }
 
@@ -151,8 +147,9 @@ namespace Meziantou.Framework.Win32
                 {
                     for (var n = 0; n < count; n++)
                     {
-                        var credential = Marshal.ReadIntPtr(pCredentials.DangerousGetHandle(), n * Marshal.SizeOf<IntPtr>());
-                        result.Add(ReadCredential(Marshal.PtrToStructure<CREDENTIAL>(credential)));
+                        var credentialPtr = Marshal.ReadIntPtr(pCredentials.DangerousGetHandle(), n * Marshal.SizeOf<IntPtr>());
+                        var credential = Marshal.PtrToStructure<CREDENTIAL>(credentialPtr);
+                        result.Add(ReadCredential(credential));
                     }
                 }
                 else

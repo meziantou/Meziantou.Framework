@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework
 {
-    public class ProcessResult
+    public sealed class ProcessResult
     {
         internal ProcessResult(int exitCode, IReadOnlyList<ProcessOutput> output)
         {

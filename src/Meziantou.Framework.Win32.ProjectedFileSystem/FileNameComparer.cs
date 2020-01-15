@@ -2,8 +2,12 @@
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    public class FileNameComparer : IComparer<string>
+    public sealed class FileNameComparer : IComparer<string>
     {
+        private FileNameComparer()
+        {
+        }
+
         public static IComparer<string> Instance { get; } = new FileNameComparer();
 
         public int Compare(string x, string y)

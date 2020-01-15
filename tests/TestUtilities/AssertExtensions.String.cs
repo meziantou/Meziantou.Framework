@@ -1,7 +1,6 @@
 ﻿using Xunit;
 using System;
 using System.Linq;
-using Meziantou.Framework;
 
 namespace TestUtilities
 {

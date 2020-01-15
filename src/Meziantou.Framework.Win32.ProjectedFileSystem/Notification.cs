@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
-    public class Notification
+    public sealed class Notification
     {
         public Notification(PRJ_NOTIFY_TYPES notificationType)
             : this(path: null, notificationType)

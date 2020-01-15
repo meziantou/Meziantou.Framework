@@ -2,8 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Linq;
 using System.Text;
+#if NET461 || NETSTANDARD2_0
+using System.Linq;
+#elif NETCOREAPP3_1
+#else
+#error Platform not supported
+#endif
 
 namespace Meziantou.Framework
 {

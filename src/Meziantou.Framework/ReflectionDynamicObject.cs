@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Meziantou.Framework
 {
-    public class ReflectionDynamicObject : DynamicObject
+    public sealed class ReflectionDynamicObject : DynamicObject
     {
         private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;

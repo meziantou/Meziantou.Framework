@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Meziantou.Framework
 {
-    public class CommandLineParser
+    public sealed class CommandLineParser
     {
         private static readonly string[] s_helpArguments = { "-?", "/?", "-help", "/help", "--help" };
 

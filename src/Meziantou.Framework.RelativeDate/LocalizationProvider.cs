@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework
 {
-    public class LocalizationProvider : ILocalizationProvider
+    public sealed class LocalizationProvider : ILocalizationProvider
     {
         private static ILocalizationProvider s_current = new LocalizationProvider();
 

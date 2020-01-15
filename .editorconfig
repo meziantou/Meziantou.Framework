@@ -106,7 +106,7 @@ csharp_style_conditional_delegate_call = true : warning
 csharp_style_throw_expression = true : warning
 
 # Code block preferences
-csharp_prefer_braces = when_multiline : suggestion
+#csharp_prefer_braces = true : suggestion # Disabled because it doesn't support no braces for control flow keywords (return, break, throw)
 
 ## Formatting conventions
 # Dotnet formatting settings:
@@ -126,10 +126,13 @@ csharp_new_line_before_open_brace = all
 csharp_new_line_between_query_expression_clauses = true
 
 # Identation options
+csharp_indent_block_contents = true
+csharp_indent_braces = false
 csharp_indent_case_contents = true
-csharp_indent_labels = flush_left
+csharp_indent_case_contents_when_block = true
 csharp_indent_switch_labels = true
-
+csharp_indent_labels = flush_left
+ 
 # Spacing options
 csharp_space_after_cast = false
 csharp_space_after_keywords_in_control_flow_statements = true
@@ -142,7 +145,6 @@ csharp_space_after_colon_in_inheritance_clause = true
 csharp_space_between_method_declaration_empty_parameter_list_parentheses = false
 csharp_space_between_method_call_name_and_opening_parenthesis = false
 csharp_space_between_method_call_empty_parameter_list_parentheses = false
-
 
 # Wrapping options
 csharp_preserve_single_line_blocks = true
@@ -228,7 +230,21 @@ dotnet_naming_symbols.all_members.applicable_kinds = *
 
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 
+## Analyzers
+# IDE0002: Name can be simplified
+dotnet_diagnostic.IDE0002.severity = suggestion
+
+# IDE0005: Remove unnecessary imports
+dotnet_diagnostic.IDE0005.severity = suggestion
+
+# IDE1006: Naming rule violation
+dotnet_diagnostic.IDE1006.severity = suggestion
+
+# MA0006: use String.Equals
+dotnet_diagnostic.MA0006.severity = none
+
 # Meziantou Analyzer
-MA0006.severity = Hidden
-MA0051.severity = Hidden
-MA0053.public_class_should_be_sealed = true
+MA0051.maximum_statements_per_method = 40
+MA0051.skip_local_functions = false
+MA0051.maximum_lines_per_method = 60
+MA0053.public_class_should_be_sealed = false

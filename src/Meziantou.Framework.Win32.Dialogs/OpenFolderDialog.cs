@@ -3,7 +3,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
-    public class OpenFolderDialog
+    public sealed class OpenFolderDialog
     {
         public DialogResult ShowDialog()
         {

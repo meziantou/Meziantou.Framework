@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Meziantou.Framework.Scheduling
 {
-    public class Event
+    public sealed class Event
     {
         public string? Id { get; set; }
         public string? Summary { get; set; }

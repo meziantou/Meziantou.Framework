@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.Win32
 {
-    public class CredentialResult
+    public sealed class CredentialResult
     {
         public CredentialResult(string userName, string password, string? domain, CredentialSaveOption credentialSaved)
         {

@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework.IO
 {
-    public class TeeTextWriter : TextWriter
+    public sealed class TeeTextWriter : TextWriter
     {
         private readonly object _lock = new object();
 

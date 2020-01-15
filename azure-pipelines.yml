@@ -12,24 +12,10 @@ variables:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 2.1'
-  inputs:
-    packageType: sdk
-    version: 2.1.607
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 3.0'
-  inputs:
-    packageType: sdk
-    version: 3.0.101
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-    
-- task: UseDotNet@2
   displayName: 'Use .NET Core sdk 3.1'
   inputs:
     packageType: sdk
-    version: 3.1.100
+    version: 3.1.101
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: DotNetCoreCLI@2
@@ -45,6 +31,7 @@ steps:
     arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
     projects: 'tests/**/*Tests.csproj'
     nobuild: true
+
 - script: |
     dotnet tool install -g dotnet-reportgenerator-globaltool
     reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura

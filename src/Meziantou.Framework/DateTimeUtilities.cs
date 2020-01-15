@@ -7,7 +7,7 @@ namespace Meziantou.Framework
     public static class DateTimeUtilities
     {
         [Pure]
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_1
         [Obsolete("Use System.Globalization.ISOWeek")]
 #elif NET461 || NETCOREAPP2_1 || NETSTANDARD2_0
 #else

@@ -14,9 +14,9 @@ namespace Meziantou.Framework
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-#if NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETCOREAPP3_1
             process.Kill(entireProcessTree);
-#elif NETSTANDARD2_0 || NET461 || NETCOREAPP2_1
+#elif NETSTANDARD2_0 || NET461
             if (!entireProcessTree)
             {
                 process.Kill();
@@ -190,7 +190,7 @@ namespace Meziantou.Framework
 
         private static bool IsWindows()
         {
-#if NETSTANDARD2_0 || NETCOREAPP2_1 || NETCOREAPP3_0 || NETCOREAPP3_1
+#if NETSTANDARD2_0 || NETCOREAPP3_1
             return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #elif NET461
             return true;

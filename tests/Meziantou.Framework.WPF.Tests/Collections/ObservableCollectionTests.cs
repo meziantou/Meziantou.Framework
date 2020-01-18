@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -130,6 +131,16 @@ namespace Meziantou.Framework.Windows.Tests
             Assert.Equal(new[] { 2 }, collection.ToList());
             eventAssert.AssertPropertyChanged("Item[]");
             eventAssert.AssertCollectionChangedReplace(oldValue: 1, newValue: 2);
+        }
+
+        [Fact]
+        public void AddWrongItemType()
+        {
+            var collection = (IList)new ConcurrentObservableCollection<string>();
+            collection.Add(null);
+            collection.Add("");
+
+            Assert.Throws<ArgumentException>(() => collection.Add(10));
         }
 
         private sealed class EventAssert : IDisposable

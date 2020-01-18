@@ -69,7 +69,11 @@ namespace Meziantou.Framework.WPF.Collections
         object? IList.this[int index]
         {
             get => this[index];
-            set => this[index] = (T)value!;
+            set
+            {
+                AssertType(value, nameof(value));
+                this[index] = (T)value!;
+            }
         }
 
         public T this[int index]
@@ -167,6 +171,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         int IList.Add(object? value)
         {
+            AssertType(value, nameof(value));
             var item = (T)value!;
             lock (_lock)
             {
@@ -179,6 +184,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         bool IList.Contains(object? value)
         {
+            AssertType(value, nameof(value));
             return Contains((T)value!);
         }
 
@@ -189,16 +195,19 @@ namespace Meziantou.Framework.WPF.Collections
 
         int IList.IndexOf(object? value)
         {
+            AssertType(value, nameof(value));
             return IndexOf((T)value!);
         }
 
         void IList.Insert(int index, object? value)
         {
+            AssertType(value, nameof(value));
             Insert(index, (T)value!);
         }
 
         void IList.Remove(object? value)
         {
+            AssertType(value, nameof(value));
             Remove((T)value!);
         }
 
@@ -210,6 +219,14 @@ namespace Meziantou.Framework.WPF.Collections
         void ICollection.CopyTo(Array array, int index)
         {
             ((ICollection)_items).CopyTo(array, index);
+        }
+
+        private static void AssertType(object? value, string argumentName)
+        {
+            if (value is null || value is T)
+                return;
+
+            throw new ArgumentException($"value must be of type '{typeof(T).FullName}'", argumentName);
         }
     }
 }

@@ -35,6 +35,19 @@ namespace Meziantou.Framework
                     { "ManyMonthsAgo", "{0} months ago" },
                     { "OneYearAgo", "one year ago" },
                     { "ManyYearsAgo", "{0} years ago" },
+
+                    { "InOneSecond", "in one second" },
+                    { "InManySeconds", "in {0} seconds" },
+                    { "InAMinute", "in a minute" },
+                    { "InManyMinutes", "in {0} minutes" },
+                    { "InAnHour", "in an hour" },
+                    { "InManyHours", "in {0} hours" },
+                    { "Tomorrow", "tomorrow" },
+                    { "InManyDays", "in {0} days" },
+                    { "InOneMonth", "in one month" },
+                    { "InManyMonths", "in {0} months" },
+                    { "InOneYear", "in one year" },
+                    { "InManyYears", "in {0} years" },
                 },
 
                 [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -52,6 +65,19 @@ namespace Meziantou.Framework
                     { "ManyMonthsAgo", "il y a {0} mois" },
                     { "OneYearAgo", "il y a un an" },
                     { "ManyYearsAgo", "il y a {0} ans" },
+
+                    { "InOneSecond", "dans une seconde" },
+                    { "InManySeconds", "dans {0} secondes" },
+                    { "InAMinute", "dans une minute" },
+                    { "InManyMinutes", "dans {0} minutes" },
+                    { "InAnHour", "dans une heure" },
+                    { "InManyHours", "dans {0} heures" },
+                    { "Tomorrow", "demain" },
+                    { "InManyDays", "dans {0} jours" },
+                    { "InOneMonth", "dans un mois" },
+                    { "InManyMonths", "dans {0} mois" },
+                    { "InOneYear", "dans un an" },
+                    { "InManyYears", "dans {0} ans" },
                 },
             };
         }

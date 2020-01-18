@@ -9,13 +9,6 @@ namespace Meziantou.Framework.Tests
     public class RelativeDateTests
     {
         [Fact]
-        public void DateInTheFuture_ThrowNotSupportedException()
-        {
-            DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
-            Assert.Throws<NotSupportedException>(() => new RelativeDate(new DateTime(2018, 1, 2)).ToString());
-        }
-
-        [Fact]
         public void DefaultDate_ToString()
         {
             DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
@@ -49,6 +42,7 @@ namespace Meziantou.Framework.Tests
                 foreach (var kind in new[] { DateTimeKind.Utc, DateTimeKind.Local })
                 {
                     yield return new object[] { "2018/01/01 00:00:00", "2018/01/01 00:00:00", kind, "now", "maintenant" };
+
                     yield return new object[] { "2018/01/01 00:00:00", "2018/01/01 00:00:01", kind, "one second ago", "il y a une seconde" };
                     yield return new object[] { "2018/01/01 00:00:00", "2018/01/01 00:00:25", kind, "25 seconds ago", "il y a 25 secondes" };
                     yield return new object[] { "2018/01/01 00:00:00", "2018/01/01 00:01:00", kind, "a minute ago", "il y a une minute" };
@@ -61,6 +55,19 @@ namespace Meziantou.Framework.Tests
                     yield return new object[] { "2018/01/01 00:00:00", "2018/04/01 00:00:00", kind, "3 months ago", "il y a 3 mois" };
                     yield return new object[] { "2018/01/01 00:00:00", "2019/01/01 00:00:00", kind, "one year ago", "il y a un an" };
                     yield return new object[] { "2018/01/01 00:00:00", "2021/01/01 00:00:00", kind, "3 years ago", "il y a 3 ans" };
+
+                    yield return new object[] { "2018/01/01 00:00:01", "2018/01/01 00:00:00", kind, "in one second", "dans une seconde" };
+                    yield return new object[] { "2018/01/01 00:00:25", "2018/01/01 00:00:00", kind, "in 25 seconds", "dans 25 secondes" };
+                    yield return new object[] { "2018/01/01 00:10:00", "2018/01/01 00:00:00", kind, "in 10 minutes", "dans 10 minutes" };
+                    yield return new object[] { "2018/01/01 01:00:00", "2018/01/01 00:00:00", kind, "in an hour", "dans une heure" };
+                    yield return new object[] { "2018/01/01 00:01:00", "2018/01/01 00:00:00", kind, "in a minute", "dans une minute" };
+                    yield return new object[] { "2018/01/01 02:00:00", "2018/01/01 00:00:00", kind, "in 2 hours", "dans 2 heures" };
+                    yield return new object[] { "2018/01/02 00:00:00", "2018/01/01 00:00:00", kind, "tomorrow", "demain" };
+                    yield return new object[] { "2018/01/03 00:00:00", "2018/01/01 00:00:00", kind, "in 2 days", "dans 2 jours" };
+                    yield return new object[] { "2018/02/01 00:00:00", "2018/01/01 00:00:00", kind, "in one month", "dans un mois" };
+                    yield return new object[] { "2018/04/01 00:00:00", "2018/01/01 00:00:00", kind, "in 3 months", "dans 3 mois" };
+                    yield return new object[] { "2019/01/01 00:00:00", "2018/01/01 00:00:00", kind, "in one year", "dans un an" };
+                    yield return new object[] { "2021/01/01 00:00:00", "2018/01/01 00:00:00", kind, "in 3 years", "dans 3 ans" };
                 }
             }
         }

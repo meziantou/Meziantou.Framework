@@ -22,10 +22,51 @@ namespace Meziantou.Framework
             var now = DateTime.Kind == DateTimeKind.Utc ? DateTimeService.UtcNow : DateTimeService.Now;
 
             var delta = now - DateTime;
-            if (delta < TimeSpan.Zero)
-                throw new NotSupportedException("Dates in the future are not supported. Value: " + DateTime.ToString("o", formatProvider));
-
             var culture = formatProvider as CultureInfo;
+
+            if (delta < TimeSpan.Zero)
+            {
+                delta = -delta;
+                if (delta < TimeSpan.FromMinutes(1))
+                {
+                    return delta.Seconds <= 1 ?
+                        GetString("InOneSecond", culture) :
+                        GetString("InManySeconds", culture, delta.Seconds);
+                }
+
+                if (delta < TimeSpan.FromMinutes(2))
+                    return GetString("InAMinute", culture);
+
+                if (delta < TimeSpan.FromMinutes(45))
+                    return GetString("InManyMinutes", culture, delta.Minutes);
+
+                if (delta < TimeSpan.FromMinutes(90))
+                    return GetString("InAnHour", culture);
+
+                if (delta < TimeSpan.FromHours(24))
+                    return GetString("InManyHours", culture, delta.Hours);
+
+                if (delta < TimeSpan.FromHours(48))
+                    return GetString("Tomorrow", culture);
+
+                if (delta < TimeSpan.FromDays(30))
+                    return GetString("InManyDays", culture, delta.Days);
+
+                if (delta < TimeSpan.FromDays(365)) // We don't care about leap year
+                {
+                    var months = Convert.ToInt32(Math.Floor((double)delta.Days / 30));
+                    return months <= 1 ?
+                        GetString("InOneMonth", culture) :
+                        GetString("InManyMonths", culture, months);
+                }
+                else
+                {
+                    var years = Convert.ToInt32(Math.Floor((double)delta.Days / 365));
+                    return years <= 1 ?
+                        GetString("InOneYear", culture) :
+                        GetString("InManyYears", culture, years);
+                }
+            }
 
             if (delta == TimeSpan.Zero)
                 return GetString("Now", culture);

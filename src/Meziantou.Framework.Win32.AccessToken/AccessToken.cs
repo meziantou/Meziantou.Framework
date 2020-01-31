@@ -46,12 +46,15 @@ namespace Meziantou.Framework.Win32
             return GetTokenInformation<NativeMethods.TOKEN_ELEVATION>(TokenInformationClass.TokenElevation).TokenIsElevated;
         }
 
-        public AccessToken? GetLinkedToken()
-        {
-            return GetTokenInformation<NativeMethods.TOKEN_LINKED_TOKEN, AccessToken>(
-                TokenInformationClass.TokenElevation,
-                linkedToken => new AccessToken(linkedToken.LinkedToken));
-        }
+        public AccessToken? GetLinkedToken() => GetTokenInformation<NativeMethods.TOKEN_LINKED_TOKEN, AccessToken?>(
+                TokenInformationClass.TokenLinkedToken,
+                linkedToken =>
+                {
+                    if (linkedToken.LinkedToken == IntPtr.Zero)
+                        return null;
+
+                    return new AccessToken(linkedToken.LinkedToken);
+                });
 
         public TokenEntry? GetMandatoryIntegrityLevel()
         {
@@ -157,7 +160,7 @@ namespace Meziantou.Framework.Win32
                         var handle = Marshal.AllocHGlobal((int)dwLength);
                         try
                         {
-                            if (!NativeMethods.GetTokenInformation(_token, type, handle, dwLength, out dwLength))
+                            if (!NativeMethods.GetTokenInformation(_token, type, handle, dwLength, out _))
                                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
                             var s = Marshal.PtrToStructure<T>(handle);

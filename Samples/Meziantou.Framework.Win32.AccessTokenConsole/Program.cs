@@ -13,6 +13,7 @@ namespace Meziantou.Framework.Win32.AccessTokenConsoleTests
             PrintToken(linkedToken);
 
             Console.WriteLine("WellKownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));
+            Console.WriteLine("IsAdministrator " + IsAdministrator());
         }
 
         private static void PrintToken(AccessToken token)
@@ -39,5 +40,31 @@ namespace Meziantou.Framework.Win32.AccessTokenConsoleTests
                 Console.WriteLine($"Privilege: {privilege.Name} ({privilege.Attributes})");
             }
         }
+
+
+        public static bool IsAdministrator()
+        {
+            using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+            if (!IsAdministrator(token) && token.GetElevationType() == TokenElevationType.Limited)
+            {
+                using var linkedToken = token.GetLinkedToken();
+                return IsAdministrator(linkedToken);
+            }
+
+            return false;
+
+            static bool IsAdministrator(AccessToken accessToken)
+            {
+                var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+                foreach (var group in accessToken.EnumerateGroups())
+                {
+                    if (group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) && group.Sid == adminSid)
+                        return true;
+                }
+
+                return false;
+            }
+        }
+
     }
 }

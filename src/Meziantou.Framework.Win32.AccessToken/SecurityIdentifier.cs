@@ -1,12 +1,13 @@
 ﻿using Meziantou.Framework.Win32.Natives;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Win32
 {
-    public sealed class SecurityIdentifier
+    public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     {
         private const byte MaxSubAuthorities = 15;
         private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
@@ -90,5 +91,18 @@ namespace Meziantou.Framework.Win32
 
             throw new Win32Exception(error);
         }
+
+        public bool Equals(SecurityIdentifier? other)
+        {
+            return other != null && Sid == other.Sid;
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as SecurityIdentifier);
+
+        public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Sid);
+
+        public static bool operator ==(SecurityIdentifier? left, SecurityIdentifier? right) => EqualityComparer<SecurityIdentifier>.Default.Equals(left, right);
+
+        public static bool operator !=(SecurityIdentifier? left, SecurityIdentifier? right) => !(left == right);
     }
 }

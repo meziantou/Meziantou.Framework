@@ -36,7 +36,9 @@ namespace Meziantou.Framework.Sanitizers
         private static readonly Regex s_safeUrlRegex = new Regex("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
-        private static readonly  Regex s_dataUrlPattern = new Regex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex s_dataUrlPattern = new Regex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+
+        private static readonly char[] s_whitespaces = new[] { '\t', '\r', '\n', ' ', '\f' };
 
         public static bool IsSafeUrl(string url)
         {
@@ -45,7 +47,17 @@ namespace Meziantou.Framework.Sanitizers
 
         public static bool IsSafeSrcset(string url)
         {
-            return url.Split(',').All(IsSafeUrl);
+            return url.Split(',').All(value => IsSafeUrl(GetUrlPart(value)));
+
+            static string GetUrlPart(string value)
+            {
+                value = value.Trim(s_whitespaces);
+                var separator = value.IndexOfAny(s_whitespaces);
+                if (separator < 0)
+                    return value;
+
+                return value.Substring(0, separator);
+            }
         }
     }
 }

@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Sanitizers
         public ISet<string> ValidAttributes { get; } = SplitToHashSet(DefaulValidAttrs);
         public ISet<string> BlockedElements { get; } = SplitToHashSet(DefaulBlockedElements);
         public ISet<string> UriAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
-        public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
+        public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulSrcsetAttrs);
 
         private static HashSet<string> SplitToHashSet(string text)
         {
@@ -84,7 +84,11 @@ namespace Meziantou.Framework.Sanitizers
         public string SanitizeHtmlFragment(string html)
         {
             var element = ParseHtmlFragment(html);
-            Sanitize(element);
+            for (var i = element.ChildNodes.Length - 1; i >= 0; i--)
+            {
+                Sanitize(element.ChildNodes[i]);
+            }
+
             return element.InnerHtml;
         }
 

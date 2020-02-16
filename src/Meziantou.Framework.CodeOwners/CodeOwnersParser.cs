@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Meziantou.Framework.CodeOwners
 {
@@ -11,70 +13,29 @@ namespace Meziantou.Framework.CodeOwners
             return context.Parse();
         }
 
-        private sealed class CodeOwnersParserContext
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct CodeOwnersParserContext
         {
-            private readonly string _content;
-            private readonly StringBuilder _builder = new StringBuilder();
-            private readonly List<CodeOwnersEntry> _entries = new List<CodeOwnersEntry>();
-            private int _currentIndex = -1;
+            private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = CreateStringBuilderPool();
+
+            private readonly List<CodeOwnersEntry> _entries;
+            private readonly StringLexer _lexer;
+
+            private static ObjectPool<StringBuilder> CreateStringBuilderPool()
+            {
+                var objectPoolProvider = new DefaultObjectPoolProvider();
+                return objectPoolProvider.CreateStringBuilderPool();
+            }
 
             public CodeOwnersParserContext(string content)
             {
-                _content = content;
-            }
-
-            private bool EndOfFile => _currentIndex >= _content.Length;
-
-            private char? Consume()
-            {
-                if (_currentIndex + 1 >= _content.Length)
-                {
-                    _currentIndex++; // Ensure EOF is set correctly
-                    return null;
-                }
-
-                _currentIndex++;
-                return _content[_currentIndex];
-            }
-
-            private char? Peek()
-            {
-                if (_currentIndex + 1 >= _content.Length)
-                    return null;
-
-                return _content[_currentIndex + 1];
-            }
-
-            private void SkipUntil(char character)
-            {
-                while (_currentIndex + 1 < _content.Length)
-                {
-                    var next = _content[_currentIndex + 1];
-                    if (next == character)
-                    {
-                        _currentIndex++;
-                        return;
-                    }
-
-                    _currentIndex++;
-                }
-            }
-
-            private void SkipSpaces()
-            {
-                while (_currentIndex + 1 < _content.Length)
-                {
-                    var next = _content[_currentIndex + 1];
-                    if (next != ' ' && next != '\t')
-                        return;
-
-                    _currentIndex++;
-                }
+                _entries = new List<CodeOwnersEntry>();
+                _lexer = new StringLexer(content);
             }
 
             public IEnumerable<CodeOwnersEntry> Parse()
             {
-                while (!EndOfFile)
+                while (!_lexer.EndOfFile)
                 {
                     ParseLine();
                 }
@@ -82,7 +43,124 @@ namespace Meziantou.Framework.CodeOwners
                 return _entries;
             }
 
-            private bool TryConsumeEndOfLineOrEndOfFile()
+            private void ParseLine()
+            {
+                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                    return;
+
+                // Comment
+                var c = _lexer.Peek();
+                if (c == '#')
+                {
+                    _lexer.ConsumeUntil('\n');
+                    return;
+                }
+
+                // Parse pattern
+                var pattern = ParsePattern();
+                if (pattern == null)
+                    return;
+
+                // Parse members (username or email)
+                ParseMembers(pattern);
+            }
+
+            private string? ParsePattern()
+            {
+                var sb = s_stringBuilderPool.Get();
+                while (!_lexer.EndOfFile)
+                {
+                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                        return null;
+
+                    var c = _lexer.Consume();
+                    switch (c)
+                    {
+                        // The next character is escaped
+                        case '\\':
+                            c = _lexer.Consume();
+                            if (c == null) // end of file
+                                return null;
+
+                            sb.Append(c);
+                            break;
+
+                        case ' ':
+                        case '\t':
+                            return s_stringBuilderPool.ToStringAndReturn(sb);
+
+                        default:
+                            sb.Append(c);
+                            break;
+                    }
+                }
+
+                return s_stringBuilderPool.ToStringAndReturn(sb);
+            }
+
+            private void ParseMembers(string pattern)
+            {
+                while (!_lexer.EndOfFile)
+                {
+                    _lexer.ConsumeSpaces();
+                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                        return;
+
+                    var sb = s_stringBuilderPool.Get();
+
+                    var c = _lexer.Consume();
+                    var isMember = c == '@';
+                    if (!isMember)
+                    {
+                        sb.Append(c);
+                    }
+
+                    while (!_lexer.EndOfFile)
+                    {
+                        if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                        {
+                            AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
+                            return;
+                        }
+
+                        c = _lexer.Consume();
+                        if (c == ' ' || c == '\t')
+                        {
+                            AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
+                            break;
+                        }
+
+                        sb.Append(c);
+                    }
+                }
+            }
+
+            private void AddEntry(bool isMember, string name, string pattern)
+            {
+                if (isMember)
+                {
+                    _entries.Add(CodeOwnersEntry.FromUsername(pattern, name));
+                }
+                else
+                {
+                    _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name));
+                }
+            }
+        }
+
+        private sealed class StringLexer
+        {
+            private int _currentIndex = -1;
+            private readonly string _content;
+
+            public StringLexer(string content)
+            {
+                _content = content;
+            }
+
+            public bool EndOfFile => _currentIndex >= _content.Length;
+
+            public bool TryConsumeEndOfLineOrEndOfFile()
             {
                 var c = Peek();
                 if (c == null)
@@ -109,103 +187,50 @@ namespace Meziantou.Framework.CodeOwners
                 return false;
             }
 
-            private void ParseLine()
+            public char? Consume()
             {
-                if (TryConsumeEndOfLineOrEndOfFile())
-                    return;
-
-                // Comment
-                var c = Peek();
-                if (c == '#')
+                if (_currentIndex + 1 >= _content.Length)
                 {
-                    SkipUntil('\n');
-                    return;
+                    _currentIndex++; // Ensure EOF is set correctly
+                    return null;
                 }
 
-                // Parse pattern
-                var pattern = ParsePattern();
-                if (pattern == null)
-                    return;
+                _currentIndex++;
+                return _content[_currentIndex];
+            }
 
-                // Parse members (username or email)
-                foreach (var (name, isMember) in ParseMembers())
+            public char? Peek()
+            {
+                if (_currentIndex + 1 >= _content.Length)
+                    return null;
+
+                return _content[_currentIndex + 1];
+            }
+
+            public void ConsumeUntil(char character)
+            {
+                while (_currentIndex + 1 < _content.Length)
                 {
-                    if (isMember)
+                    var next = _content[_currentIndex + 1];
+                    if (next == character)
                     {
-                        _entries.Add(CodeOwnersEntry.FromUsername(pattern, name));
+                        _currentIndex++;
+                        return;
                     }
-                    else
-                    {
-                        _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name));
-                    }
+
+                    _currentIndex++;
                 }
             }
 
-            private string? ParsePattern()
+            public void ConsumeSpaces()
             {
-                var sb = _builder.Clear();
-                while (!EndOfFile)
+                while (_currentIndex + 1 < _content.Length)
                 {
-                    if (TryConsumeEndOfLineOrEndOfFile())
-                        return null;
+                    var next = _content[_currentIndex + 1];
+                    if (next != ' ' && next != '\t')
+                        return;
 
-                    var c = Consume();
-                    switch (c)
-                    {
-                        // The next character is escaped
-                        case '\\':
-                            c = Consume();
-                            if (c == null) // end of file
-                                return null;
-
-                            sb.Append(c);
-                            break;
-
-                        case ' ':
-                        case '\t':
-                            return sb.ToString();
-
-                        default:
-                            sb.Append(c);
-                            break;
-                    }
-                }
-
-                return sb.ToString();
-            }
-
-            private IEnumerable<(string Name, bool IsMember)> ParseMembers()
-            {
-                while (!EndOfFile)
-                {
-                    SkipSpaces();
-                    if (TryConsumeEndOfLineOrEndOfFile())
-                        yield break;
-
-                    var sb = _builder.Clear();
-
-                    var c = Consume();
-                    var isMember = c == '@';
-                    if (!isMember)
-                        sb.Append(c);
-
-                    while (!EndOfFile)
-                    {
-                        if (TryConsumeEndOfLineOrEndOfFile())
-                        {
-                            yield return (sb.ToString(), isMember);
-                            yield break;
-                        }
-
-                        c = Consume();
-                        if (c == ' ' || c == '\t')
-                        {
-                            yield return (sb.ToString(), isMember);
-                            break;
-                        }
-
-                        sb.Append(c);
-                    }
+                    _currentIndex++;
                 }
             }
         }

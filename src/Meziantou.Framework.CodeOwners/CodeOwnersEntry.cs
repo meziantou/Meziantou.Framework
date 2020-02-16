@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.CodeOwners
 {
-    public sealed class CodeOwnersEntry
+    [StructLayout(LayoutKind.Auto)]
+    public readonly struct CodeOwnersEntry
     {
         private CodeOwnersEntry(string pattern, CodeOwnersEntryType entryType, string member)
         {
@@ -38,9 +40,9 @@ namespace Meziantou.Framework.CodeOwners
         public override int GetHashCode()
         {
             var hashCode = 1707150943;
-            hashCode = (hashCode * -1521134295) + EntryType.GetHashCode();
-            hashCode = (hashCode * -1521134295) + StringComparer.Ordinal.GetHashCode(Pattern);
-            hashCode = (hashCode * -1521134295) + StringComparer.Ordinal.GetHashCode(Member);
+            hashCode = hashCode * -1521134295 + EntryType.GetHashCode();
+            hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Pattern);
+            hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Member);
             return hashCode;
         }
     }

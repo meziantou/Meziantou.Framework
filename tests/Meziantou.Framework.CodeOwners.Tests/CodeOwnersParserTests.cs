@@ -99,5 +99,12 @@ apps/ @octocat
 
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public void ParseTwice()
+        {
+            const string Content = "* @user1 @user2  ";
+            Assert.Equal(CodeOwnersParser.Parse(Content).ToArray(), CodeOwnersParser.Parse(Content).ToArray());
+        }
     }
 }

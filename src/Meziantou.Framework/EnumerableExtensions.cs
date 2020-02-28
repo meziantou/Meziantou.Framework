@@ -183,10 +183,12 @@ namespace Meziantou.Framework
             return ForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
         }
 
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
+        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
+
+            var exceptions = new ConcurrentBag<Exception>();
 
             var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
                         select Task.Run(async () =>
@@ -195,12 +197,23 @@ namespace Meziantou.Framework
                             {
                                 while (partition.MoveNext())
                                 {
-                                    await action(partition.Current).ConfigureAwait(false);
+                                    try
+                                    {
+                                        await action(partition.Current).ConfigureAwait(false);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        exceptions.Add(ex);
+                                    }
                                 }
                             }
                         }, cancellationToken);
 
-            return Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+            if(exceptions.Count > 0)
+            {
+                throw new AggregateException(exceptions);
+            }
         }
 
         public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable

@@ -302,10 +302,10 @@ namespace Meziantou.Framework.Html
                         break;
 
                     case HtmlParserState.RawText:
-                        if (((c == '>') || (IsWhiteSpace(c))) && (Value.Length >= (_currentElement.Length + 2)) &&
+                        if (((c == '>') || IsWhiteSpace(c)) && (Value.Length >= (_currentElement.Length + 2)) &&
                             (Value[Value.Length - _currentElement.Length - 2] == '<') &&
                             (Value[Value.Length - _currentElement.Length - 1] == '/') &&
-                            (Value.ToString(Value.Length - _currentElement.Length, _currentElement.Length).EqualsIgnoreCase(_currentElement)))
+                            Value.ToString(Value.Length - _currentElement.Length, _currentElement.Length).EqualsIgnoreCase(_currentElement))
                         {
                             var rawText = Value.ToString(0, Value.Length - _currentElement.Length - 2);
                             PushCurrentState(HtmlParserState.Text, rawText);

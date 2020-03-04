@@ -115,7 +115,7 @@ namespace Meziantou.Framework
 
                             break; // only use vowel if leading char
                         case 'B':
-                            if (((n > 0) && n == wdsz - 1) && (local[n - 1] == 'M'))
+                            if ((n > 0) && n == wdsz - 1 && (local[n - 1] == 'M'))
                             {
                                 break;
                             }

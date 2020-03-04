@@ -165,7 +165,7 @@ namespace Meziantou.Framework.Html
                 if (index < 0 || index == (startIndex + 1))
                     return null;
 
-                return header.Substring(startIndex + 1, (index - startIndex) - 1).Trim();
+                return header.Substring(startIndex + 1, index - startIndex - 1).Trim();
             }
             index = startIndex;
             while (index < header.Length)

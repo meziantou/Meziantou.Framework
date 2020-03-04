@@ -132,7 +132,7 @@ namespace Meziantou.Framework.CodeDom
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
 
-            if ((typeName.StartsWith("[", StringComparison.Ordinal)) && typeName.EndsWith("]", StringComparison.Ordinal))
+            if (typeName.StartsWith("[", StringComparison.Ordinal) && typeName.EndsWith("]", StringComparison.Ordinal))
             {
                 typeName = typeName.Substring(1, typeName.Length - 2).Trim();
             }

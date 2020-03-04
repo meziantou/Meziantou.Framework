@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Sanitizers
 
         private static HashSet<string> SplitToHashSet(string text)
         {
-            var hashSet = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (!string.IsNullOrEmpty(text))
             {
                 var items = text.Split(',');

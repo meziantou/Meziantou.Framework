@@ -28,7 +28,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         [Fact]
         public void CodeExpression_Op_Unary_Add()
         {
-            var result = -((Expression)5);
+            var result = -(Expression)5;
 
             Assert.Equal(5, ((LiteralExpression)result.Expression).Value);
             Assert.Equal(UnaryOperator.Minus, result.Operator);

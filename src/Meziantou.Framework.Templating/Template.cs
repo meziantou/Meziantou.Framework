@@ -144,7 +144,7 @@ namespace Meziantou.Framework.Templating
                 for (var i = 0; i < typeParameters.Length; ++i)
                 {
                     var typeParamName = GetFriendlyTypeName(typeParameters[i]);
-                    friendlyName += (i == 0 ? typeParamName : "," + typeParamName);
+                    friendlyName += i == 0 ? typeParamName : "," + typeParamName;
                 }
                 friendlyName += ">";
                 friendlyName = type.Namespace + "." + friendlyName;

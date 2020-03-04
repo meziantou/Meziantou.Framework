@@ -12,6 +12,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         PRJ_UPDATE_RESERVED1 = 0x00000008,
         PRJ_UPDATE_RESERVED2 = 0x00000010,
         PRJ_UPDATE_ALLOW_READ_ONLY = 0x00000020,
-        PRJ_UPDATE_MAX_VAL = (PRJ_UPDATE_ALLOW_READ_ONLY << 1),
+        PRJ_UPDATE_MAX_VAL = PRJ_UPDATE_ALLOW_READ_ONLY << 1,
     }
 }

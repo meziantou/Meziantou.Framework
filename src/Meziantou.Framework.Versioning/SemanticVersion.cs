@@ -224,10 +224,14 @@ namespace Meziantou.Framework.Versioning
                 return false;
 
             if (!TryReadPrerelease(versionString, ref index, out var prereleaseLabels))
-                return false;
+            {
+                prereleaseLabels = null;
+            }
 
             if (!TryReadMetadata(versionString, ref index, out var metadata))
-                return false;
+            {
+                metadata = null;
+            }
 
             // Should be at the end of the string
             if (index != versionString.Length)
@@ -259,7 +263,7 @@ namespace Meziantou.Framework.Versioning
             }
 
             labels = null;
-            return true;
+            return false;
         }
 
         private static IReadOnlyList<string> ReadPrereleaseIdentifiers(string versionString, ref int index)
@@ -290,7 +294,7 @@ namespace Meziantou.Framework.Versioning
             }
 
             labels = null;
-            return true;
+            return false;
         }
 
         private static IReadOnlyList<string> TryReadMetadataIdentifiers(string versionString, ref int index)
@@ -354,10 +358,11 @@ namespace Meziantou.Framework.Versioning
             value = default;
             return false;
 
-            static bool IsValidLabelCharacter(char c)
-            {
-                return IsLetter(c) || IsDigit(c) || IsDash(c);
-            }
+        }
+
+        private static bool IsValidLabelCharacter(char c)
+        {
+            return IsLetter(c) || IsDigit(c) || IsDash(c);
         }
 
         private static bool TryReadMetadataIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
@@ -377,11 +382,6 @@ namespace Meziantou.Framework.Versioning
 
             value = default;
             return false;
-
-            static bool IsValidLabelCharacter(char c)
-            {
-                return IsLetter(c) || IsDigit(c) || IsDash(c);
-            }
         }
 
         private static bool TryReadNumber(string versionString, ref int index, out int value)

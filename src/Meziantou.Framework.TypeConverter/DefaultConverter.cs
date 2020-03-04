@@ -220,7 +220,7 @@ namespace Meziantou.Framework
 
         protected virtual bool TryConvert(DateTime input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
         {
-            value = BitConverter.GetBytes((input).ToBinary());
+            value = BitConverter.GetBytes(input.ToBinary());
             return true;
         }
 
@@ -247,9 +247,9 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (input is DateTimeOffset dateTimeOffset && TryConvert((dateTimeOffset).DateTime, typeof(byte[]), provider, out var result))
+            if (input is DateTimeOffset dateTimeOffset && TryConvert(dateTimeOffset.DateTime, provider, out var result))
             {
-                value = (byte[]?)result;
+                value = result;
                 return true;
             }
 

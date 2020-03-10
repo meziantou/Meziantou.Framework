@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework
 {
-    public static class TaskExtensions
+    public static partial class TaskExtensions
     {
         // https://www.meziantou.net/fire-and-forget-a-task-in-dotnet.htm
         public static void Forget(this Task task)

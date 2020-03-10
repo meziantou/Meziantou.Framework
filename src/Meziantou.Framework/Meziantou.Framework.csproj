@@ -3,13 +3,21 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>2.8.2</Version>
+    <Version>2.9.0</Version>
   </PropertyGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'net461'">
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="DebounceExtensions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>DebounceExtensions.cs</LastGenOutput>
+    </None>
+    <None Update="TaskExtensions.WhenAll.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TaskExtensions.WhenAll.cs</LastGenOutput>
     </None>
     <None Update="ThrottleExtensions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -26,6 +34,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>DebounceExtensions.tt</DependentUpon>
+    </Compile>
+    <Compile Update="TaskExtensions.WhenAll.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TaskExtensions.WhenAll.tt</DependentUpon>
     </Compile>
     <Compile Update="ThrottleExtensions.cs">
       <DesignTime>True</DesignTime>

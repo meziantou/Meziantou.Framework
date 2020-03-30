@@ -9,14 +9,13 @@ variables:
   solution: Meziantou.Framework.sln
   buildConfiguration: Release
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_VERSION: '3.1.x'
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 3.1'
   inputs:
-    packageType: sdk
-    version: 3.1.101
-    installationPath: $(Agent.ToolsDirectory)/dotnet
+    packageType: 'sdk'
+    version: $(DOTNET_VERSION)
 
 - task: DotNetCoreCLI@2
   displayName: dotnet build
@@ -28,21 +27,9 @@ steps:
   displayName: dotnet test
   inputs:
     command: test
-    arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
+    arguments: '--configuration $(BuildConfiguration) --collect "Code coverage"'
     projects: 'tests/**/*Tests.csproj'
     nobuild: true
-
-- script: |
-    dotnet tool install -g dotnet-reportgenerator-globaltool
-    reportgenerator -reports:$(Build.SourcesDirectory)/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura
-  displayName: Create Code coverage report
-
-- task: PublishCodeCoverageResults@1
-  displayName: 'Publish code coverage'
-  inputs:
-    codeCoverageTool: Cobertura
-    summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
-    reportDirectory: '$(Build.SourcesDirectory)/CodeCoverage'
 
 - task: DotNetCoreCLI@2
   displayName: dotnet pack
@@ -58,7 +45,7 @@ steps:
     $files = Get-ChildItem $(Build.ArtifactStagingDirectory) -Filter *.nupkg
     foreach($file in $files) {
         Write-Host "Pushing NuGet package: $($file.FullName)"
-        & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output
+        & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
     }
   workingDirectory: '$(Build.ArtifactStagingDirectory)'
   ignoreLASTEXITCODE: true  

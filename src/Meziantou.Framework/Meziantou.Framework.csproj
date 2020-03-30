@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>2.9.0</Version>
+    <Version>2.9.1</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net461'">

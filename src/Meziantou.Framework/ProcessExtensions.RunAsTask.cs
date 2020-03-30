@@ -54,6 +54,7 @@ namespace Meziantou.Framework
 
             var tcs = new TaskCompletionSource<ProcessResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             var logs = new List<ProcessOutput>();
+            var manualResetEvent = new ManualResetEventSlim(); // We cannot dispose the process before calling BeginXXXReadLine and InputStream.Close().
 
             var process = new Process
             {
@@ -65,9 +66,14 @@ namespace Meziantou.Framework
             {
                 try
                 {
+#pragma warning disable MA0040 // Use a cancellation token, The process is already closed so it should be almost instant
+                    manualResetEvent.Wait();
+#pragma warning restore MA0040
+
                     process.WaitForExit();
                     tcs.TrySetResult(new ProcessResult(process.ExitCode, logs));
                     process.Dispose();
+                    manualResetEvent.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -75,33 +81,30 @@ namespace Meziantou.Framework
                 }
             };
 
-            process.ErrorDataReceived += (sender, e) =>
+            if (psi.RedirectStandardError)
             {
-                if (e.Data != null)
+                process.ErrorDataReceived += (sender, e) =>
                 {
-                    logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
-                }
-            };
-            process.OutputDataReceived += (sender, e) =>
-            {
-                if (e.Data != null)
-                {
-                    logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
-                }
-            };
-
-            if (!process.Start())
-                throw new InvalidOperationException($"Cannot start the process '{psi.FileName}'");
+                    if (e.Data != null)
+                    {
+                        logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                    }
+                };
+            }
 
             if (psi.RedirectStandardOutput)
             {
-                process.BeginOutputReadLine();
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (e.Data != null)
+                    {
+                        logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                    }
+                };
             }
 
-            if (psi.RedirectStandardError)
-            {
-                process.BeginErrorReadLine();
-            }
+            if (!process.Start())
+                throw new InvalidOperationException($"Cannot start the process '{psi.FileName}'");
 
             if (cancellationToken.CanBeCanceled)
             {
@@ -114,27 +117,30 @@ namespace Meziantou.Framework
 
                     try
                     {
-                        try
+                        if (IsWindows())
                         {
-                            if (IsWindows())
-                            {
-                                process.Kill(entireProcessTree: true);
-                            }
-                            else
-                            {
-                                process.Kill();
-                            }
+                            process.Kill(entireProcessTree: true);
                         }
-                        catch (InvalidOperationException)
+                        else
                         {
-                            // the process may already be killed
+                            process.Kill();
                         }
                     }
-                    finally
+                    catch (InvalidOperationException)
                     {
-                        process.Dispose();
+                        // the process may already be killed
                     }
                 });
+            }
+
+            if (psi.RedirectStandardOutput)
+            {
+                process.BeginOutputReadLine();
+            }
+
+            if (psi.RedirectStandardError)
+            {
+                process.BeginErrorReadLine();
             }
 
             if (psi.RedirectStandardInput)
@@ -142,6 +148,7 @@ namespace Meziantou.Framework
                 process.StandardInput.Close();
             }
 
+            manualResetEvent.Set();
             return tcs.Task;
         }
     }

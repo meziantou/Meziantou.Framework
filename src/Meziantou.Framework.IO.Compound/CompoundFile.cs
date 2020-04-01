@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -2033,7 +2034,7 @@ namespace Meziantou.Framework.IO.Compound
 
             public override string ToString()
             {
-                return SectorType + ":" + Index;
+                return SectorType + ":" + Index.ToString(CultureInfo.InvariantCulture);
             }
         }
     }

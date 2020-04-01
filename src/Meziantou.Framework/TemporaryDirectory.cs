@@ -70,7 +70,7 @@ namespace Meziantou.Framework
                     var tempPath = filePath + "_";
                     while (Directory.Exists(filePath))
                     {
-                        filePath = tempPath + count;
+                        filePath = tempPath + count.ToStringInvariant();
                         count++;
                     }
 

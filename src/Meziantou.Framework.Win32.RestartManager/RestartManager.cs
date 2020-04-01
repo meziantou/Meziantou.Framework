@@ -68,10 +68,8 @@ namespace Meziantou.Framework.Win32
                 {
                     return arrayCount > 0;
                 }
-                else
-                {
-                    throw new Win32Exception((int)result, $"RmGetList failed ({result})");
-                }
+
+                throw new Win32Exception((int)result, $"RmGetList failed ({result})");
             }
         }
 

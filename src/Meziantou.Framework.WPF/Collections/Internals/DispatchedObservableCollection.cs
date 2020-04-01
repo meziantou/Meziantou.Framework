@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Windows.Threading;
 
@@ -26,7 +27,7 @@ namespace Meziantou.Framework.WPF.Collections
         {
             if (!IsOnDispatcherThread())
             {
-                throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + Thread.CurrentThread.ManagedThreadId);
+                throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + Thread.CurrentThread.ManagedThreadId.ToString(CultureInfo.InvariantCulture));
             }
         }
 

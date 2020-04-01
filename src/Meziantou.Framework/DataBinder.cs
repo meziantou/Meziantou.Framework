@@ -44,10 +44,10 @@ namespace Meziantou.Framework
 
             for (prop = container, i = 0; (i < expressionParts.Length) && (prop != null); i++)
             {
-                string expr = expressionParts[i];
-                bool indexedExpr = expr.IndexOfAny(s_indexExprStartChars) >= 0;
+                var expr = expressionParts[i];
+                var indexedExpr = expr.IndexOfAny(s_indexExprStartChars) >= 0;
 
-                if (indexedExpr == false)
+                if (!indexedExpr)
                 {
                     prop = GetPropertyValue(prop, expr);
                 }
@@ -113,7 +113,7 @@ namespace Meziantou.Framework
             }
             else
             {
-                throw new ArgumentException(string.Format("Databinding: '{0}' does not contain a property with the name '{1}'", container.GetType().FullName, propertyName), nameof(propertyName));
+                throw new ArgumentException($"Databinding: '{container.GetType().FullName}' does not contain a property with the name '{propertyName}'", nameof(propertyName));
             }
         }
 
@@ -145,17 +145,17 @@ namespace Meziantou.Framework
             if (string.IsNullOrEmpty(expression))
                 throw new ArgumentNullException(nameof(expression));
 
-            bool intIndex = false;
+            var intIndex = false;
 
-            int indexExprStart = expression.IndexOfAny(s_indexExprStartChars);
-            int indexExprEnd = expression.IndexOfAny(s_indexExprEndChars, indexExprStart + 1);
+            var indexExprStart = expression.IndexOfAny(s_indexExprStartChars);
+            var indexExprEnd = expression.IndexOfAny(s_indexExprEndChars, indexExprStart + 1);
 
             if ((indexExprStart < 0) || (indexExprEnd < 0) || (indexExprEnd == indexExprStart + 1))
-                throw new ArgumentException(string.Format("Databinding: '{0}' is not a valid indexed expression.", expression), nameof(expression));
+                throw new ArgumentException($"Databinding: '{expression}' is not a valid indexed expression.", nameof(expression));
 
             string? propName = null;
             object? indexValue = null;
-            string index = expression.Substring(indexExprStart + 1, indexExprEnd - indexExprStart - 1).Trim();
+            var index = expression.Substring(indexExprStart + 1, indexExprEnd - indexExprStart - 1).Trim();
 
             if (indexExprStart != 0)
                 propName = expression.Substring(0, indexExprStart);
@@ -191,7 +191,7 @@ namespace Meziantou.Framework
             }
 
             if (indexValue == null)
-                throw new ArgumentException(string.Format("Databinding: '{0}' is not a valid indexed expression.", expression), nameof(expression));
+                throw new ArgumentException($"Databinding: '{expression}' is not a valid indexed expression.", nameof(expression));
 
             object? collectionProp;
             if ((propName != null) && (propName.Length != 0))

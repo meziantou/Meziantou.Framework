@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Win32.Natives;
@@ -31,14 +32,14 @@ namespace Meziantou.Framework.Win32
             var applicationName = Marshal.PtrToStringUni(credential.TargetName);
             Debug.Assert(applicationName != null);
 
-            string? userName = Marshal.PtrToStringUni(credential.UserName);
+            var userName = Marshal.PtrToStringUni(credential.UserName);
             string? secret = null;
             if (credential.CredentialBlob != IntPtr.Zero)
             {
                 secret = Marshal.PtrToStringUni(credential.CredentialBlob, (int)credential.CredentialBlobSize / 2);
             }
 
-            string? comment = Marshal.PtrToStringUni(credential.Comment);
+            var comment = Marshal.PtrToStringUni(credential.Comment);
             return new Credential(credential.Type, applicationName, userName, secret, comment);
         }
 
@@ -108,7 +109,7 @@ namespace Meziantou.Framework.Win32
                 var written = Advapi32.CredWrite(ref credential, 0);
                 var lastError = Marshal.GetLastWin32Error();
                 if (!written)
-                    throw new Win32Exception(lastError, $"CredWrite failed with the error code {lastError}.");
+                    throw new Win32Exception(lastError, $"CredWrite failed with the error code {lastError.ToString(CultureInfo.InvariantCulture)}.");
             }
             finally
             {

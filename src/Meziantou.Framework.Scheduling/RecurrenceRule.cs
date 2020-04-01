@@ -182,7 +182,7 @@ namespace Meziantou.Framework.Scheduling
                 if ((monthDay >= 1 && monthDay <= 31) || (monthDay <= -1 && monthDay >= -31))
                     continue;
 
-                throw new FormatException($"Monthday '{monthDay}' is invalid.");
+                throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
             }
             return monthDays;
         }
@@ -217,8 +217,9 @@ namespace Meziantou.Framework.Scheduling
             {
                 if ((yearDay >= 1 && yearDay <= 366) || (yearDay <= -1 && yearDay >= -366))
                     continue;
-                throw new FormatException($"Year day '{yearDay}' is invalid.");
+                throw new FormatException($"Year day '{yearDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
             }
+
             return yearDays;
         }
 

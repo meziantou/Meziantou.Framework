@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Win32
                 .Replace(":", "")
                 .Replace(Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture), "");
 
-            return string.Format("\\\\.\\{0}:", name);
+            return $"\\\\.\\{name}:";
         }
     }
 }

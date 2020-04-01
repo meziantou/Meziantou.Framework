@@ -120,15 +120,15 @@ namespace Meziantou.Framework.Scheduling
                 case 11:
                 case 12:
                 case 13:
-                    return num + "th";
+                    return num.ToString(CultureInfo.CurrentCulture) + "th";
             }
 
-            return (num % 10) switch
+            return num.ToString(CultureInfo.CurrentCulture) + (num % 10) switch
             {
-                1 => num + "st",
-                2 => num + "nd",
-                3 => num + "rd",
-                _ => num + "th",
+                1 => "st",
+                2 => "nd",
+                3 => "rd",
+                _ => "th",
             };
         }
 
@@ -138,10 +138,10 @@ namespace Meziantou.Framework.Scheduling
             if (num <= 0)
                 return num.ToString(CultureInfo.CurrentCulture);
 
-            return num switch
+            return num.ToString(CultureInfo.CurrentCulture) + num switch
             {
-                1 => num + "er",
-                _ => num + "e",
+                1 => "er",
+                _ => "e",
             };
         }
     }

@@ -12,10 +12,10 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern JobObject OpenJobObject(JobObjectAccessRights desiredAccess, bool inheritHandle, string lpName);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern bool SetInformationJobObject(JobObject hJob, JobObjectInfoClass JobObjectInfoClass, ref JOBOBJECT_INFO lpJobObjectInfo, int cbJobObjectInfoLength);
+        internal static extern bool SetInformationJobObject(JobObject hJob, JobObjectInfoClass jobObjectInfoClass, ref JOBOBJECT_INFO lpJobObjectInfo, int cbJobObjectInfoLength);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern bool SetInformationJobObject(JobObject hJob, JobObjectInfoClass JobObjectInfoClass, ref JOBOBJECT_BASIC_UI_RESTRICTIONS lpJobObjectInfo, int cbJobObjectInfoLength);
+        internal static extern bool SetInformationJobObject(JobObject hJob, JobObjectInfoClass jobObjectInfoClass, ref JOBOBJECT_BASIC_UI_RESTRICTIONS lpJobObjectInfo, int cbJobObjectInfoLength);
 
         [DllImport("kernel32.dll")]
         internal static extern bool TerminateJobObject(JobObject hJob, uint uExitCode);

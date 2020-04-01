@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -33,7 +34,7 @@ namespace Meziantou.Framework.Win32
 
             var winErrorCode = LsaNtStatusToWinError(result);
             if (winErrorCode != 0)
-                throw new Win32Exception(winErrorCode, "StorePrivateData failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "StorePrivateData failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
         }
 
         public static string? GetValue(string key)
@@ -59,7 +60,7 @@ namespace Meziantou.Framework.Win32
 
             var winErrorCode = LsaNtStatusToWinError(result);
             if (winErrorCode != 0)
-                throw new Win32Exception(winErrorCode, "LsaRetrievePrivateData failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "LsaRetrievePrivateData failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
 
             if (privateData == IntPtr.Zero)
                 return null;
@@ -77,7 +78,7 @@ namespace Meziantou.Framework.Win32
             var ntsResult = LsaOpenPolicy(ref localsystem, ref objectAttributes, (uint)LSA_AccessPolicy.POLICY_GET_PRIVATE_INFORMATION, out var lsaPolicyHandle);
             var winErrorCode = LsaNtStatusToWinError(ntsResult);
             if (winErrorCode != 0)
-                throw new Win32Exception(winErrorCode, "LsaOpenPolicy failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "LsaOpenPolicy failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
 
             return lsaPolicyHandle;
         }
@@ -87,7 +88,7 @@ namespace Meziantou.Framework.Win32
             var ntsResult = LsaClose(lsaPolicyHandle);
             var winErrorCode = LsaNtStatusToWinError(ntsResult);
             if (winErrorCode != 0)
-                throw new Win32Exception(winErrorCode, "LsaClose failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "LsaClose failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
         }
 
         private static void FreeMemory(IntPtr buffer)
@@ -95,7 +96,7 @@ namespace Meziantou.Framework.Win32
             var ntsResult = LsaFreeMemory(buffer);
             var winErrorCode = LsaNtStatusToWinError(ntsResult);
             if (winErrorCode != 0)
-                throw new Win32Exception(winErrorCode, "LsaFreeMemory failed: " + winErrorCode);
+                throw new Win32Exception(winErrorCode, "LsaFreeMemory failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
         }
 
         private const uint STATUS_OBJECT_NAME_NOT_FOUND = 0xC0000034;

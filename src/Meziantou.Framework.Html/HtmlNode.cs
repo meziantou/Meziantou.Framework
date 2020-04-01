@@ -87,7 +87,7 @@ namespace Meziantou.Framework.Html
         {
             // deep recursion testing. incurred because of xslt in general
             if (index > MaxRecursion)
-                throw new HtmlException($"HTML0005: Maximum recursion depth ({MaxRecursion}) exceeded. This may be caused by a recursive XSLT.");
+                throw new HtmlException($"HTML0005: Maximum recursion depth ({MaxRecursion.ToString(CultureInfo.InvariantCulture)}) exceeded. This may be caused by a recursive XSLT.");
 
             _innerHtml = null;
             _innerText = null;

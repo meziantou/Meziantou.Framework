@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Meziantou.Framework;
 
 namespace SingleInstanceConsoleAppSample
@@ -24,7 +25,7 @@ namespace SingleInstanceConsoleAppSample
 
         private static void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
         {
-            Console.WriteLine("New instance " + e.ProcessId);
+            Console.WriteLine("New instance " + e.ProcessId.ToString(CultureInfo.InvariantCulture));
             foreach (var arg in e.Arguments)
             {
                 Console.WriteLine(arg);

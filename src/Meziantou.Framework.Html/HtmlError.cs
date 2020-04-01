@@ -1,4 +1,6 @@
 ﻿#nullable disable
+using System;
+
 namespace Meziantou.Framework.Html
 {
     public sealed class HtmlError
@@ -27,7 +29,7 @@ namespace Meziantou.Framework.Html
 
         public override string ToString()
         {
-            return $"{Line}x{Column}x{Offset} {ErrorType}";
+            return FormattableString.Invariant($"{Line}x{Column}x{Offset} {ErrorType}");
         }
     }
 }

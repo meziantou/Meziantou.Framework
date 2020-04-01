@@ -46,40 +46,12 @@ namespace Meziantou.Framework
             return RunAsTask(psi, cancellationToken);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0067:Dispose objects before losing scope", Justification = "Disposed in Exited event")]
-        public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
+        public static async Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<ProcessResult>(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
 
-            var tcs = new TaskCompletionSource<ProcessResult>(TaskCreationOptions.RunContinuationsAsynchronously);
             var logs = new List<ProcessOutput>();
-            var manualResetEvent = new ManualResetEventSlim(); // We cannot dispose the process before calling BeginXXXReadLine and InputStream.Close().
-
-            var process = new Process
-            {
-                StartInfo = psi,
-                EnableRaisingEvents = true,
-            };
-
-            process.Exited += (sender, e) =>
-            {
-                try
-                {
-#pragma warning disable MA0040 // Use a cancellation token, The process is already closed so it should be almost instant
-                    manualResetEvent.Wait();
-#pragma warning restore MA0040
-
-                    process.WaitForExit();
-                    tcs.TrySetResult(new ProcessResult(process.ExitCode, logs));
-                    process.Dispose();
-                    manualResetEvent.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    tcs.TrySetException(ex);
-                }
-            };
+            using var process = Process.Start(psi);
 
             if (psi.RedirectStandardError)
             {
@@ -90,6 +62,7 @@ namespace Meziantou.Framework
                         logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
                     }
                 };
+                process.BeginErrorReadLine();
             }
 
             if (psi.RedirectStandardOutput)
@@ -101,30 +74,25 @@ namespace Meziantou.Framework
                         logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
                     }
                 };
+                process.BeginOutputReadLine();
             }
 
-            if (!process.Start())
-                throw new InvalidOperationException($"Cannot start the process '{psi.FileName}'");
+            if (psi.RedirectStandardInput)
+            {
+                process.StandardInput.Close();
+            }
 
+            CancellationTokenRegistration registration = default;
             if (cancellationToken.CanBeCanceled)
             {
-                cancellationToken.Register(() =>
+                registration = cancellationToken.Register(() =>
                 {
                     if (process.HasExited)
                         return;
 
-                    tcs.TrySetCanceled(cancellationToken);
-
                     try
                     {
-                        if (IsWindows())
-                        {
-                            process.Kill(entireProcessTree: true);
-                        }
-                        else
-                        {
-                            process.Kill();
-                        }
+                        process.Kill(entireProcessTree: true);
                     }
                     catch (InvalidOperationException)
                     {
@@ -133,23 +101,133 @@ namespace Meziantou.Framework
                 });
             }
 
-            if (psi.RedirectStandardOutput)
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            registration.Dispose();
+
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ProcessResult(process.ExitCode, logs);
+        }
+
+        public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)
+        {
+            // https://source.dot.net/#System.Diagnostics.Process/System/Diagnostics/Process.cs,b6a5b00714a61f06
+            // Because the process has already started by the time this method is called,
+            // we're in a race against the process to set up our exit handlers before the process
+            // exits. As a result, there are several different flows that must be handled:
+            //
+            // CASE 1: WE ENABLE EVENTS
+            // This is the "happy path". In this case we enable events.
+            //
+            // CASE 1.1: PROCESS EXITS OR IS CANCELED AFTER REGISTERING HANDLER
+            // This case continues the "happy path". The process exits or waiting is canceled after
+            // registering the handler and no special cases are needed.
+            //
+            // CASE 1.2: PROCESS EXITS BEFORE REGISTERING HANDLER
+            // It's possible that the process can exit after we enable events but before we reigster
+            // the handler. In that case we must check for exit after registering the handler.
+            //
+            //
+            // CASE 2: PROCESS EXITS BEFORE ENABLING EVENTS
+            // The process may exit before we attempt to enable events. In that case EnableRaisingEvents
+            // will throw an exception like this:
+            //     System.InvalidOperationException : Cannot process request because the process (42) has exited.
+            // In this case we catch the InvalidOperationException. If the process has exited, our work
+            // is done and we return. If for any reason (now or in the future) enabling events fails
+            // and the process has not exited, bubble the exception up to the user.
+            //
+            //
+            // CASE 3: USER ALREADY ENABLED EVENTS
+            // In this case the user has already enabled raising events. Re-enabling events is a no-op
+            // as the value hasn't changed. However, no-op also means that if the process has already
+            // exited, EnableRaisingEvents won't throw an exception.
+            //
+            // CASE 3.1: PROCESS EXITS OR IS CANCELED AFTER REGISTERING HANDLER
+            // (See CASE 1.1)
+            //
+            // CASE 3.2: PROCESS EXITS BEFORE REGISTERING HANDLER
+            // (See CASE 1.2)
+
+            if (!process.HasExited)
             {
-                process.BeginOutputReadLine();
+                // Early out for cancellation before doing more expensive work
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
-            if (psi.RedirectStandardError)
+            try
             {
-                process.BeginErrorReadLine();
+                // CASE 1: We enable events
+                // CASE 2: Process exits before enabling events (and throws an exception)
+                // CASE 3: User already enabled events (no-op)
+                process.EnableRaisingEvents = true;
+            }
+            catch (InvalidOperationException)
+            {
+                // CASE 2: If the process has exited, our work is done, otherwise bubble the
+                // exception up to the user
+                if (process.HasExited)
+                {
+                    return;
+                }
+
+                throw;
             }
 
-            if (psi.RedirectStandardInput)
+            var tcs = new TaskCompletionSourceWithCancellation<bool>();
+
+            void Handler(object? s, EventArgs e) => tcs.TrySetResult(true);
+            process.Exited += Handler;
+
+            try
             {
-                process.StandardInput.Close();
+                if (process.HasExited)
+                {
+                    // CASE 1.2 & CASE 3.2: Handle race where the process exits before registering the handler
+                    return;
+                }
+
+                // CASE 1.1 & CASE 3.1: Process exits or is canceled here
+                await tcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                process.Exited -= Handler;
+            }
+        }
+
+        private sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+        {
+            private CancellationToken _cancellationToken;
+
+            public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
             }
 
-            manualResetEvent.Set();
-            return tcs.Task;
+            private void OnCancellation()
+            {
+                TrySetCanceled(_cancellationToken);
+            }
+
+#if NETCOREAPP3_1
+            public async ValueTask<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
+            {
+                _cancellationToken = cancellationToken;
+                using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
+                {
+                    return await Task.ConfigureAwait(false);
+                }
+            }
+#elif NET461 || NETSTANDARD2_0
+            public async Task<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
+            {
+                _cancellationToken = cancellationToken;
+                using (cancellationToken.Register(s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
+                {
+                    return await Task.ConfigureAwait(false);
+                }
+            }
+#else
+#error Platform not supported
+#endif
         }
     }
 }

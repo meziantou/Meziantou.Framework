@@ -1,4 +1,7 @@
-﻿using Xunit;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
@@ -68,6 +71,66 @@ namespace Meziantou.Framework.Tests
         public void ContainsIgnoreCase(string left, string right, bool expectedResult)
         {
             Assert.Equal(expectedResult, left.ContainsIgnoreCase(right));
+        }
+
+        [Theory]
+        [MemberData(nameof(SplitLineData))]
+        public void SplitLine(string str, (string Line, string Separator)[] expected)
+        {
+            var actual = str.SplitLines();
+
+            Assert.Equal(expected.Select(t => t.Line).ToList(), actual.ToList());
+        }
+
+        [Theory]
+        [MemberData(nameof(SplitLineData))]
+        public void SplitLine_Span(string str, (string Line, string Separator)[] expected)
+        {
+            var actual = new List<(string, string)>();
+            str.SplitLines((line, separator) => actual.Add((line.ToString(), separator.ToString())));
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(SplitLineData))]
+        public void SplitLine_SpanFunc(string str, (string Line, string Separator)[] expected)
+        {
+            var actual = new List<(string, string)>();
+            str.SplitLines((line, separator) =>
+            {
+                actual.Add((line.ToString(), separator.ToString()));
+                return true;
+            });
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void SplitLine_SpanFunc_Stop()
+        {
+            var actual = new List<(string, string)>();
+            "a\nb\nc\nd".SplitLines((line, separator) =>
+            {
+                actual.Add((line.ToString(), separator.ToString()));
+                return !line.Equals("b", StringComparison.Ordinal);
+            });
+
+            Assert.Equal(new[] { ("a", "\n"), ("b", "\n") }, actual);
+        }
+
+        public static TheoryData<string, (string Line, string Separator)[]> SplitLineData()
+        {
+            return new TheoryData<string, (string Line, string Separator)[]>
+            {
+                { "", Array.Empty<(string, string)>() },
+                { "ab", new[] { ("ab", "") } },
+                { "ab\r\n", new[] { ("ab", "\r\n") } },
+                { "ab\r\ncd", new[] { ("ab", "\r\n"), ("cd", "") } },
+                { "ab\rcd", new[] { ("ab", "\r"), ("cd", "") } },
+                { "ab\ncd", new[] { ("ab", "\n"), ("cd", "") } },
+                { "\ncd", new[] { ("", "\n"), ("cd", "") } },
+            };
         }
     }
 }

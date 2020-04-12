@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace Meziantou.Framework
@@ -113,5 +115,114 @@ namespace Meziantou.Framework
 
             return str[0] == c;
         }
+
+        [Pure]
+        [SuppressMessage("Design", "MA0045:Do not use blocking call (make method async)", Justification = "No io operation")]
+        public static IEnumerable<string> SplitLines(this string str)
+        {
+            if (str.Length == 0)
+                return Array.Empty<string>();
+
+            return SplitLinesImpl(str);
+
+            static IEnumerable<string> SplitLinesImpl(string str)
+            {
+                using var reader = new StringReader(str);
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                    yield return line;
+            }
+        }
+
+#if NETCOREAPP3_1
+
+        public delegate void LineAction(ReadOnlySpan<char> line, ReadOnlySpan<char> separator);
+        public delegate bool CancellableLineAction(ReadOnlySpan<char> line, ReadOnlySpan<char> separator);
+
+        [Pure]
+        public static void SplitLines(this string str, LineAction action)
+        {
+            var span = str.AsSpan();
+            Span<char> separator = stackalloc char[2];
+
+            var start = 0;
+            var i = 0;
+            while (i < span.Length)
+            {
+                var ch = span[i];
+                if (ch == '\r' || ch == '\n')
+                {
+                    var line = span[start..i];
+
+                    separator[0] = ch;
+                    var currentSeparator = separator.Slice(0, 1);
+
+                    start = i + 1;
+                    if (ch == '\r' && start < span.Length && span[start] == '\n')
+                    {
+                        separator[1] = '\n';
+                        currentSeparator = separator;
+
+                        i++;
+                        start = i + 1;
+                    }
+
+                    action(line, currentSeparator);
+                }
+
+                i++;
+            }
+
+            if (i > start)
+            {
+                action(span[start..], ReadOnlySpan<char>.Empty);
+            }
+        }
+
+        [Pure]
+        public static void SplitLines(this string str, CancellableLineAction action)
+        {
+            var span = str.AsSpan();
+            Span<char> separator = stackalloc char[2];
+
+            var start = 0;
+            var i = 0;
+            while (i < span.Length)
+            {
+                var ch = span[i];
+                if (ch == '\r' || ch == '\n')
+                {
+                    var line = span[start..i];
+
+                    separator[0] = ch;
+                    var currentSeparator = separator.Slice(0, 1);
+
+                    start = i + 1;
+                    if (ch == '\r' && start < span.Length && span[start] == '\n')
+                    {
+                        separator[1] = '\n';
+                        currentSeparator = separator;
+
+                        i++;
+                        start = i + 1;
+                    }
+
+                    if (!action(line, currentSeparator))
+                        return;
+                }
+
+                i++;
+            }
+
+            if (i > start)
+            {
+                action(span[start..], ReadOnlySpan<char>.Empty);
+            }
+        }
+#elif NET461
+#elif NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
     }
 }

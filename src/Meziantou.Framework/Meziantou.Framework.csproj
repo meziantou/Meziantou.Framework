@@ -3,11 +3,15 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>2.12.0</Version>
+    <Version>2.13.0</Version>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net461'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
 
   <ItemGroup>

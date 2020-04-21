@@ -73,50 +73,44 @@ namespace Meziantou.Framework.Tests
             Assert.Equal(expectedResult, left.ContainsIgnoreCase(right));
         }
 
-        [Theory]
-        [MemberData(nameof(SplitLineData))]
-        public void SplitLine(string str, (string Line, string Separator)[] expected)
-        {
-            var actual = str.SplitLines();
-
-            Assert.Equal(expected.Select(t => t.Line).ToList(), actual.ToList());
-        }
-
-        [Theory]
-        [MemberData(nameof(SplitLineData))]
-        public void SplitLine_Span(string str, (string Line, string Separator)[] expected)
-        {
-            var actual = new List<(string, string)>();
-            str.SplitLines((line, separator) => actual.Add((line.ToString(), separator.ToString())));
-
-            Assert.Equal(expected, actual);
-        }
-
-        [Theory]
-        [MemberData(nameof(SplitLineData))]
-        public void SplitLine_SpanFunc(string str, (string Line, string Separator)[] expected)
-        {
-            var actual = new List<(string, string)>();
-            str.SplitLines((line, separator) =>
-            {
-                actual.Add((line.ToString(), separator.ToString()));
-                return true;
-            });
-
-            Assert.Equal(expected, actual);
-        }
-
         [Fact]
-        public void SplitLine_SpanFunc_Stop()
+        public void SplitLine_Stop()
         {
             var actual = new List<(string, string)>();
-            "a\nb\nc\nd".SplitLines((line, separator) =>
+            foreach (var (line, separator) in "a\nb\nc\nd".SplitLines())
             {
                 actual.Add((line.ToString(), separator.ToString()));
-                return !line.Equals("b", StringComparison.Ordinal);
-            });
+                if (line.Equals("b", StringComparison.Ordinal))
+                    break;
+            }
 
             Assert.Equal(new[] { ("a", "\n"), ("b", "\n") }, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(SplitLineData))]
+        public void SplitLineSpan(string str, (string Line, string Separator)[] expected)
+        {
+            var actual = new List<(string, string)>();
+            foreach (var (line, separator) in str.SplitLines())
+            {
+                actual.Add((line.ToString(), separator.ToString()));
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
+        [Theory]
+        [MemberData(nameof(SplitLineData))]
+        public void SplitLineSpan2(string str, (string Line, string Separator)[] expected)
+        {
+            var actual = new List<string>();
+            foreach (ReadOnlySpan<char> line in str.SplitLines())
+            {
+                actual.Add(line.ToString());
+            }
+
+            Assert.Equal(expected.Select(item => item.Line).ToArray(), actual);
         }
 
         public static TheoryData<string, (string Line, string Separator)[]> SplitLineData()

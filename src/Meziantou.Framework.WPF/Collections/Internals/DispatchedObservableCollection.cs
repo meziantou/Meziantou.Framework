@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading;
 using System.Windows.Threading;
 
@@ -179,9 +180,20 @@ namespace Meziantou.Framework.WPF.Collections
             EnqueueEvent(PendingEvent.Add(item));
         }
 
+        internal void EnqueueAddRange(IEnumerable<T> items)
+        {
+            EnqueueEvents(items.Select(PendingEvent.Add));
+        }
+
         internal bool EnqueueRemove(T item)
         {
             EnqueueEvent(PendingEvent.Remove(item));
+            return true;
+        }
+
+        internal bool EnqueueRemoveRange(IEnumerable<T> items)
+        {
+            EnqueueEvents(items.Select(PendingEvent.Remove));
             return true;
         }
 
@@ -206,6 +218,16 @@ namespace Meziantou.Framework.WPF.Collections
             ProcessPendingEventsOrDispatch();
         }
 
+        private void EnqueueEvents(IEnumerable<PendingEvent<T>> events)
+        {
+            foreach (var @event in events)
+            {
+                _pendingEvents.Enqueue(@event);
+            }
+
+            ProcessPendingEventsOrDispatch();
+        }
+
         private void ProcessPendingEventsOrDispatch()
         {
             if (!IsOnDispatcherThread())
@@ -225,16 +247,22 @@ namespace Meziantou.Framework.WPF.Collections
         private void ProcessPendingEvents()
         {
             _isDispatcherPending = false;
-            while (_pendingEvents.TryDequeue(out var pendingEvent))
+            foreach (var events in AccumulatePendingEvents())
             {
-                switch (pendingEvent.Type)
+                switch (events[0].Type)
                 {
                     case PendingEventType.Add:
-                        AddItem(pendingEvent.Item);
+                        if (events.Count == 1)
+                            AddItem(events[0].Item);
+                        else
+                            AddItems(events.Select(e => e.Item));
                         break;
 
                     case PendingEventType.Remove:
-                        RemoveItem(pendingEvent.Item);
+                        if (events.Count == 1)
+                            RemoveItem(events[0].Item);
+                        else
+                            RemoveItems(events.Select(e => e.Item));
                         break;
 
                     case PendingEventType.Clear:
@@ -242,17 +270,47 @@ namespace Meziantou.Framework.WPF.Collections
                         break;
 
                     case PendingEventType.Insert:
-                        InsertItem(pendingEvent.Index, pendingEvent.Item);
+                        foreach (var pendingEvent in events)
+                        {
+                            InsertItem(pendingEvent.Index, pendingEvent.Item);
+                        }
                         break;
 
                     case PendingEventType.RemoveAt:
-                        RemoveItemAt(pendingEvent.Index);
+                        foreach (var pendingEvent in events)
+                        {
+                            RemoveItemAt(pendingEvent.Index);
+                        }
                         break;
 
                     case PendingEventType.Replace:
-                        ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                        foreach (var pendingEvent in events)
+                        {
+                            ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                        }
                         break;
                 }
+            }
+        }
+
+        private IEnumerable<List<PendingEvent<T>>> AccumulatePendingEvents()
+        {
+            var index = 0;
+            var list = new List<PendingEvent<T>>();
+            while (_pendingEvents.TryDequeue(out var pendingEvent))
+            {
+                if (list.Count > 0 && list[list.Count - 1].Type != pendingEvent.Type)
+                {
+                    yield return list.GetRange(index, list.Count - index);
+                    index = list.Count;
+                }
+
+                list.Add(pendingEvent);
+            }
+
+            if (index != list.Count)
+            {
+                yield return list.GetRange(index, list.Count - index);
             }
         }
 

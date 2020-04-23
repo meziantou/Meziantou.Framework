@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -101,6 +102,19 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
+        public void AddRange(IEnumerable<T> items)
+        {
+            lock (_lock)
+            {
+                var count = _items.Count;
+                _items = _items.AddRange(items);
+                if (count == _items.Count)
+                    return;
+
+                _observableCollection?.EnqueueAddRange(_items.GetRange(count, _items.Count - count));
+            }
+        }
+
         public void Clear()
         {
             lock (_lock)
@@ -132,6 +146,20 @@ namespace Meziantou.Framework.WPF.Collections
                 }
 
                 return false;
+            }
+        }
+
+        public void RemoveRange(IEnumerable<T> items)
+        {
+            lock (_lock)
+            {
+                var itemsList = items.ToList();
+                var count = _items.Count;
+                _items = _items.RemoveRange(itemsList);
+                if (count == _items.Count)
+                    return;
+
+                _observableCollection?.EnqueueRemoveRange(itemsList);
             }
         }
 

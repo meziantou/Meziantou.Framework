@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -56,6 +57,16 @@ namespace Meziantou.Framework.WPF.Collections
             CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
+        protected void AddItems(IEnumerable<T> items)
+        {
+            var index = _items.Count;
+            _items.AddRange(items);
+
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
+        }
+
         protected void RemoveItemAt(int index)
         {
             var item = _items[index];
@@ -78,6 +89,22 @@ namespace Meziantou.Framework.WPF.Collections
             OnIndexerPropertyChanged();
             CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
             return true;
+        }
+
+        protected void RemoveItems(IEnumerable<T> items)
+        {
+            var count = _items.Count;
+            foreach (var item in items)
+            {
+                _items.Remove(item);
+            }
+
+            if (count == _items.Count)
+                return;
+
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
         }
 
         protected void ClearItems()

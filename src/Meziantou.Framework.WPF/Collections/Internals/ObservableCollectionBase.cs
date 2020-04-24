@@ -29,55 +29,57 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
-        protected void ReplaceItem(int index, T item)
+        protected void ReplaceItem(int index, T item, bool raiseEvents)
         {
             var oldItem = _items[index];
             _items[index] = item;
 
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
+            if (raiseEvents)
+            {
+                OnIndexerPropertyChanged();
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
+            }
         }
 
-        protected void InsertItem(int index, T item)
+        protected void InsertItem(int index, T item, bool raiseEvents)
         {
             _items.Insert(index, item);
 
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            if (raiseEvents)
+            {
+                OnCountPropertyChanged();
+                OnIndexerPropertyChanged();
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            }
         }
 
-        protected void AddItem(T item)
+        protected void AddItem(T item, bool raiseEvents)
         {
             var index = _items.Count;
             _items.Add(item);
 
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            if (raiseEvents)
+            {
+                OnCountPropertyChanged();
+                OnIndexerPropertyChanged();
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            }
         }
 
-        protected void AddItems(IEnumerable<T> items)
-        {
-            var index = _items.Count;
-            _items.AddRange(items);
-
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
-        }
-
-        protected void RemoveItemAt(int index)
+        protected void RemoveItemAt(int index, bool raiseEvents)
         {
             var item = _items[index];
             _items.RemoveAt(index);
 
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            if (raiseEvents)
+            {
+                OnCountPropertyChanged();
+                OnIndexerPropertyChanged();
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            }
         }
 
-        protected bool RemoveItem(T item)
+        protected bool RemoveItem(T item, bool raiseEvents)
         {
             var index = _items.IndexOf(item);
             if (index < 0)
@@ -85,31 +87,28 @@ namespace Meziantou.Framework.WPF.Collections
 
             _items.RemoveAt(index);
 
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            if (raiseEvents)
+            {
+                OnCountPropertyChanged();
+                OnIndexerPropertyChanged();
+                CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            }
+
             return true;
         }
 
-        protected void RemoveItems(IEnumerable<T> items)
-        {
-            var count = _items.Count;
-            foreach (var item in items)
-            {
-                _items.Remove(item);
-            }
-
-            if (count == _items.Count)
-                return;
-
-            OnCountPropertyChanged();
-            OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
-        }
-
-        protected void ClearItems()
+        protected void ClearItems(bool raiseEvents)
         {
             _items.Clear();
+
+            if (raiseEvents)
+            {
+                RaiseResetEvent();
+            }
+        }
+
+        protected void RaiseResetEvent()
+        {
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
             CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);

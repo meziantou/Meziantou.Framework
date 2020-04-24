@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WPF\Meziantou.Framework.WPF.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>

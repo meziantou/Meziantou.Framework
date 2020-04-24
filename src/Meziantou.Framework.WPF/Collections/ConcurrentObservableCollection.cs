@@ -151,9 +151,10 @@ namespace Meziantou.Framework.WPF.Collections
 
         public void RemoveRange(IEnumerable<T> items)
         {
+            var itemsList = items.ToList();
+
             lock (_lock)
             {
-                var itemsList = items.ToList();
                 var count = _items.Count;
                 _items = _items.RemoveRange(itemsList);
                 if (count == _items.Count)
@@ -170,6 +171,18 @@ namespace Meziantou.Framework.WPF.Collections
                 _items = _items.RemoveAt(index);
                 _observableCollection?.EnqueueRemoveAt(index);
             }
+        }
+
+        /// <summary>
+        /// Begin a batch of operations on the collection. No CollectionChanged event is raised during the batch.<br/>
+        /// Batch modes:<br/>
+        /// - <see cref="BatchMode.Optimized"/>: Call all events when disposed.<br/>
+        /// - <see cref="BatchMode.Reset"/>: Call reset event when disposed.<br/>
+        /// By default, use <see cref="BatchMode.Optimized"/>.
+        /// </summary>
+        public IDisposable? BeginBatch(BatchMode mode = BatchMode.Default)
+        {
+            return _observableCollection?.BeginBatch(mode);
         }
 
         public IEnumerator<T> GetEnumerator()

@@ -16,6 +16,7 @@ namespace Meziantou.Framework.WPF.Collections
         private readonly Dispatcher _dispatcher;
 
         private bool _isDispatcherPending;
+        private BatchMode? _batchMode;
 
         public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, Dispatcher dispatcher)
             : base(collection)
@@ -170,6 +171,19 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
+        public IDisposable BeginBatch(BatchMode mode)
+        {
+            if (_batchMode != null)
+                throw new InvalidOperationException("Collection already in batch mode");
+
+            _batchMode = mode;
+            return new BatchModeScope(() =>
+            {
+                ProcessPendingEventsOrDispatch(forceProcess: true);
+                _batchMode = null;
+            });
+        }
+
         internal void EnqueueReplace(int index, T value)
         {
             EnqueueEvent(PendingEvent.Replace(index, value));
@@ -228,89 +242,63 @@ namespace Meziantou.Framework.WPF.Collections
             ProcessPendingEventsOrDispatch();
         }
 
-        private void ProcessPendingEventsOrDispatch()
+        private void ProcessPendingEventsOrDispatch(bool forceProcess = false)
         {
+            if (!forceProcess && _batchMode != null)
+                return;
+
             if (!IsOnDispatcherThread())
             {
                 if (!_isDispatcherPending)
                 {
                     _isDispatcherPending = true;
-                    _dispatcher.BeginInvoke((Action)ProcessPendingEvents);
+                    var mode = _batchMode;
+                    _dispatcher.BeginInvoke(new Action(() => ProcessPendingEvents(mode)));
                 }
 
                 return;
             }
 
-            ProcessPendingEvents();
+            ProcessPendingEvents(_batchMode);
         }
 
-        private void ProcessPendingEvents()
+        private void ProcessPendingEvents(BatchMode? batchMode)
         {
             _isDispatcherPending = false;
-            foreach (var events in AccumulatePendingEvents())
+            var raiseEvents = batchMode != BatchMode.Reset;
+            while (_pendingEvents.TryDequeue(out var pendingEvent))
             {
-                switch (events[0].Type)
+                switch (pendingEvent.Type)
                 {
                     case PendingEventType.Add:
-                        if (events.Count == 1)
-                            AddItem(events[0].Item);
-                        else
-                            AddItems(events.Select(e => e.Item));
+                        AddItem(pendingEvent.Item, raiseEvents);
                         break;
 
                     case PendingEventType.Remove:
-                        if (events.Count == 1)
-                            RemoveItem(events[0].Item);
-                        else
-                            RemoveItems(events.Select(e => e.Item));
+                        RemoveItem(pendingEvent.Item, raiseEvents);
                         break;
 
                     case PendingEventType.Clear:
-                        ClearItems();
+                        ClearItems(raiseEvents);
                         break;
 
                     case PendingEventType.Insert:
-                        foreach (var pendingEvent in events)
-                        {
-                            InsertItem(pendingEvent.Index, pendingEvent.Item);
-                        }
+                        InsertItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
                         break;
 
                     case PendingEventType.RemoveAt:
-                        foreach (var pendingEvent in events)
-                        {
-                            RemoveItemAt(pendingEvent.Index);
-                        }
+                        RemoveItemAt(pendingEvent.Index, raiseEvents);
                         break;
 
                     case PendingEventType.Replace:
-                        foreach (var pendingEvent in events)
-                        {
-                            ReplaceItem(pendingEvent.Index, pendingEvent.Item);
-                        }
+                        ReplaceItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
                         break;
                 }
             }
-        }
 
-        private IEnumerable<List<PendingEvent<T>>> AccumulatePendingEvents()
-        {
-            var index = 0;
-            var list = new List<PendingEvent<T>>();
-            while (_pendingEvents.TryDequeue(out var pendingEvent))
+            if (batchMode == BatchMode.Reset)
             {
-                if (list.Count > 0 && list[list.Count - 1].Type != pendingEvent.Type)
-                {
-                    yield return list.GetRange(index, list.Count - index);
-                    index = list.Count;
-                }
-
-                list.Add(pendingEvent);
-            }
-
-            if (index != list.Count)
-            {
-                yield return list.GetRange(index, list.Count - index);
+                RaiseResetEvent();
             }
         }
 
@@ -411,6 +399,21 @@ namespace Meziantou.Framework.WPF.Collections
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
             ((IList)_collection).RemoveAt(index);
+        }
+
+        private class BatchModeScope : IDisposable
+        {
+            private readonly Action _action;
+
+            public BatchModeScope(Action action)
+            {
+                _action = action ?? throw new ArgumentNullException(nameof(action));
+            }
+
+            public void Dispose()
+            {
+                _action();
+            }
         }
     }
 }

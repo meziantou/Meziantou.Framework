@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows.Threading;
 using Meziantou.Framework.WPF.Collections;
 using Xunit;
 
@@ -141,6 +142,138 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add("");
 
             Assert.Throws<ArgumentException>(() => collection.Add(10));
+        }
+
+        [Fact]
+        public void CollectionChanged_01()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            collection.Add(1);
+
+            // Assert
+            Assert.Single(events);
+            Assert.Equal(NotifyCollectionChangedAction.Add, events[0].Action);
+        }
+
+        [Fact]
+        public void CollectionChanged_02()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            collection.Add(1);
+            collection.Add(2);
+            collection.Add(3);
+            collection.Remove(2);
+
+            // Assert
+            Assert.Equal(4, events.Count);
+            foreach (var e in events.Take(3))
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+
+            Assert.Equal(NotifyCollectionChangedAction.Remove, events[3].Action);
+        }
+
+        [Fact]
+        public void CollectionChanged_03()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            collection.Add(1);
+            collection.Add(2);
+            collection.Add(3);
+            collection.Remove(4); // Collection does not contain item
+
+            // Assert
+            Assert.Equal(3, events.Count);
+            foreach (var e in events)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+        }
+
+        [Fact]
+        public void CollectionChanged_04()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            collection.AddRange(new[] { 1, 2, 3 });
+
+            // Assert
+            Assert.Equal(3, events.Count);
+            foreach (var e in events)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+        }
+
+        [Fact]
+        public void BatchMode_01()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            using (collection.BeginBatch(BatchMode.Optimized))
+            {
+                collection.AddRange(new[] { 1, 2, 3 });
+
+                // Assert
+                Assert.Empty(events);
+            }
+
+            Assert.Equal(3, events.Count);
+            foreach (var e in events)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+        }
+
+        [Fact]
+        public void BatchMode_02()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            using (collection.BeginBatch(BatchMode.Reset))
+            {
+                collection.AddRange(new[] { 1, 2, 3 });
+
+                // Assert
+                Assert.Empty(events);
+            }
+
+            Assert.Single(events);
+            Assert.Equal(NotifyCollectionChangedAction.Reset, events[0].Action);
         }
 
         private sealed class EventAssert : IDisposable

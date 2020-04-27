@@ -239,7 +239,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
 
             // Act
-            using (collection.BeginBatch(BatchMode.Optimized))
+            using (collection.BeginBatch())
             {
                 collection.AddRange(new[] { 1, 2, 3 });
 
@@ -274,6 +274,62 @@ namespace Meziantou.Framework.Windows.Tests
 
             Assert.Single(events);
             Assert.Equal(NotifyCollectionChangedAction.Reset, events[0].Action);
+        }
+
+        [Fact]
+        public void BatchMode_03()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            using (collection.BeginBatch(BatchMode.Optimized))
+            {
+                collection.AddRange(new[] { 1, 2, 3 });
+                collection.Remove(2);
+
+                // Assert
+                Assert.Empty(events);
+            }
+
+            Assert.Equal(2, events.Count);
+            foreach (var e in events)
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+        }
+
+        [Fact]
+        public void BatchMode_04()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>(Dispatcher.CurrentDispatcher);
+
+            var events = new List<NotifyCollectionChangedEventArgs>();
+            collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
+
+            // Act
+            collection.AddRange(new[] { 2 });
+
+            using (collection.BeginBatch(BatchMode.Optimized))
+            {
+                collection.AddRange(new[] { 1, 2, 3 });
+                collection.Remove(2);
+
+                // Assert
+                Assert.Single(events);
+            }
+
+            Assert.Equal(5, events.Count); // Cannot be optimized
+            foreach (var e in events.Take(4))
+            {
+                Assert.Equal(NotifyCollectionChangedAction.Add, e.Action);
+            }
+
+            Assert.Equal(NotifyCollectionChangedAction.Remove, events[4].Action);
         }
 
         private sealed class EventAssert : IDisposable

@@ -266,7 +266,7 @@ namespace Meziantou.Framework.WPF.Collections
         {
             _isDispatcherPending = false;
             var raiseEvents = batchMode != BatchMode.Reset;
-            while (_pendingEvents.TryDequeue(out var pendingEvent))
+            foreach (var pendingEvent in DequeueEvents())
             {
                 switch (pendingEvent.Type)
                 {
@@ -299,6 +299,44 @@ namespace Meziantou.Framework.WPF.Collections
             if (batchMode == BatchMode.Reset)
             {
                 RaiseResetEvent();
+            }
+        }
+
+        private IEnumerable<PendingEvent<T>> DequeueEvents()
+        {
+            if (_batchMode == BatchMode.Optimized)
+            {
+                var events = new List<PendingEvent<T>>();
+                while (_pendingEvents.TryDequeue(out var pendingEvent))
+                {
+                    events.Add(pendingEvent);
+                }
+
+                for (var i = 0; i < events.Count; i++)
+                {
+                    if (events[i].Type != PendingEventType.Add || _items.Contains(events[i].Item))
+                    {
+                        yield return events[i];
+                        continue;
+                    }
+
+                    var index = events.FindIndex(i + 1, e => e.Type == PendingEventType.Remove && Equals(e.Item, events[i].Item));
+                    if (index < 0)
+                    {
+                        yield return events[i];
+                    }
+                    else
+                    {
+                        events.RemoveAt(index);
+                    }
+                }
+            }
+            else
+            {
+                while (_pendingEvents.TryDequeue(out var pendingEvent))
+                {
+                    yield return pendingEvent;
+                }
             }
         }
 

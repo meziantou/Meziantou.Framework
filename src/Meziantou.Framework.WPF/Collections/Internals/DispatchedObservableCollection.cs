@@ -439,7 +439,7 @@ namespace Meziantou.Framework.WPF.Collections
             ((IList)_collection).RemoveAt(index);
         }
 
-        private class BatchModeScope : IDisposable
+        private sealed class BatchModeScope : IDisposable
         {
             private readonly Action _action;
 

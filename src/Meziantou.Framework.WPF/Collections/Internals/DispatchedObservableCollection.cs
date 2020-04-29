@@ -252,90 +252,117 @@ namespace Meziantou.Framework.WPF.Collections
                 if (!_isDispatcherPending)
                 {
                     _isDispatcherPending = true;
-                    var mode = _batchMode;
-                    _dispatcher.BeginInvoke(new Action(() => ProcessPendingEvents(mode)));
+                    if (_batchMode == null)
+                    {
+                        _dispatcher.BeginInvoke((Action)ProcessPendingEvents);
+                    }
+                    else
+                    {
+                        var batchMode = (BatchMode)_batchMode;
+                        _dispatcher.BeginInvoke(new Action(() => ProcessBatch(batchMode)));
+                    }
                 }
 
                 return;
             }
 
-            ProcessPendingEvents(_batchMode);
+            if (_batchMode == null)
+                ProcessPendingEvents();
+            else
+                ProcessBatch((BatchMode)_batchMode);
         }
 
-        private void ProcessPendingEvents(BatchMode? batchMode)
+        private void ProcessPendingEvents()
         {
             _isDispatcherPending = false;
-            var raiseEvents = batchMode != BatchMode.Reset;
-            foreach (var pendingEvent in DequeueEvents())
+            while (_pendingEvents.TryDequeue(out var pendingEvent))
             {
-                switch (pendingEvent.Type)
-                {
-                    case PendingEventType.Add:
-                        AddItem(pendingEvent.Item, raiseEvents);
-                        break;
-
-                    case PendingEventType.Remove:
-                        RemoveItem(pendingEvent.Item, raiseEvents);
-                        break;
-
-                    case PendingEventType.Clear:
-                        ClearItems(raiseEvents);
-                        break;
-
-                    case PendingEventType.Insert:
-                        InsertItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
-                        break;
-
-                    case PendingEventType.RemoveAt:
-                        RemoveItemAt(pendingEvent.Index, raiseEvents);
-                        break;
-
-                    case PendingEventType.Replace:
-                        ReplaceItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
-                        break;
-                }
-            }
-
-            if (batchMode == BatchMode.Reset)
-            {
-                RaiseResetEvent();
+                ProcessPendingEvent(pendingEvent, raiseEvents: true);
             }
         }
 
-        private IEnumerable<PendingEvent<T>> DequeueEvents()
+        private void ProcessBatch(BatchMode batchMode)
         {
-            if (_batchMode == BatchMode.Optimized)
+            _isDispatcherPending = false;
+            if (_batchMode == null)
+                throw new InvalidOperationException("Cannot process batch without BatchMode");
+
+            if (batchMode == BatchMode.CombineEvents)
             {
-                var events = new List<PendingEvent<T>>();
-                while (_pendingEvents.TryDequeue(out var pendingEvent))
+                foreach (var pendingEvent in CombineEvents())
                 {
-                    events.Add(pendingEvent);
-                }
-
-                for (var i = 0; i < events.Count; i++)
-                {
-                    if (events[i].Type != PendingEventType.Add || _items.Contains(events[i].Item))
-                    {
-                        yield return events[i];
-                        continue;
-                    }
-
-                    var index = events.FindIndex(i + 1, e => e.Type == PendingEventType.Remove && Equals(e.Item, events[i].Item));
-                    if (index < 0)
-                    {
-                        yield return events[i];
-                    }
-                    else
-                    {
-                        events.RemoveAt(index);
-                    }
+                    ProcessPendingEvent(pendingEvent, raiseEvents: true);
                 }
             }
             else
             {
+                var raiseEvents = batchMode != BatchMode.ResetCollection;
                 while (_pendingEvents.TryDequeue(out var pendingEvent))
                 {
-                    yield return pendingEvent;
+                    ProcessPendingEvent(pendingEvent, raiseEvents);
+                }
+
+                if (batchMode == BatchMode.ResetCollection)
+                {
+                    RaiseResetEvent();
+                }
+            }
+        }
+
+        private void ProcessPendingEvent(PendingEvent<T> pendingEvent, bool raiseEvents)
+        {
+            switch (pendingEvent.Type)
+            {
+                case PendingEventType.Add:
+                    AddItem(pendingEvent.Item, raiseEvents);
+                    break;
+
+                case PendingEventType.Remove:
+                    RemoveItem(pendingEvent.Item, raiseEvents);
+                    break;
+
+                case PendingEventType.Clear:
+                    ClearItems(raiseEvents);
+                    break;
+
+                case PendingEventType.Insert:
+                    InsertItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
+                    break;
+
+                case PendingEventType.RemoveAt:
+                    RemoveItemAt(pendingEvent.Index, raiseEvents);
+                    break;
+
+                case PendingEventType.Replace:
+                    ReplaceItem(pendingEvent.Index, pendingEvent.Item, raiseEvents);
+                    break;
+            }
+        }
+
+        private IEnumerable<PendingEvent<T>> CombineEvents()
+        {
+            var events = new List<PendingEvent<T>>();
+            while (_pendingEvents.TryDequeue(out var pendingEvent))
+            {
+                events.Add(pendingEvent);
+            }
+
+            for (var i = 0; i < events.Count; i++)
+            {
+                if (events[i].Type != PendingEventType.Add || _items.Contains(events[i].Item))
+                {
+                    yield return events[i];
+                    continue;
+                }
+
+                var index = events.FindIndex(i + 1, e => e.Type == PendingEventType.Remove && Equals(e.Item, events[i].Item));
+                if (index < 0)
+                {
+                    yield return events[i];
+                }
+                else
+                {
+                    events.RemoveAt(index);
                 }
             }
         }

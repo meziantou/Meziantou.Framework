@@ -264,7 +264,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
 
             // Act
-            using (collection.BeginBatch(BatchMode.Reset))
+            using (collection.BeginBatch(BatchMode.ResetCollection))
             {
                 collection.AddRange(new[] { 1, 2, 3 });
 
@@ -286,7 +286,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.AsObservable.CollectionChanged += (sender, args) => events.Add(args);
 
             // Act
-            using (collection.BeginBatch(BatchMode.Optimized))
+            using (collection.BeginBatch(BatchMode.CombineEvents))
             {
                 collection.AddRange(new[] { 1, 2, 3 });
                 collection.Remove(2);
@@ -314,7 +314,7 @@ namespace Meziantou.Framework.Windows.Tests
             // Act
             collection.AddRange(new[] { 2 });
 
-            using (collection.BeginBatch(BatchMode.Optimized))
+            using (collection.BeginBatch(BatchMode.CombineEvents))
             {
                 collection.AddRange(new[] { 1, 2, 3 });
                 collection.Remove(2);

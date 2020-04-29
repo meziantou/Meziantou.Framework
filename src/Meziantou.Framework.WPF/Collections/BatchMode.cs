@@ -2,8 +2,8 @@
 {
     public enum BatchMode
     {
-        Default,
-        Optimized,
-        Reset
+        DeferEvents,
+        CombineEvents,
+        ResetCollection
     }
 }

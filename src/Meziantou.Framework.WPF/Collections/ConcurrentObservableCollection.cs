@@ -176,11 +176,11 @@ namespace Meziantou.Framework.WPF.Collections
         /// <summary>
         /// Begin a batch of operations on the collection. No CollectionChanged event is raised during the batch.<br/>
         /// Batch modes:<br/>
-        /// - <see cref="BatchMode.Default"/>: Call all events when disposed.<br/>
-        /// - <see cref="BatchMode.Optimized"/>: Call all events when disposed and try to optimize events (add/remove events for same item are not called).<br/>
-        /// - <see cref="BatchMode.Reset"/>: Call reset event when disposed.
+        /// - <see cref="BatchMode.DeferEvents"/>: Call all events when disposed.<br/>
+        /// - <see cref="BatchMode.CombineEvents"/>: Call all events when disposed and try to optimize events (add/remove events for same item are not called).<br/>
+        /// - <see cref="BatchMode.ResetCollection"/>: Call reset event when disposed.
         /// </summary>
-        public IDisposable? BeginBatch(BatchMode mode = BatchMode.Default)
+        public IDisposable? BeginBatch(BatchMode mode = BatchMode.DeferEvents)
         {
             return _observableCollection?.BeginBatch(mode);
         }

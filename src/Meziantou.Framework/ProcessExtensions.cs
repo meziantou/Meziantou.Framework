@@ -86,6 +86,8 @@ namespace Meziantou.Framework
 
             IEnumerable<int> GetAncestorProcessIdsIterator()
             {
+                var returnedProcesses = new HashSet<int>();
+
                 var processId = process.Id;
                 var processes = GetProcesses().ToList();
                 var found = true;
@@ -96,9 +98,12 @@ namespace Meziantou.Framework
                     {
                         if (entry.ProcessId == processId)
                         {
-                            yield return entry.ParentProcessId;
-                            processId = entry.ParentProcessId;
-                            found = true;
+                            if (returnedProcesses.Add(entry.ParentProcessId))
+                            {
+                                yield return entry.ParentProcessId;
+                                processId = entry.ParentProcessId;
+                                found = true;
+                            }
                         }
                     }
 

@@ -6,16 +6,11 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework
 {
     [StructLayout(LayoutKind.Auto)]
-    public readonly struct FileLength : IEquatable<FileLength>, IComparable, IComparable<FileLength>, IFormattable
+    public readonly partial struct FileLength : IEquatable<FileLength>, IComparable, IComparable<FileLength>, IFormattable
     {
         public FileLength(long length)
         {
             Length = length;
-        }
-
-        public FileLength(string filePath)
-        {
-            Length = new FileInfo(filePath).Length;
         }
 
         public long Length { get; }
@@ -62,23 +57,103 @@ namespace Meziantou.Framework
             }
 
             if (!TryParseUnit(unitString, out var unit))
-                throw new ArgumentException("format is invalid", nameof(format));
+            {
+                if (unitString == "fi")
+                {
+                    unit = GetUnitI();
+                }
+                else if (unitString == "f")
+                {
+                    unit = FindUnit();
+                }
+                else
+                {
+                    throw new ArgumentException($"format '{format}' is invalid", nameof(format));
+                }
+            }
 
             var numberFormat = "G";
             if (index > 0)
             {
                 if (!int.TryParse(format.Substring(index), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
-                    throw new ArgumentException("format is invalid", nameof(format));
+                    throw new ArgumentException($"format '{format}' is invalid", nameof(format));
 
                 numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
             }
 
-            return GetLength(unit).ToString(numberFormat, formatProvider);
+            return GetLength(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
+        }
+
+        private FileLengthUnit FindUnit()
+        {
+            if (Length >= (long)FileLengthUnit.ExaByte)
+                return FileLengthUnit.ExaByte;
+
+            if (Length >= (long)FileLengthUnit.PetaByte)
+                return FileLengthUnit.PetaByte;
+
+            else if (Length >= (long)FileLengthUnit.TeraByte)
+                return FileLengthUnit.TeraByte;
+
+            else if (Length >= (long)FileLengthUnit.GigaByte)
+                return FileLengthUnit.GigaByte;
+
+            else if (Length >= (long)FileLengthUnit.MegaByte)
+                return FileLengthUnit.MegaByte;
+
+            else if (Length >= (long)FileLengthUnit.KiloByte)
+                return FileLengthUnit.KiloByte;
+
+            return FileLengthUnit.Byte;
+        }
+
+        private FileLengthUnit GetUnitI()
+        {
+            if (Length >= (long)FileLengthUnit.ExbiByte)
+                return FileLengthUnit.ExbiByte;
+
+            if (Length >= (long)FileLengthUnit.PebiByte)
+                return FileLengthUnit.PebiByte;
+
+            if (Length >= (long)FileLengthUnit.TebiByte)
+                return FileLengthUnit.TebiByte;
+
+            if (Length >= (long)FileLengthUnit.GibiByte)
+                return FileLengthUnit.GibiByte;
+
+            if (Length >= (long)FileLengthUnit.MebiByte)
+                return FileLengthUnit.MebiByte;
+
+            if (Length >= (long)FileLengthUnit.KibiByte)
+                return FileLengthUnit.KibiByte;
+
+            return FileLengthUnit.Byte;
         }
 
         public double GetLength(FileLengthUnit unit)
         {
             return (double)Length / (long)unit;
+        }
+
+        private static string UnitToString(FileLengthUnit unit)
+        {
+            return unit switch
+            {
+                FileLengthUnit.Byte => "B",
+                FileLengthUnit.KiloByte => "kB",
+                FileLengthUnit.MegaByte => "MB",
+                FileLengthUnit.GigaByte => "GB",
+                FileLengthUnit.TeraByte => "TB",
+                FileLengthUnit.PetaByte => "PB",
+                FileLengthUnit.ExaByte => "EB",
+                FileLengthUnit.KibiByte => "kiB",
+                FileLengthUnit.MebiByte => "MiB",
+                FileLengthUnit.GibiByte => "GiB",
+                FileLengthUnit.TebiByte => "TiB",
+                FileLengthUnit.PebiByte => "PiB",
+                FileLengthUnit.ExbiByte => "EiB",
+                _ => throw new ArgumentOutOfRangeException(nameof(unit)),
+            };
         }
 
         public static bool operator ==(FileLength length1, FileLength length2) => length1.Equals(length2);
@@ -156,5 +231,13 @@ namespace Meziantou.Framework
             result = FileLengthUnit.Byte;
             return true;
         }
+
+        public static FileLength From(int value, FileLengthUnit unit) => new FileLength(value * (long)unit);
+        public static FileLength From(long value, FileLengthUnit unit) => new FileLength(value * (long)unit);
+        public static FileLength From(float value, FileLengthUnit unit) => new FileLength((long)(value * (long)unit));
+        public static FileLength From(double value, FileLengthUnit unit) => new FileLength((long)(value * (long)unit));
+
+        public static FileLength FromFile(FileInfo fileInfo) => new FileLength(fileInfo.Length);
+        public static FileLength FromFile(string filePath) => FromFile(new FileInfo(filePath));
     }
 }

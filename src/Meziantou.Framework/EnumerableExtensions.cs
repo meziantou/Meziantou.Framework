@@ -67,12 +67,12 @@ namespace Meziantou.Framework
         }
 
         [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<T>? WhereNotNull<T>(this IEnumerable<T>? source) where T : class
+        public static IEnumerable<T>? WhereNotNull<T>(this IEnumerable<T?>? source) where T : class
         {
             if (source == null)
                 return null;
 
-            return source.Where(item => item != null);
+            return source.Where(item => item != null)!;
         }
 
         [return: NotNullIfNotNull(parameterName: "source")]

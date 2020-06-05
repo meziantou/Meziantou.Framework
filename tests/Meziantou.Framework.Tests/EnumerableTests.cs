@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -151,5 +152,21 @@ namespace Meziantou.Framework.Tests
             // Assert
             Assert.Equal(TimeSpan.FromSeconds(9), sum);
         }
+
+#nullable enable
+        [Fact]
+        [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Ensure the type is non nullable")]
+        public void WhereNotNull()
+        {
+            // Arrange
+            var list = new List<string?>() { "", null, "a" };
+
+            // Act
+            List<string> actual = list.WhereNotNull().ToList();
+
+            // Assert
+            Assert.Equal(new[] { "", "a" }, actual);
+        }
+#nullable disable
     }
 }

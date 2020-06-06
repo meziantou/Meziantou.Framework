@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -123,7 +121,6 @@ namespace Meziantou.Framework
             return str[0] == c;
         }
 
-#if NETCOREAPP3_1 || NETSTANDARD2_0
         [Pure]
         public static LineSplitEnumerator SplitLines(this string str) => new LineSplitEnumerator(str.AsSpan());
 
@@ -193,9 +190,5 @@ namespace Meziantou.Framework
 
             public static implicit operator ReadOnlySpan<char>(LineSplitEntry entry) => entry.Line;
         }
-#elif NET461
-#else
-#error Platform not supported
-#endif
     }
 }

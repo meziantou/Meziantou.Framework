@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -29,6 +30,8 @@ namespace Meziantou.Framework.Templating
         public override string NewLine
         {
             get => InnerWriter.NewLine;
+
+            [param: AllowNull]
             set => InnerWriter.NewLine = value;
         }
 

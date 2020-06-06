@@ -211,7 +211,6 @@ namespace Meziantou.Framework
             }
         }
 
-#if NETCOREAPP3_1
         public static string ToHexa(this ReadOnlySpan<byte> bytes)
         {
             return ToHexa(bytes, default);
@@ -311,10 +310,6 @@ namespace Meziantou.Framework
                 return true;
             }
         }
-#elif NETSTANDARD2_0 || NET461
-#else
-#error Platform not supported
-#endif
 
         private static bool TryGetHexValue(char c, out int value)
         {

@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Scheduling
         public DayOfWeek DayOfWeek { get; set; }
         public int? Ordinal { get; set; }
 
-        public bool Equals(ByDay other)
+        public bool Equals(ByDay? other)
         {
             if (other is null)
                 return false;

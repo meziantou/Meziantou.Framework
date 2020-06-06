@@ -153,6 +153,20 @@ namespace Meziantou.Framework.Tests
             Assert.Equal(TimeSpan.FromSeconds(9), sum);
         }
 
+        [Fact]
+        public void EmptyIfNull_Null()
+        {
+            IEnumerable<string> items = null;
+            Assert.Equal(Array.Empty<string>(), items.EmptyIfNull());
+        }
+
+        [Fact]
+        public void EmptyIfNull_NotNull()
+        {
+            var items = new string[] { "" };
+            Assert.Same(items, items.EmptyIfNull());
+        }
+
 #nullable enable
         [Fact]
         [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Ensure the type is non nullable")]

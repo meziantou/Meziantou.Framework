@@ -50,7 +50,7 @@ namespace Meziantou.Framework
             list[index] = newItem;
         }
 
-        public static void AddOrReplace<T>(this IList<T> list, T oldItem, T newItem)
+        public static void AddOrReplace<T>(this IList<T> list, [AllowNull] T oldItem, T newItem)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
@@ -168,6 +168,14 @@ namespace Meziantou.Framework
             }
         }
 
+        public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T>? items)
+        {
+            if (items == null)
+                return Enumerable.Empty<T>();
+
+            return items;
+        }
+
         public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
         {
             return ForEachAsync(source, action, CancellationToken.None);
@@ -210,7 +218,7 @@ namespace Meziantou.Framework
                         }, cancellationToken);
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
-            if(exceptions.Count > 0)
+            if (exceptions.Count > 0)
             {
                 throw new AggregateException(exceptions);
             }

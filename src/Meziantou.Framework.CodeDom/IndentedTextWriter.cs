@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -16,6 +17,7 @@ namespace Meziantou.Framework.CodeDom
         public override string NewLine
         {
             get => InnerWriter.NewLine;
+            [param: AllowNull]
             set => InnerWriter.NewLine = value;
         }
 

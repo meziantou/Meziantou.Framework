@@ -25,11 +25,11 @@ namespace Meziantou.Framework.CodeDom
             base.VisitInterfaceDeclaration(interfaceDeclaration);
         }
 
-        private sealed class MemberComparer : IComparer<MemberDeclaration>
+        private sealed class MemberComparer : IComparer<MemberDeclaration?>
         {
             public static MemberComparer Instance { get; } = new MemberComparer();
 
-            public int Compare(MemberDeclaration x, MemberDeclaration y)
+            public int Compare(MemberDeclaration? x, MemberDeclaration? y)
             {
                 var sortOrderX = SortOrder(x);
                 var sortOrderY = SortOrder(y);
@@ -37,10 +37,10 @@ namespace Meziantou.Framework.CodeDom
                 if (result != 0)
                     return result;
 
-                return StringComparer.Ordinal.Compare(x.Name, y.Name);
+                return StringComparer.Ordinal.Compare(x?.Name, y?.Name);
             }
 
-            private static int SortOrder(MemberDeclaration m)
+            private static int SortOrder(MemberDeclaration? m)
             {
                 return m switch
                 {

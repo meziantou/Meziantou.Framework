@@ -9,7 +9,7 @@ namespace Meziantou.Framework
         [Pure]
 #if NETCOREAPP3_1
         [Obsolete("Use System.Globalization.ISOWeek")]
-#elif NET461 || NETCOREAPP2_1 || NETSTANDARD2_0
+#elif NET461 || NETSTANDARD2_0
 #else
 #error Platform not supported
 #endif

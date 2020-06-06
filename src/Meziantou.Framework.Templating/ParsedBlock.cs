@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Templating
             return s?.Replace("\"", "\"\"");
         }
 
-        int IComparable<ParsedBlock>.CompareTo(ParsedBlock other)
+        int IComparable<ParsedBlock>.CompareTo(ParsedBlock? other)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));

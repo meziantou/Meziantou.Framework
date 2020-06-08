@@ -33,12 +33,12 @@ namespace Meziantou.Framework.Scheduling
             return recurrenceRule;
         }
 
-        public static bool TryParse(string rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule)
+        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule)
         {
             return TryParse(rrule, out recurrenceRule, out _);
         }
 
-        public static bool TryParse(string rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule, out string? error)
+        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule, out string? error)
         {
             recurrenceRule = null;
             error = null;

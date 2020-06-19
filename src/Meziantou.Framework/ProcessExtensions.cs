@@ -139,7 +139,11 @@ namespace Meziantou.Framework
             if (parentProcessId == null)
                 return null;
 
-            return Process.GetProcessById(parentProcessId.Value);
+            var parentProcess = Process.GetProcessById(parentProcessId.Value);
+            if (parentProcess == null || parentProcess.StartTime > process.StartTime)
+                return null;
+
+            return parentProcess;
         }
 
         public static IEnumerable<ProcessEntry> GetProcesses()
@@ -179,6 +183,9 @@ namespace Meziantou.Framework
                     try
                     {
                         var child = entry.ToProcess();
+                        if (child == null || child.StartTime < process.StartTime)
+                            continue;
+
                         children.Add(child);
                         if (currentDepth < maxDepth)
                         {

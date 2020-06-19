@@ -119,7 +119,7 @@ namespace Meziantou.Framework.Tests
             Assert.True(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
         }
 
-        [Fact]
+        [RunIfWindowsAdministratorFact]
         public void GetAncestorProcessIds()
         {
             var current = Process.GetCurrentProcess();

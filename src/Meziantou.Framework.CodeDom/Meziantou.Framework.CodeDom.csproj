@@ -4,7 +4,15 @@
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>C# code generator</Description>
     <Version>2.13.8</Version>    
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
 
   <ItemGroup Condition="$(TargetFramework) == 'net461'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" PrivateAssets="All" />

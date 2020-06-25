@@ -3,6 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Version>1.2.4</Version>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
 
 </Project>

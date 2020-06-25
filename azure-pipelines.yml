@@ -37,21 +37,26 @@ steps:
     command: 'pack'
     packagesToPack: 'src/**/*.csproj'
     nobuild: true
-    includesymbols: true
     versioningScheme: 'off'
 
 - powershell: |
-    Write-Host "Searching nupkg in folder: $(Build.ArtifactStagingDirectory)"
-    $files = Get-ChildItem $(Build.ArtifactStagingDirectory) -Filter *.nupkg
+    Write-Host "Searching nupkg and snupkg in folder: $(Build.ArtifactStagingDirectory)"
+    $files = Get-ChildItem $(Build.ArtifactStagingDirectory)\* -Include *.nupkg,*.snupkg
     foreach($file in $files) {
         Write-Host "Pushing NuGet package: $($file.FullName)"
-        & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+        if ($env:Build_SourceBranch -eq 'refs/heads/master')
+        {
+          & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+        }
+        else
+        {
+          Write-Host "Not on the default branch => Do not push"
+        }
     }
   workingDirectory: '$(Build.ArtifactStagingDirectory)'
   ignoreLASTEXITCODE: true  
   displayName: dotnet push
   continueOnError: true
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact'

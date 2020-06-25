@@ -15,6 +15,9 @@
 
     <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->

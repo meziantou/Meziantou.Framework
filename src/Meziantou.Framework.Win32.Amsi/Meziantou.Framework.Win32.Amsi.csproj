@@ -5,6 +5,14 @@
     <Description>.NET wrapper for the Antimalware Scan Interface (AMSI)</Description>
     <Version>1.0.7</Version>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
 
 </Project>

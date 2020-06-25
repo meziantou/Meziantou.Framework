@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>Convert object to an other type</Description>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <DefineConstants>ReflectionUtilities_Interal;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 

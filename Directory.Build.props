@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <LangVersion>preview</LangVersion>
-    <Deterministic>true</Deterministic>
     <Features>strict</Features>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 
   <PropertyGroup>

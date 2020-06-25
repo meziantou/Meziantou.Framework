@@ -4,8 +4,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.28822.285
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{70A3E965-3866-4D23-9626-8D70E0E8729C}"
+	ProjectSection(SolutionItems) = preProject
+		src\Directory.Build.props = src\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Directory.Build.props = tests\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework", "src\Meziantou.Framework\Meziantou.Framework.csproj", "{301FBA31-89C4-49E8-8E9A-9D4AF2D515C4}"
 EndProject
@@ -125,9 +131,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeOwn
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.CodeOwners.Tests", "tests\Meziantou.Framework.CodeOwners.Tests\Meziantou.Framework.CodeOwners.Tests.csproj", "{D51B8275-91F8-4E48-A8DA-CE9F26005A21}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.HtmlSanitizer", "src\Meziantou.Framework.HtmlSanitizer\Meziantou.Framework.HtmlSanitizer.csproj", "{0DD6F98F-0FEB-457C-8805-321FCC6CA25B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.HtmlSanitizer", "src\Meziantou.Framework.HtmlSanitizer\Meziantou.Framework.HtmlSanitizer.csproj", "{0DD6F98F-0FEB-457C-8805-321FCC6CA25B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.HtmlSanitizer.Tests", "tests\Meziantou.Framework.HtmlSanitizer.Tests\Meziantou.Framework.HtmlSanitizer.Tests.csproj", "{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.HtmlSanitizer.Tests", "tests\Meziantou.Framework.HtmlSanitizer.Tests\Meziantou.Framework.HtmlSanitizer.Tests.csproj", "{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

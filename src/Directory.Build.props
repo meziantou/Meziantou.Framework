@@ -7,7 +7,9 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Nullable>enable</Nullable>
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
   </ItemGroup>
@@ -15,5 +17,5 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/Nullable.cs" />
   </ItemGroup>
-  
+
 </Project>

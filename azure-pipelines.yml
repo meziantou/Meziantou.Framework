@@ -40,12 +40,13 @@ steps:
     versioningScheme: 'off'
 
 - powershell: |
-    Write-Host "Searching nupkg and snupkg in folder: $(Build.ArtifactStagingDirectory)"
-    $files = Get-ChildItem $(Build.ArtifactStagingDirectory)\* -Include *.nupkg,*.snupkg
+    Write-Host "Searching nupkg in folder: $(Build.ArtifactStagingDirectory)"
+    $files = Get-ChildItem $(Build.ArtifactStagingDirectory)\* -Include *.nupkg
     foreach($file in $files) {
         Write-Host "Pushing NuGet package: $($file.FullName)"
         if ($env:Build_SourceBranch -eq 'refs/heads/master')
         {
+          # Push both nupkg and snupkg
           & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
         }
         else

@@ -148,6 +148,9 @@ namespace Meziantou.Framework
         {
             var fullPath = Path.GetFullPath(path);
             var fullPathWithoutTrailingDirectorySeparator = Path.TrimEndingDirectorySeparator(fullPath);
+            if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
+                return Empty;
+
             return new FullPath(fullPathWithoutTrailingDirectorySeparator);
         }
 

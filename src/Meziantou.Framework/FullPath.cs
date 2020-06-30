@@ -4,9 +4,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework
 {
+    [JsonConverter(typeof(FullPathJsonConverter))]
     public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
     {
         internal readonly string? _value;
@@ -25,7 +27,7 @@ namespace Meziantou.Framework
 
         public bool IsEmpty => _value is null;
 
-        public static implicit operator string?(FullPath fullPath) => fullPath._value;
+        public static implicit operator string(FullPath fullPath) => fullPath.ToString();
 
         public static bool operator ==(FullPath path1, FullPath path2) => path1.Equals(path2);
         public static bool operator !=(FullPath path1, FullPath path2) => !(path1 == path2);

@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System.Text.Json;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
@@ -86,6 +87,50 @@ namespace Meziantou.Framework.Tests
             var childPath = FullPath.FromPath(path);
 
             Assert.Equal(childPath, rootPath);
+        }
+
+        [Fact]
+        public void JsonSerialize_RoundTripEmpty()
+        {
+            var value = FullPath.Empty;
+            Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
+        }
+
+        [Fact]
+        public void JsonSerialize_RoundTripNonEmpty()
+        {
+            var value = FullPath.FromPath(@"c:\test");
+            Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
+        }
+
+        [Fact]
+        public void JsonSerialize_Empty()
+        {
+            Assert.Equal("\"\"", JsonSerializer.Serialize(FullPath.Empty));
+        }
+
+        [Fact]
+        public void JsonSerialize_NonEmpty()
+        {
+            Assert.Equal(@"""c:\\test""", JsonSerializer.Serialize(FullPath.FromPath(@"c:\test")));
+        }
+
+        [Fact]
+        public void JsonDeserialize_Null()
+        {
+            Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@"null"));
+        }
+
+        [Fact]
+        public void JsonDeserialize_Empty()
+        {
+            Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@""""""));
+        }
+
+        [Fact]
+        public void JsonDeserialize_NonEmpty()
+        {
+            Assert.Equal(FullPath.FromPath(@"c:\test"), JsonSerializer.Deserialize<FullPath>(@"""c:\\test"""));
         }
     }
 }

@@ -1,55 +1,32 @@
-﻿using System;
+﻿#if NETCOREAPP3_1
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
-#if NETCOREAPP3_1
 using System.Threading.Tasks;
-#endif
 
 namespace Meziantou.Framework
 {
     [DebuggerDisplay("{FullPath}")]
-    public sealed class TemporaryDirectory : IDisposable
-#if NETCOREAPP3_1
-        , IAsyncDisposable
-#elif NET461 || NETSTANDARD2_0
-#else
-#error Platform not supported
-#endif
+    public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     {
-        public string FullPath { get; }
+        public FullPath FullPath { get; }
 
-        private TemporaryDirectory(string path)
+        private TemporaryDirectory(FullPath path)
         {
             FullPath = path;
         }
 
         public static TemporaryDirectory Create()
         {
-            return new TemporaryDirectory(CreateUniqueDirectory(Path.Combine(Path.GetTempPath(), "TD", DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture))));
+            return new TemporaryDirectory(CreateUniqueDirectory(FullPath.FromPath(Path.GetTempPath(), "TD", DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture))));
         }
 
-        public string GetFullPath(string relativePath)
+        public FullPath GetFullPath(string relativePath)
         {
-            return Path.Combine(FullPath, relativePath);
-        }
-
-        public string GetFile(string path)
-        {
-            var filePath = GetFullPath(path);
-            if (File.Exists(filePath))
-                return filePath;
-
-            var files = Directory.GetFiles(FullPath, path, SearchOption.AllDirectories);
-            if (files.Length == 1)
-                return files[0];
-
-            if (files.Length == 0)
-                throw new ArgumentException($"There is no file matching {path} in '{FullPath}'", nameof(path));
-
-            throw new ArgumentException($"There is more than one file matching {path} in '{FullPath}': {string.Join("; ", files)}", nameof(path));
+            return FullPath.FromPath(FullPath, relativePath);
         }
 
         public void Dispose()
@@ -58,7 +35,7 @@ namespace Meziantou.Framework
             DeleteFileSystemEntry(di);
         }
 
-        private static string CreateUniqueDirectory(string filePath)
+        private static FullPath CreateUniqueDirectory(FullPath filePath)
         {
             using (var mutex = new Mutex(initiallyOwned: false, name: "Meziantou.Framework.TemporaryDirectory"))
             {
@@ -148,12 +125,10 @@ namespace Meziantou.Framework
 
         [SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Can be used from the debugger")]
         private void OpenInExplorer()
-
         {
             Process.Start(FullPath);
         }
 
-#if NETCOREAPP3_1
         public async ValueTask DisposeAsync()
         {
             await DeleteFileSystemEntryAsync(new DirectoryInfo(FullPath)).ConfigureAwait(false);
@@ -219,9 +194,9 @@ namespace Meziantou.Framework
                 await Task.Delay(50).ConfigureAwait(false);
             }
         }
-#elif NET461 || NETSTANDARD2_0 || NETCOREAPP2_1
+    }
+}
+#elif NET461 || NETSTANDARD2_0
 #else
 #error Platform not supported
 #endif
-    }
-}

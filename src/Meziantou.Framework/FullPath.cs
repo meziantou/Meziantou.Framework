@@ -39,14 +39,19 @@ namespace Meziantou.Framework
 
         public string? GetExtension() => Path.GetExtension(_value);
 
-        public FullPath GetDirectoryName()
+        public FullPath DirectoryName
         {
-            var result = Path.GetDirectoryName(_value);
-            if (result is null)
-                return Empty;
+            get
+            {
+                var result = Path.GetDirectoryName(_value);
+                if (result is null)
+                    return Empty;
 
-            return new FullPath(result);
+                return new FullPath(result);
+            }
         }
+
+        public string? FileName => Path.GetFileName(_value);
 
         public int CompareTo(FullPath other) => FullPathComparer.Default.Compare(this, other);
         public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);

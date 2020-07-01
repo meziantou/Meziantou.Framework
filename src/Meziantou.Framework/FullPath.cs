@@ -39,9 +39,7 @@ namespace Meziantou.Framework
         public static FullPath operator +(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
         public static FullPath operator /(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
 
-        public string? GetExtension() => Path.GetExtension(_value);
-
-        public FullPath DirectoryName
+        public FullPath Parent
         {
             get
             {
@@ -53,7 +51,9 @@ namespace Meziantou.Framework
             }
         }
 
-        public string? FileName => Path.GetFileName(_value);
+        public string? Name => Path.GetFileName(_value);
+
+        public string? Extension => Path.GetExtension(_value);
 
         public int CompareTo(FullPath other) => FullPathComparer.Default.Compare(this, other);
         public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
@@ -188,6 +188,14 @@ namespace Meziantou.Framework
                 return FromPath(Path.Combine(path1, path2, path3));
 
             return FromPath(Path.Combine(rootPath._value!, path1, path2, path3));
+        }
+
+        public static FullPath From(FileSystemInfo? fsi)
+        {
+            if (fsi == null)
+                return Empty;
+
+            return FromPath(fsi.FullName);
         }
     }
 }

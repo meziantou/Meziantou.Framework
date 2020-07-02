@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -462,6 +463,29 @@ namespace Meziantou.Framework
             }
 
             return TimeSpan.FromTicks(result / count);
+        }
+
+        public static IEnumerable<T> AsActualEnumerable<T>(this IEnumerable<T> enumerable)
+        {
+            return new ActualEnumerable<T>(enumerable);
+        }
+
+        private sealed class ActualEnumerable<T> : IEnumerable<T>
+        {
+            private readonly IEnumerable<T> _enumerable;
+
+            public ActualEnumerable(IEnumerable<T> enumerable) => _enumerable = enumerable;
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                // Don't use _enumerable.GetEnumerator here because the call-site may have special optimization on the returned enumerator
+                foreach (var value in _enumerable)
+                {
+                    yield return value;
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }
 }

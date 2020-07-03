@@ -77,6 +77,24 @@ namespace Meziantou.Framework
         }
 
         [return: NotNullIfNotNull(parameterName: "source")]
+        public static IEnumerable<string>? WhereNotNullOrEmpty(this IEnumerable<string?>? source)
+        {
+            if (source == null)
+                return null;
+
+            return source.Where(item => !string.IsNullOrEmpty(item))!;
+        }
+
+        [return: NotNullIfNotNull(parameterName: "source")]
+        public static IEnumerable<string>? WhereNotNullOrWhiteSpace(this IEnumerable<string?>? source)
+        {
+            if (source == null)
+                return null;
+
+            return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
+        }
+
+        [return: NotNullIfNotNull(parameterName: "source")]
         public static IEnumerable<TSource>? DistinctBy<TSource, TKey>(this IEnumerable<TSource>? source, Func<TSource, TKey> keySelector)
         {
             return DistinctBy(source, keySelector, EqualityComparer<TKey>.Default);

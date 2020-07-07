@@ -73,6 +73,7 @@ namespace Meziantou.Framework
             }
         }
 
+        [Obsolete("Use FullPath struct instead")]
         public static bool ArePathEqual(string path1, string path2)
         {
             if (path1 == null)
@@ -86,6 +87,7 @@ namespace Meziantou.Framework
             return Uri.Compare(uri1, uri2, UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) == 0;
         }
 
+        [Obsolete("Use FullPath struct instead")]
         public static bool IsChildPathOf(string parent, string child)
         {
             if (parent == null)
@@ -99,6 +101,7 @@ namespace Meziantou.Framework
             return parentUri.IsBaseOf(childUri);
         }
 
+        [Obsolete("Use FullPath struct instead")]
         public static string MakeRelativePath(string root, string path)
         {
             if (root == null)
@@ -169,6 +172,59 @@ namespace Meziantou.Framework
                     return false;
             }
             return true;
+        }
+
+        public static void DirectoryCopy(string sourcePath, string destinationPath)
+        {
+            // Get the subdirectories for the specified directory.
+            var dir = new DirectoryInfo(sourcePath);
+            if (!dir.Exists)
+                throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + sourcePath);
+
+            var dirs = dir.GetDirectories();
+            if (!Directory.Exists(destinationPath))
+            {
+                Directory.CreateDirectory(destinationPath);
+            }
+
+            // Get the files in the directory and copy them to the new location.
+            var files = dir.GetFiles();
+            foreach (var file in files)
+            {
+                var temppath = Path.Combine(destinationPath, file.Name);
+                file.CopyTo(temppath, overwrite: false);
+            }
+
+            // Copy subdirectories
+            foreach (var subdir in dirs)
+            {
+                var temppath = Path.Combine(destinationPath, subdir.Name);
+                DirectoryCopy(subdir.FullName, temppath);
+            }
+        }
+
+        public static void DirectoryCopy(DirectoryInfo source, DirectoryInfo destination)
+        {
+            if (!source.Exists)
+                throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + source);
+
+            destination.Create();
+
+            // Get the files in the directory and copy them to the new location.
+            var files = source.GetFiles();
+            foreach (var file in files)
+            {
+                var temppath = Path.Combine(destination.FullName, file.Name);
+                file.CopyTo(temppath, overwrite: false);
+            }
+
+            // Copy subdirectories
+            var dirs = source.GetDirectories();
+            foreach (var subdir in dirs)
+            {
+                var temppath = new DirectoryInfo(Path.Combine(destination.FullName, subdir.Name));
+                DirectoryCopy(subdir, temppath);
+            }
         }
 
         public static void DeleteFileSystemEntry(string path)

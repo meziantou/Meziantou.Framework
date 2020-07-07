@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
@@ -167,5 +170,163 @@ namespace Meziantou.Framework
             }
             return true;
         }
+
+        public static void DeleteFileSystemEntry(string path)
+        {
+            var di = new DirectoryInfo(path);
+            if (di.Exists)
+            {
+                DeleteFileSystemEntry(di);
+                return;
+            }
+
+            var fi = new FileInfo(path);
+            if (fi.Exists)
+            {
+                DeleteFileSystemEntry(fi);
+            }
+        }
+
+        public static void DeleteFileSystemEntry(FileSystemInfo fileSystemInfo)
+        {
+            if (!fileSystemInfo.Exists)
+                return;
+
+            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            {
+                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
+                {
+                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        try
+                        {
+                            RetryOnSharingViolation(() => childInfo.Delete());
+                        }
+                        catch (FileNotFoundException)
+                        {
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        DeleteFileSystemEntry(childInfo);
+                    }
+                }
+            }
+            try
+            {
+                RetryOnSharingViolation(() => fileSystemInfo.Attributes = FileAttributes.Normal);
+                RetryOnSharingViolation(() => fileSystemInfo.Delete());
+            }
+            catch (FileNotFoundException)
+            {
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
+        }
+
+        [SuppressMessage("Design", "MA0045:Do not use blocking call (make method async)", Justification = "This method is intended to be sync")]
+        private static void RetryOnSharingViolation(Action action)
+        {
+            var attempt = 0;
+            while (attempt < 10)
+            {
+                try
+                {
+                    action();
+                    return;
+                }
+                catch (IOException ex) when (IsSharingViolation(ex))
+                {
+                }
+
+                attempt++;
+                Thread.Sleep(50);
+            }
+        }
+
+#if NETCOREAPP3_1
+        public static ValueTask DeleteFileSystemEntryAsync(string path)
+        {
+            var di = new DirectoryInfo(path);
+            if (di.Exists)
+            {
+                return DeleteFileSystemEntryAsync(di);
+            }
+
+            var fi = new FileInfo(path);
+            if (fi.Exists)
+            {
+                return DeleteFileSystemEntryAsync(fi);
+            }
+
+            return default;
+        }
+
+        public static async ValueTask DeleteFileSystemEntryAsync(FileSystemInfo fileSystemInfo)
+        {
+            if (!fileSystemInfo.Exists)
+                return;
+
+            if (fileSystemInfo is DirectoryInfo directoryInfo)
+            {
+                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
+                {
+                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        try
+                        {
+                            await RetryOnSharingViolationAsync(() => childInfo.Delete()).ConfigureAwait(false);
+                        }
+                        catch (FileNotFoundException)
+                        {
+                        }
+                        catch (DirectoryNotFoundException)
+                        {
+                        }
+                    }
+                    else
+                    {
+                        DeleteFileSystemEntry(childInfo);
+                    }
+                }
+            }
+
+            try
+            {
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete()).ConfigureAwait(false);
+            }
+            catch (FileNotFoundException)
+            {
+            }
+            catch (DirectoryNotFoundException)
+            {
+            }
+        }
+
+        private static async ValueTask RetryOnSharingViolationAsync(Action action)
+        {
+            var attempt = 0;
+            while (attempt < 10)
+            {
+                try
+                {
+                    action();
+                    return;
+                }
+                catch (IOException ex) when (IsSharingViolation(ex))
+                {
+                }
+
+                attempt++;
+                await Task.Delay(50).ConfigureAwait(false);
+            }
+        }
+#elif NETSTANDARD2_0 || NET461
+#endif
     }
 }

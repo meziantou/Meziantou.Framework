@@ -174,7 +174,7 @@ namespace Meziantou.Framework
             return true;
         }
 
-        public static void DirectoryCopy(string sourcePath, string destinationPath)
+        public static void CopyDirectory(string sourcePath, string destinationPath)
         {
             // Get the subdirectories for the specified directory.
             var dir = new DirectoryInfo(sourcePath);
@@ -199,11 +199,11 @@ namespace Meziantou.Framework
             foreach (var subdir in dirs)
             {
                 var temppath = Path.Combine(destinationPath, subdir.Name);
-                DirectoryCopy(subdir.FullName, temppath);
+                CopyDirectory(subdir.FullName, temppath);
             }
         }
 
-        public static void DirectoryCopy(DirectoryInfo source, DirectoryInfo destination)
+        public static void CopyDirectory(DirectoryInfo source, DirectoryInfo destination)
         {
             if (!source.Exists)
                 throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + source);
@@ -223,27 +223,27 @@ namespace Meziantou.Framework
             foreach (var subdir in dirs)
             {
                 var temppath = new DirectoryInfo(Path.Combine(destination.FullName, subdir.Name));
-                DirectoryCopy(subdir, temppath);
+                CopyDirectory(subdir, temppath);
             }
         }
 
-        public static void DeleteFileSystemEntry(string path)
+        public static void Delete(string path)
         {
             var di = new DirectoryInfo(path);
             if (di.Exists)
             {
-                DeleteFileSystemEntry(di);
+                Delete(di);
                 return;
             }
 
             var fi = new FileInfo(path);
             if (fi.Exists)
             {
-                DeleteFileSystemEntry(fi);
+                Delete(fi);
             }
         }
 
-        public static void DeleteFileSystemEntry(FileSystemInfo fileSystemInfo)
+        public static void Delete(FileSystemInfo fileSystemInfo)
         {
             if (!fileSystemInfo.Exists)
                 return;
@@ -267,7 +267,7 @@ namespace Meziantou.Framework
                     }
                     else
                     {
-                        DeleteFileSystemEntry(childInfo);
+                        Delete(childInfo);
                     }
                 }
             }
@@ -305,24 +305,24 @@ namespace Meziantou.Framework
         }
 
 #if NETCOREAPP3_1
-        public static ValueTask DeleteFileSystemEntryAsync(string path)
+        public static ValueTask DeleteAsync(string path)
         {
             var di = new DirectoryInfo(path);
             if (di.Exists)
             {
-                return DeleteFileSystemEntryAsync(di);
+                return DeleteAsync(di);
             }
 
             var fi = new FileInfo(path);
             if (fi.Exists)
             {
-                return DeleteFileSystemEntryAsync(fi);
+                return DeleteAsync(fi);
             }
 
             return default;
         }
 
-        public static async ValueTask DeleteFileSystemEntryAsync(FileSystemInfo fileSystemInfo)
+        public static async ValueTask DeleteAsync(FileSystemInfo fileSystemInfo)
         {
             if (!fileSystemInfo.Exists)
                 return;
@@ -346,7 +346,7 @@ namespace Meziantou.Framework
                     }
                     else
                     {
-                        DeleteFileSystemEntry(childInfo);
+                        Delete(childInfo);
                     }
                 }
             }

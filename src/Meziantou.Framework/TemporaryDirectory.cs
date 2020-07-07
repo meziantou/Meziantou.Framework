@@ -31,7 +31,7 @@ namespace Meziantou.Framework
 
         public void Dispose()
         {
-            IOUtilities.DeleteFileSystemEntry(new DirectoryInfo(FullPath));
+            IOUtilities.Delete(new DirectoryInfo(FullPath));
         }
 
         private static FullPath CreateUniqueDirectory(FullPath filePath)
@@ -69,7 +69,7 @@ namespace Meziantou.Framework
 
         public ValueTask DisposeAsync()
         {
-            return IOUtilities.DeleteFileSystemEntryAsync(new DirectoryInfo(FullPath));
+            return IOUtilities.DeleteAsync(new DirectoryInfo(FullPath));
         }
     }
 }

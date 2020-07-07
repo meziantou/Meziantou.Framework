@@ -195,6 +195,24 @@ namespace Meziantou.Framework
             return items;
         }
 
+        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> action)
+        {
+            foreach (var item in source)
+            {
+                action(item);
+            }
+        }
+
+        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource, int> action)
+        {
+            var index = 0;
+            foreach (var item in source)
+            {
+                action(item, index);
+                index++;
+            }
+        }
+
         public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
         {
             return ForEachAsync(source, action, CancellationToken.None);

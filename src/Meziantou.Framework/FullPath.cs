@@ -39,6 +39,8 @@ namespace Meziantou.Framework
         public static FullPath operator +(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
         public static FullPath operator /(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
 
+        public string Value => _value ?? "";
+
         public FullPath Parent
         {
             get
@@ -65,7 +67,7 @@ namespace Meziantou.Framework
         public override int GetHashCode() => FullPathComparer.Default.GetHashCode(this);
         public int GetHashCode(bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).GetHashCode(this);
 
-        public override string ToString() => _value ?? "";
+        public override string ToString() => Value;
 
         public string MakePathRelativeTo(FullPath rootPath)
         {

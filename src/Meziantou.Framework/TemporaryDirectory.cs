@@ -43,10 +43,10 @@ namespace Meziantou.Framework
                 {
                     var count = 1;
 
-                    var tempPath = filePath + "_";
+                    var tempPath = filePath.Value + "_";
                     while (Directory.Exists(filePath))
                     {
-                        filePath = tempPath + count.ToStringInvariant();
+                        filePath = FullPath.FromPath(tempPath + count.ToStringInvariant());
                         count++;
                     }
 

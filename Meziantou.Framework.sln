@@ -135,6 +135,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.HtmlSan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.HtmlSanitizer.Tests", "tests\Meziantou.Framework.HtmlSanitizer.Tests\Meziantou.Framework.HtmlSanitizer.Tests.csproj", "{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.WPF.EnumComboBox", "Samples\Meziantou.Framework.WPF.EnumComboBox\Meziantou.Framework.WPF.EnumComboBox.csproj", "{259CB22D-9346-452C-8B4B-428F28675987}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -365,6 +367,10 @@ Global
 		{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{259CB22D-9346-452C-8B4B-428F28675987}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{259CB22D-9346-452C-8B4B-428F28675987}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{259CB22D-9346-452C-8B4B-428F28675987}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{259CB22D-9346-452C-8B4B-428F28675987}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -426,6 +432,7 @@ Global
 		{D51B8275-91F8-4E48-A8DA-CE9F26005A21} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{0DD6F98F-0FEB-457C-8805-321FCC6CA25B} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{259CB22D-9346-452C-8B4B-428F28675987} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

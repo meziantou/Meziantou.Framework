@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -12,8 +13,15 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(1033, cultureInfo, out CultureInfo value);
 
-            Assert.True(converted);
-            Assert.Equal("en-US", value.Name);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.True(converted);
+                Assert.Equal("en-US", value.Name);
+            }
+            else
+            {
+                Assert.False(converted);
+            }
         }
 
         [Fact]

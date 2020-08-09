@@ -51,61 +51,72 @@ namespace Meziantou.Framework
             cancellationToken.ThrowIfCancellationRequested();
 
             var logs = new List<ProcessOutput>();
-            using var process = Process.Start(psi);
-
-            if (psi.RedirectStandardError)
+            ProcessResult result;
+            using (var process = Process.Start(psi))
             {
-                process.ErrorDataReceived += (sender, e) =>
+                if (psi.RedirectStandardError)
                 {
-                    if (e.Data != null)
+                    process.ErrorDataReceived += (sender, e) =>
                     {
-                        logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
-                    }
-                };
-                process.BeginErrorReadLine();
-            }
+                        if (e.Data != null)
+                        {
+                            logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                        }
+                    };
+                    process.BeginErrorReadLine();
+                }
 
-            if (psi.RedirectStandardOutput)
-            {
-                process.OutputDataReceived += (sender, e) =>
+                if (psi.RedirectStandardOutput)
                 {
-                    if (e.Data != null)
+                    process.OutputDataReceived += (sender, e) =>
                     {
-                        logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
-                    }
-                };
-                process.BeginOutputReadLine();
-            }
+                        if (e.Data != null)
+                        {
+                            logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                        }
+                    };
+                    process.BeginOutputReadLine();
+                }
 
-            if (psi.RedirectStandardInput)
-            {
-                process.StandardInput.Close();
-            }
-
-            CancellationTokenRegistration registration = default;
-            if (cancellationToken.CanBeCanceled)
-            {
-                registration = cancellationToken.Register(() =>
+                if (psi.RedirectStandardInput)
                 {
-                    if (process.HasExited)
-                        return;
+                    process.StandardInput.Close();
+                }
 
-                    try
+                if (process.HasExited)
+                    return new ProcessResult(process.ExitCode, logs);
+
+                CancellationTokenRegistration registration = default;
+                if (cancellationToken.CanBeCanceled)
+                {
+                    registration = cancellationToken.Register(() =>
                     {
-                        process.Kill(entireProcessTree: true);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // the process may already be killed
-                    }
-                });
+                        try
+                        {
+                            process.Kill(entireProcessTree: true);
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            try
+                            {
+                                // Try to at least kill the root process
+                                process.Kill();
+                            }
+                            catch (InvalidOperationException)
+                            {
+                            }
+                        }
+                    });
+                }
+
+                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                process.WaitForExit();
+                registration.Dispose();
+                result = new ProcessResult(process.ExitCode, logs);
             }
-
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            registration.Dispose();
 
             cancellationToken.ThrowIfCancellationRequested();
-            return new ProcessResult(process.ExitCode, logs);
+            return result;
         }
 
         public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)

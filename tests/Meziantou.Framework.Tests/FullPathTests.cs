@@ -112,7 +112,9 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void JsonSerialize_NonEmpty()
         {
-            Assert.Equal(@"""c:\\test""", JsonSerializer.Serialize(FullPath.FromPath(@"c:\test")));
+            var path = System.Environment.CurrentDirectory;
+            Assert.Equal(JsonSerializer.Serialize(path), JsonSerializer.Serialize(FullPath.FromPath(path)));
+            Assert.Equal(path, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value);
         }
 
         [Fact]

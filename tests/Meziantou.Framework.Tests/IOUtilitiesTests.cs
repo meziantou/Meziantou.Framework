@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System.Runtime.InteropServices;
+using Xunit;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace Meziantou.Framework.Tests
@@ -12,9 +13,11 @@ namespace Meziantou.Framework.Tests
         [InlineData(@"c:\dir1", @"c:\dir1", true)]
         public void IsChildPathOf(string parent, string child, bool expectedResult)
         {
-            var result = IOUtilities.IsChildPathOf(parent, child);
-
-            Assert.Equal(expectedResult, result);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var result = IOUtilities.IsChildPathOf(parent, child);
+                Assert.Equal(expectedResult, result);
+            }
         }
 
         [Theory]
@@ -24,9 +27,11 @@ namespace Meziantou.Framework.Tests
         [InlineData(@"c:\a\", @"c:\dir1\..\a\", true)]
         public void ArePathEqual(string path1, string path2, bool expectedResult)
         {
-            var result = IOUtilities.ArePathEqual(path1, path2);
-
-            Assert.Equal(expectedResult, result);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var result = IOUtilities.ArePathEqual(path1, path2);
+                Assert.Equal(expectedResult, result);
+            }
         }
 
         [Theory]
@@ -37,9 +42,11 @@ namespace Meziantou.Framework.Tests
         [InlineData(@"c:\a\b\c\", @"c:\a\dir2", @"..\..\dir2")]
         public void MakeRelativePath(string path1, string path2, string expectedResult)
         {
-            var result = IOUtilities.MakeRelativePath(path1, path2);
-
-            Assert.Equal(expectedResult, result);
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var result = IOUtilities.MakeRelativePath(path1, path2);
+                Assert.Equal(expectedResult, result);
+            }
         }
 
         [Theory]

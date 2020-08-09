@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using TestUtilities;
@@ -15,7 +16,17 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask()
         {
-            var result = await ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None).ConfigureAwait(false);
+            static Task<ProcessResult> CreateProcess()
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None);
+                }
+
+                return ProcessExtensions.RunAsTask("echo", "test", CancellationToken.None);
+            }
+
+            var result = await CreateProcess().ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
             Assert.Equal(1, result.Output.Count);
             Assert.Equal("test", result.Output[0].Text);
@@ -25,11 +36,23 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_RedirectOutput()
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                FileName = "cmd.exe",
-                Arguments = "/C echo test",
-            };
+                psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/C echo test",
+                };
+            }
+            else
+            {
+                psi = new ProcessStartInfo
+                {
+                    FileName = "echo",
+                    Arguments = "test",
+                };
+            }
 
             var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
@@ -41,11 +64,23 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_DoNotRedirectOutput()
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                FileName = "cmd.exe",
-                Arguments = "/C echo test",
-            };
+                psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/C echo test",
+                };
+            }
+            else
+            {
+                psi = new ProcessStartInfo
+                {
+                    FileName = "echo",
+                    Arguments = "test",
+                };
+            }
 
             var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
@@ -63,15 +98,26 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_Cancel()
         {
+            DateTime start = DateTime.Now;
+
             using var cts = new CancellationTokenSource();
-            var task = ProcessExtensions.RunAsTask("cmd", "/C ping 127.0.0.1 -n 10", cts.Token);
+            Task task;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                task = ProcessExtensions.RunAsTask("ping.exe", "127.0.0.1 -n 10", cts.Token);
+            }
+            else
+            {
+                task = ProcessExtensions.RunAsTask("ping", "127.0.0.1 -c 10", cts.Token);
+            }
+
             await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
             cts.Cancel();
 
             await Assert.ThrowsAsync<TaskCanceledException>(() => task).ConfigureAwait(false);
         }
 
-        [Fact]
+        [RunIfWindowsFact]
         public void GetProcesses()
         {
             var processes = ProcessExtensions.GetProcesses();
@@ -106,6 +152,16 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
+        public void GetParentProcessId()
+        {
+            var current = Process.GetCurrentProcess();
+            var parent = current.GetParentProcessId();
+
+            Assert.NotNull(parent);
+            Assert.NotEqual(current.Id, parent);
+        }
+
+        [RunIfWindowsFact]
         public void GetParent()
         {
             var current = Process.GetCurrentProcess();
@@ -174,31 +230,66 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-        [Fact]
+        [RunIfWindowsFact]
         public void KillProcess_EntireProcessTree_True()
         {
-            using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+            var start = DateTime.UtcNow;
+
+            static Process CreateProcess()
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
+                }
+
+                return Process.Start("sh", "-c \"ping 127.0.0.1 -c 10\"");
+            }
+
+            Process GetPingProcess()
+            {
+                var processes = Process.GetProcesses();
+                var pingProcesses = processes.Where(p => p.ProcessName.EqualsIgnoreCase("ping")).ToList();
+                return pingProcesses.SingleOrDefault(p => p.StartTime >= start.ToLocalTime());
+            }
+
+            using var shellProcess = CreateProcess();
+            Process pingProcess = null;
             try
             {
                 // We need to wait for the process to be started by cmd
-                IReadOnlyCollection<Process> processes;
-                while ((processes = process.GetChildProcesses()).Count == 0)
+                while ((pingProcess = GetPingProcess()) == null)
                 {
+                    // Must be greater than the ping time to prevent other tests from using this ping instance
+                    if (DateTime.UtcNow - start > TimeSpan.FromSeconds(15))
+                    {
+                        var allProcesses = Process.GetProcesses();
+                        Assert.True(false, "Cannot find the ping process. Running processes: " + string.Join(", ", allProcesses.Select(p => p.ProcessName)));
+                    }
+
                     Thread.Sleep(100);
                     continue;
                 }
 
-                Assert.True(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+                Assert.NotNull(pingProcess);
 
-                process.Kill(entireProcessTree: true);
+                ProcessExtensions.Kill(shellProcess, entireProcessTree: true);
 
-                var childProcess = processes.First();
-                Assert.True(childProcess.HasExited);
+                shellProcess.WaitForExit(1000);
+                Assert.True(shellProcess.HasExited, $"Shell process ({shellProcess.Id}) has not exited");
+
+                pingProcess.WaitForExit(1000);
+                Assert.True(pingProcess.HasExited, $"Ping process ({pingProcess.Id}) has not exited");
             }
             finally
             {
-                process.Kill(entireProcessTree: true);
-                process.WaitForExit();
+                if (pingProcess != null)
+                {
+                    pingProcess.Kill(entireProcessTree: true);
+                    pingProcess.WaitForExit();
+                }
+
+                shellProcess.Kill(entireProcessTree: true);
+                shellProcess.WaitForExit();
             }
         }
     }

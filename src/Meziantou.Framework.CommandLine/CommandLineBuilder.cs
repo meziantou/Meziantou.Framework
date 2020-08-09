@@ -79,7 +79,7 @@ namespace Meziantou.Framework
             EscapeArgument(value, sb);
             sb.Append('"');
 
-            for (var i = sb.Length - 2; i >= 1; i--)
+            for (var i = sb.Length - 1; i >= 0; i--)
             {
                 var c = sb[i];
                 if (s_cmdReservedCharacters.Contains(c))

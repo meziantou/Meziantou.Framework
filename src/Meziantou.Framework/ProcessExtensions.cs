@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -118,15 +120,40 @@ namespace Meziantou.Framework
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
-                throw new PlatformNotSupportedException("Only supported on Windows");
-
-            var processId = process.Id;
-            foreach (var entry in GetProcesses())
+            if (IsWindows())
             {
-                if (entry.ProcessId == processId)
+                var processId = process.Id;
+                foreach (var entry in GetProcesses())
                 {
-                    return entry.ParentProcessId;
+                    if (entry.ProcessId == processId)
+                    {
+                        return entry.ParentProcessId;
+                    }
+                }
+            }
+            else
+            {
+                var processId = process.Id;
+                try
+                {
+                    using var stream = File.OpenRead("/proc/" + processId.ToStringInvariant() + "/status");
+                    using var sr = new StreamReader(stream);
+                    string? line;
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        const string Prefix = "PPid:";
+                        if (line.StartsWith(Prefix, StringComparison.Ordinal))
+                        {
+                            if (int.TryParse(line.Substring(Prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var ppid))
+                                return ppid;
+                        }
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                }
+                catch (DirectoryNotFoundException)
+                {
                 }
             }
 
@@ -148,6 +175,9 @@ namespace Meziantou.Framework
 
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
+            if (!IsWindows())
+                throw new PlatformNotSupportedException("Only supported on Windows");
+
             using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
             var entry = new ProcessEntry32
             {

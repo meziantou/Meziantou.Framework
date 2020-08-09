@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework
@@ -185,7 +186,7 @@ namespace Meziantou.Framework
             return list.ToArray();
         }
 
-        protected virtual bool TryConvert(byte[] input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out string? value)
+        protected virtual bool TryConvert(byte[] input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out string? value)
         {
             switch (ByteArrayToStringFormat)
             {
@@ -206,25 +207,25 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(TimeSpan input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
+        protected virtual bool TryConvert(TimeSpan input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
         {
             value = BitConverter.GetBytes(input.Ticks);
             return true;
         }
 
-        protected virtual bool TryConvert(Guid input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
+        protected virtual bool TryConvert(Guid input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
         {
             value = input.ToByteArray();
             return true;
         }
 
-        protected virtual bool TryConvert(DateTime input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
+        protected virtual bool TryConvert(DateTime input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
         {
             value = BitConverter.GetBytes(input.ToBinary());
             return true;
         }
 
-        protected virtual bool TryConvert(decimal input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
+        protected virtual bool TryConvert(decimal input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
         {
             var decBytes = new byte[16];
             GetBytes(input, decBytes);
@@ -232,7 +233,7 @@ namespace Meziantou.Framework
             return true;
         }
 
-        protected virtual bool TryConvert(object? input, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out byte[]? value)
+        protected virtual bool TryConvert(object? input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
         {
             byte[]? bytes;
             if (input is Guid guid)
@@ -321,19 +322,17 @@ namespace Meziantou.Framework
 
             if (input is string name)
             {
+                // On Linux any name seems to be valid. If the name is a LCID, skip it.
+                if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
+                    return TryConvert(i, provider, out value);
+
                 try
                 {
-                    value = new CultureInfo(name);
+                    value = CultureInfo.GetCultureInfo(name);
                     return true;
                 }
                 catch (CultureNotFoundException)
                 {
-                }
-
-                if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
-                {
-                    if (TryConvert(i, provider, out value))
-                        return true;
                 }
             }
 
@@ -347,19 +346,33 @@ namespace Meziantou.Framework
             return false;
         }
 
-        protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)]out CultureInfo? value)
+        protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out CultureInfo? value)
         {
-            try
+            if (IsWindows())
             {
-                value = new CultureInfo(lcid);
-                return true;
-            }
-            catch (CultureNotFoundException)
-            {
+                try
+                {
+                    value = CultureInfo.GetCultureInfo(lcid);
+                    return true;
+                }
+                catch (CultureNotFoundException)
+                {
+                }
             }
 
             value = null;
             return false;
+        }
+
+        private static bool IsWindows()
+        {
+#if NETSTANDARD2_0 || NETCOREAPP3_1
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#elif NET461
+            return true;
+#else
+#error Platform not supported
+#endif
         }
 
         protected virtual bool TryConvert(object? input, IFormatProvider? provider, out DateTimeOffset value)
@@ -1126,6 +1139,9 @@ namespace Meziantou.Framework
                             value = cultureInfo;
                             return true;
                         }
+
+                        value = null;
+                        return false;
                     }
                     else if (conversionType == typeof(DateTimeOffset))
                     {

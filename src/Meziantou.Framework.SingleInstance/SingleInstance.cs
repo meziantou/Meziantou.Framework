@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 #if NET461
@@ -49,12 +50,15 @@ namespace Meziantou.Framework
                 return;
 
 #if NETCOREAPP2_1 || NETCOREAPP3_1
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
+
             _server = new NamedPipeServerStream(
-                       PipeName,
-                       PipeDirection.In,
-                       NamedPipeServerStream.MaxAllowedServerInstances,
-                       PipeTransmissionMode.Message,
-                       PipeOptions.CurrentUserOnly);
+                    PipeName,
+                    PipeDirection.In,
+                    NamedPipeServerStream.MaxAllowedServerInstances,
+                    PipeTransmissionMode.Message,
+                    PipeOptions.CurrentUserOnly);
 #elif NET461
             using (var currentIdentity = WindowsIdentity.GetCurrent())
             {

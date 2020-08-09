@@ -1,40 +1,37 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Meziantou.Framework.Collections;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    public sealed class SingleInstanceTests : IDisposable
+    public sealed class SingleInstanceTests
     {
-        private readonly SingleInstance _singleInstance;
-
-        public SingleInstanceTests()
+        [RunIfWindowsFact]
+        public async Task TestSingleInstance_NotifyFirstInstance()
         {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
             var applicationId = Guid.NewGuid();
-            _singleInstance = new SingleInstance(applicationId);
-        }
+            using var singleInstance = new SingleInstance(applicationId);
+            Assert.True(singleInstance.StartApplication(), "Cannot start the instance");
 
-        public void Dispose()
-        {
-            _singleInstance.Dispose();
-        }
-
-        [Fact(Timeout = 10000)]
-        public void TestSingleInstance()
-        {
-            Assert.True(_singleInstance.StartApplication());
+            // Be sure the server is ready
+            await Task.Delay(50);
 
             var events = new SynchronizedList<SingleInstanceEventArgs>();
-            _singleInstance.NewInstance += SingleInstance_NewInstance;
+            singleInstance.NewInstance += SingleInstance_NewInstance;
 
-            Assert.True(_singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }));
-            Assert.True(_singleInstance.NotifyFirstInstance(new[] { "123" }));
+            Assert.True(singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }), "Cannot notify first instance 1");
+            await Task.Delay(50);
+            Assert.True(singleInstance.NotifyFirstInstance(new[] { "123" }), "Cannot notify first instance 2");
 
-            while (events.Count < 2)
+            while (!cts.Token.IsCancellationRequested && events.Count < 2)
             {
-                Thread.Sleep(50);
+                await Task.Delay(50);
             }
 
             Assert.Equal(2, events.Count);
@@ -44,9 +41,27 @@ namespace Meziantou.Framework.Tests
 
             void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
             {
-                Assert.Equal(_singleInstance, sender);
+                Assert.Equal(singleInstance, sender);
                 events.Add(e);
             }
+        }
+
+        [Fact]
+        public async Task TestSingleInstance()
+        {
+            var applicationId = Guid.NewGuid();
+            using var singleInstance = new SingleInstance(applicationId);
+            singleInstance.StartServer = false;
+
+            Assert.True(singleInstance.StartApplication());
+            Assert.True(singleInstance.StartApplication());
+
+            // Need to run on another thread because the lock is re-entrant
+            await Task.Run(() =>
+            {
+                using var singleInstance2 = new SingleInstance(applicationId);
+                Assert.False(singleInstance2.StartApplication());
+            });
         }
     }
 }

@@ -20,10 +20,6 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>DebounceExtensions.cs</LastGenOutput>
     </None>
-    <None Update="FileLength.Generated.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>FileLength.Generated.cs</LastGenOutput>
-    </None>
     <None Update="TaskExtensions.WhenAll.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>TaskExtensions.WhenAll.cs</LastGenOutput>
@@ -43,11 +39,6 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>DebounceExtensions.tt</DependentUpon>
-    </Compile>
-    <Compile Update="FileLength.Generated.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>FileLength.Generated.tt</DependentUpon>
     </Compile>
     <Compile Update="TaskExtensions.WhenAll.cs">
       <DesignTime>True</DesignTime>

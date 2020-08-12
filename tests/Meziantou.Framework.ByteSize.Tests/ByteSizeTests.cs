@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
-    public class FileLengthTests
+    public sealed class ByteSizeTests
     {
         [Theory]
         [InlineData(10, "B", "10B")]
@@ -18,7 +18,7 @@ namespace Meziantou.Framework.Tests
         [InlineData(1_510_000, "f2", "1.51MB")]
         public void ToString_Test(long length, string format, string expectedValue)
         {
-            var fileLength = new FileLength(length);
+            var fileLength = new ByteSize(length);
             var actual = fileLength.ToString(format, CultureInfo.InvariantCulture);
 
             Assert.Equal(expectedValue, actual);

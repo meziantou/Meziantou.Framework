@@ -137,7 +137,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.HtmlSan
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.WPF.EnumComboBox", "Samples\Meziantou.Framework.WPF.EnumComboBox\Meziantou.Framework.WPF.EnumComboBox.csproj", "{259CB22D-9346-452C-8B4B-428F28675987}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgumentsPrinter", "tests\ArgumentsPrinter\ArgumentsPrinter.csproj", "{CF1BA4C2-AB07-457C-B586-E663634DD737}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArgumentsPrinter", "tests\ArgumentsPrinter\ArgumentsPrinter.csproj", "{CF1BA4C2-AB07-457C-B586-E663634DD737}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ByteSize", "src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj", "{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ByteSize.Tests", "tests\Meziantou.Framework.ByteSize.Tests\Meziantou.Framework.ByteSize.Tests.csproj", "{F9657735-DD90-4AC0-A60F-DC887CA87968}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -377,6 +381,14 @@ Global
 		{CF1BA4C2-AB07-457C-B586-E663634DD737}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF1BA4C2-AB07-457C-B586-E663634DD737}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF1BA4C2-AB07-457C-B586-E663634DD737}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -440,6 +452,8 @@ Global
 		{E0ABB242-0DF1-46B2-BD43-25B0DAACDF69} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{259CB22D-9346-452C-8B4B-428F28675987} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 		{CF1BA4C2-AB07-457C-B586-E663634DD737} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{F9657735-DD90-4AC0-A60F-DC887CA87968} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

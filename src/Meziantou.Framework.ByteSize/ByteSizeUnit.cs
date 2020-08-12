@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework
 {
-    public enum FileLengthUnit : long
+    public enum ByteSizeUnit : long
     {
         Byte = 1L,
         KiloByte = 1_000L,

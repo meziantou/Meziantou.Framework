@@ -34,6 +34,10 @@ namespace Meziantou.Framework
 
         public override string ToString() => ToString(format: null, formatProvider: null);
 
+        public string ToString(ByteSizeUnit unit) => ToString(unit, null);
+
+        public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
+
         public string ToString(string? format, IFormatProvider? formatProvider)
         {
             if (string.IsNullOrEmpty(format))

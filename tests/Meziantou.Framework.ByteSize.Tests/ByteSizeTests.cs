@@ -31,6 +31,20 @@ namespace Meziantou.Framework.Tests
         }
 
         [Theory]
+        [InlineData(10, ByteSizeUnit.Byte, "10B")]
+        [InlineData(1_000, ByteSizeUnit.KiloByte, "1kB")]
+        [InlineData(1_500, ByteSizeUnit.KiloByte, "1.5kB")]
+        [InlineData(1_024, ByteSizeUnit.KibiByte, "1kiB")]
+        [InlineData(1_000_000, ByteSizeUnit.MegaByte, "1MB")]
+        public void ToString_Unit_Test(long length, ByteSizeUnit unit, string expectedValue)
+        {
+            var byteSize = new ByteSize(length);
+            var formattedValue = byteSize.ToString(unit, CultureInfo.InvariantCulture);
+
+            Assert.Equal(expectedValue, formattedValue);
+        }
+
+        [Theory]
         [InlineData("1", 1)]
         [InlineData("1b", 1)]
         [InlineData("1B", 1)]

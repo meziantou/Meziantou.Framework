@@ -37,7 +37,7 @@ namespace Meziantou.Framework
         public string ToString(string? format, IFormatProvider? formatProvider)
         {
             if (string.IsNullOrEmpty(format))
-                return Value.ToString(formatProvider);
+                return Value.ToString(formatProvider) + "B";
 
             var index = -1;
             for (var i = 0; i < format.Length; i++)
@@ -56,15 +56,15 @@ namespace Meziantou.Framework
                 unitString = format.Substring(0, index);
             }
 
-            if (!TryParseUnit(unitString, out var unit))
+            if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
             {
                 if (unitString == "fi")
                 {
-                    unit = GetUnitI();
+                    unit = FindBestUnitI();
                 }
                 else if (unitString == "f")
                 {
-                    unit = FindUnit();
+                    unit = FindBestUnit();
                 }
                 else
                 {
@@ -81,10 +81,10 @@ namespace Meziantou.Framework
                 numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
             }
 
-            return GetLength(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
+            return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
         }
 
-        private ByteSizeUnit FindUnit()
+        private ByteSizeUnit FindBestUnit()
         {
             if (Value >= (long)ByteSizeUnit.ExaByte)
                 return ByteSizeUnit.ExaByte;
@@ -107,7 +107,7 @@ namespace Meziantou.Framework
             return ByteSizeUnit.Byte;
         }
 
-        private ByteSizeUnit GetUnitI()
+        private ByteSizeUnit FindBestUnitI()
         {
             if (Value >= (long)ByteSizeUnit.ExbiByte)
                 return ByteSizeUnit.ExbiByte;
@@ -130,7 +130,7 @@ namespace Meziantou.Framework
             return ByteSizeUnit.Byte;
         }
 
-        public double GetLength(ByteSizeUnit unit)
+        public double GetValue(ByteSizeUnit unit)
         {
             return (double)Value / (long)unit;
         }
@@ -170,64 +170,102 @@ namespace Meziantou.Framework
 
         public static implicit operator ByteSize(long value) => new ByteSize(value);
 
-        private static bool TryParseUnit(string unit, out ByteSizeUnit result)
+        private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
         {
             var last = unit[unit.Length - 1];
             if (last != 'b' && last != 'B')
             {
                 result = default;
+                parsedLength = 0;
                 return false;
             }
 
             if (unit.Length > 1)
             {
-                var multiple = unit.Substring(0, unit.Length - 1);
-                switch (multiple.ToUpperInvariant())
+                parsedLength = 2;
+                var isI = false;
+                var c = char.ToUpperInvariant(unit[unit.Length - 2]);
+                if (c == 'i' || c == 'I')
                 {
-                    case "K":
-                        result = ByteSizeUnit.KiloByte;
+                    parsedLength = 3;
+                    if (unit.Length > 2)
+                    {
+                        c = char.ToUpperInvariant(unit[unit.Length - 3]);
+                        isI = true;
+                    }
+                    else
+                    {
+                        result = default;
+                        return false;
+                    }
+                }
+
+                switch (c)
+                {
+                    case 'K':
+                        result = isI ? ByteSizeUnit.KibiByte : ByteSizeUnit.KiloByte;
                         return true;
 
-                    case "M":
-                        result = ByteSizeUnit.MegaByte;
+                    case 'M':
+                        result = isI ? ByteSizeUnit.MebiByte : ByteSizeUnit.MegaByte;
                         return true;
 
-                    case "G":
-                        result = ByteSizeUnit.GigaByte;
+                    case 'G':
+                        result = isI ? ByteSizeUnit.GibiByte : ByteSizeUnit.GigaByte;
                         return true;
 
-                    case "T":
-                        result = ByteSizeUnit.TeraByte;
+                    case 'T':
+                        result = isI ? ByteSizeUnit.TebiByte : ByteSizeUnit.TeraByte;
                         return true;
 
-                    case "P":
-                        result = ByteSizeUnit.PetaByte;
-                        return true;
-
-                    case "KI":
-                        result = ByteSizeUnit.KibiByte;
-                        return true;
-
-                    case "MI":
-                        result = ByteSizeUnit.MebiByte;
-                        return true;
-
-                    case "GI":
-                        result = ByteSizeUnit.GibiByte;
-                        return true;
-
-                    case "TI":
-                        result = ByteSizeUnit.TebiByte;
-                        return true;
-
-                    case "PI":
-                        result = ByteSizeUnit.PebiByte;
+                    case 'P':
+                        result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
                         return true;
                 }
             }
 
+            parsedLength = 1;
             result = ByteSizeUnit.Byte;
             return true;
+        }
+
+        public static ByteSize Parse(string text, IFormatProvider? formatProvider)
+        {
+            if (TryParse(text, formatProvider, out var result))
+                return result;
+
+            throw new FormatException($"The value '{text}' is not valid");
+        }
+
+        public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
+        {
+            text = text.Trim();
+
+            // Find unit
+            if (TryParseUnit(text, out var unit, out var unitLength))
+            {
+                text = text.Substring(0, text.Length - unitLength);
+            }
+            else
+            {
+                unit = ByteSizeUnit.Byte;
+            }
+
+            // Convert number
+            if (long.TryParse(text, NumberStyles.Integer, formatProvider, out var resultLong))
+            {
+                result = From(resultLong, unit);
+                return true;
+            }
+
+            if (double.TryParse(text, NumberStyles.Float, formatProvider, out var resultDouble))
+            {
+                result = From(resultDouble, unit);
+                return true;
+            }
+
+            result = default;
+            return false;
         }
 
         public static ByteSize From(byte value, ByteSizeUnit unit) => new ByteSize(value * (long)unit);

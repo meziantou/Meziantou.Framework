@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
     <Description>C# code generator</Description>
-    <Version>3.0.0</Version>    
+    <Version>3.1.0</Version>    
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net461'">

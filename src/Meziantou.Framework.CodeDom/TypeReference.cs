@@ -199,6 +199,13 @@ namespace Meziantou.Framework.CodeDom
             return type;
         }
 
+        public TypeReference MakeArray(int rank)
+        {
+            var type = Clone();
+            type.ArrayRank = rank;
+            return type;
+        }
+
         public static implicit operator TypeReference(TypeDeclaration typeDeclaration) => new TypeReference(typeDeclaration);
 
         public static implicit operator TypeReference(Type type) => new TypeReference(type);

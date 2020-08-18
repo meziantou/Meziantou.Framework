@@ -37,7 +37,7 @@
         public TypeReference? Type
         {
             get => _type;
-            set => SetParent(ref _type, value);
+            set => _type = value;
         }
 
         public Modifiers Modifiers { get; set; }

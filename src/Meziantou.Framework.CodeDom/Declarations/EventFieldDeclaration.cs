@@ -27,7 +27,7 @@
         public TypeReference? Type
         {
             get => _type;
-            set => SetParent(ref _type, value);
+            set => _type = value;
         }
 
         public StatementCollection? AddAccessor
@@ -45,7 +45,7 @@
         public TypeReference? PrivateImplementationType
         {
             get => _privateImplementationType;
-            set => SetParent(ref _privateImplementationType, value);
+            set => _privateImplementationType = value;
         }
 
         public Modifiers Modifiers { get; set; }

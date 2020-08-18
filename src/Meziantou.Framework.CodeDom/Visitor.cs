@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -263,8 +264,8 @@ namespace Meziantou.Framework.CodeDom
                     VisitTypeParameterConstraintCollection(typeParameterConstraintCollection);
                     break;
 
-                case TypeReference typeReference:
-                    VisitTypeReference(typeReference);
+                case TypeReferenceExpression typeReference:
+                    VisitTypeReferenceExpression(typeReference);
                     break;
 
                 case UnaryExpression unaryExpression:
@@ -319,9 +320,20 @@ namespace Meziantou.Framework.CodeDom
                     VisitYieldReturnStatement(yieldReturnStatement);
                     break;
 
+                case NewArrayExpression newArrayExpression:
+                    VisitNewArrayExpression(newArrayExpression);
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeObject));
             }
+        }
+
+        protected virtual void VisitNewArrayExpression(NewArrayExpression newArrayExpression)
+        {
+            VisitExpression(newArrayExpression);
+            VisitTypeReferenceIfNotNull(newArrayExpression.Type);
+            VisitCollection(newArrayExpression.Arguments);
         }
 
         public virtual void VisitTypeParameterConstraintCollection(TypeParameterConstraintCollection typeParameterConstraintCollection)
@@ -412,14 +424,27 @@ namespace Meziantou.Framework.CodeDom
             Visit(unaryExpression.Expression);
         }
 
+        private void VisitTypeReferenceIfNotNull(TypeReference? typeReference)
+        {
+            if (typeReference != null)
+            {
+                VisitTypeReference(typeReference);
+            }
+        }
+
         public virtual void VisitTypeReference(TypeReference typeReference)
         {
+        }
+
+        public virtual void VisitTypeReferenceExpression(TypeReferenceExpression typeReference)
+        {
+            VisitTypeReferenceIfNotNull(typeReference.Type);
         }
 
         public virtual void VisitTypeOfExpression(TypeOfExpression typeOfExpression)
         {
             VisitExpression(typeOfExpression);
-            Visit(typeOfExpression.Type);
+            VisitTypeReferenceIfNotNull(typeOfExpression.Type);
         }
 
         public virtual void VisitTryCatchFinallyStatement(TryCatchFinallyStatement tryCatchFinallyStatement)
@@ -465,7 +490,7 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitPropertyDeclaration(PropertyDeclaration propertyDeclaration)
         {
             VisitMemberDeclaration(propertyDeclaration);
-            Visit(propertyDeclaration.PrivateImplementationType);
+            VisitTypeReferenceIfNotNull(propertyDeclaration.PrivateImplementationType);
             Visit(propertyDeclaration.Getter);
             Visit(propertyDeclaration.Setter);
         }
@@ -478,7 +503,7 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitOperatorDeclaration(OperatorDeclaration operatorDeclaration)
         {
             VisitMemberDeclaration(operatorDeclaration);
-            Visit(operatorDeclaration.ReturnType);
+            VisitTypeReferenceIfNotNull(operatorDeclaration.ReturnType);
             VisitCollection(operatorDeclaration.Arguments);
             Visit(operatorDeclaration.Statements);
         }
@@ -487,7 +512,7 @@ namespace Meziantou.Framework.CodeDom
         {
             VisitExpression(newObjectExpression);
             Visit(newObjectExpression.Arguments);
-            Visit(newObjectExpression.Type);
+            VisitTypeReferenceIfNotNull(newObjectExpression.Type);
         }
 
         public virtual void VisitNamespaceDeclaration(NamespaceDeclaration namespaceDeclaration)
@@ -507,7 +532,7 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitMethodInvokeExpression(MethodInvokeExpression methodInvokeExpression)
         {
             VisitExpression(methodInvokeExpression);
-            VisitCollection(methodInvokeExpression.Parameters);
+            VisitTypeReferenceCollection(methodInvokeExpression.Parameters);
             Visit(methodInvokeExpression.Arguments);
             Visit(methodInvokeExpression.Method);
         }
@@ -526,8 +551,8 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitMethodDeclaration(MethodDeclaration methodDeclaration)
         {
             VisitMemberDeclaration(methodDeclaration);
-            Visit(methodDeclaration.ReturnType);
-            Visit(methodDeclaration.PrivateImplementationType);
+            VisitTypeReferenceIfNotNull(methodDeclaration.ReturnType);
+            VisitTypeReferenceIfNotNull(methodDeclaration.PrivateImplementationType);
             VisitCollection(methodDeclaration.Parameters);
             VisitCollection(methodDeclaration.Arguments);
             Visit(methodDeclaration.Statements);
@@ -537,7 +562,7 @@ namespace Meziantou.Framework.CodeDom
         {
             VisitCommentable(methodArgumentDeclaration);
             VisitCustomAttributeContainer(methodArgumentDeclaration);
-            Visit(methodArgumentDeclaration.Type);
+            VisitTypeReferenceIfNotNull(methodArgumentDeclaration.Type);
             Visit(methodArgumentDeclaration.DefaultValue);
         }
 
@@ -568,7 +593,7 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
         {
             VisitMemberDeclaration(fieldDeclaration);
-            Visit(fieldDeclaration.Type);
+            VisitTypeReferenceIfNotNull(fieldDeclaration.Type);
             Visit(fieldDeclaration.InitExpression);
         }
 
@@ -586,10 +611,10 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitEventFieldDeclaration(EventFieldDeclaration eventFieldDeclaration)
         {
             VisitMemberDeclaration(eventFieldDeclaration);
-            Visit(eventFieldDeclaration.Type);
+            VisitTypeReferenceIfNotNull(eventFieldDeclaration.Type);
             Visit(eventFieldDeclaration.AddAccessor);
             Visit(eventFieldDeclaration.RemoveAccessor);
-            Visit(eventFieldDeclaration.PrivateImplementationType);
+            VisitTypeReferenceIfNotNull(eventFieldDeclaration.PrivateImplementationType);
         }
 
         public virtual void VisitEnumerationMember(EnumerationMember enumerationMember)
@@ -602,14 +627,14 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitEnumerationDeclaration(EnumerationDeclaration enumerationDeclaration)
         {
             VisitTypeDeclaration(enumerationDeclaration);
-            Visit(enumerationDeclaration.BaseType);
+            VisitTypeReferenceIfNotNull(enumerationDeclaration.BaseType);
             VisitCollection(enumerationDeclaration.Members);
         }
 
         public virtual void VisitDelegateDeclaration(DelegateDeclaration delegateDeclaration)
         {
             VisitTypeDeclaration(delegateDeclaration);
-            Visit(delegateDeclaration.ReturnType);
+            VisitTypeReferenceIfNotNull(delegateDeclaration.ReturnType);
             VisitCollection(delegateDeclaration.Parameters);
             VisitCollection(delegateDeclaration.Arguments);
         }
@@ -629,14 +654,14 @@ namespace Meziantou.Framework.CodeDom
         {
             VisitCommentable(customAttribute);
             VisitCollection(customAttribute.Arguments);
-            Visit(customAttribute.Type);
+            VisitTypeReferenceIfNotNull(customAttribute.Type);
         }
 
         public virtual void VisitConvertExpression(ConvertExpression convertExpression)
         {
             VisitExpression(convertExpression);
             Visit(convertExpression.Expression);
-            Visit(convertExpression.Type);
+            VisitTypeReferenceIfNotNull(convertExpression.Type);
         }
 
         public virtual void VisitConstructorThisInitializer(ConstructorThisInitializer constructorThisInitializer)
@@ -685,7 +710,7 @@ namespace Meziantou.Framework.CodeDom
         public virtual void VisitCatchClause(CatchClause catchClause)
         {
             VisitCommentable(catchClause);
-            Visit(catchClause.ExceptionType);
+            VisitTypeReferenceIfNotNull(catchClause.ExceptionType);
             Visit(catchClause.Body);
         }
 
@@ -693,7 +718,7 @@ namespace Meziantou.Framework.CodeDom
         {
             VisitExpression(castExpression);
             Visit(castExpression.Expression);
-            Visit(castExpression.Type);
+            VisitTypeReferenceIfNotNull(castExpression.Type);
         }
 
         public virtual void VisitBinaryExpression(BinaryExpression binaryExpression)
@@ -757,8 +782,8 @@ namespace Meziantou.Framework.CodeDom
             VisitMemberContainer(interfaceDeclaration);
             VisitParametrableType(interfaceDeclaration);
             VisitTypeDeclarationContainer(interfaceDeclaration);
-            VisitCollection(interfaceDeclaration.Implements);
-            Visit(interfaceDeclaration.BaseType);
+            VisitTypeReferenceCollection(interfaceDeclaration.Implements);
+            VisitTypeReferenceIfNotNull(interfaceDeclaration.BaseType);
         }
 
         public virtual void VisitTypeParameterConstraint(TypeParameterConstraint typeParameterConstraint)
@@ -790,7 +815,7 @@ namespace Meziantou.Framework.CodeDom
             VisitMemberContainer(structDeclaration);
             VisitParametrableType(structDeclaration);
             VisitTypeDeclarationContainer(structDeclaration);
-            VisitCollection(structDeclaration.Implements);
+            VisitTypeReferenceCollection(structDeclaration.Implements);
         }
 
         public virtual void VisitClassDeclaration(ClassDeclaration classDeclaration)
@@ -799,8 +824,8 @@ namespace Meziantou.Framework.CodeDom
             VisitMemberContainer(classDeclaration);
             VisitParametrableType(classDeclaration);
             VisitTypeDeclarationContainer(classDeclaration);
-            VisitCollection(classDeclaration.Implements);
-            Visit(classDeclaration.BaseType);
+            VisitTypeReferenceCollection(classDeclaration.Implements);
+            VisitTypeReferenceIfNotNull(classDeclaration.BaseType);
         }
 
         public virtual void VisitExpressions(CodeObjectCollection<Expression> expressions)
@@ -821,6 +846,17 @@ namespace Meziantou.Framework.CodeDom
             foreach (var item in items)
             {
                 Visit(item);
+            }
+        }
+
+        private void VisitTypeReferenceCollection(IEnumerable<TypeReference> items)
+        {
+            if (items == null)
+                return;
+
+            foreach (var item in items)
+            {
+                VisitTypeReferenceIfNotNull(item);
             }
         }
 

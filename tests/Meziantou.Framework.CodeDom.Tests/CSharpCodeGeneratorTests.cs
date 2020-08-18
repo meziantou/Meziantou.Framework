@@ -1419,7 +1419,7 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_TypeReference()
         {
-            var expression = new TypeReference(typeof(Console));
+            var expression = new TypeReferenceExpression(typeof(Console));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1430,7 +1430,7 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_TypeReference_Nested()
         {
-            var expression = new TypeReference(typeof(SampleEnum));
+            var expression = new TypeReferenceExpression(typeof(SampleEnum));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1441,7 +1441,7 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_TypeReference_Generic()
         {
-            var expression = new TypeReference(typeof(Sample<int>));
+            var expression = new TypeReferenceExpression(typeof(Sample<int>));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(expression);
@@ -1772,6 +1772,17 @@ void Sample()
 {
 }
 ", result);
+        }
+
+        [Fact]
+        public void CSharpCodeGenerator_NewArray()
+        {
+            var type = new NewArrayExpression(typeof(int), 1, 2);
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(type);
+
+            AssertExtensions.StringEquals(@"new int[1, 2]", result);
         }
     }
 }

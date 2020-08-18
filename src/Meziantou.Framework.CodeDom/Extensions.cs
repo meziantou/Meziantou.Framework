@@ -104,12 +104,12 @@ namespace Meziantou.Framework.CodeDom
 
         public static MemberReferenceExpression CreateMemberReferenceExpression(this MethodArgumentDeclaration argument, string name, params string[] names) => CreateMemberReferenceExpression(new ArgumentReferenceExpression(argument), name, names);
 
-        public static BinaryExpression CreateIsNullExpression(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, new TypeReference(typeof(object)).CreateMemberReferenceExpression(nameof(object.ReferenceEquals)).CreateInvokeMethodExpression(expression), new LiteralExpression(value: true));
+        public static BinaryExpression CreateIsNullExpression(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, new TypeReferenceExpression(typeof(object)).CreateMemberReferenceExpression(nameof(object.ReferenceEquals)).CreateInvokeMethodExpression(expression), new LiteralExpression(value: true));
 
         public static BinaryExpression CreateEqualsNullExpression(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, expression, new LiteralExpression(value: null));
 
-        public static MethodInvokeExpression CreateIsNullOrEmptyExpression(this Expression expression) => new TypeReference(typeof(string)).CreateInvokeMethodExpression(nameof(string.IsNullOrEmpty), expression);
+        public static MethodInvokeExpression CreateIsNullOrEmptyExpression(this Expression expression) => new TypeReferenceExpression(typeof(string)).CreateInvokeMethodExpression(nameof(string.IsNullOrEmpty), expression);
 
-        public static MethodInvokeExpression CreateIsNullOrWhitespaceExpression(this Expression expression) => new TypeReference(typeof(string)).CreateInvokeMethodExpression(nameof(string.IsNullOrWhiteSpace), expression);
+        public static MethodInvokeExpression CreateIsNullOrWhitespaceExpression(this Expression expression) => new TypeReferenceExpression(typeof(string)).CreateInvokeMethodExpression(nameof(string.IsNullOrWhiteSpace), expression);
     }
 }

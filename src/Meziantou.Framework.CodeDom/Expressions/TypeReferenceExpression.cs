@@ -1,14 +1,14 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class TypeOfExpression : Expression
+    public class TypeReferenceExpression : Expression
     {
         private TypeReference? _type;
 
-        public TypeOfExpression()
+        public TypeReferenceExpression()
         {
         }
 
-        public TypeOfExpression(TypeReference? type)
+        public TypeReferenceExpression(TypeReference? type)
         {
             Type = type;
         }

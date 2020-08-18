@@ -1,19 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Meziantou.Framework.CodeDom
 {
-    public class TypeReference : Expression
+    public class TypeReference
     {
+        private static readonly char[] s_arityOrArrayCharacters = new[] { '`', '[' };
+
         private TypeParameter? _typeParameter;
         private TypeDeclaration? _typeDeclaration;
-        private string? _name;
-        private string? _namespace;
-        private CodeObjectCollection<TypeReference>? _parameters;
-        private CodeObjectCollection<TypeReference>? _typeDeclarationParameters;
+        private string? _typeName;
+        private List<TypeReference>? _parameters;
+        private List<TypeReference>? _typeDeclarationParameters;
 
-        public TypeReference()
+        private TypeReference()
         {
         }
 
@@ -27,73 +29,67 @@ namespace Meziantou.Framework.CodeDom
             _typeParameter = typeParameter ?? throw new ArgumentNullException(nameof(typeParameter));
         }
 
-        public TypeReference(string clrFullTypeName)
+        public TypeReference(string typeName)
         {
-            var parsedType = ParsedType.Parse(clrFullTypeName);
-            FromParsedType(parsedType);
+            _typeName = typeName;
         }
 
-        private void FromParsedType(ParsedType parsedType)
+        public TypeReference(Type type)
         {
-            Namespace = parsedType.Namespace;
-            Name = parsedType.Name;
-            if (parsedType.Arguments != null)
+            var name = type.Name;
+            var arityOrArrayIndex = name.IndexOfAny(s_arityOrArrayCharacters);
+            if (arityOrArrayIndex > 0)
             {
-                foreach (var argument in parsedType.Arguments)
+                name = name.Substring(0, arityOrArrayIndex);
+            }
+
+            var declaringType = type.DeclaringType;
+            if (declaringType != null)
+            {
+                string? typeName = name;
+                string? lastNamespace = null;
+                while (declaringType != null)
                 {
-                    var typeReference = new TypeReference();
-                    typeReference.FromParsedType(argument);
-                    Parameters.Add(typeReference);
+                    typeName = declaringType.Name + '+' + typeName;
+
+                    lastNamespace = declaringType.Namespace;
+                    declaringType = declaringType.DeclaringType;
+                }
+
+                _typeName = lastNamespace + '.' + typeName;
+            }
+            else
+            {
+                var ns = type.Namespace;
+                if (!string.IsNullOrEmpty(ns))
+                {
+                    _typeName = ns + '.' + name;
+                }
+                else
+                {
+                    _typeName = name;
+                }
+            }
+
+            if (type.IsArray)
+            {
+                ArrayRank = type.GetArrayRank();
+            }
+
+            if (type.IsGenericType)
+            {
+                foreach (var genericType in type.GenericTypeArguments)
+                {
+                    Parameters.Add(new TypeReference(genericType));
                 }
             }
         }
 
-        public TypeReference(Type type)
-            : this(type.FullName ?? throw new ArgumentException("Type has no FullName", nameof(type)))
-        {
-        }
+        public bool IsArray => ArrayRank > 0;
 
-        public string? Name
-        {
-            get
-            {
-                if (_typeDeclaration != null)
-                    return _typeDeclaration.Name;
+        public int ArrayRank { get; set; }
 
-                if (_typeParameter != null)
-                    return _typeParameter.Name;
-
-                return _name;
-            }
-            set
-            {
-                _name = value;
-                _typeDeclaration = null;
-                _typeParameter = null;
-            }
-        }
-
-        public string? Namespace
-        {
-            get
-            {
-                if (_typeDeclaration != null)
-                    return _typeDeclaration.Namespace;
-
-                if (_typeParameter != null)
-                    return null;
-
-                return _namespace;
-            }
-            set
-            {
-                _namespace = value;
-                _typeDeclaration = null;
-                _typeParameter = null;
-            }
-        }
-
-        public CodeObjectCollection<TypeReference> Parameters
+        public IList<TypeReference> Parameters
         {
             get
             {
@@ -101,7 +97,7 @@ namespace Meziantou.Framework.CodeDom
                 {
                     if (_typeDeclarationParameters == null)
                     {
-                        var collection = new CodeObjectCollection<TypeReference>(this);
+                        var collection = new List<TypeReference>();
                         collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p.Name ?? throw new InvalidOperationException("TypeReference has no name"))));
                         _typeDeclarationParameters = collection;
                     }
@@ -111,10 +107,24 @@ namespace Meziantou.Framework.CodeDom
 
                 if (_parameters == null)
                 {
-                    _parameters = new CodeObjectCollection<TypeReference>(this);
+                    _parameters = new List<TypeReference>();
                 }
 
                 return _parameters;
+            }
+        }
+
+        public string? TypeName
+        {
+            get
+            {
+                if (_typeParameter != null)
+                    return _typeParameter.Name;
+
+                if (_typeDeclaration != null)
+                    return _typeDeclaration.Namespace + '.' + _typeDeclaration.Name;
+
+                return _typeName;
             }
         }
 
@@ -123,12 +133,7 @@ namespace Meziantou.Framework.CodeDom
             get
             {
                 var sb = new StringBuilder();
-                if (!string.IsNullOrEmpty(Namespace))
-                {
-                    sb.Append(Namespace).Append('.');
-                }
-
-                sb.Append(Name);
+                sb.Append(TypeName);
                 if (Parameters.Any())
                 {
                     sb.Append('<');
@@ -147,6 +152,16 @@ namespace Meziantou.Framework.CodeDom
                     sb.Append('>');
                 }
 
+                if (IsArray)
+                {
+                    sb.Append('[');
+                    for (var i = 1; i < ArrayRank; i++)
+                    {
+                        sb.Append(',');
+                    }
+                    sb.Append(']');
+                }
+
                 return sb.ToString();
             }
         }
@@ -155,15 +170,15 @@ namespace Meziantou.Framework.CodeDom
         {
             var clone = new TypeReference
             {
-                _name = _name,
-                _namespace = _namespace,
+                _typeName = _typeName,
                 _typeDeclaration = _typeDeclaration,
                 _typeParameter = _typeParameter,
+                ArrayRank = ArrayRank,
             };
 
             if (_parameters != null)
             {
-                clone._parameters = new CodeObjectCollection<TypeReference>(clone);
+                clone._parameters = new List<TypeReference>();
                 foreach (var parameter in _parameters)
                 {
                     clone._parameters.Add(parameter);
@@ -174,9 +189,13 @@ namespace Meziantou.Framework.CodeDom
 
         public TypeReference MakeGeneric(params TypeReference[] typeArguments)
         {
-            var type = new TypeReference(ClrFullTypeName);
+            var type = Clone();
             type.Parameters.Clear();
-            type.Parameters.AddRange(typeArguments);
+            foreach (var arg in typeArguments)
+            {
+                type.Parameters.Add(arg);
+            }
+
             return type;
         }
 

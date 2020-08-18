@@ -1,15 +1,15 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class NewObjectExpression : Expression
+    public class NewArrayExpression : Expression
     {
         private TypeReference? _type;
 
-        public NewObjectExpression()
+        public NewArrayExpression()
         {
             Arguments = new CodeObjectCollection<Expression>(this);
         }
 
-        public NewObjectExpression(TypeReference? type, params Expression[] arguments)
+        public NewArrayExpression(TypeReference? type, params Expression[] arguments)
         {
             Arguments = new CodeObjectCollection<Expression>(this);
 

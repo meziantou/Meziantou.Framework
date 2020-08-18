@@ -18,7 +18,7 @@
         public TypeReference? BaseType
         {
             get => _baseType;
-            set => SetParent(ref _baseType, value);
+            set => _baseType = value;
         }
 
         public CodeObjectCollection<EnumerationMember> Members { get; }

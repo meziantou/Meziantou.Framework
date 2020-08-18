@@ -229,7 +229,7 @@ namespace Meziantou.Framework.CodeDom
         {
             if (statement.Type != null)
             {
-                Write(writer, statement.Type);
+                WriteTypeReference(writer, statement.Type);
                 writer.Write(" ");
             }
             else

@@ -7,7 +7,7 @@
         public TypeReference? ReturnType
         {
             get => _returnType;
-            set => SetParent(ref _returnType, value);
+            set => _returnType = value;
         }
 
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }

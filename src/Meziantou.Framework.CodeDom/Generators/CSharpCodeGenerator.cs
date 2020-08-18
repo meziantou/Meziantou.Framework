@@ -212,7 +212,7 @@ namespace Meziantou.Framework.CodeDom
             if (enumeration.BaseType != null)
             {
                 writer.Write(" : ");
-                Write(writer, enumeration.BaseType);
+                WriteTypeReference(writer, enumeration.BaseType);
             }
 
             writer.WriteLine();
@@ -252,7 +252,7 @@ namespace Meziantou.Framework.CodeDom
             }
             else
             {
-                Write(writer, d.ReturnType);
+                WriteTypeReference(writer, d.ReturnType);
                 writer.Write(" ");
             }
             WriteIdentifier(writer, d.Name);
@@ -283,13 +283,13 @@ namespace Meziantou.Framework.CodeDom
             }
             else
             {
-                Write(writer, member.ReturnType);
+                WriteTypeReference(writer, member.ReturnType);
                 writer.Write(' ');
             }
 
             if (member.PrivateImplementationType != null)
             {
-                Write(writer, member.PrivateImplementationType);
+                WriteTypeReference(writer, member.PrivateImplementationType);
                 writer.Write('.');
             }
 
@@ -335,7 +335,7 @@ namespace Meziantou.Framework.CodeDom
 
                 if (member.ReturnType != null)
                 {
-                    Write(writer, member.ReturnType);
+                    WriteTypeReference(writer, member.ReturnType);
                 }
                 else
                 {
@@ -350,7 +350,7 @@ namespace Meziantou.Framework.CodeDom
             {
                 if (member.ReturnType != null)
                 {
-                    Write(writer, member.ReturnType);
+                    WriteTypeReference(writer, member.ReturnType);
                     writer.Write(' ');
                 }
 
@@ -380,7 +380,7 @@ namespace Meziantou.Framework.CodeDom
             }
 
             Write(writer, arg.Direction);
-            Write(writer, arg.Type);
+            WriteTypeReference(writer, arg.Type);
             writer.Write(" ");
             WriteIdentifier(writer, arg.Name);
             if (arg.DefaultValue != null)
@@ -426,7 +426,7 @@ namespace Meziantou.Framework.CodeDom
             }
             else
             {
-                Write(writer, member.Type);
+                WriteTypeReference(writer, member.Type);
                 writer.Write(" ");
             }
 
@@ -448,13 +448,13 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("event ");
             if (member.Type != null)
             {
-                Write(writer, member.Type);
+                WriteTypeReference(writer, member.Type);
                 writer.Write(" ");
             }
 
             if (member.PrivateImplementationType != null)
             {
-                Write(writer, member.PrivateImplementationType);
+                WriteTypeReference(writer, member.PrivateImplementationType);
                 writer.Write('.');
             }
 
@@ -516,12 +516,12 @@ namespace Meziantou.Framework.CodeDom
         {
             Write(writer, member.CustomAttributes);
             Write(writer, member.Modifiers);
-            Write(writer, member.Type);
+            WriteTypeReference(writer, member.Type);
             writer.Write(" ");
 
             if (member.PrivateImplementationType != null)
             {
-                Write(writer, member.PrivateImplementationType);
+                WriteTypeReference(writer, member.PrivateImplementationType);
                 writer.Write('.');
             }
 
@@ -561,7 +561,7 @@ namespace Meziantou.Framework.CodeDom
             if (baseTypes.Any())
             {
                 writer.Write(" : ");
-                Write(writer, baseTypes, ", ");
+                WriteTypeReferences(writer, baseTypes, ", ");
             }
 
             writer.WriteLine();
@@ -584,7 +584,7 @@ namespace Meziantou.Framework.CodeDom
             if (baseTypes.Any())
             {
                 writer.Write(" : ");
-                Write(writer, baseTypes, ", ");
+                WriteTypeReferences(writer, baseTypes, ", ");
             }
 
             writer.WriteLine();
@@ -607,7 +607,7 @@ namespace Meziantou.Framework.CodeDom
             if (baseTypes.Any())
             {
                 writer.Write(" : ");
-                Write(writer, baseTypes, ", ");
+                WriteTypeReferences(writer, baseTypes, ", ");
             }
 
             writer.WriteLine();
@@ -720,7 +720,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(": ");
             }
 
-            Write(writer, attribute.Type);
+            WriteTypeReference(writer, attribute.Type);
 
             if (attribute.Arguments.Count > 0)
             {
@@ -825,7 +825,7 @@ namespace Meziantou.Framework.CodeDom
             if (catchClause.ExceptionType != null)
             {
                 writer.Write(" (");
-                Write(writer, catchClause.ExceptionType);
+                WriteTypeReference(writer, catchClause.ExceptionType);
                 if (!string.IsNullOrEmpty(catchClause.ExceptionVariableName))
                 {
                     writer.Write(" ");
@@ -899,7 +899,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, BaseTypeParameterConstraint constraint)
         {
-            Write(writer, constraint.Type);
+            WriteTypeReference(writer, constraint.Type);
         }
 
         protected virtual void Write(IndentedTextWriter writer, ClassTypeParameterConstraint constraint)
@@ -1215,12 +1215,12 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        private void WriteGenericParameters(IndentedTextWriter writer, CodeObjectCollection<TypeReference> types)
+        private void WriteGenericParameters(IndentedTextWriter writer, IList<TypeReference> types)
         {
             if (types.Any())
             {
                 writer.Write("<");
-                Write(writer, types, ", ");
+                WriteTypeReferences(writer, types, ", ");
                 writer.Write(">");
             }
         }
@@ -1317,6 +1317,43 @@ namespace Meziantou.Framework.CodeDom
                 var o = objects[i];
                 Write(writer, o);
                 afterItemAction((o, i == 0, i == objects.Count - 1));
+            }
+        }
+
+        protected virtual void WriteTypeReference(IndentedTextWriter writer, TypeReference? type)
+        {
+            if (type == null)
+                return;
+
+            if (s_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
+            {
+                writer.Write(keyword);
+                return;
+            }
+
+            if (type.TypeName != null)
+            {
+                writer.Write(type.TypeName.Replace('+', '.'));
+            }
+
+            WriteGenericParameters(writer, type.Parameters);
+        }
+
+        protected virtual void WriteTypeReferences(IndentedTextWriter writer, IEnumerable<TypeReference?> types, string separator)
+        {
+            var first = true;
+            foreach (var type in types)
+            {
+                if (type != null)
+                {
+                    if (!first)
+                    {
+                        writer.Write(separator);
+                    }
+
+                    WriteTypeReference(writer, type);
+                    first = false;
+                }
             }
         }
     }

@@ -14,87 +14,91 @@ namespace Meziantou.Framework.CodeDom
             switch (expression)
             {
                 case BinaryExpression o:
-                    Write(writer, o);
+                    WriteBinaryExpression(writer, o);
                     break;
 
                 case UnaryExpression o:
-                    Write(writer, o);
+                    WriteUnaryExpression(writer, o);
                     break;
 
                 case LiteralExpression o:
-                    Write(writer, o);
+                    WriteLiteralExpression(writer, o);
                     break;
 
                 case ArgumentReferenceExpression o:
-                    Write(writer, o);
+                    WriteArgumentReferenceExpression(writer, o);
                     break;
 
                 case MemberReferenceExpression o:
-                    Write(writer, o);
+                    WriteMemberReferenceExpression(writer, o);
                     break;
 
                 case MethodInvokeExpression o:
-                    Write(writer, o);
+                    WriteMethodInvokeExpression(writer, o);
                     break;
 
                 case ThisExpression o:
-                    Write(writer, o);
+                    WriteThisExpression(writer, o);
                     break;
 
                 case MethodInvokeArgumentExpression o:
-                    Write(writer, o);
+                    WriteMethodInvokeArgumentExpression(writer, o);
                     break;
 
                 case ArrayIndexerExpression o:
-                    Write(writer, o);
+                    WriteArrayIndexerExpression(writer, o);
                     break;
 
                 case BaseExpression o:
-                    Write(writer, o);
+                    WriteBaseExpression(writer, o);
                     break;
 
                 case DefaultValueExpression o:
-                    Write(writer, o);
+                    WriteDefaultValueExpression(writer, o);
                     break;
 
                 case NameofExpression o:
-                    Write(writer, o);
+                    WriteNameofExpression(writer, o);
                     break;
 
                 case NewObjectExpression o:
-                    Write(writer, o);
+                    WriteNewObjectExpression(writer, o);
                     break;
 
                 case SnippetExpression o:
-                    Write(writer, o);
+                    WriteSnippetExpression(writer, o);
                     break;
 
                 case ValueArgumentExpression o:
-                    Write(writer, o);
+                    WriteValueArgumentExpression(writer, o);
                     break;
 
                 case CastExpression o:
-                    Write(writer, o);
+                    WriteCastExpression(writer, o);
                     break;
 
                 case ConvertExpression o:
-                    Write(writer, o);
+                    WriteConvertExpression(writer, o);
                     break;
 
                 case TypeOfExpression o:
-                    Write(writer, o);
+                    WriteTypeOfExpression(writer, o);
                     break;
 
                 case VariableReferenceExpression o:
-                    Write(writer, o);
+                    WriteVariableReferenceExpression(writer, o);
                     break;
 
-                case TypeReference o:
-                    Write(writer, o);
+                case TypeReferenceExpression o:
+                    WriteTypeReferenceExpression(writer, o);
                     break;
 
                 case AwaitExpression o:
-                    Write(writer, o);
+                    WriteAwaitExpression(writer, o);
+                    break;
+                    
+                case NewArrayExpression o:
+                    WriteNewArrayExpression(writer, o);
                     break;
 
                 default:
@@ -104,17 +108,22 @@ namespace Meziantou.Framework.CodeDom
             WriteAfterComments(writer, expression);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ThisExpression expression)
+        protected virtual void WriteTypeReferenceExpression(IndentedTextWriter writer, TypeReferenceExpression expression)
+        {
+            WriteTypeReference(writer, expression.Type);
+        }
+
+        protected virtual void WriteThisExpression(IndentedTextWriter writer, ThisExpression expression)
         {
             writer.Write("this");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, BaseExpression expression)
+        protected virtual void WriteBaseExpression(IndentedTextWriter writer, BaseExpression expression)
         {
             writer.Write("base");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MethodInvokeExpression expression)
+        protected virtual void WriteMethodInvokeExpression(IndentedTextWriter writer, MethodInvokeExpression expression)
         {
             Write(writer, expression.Method);
             WriteGenericParameters(writer, expression.Parameters);
@@ -123,7 +132,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MethodInvokeArgumentExpression expression)
+        protected virtual void WriteMethodInvokeArgumentExpression(IndentedTextWriter writer, MethodInvokeArgumentExpression expression)
         {
             Write(writer, expression.Direction);
 
@@ -136,12 +145,12 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, expression.Value);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ArgumentReferenceExpression expression)
+        protected virtual void WriteArgumentReferenceExpression(IndentedTextWriter writer, ArgumentReferenceExpression expression)
         {
             WriteIdentifier(writer, expression.Name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MemberReferenceExpression expression)
+        protected virtual void WriteMemberReferenceExpression(IndentedTextWriter writer, MemberReferenceExpression expression)
         {
             if (expression.TargetObject != null)
             {
@@ -152,7 +161,7 @@ namespace Meziantou.Framework.CodeDom
             WriteIdentifier(writer, expression.Name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, LiteralExpression expression)
+        protected virtual void WriteLiteralExpression(IndentedTextWriter writer, LiteralExpression expression)
         {
             switch (expression.Value)
             {
@@ -391,7 +400,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, BinaryExpression expression)
+        protected virtual void WriteBinaryExpression(IndentedTextWriter writer, BinaryExpression expression)
         {
             writer.Write("(");
             Write(writer, expression.LeftExpression);
@@ -402,7 +411,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, UnaryExpression expression)
+        protected virtual void WriteUnaryExpression(IndentedTextWriter writer, UnaryExpression expression)
         {
             writer.Write("(");
             if (IsPrefixOperator(expression.Operator))
@@ -418,7 +427,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ArrayIndexerExpression expression)
+        protected virtual void WriteArrayIndexerExpression(IndentedTextWriter writer, ArrayIndexerExpression expression)
         {
             Write(writer, expression.ArrayExpression);
             writer.Write("[");
@@ -426,100 +435,84 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("]");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, DefaultValueExpression expression)
+        protected virtual void WriteDefaultValueExpression(IndentedTextWriter writer, DefaultValueExpression expression)
         {
             writer.Write("default");
             if (expression.Type != null)
             {
                 writer.Write("(");
-                Write(writer, expression.Type);
+                WriteTypeReference(writer, expression.Type);
                 writer.Write(")");
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, NameofExpression expression)
+        protected virtual void WriteNameofExpression(IndentedTextWriter writer, NameofExpression expression)
         {
             writer.Write("nameof(");
             Write(writer, expression.Expression);
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, NewObjectExpression expression)
+        protected virtual void WriteNewObjectExpression(IndentedTextWriter writer, NewObjectExpression expression)
         {
             writer.Write("new ");
-            Write(writer, expression.Type);
+            WriteTypeReference(writer, expression.Type);
             writer.Write("(");
             Write(writer, expression.Arguments, ", ");
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, SnippetExpression expression)
+        protected virtual void WriteNewArrayExpression(IndentedTextWriter writer, NewArrayExpression expression)
+        {
+            writer.Write("new ");
+            WriteTypeReference(writer, expression.Type);
+            writer.Write("[");
+            Write(writer, expression.Arguments, ", ");
+            writer.Write("]");
+        }
+
+        protected virtual void WriteSnippetExpression(IndentedTextWriter writer, SnippetExpression expression)
         {
             writer.Write(expression.Expression);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ValueArgumentExpression expression)
+        protected virtual void WriteValueArgumentExpression(IndentedTextWriter writer, ValueArgumentExpression expression)
         {
             writer.Write("value");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CastExpression expression)
+        protected virtual void WriteCastExpression(IndentedTextWriter writer, CastExpression expression)
         {
             writer.Write("(");
             writer.Write("(");
-            Write(writer, expression.Type);
+            WriteTypeReference(writer, expression.Type);
             writer.Write(")");
             Write(writer, expression.Expression);
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ConvertExpression expression)
+        protected virtual void WriteConvertExpression(IndentedTextWriter writer, ConvertExpression expression)
         {
             writer.Write("(");
             Write(writer, expression.Expression);
             writer.Write(" as ");
-            Write(writer, expression.Type);
+            WriteTypeReference(writer, expression.Type);
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TypeOfExpression expression)
+        protected virtual void WriteTypeOfExpression(IndentedTextWriter writer, TypeOfExpression expression)
         {
             writer.Write("typeof(");
-            Write(writer, expression.Type);
+            WriteTypeReference(writer, expression.Type);
             writer.Write(")");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, VariableReferenceExpression expression)
+        protected virtual void WriteVariableReferenceExpression(IndentedTextWriter writer, VariableReferenceExpression expression)
         {
             WriteIdentifier(writer, expression.Name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TypeReference? type)
-        {
-            if (type == null)
-                return;
-
-            if (s_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
-            {
-                writer.Write(keyword);
-                return;
-            }
-
-            if (type.Namespace != null)
-            {
-                writer.Write(type.Namespace);
-                writer.Write('.');
-            }
-
-            if (type.Name != null)
-            {
-                writer.Write(type.Name.Replace('+', '.'));
-            }
-
-            WriteGenericParameters(writer, type.Parameters);
-        }
-
-        protected virtual void Write(IndentedTextWriter writer, AwaitExpression expression)
+        protected virtual void WriteAwaitExpression(IndentedTextWriter writer, AwaitExpression expression)
         {
             writer.Write("await ");
             if (expression.Expression != null)

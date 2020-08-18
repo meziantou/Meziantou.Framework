@@ -18,7 +18,7 @@
         public TypeReference? ExceptionType
         {
             get => _exceptionType;
-            set => SetParent(ref _exceptionType, value);
+            set => _exceptionType = value;
         }
 
         public StatementCollection? Body

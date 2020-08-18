@@ -1325,18 +1325,30 @@ namespace Meziantou.Framework.CodeDom
             if (type == null)
                 return;
 
-            if (s_predefinedTypes.TryGetValue(type.ClrFullTypeName, out var keyword))
+            if (s_predefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
             {
                 writer.Write(keyword);
-                return;
             }
-
-            if (type.TypeName != null)
+            else
             {
-                writer.Write(type.TypeName.Replace('+', '.'));
+                if (type.TypeName != null)
+                {
+                    writer.Write(type.TypeName.Replace('+', '.'));
+                }
+
+                WriteGenericParameters(writer, type.Parameters);
             }
 
-            WriteGenericParameters(writer, type.Parameters);
+            if (type.IsArray)
+            {
+                writer.Write('[');
+                for (var i = 1; i < type.ArrayRank; i++)
+                {
+                    writer.Write(',');
+                }
+
+                writer.Write(']');
+            }
         }
 
         protected virtual void WriteTypeReferences(IndentedTextWriter writer, IEnumerable<TypeReference?> types, string separator)

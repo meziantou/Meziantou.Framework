@@ -128,6 +128,35 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
+        internal string ClrFullTypeNameWithoutArray
+        {
+            get
+            {
+                var sb = new StringBuilder();
+                sb.Append(TypeName);
+                if (Parameters.Any())
+                {
+                    sb.Append('<');
+                    var first = true;
+                    foreach (var parameter in Parameters)
+                    {
+                        if (!first)
+                        {
+                            sb.Append(", ");
+                        }
+
+                        sb.Append(parameter.ClrFullTypeName);
+
+                        first = false;
+                    }
+                    sb.Append('>');
+                }
+
+                return sb.ToString();
+            }
+        }
+
+
         public string ClrFullTypeName
         {
             get

@@ -1777,12 +1777,13 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_NewArray()
         {
-            var type = new NewArrayExpression(typeof(int), 1, 2);
+            var variable = new VariableDeclarationStatement(typeof(int[]), "a", new NewArrayExpression(typeof(int), 1, 2));
 
             var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
+            var result = generator.Write(variable);
 
-            AssertExtensions.StringEquals(@"new int[1, 2]", result);
+            AssertExtensions.StringEquals(@"int[] a = new int[1, 2];
+", result);
         }
     }
 }

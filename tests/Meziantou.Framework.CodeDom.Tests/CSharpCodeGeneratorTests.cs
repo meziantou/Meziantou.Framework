@@ -68,6 +68,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         public void CSharpCodeGenerator_ClassDeclarations()
         {
             var unit = new CompilationUnit();
+            unit.CommentsBefore.Add("test");
             var ns = unit.AddNamespace("test");
 
             ns.AddType(new ClassDeclaration("Sample1"));
@@ -76,7 +77,8 @@ namespace Meziantou.Framework.CodeDom.Tests
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(unit);
 
-            AssertExtensions.StringEquals(@"namespace test
+            AssertExtensions.StringEquals(@"// test
+namespace test
 {
     class Sample1
     {

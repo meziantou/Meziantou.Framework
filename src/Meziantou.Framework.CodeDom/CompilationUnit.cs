@@ -1,29 +1,15 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer
+    public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable
     {
         private CodeObjectCollection<TypeDeclaration>? _types;
         private CodeObjectCollection<NamespaceDeclaration>? _namespaces;
         private CodeObjectCollection<UsingDirective>? _usings;
+        private CommentCollection? _commentsAfter;
+        private CommentCollection? _commentsBefore;
 
         public CompilationUnit()
         {
-        }
-
-        public CompilationUnit(TypeDeclaration? typeDeclaration)
-        {
-            if (typeDeclaration != null)
-            {
-                Types.Add(typeDeclaration);
-            }
-        }
-
-        public CompilationUnit(NamespaceDeclaration? namespaceDeclaration)
-        {
-            if (namespaceDeclaration != null)
-            {
-                Namespaces.Add(namespaceDeclaration);
-            }
         }
 
         public CodeObjectCollection<TypeDeclaration> Types
@@ -63,5 +49,9 @@
                 return _usings;
             }
         }
+
+        public CommentCollection CommentsAfter => _commentsAfter ??= new CommentCollection(this);
+
+        public CommentCollection CommentsBefore => _commentsBefore ??= new CommentCollection(this);
     }
 }

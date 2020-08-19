@@ -148,9 +148,11 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void Write(IndentedTextWriter writer, CompilationUnit unit)
         {
+            WriteBeforeComments(writer, unit);
             Write(writer, unit.Usings, writer.NewLine);
             Write(writer, unit.Namespaces, writer.NewLine);
             Write(writer, unit.Types, writer.NewLine);
+            WriteAfterComments(writer, unit);
         }
 
         protected virtual void Write(IndentedTextWriter writer, NamespaceDeclaration ns)

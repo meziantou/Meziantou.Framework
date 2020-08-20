@@ -28,6 +28,12 @@
             Name = memberName;
         }
 
+        public MemberReferenceExpression(TypeReference? type, string? memberName)
+        {
+            TargetObject = type != null ? new TypeReferenceExpression(type) : null;
+            Name = memberName;
+        }
+
         public string? Name
         {
             get

@@ -1820,5 +1820,46 @@ void Sample()
             AssertExtensions.StringEquals(@"string? a;
 ", result);
         }
+
+        [Fact]
+        public void CSharpCodeGenerator_CompilationContextNullableContext()
+        {
+            var unit = new CompilationUnit
+            {
+                NullableContext = NullableContext.Enable,
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(unit);
+
+            AssertExtensions.StringEquals(@"#nullable enable
+#nullable disable
+", result);
+        }
+
+        [Fact]
+        public void CSharpCodeGenerator_UsingStatementNullableContext()
+        {
+            var unit = new UsingStatement
+            {
+                Statement = new ExpressionStatement(LiteralExpression.Null()) { NullableContext = NullableContext.Disable },
+                //Body = new StatementCollection(),
+                NullableContext = NullableContext.Enable,
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(unit);
+
+            AssertExtensions.StringEquals(@"#nullable enable
+using (
+#nullable disable
+null
+#nullable enable
+)
+{
+}
+#nullable disable
+", result);
+        }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable
+    public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable, INullableContext
     {
         protected MemberDeclaration()
             : this(name: null)
@@ -23,5 +23,6 @@
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
         public XmlCommentCollection XmlComments { get; }
+        public NullableContext NullableContext { get; set; }
     }
 }

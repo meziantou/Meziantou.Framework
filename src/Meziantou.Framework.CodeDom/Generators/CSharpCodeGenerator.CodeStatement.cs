@@ -20,12 +20,12 @@ namespace Meziantou.Framework.CodeDom
         protected readonly WriteStatementOptions _defaultWriteStatementOptions = new WriteStatementOptions();
         protected readonly WriteStatementOptions _inlineStatementWriteStatementOptions = new WriteStatementOptions() { EndStatement = false };
 
-        protected virtual void Write(IndentedTextWriter writer, Statement statement)
+        protected virtual void WriteStatement(IndentedTextWriter writer, Statement statement)
         {
-            Write(writer, statement, _defaultWriteStatementOptions);
+            WriteStatement(writer, statement, _defaultWriteStatementOptions);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options)
+        protected virtual void WriteStatement(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options)
         {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
@@ -33,83 +33,84 @@ namespace Meziantou.Framework.CodeDom
             if (statement == null)
                 return;
 
+            WriteNullableContextBefore(writer, statement);
             WriteBeforeComments(writer, statement);
             switch (statement)
             {
                 case ConditionStatement o:
-                    Write(writer, o, options);
+                    WriteConditionStatement(writer, o, options);
                     break;
 
                 case ReturnStatement o:
-                    Write(writer, o, options);
+                    WriteReturnStatement(writer, o, options);
                     break;
 
                 case YieldReturnStatement o:
-                    Write(writer, o, options);
+                    WriteYieldReturnStatement(writer, o, options);
                     break;
 
                 case YieldBreakStatement o:
-                    Write(writer, o, options);
+                    WriteYieldBreakStatement(writer, o, options);
                     break;
 
                 case AssignStatement o:
-                    Write(writer, o, options);
+                    WriteAssignStatement(writer, o, options);
                     break;
 
                 case ExpressionStatement o:
-                    Write(writer, o, options);
+                    WriteExpressionStatement(writer, o, options);
                     break;
 
                 case ThrowStatement o:
-                    Write(writer, o, options);
+                    WriteThrowStatement(writer, o, options);
                     break;
 
                 case UsingStatement o:
-                    Write(writer, o, options);
+                    WriteUsingStatement(writer, o, options);
                     break;
 
                 case VariableDeclarationStatement o:
-                    Write(writer, o, options);
+                    WriteVariableDeclarationStatement(writer, o, options);
                     break;
 
                 case WhileStatement o:
-                    Write(writer, o, options);
+                    WriteWhileStatement(writer, o, options);
                     break;
 
                 case IterationStatement o:
-                    Write(writer, o, options);
+                    WriteIterationStatement(writer, o, options);
                     break;
 
                 case ExpressionCollectionStatement o:
-                    Write(writer, o, options);
+                    WriteExpressionCollectionStatement(writer, o, options);
                     break;
 
                 case GotoNextLoopIterationStatement o:
-                    Write(writer, o, options);
+                    WriteGotoNextLoopIterationStatement(writer, o, options);
                     break;
 
                 case ExitLoopStatement o:
-                    Write(writer, o, options);
+                    WriteExitLoopStatement(writer, o, options);
                     break;
 
                 case SnippetStatement o:
-                    Write(writer, o, options);
+                    WriteSnippetStatement(writer, o, options);
                     break;
 
                 case TryCatchFinallyStatement o:
-                    Write(writer, o, options);
+                    WriteTryCatchFinallyStatement(writer, o, options);
                     break;
 
                 case AddEventHandlerStatement o:
-                    Write(writer, o, options);
+                    WriteAddEventHandlerStatement(writer, o, options);
                     break;
 
                 case RemoveEventHandlerStatement o:
-                    Write(writer, o, options);
+                    WriteRemoveEventHandlerStatement(writer, o, options);
                     break;
 
                 case CommentStatement o:
-                    Write(writer, o, options);
+                    WriteCommentStatement(writer, o, options);
                     break;
 
                 default:
@@ -117,115 +118,116 @@ namespace Meziantou.Framework.CodeDom
             }
 
             WriteAfterComments(writer, statement);
+            WriteNullableContextAfter(writer, statement);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TryCatchFinallyStatement statement, WriteStatementOptions options)
+        protected virtual void WriteTryCatchFinallyStatement(IndentedTextWriter writer, TryCatchFinallyStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("try");
-            Write(writer, statement.Try);
+            WriteStatements(writer, statement.Try);
 
             if (statement.Catch != null)
             {
-                Write(writer, statement.Catch);
+                WriteCatchClauseCollection(writer, statement.Catch);
             }
 
             if (statement.Finally != null)
             {
                 writer.WriteLine("finally");
-                Write(writer, statement.Finally);
+                WriteStatements(writer, statement.Finally);
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, SnippetStatement statement, WriteStatementOptions options)
+        protected virtual void WriteSnippetStatement(IndentedTextWriter writer, SnippetStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine(statement.Statement);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, GotoNextLoopIterationStatement statement, WriteStatementOptions options)
+        protected virtual void WriteGotoNextLoopIterationStatement(IndentedTextWriter writer, GotoNextLoopIterationStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("continue;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ExitLoopStatement statement, WriteStatementOptions options)
+        protected virtual void WriteExitLoopStatement(IndentedTextWriter writer, ExitLoopStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("break;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ReturnStatement statement, WriteStatementOptions options)
+        protected virtual void WriteReturnStatement(IndentedTextWriter writer, ReturnStatement statement, WriteStatementOptions options)
         {
             writer.Write("return");
             if (statement.Expression != null)
             {
                 writer.Write(" ");
-                Write(writer, statement.Expression);
+                WriteExpression(writer, statement.Expression);
             }
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, YieldReturnStatement statement, WriteStatementOptions options)
+        protected virtual void WriteYieldReturnStatement(IndentedTextWriter writer, YieldReturnStatement statement, WriteStatementOptions options)
         {
             writer.Write("yield return");
             if (statement.Expression != null)
             {
                 writer.Write(" ");
-                Write(writer, statement.Expression);
+                WriteExpression(writer, statement.Expression);
             }
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, YieldBreakStatement statement, WriteStatementOptions options)
+        protected virtual void WriteYieldBreakStatement(IndentedTextWriter writer, YieldBreakStatement statement, WriteStatementOptions options)
         {
             writer.WriteLine("yield break;");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ConditionStatement statement, WriteStatementOptions options)
+        protected virtual void WriteConditionStatement(IndentedTextWriter writer, ConditionStatement statement, WriteStatementOptions options)
         {
             writer.Write("if (");
-            Write(writer, statement.Condition);
+            WriteExpression(writer, statement.Condition);
             writer.WriteLine(")");
-            Write(writer, statement.TrueStatements);
+            WriteStatements(writer, statement.TrueStatements);
             if (statement.FalseStatements != null)
             {
                 writer.WriteLine("else");
-                Write(writer, statement.FalseStatements);
+                WriteStatements(writer, statement.FalseStatements);
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, AssignStatement statement, WriteStatementOptions options)
+        protected virtual void WriteAssignStatement(IndentedTextWriter writer, AssignStatement statement, WriteStatementOptions options)
         {
-            Write(writer, statement.LeftExpression);
+            WriteExpression(writer, statement.LeftExpression);
             writer.Write(" = ");
-            Write(writer, statement.RightExpression);
+            WriteExpression(writer, statement.RightExpression);
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ExpressionStatement statement, WriteStatementOptions options)
+        protected virtual void WriteExpressionStatement(IndentedTextWriter writer, ExpressionStatement statement, WriteStatementOptions options)
         {
-            Write(writer, statement.Expression);
+            WriteExpression(writer, statement.Expression);
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ThrowStatement statement, WriteStatementOptions options)
+        protected virtual void WriteThrowStatement(IndentedTextWriter writer, ThrowStatement statement, WriteStatementOptions options)
         {
             writer.Write("throw");
             if (statement.Expression != null)
             {
                 writer.Write(" ");
-                Write(writer, statement.Expression);
+                WriteExpression(writer, statement.Expression);
             }
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, UsingStatement statement, WriteStatementOptions options)
+        protected virtual void WriteUsingStatement(IndentedTextWriter writer, UsingStatement statement, WriteStatementOptions options)
         {
             writer.Write("using (");
-            Write(writer, statement.Statement, _inlineStatementWriteStatementOptions);
+            WriteStatement(writer, statement.Statement, _inlineStatementWriteStatementOptions);
             writer.Write(")");
             writer.WriteLine();
-            Write(writer, statement.Body);
+            WriteStatements(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, VariableDeclarationStatement statement, WriteStatementOptions options)
+        protected virtual void WriteVariableDeclarationStatement(IndentedTextWriter writer, VariableDeclarationStatement statement, WriteStatementOptions options)
         {
             if (statement.Type != null)
             {
@@ -241,84 +243,84 @@ namespace Meziantou.Framework.CodeDom
             if (statement.InitExpression != null)
             {
                 writer.Write(" = ");
-                Write(writer, statement.InitExpression);
+                WriteExpression(writer, statement.InitExpression);
             }
 
             options.WriteEnd(writer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, WhileStatement statement, WriteStatementOptions options)
+        protected virtual void WriteWhileStatement(IndentedTextWriter writer, WhileStatement statement, WriteStatementOptions options)
         {
             writer.Write("while (");
-            Write(writer, statement.Condition);
+            WriteExpression(writer, statement.Condition);
             writer.Write(")");
             writer.WriteLine();
 
-            Write(writer, statement.Body);
+            WriteStatements(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, IterationStatement statement, WriteStatementOptions options)
+        protected virtual void WriteIterationStatement(IndentedTextWriter writer, IterationStatement statement, WriteStatementOptions options)
         {
             writer.Write("for (");
             if (statement.Initialization != null)
             {
-                Write(writer, statement.Initialization, _inlineStatementWriteStatementOptions);
+                WriteStatement(writer, statement.Initialization, _inlineStatementWriteStatementOptions);
             }
             writer.Write("; ");
             if (statement.Condition != null)
             {
-                Write(writer, statement.Condition);
+                WriteExpression(writer, statement.Condition);
             }
             writer.Write("; ");
             if (statement.IncrementStatement != null)
             {
-                Write(writer, statement.IncrementStatement, _inlineStatementWriteStatementOptions);
+                WriteStatement(writer, statement.IncrementStatement, _inlineStatementWriteStatementOptions);
             }
             writer.Write(")");
             writer.WriteLine();
-            Write(writer, statement.Body);
+            WriteStatements(writer, statement.Body);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, AddEventHandlerStatement statement, WriteStatementOptions options)
+        protected virtual void WriteAddEventHandlerStatement(IndentedTextWriter writer, AddEventHandlerStatement statement, WriteStatementOptions options)
         {
             if (statement.LeftExpression != null)
             {
-                Write(writer, statement.LeftExpression);
+                WriteExpression(writer, statement.LeftExpression);
             }
 
             writer.Write(" += ");
 
             if (statement.RightExpression != null)
             {
-                Write(writer, statement.RightExpression);
+                WriteExpression(writer, statement.RightExpression);
             }
 
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, RemoveEventHandlerStatement statement, WriteStatementOptions options)
+        protected virtual void WriteRemoveEventHandlerStatement(IndentedTextWriter writer, RemoveEventHandlerStatement statement, WriteStatementOptions options)
         {
             if (statement.LeftExpression != null)
             {
-                Write(writer, statement.LeftExpression);
+                WriteExpression(writer, statement.LeftExpression);
             }
 
             writer.Write(" -= ");
 
             if (statement.RightExpression != null)
             {
-                Write(writer, statement.RightExpression);
+                WriteExpression(writer, statement.RightExpression);
             }
 
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ExpressionCollectionStatement statement, WriteStatementOptions options)
+        protected virtual void WriteExpressionCollectionStatement(IndentedTextWriter writer, ExpressionCollectionStatement statement, WriteStatementOptions options)
         {
             Write(writer, statement, ", ");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CommentStatement statement, WriteStatementOptions options)
+        protected virtual void WriteCommentStatement(IndentedTextWriter writer, CommentStatement statement, WriteStatementOptions options)
         {
             WriteLineComment(writer, statement.Content);
         }

@@ -78,67 +78,67 @@ namespace Meziantou.Framework.CodeDom
             switch (codeObject)
             {
                 case CompilationUnit o:
-                    Write(writer, o);
+                    WriteCompilationUnit(writer, o);
                     break;
 
                 case NamespaceDeclaration o:
-                    Write(writer, o);
+                    WriteNamespaceDeclaration(writer, o);
                     break;
 
                 case TypeDeclaration o:
-                    Write(writer, o);
+                    WriteTypeDeclaration(writer, o);
                     break;
 
                 case Expression o:
-                    Write(writer, o);
+                    WriteExpression(writer, o);
                     break;
 
                 case Statement o:
-                    Write(writer, o);
+                    WriteStatement(writer, o);
                     break;
 
                 case Directive o:
-                    Write(writer, o);
+                    WriteDirective(writer, o);
                     break;
 
                 case MemberDeclaration o:
-                    Write(writer, o);
+                    WriteMemberDeclaration(writer, o);
                     break;
 
                 case MethodArgumentDeclaration o:
-                    Write(writer, o);
+                    WriteMethodArgument(writer, o);
                     break;
 
                 case CustomAttribute o:
-                    Write(writer, o);
+                    WriteCustomAttribute(writer, o);
                     break;
 
                 case CustomAttributeArgument o:
-                    Write(writer, o);
+                    WriteCustomAttributeArgument(writer, o);
                     break;
 
                 case CatchClauseCollection o:
-                    Write(writer, o);
+                    WriteCatchClauseCollection(writer, o);
                     break;
 
                 case CatchClause o:
-                    Write(writer, o);
+                    WriteCatchClause(writer, o);
                     break;
 
                 case ConstructorInitializer o:
-                    Write(writer, o);
+                    WriteConstructorInitializer(writer, o);
                     break;
 
                 case TypeParameterConstraint o:
-                    Write(writer, o);
+                    WriteTypeParameterConstraint(writer, o);
                     break;
 
                 case Comment o:
-                    Write(writer, o);
+                    WriteComment(writer, o);
                     break;
 
                 case XmlComment o:
-                    Write(writer, o);
+                    WriteXmlComment(writer, o);
                     break;
 
                 default:
@@ -146,16 +146,18 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CompilationUnit unit)
+        protected virtual void WriteCompilationUnit(IndentedTextWriter writer, CompilationUnit unit)
         {
             WriteBeforeComments(writer, unit);
+            WriteNullableContextBefore(writer, unit);
             Write(writer, unit.Usings, writer.NewLine);
             Write(writer, unit.Namespaces, writer.NewLine);
             Write(writer, unit.Types, writer.NewLine);
+            WriteNullableContextAfter(writer, unit);
             WriteAfterComments(writer, unit);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, NamespaceDeclaration ns)
+        protected virtual void WriteNamespaceDeclaration(IndentedTextWriter writer, NamespaceDeclaration ns)
         {
             WriteBeforeComments(writer, ns);
             writer.Write("namespace ");
@@ -171,32 +173,33 @@ namespace Meziantou.Framework.CodeDom
             WriteAfterComments(writer, ns);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TypeDeclaration type)
+        protected virtual void WriteTypeDeclaration(IndentedTextWriter writer, TypeDeclaration type)
         {
+            WriteNullableContextBefore(writer, type);
             WriteXmlComments(writer, type);
             WriteBeforeComments(writer, type);
-            Write(writer, type.CustomAttributes);
-            Write(writer, type.Modifiers);
+            WriteCustomAttributes(writer, type.CustomAttributes);
+            WriteModifiers(writer, type.Modifiers);
             switch (type)
             {
                 case ClassDeclaration o:
-                    Write(writer, o);
+                    WriteClassDeclaration(writer, o);
                     break;
 
                 case StructDeclaration o:
-                    Write(writer, o);
+                    WriteStructDeclaration(writer, o);
                     break;
 
                 case EnumerationDeclaration o:
-                    Write(writer, o);
+                    WriteEnumerationDeclaration(writer, o);
                     break;
 
                 case InterfaceDeclaration o:
-                    Write(writer, o);
+                    WriteInterfaceDeclaration(writer, o);
                     break;
 
                 case DelegateDeclaration o:
-                    Write(writer, o);
+                    WriteDelegateDeclaration(writer, o);
                     break;
 
                 default:
@@ -204,9 +207,10 @@ namespace Meziantou.Framework.CodeDom
             }
 
             WriteAfterComments(writer, type);
+            WriteNullableContextAfter(writer, type);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, EnumerationDeclaration enumeration)
+        protected virtual void WriteEnumerationDeclaration(IndentedTextWriter writer, EnumerationDeclaration enumeration)
         {
             writer.Write("enum ");
             WriteIdentifier(writer, enumeration.Name);
@@ -234,18 +238,18 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, EnumerationMember member)
+        protected virtual void WriteEnumerationMember(IndentedTextWriter writer, EnumerationMember member)
         {
-            Write(writer, member.CustomAttributes);
+            WriteCustomAttributes(writer, member.CustomAttributes);
             WriteIdentifier(writer, member.Name);
             if (member.Value != null)
             {
                 writer.Write(" = ");
-                Write(writer, member.Value);
+                WriteExpression(writer, member.Value);
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, DelegateDeclaration d)
+        protected virtual void WriteDelegateDeclaration(IndentedTextWriter writer, DelegateDeclaration d)
         {
             writer.Write("delegate ");
             if (d.ReturnType == null)
@@ -260,7 +264,7 @@ namespace Meziantou.Framework.CodeDom
             WriteIdentifier(writer, d.Name);
             WriteGenericParameters(writer, d);
             writer.Write("(");
-            Write(writer, d.Arguments);
+            WriteMethodArguments(writer, d.Arguments);
             writer.Write(")");
             WriteGenericParameterConstraints(writer, d);
             if (d.HasConstraints())
@@ -275,10 +279,10 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MethodDeclaration member)
+        protected virtual void WriteMethodDeclaration(IndentedTextWriter writer, MethodDeclaration member)
         {
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
             if (member.ReturnType == null)
             {
                 writer.Write("void ");
@@ -298,7 +302,7 @@ namespace Meziantou.Framework.CodeDom
             WriteIdentifier(writer, member.Name);
             WriteGenericParameters(writer, member);
             writer.Write("(");
-            Write(writer, member.Arguments);
+            WriteMethodArguments(writer, member.Arguments);
             writer.Write(")");
             if (member.Statements != null || member.HasConstraints())
             {
@@ -321,16 +325,16 @@ namespace Meziantou.Framework.CodeDom
             }
             else
             {
-                Write(writer, member.Statements);
+                WriteStatements(writer, member.Statements);
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, OperatorDeclaration member)
+        protected virtual void WriteOperatorDeclaration(IndentedTextWriter writer, OperatorDeclaration member)
         {
             var isConversion = member.Modifiers.HasFlag(Modifiers.Implicit) || member.Modifiers.HasFlag(Modifiers.Explicit);
 
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
             if (isConversion)
             {
                 writer.Write("operator ");
@@ -361,40 +365,40 @@ namespace Meziantou.Framework.CodeDom
 
             WriteIdentifier(writer, member.Name);
             writer.Write("(");
-            Write(writer, member.Arguments);
+            WriteMethodArguments(writer, member.Arguments);
             writer.Write(")");
             writer.WriteLine();
-            Write(writer, member.Statements);
+            WriteStatements(writer, member.Statements);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<MethodArgumentDeclaration> args)
+        protected virtual void WriteMethodArguments(IndentedTextWriter writer, CodeObjectCollection<MethodArgumentDeclaration> args)
         {
             Write(writer, args, ", ");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MethodArgumentDeclaration arg)
+        protected virtual void WriteMethodArgument(IndentedTextWriter writer, MethodArgumentDeclaration arg)
         {
             WriteBeforeComments(writer, arg);
-            Write(writer, arg.CustomAttributes);
+            WriteCustomAttributes(writer, arg.CustomAttributes);
             if (arg.IsExtension)
             {
                 writer.Write("this ");
             }
 
-            Write(writer, arg.Direction);
+            WriteDirection(writer, arg.Direction);
             WriteTypeReference(writer, arg.Type);
             writer.Write(" ");
             WriteIdentifier(writer, arg.Name);
             if (arg.DefaultValue != null)
             {
                 writer.Write(" = ");
-                Write(writer, arg.DefaultValue);
+                WriteExpression(writer, arg.DefaultValue);
             }
 
             WriteAfterComments(writer, arg);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, Direction direction)
+        protected virtual void WriteDirection(IndentedTextWriter writer, Direction direction)
         {
             switch (direction)
             {
@@ -418,10 +422,10 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, FieldDeclaration member)
+        protected virtual void WriteFieldDeclaration(IndentedTextWriter writer, FieldDeclaration member)
         {
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
             if (member.Type == null)
             {
                 writer.Write("var ");
@@ -437,16 +441,16 @@ namespace Meziantou.Framework.CodeDom
             if (member.InitExpression != null)
             {
                 writer.Write(" = ");
-                Write(writer, member.InitExpression);
+                WriteExpression(writer, member.InitExpression);
             }
 
             writer.WriteLine(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, EventFieldDeclaration member)
+        protected virtual void WriteEventFieldDeclaration(IndentedTextWriter writer, EventFieldDeclaration member)
         {
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
             writer.Write("event ");
             if (member.Type != null)
             {
@@ -475,13 +479,13 @@ namespace Meziantou.Framework.CodeDom
                 if (member.AddAccessor != null)
                 {
                     writer.WriteLine("add");
-                    Write(writer, member.AddAccessor);
+                    WriteStatements(writer, member.AddAccessor);
                 }
 
                 if (member.RemoveAccessor != null)
                 {
                     writer.WriteLine("remove");
-                    Write(writer, member.RemoveAccessor);
+                    WriteStatements(writer, member.RemoveAccessor);
                 }
 
                 writer.Indent--;
@@ -489,10 +493,10 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ConstructorDeclaration member)
+        protected virtual void WriteConstructorDeclaration(IndentedTextWriter writer, ConstructorDeclaration member)
         {
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
 
             var name = member.ParentType?.Name ?? member.Name;
             if (name != null)
@@ -501,23 +505,23 @@ namespace Meziantou.Framework.CodeDom
             }
 
             writer.Write("(");
-            Write(writer, member.Arguments);
+            WriteMethodArguments(writer, member.Arguments);
             writer.Write(")");
             if (member.Initializer != null)
             {
                 writer.WriteLine();
                 writer.Indent++;
-                Write(writer, member.Initializer);
+                WriteConstructorInitializer(writer, member.Initializer);
                 writer.Indent--;
             }
             writer.WriteLine();
-            Write(writer, member.Statements);
+            WriteStatements(writer, member.Statements);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, PropertyDeclaration member)
+        protected virtual void WritePropertyDeclaration(IndentedTextWriter writer, PropertyDeclaration member)
         {
-            Write(writer, member.CustomAttributes);
-            Write(writer, member.Modifiers);
+            WriteCustomAttributes(writer, member.CustomAttributes);
+            WriteModifiers(writer, member.Modifiers);
             WriteTypeReference(writer, member.Type);
             writer.Write(" ");
 
@@ -535,12 +539,12 @@ namespace Meziantou.Framework.CodeDom
 
             if (member.Getter != null)
             {
-                Write(writer, member.Getter.CustomAttributes);
-                Write(writer, member.Getter.Modifiers);
+                WriteCustomAttributes(writer, member.Getter.CustomAttributes);
+                WriteModifiers(writer, member.Getter.Modifiers);
                 if (member.Getter.Statements != null)
                 {
                     writer.WriteLine("get");
-                    Write(writer, member.Getter.Statements);
+                    WriteStatements(writer, member.Getter.Statements);
                 }
                 else
                 {
@@ -550,12 +554,12 @@ namespace Meziantou.Framework.CodeDom
 
             if (member.Setter != null)
             {
-                Write(writer, member.Setter.CustomAttributes);
-                Write(writer, member.Setter.Modifiers);
+                WriteCustomAttributes(writer, member.Setter.CustomAttributes);
+                WriteModifiers(writer, member.Setter.Modifiers);
                 if (member.Setter.Statements != null)
                 {
                     writer.WriteLine("set");
-                    Write(writer, member.Setter.Statements);
+                    WriteStatements(writer, member.Setter.Statements);
                 }
                 else
                 {
@@ -567,7 +571,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ClassDeclaration type)
+        protected virtual void WriteClassDeclaration(IndentedTextWriter writer, ClassDeclaration type)
         {
             writer.Write("class ");
             WriteIdentifier(writer, type.Name);
@@ -590,7 +594,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, StructDeclaration type)
+        protected virtual void WriteStructDeclaration(IndentedTextWriter writer, StructDeclaration type)
         {
             writer.Write("struct ");
             WriteIdentifier(writer, type.Name);
@@ -613,7 +617,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, InterfaceDeclaration type)
+        protected virtual void WriteInterfaceDeclaration(IndentedTextWriter writer, InterfaceDeclaration type)
         {
             writer.Write("interface ");
             WriteIdentifier(writer, type.Name);
@@ -637,7 +641,7 @@ namespace Meziantou.Framework.CodeDom
             writer.WriteLine("}");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, Modifiers modifiers)
+        protected virtual void WriteModifiers(IndentedTextWriter writer, Modifiers modifiers)
         {
             if ((modifiers & Modifiers.Private) == Modifiers.Private)
             {
@@ -717,7 +721,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CodeObjectCollection<CustomAttribute> attributes)
+        protected virtual void WriteCustomAttributes(IndentedTextWriter writer, CodeObjectCollection<CustomAttribute> attributes)
         {
             if (attributes.Count > 0)
             {
@@ -726,13 +730,13 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CustomAttribute attribute)
+        protected virtual void WriteCustomAttribute(IndentedTextWriter writer, CustomAttribute attribute)
         {
             WriteBeforeComments(writer, attribute);
             writer.Write("[");
             if (attribute.Target.HasValue)
             {
-                writer.Write(Write(attribute.Target.Value));
+                writer.Write(WriteCustomAttributeTarget(attribute.Target.Value));
                 writer.Write(": ");
             }
 
@@ -757,7 +761,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CustomAttributeArgument arg)
+        protected virtual void WriteCustomAttributeArgument(IndentedTextWriter writer, CustomAttributeArgument arg)
         {
             WriteBeforeComments(writer, arg);
             if (!string.IsNullOrEmpty(arg.PropertyName))
@@ -766,42 +770,43 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(" = ");
             }
 
-            Write(writer, arg.Value);
+            WriteExpression(writer, arg.Value);
             WriteAfterComments(writer, arg);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, MemberDeclaration member)
+        protected virtual void WriteMemberDeclaration(IndentedTextWriter writer, MemberDeclaration member)
         {
+            WriteNullableContextBefore(writer, member);
             WriteXmlComments(writer, member);
             WriteBeforeComments(writer, member);
             switch (member)
             {
                 case EnumerationMember o:
-                    Write(writer, o);
+                    WriteEnumerationMember(writer, o);
                     break;
 
                 case MethodDeclaration o:
-                    Write(writer, o);
+                    WriteMethodDeclaration(writer, o);
                     break;
 
                 case OperatorDeclaration o:
-                    Write(writer, o);
+                    WriteOperatorDeclaration(writer, o);
                     break;
 
                 case FieldDeclaration o:
-                    Write(writer, o);
+                    WriteFieldDeclaration(writer, o);
                     break;
 
                 case ConstructorDeclaration o:
-                    Write(writer, o);
+                    WriteConstructorDeclaration(writer, o);
                     break;
 
                 case PropertyDeclaration o:
-                    Write(writer, o);
+                    WritePropertyDeclaration(writer, o);
                     break;
 
                 case EventFieldDeclaration o:
-                    Write(writer, o);
+                    WriteEventFieldDeclaration(writer, o);
                     break;
 
                 default:
@@ -809,15 +814,16 @@ namespace Meziantou.Framework.CodeDom
             }
 
             WriteAfterComments(writer, member);
+            WriteNullableContextAfter(writer, member);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, Directive directive)
+        protected virtual void WriteDirective(IndentedTextWriter writer, Directive directive)
         {
             WriteBeforeComments(writer, directive);
             switch (directive)
             {
                 case UsingDirective o:
-                    Write(writer, o);
+                    WriteUsingDirective(writer, o);
                     break;
 
                 default:
@@ -827,14 +833,14 @@ namespace Meziantou.Framework.CodeDom
             WriteAfterComments(writer, directive);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, UsingDirective usingDirective)
+        protected virtual void WriteUsingDirective(IndentedTextWriter writer, UsingDirective usingDirective)
         {
             writer.Write("using ");
             writer.Write(usingDirective.Namespace);
             writer.Write(";");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CatchClause catchClause)
+        protected virtual void WriteCatchClause(IndentedTextWriter writer, CatchClause catchClause)
         {
             WriteBeforeComments(writer, catchClause);
             writer.Write("catch");
@@ -851,16 +857,16 @@ namespace Meziantou.Framework.CodeDom
             }
             writer.WriteLine();
 
-            Write(writer, catchClause.Body);
+            WriteStatements(writer, catchClause.Body);
             WriteAfterComments(writer, catchClause);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, CatchClauseCollection clauses)
+        protected virtual void WriteCatchClauseCollection(IndentedTextWriter writer, CatchClauseCollection clauses)
         {
             Write(writer, clauses, "");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ConstructorInitializer initializer)
+        protected virtual void WriteConstructorInitializer(IndentedTextWriter writer, ConstructorInitializer initializer)
         {
             WriteBeforeComments(writer, initializer);
             writer.Write(": ");
@@ -884,28 +890,28 @@ namespace Meziantou.Framework.CodeDom
             WriteAfterComments(writer, initializer);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, TypeParameterConstraint constraint)
+        protected virtual void WriteTypeParameterConstraint(IndentedTextWriter writer, TypeParameterConstraint constraint)
         {
             switch (constraint)
             {
                 case BaseTypeParameterConstraint o:
-                    Write(writer, o);
+                    WriteBaseTypeParameterContraint(writer, o);
                     break;
 
                 case ClassTypeParameterConstraint o:
-                    Write(writer, o);
+                    WriteClassTypeParameterConstraint(writer, o);
                     break;
 
                 case ValueTypeTypeParameterConstraint o:
-                    Write(writer, o);
+                    WriteValueTypeParameterContraint(writer, o);
                     break;
 
                 case ConstructorParameterConstraint o:
-                    Write(writer, o);
+                    WriteConstructParameterConstraint(writer, o);
                     break;
 
                 case UnmanagedTypeParameterConstraint o:
-                    Write(writer, o);
+                    WriteUnmanagedTypeParameterConstraint(writer, o);
                     break;
 
                 default:
@@ -913,32 +919,32 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, BaseTypeParameterConstraint constraint)
+        protected virtual void WriteBaseTypeParameterContraint(IndentedTextWriter writer, BaseTypeParameterConstraint constraint)
         {
             WriteTypeReference(writer, constraint.Type);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ClassTypeParameterConstraint constraint)
+        protected virtual void WriteClassTypeParameterConstraint(IndentedTextWriter writer, ClassTypeParameterConstraint constraint)
         {
             writer.Write("class");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ValueTypeTypeParameterConstraint constraint)
+        protected virtual void WriteValueTypeParameterContraint(IndentedTextWriter writer, ValueTypeTypeParameterConstraint constraint)
         {
             writer.Write("struct");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, UnmanagedTypeParameterConstraint constraint)
+        protected virtual void WriteUnmanagedTypeParameterConstraint(IndentedTextWriter writer, UnmanagedTypeParameterConstraint constraint)
         {
             writer.Write("unmanaged");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ConstructorParameterConstraint constraint)
+        protected virtual void WriteConstructParameterConstraint(IndentedTextWriter writer, ConstructorParameterConstraint constraint)
         {
             writer.Write("new()");
         }
 
-        protected virtual CommentType Write(IndentedTextWriter writer, Comment comment)
+        protected virtual CommentType WriteComment(IndentedTextWriter writer, Comment comment)
         {
             switch (comment.Type)
             {
@@ -956,12 +962,12 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, XmlComment comment)
+        protected virtual void WriteXmlComment(IndentedTextWriter writer, XmlComment comment)
         {
             WriteDocumentationComment(writer, comment.Element?.ToString());
         }
 
-        protected virtual string Write(BinaryOperator op)
+        protected virtual string WriteBinaryOperator(BinaryOperator op)
         {
             return op switch
             {
@@ -1010,7 +1016,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual string Write(UnaryOperator op)
+        protected virtual string WriteUnaryOperator(UnaryOperator op)
         {
             switch (op)
             {
@@ -1036,7 +1042,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual string Write(CustomAttributeTarget target)
+        protected virtual string WriteCustomAttributeTarget(CustomAttributeTarget target)
         {
             return target switch
             {
@@ -1066,7 +1072,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write(name);
         }
 
-        protected virtual void Write(IndentedTextWriter writer, StatementCollection? statements)
+        protected virtual void WriteStatements(IndentedTextWriter writer, StatementCollection? statements)
         {
             writer.WriteLine("{");
             writer.Indent++;
@@ -1082,7 +1088,7 @@ namespace Meziantou.Framework.CodeDom
                         mustAddNewLine = false;
                     }
 
-                    Write(writer, statement);
+                    WriteStatement(writer, statement);
                     mustAddNewLine = IsBlockStatement(statement);
                 }
             }
@@ -1185,7 +1191,7 @@ namespace Meziantou.Framework.CodeDom
         {
             foreach (var comment in commentable.XmlComments)
             {
-                Write(writer, comment);
+                WriteXmlComment(writer, comment);
             }
         }
 
@@ -1203,7 +1209,7 @@ namespace Meziantou.Framework.CodeDom
                     }
                 }
 
-                type = Write(writer, c);
+                type = WriteComment(writer, c);
                 first = false;
             }
 
@@ -1226,7 +1232,7 @@ namespace Meziantou.Framework.CodeDom
                     writer.Write(' ');
                 }
 
-                type = Write(writer, c);
+                type = WriteComment(writer, c);
                 first = false;
             }
         }
@@ -1387,6 +1393,38 @@ namespace Meziantou.Framework.CodeDom
                     WriteTypeReference(writer, type);
                     first = false;
                 }
+            }
+        }
+
+        protected virtual void WriteNullableContextBefore(IndentedTextWriter writer, INullableContext nullableContext)
+        {
+            switch (nullableContext.NullableContext)
+            {
+                case NullableContext.Enable:
+                    writer.EnsureNewLine();
+                    writer.WriteLineNoTabs("#nullable enable");
+                    break;
+
+                case NullableContext.Disable:
+                    writer.EnsureNewLine();
+                    writer.WriteLineNoTabs("#nullable disable");
+                    break;
+            }
+        }
+
+        protected virtual void WriteNullableContextAfter(IndentedTextWriter writer, INullableContext nullableContext)
+        {
+            switch (nullableContext.NullableContext)
+            {
+                case NullableContext.Enable:
+                    writer.EnsureNewLine();
+                    writer.WriteLineNoTabs("#nullable disable");
+                    break;
+
+                case NullableContext.Disable:
+                    writer.EnsureNewLine();
+                    writer.WriteLineNoTabs("#nullable enable");
+                    break;
             }
         }
     }

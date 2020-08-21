@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable
+    public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable, INullableContext
     {
         private CodeObjectCollection<TypeDeclaration>? _types;
         private CodeObjectCollection<NamespaceDeclaration>? _namespaces;
@@ -11,6 +11,8 @@
         public CompilationUnit()
         {
         }
+
+        public NullableContext NullableContext { get; set; }
 
         public CodeObjectCollection<TypeDeclaration> Types
         {

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public partial class CSharpCodeGenerator
     {
-        protected virtual void Write(IndentedTextWriter writer, Expression? expression)
+        protected virtual void WriteExpression(IndentedTextWriter writer, Expression? expression)
         {
             if (expression == null)
                 return;
@@ -125,7 +125,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void WriteMethodInvokeExpression(IndentedTextWriter writer, MethodInvokeExpression expression)
         {
-            Write(writer, expression.Method);
+            WriteExpression(writer, expression.Method);
             WriteGenericParameters(writer, expression.Parameters);
             writer.Write("(");
             Write(writer, expression.Arguments, ", ");
@@ -134,7 +134,7 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual void WriteMethodInvokeArgumentExpression(IndentedTextWriter writer, MethodInvokeArgumentExpression expression)
         {
-            Write(writer, expression.Direction);
+            WriteDirection(writer, expression.Direction);
 
             if (!string.IsNullOrEmpty(expression.Name))
             {
@@ -142,7 +142,7 @@ namespace Meziantou.Framework.CodeDom
                 writer.Write(": ");
             }
 
-            Write(writer, expression.Value);
+            WriteExpression(writer, expression.Value);
         }
 
         protected virtual void WriteArgumentReferenceExpression(IndentedTextWriter writer, ArgumentReferenceExpression expression)
@@ -154,7 +154,7 @@ namespace Meziantou.Framework.CodeDom
         {
             if (expression.TargetObject != null)
             {
-                Write(writer, expression.TargetObject);
+                WriteExpression(writer, expression.TargetObject);
                 writer.Write(".");
             }
 
@@ -166,63 +166,63 @@ namespace Meziantou.Framework.CodeDom
             switch (expression.Value)
             {
                 case null:
-                    WriteNull(writer);
+                    WriteNullLiteral(writer);
                     return;
 
                 case bool value:
-                    Write(writer, value);
+                    WriteBooleanLiteral(writer, value);
                     break;
 
                 case sbyte value:
-                    Write(writer, value);
+                    WriteSByteLiteral(writer, value);
                     return;
 
                 case byte value:
-                    Write(writer, value);
+                    WriteByteLiteral(writer, value);
                     return;
 
                 case short value:
-                    Write(writer, value);
+                    WriteInt16Literal(writer, value);
                     return;
 
                 case ushort value:
-                    Write(writer, value);
+                    WriteUInt16Literal(writer, value);
                     return;
 
                 case int value:
-                    Write(writer, value);
+                    WriteInt32Literal(writer, value);
                     return;
 
                 case uint value:
-                    Write(writer, value);
+                    WriteUint32Literal(writer, value);
                     return;
 
                 case long value:
-                    Write(writer, value);
+                    Int64Literal(writer, value);
                     return;
 
                 case ulong value:
-                    Write(writer, value);
+                    WriteUInt64Literal(writer, value);
                     return;
 
                 case float value:
-                    Write(writer, value);
+                    WriteSingleLiteral(writer, value);
                     return;
 
                 case double value:
-                    Write(writer, value);
+                    WriteDoubleLiteral(writer, value);
                     return;
 
                 case decimal value:
-                    Write(writer, value);
+                    WriteDecimalLiteral(writer, value);
                     return;
 
                 case char value:
-                    Write(writer, value);
+                    WriteCharLiteral(writer, value);
                     break;
 
                 case string value:
-                    Write(writer, value);
+                    WriteStringLiteral(writer, value);
                     return;
 
                 default:
@@ -230,12 +230,12 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void WriteNull(IndentedTextWriter writer)
+        protected virtual void WriteNullLiteral(IndentedTextWriter writer)
         {
             writer.Write("null");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, bool value)
+        protected virtual void WriteBooleanLiteral(IndentedTextWriter writer, bool value)
         {
             if (value)
             {
@@ -247,50 +247,50 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, sbyte value)
+        protected virtual void WriteSByteLiteral(IndentedTextWriter writer, sbyte value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual void Write(IndentedTextWriter writer, byte value)
+        protected virtual void WriteByteLiteral(IndentedTextWriter writer, byte value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual void Write(IndentedTextWriter writer, short value)
+        protected virtual void WriteInt16Literal(IndentedTextWriter writer, short value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ushort value)
+        protected virtual void WriteUInt16Literal(IndentedTextWriter writer, ushort value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual void Write(IndentedTextWriter writer, int value)
+        protected virtual void WriteInt32Literal(IndentedTextWriter writer, int value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
         }
 
-        protected virtual void Write(IndentedTextWriter writer, uint value)
+        protected virtual void WriteUint32Literal(IndentedTextWriter writer, uint value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
             writer.Write("u");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, long value)
+        protected virtual void Int64Literal(IndentedTextWriter writer, long value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
             writer.Write("L");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, ulong value)
+        protected virtual void WriteUInt64Literal(IndentedTextWriter writer, ulong value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
             writer.Write("uL");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, string value)
+        protected virtual void WriteStringLiteral(IndentedTextWriter writer, string value)
         {
             writer.Write("\"");
             foreach (var c in value)
@@ -345,20 +345,20 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("\"");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, char value)
+        protected virtual void WriteCharLiteral(IndentedTextWriter writer, char value)
         {
             writer.Write('\'');
             writer.Write(value);
             writer.Write('\'');
         }
 
-        protected virtual void Write(IndentedTextWriter writer, decimal value)
+        protected virtual void WriteDecimalLiteral(IndentedTextWriter writer, decimal value)
         {
             writer.Write(value.ToString(CultureInfo.InvariantCulture));
             writer.Write("m");
         }
 
-        protected virtual void Write(IndentedTextWriter writer, float value)
+        protected virtual void WriteSingleLiteral(IndentedTextWriter writer, float value)
         {
             if (float.IsNaN(value))
             {
@@ -379,7 +379,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected virtual void Write(IndentedTextWriter writer, double value)
+        protected virtual void WriteDoubleLiteral(IndentedTextWriter writer, double value)
         {
             if (double.IsNaN(value))
             {
@@ -403,11 +403,11 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void WriteBinaryExpression(IndentedTextWriter writer, BinaryExpression expression)
         {
             writer.Write("(");
-            Write(writer, expression.LeftExpression);
+            WriteExpression(writer, expression.LeftExpression);
             writer.Write(" ");
-            writer.Write(Write(expression.Operator));
+            writer.Write(WriteBinaryOperator(expression.Operator));
             writer.Write(" ");
-            Write(writer, expression.RightExpression);
+            WriteExpression(writer, expression.RightExpression);
             writer.Write(")");
         }
 
@@ -416,20 +416,20 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("(");
             if (IsPrefixOperator(expression.Operator))
             {
-                writer.Write(Write(expression.Operator));
-                Write(writer, expression.Expression);
+                writer.Write(WriteUnaryOperator(expression.Operator));
+                WriteExpression(writer, expression.Expression);
             }
             else
             {
-                Write(writer, expression.Expression);
-                writer.Write(Write(expression.Operator));
+                WriteExpression(writer, expression.Expression);
+                writer.Write(WriteUnaryOperator(expression.Operator));
             }
             writer.Write(")");
         }
 
         protected virtual void WriteArrayIndexerExpression(IndentedTextWriter writer, ArrayIndexerExpression expression)
         {
-            Write(writer, expression.ArrayExpression);
+            WriteExpression(writer, expression.ArrayExpression);
             writer.Write("[");
             Write(writer, expression.Indices, ", ");
             writer.Write("]");
@@ -449,7 +449,7 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void WriteNameofExpression(IndentedTextWriter writer, NameofExpression expression)
         {
             writer.Write("nameof(");
-            Write(writer, expression.Expression);
+            WriteExpression(writer, expression.Expression);
             writer.Write(")");
         }
 
@@ -487,14 +487,14 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("(");
             WriteTypeReference(writer, expression.Type);
             writer.Write(")");
-            Write(writer, expression.Expression);
+            WriteExpression(writer, expression.Expression);
             writer.Write(")");
         }
 
         protected virtual void WriteConvertExpression(IndentedTextWriter writer, ConvertExpression expression)
         {
             writer.Write("(");
-            Write(writer, expression.Expression);
+            WriteExpression(writer, expression.Expression);
             writer.Write(" as ");
             WriteTypeReference(writer, expression.Type);
             writer.Write(")");
@@ -517,7 +517,7 @@ namespace Meziantou.Framework.CodeDom
             writer.Write("await ");
             if (expression.Expression != null)
             {
-                Write(writer, expression.Expression);
+                WriteExpression(writer, expression.Expression);
             }
         }
     }

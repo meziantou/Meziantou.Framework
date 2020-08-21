@@ -1,9 +1,10 @@
 ﻿namespace Meziantou.Framework.CodeDom
 {
-    public abstract class Statement : CodeObject, ICommentable
+    public abstract class Statement : CodeObject, ICommentable, INullableContext
     {
         public CommentCollection CommentsBefore { get; }
         public CommentCollection CommentsAfter { get; }
+        public NullableContext NullableContext { get; set; }
 
         protected Statement()
         {

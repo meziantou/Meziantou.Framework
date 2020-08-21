@@ -55,6 +55,7 @@ namespace Meziantou.Framework.CodeDom
             TabString = tabString;
             InnerWriter = writer;
             CloseWriter = closeWriter;
+            _tabsPending = true;
         }
 
         public override void Close()
@@ -81,6 +82,14 @@ namespace Meziantou.Framework.CodeDom
             }
 
             _tabsPending = false;
+        }
+
+        public void EnsureNewLine()
+        {
+            if (_tabsPending)
+                return;
+
+            WriteLine();
         }
 
         public override void Write(string? value)

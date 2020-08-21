@@ -12,5 +12,7 @@
         }
 
         public object? Value { get; set; }
+
+        public static LiteralExpression Null() => new LiteralExpression(value: null);
     }
 }

@@ -204,6 +204,7 @@ namespace Meziantou.Framework.CodeDom
                 _typeDeclaration = _typeDeclaration,
                 _typeParameter = _typeParameter,
                 ArrayRank = ArrayRank,
+                Nullable = Nullable,
             };
 
             if (_parameters != null)

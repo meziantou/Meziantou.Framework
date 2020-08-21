@@ -89,6 +89,8 @@ namespace Meziantou.Framework.CodeDom
 
         public int ArrayRank { get; set; }
 
+        public NullableAnnotation Nullable { get; set; }
+
         public IList<TypeReference> Parameters
         {
             get
@@ -155,7 +157,6 @@ namespace Meziantou.Framework.CodeDom
                 return sb.ToString();
             }
         }
-
 
         public string ClrFullTypeName
         {
@@ -232,6 +233,13 @@ namespace Meziantou.Framework.CodeDom
         {
             var type = Clone();
             type.ArrayRank = rank;
+            return type;
+        }
+
+        public TypeReference MakeNullable(NullableAnnotation value = NullableAnnotation.Nullable)
+        {
+            var type = Clone();
+            type.Nullable = value;
             return type;
         }
 

@@ -1355,6 +1355,11 @@ namespace Meziantou.Framework.CodeDom
                 WriteGenericParameters(writer, type.Parameters);
             }
 
+            if (type.Nullable == NullableAnnotation.Nullable)
+            {
+                writer.Write('?');
+            }
+
             if (type.IsArray)
             {
                 writer.Write('[');

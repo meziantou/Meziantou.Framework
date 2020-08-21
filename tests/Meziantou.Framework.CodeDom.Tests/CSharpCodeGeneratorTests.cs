@@ -1787,6 +1787,7 @@ void Sample()
             AssertExtensions.StringEquals(@"int[] a = new int[1, 2];
 ", result);
         }
+
         [Fact]
         public void CSharpCodeGenerator_EmptyGetter()
         {
@@ -1805,6 +1806,18 @@ void Sample()
 {
     get;
 }
+", result);
+        }
+
+        [Fact]
+        public void CSharpCodeGenerator_NullableType()
+        {
+            var prop = new VariableDeclarationStatement(new TypeReference(typeof(string)).MakeNullable(), "a");
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(prop);
+
+            AssertExtensions.StringEquals(@"string? a;
 ", result);
         }
     }

@@ -1787,5 +1787,25 @@ void Sample()
             AssertExtensions.StringEquals(@"int[] a = new int[1, 2];
 ", result);
         }
+        [Fact]
+        public void CSharpCodeGenerator_EmptyGetter()
+        {
+            var prop = new PropertyDeclaration("A", typeof(int))
+            {
+                Getter = new PropertyAccessorDeclaration
+                {
+                    Statements = null,
+                },
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(prop);
+
+            AssertExtensions.StringEquals(@"int A
+{
+    get;
+}
+", result);
+        }
     }
 }

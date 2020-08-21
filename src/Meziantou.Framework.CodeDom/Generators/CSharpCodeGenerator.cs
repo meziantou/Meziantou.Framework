@@ -537,16 +537,30 @@ namespace Meziantou.Framework.CodeDom
             {
                 Write(writer, member.Getter.CustomAttributes);
                 Write(writer, member.Getter.Modifiers);
-                writer.WriteLine("get");
-                Write(writer, member.Getter.Statements);
+                if (member.Getter.Statements != null)
+                {
+                    writer.WriteLine("get");
+                    Write(writer, member.Getter.Statements);
+                }
+                else
+                {
+                    writer.WriteLine("get;");
+                }
             }
 
             if (member.Setter != null)
             {
                 Write(writer, member.Setter.CustomAttributes);
                 Write(writer, member.Setter.Modifiers);
-                writer.WriteLine("set");
-                Write(writer, member.Setter.Statements);
+                if (member.Setter.Statements != null)
+                {
+                    writer.WriteLine("set");
+                    Write(writer, member.Setter.Statements);
+                }
+                else
+                {
+                    writer.WriteLine("set;");
+                }
             }
 
             writer.Indent--;

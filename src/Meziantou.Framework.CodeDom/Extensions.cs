@@ -81,13 +81,13 @@ namespace Meziantou.Framework.CodeDom
 
         public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(expression, memberName), parameters, arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, params Expression[] arguments) => CreateInvokeMethodExpression(expression, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, params Expression[] arguments) => CreateInvokeMethodExpression(new VariableReferenceExpression(expression), arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, string memberName, params Expression[] arguments) => CreateInvokeMethodExpression(expression, memberName, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, string memberName, params Expression[] arguments) => CreateInvokeMethodExpression(new VariableReferenceExpression(expression), memberName, arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, TypeReference[] parameters, params Expression[] arguments) => CreateInvokeMethodExpression(expression, parameters, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, TypeReference[] parameters, params Expression[] arguments) => CreateInvokeMethodExpression(new VariableReferenceExpression(expression), parameters, arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => CreateInvokeMethodExpression(expression, memberName, parameters, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => CreateInvokeMethodExpression(new VariableReferenceExpression(expression), memberName, parameters, arguments);
 
         public static MemberReferenceExpression CreateMemberReferenceExpression(this Expression expression, string name, params string[] names)
         {

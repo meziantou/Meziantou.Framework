@@ -153,7 +153,6 @@ namespace Meziantou.Framework.CodeDom
             Write(writer, unit.Usings, writer.NewLine);
             Write(writer, unit.Namespaces, writer.NewLine);
             Write(writer, unit.Types, writer.NewLine);
-            WriteNullableContextAfter(writer, unit);
             WriteAfterComments(writer, unit);
         }
 

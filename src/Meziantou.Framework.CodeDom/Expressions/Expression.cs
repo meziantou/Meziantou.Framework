@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Linq.Expressions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -32,9 +32,23 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator Expression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReferenceExpression(variableDeclarationStatement);
+        [return: NotNullIfNotNull("variableDeclarationStatement")]
+        public static implicit operator Expression?(VariableDeclarationStatement? variableDeclarationStatement)
+        {
+            if (variableDeclarationStatement is null)
+                return null;
 
-        public static implicit operator Expression(MethodArgumentDeclaration argument) => new ArgumentReferenceExpression(argument);
+            return new VariableReferenceExpression(variableDeclarationStatement);
+        }
+
+        [return: NotNullIfNotNull("argument")]
+        public static implicit operator Expression?(MethodArgumentDeclaration? argument)
+        {
+            if (argument is null)
+                return null;
+
+            return new ArgumentReferenceExpression(argument);
+        }
 
         public static implicit operator Expression(TypeReference typeReference) => new TypeReferenceExpression(typeReference);
 

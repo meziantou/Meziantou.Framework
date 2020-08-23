@@ -1833,7 +1833,6 @@ void Sample()
             var result = generator.Write(unit);
 
             AssertExtensions.StringEquals(@"#nullable enable
-#nullable disable
 ", result);
         }
 

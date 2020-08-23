@@ -324,9 +324,20 @@ namespace Meziantou.Framework.CodeDom
                     VisitNewArrayExpression(newArrayExpression);
                     break;
 
+                case IsInstanceOfTypeExpression isInstanceOfTypeExpression:
+                    VisitIsInstanceOfTypeExpression(isInstanceOfTypeExpression);
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(codeObject));
             }
+        }
+
+        protected virtual void VisitIsInstanceOfTypeExpression(IsInstanceOfTypeExpression isInstanceOfTypeExpression)
+        {
+            VisitExpression(isInstanceOfTypeExpression);
+            VisitTypeReferenceIfNotNull(isInstanceOfTypeExpression.Type);
+            Visit(isInstanceOfTypeExpression.Expression);
         }
 
         protected virtual void VisitNewArrayExpression(NewArrayExpression newArrayExpression)

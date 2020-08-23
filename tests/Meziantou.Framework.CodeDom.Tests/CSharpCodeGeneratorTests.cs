@@ -1860,5 +1860,20 @@ null
 #nullable disable
 ", result);
         }
+
+        [Fact]
+        public void CSharpCodeGenerator_IsInstanceOfType()
+        {
+            var unit = new IsInstanceOfTypeExpression
+            {
+                Expression = new VariableReferenceExpression("a"),
+                Type = new TypeReference(typeof(string)),
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(unit);
+
+            AssertExtensions.StringEquals(@"(a is string)", result);
+        }
     }
 }

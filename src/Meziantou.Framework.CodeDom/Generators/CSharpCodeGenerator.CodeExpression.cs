@@ -96,9 +96,13 @@ namespace Meziantou.Framework.CodeDom
                 case AwaitExpression o:
                     WriteAwaitExpression(writer, o);
                     break;
-                    
+
                 case NewArrayExpression o:
                     WriteNewArrayExpression(writer, o);
+                    break;
+
+                case IsInstanceOfTypeExpression o:
+                    WriteIsInstanceOfTypeExpression(writer, o);
                     break;
 
                 default:
@@ -106,6 +110,15 @@ namespace Meziantou.Framework.CodeDom
             }
 
             WriteAfterComments(writer, expression);
+        }
+
+        protected virtual void WriteIsInstanceOfTypeExpression(IndentedTextWriter writer, IsInstanceOfTypeExpression expression)
+        {
+            writer.Write("(");
+            WriteExpression(writer, expression.Expression);
+            writer.Write(" is ");
+            WriteTypeReference(writer, expression.Type);
+            writer.Write(")");
         }
 
         protected virtual void WriteTypeReferenceExpression(IndentedTextWriter writer, TypeReferenceExpression expression)

@@ -98,5 +98,15 @@ namespace Meziantou.Framework
         {
             return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Kind);
         }
+
+        public static string ToStringInvariant(this DateTime dt)
+        {
+            return dt.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant(this DateTime dt, string format)
+        {
+            return dt.ToString(format, CultureInfo.InvariantCulture);
+        }
     }
 }

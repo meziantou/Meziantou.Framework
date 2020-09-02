@@ -120,7 +120,7 @@ namespace Meziantou.Framework.CommandLineTests
             }
 
             Assert.Equal(expectedArguments, actualArguments);
-            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(1, process.ExitCode);
         }
     }
 }

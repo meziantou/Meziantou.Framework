@@ -297,7 +297,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector, IComparer<TValue> comparer)
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
         {
             if (enumerable == null)
                 throw new ArgumentNullException(nameof(enumerable));
@@ -405,7 +405,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector, IComparer<TValue> comparer)
+        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
         {
             if (enumerable == null)
                 throw new ArgumentNullException(nameof(enumerable));

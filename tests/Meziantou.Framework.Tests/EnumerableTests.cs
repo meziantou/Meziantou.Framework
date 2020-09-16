@@ -85,6 +85,36 @@ namespace Meziantou.Framework.Tests
             Assert.Equal(10, max);
         }
 
+        [Fact]
+        public void MaxByTests_Nullable()
+        {
+#nullable enable
+            // Arrange
+            var list = new List<string?>() { "a", "b" };
+
+            // Act
+            var max = list.MaxBy(i => i, Comparer<string>.Default);
+
+            // Assert
+            Assert.Equal("b", max);
+#nullable disable
+        }
+
+        [Fact]
+        public void MaxByTests_NotNullable()
+        {
+#nullable enable
+            // Arrange
+            var list = new List<string>() { "a", "b" };
+
+            // Act
+            var max = list.MaxBy(i => i, Comparer<string>.Default);
+
+            // Assert
+            Assert.Equal("b", max);
+#nullable disable
+        }
+
         /// <summary>
         /// ////
         /// </summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 
@@ -588,7 +589,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine("{");
             writer.Indent++;
-            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), endOfLine: null);
+            WriteLines(writer, Concat(type.Members, type.Types), endOfLine: null);
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -611,7 +612,7 @@ namespace Meziantou.Framework.CodeDom
 
             writer.WriteLine("{");
             writer.Indent++;
-            WriteLines(writer, type.Members.Cast<CodeObject>().Concat(type.Types), endOfLine: null);
+            WriteLines(writer, Concat(type.Members, type.Types), endOfLine: null);
             writer.Indent--;
             writer.WriteLine("}");
         }
@@ -993,6 +994,7 @@ namespace Meziantou.Framework.CodeDom
             };
         }
 
+        [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Better readability")]
         protected virtual bool IsPrefixOperator(UnaryOperator op)
         {
             switch (op)
@@ -1017,28 +1019,17 @@ namespace Meziantou.Framework.CodeDom
 
         protected virtual string WriteUnaryOperator(UnaryOperator op)
         {
-            switch (op)
+            return op switch
             {
-                case UnaryOperator.None:
-                    return "";
-                case UnaryOperator.Not:
-                    return "!";
-                case UnaryOperator.Complement:
-                    return "~";
-                case UnaryOperator.Plus:
-                    return "+";
-                case UnaryOperator.Minus:
-                    return "-";
-                case UnaryOperator.PreIncrement:
-                case UnaryOperator.PostIncrement:
-                    return "++";
-                case UnaryOperator.PreDecrement:
-                case UnaryOperator.PostDecrement:
-                    return "--";
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(op));
-            }
+                UnaryOperator.None => "",
+                UnaryOperator.Not => "!",
+                UnaryOperator.Complement => "~",
+                UnaryOperator.Plus => "+",
+                UnaryOperator.Minus => "-",
+                UnaryOperator.PreIncrement or UnaryOperator.PostIncrement => "++",
+                UnaryOperator.PreDecrement or UnaryOperator.PostDecrement => "--",
+                _ => throw new ArgumentOutOfRangeException(nameof(op)),
+            };
         }
 
         protected virtual string WriteCustomAttributeTarget(CustomAttributeTarget target)
@@ -1172,7 +1163,7 @@ namespace Meziantou.Framework.CodeDom
                 return true;
             }
 
-            if (comment.Contains("*/"))
+            if (comment.Contains("*/", StringComparison.Ordinal))
             {
                 WriteLineComment(writer, comment);
                 return false;
@@ -1316,7 +1307,8 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string? endOfLine) where T : CodeObject
+        private void WriteLines<T>(IndentedTextWriter writer, IEnumerable<T> objects, string? endOfLine)
+            where T : CodeObject
         {
             var first = true;
             foreach (var o in objects)
@@ -1425,6 +1417,15 @@ namespace Meziantou.Framework.CodeDom
                     writer.WriteLineNoTabs("#nullable enable");
                     break;
             }
+        }
+
+        private static IEnumerable<CodeObject> Concat(IEnumerable<CodeObject> items1, IEnumerable<CodeObject> items2)
+        {
+            foreach (var item in items1)
+                yield return item;
+
+            foreach (var item in items2)
+                yield return item;
         }
     }
 }

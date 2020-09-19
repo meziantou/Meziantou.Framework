@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework
@@ -101,7 +102,9 @@ namespace Meziantou.Framework
 #else
 #error plateform not supported
 #endif
+
         [Obsolete("Use ParseHexa")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static byte[] FromHexa(string str)
         {
             return ParseHexa(str);
@@ -163,7 +166,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public static bool TryParseHexa(string? str, [NotNullWhen(returnValue: true)]out byte[]? result)
+        public static bool TryParseHexa(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
         {
             if (str == null || str.Length % 2 != 0)
             {

@@ -27,7 +27,8 @@ namespace Meziantou.Framework.WPF
                 return this;
             }
 
-            [SuppressMessage("Design", "MA0038:Make method static", Justification = "Cannot be static")]
+            [SuppressMessage("Design", "MA0038:Make method static", Justification = "Cannot be static for the await pattern")]
+            [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Cannot be static for the await pattern")]
             public void GetResult()
             {
             }

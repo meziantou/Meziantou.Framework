@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{70A3E965-386
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}"
 	ProjectSection(SolutionItems) = preProject
+		tests\.editorconfig = tests\.editorconfig
 		tests\Directory.Build.props = tests\Directory.Build.props
 	EndProjectSection
 EndProject
@@ -119,8 +120,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AmsiTests", "tests\Meziantou.Framework.Win32.AmsiTests\Meziantou.Framework.Win32.AmsiTests.csproj", "{074D52E6-647D-4740-B134-1AF2BBA00839}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.IO.Compound", "src\Meziantou.Framework.IO.Compound\Meziantou.Framework.IO.Compound.csproj", "{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SingleInstanceConsoleAppSample", "Samples\SingleInstanceConsoleAppSample\SingleInstanceConsoleAppSample.csproj", "{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SingleInstance", "src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj", "{A91E3590-C919-48E4-AFF2-2A2C346B22EA}"
@@ -139,9 +138,25 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.WPF.Enu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArgumentsPrinter", "tests\ArgumentsPrinter\ArgumentsPrinter.csproj", "{CF1BA4C2-AB07-457C-B586-E663634DD737}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ByteSize", "src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj", "{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ByteSize", "src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj", "{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ByteSize.Tests", "tests\Meziantou.Framework.ByteSize.Tests\Meziantou.Framework.ByteSize.Tests.csproj", "{F9657735-DD90-4AC0-A60F-DC887CA87968}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ByteSize.Tests", "tests\Meziantou.Framework.ByteSize.Tests\Meziantou.Framework.ByteSize.Tests.csproj", "{F9657735-DD90-4AC0-A60F-DC887CA87968}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.FullPath", "src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj", "{A49E36E9-C37F-4072-BF04-562B299F330A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.FullPath.Tests", "tests\Meziantou.Framework.FullPath.Tests\Meziantou.Framework.FullPath.Tests.csproj", "{14412E43-945C-4984-8772-2927AF739754}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.TemporaryDirectory", "src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj", "{4CE0E722-9632-4F35-804D-F96D69E7E1A5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.TemporaryDirectory.Tests", "tests\Meziantou.Framework.TemporaryDirectory.Tests\Meziantou.Framework.TemporaryDirectory.Tests.csproj", "{57360E10-40E1-42A7-9665-992E34375DDE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Slug", "src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj", "{09A172B9-F79D-4C9C-A497-EF4B1C28C363}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Slug.Tests", "tests\Meziantou.Framework.Slug.Tests\Meziantou.Framework.Slug.Tests.csproj", "{E9E3772C-0490-4261-A72D-E69456815F62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ValueStopwatch", "src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj", "{9AF843FC-0B45-473B-8C87-84BAA60D4043}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ValueStopwatch.Tests", "tests\Meziantou.Framework.ValueStopwatch.Tests\Meziantou.Framework.ValueStopwatch.Tests.csproj", "{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -341,10 +356,6 @@ Global
 		{074D52E6-647D-4740-B134-1AF2BBA00839}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{074D52E6-647D-4740-B134-1AF2BBA00839}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{074D52E6-647D-4740-B134-1AF2BBA00839}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7804E0A1-680B-4FCE-8D55-112F6D8DF17E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -389,6 +400,38 @@ Global
 		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F9657735-DD90-4AC0-A60F-DC887CA87968}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A49E36E9-C37F-4072-BF04-562B299F330A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A49E36E9-C37F-4072-BF04-562B299F330A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A49E36E9-C37F-4072-BF04-562B299F330A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A49E36E9-C37F-4072-BF04-562B299F330A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14412E43-945C-4984-8772-2927AF739754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14412E43-945C-4984-8772-2927AF739754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14412E43-945C-4984-8772-2927AF739754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14412E43-945C-4984-8772-2927AF739754}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CE0E722-9632-4F35-804D-F96D69E7E1A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CE0E722-9632-4F35-804D-F96D69E7E1A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CE0E722-9632-4F35-804D-F96D69E7E1A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CE0E722-9632-4F35-804D-F96D69E7E1A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57360E10-40E1-42A7-9665-992E34375DDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57360E10-40E1-42A7-9665-992E34375DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57360E10-40E1-42A7-9665-992E34375DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57360E10-40E1-42A7-9665-992E34375DDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09A172B9-F79D-4C9C-A497-EF4B1C28C363}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09A172B9-F79D-4C9C-A497-EF4B1C28C363}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09A172B9-F79D-4C9C-A497-EF4B1C28C363}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09A172B9-F79D-4C9C-A497-EF4B1C28C363}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9E3772C-0490-4261-A72D-E69456815F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9E3772C-0490-4261-A72D-E69456815F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9E3772C-0490-4261-A72D-E69456815F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9E3772C-0490-4261-A72D-E69456815F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AF843FC-0B45-473B-8C87-84BAA60D4043}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AF843FC-0B45-473B-8C87-84BAA60D4043}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AF843FC-0B45-473B-8C87-84BAA60D4043}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AF843FC-0B45-473B-8C87-84BAA60D4043}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -442,7 +485,6 @@ Global
 		{EA801E63-1D27-4343-BA66-4C86CC26029E} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{CBD962AB-EE25-45DF-946F-80F2A061C4C3} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{074D52E6-647D-4740-B134-1AF2BBA00839} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
-		{7804E0A1-680B-4FCE-8D55-112F6D8DF17E} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{C6B632DC-DAD6-4A07-8E6B-4D892C4149A3} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 		{A91E3590-C919-48E4-AFF2-2A2C346B22EA} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{A227849F-66A8-4F99-956A-7BFDB54165E0} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
@@ -454,6 +496,14 @@ Global
 		{CF1BA4C2-AB07-457C-B586-E663634DD737} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{A3FEEB8A-39AE-49A5-A327-FA64AAF56AF7} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{F9657735-DD90-4AC0-A60F-DC887CA87968} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{A49E36E9-C37F-4072-BF04-562B299F330A} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{14412E43-945C-4984-8772-2927AF739754} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{4CE0E722-9632-4F35-804D-F96D69E7E1A5} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{57360E10-40E1-42A7-9665-992E34375DDE} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{09A172B9-F79D-4C9C-A497-EF4B1C28C363} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{E9E3772C-0490-4261-A72D-E69456815F62} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{9AF843FC-0B45-473B-8C87-84BAA60D4043} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

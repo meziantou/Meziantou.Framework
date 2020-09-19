@@ -10,14 +10,14 @@ namespace Meziantou.Framework.Win32.Natives
     [StructLayout(LayoutKind.Sequential)]
     internal struct RM_UNIQUE_PROCESS
     {
-        public int dwProcessId;
+        public int ProcessId;
         public System.Runtime.InteropServices.ComTypes.FILETIME ProcessStartTime;
 
         public static RM_UNIQUE_PROCESS GetProcesses(Process process)
         {
             var rp = new RM_UNIQUE_PROCESS
             {
-                dwProcessId = process.Id,
+                ProcessId = process.Id,
             };
 
             NativeMethods.GetProcessTimes(process.Handle, out var creationTime, out _, out _, out _);

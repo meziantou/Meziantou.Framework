@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Win32.Natives
 
         void BindToHandler([In, MarshalAs(UnmanagedType.Interface)] IntPtr pbc, [In] ref Guid rbhid, [In] ref Guid riid, out IntPtr ppvOut);
 
-        void GetPropertyStore([In] int Flags, [In] ref Guid riid, out IntPtr ppv);
+        void GetPropertyStore([In] int flags, [In] ref Guid riid, out IntPtr ppv);
 
         void GetPropertyDescriptionList([In] ref PROPERTYKEY keyType, [In] ref Guid riid, out IntPtr ppv);
 

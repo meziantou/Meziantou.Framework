@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Templating
     internal sealed class TextReaderWithPosition : TextReader
     {
         private readonly TextReader _reader;
-        private bool _previousIsCarriageReturn = false;
+        private bool _previousIsCarriageReturn;
 
         public int Line { get; private set; } = 1;
         public int Column { get; private set; } = 1;

@@ -1,0 +1,4 @@
+root = false
+
+[*.cs]
+dotnet_diagnostic.CA1416.severity = none

@@ -1,4 +1,5 @@
-﻿#if NETSTANDARD2_0 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
+﻿#pragma warning disable 
+#if NETSTANDARD2_0 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Index.cs
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Range.cs
 
@@ -14,6 +15,7 @@ namespace System
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
+    [Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Auto)]
     internal readonly struct Index : IEquatable<Index>
     {
         private readonly int _value;
@@ -151,6 +153,7 @@ namespace System
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
+    [Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Auto)]
     internal readonly struct Range : IEquatable<Range>
     {
         /// <summary>Represent the inclusive start index of the Range.</summary>
@@ -273,7 +276,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
-#elif NETCOREAPP3_0
+#elif NETSTANDARD2_1 || NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
 #else
 #error Platform not supported
 #endif

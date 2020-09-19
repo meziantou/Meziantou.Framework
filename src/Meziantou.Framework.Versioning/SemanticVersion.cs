@@ -347,7 +347,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                value = versionString.Substring(index, last - index);
+                value = versionString[index..last];
                 if (value[0] != '0' || value.Any(c => !IsDigit(c)))
                 {
                     index = last;
@@ -375,7 +375,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                value = versionString.Substring(index, last - index);
+                value = versionString[index..last];
                 index = last;
                 return true;
             }
@@ -394,7 +394,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                var str = versionString.Substring(index, last - index);
+                var str = versionString[index..last];
                 if (str.Length == 1 && str[0] == '0')
                 {
                     value = 0;

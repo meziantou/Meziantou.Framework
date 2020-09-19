@@ -76,7 +76,7 @@ namespace Meziantou.Framework.Csv
                 if (Quote.HasValue)
                 {
                     var quote = Quote.Value;
-                    if (value[0] != quote && value.IndexOf(Separator) < 0)
+                    if (value[0] != quote && value.IndexOf(Separator, StringComparison.Ordinal) < 0)
                     {
                         await writer.WriteAsync(value).ConfigureAwait(false);
                     }

@@ -87,7 +87,7 @@ namespace Meziantou.Framework.Tests
 
 #pragma warning disable IDE0051 // Remove unused private members
 #pragma warning disable IDE0032 // Use auto property
-#pragma warning disable MA0038 // Make method static
+#pragma warning disable CA1822 // Make method static
         private class Test
         {
             private int _privateField = 42;

@@ -133,7 +133,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             public Guid FileId;
             public Guid DataStreamId;
             public string FilePathName;
-            public IntPtr VersionInfo; // TODO
+            public IntPtr VersionInfo;
             public uint TriggeringProcessId;
             public string TriggeringProcessImageFileName;
             public IntPtr InstanceContext;

@@ -1,6 +1,4 @@
-﻿#if NET461 || NETSTANDARD2_0
-#elif NETCOREAPP3_1
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -140,7 +138,7 @@ namespace Meziantou.Framework
             if (_value.Length <= rootPath._value.Length)
                 return false;
 
-            if (!_value.StartsWith(rootPath._value))
+            if (!_value.StartsWith(rootPath._value, StringComparison.Ordinal))
                 return false;
 
             // rootpath: /a/b
@@ -201,6 +199,3 @@ namespace Meziantou.Framework
         }
     }
 }
-#else
-#error Platform not supported
-#endif

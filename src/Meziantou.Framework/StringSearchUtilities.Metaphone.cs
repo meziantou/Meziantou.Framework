@@ -127,7 +127,7 @@ namespace Meziantou.Framework
                         case 'C': // lots of C special cases
                             /* discard if SCI, SCE or SCY */
                             if ((n > 0) && (local[n - 1] == 'S') && (n + 1 < wdsz)
-                                && (Frontv.IndexOf(local[n + 1]) >= 0))
+                                && (Frontv.Contains(local[n + 1], StringComparison.Ordinal)))
                             {
                                 break;
                             }
@@ -142,7 +142,7 @@ namespace Meziantou.Framework
                                 break;
                             }
 
-                            if ((n + 1 < wdsz) && (Frontv.IndexOf(local[n + 1]) >= 0))
+                            if ((n + 1 < wdsz) && (Frontv.Contains(local[n + 1], StringComparison.Ordinal)))
                             {
                                 code.Append('S');
                                 mtsz++;
@@ -161,7 +161,7 @@ namespace Meziantou.Framework
                             {
                                 // detect CH
                                 if ((n == 0) && (wdsz >= 3) && // CH consonant -> K consonant
-                                    (Vowels.IndexOf(local[2]) < 0))
+                                    !Vowels.Contains(local[2], StringComparison.Ordinal))
                                 {
                                     code.Append('K');
                                 }
@@ -182,7 +182,7 @@ namespace Meziantou.Framework
 
                         case 'D':
                             if ((n + 2 < wdsz) && // DGE DGI DGY -> J
-                                (local[n + 1] == 'G') && (Frontv.IndexOf(local[n + 2]) >= 0))
+                                (local[n + 1] == 'G') && (Frontv.Contains(local[n + 2], StringComparison.Ordinal)))
                             {
                                 code.Append('J');
                                 n += 2;
@@ -199,7 +199,7 @@ namespace Meziantou.Framework
                             if ((n + 2 == wdsz) && (local[n + 1] == 'H'))
                                 break;
 
-                            if ((n + 2 < wdsz) && (local[n + 1] == 'H') && (Vowels.IndexOf(local[n + 2]) < 0))
+                            if ((n + 2 < wdsz) && (local[n + 1] == 'H') && !Vowels.Contains(local[n + 2], StringComparison.Ordinal))
                                 break;
 
                             tmpS = local.ToString();
@@ -210,7 +210,7 @@ namespace Meziantou.Framework
                             // if ((n > 0) &&
                             // (local[n - 1] == 'G')) hard = true;//totest
                             // else hard = false;
-                            if ((n + 1 < wdsz) && (Frontv.IndexOf(local[n + 1]) >= 0) /*&& !hard*/)
+                            if ((n + 1 < wdsz) && Frontv.Contains(local[n + 1], StringComparison.Ordinal) /*&& !hard*/)
                             {
                                 code.Append('J');
                             }
@@ -226,10 +226,10 @@ namespace Meziantou.Framework
                             if (n + 1 == wdsz)
                                 break; // terminal H
 
-                            if (n > 0 && Varson.IndexOf(local[n - 1]) >= 0)
+                            if (n > 0 && Varson.Contains(local[n - 1], StringComparison.Ordinal))
                                 break;
 
-                            if (Vowels.IndexOf(local[n + 1]) >= 0)
+                            if (Vowels.Contains(local[n + 1], StringComparison.Ordinal))
                             {
                                 code.Append('H');
                                 mtsz++; // Hvowel
@@ -324,7 +324,7 @@ namespace Meziantou.Framework
 
                         case 'W':
                         case 'Y': // silent if not followed by vowel
-                            if ((n + 1 < wdsz) && (Vowels.IndexOf(local[n + 1]) >= 0))
+                            if ((n + 1 < wdsz) && Vowels.Contains(local[n + 1], StringComparison.Ordinal))
                             {
                                 code.Append(symb);
                                 mtsz++;

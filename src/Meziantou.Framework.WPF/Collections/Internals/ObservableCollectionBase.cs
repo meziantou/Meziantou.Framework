@@ -9,29 +9,29 @@ namespace Meziantou.Framework.WPF.Collections
         public event NotifyCollectionChangedEventHandler? CollectionChanged;
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private protected readonly List<T> _items;
+        private protected List<T> Items { get; }
 
         protected ObservableCollectionBase()
         {
-            _items = new List<T>();
+            Items = new List<T>();
         }
 
         protected ObservableCollectionBase(IEnumerable<T> items)
         {
             if (items == null)
             {
-                _items = new List<T>();
+                Items = new List<T>();
             }
             else
             {
-                _items = new List<T>(items);
+                Items = new List<T>(items);
             }
         }
 
         protected void ReplaceItem(int index, T item)
         {
-            var oldItem = _items[index];
-            _items[index] = item;
+            var oldItem = Items[index];
+            Items[index] = item;
 
             OnIndexerPropertyChanged();
             CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
@@ -39,7 +39,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         protected void InsertItem(int index, T item)
         {
-            _items.Insert(index, item);
+            Items.Insert(index, item);
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
@@ -48,8 +48,8 @@ namespace Meziantou.Framework.WPF.Collections
 
         protected void AddItem(T item)
         {
-            var index = _items.Count;
-            _items.Add(item);
+            var index = Items.Count;
+            Items.Add(item);
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
@@ -58,8 +58,8 @@ namespace Meziantou.Framework.WPF.Collections
 
         protected void RemoveItemAt(int index)
         {
-            var item = _items[index];
-            _items.RemoveAt(index);
+            var item = Items[index];
+            Items.RemoveAt(index);
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
@@ -68,11 +68,11 @@ namespace Meziantou.Framework.WPF.Collections
 
         protected bool RemoveItem(T item)
         {
-            var index = _items.IndexOf(item);
+            var index = Items.IndexOf(item);
             if (index < 0)
                 return false;
 
-            _items.RemoveAt(index);
+            Items.RemoveAt(index);
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
@@ -82,7 +82,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         protected void ClearItems()
         {
-            _items.Clear();
+            Items.Clear();
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
             CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);

@@ -27,11 +27,10 @@ namespace Meziantou.Framework.Templating
         ///     Gets or sets the new line character to use.
         /// </summary>
         /// <returns> The new line character to use. </returns>
+        [AllowNull]
         public override string NewLine
         {
             get => InnerWriter.NewLine;
-
-            [param: AllowNull]
             set => InnerWriter.NewLine = value;
         }
 

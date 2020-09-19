@@ -3,7 +3,6 @@
     public class ConvertExpression : Expression
     {
         private Expression? _expression;
-        private TypeReference? _type;
 
         public ConvertExpression()
         {
@@ -21,10 +20,6 @@
             set => SetParent(ref _expression, value);
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
     }
 }

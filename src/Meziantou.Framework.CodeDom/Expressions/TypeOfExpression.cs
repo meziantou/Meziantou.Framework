@@ -2,8 +2,6 @@
 {
     public class TypeOfExpression : Expression
     {
-        private TypeReference? _type;
-
         public TypeOfExpression()
         {
         }
@@ -13,10 +11,6 @@
             Type = type;
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
     }
 }

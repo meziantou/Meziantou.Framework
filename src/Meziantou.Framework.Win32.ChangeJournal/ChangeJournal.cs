@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class ChangeJournal : IDisposable
     {
         internal ChangeJournalSafeHandle ChangeJournalHandle { get; }
@@ -28,7 +30,7 @@ namespace Meziantou.Framework.Win32
                 throw new ArgumentNullException(nameof(driveInfo));
 
             var volume = VolumeHelper.GetValidVolumePath(driveInfo);
-            var handle = Win32Methods.CreateFile(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
+            var handle = Win32Methods.CreateFileW(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
             if (handle.IsInvalid)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 

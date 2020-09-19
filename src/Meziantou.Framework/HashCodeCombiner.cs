@@ -1,10 +1,12 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
     [StructLayout(LayoutKind.Auto)]
+    [Obsolete("Use System.HashCode")]
     public struct HashCodeCombiner
     {
         private int _hash;

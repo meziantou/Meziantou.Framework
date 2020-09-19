@@ -3,12 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Text;
-#if NET461 || NETSTANDARD2_0
-using System.Linq;
-#elif NETCOREAPP3_1
-#else
-#error Platform not supported
-#endif
 
 namespace Meziantou.Framework
 {
@@ -169,7 +163,7 @@ namespace Meziantou.Framework
 
                 if (sb.Length > i)
                 {
-                    cs = "CS".Contains(sb[i]);
+                    cs = "CS".Contains(sb[i], StringComparison.Ordinal);
                 }
             }
 
@@ -190,7 +184,7 @@ namespace Meziantou.Framework
             }
 
             // Remove the last character if it's an A or a T or a D or an S
-            if (sb.Length > 0 && "ATDS".Contains(sb[sb.Length - 1]))
+            if (sb.Length > 0 && "ATDS".Contains(sb[^1], StringComparison.Ordinal))
             {
                 sb = sb.Remove(sb.Length - 1, 1);
             }
@@ -308,7 +302,7 @@ namespace Meziantou.Framework
                 i++;
             }
 
-            if (!sb.StartsWith(prefix)) // TODO remove?
+            if (!sb.StartsWith(prefix))
                 return;
 
             sb.Replace(prefix, replace, 0, 1);

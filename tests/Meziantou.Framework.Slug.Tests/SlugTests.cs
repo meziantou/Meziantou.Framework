@@ -12,8 +12,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("TeSt test ", "TeSt-test")]
         public void Slug_WithDefaultOptions(string text, string expected)
         {
-            var options = new SlugOptions();
-            var slug = Slug.Create(text, options);
+            var slug = Slug.Create(text);
 
             Assert.Equal(expected, slug);
         }
@@ -25,7 +24,7 @@ namespace Meziantou.Framework.Tests
         {
             var options = new SlugOptions
             {
-                ToLower = true,
+                CasingTransformation = CasingTransformation.ToLowerCase,
             };
             var slug = Slug.Create(text, options);
 

@@ -2,8 +2,6 @@
 {
     public class EnumerationDeclaration : TypeDeclaration
     {
-        private TypeReference? _baseType;
-
         public EnumerationDeclaration()
         {
             Members = new CodeObjectCollection<EnumerationMember>(this);
@@ -15,12 +13,7 @@
             Name = name;
         }
 
-        public TypeReference? BaseType
-        {
-            get => _baseType;
-            set => _baseType = value;
-        }
-
+        public TypeReference? BaseType { get; set; }
         public CodeObjectCollection<EnumerationMember> Members { get; }
     }
 }

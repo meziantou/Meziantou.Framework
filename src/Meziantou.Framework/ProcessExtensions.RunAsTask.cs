@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,13 +19,21 @@ namespace Meziantou.Framework
             var psi = new ProcessStartInfo
             {
                 FileName = fileName,
-                Arguments = arguments,
-                WorkingDirectory = workingDirectory,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 ErrorDialog = false,
                 UseShellExecute = false,
             };
+
+            if (arguments != null)
+            {
+                psi.Arguments = arguments;
+            }
+
+            if (workingDirectory != null)
+            {
+                psi.WorkingDirectory = workingDirectory;
+            }
 
             return RunAsTask(psi, cancellationToken);
         }
@@ -54,6 +63,9 @@ namespace Meziantou.Framework
             ProcessResult result;
             using (var process = Process.Start(psi))
             {
+                if (process == null)
+                    throw new InvalidOperationException("The process is null");
+
                 if (psi.RedirectStandardError)
                 {
                     process.ErrorDataReceived += (sender, e) =>
@@ -110,8 +122,7 @@ namespace Meziantou.Framework
                 }
 
                 await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                process.WaitForExit();
-                registration.Dispose();
+                await registration.DisposeAsync().ConfigureAwait(false);
                 result = new ProcessResult(process.ExitCode, logs);
             }
 
@@ -119,6 +130,8 @@ namespace Meziantou.Framework
             return result;
         }
 
+        [Obsolete("Exist in .NET 5.0")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)
         {
             // https://source.dot.net/#System.Diagnostics.Process/System/Diagnostics/Process.cs,b6a5b00714a61f06

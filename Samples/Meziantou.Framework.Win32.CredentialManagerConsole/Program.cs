@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Runtime.Versioning;
+
+[assembly: SupportedOSPlatform("windows")]
 
 namespace Meziantou.Framework.Win32.CredentialManagerConsole
 {

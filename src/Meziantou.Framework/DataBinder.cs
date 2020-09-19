@@ -76,7 +76,7 @@ namespace Meziantou.Framework
                 }
                 else
                 {
-                    return string.Format(format, value);
+                    return string.Format(provider: null, format, value);
                 }
             }
         }
@@ -132,7 +132,7 @@ namespace Meziantou.Framework
                 }
                 else
                 {
-                    return string.Format(format, value);
+                    return string.Format(provider: null, format, value);
                 }
             }
         }
@@ -162,10 +162,10 @@ namespace Meziantou.Framework
 
             if (index.Length != 0)
             {
-                if (((index[0] == '"') && (index[index.Length - 1] == '"')) ||
-                    ((index[0] == '\'') && (index[index.Length - 1] == '\'')))
+                if (((index[0] == '"') && (index[^1] == '"')) ||
+                    ((index[0] == '\'') && (index[^1] == '\'')))
                 {
-                    indexValue = index.Substring(1, index.Length - 2);
+                    indexValue = index[1..^1];
                 }
                 else
                 {
@@ -215,15 +215,11 @@ namespace Meziantou.Framework
                 }
                 else
                 {
-                    var propInfo = collectionProp.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, null, null, new Type[] { indexValue.GetType() }, null);
+                    var propInfo = collectionProp.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, binder: null, returnType: null, new Type[] { indexValue.GetType() }, modifiers: null);
                     if (propInfo != null)
-                    {
                         return propInfo.GetValue(collectionProp, new object[] { indexValue });
-                    }
-                    else
-                    {
-                        throw new ArgumentException(string.Format("Databinding: '{0}' does not allow indexed access.", collectionProp.GetType().FullName), nameof(expression));
-                    }
+
+                    throw new ArgumentException($"Databinding: '{collectionProp.GetType().FullName}' does not allow indexed access.", nameof(expression));
                 }
             }
 
@@ -245,7 +241,7 @@ namespace Meziantou.Framework
                 }
                 else
                 {
-                    return string.Format(format, value);
+                    return string.Format(provider: null, format, value);
                 }
             }
         }

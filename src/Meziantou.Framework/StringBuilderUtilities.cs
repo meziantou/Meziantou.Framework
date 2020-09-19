@@ -47,7 +47,7 @@ namespace Meziantou.Framework
             if (stringBuilder.Length == 0)
                 return false;
 
-            return stringBuilder[stringBuilder.Length - 1] == suffix;
+            return stringBuilder[^1] == suffix;
         }
 
         [Pure]
@@ -75,7 +75,7 @@ namespace Meziantou.Framework
             if (stringBuilder == null)
                 throw new ArgumentNullException(nameof(stringBuilder));
 
-            for (int i = 0; i < stringBuilder.Length; i++)
+            for (var i = 0; i < stringBuilder.Length; i++)
             {
                 if (stringBuilder[i] == trimChar)
                     continue;
@@ -94,7 +94,7 @@ namespace Meziantou.Framework
             if (stringBuilder == null)
                 throw new ArgumentNullException(nameof(stringBuilder));
 
-            for (int i = stringBuilder.Length - 1; i >= 0; i--)
+            for (var i = stringBuilder.Length - 1; i >= 0; i--)
             {
                 if (stringBuilder[i] == trimChar)
                     continue;

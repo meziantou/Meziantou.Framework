@@ -25,14 +25,14 @@ namespace Meziantou.Framework.Win32.Natives
         /// If the process is a critical process, and the installer is run as a service, this parameter returns the long name of the critical process. 
         /// </summary>
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCH_RM_MAX_APP_NAME + 1)]
-        public string strAppName;
+        public string AppName;
 
         /// <summary>
         /// If the process is a service, this is the short name for the service.
         /// This member is not used if the process is not a service.
         /// </summary>
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = CCH_RM_MAX_SVC_NAME + 1)]
-        public string strServiceShortName;
+        public string ServiceShortName;
 
         /// <summary>
         /// Contains an RM_APP_TYPE enumeration value that specifies the type of application as RmUnknownApp, RmMainWindow, RmOtherWindow, RmService, RmExplorer or RmCritical.
@@ -58,6 +58,6 @@ namespace Meziantou.Framework.Win32.Natives
         /// This member is always FALSE if the process is a critical system process.
         /// </summary>
         [MarshalAs(UnmanagedType.Bool)]
-        public bool bRestartable;
+        public bool Restartable;
     }
 }

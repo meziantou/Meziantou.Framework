@@ -48,20 +48,16 @@ namespace Meziantou.Framework
             if (num <= 0)
                 return num.ToString(formatProvider);
 
-            switch (num % 100)
+            return (num % 100) switch
             {
-                case 11:
-                case 12:
-                case 13:
-                    return string.Format(formatProvider, "{0}th", num);
-            }
-
-            return (num % 10) switch
-            {
-                1 => string.Format(formatProvider, "{0}st", num),
-                2 => string.Format(formatProvider, "{0}nd", num),
-                3 => string.Format(formatProvider, "{0}rd", num),
-                _ => string.Format(formatProvider, "{0}th", num),
+                11 or 12 or 13 => string.Format(formatProvider, "{0}th", num),
+                _ => (num % 10) switch
+                {
+                    1 => string.Format(formatProvider, "{0}st", num),
+                    2 => string.Format(formatProvider, "{0}nd", num),
+                    3 => string.Format(formatProvider, "{0}rd", num),
+                    _ => string.Format(formatProvider, "{0}th", num),
+                },
             };
         }
 
@@ -204,20 +200,22 @@ namespace Meziantou.Framework
             return number.ToString(CultureInfo.InvariantCulture);
         }
 
+#if NET5_0
         [Pure]
-        public static string ToStringInvariant(this double number)
+        public static string ToStringInvariant(this System.Half number)
         {
             return ToStringInvariant(number, format: null);
         }
 
         [Pure]
-        public static string ToStringInvariant(this double number, string? format)
+        public static string ToStringInvariant(this System.Half number, string? format)
         {
             if (format != null)
                 return number.ToString(format, CultureInfo.InvariantCulture);
 
             return number.ToString(CultureInfo.InvariantCulture);
         }
+#endif
 
         [Pure]
         public static string ToStringInvariant(this float number)
@@ -227,6 +225,21 @@ namespace Meziantou.Framework
 
         [Pure]
         public static string ToStringInvariant(this float number, string? format)
+        {
+            if (format != null)
+                return number.ToString(format, CultureInfo.InvariantCulture);
+
+            return number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        [Pure]
+        public static string ToStringInvariant(this double number)
+        {
+            return ToStringInvariant(number, format: null);
+        }
+
+        [Pure]
+        public static string ToStringInvariant(this double number, string? format)
         {
             if (format != null)
                 return number.ToString(format, CultureInfo.InvariantCulture);

@@ -3,7 +3,6 @@
     public class FieldDeclaration : MemberDeclaration, IModifiers
     {
         private Expression? _initExpression;
-        private TypeReference? _type;
 
         public FieldDeclaration()
             : this(name: null, type: null)
@@ -34,11 +33,7 @@
             set => SetParent(ref _initExpression, value);
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public Modifiers Modifiers { get; set; }
     }

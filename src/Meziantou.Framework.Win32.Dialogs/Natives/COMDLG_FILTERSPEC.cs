@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Win32.Natives
     internal struct COMDLG_FILTERSPEC
     {
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string? pszName;
+        public string? PszName;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        internal string? pszSpec;
+        public string? PszSpec;
     }
 }

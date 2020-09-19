@@ -5,12 +5,14 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
+        [Obsolete("Already implemented in .NET 3.1")]
         public static void Kill(this Process process, bool entireProcessTree = false)
         {
             if (process == null)
@@ -50,12 +52,13 @@ namespace Meziantou.Framework
 #endif
         }
 
+        [SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             var children = new List<Process>();
@@ -63,12 +66,13 @@ namespace Meziantou.Framework
             return children;
         }
 
+        [SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetChildProcesses(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             var children = new List<Process>();
@@ -76,12 +80,13 @@ namespace Meziantou.Framework
             return children;
         }
 
+        [SupportedOSPlatform("windows")]
         public static IEnumerable<int> GetAncestorProcessIds(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             return GetAncestorProcessIdsIterator();
@@ -120,7 +125,7 @@ namespace Meziantou.Framework
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (IsWindows())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var processId = process.Id;
                 foreach (var entry in GetProcesses())
@@ -144,7 +149,7 @@ namespace Meziantou.Framework
                         const string Prefix = "PPid:";
                         if (line.StartsWith(Prefix, StringComparison.Ordinal))
                         {
-                            if (int.TryParse(line.Substring(Prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var ppid))
+                            if (int.TryParse(line[Prefix.Length..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var ppid))
                                 return ppid;
                         }
                     }
@@ -173,9 +178,10 @@ namespace Meziantou.Framework
             return parentProcess;
         }
 
+        [SupportedOSPlatform("windows")]
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
@@ -192,6 +198,7 @@ namespace Meziantou.Framework
             }
         }
 
+        [SupportedOSPlatform("windows")]
         private static void GetChildProcesses(Process process, List<Process> children, int maxDepth, int currentDepth)
         {
             var entries = new List<ProcessEntry>(100);
@@ -228,17 +235,6 @@ namespace Meziantou.Framework
                     }
                 }
             }
-        }
-
-        private static bool IsWindows()
-        {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET461
-            return true;
-#else
-#error Platform not supported
-#endif
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

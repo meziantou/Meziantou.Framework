@@ -11,7 +11,7 @@ namespace Meziantou.Framework
             var totalRead = 0;
             while (count > 0)
             {
-                int read = stream.Read(buffer, offset + totalRead, count);
+                var read = stream.Read(buffer, offset + totalRead, count);
                 if (read == 0)
                     return totalRead;
 
@@ -22,12 +22,15 @@ namespace Meziantou.Framework
             return totalRead;
         }
 
+#if NETCOREAPP3_1
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1835:Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'", Justification = "Not supported in net461")]
+#endif
         public static async Task<int> ReadUntilCountOrEndAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             var totalRead = 0;
             while (count > 0)
             {
-                int read = await stream.ReadAsync(buffer, offset + totalRead, count, cancellationToken).ConfigureAwait(false);
+                var read = await stream.ReadAsync(buffer, offset + totalRead, count, cancellationToken).ConfigureAwait(false);
                 if (read == 0)
                     return totalRead;
 

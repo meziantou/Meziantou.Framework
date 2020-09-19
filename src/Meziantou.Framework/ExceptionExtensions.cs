@@ -1,25 +1,24 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Meziantou.Framework
 {
     public static class ExceptionExtensions
     {
-        [return: NotNullIfNotNull(parameterName: "exception")]
-        public static string? ToString(this Exception? exception, bool includeInnerException)
+        public static string ToString(this Exception exception, bool includeInnerException)
         {
             if (exception == null)
-                return null;
+                throw new ArgumentNullException(nameof(exception));
 
             if (!includeInnerException)
                 return exception.ToString();
 
             var sb = new StringBuilder();
-            while (exception != null)
+            var currentException = exception;
+            while (currentException != null)
             {
-                sb.Append(exception).AppendLine();
-                exception = exception.InnerException;
+                sb.Append(currentException).AppendLine();
+                currentException = currentException.InnerException;
             }
 
             return sb.ToString();

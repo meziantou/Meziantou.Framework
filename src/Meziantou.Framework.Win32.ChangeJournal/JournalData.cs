@@ -14,7 +14,6 @@ namespace Meziantou.Framework.Win32
         /// </summary>
         /// <param name="nativeData"></param>
         internal JournalData(USN_JOURNAL_DATA nativeData)
-            : this()
         {
             ID = nativeData.UsnJournalID;
             FirstUSN = nativeData.FirstUsn;

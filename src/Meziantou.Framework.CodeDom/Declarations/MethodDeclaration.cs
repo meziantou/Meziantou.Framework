@@ -2,21 +2,8 @@
 {
     public class MethodDeclaration : MemberDeclaration, IParametrableType, IModifiers
     {
-        private TypeReference? _returnType;
-        private TypeReference? _privateImplementationType;
-
-        public TypeReference? ReturnType
-        {
-            get => _returnType;
-            set => _returnType = value;
-        }
-
-        public TypeReference? PrivateImplementationType
-        {
-            get => _privateImplementationType;
-            set => _privateImplementationType = value;
-        }
-
+        public TypeReference? ReturnType { get; set; }
+        public TypeReference? PrivateImplementationType { get; set; }
         public CodeObjectCollection<TypeParameter> Parameters { get; }
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
         public StatementCollection? Statements { get; set; }

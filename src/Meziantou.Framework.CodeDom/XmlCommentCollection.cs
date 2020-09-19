@@ -15,22 +15,22 @@ namespace Meziantou.Framework.CodeDom
 
         public void AddSummary(string description)
         {
-            Add(new XmlComment(new XElement("summary", description)));
+            Add(new XmlComment(new XElement(XName.Get("summary"), description)));
         }
 
         public void AddReturn(string text)
         {
-            Add(new XmlComment(new XElement("return", text)));
+            Add(new XmlComment(new XElement(XName.Get("return"), text)));
         }
 
         public void AddParam(string name, string description)
         {
-            Add(new XmlComment(new XElement("param", new XAttribute("name", name), description)));
+            Add(new XmlComment(new XElement(XName.Get("param"), new XAttribute(XName.Get("name"), name), description)));
         }
 
         public void AddTypeParam(string name, string description)
         {
-            Add(new XmlComment(new XElement("typeparam", new XAttribute("name", name), description)));
+            Add(new XmlComment(new XElement(XName.Get("typeparam"), new XAttribute(XName.Get("name"), name), description)));
         }
     }
 }

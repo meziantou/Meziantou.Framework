@@ -39,6 +39,18 @@ namespace Meziantou.Framework
         }
 
         [Pure]
+        internal static bool Contains(this string str, char value, StringComparison stringComparison)
+        {
+#if NET5_0 || NETCOREAPP3_1
+            return str.Contains(value, stringComparison);
+#elif NET461 || NETSTANDARD2_0
+            return str.IndexOf(value.ToString(), stringComparison) >= 0;
+#else
+#error Platform not supported
+#endif
+        }
+
+        [Pure]
         public static bool Contains(this string? str, string? value, StringComparison stringComparison)
         {
             if (str == null)
@@ -109,7 +121,7 @@ namespace Meziantou.Framework
             if (string.IsNullOrEmpty(str))
                 return false;
 
-            return str[str.Length - 1] == c;
+            return str[^1] == c;
         }
 
         [Pure]
@@ -157,13 +169,13 @@ namespace Meziantou.Framework
                     if (next == '\n')
                     {
                         Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 2));
-                        _str = span.Slice(index + 2);
+                        _str = span[(index + 2)..];
                         return true;
                     }
                 }
 
                 Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 1));
-                _str = span.Slice(index + 1);
+                _str = span[(index + 1)..];
                 return true;
             }
 

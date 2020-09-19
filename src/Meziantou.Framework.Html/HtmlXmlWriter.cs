@@ -98,8 +98,7 @@ namespace Meziantou.Framework.Html
 
         private HtmlElement GetCurrentElement()
         {
-            var element = Current as HtmlElement;
-            if (element == null)
+            if (Current is not HtmlElement element)
                 throw new InvalidOperationException($"Current node is not an element but is of '{Current.GetType().FullName}' type.");
 
             return element;
@@ -145,8 +144,7 @@ namespace Meziantou.Framework.Html
 
         public override void WriteEndAttribute()
         {
-            var att = Current as HtmlAttribute;
-            if (att == null)
+            if (Current is not HtmlAttribute att)
                 throw new InvalidOperationException("Current node is not an attribute but is of '" + Current.GetType().FullName + "' type.");
 
             Current = att.ParentNode;

@@ -34,6 +34,45 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
+        public void AddOrReplaceTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 2, 3 };
+
+            // Act
+            list.AddOrReplace(10, 5);
+
+            // Assert
+            Assert.Equal(new[] { 1, 2, 3, 5 }, list);
+        }
+
+        [Fact]
+        public void AddOrReplaceTests_02()
+        {
+            // Arrange
+            var list = new List<string>();
+
+            // Act
+            list.AddOrReplace(null, "");
+
+            // Assert
+            Assert.Equal(new[] { "" }, list);
+        }
+
+        [Fact]
+        public void AddOrReplaceTests_03()
+        {
+            // Arrange
+            var list = new List<int> { 1, 2, 3 };
+
+            // Act
+            list.AddOrReplace(2, 5);
+
+            // Assert
+            Assert.Equal(new[] { 1, 5, 3 }, list);
+        }
+
+        [Fact]
         public async Task ForEachAsync()
         {
             var bag = new ConcurrentBag<int>();

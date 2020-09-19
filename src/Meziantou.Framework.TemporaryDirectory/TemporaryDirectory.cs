@@ -1,7 +1,5 @@
-﻿#if NETCOREAPP3_1
-using System;
+﻿using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -29,11 +27,6 @@ namespace Meziantou.Framework
             return FullPath.FromPath(FullPath, relativePath);
         }
 
-        public void Dispose()
-        {
-            IOUtilities.Delete(new DirectoryInfo(FullPath));
-        }
-
         private static FullPath CreateUniqueDirectory(FullPath filePath)
         {
             using (var mutex = new Mutex(initiallyOwned: false, name: "Meziantou.Framework.TemporaryDirectory"))
@@ -46,7 +39,7 @@ namespace Meziantou.Framework
                     var tempPath = filePath.Value + "_";
                     while (Directory.Exists(filePath))
                     {
-                        filePath = FullPath.FromPath(tempPath + count.ToStringInvariant());
+                        filePath = FullPath.FromPath(tempPath + count.ToString(CultureInfo.InvariantCulture));
                         count++;
                     }
 
@@ -61,10 +54,9 @@ namespace Meziantou.Framework
             return filePath;
         }
 
-        [SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Can be used from the debugger")]
-        private void OpenInExplorer()
+        public void Dispose()
         {
-            Process.Start(FullPath);
+            IOUtilities.Delete(new DirectoryInfo(FullPath));
         }
 
         public ValueTask DisposeAsync()
@@ -73,7 +65,3 @@ namespace Meziantou.Framework
         }
     }
 }
-#elif NET461 || NETSTANDARD2_0
-#else
-#error Platform not supported
-#endif

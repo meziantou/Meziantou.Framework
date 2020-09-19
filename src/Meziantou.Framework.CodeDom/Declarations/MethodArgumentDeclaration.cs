@@ -2,7 +2,6 @@
 {
     public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
     {
-        private TypeReference? _type;
         private Expression? _defaultValue;
 
         public MethodArgumentDeclaration()
@@ -25,12 +24,7 @@
         public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
         public string? Name { get; set; }
         public bool IsExtension { get; set; }
-
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public Expression? DefaultValue
         {

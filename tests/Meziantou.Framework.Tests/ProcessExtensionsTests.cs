@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS0618 // Type or member is obsolete
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -98,7 +99,7 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_Cancel()
         {
-            DateTime start = DateTime.Now;
+            var start = DateTime.Now;
 
             using var cts = new CancellationTokenSource();
             Task task;
@@ -182,7 +183,7 @@ namespace Meziantou.Framework.Tests
             var parents = current.GetAncestorProcessIds().ToList();
 
             AssertExtensions.AllItemsAreUnique(parents);
-            bool hasParent = false;
+            var hasParent = false;
             foreach (var parentId in parents)
             {
                 try

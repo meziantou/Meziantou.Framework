@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public static class CredentialManager
     {
         public static Credential? ReadCredential(string applicationName)
@@ -133,12 +135,18 @@ namespace Meziantou.Framework.Win32
             }
         }
 
-        public static IReadOnlyList<Credential> EnumerateCrendentials()
+        [Obsolete("Use EnumerateCredentials")]
+        public static IReadOnlyList<Credential> EnumerateCrendentials() => EnumerateCredentials();
+
+        public static IReadOnlyList<Credential> EnumerateCredentials()
         {
-            return EnumerateCrendentials(filter: null);
+            return EnumerateCredentials(filter: null);
         }
 
-        public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter)
+        [Obsolete("Use EnumerateCredentials")]
+        public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter) => EnumerateCredentials(filter);
+
+        public static IReadOnlyList<Credential> EnumerateCredentials(string? filter)
         {
             var result = new List<Credential>();
             var ret = Advapi32.CredEnumerate(filter, 0, out var count, out var pCredentials);
@@ -172,7 +180,7 @@ namespace Meziantou.Framework.Win32
                 userId.Append(userName);
             }
 
-            var save = saveCredential == CredentialSaveOption.Selected ? true : false;
+            var save = saveCredential == CredentialSaveOption.Selected;
             var flags = CredentialUIFlags.CompleteUsername | CredentialUIFlags.ExcludeCertificates | CredentialUIFlags.GenericCredentials;
             if (saveCredential == CredentialSaveOption.Unselected)
             {
@@ -187,7 +195,7 @@ namespace Meziantou.Framework.Win32
                 flags |= CredentialUIFlags.DoNotPersist;
             }
 
-            _ = Credui.CredUICmdLinePromptForCredentials(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
+            _ = Credui.CredUICmdLinePromptForCredentialsW(target, IntPtr.Zero, 0, userId, userId.Capacity, userPassword, userPassword.Capacity, ref save, flags);
 
             var userBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
             var domainBuilder = new StringBuilder(Credui.CREDUI_MAX_USERNAME_LENGTH);
@@ -199,9 +207,9 @@ namespace Meziantou.Framework.Win32
             {
                 CredentialUIReturnCodes.Success => new CredentialResult(userBuilder.ToString(), userPassword.ToString(), domainBuilder.ToString(), credentialSaved),
                 CredentialUIReturnCodes.InvalidAccountName => new CredentialResult(userId.ToString(), userPassword.ToString(), domain: null, credentialSaved),
-                CredentialUIReturnCodes.InsufficientBuffer => throw new OutOfMemoryException(),
-                CredentialUIReturnCodes.InvalidParameter => throw new ArgumentException(),
-                _ => throw new ArgumentOutOfRangeException(),
+                CredentialUIReturnCodes.InsufficientBuffer => throw new Win32Exception((int)returnCode, "Insufficient buffer"),
+                CredentialUIReturnCodes.InvalidParameter => throw new Win32Exception((int)returnCode, "Invalid parameter"),
+                _ => throw new Win32Exception((int)returnCode),
             };
         }
 
@@ -209,16 +217,16 @@ namespace Meziantou.Framework.Win32
         {
             var credUI = new CredentialUIInfo
             {
-                hwndParent = owner,
-                pszMessageText = messageText,
-                pszCaptionText = captionText,
-                hbmBanner = IntPtr.Zero,
+                HwndParent = owner,
+                PszMessageText = messageText,
+                PszCaptionText = captionText,
+                HbmBanner = IntPtr.Zero,
             };
 
-            var save = saveCredential == CredentialSaveOption.Selected ? true : false;
+            var save = saveCredential == CredentialSaveOption.Selected;
 
             // Setup the flags and variables
-            credUI.cbSize = Marshal.SizeOf(credUI);
+            credUI.CbSize = Marshal.SizeOf(credUI);
             var errorcode = 0;
             uint authPackage = 0;
 
@@ -270,7 +278,7 @@ namespace Meziantou.Framework.Win32
             inCredSize = 0;
         }
 
-        private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, [NotNullWhen(returnValue: true)] out string? userName, [NotNullWhen(returnValue: true)]out string? password, [NotNullWhen(returnValue: true)]out string? domain)
+        private static bool GetCredentialsFromOutputBuffer(IntPtr outCredBuffer, uint outCredSize, [NotNullWhen(returnValue: true)] out string? userName, [NotNullWhen(returnValue: true)] out string? password, [NotNullWhen(returnValue: true)] out string? domain)
         {
             var maxUserName = Credui.CREDUI_MAX_USERNAME_LENGTH;
             var maxDomain = Credui.CREDUI_MAX_USERNAME_LENGTH;
@@ -280,7 +288,7 @@ namespace Meziantou.Framework.Win32
             var domainBuf = new StringBuilder(maxPassword);
             try
             {
-                if (Credui.CredUnPackAuthenticationBuffer(0, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, ref maxDomain, passwordBuf, ref maxPassword))
+                if (Credui.CredUnPackAuthenticationBufferW(0, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, ref maxDomain, passwordBuf, ref maxPassword))
                 {
                     userName = usernameBuf.ToString();
                     password = passwordBuf.ToString();
@@ -303,13 +311,13 @@ namespace Meziantou.Framework.Win32
                                 break;
 
                             case CredentialUIReturnCodes.InsufficientBuffer:
-                                throw new OutOfMemoryException();
+                                throw new Win32Exception((int)returnCode, "Insufficient buffer");
 
                             case CredentialUIReturnCodes.InvalidParameter:
-                                throw new ArgumentException();
+                                throw new Win32Exception((int)returnCode, "Invalid parameter");
 
                             default:
-                                throw new ArgumentOutOfRangeException();
+                                throw new Win32Exception((int)returnCode);
                         }
                     }
 

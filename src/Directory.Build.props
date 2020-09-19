@@ -1,20 +1,20 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
-  <!-- sourcelink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
-  <PropertyGroup>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <Nullable>enable</Nullable>
-    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
-  </PropertyGroup>
-  
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.566">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/Nullable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/NullableAttributes.cs" Link="Internals/NullableAttributes.cs" />
+	  <Compile Include="$(MSBuildThisFileDirectory)/PlatformAttributes.cs" Link="Internals/PlatformAttributes.cs" />
   </ItemGroup>
 
 </Project>

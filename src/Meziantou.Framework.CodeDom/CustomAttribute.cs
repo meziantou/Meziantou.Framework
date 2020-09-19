@@ -2,8 +2,6 @@
 {
     public class CustomAttribute : CodeObject, ICommentable
     {
-        private TypeReference? _type;
-
         public CustomAttribute()
             : this(typeReference: null)
         {
@@ -17,12 +15,7 @@
             Type = typeReference;
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
-
+        public TypeReference? Type { get; set; }
         public CustomAttributeTarget? Target { get; }
         public CodeObjectCollection<CustomAttributeArgument> Arguments { get; }
         public CommentCollection CommentsBefore { get; }

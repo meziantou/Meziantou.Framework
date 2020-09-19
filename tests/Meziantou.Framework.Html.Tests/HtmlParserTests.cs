@@ -109,7 +109,9 @@ namespace Meziantou.Framework.Html.Tests
             using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
+#pragma warning disable SYSLIB0001 // Type or member is obsolete
             Assert.Equal(Encoding.UTF7, document.DetectedEncoding);
+#pragma warning restore SYSLIB0001 // Type or member is obsolete
         }
 
         [Fact]
@@ -119,7 +121,9 @@ namespace Meziantou.Framework.Html.Tests
             using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
+#pragma warning disable SYSLIB0001 // Type or member is obsolete
             Assert.Equal(Encoding.UTF7, document.DetectedEncoding);
+#pragma warning restore SYSLIB0001 // Type or member is obsolete
         }
     }
 }

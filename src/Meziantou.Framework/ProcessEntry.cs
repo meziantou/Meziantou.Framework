@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework
 {
     [StructLayout(LayoutKind.Auto)]
-    public readonly struct ProcessEntry
+    public readonly struct ProcessEntry : IEquatable<ProcessEntry>
     {
         internal ProcessEntry(int processId, int parentProcessId)
         {
@@ -17,26 +18,25 @@ namespace Meziantou.Framework
 
         public override bool Equals(object? obj)
         {
-            if (obj is ProcessEntry entry)
-            {
-                return ProcessId == entry.ProcessId &&
-                      ParentProcessId == entry.ParentProcessId;
-            }
+            return obj is ProcessEntry entry && Equals(entry);
+        }
 
-            return false;
+        public bool Equals(ProcessEntry other)
+        {
+            return ProcessId == other.ProcessId && ParentProcessId == other.ParentProcessId;
         }
 
         public override int GetHashCode()
         {
-            var hashCode = 802333198;
-            hashCode = hashCode * -1521134295 + ProcessId.GetHashCode();
-            hashCode = hashCode * -1521134295 + ParentProcessId.GetHashCode();
-            return hashCode;
+            return HashCode.Combine(ProcessId, ParentProcessId);
         }
 
         public Process ToProcess()
         {
             return Process.GetProcessById(ProcessId);
         }
+
+        public static bool operator ==(ProcessEntry left, ProcessEntry right) => left.Equals(right);
+        public static bool operator !=(ProcessEntry left, ProcessEntry right) => !(left == right);
     }
 }

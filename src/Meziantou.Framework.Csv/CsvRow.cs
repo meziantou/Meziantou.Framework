@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Csv
         public IReadOnlyList<CsvColumn>? Columns { get; }
         public IReadOnlyList<string> Values { get; }
 
-        public CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
+        internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
         {
             Values = values ?? throw new ArgumentNullException(nameof(values));
             Columns = columns;
@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Csv
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 if (index >= Values.Count)
-                    return null;
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 return Values[index];
             }
@@ -37,7 +37,13 @@ namespace Meziantou.Framework.Csv
                 if (columnName == null)
                     throw new ArgumentNullException(nameof(columnName));
 
+                if (Columns == null)
+                    throw new InvalidOperationException("Columns are not parsed");
+
                 var column = Columns.FirstOrDefault(c => string.Equals(c.Name, columnName, StringComparison.Ordinal));
+                if (column == null)
+                    return null;
+
                 return this[column];
             }
         }
@@ -63,6 +69,9 @@ namespace Meziantou.Framework.Csv
 
         bool IReadOnlyDictionary<string, string?>.ContainsKey(string key)
         {
+            if (Columns == null)
+                return false;
+
             return Columns.Any(c => string.Equals(c.Name, key, StringComparison.Ordinal));
         }
 

@@ -112,7 +112,7 @@ namespace Meziantou.Framework
             return false;
         }
 
-        public override bool TryInvokeMember(InvokeMemberBinder binder, object[]? args, out object? result)
+        public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
         {
             Type? type = _typeCache.Type;
             var flags = _originalObject == null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
@@ -122,7 +122,7 @@ namespace Meziantou.Framework
             {
                 try
                 {
-                    result = type.InvokeMember(binder.Name, flags, binder: null, _originalObject, args);
+                    result = type.InvokeMember(binder.Name, flags, binder: null, _originalObject, args, culture: null);
                     return true;
                 }
                 catch (MissingMethodException)
@@ -175,7 +175,7 @@ namespace Meziantou.Framework
 
         public override bool TryConvert(ConvertBinder binder, out object? result)
         {
-            result = Convert.ChangeType(_originalObject, binder.Type);
+            result = Convert.ChangeType(_originalObject, binder.Type, provider: null);
             return true;
         }
 

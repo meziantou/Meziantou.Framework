@@ -5,15 +5,18 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
+    [SupportedOSPlatform("windows")]
     public abstract class ProjectedFileSystemBase : IDisposable
     {
-        // TODO
-        // * Version
+        // Remaining work
+        // * Use VersionInfo
         // * FileNotFound
+        // * DirectoryNotFound
         // * Async loading (https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand)
         // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjupdatefileifneeded
 
@@ -75,7 +78,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 {
                     opt.Flags = options.UseNegativePathCache ? NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
 
-                    // TODO extract to function
                     var structureSize = Marshal.SizeOf<NativeMethods.PRJ_NOTIFICATION_MAPPING>();
                     notificationMappingsPtr = Marshal.AllocHGlobal(structureSize * options.Notifications.Count);
 
@@ -95,9 +97,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var context = ++_context;
-#pragma warning disable IDE0067 // Dispose objects before losing scope: _instanceHandle is disposed in Dispose
                 var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, new IntPtr(context), in opt, out _instanceHandle);
-#pragma warning restore IDE0067
                 hr.EnsureSuccess();
             }
             finally
@@ -164,7 +164,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         protected abstract IEnumerable<ProjectedFileSystemEntry> GetEntries(string path);
 
-        protected virtual ProjectedFileSystemEntry GetEntry(string path)
+        protected virtual ProjectedFileSystemEntry? GetEntry(string path)
         {
             var directory = Path.GetDirectoryName(path);
             return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
@@ -173,6 +173,12 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         protected abstract Stream OpenRead(string path);
 
         public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             Stop();
         }
@@ -186,7 +192,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             return HResult.E_FILENOTFOUND;
         }
 
-        private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters /*TODO*/)
+        private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
         {
             Debug.WriteLine($"{notification} {callbackData.FilePathName} {callbackData.Flags}");
             return HResult.S_OK;
@@ -200,7 +206,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         private HResult StartDirectoryEnumerationCallback(in NativeMethods.PrjCallbackData callbackData, in Guid enumerationId)
         {
-            // TODO be able to return directory not found
             var entries = GetEntries(callbackData.FilePathName);
             _activeEnumerations[enumerationId] = new DirectoryEnumerationSession(entries);
             return HResult.S_OK;
@@ -297,7 +302,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
                 // Ensure our transfer size is aligned to the device alignment, and is
                 // no larger than buffer size (note this assumes the device alignment is less than buffer size).
-                ulong writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
+                var writeEndOffset = BlockAlignTruncate(writeStartOffset + maxBufferSize, instanceInfo.WriteAlignment);
                 Debug.Assert(writeEndOffset > 0);
                 Debug.Assert(writeEndOffset > writeStartOffset);
 

@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace Meziantou.Framework
 {
-#if ReflectionUtilities_Interal
+#if ReflectionUtilities_Internal
     internal
 #else
     public

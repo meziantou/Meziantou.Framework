@@ -1,6 +1,4 @@
-﻿#if NET461 || NETSTANDARD2_0
-#elif NETCOREAPP3_1
-using System;
+﻿using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -23,6 +21,3 @@ namespace Meziantou.Framework
         }
     }
 }
-#else
-#error Platform not supported
-#endif

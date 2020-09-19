@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.ComponentModel;
-using Meziantou.Framework.Win32.Natives;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
     /// <summary>
     /// A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public sealed class JobObject : SafeHandle
     {
         /// <summary>
@@ -28,9 +30,9 @@ namespace Meziantou.Framework.Win32
         {
             var atts = new SECURITY_ATTRIBUTES
             {
-                bInheritHandle = true,
-                lpSecurityDescriptor = IntPtr.Zero,
-                nLength = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
+                InheritHandle = true,
+                SecurityDescriptor = IntPtr.Zero,
+                Length = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
             };
 
             SetHandle(NativeMethods.CreateJobObject(ref atts, name));

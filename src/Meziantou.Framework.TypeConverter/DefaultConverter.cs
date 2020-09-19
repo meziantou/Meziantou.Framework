@@ -53,7 +53,7 @@ namespace Meziantou.Framework
             {
                 if (s[0] == 'x' || s[0] == 'X')
                 {
-                    s = s.Substring(1);
+                    s = s[1..];
                     return true;
                 }
 
@@ -61,7 +61,7 @@ namespace Meziantou.Framework
                 {
                     if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
                     {
-                        s = s.Substring(2);
+                        s = s[2..];
                         return true;
                     }
                 }

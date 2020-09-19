@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
@@ -46,7 +47,7 @@ namespace Meziantou.Framework.Html
             if (str.Length == 0)
                 return false;
 
-            return str[str.Length - 1] == c;
+            return str[^1] == c;
         }
 
         public static Encoding GetDefaultEncoding()
@@ -179,7 +180,7 @@ namespace Meziantou.Framework.Html
             if (index == startIndex)
                 return null;
 
-            return header.Substring(startIndex, index - startIndex).Trim();
+            return header[startIndex..index].Trim();
         }
 
         public static string GetValidXmlName(string text)
@@ -229,21 +230,15 @@ namespace Meziantou.Framework.Html
                 return false;
 
             var category = CharUnicodeInfo.GetUnicodeCategory(c);
-            switch (category)
-            {
-                case UnicodeCategory.UppercaseLetter://Lu
-                case UnicodeCategory.LowercaseLetter://Ll
-                case UnicodeCategory.TitlecaseLetter://Lt
-                case UnicodeCategory.LetterNumber://Nl
-                case UnicodeCategory.OtherLetter://Lo
-                    return true;
-
-                default:
-                    return false;
-            }
+            return category == UnicodeCategory.UppercaseLetter
+                || category == UnicodeCategory.LowercaseLetter
+                || category == UnicodeCategory.TitlecaseLetter
+                || category == UnicodeCategory.LetterNumber
+                || category == UnicodeCategory.OtherLetter;
         }
 
         // valids are Lu, Ll, Lt, Lo, Nl, Mc, Me, Mn, Lm, or Nd
+        [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Better readability")]
         private static bool IsValidXmlNamePart(char c)
         {
             if ((c == '_') || (c == '.'))
@@ -267,11 +262,9 @@ namespace Meziantou.Framework.Html
                 case UnicodeCategory.LetterNumber://Nl
                 case UnicodeCategory.OtherLetter://Lo
                 case UnicodeCategory.ModifierLetter://Lm
-
                 case UnicodeCategory.NonSpacingMark://Mn
                 case UnicodeCategory.SpacingCombiningMark://Mc
                 case UnicodeCategory.EnclosingMark://Me
-
                 case UnicodeCategory.DecimalDigitNumber://Nd
                     return true;
 
@@ -302,21 +295,21 @@ namespace Meziantou.Framework.Html
             var pos = path.IndexOf(Path.DirectorySeparatorChar, 3); // \\\ is invalid
             if (pos < 0)
             {
-                serverName = path.Substring(2);
+                serverName = path[2..];
                 return path;
             }
 
             var pos2 = path.IndexOf(Path.DirectorySeparatorChar, pos + 2); // \\server\\ is invalid
             if (pos2 < 0)
             {
-                serverName = path.Substring(2, pos - 2);
-                shareName = path.Substring(pos + 1);
+                serverName = path[2..pos];
+                shareName = path[(pos + 1)..];
                 return path;
             }
 
-            serverName = path.Substring(2, pos - 2);
-            shareName = path.Substring(pos + 1, pos2 - (pos + 1));
-            sharePath = path.Substring(pos2 + 1);
+            serverName = path[2..pos];
+            shareName = path[(pos + 1)..pos2];
+            sharePath = path[(pos2 + 1)..];
             return @"\\" + serverName + @"\" + shareName;
         }
 
@@ -329,7 +322,7 @@ namespace Meziantou.Framework.Html
 
             if (path.StartsWith(Prefix, StringComparison.Ordinal))
             {
-                path = path.Substring(Prefix.Length);
+                path = path[Prefix.Length..];
             }
 
             var spath = GetServerPath(path);
@@ -350,7 +343,7 @@ namespace Meziantou.Framework.Html
             if (string.IsNullOrEmpty(path))
                 return Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture);
 
-            if (path[path.Length - 1] != Path.DirectorySeparatorChar)
+            if (path[^1] != Path.DirectorySeparatorChar)
                 return path + Path.DirectorySeparatorChar;
 
             return path;

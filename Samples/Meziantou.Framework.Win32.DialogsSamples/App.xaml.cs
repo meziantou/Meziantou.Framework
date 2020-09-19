@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿using System.Runtime.Versioning;
+using System.Windows;
+
+[assembly: SupportedOSPlatform("windows")]
 
 namespace Meziantou.Framework.Win32.DialogsSamples
 {

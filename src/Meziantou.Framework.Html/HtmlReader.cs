@@ -53,8 +53,7 @@ namespace Meziantou.Framework.Html
         {
             get
             {
-                var sr = TextReader as StreamReader;
-                if (sr == null)
+                if (TextReader is not StreamReader sr)
                     return false;
 
                 return sr.BaseStream?.CanSeek == true;
@@ -66,16 +65,15 @@ namespace Meziantou.Framework.Html
             if (!IsRestartable)
                 throw new InvalidOperationException();
 
-            var sr = TextReader as StreamReader;
-            if (sr == null || sr.BaseStream == null || !sr.BaseStream.CanSeek)
+            if (TextReader is not StreamReader sr || sr.BaseStream == null || !sr.BaseStream.CanSeek)
                 return false;
 
             return sr.BaseStream.Seek(0, SeekOrigin.Begin) == 0;
         }
 
-        private void OnParsing(object sender, HtmlReaderParseEventArgs e)
+        private void OnParsing(HtmlReaderParseEventArgs e)
         {
-            Parsing?.Invoke(sender, e);
+            Parsing?.Invoke(this, e);
         }
 
         private void SetCurrentElement(string tag)
@@ -100,7 +98,7 @@ namespace Meziantou.Framework.Html
                 State = ParserState,
             };
 
-            OnParsing(this, e);
+            OnParsing(e);
             cont = e.Continue;
             _eof = e.Eof;
             prev = e.PreviousCharacter;
@@ -323,7 +321,7 @@ namespace Meziantou.Framework.Html
                         break;
 
                     case HtmlParserState.CData:
-                        if (c == '>' && Value.Length >= 2 && Value[Value.Length - 2] == ']' && Value[Value.Length - 1] == ']')
+                        if (c == '>' && Value.Length >= 2 && Value[^2] == ']' && Value[^1] == ']')
                         {
                             var rawText = Value.ToString(0, Value.Length - 2);
                             PushCurrentState(HtmlParserState.CDataText, rawText);
@@ -413,7 +411,7 @@ namespace Meziantou.Framework.Html
                         break;
 
                     case HtmlParserState.CommentOpen:
-                        if (c == '>' && Value.Length > 2 && Value[Value.Length - 1] == '-' && Value[Value.Length - 2] == '-')
+                        if (c == '>' && Value.Length > 2 && Value[^1] == '-' && Value[^2] == '-')
                         {
                             PushCurrentState(HtmlParserState.CommentClose, Value.Remove(Value.Length - 2, 2).ToString());
                             ParserState = HtmlParserState.Text;

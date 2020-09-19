@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 #if NET461
@@ -50,7 +48,7 @@ namespace Meziantou.Framework
                 return;
 
 #if NETCOREAPP2_1 || NETCOREAPP3_1
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
             _server = new NamedPipeServerStream(
@@ -87,7 +85,7 @@ namespace Meziantou.Framework
 #endif
             try
             {
-                _server.BeginWaitForConnection(Listen, state: null);
+                _server.BeginWaitForConnection(Listen, state: null!); // TODO-NULLABLE https://github.com/dotnet/runtime/pull/42442
             }
             catch (ObjectDisposedException)
             {
@@ -171,7 +169,7 @@ namespace Meziantou.Framework
                     using (var binaryWriter = new BinaryWriter(ms))
                     {
                         binaryWriter.Write(NotifyInstanceMessageType);
-                        binaryWriter.Write(Process.GetCurrentProcess().Id);
+                        binaryWriter.Write(GetCurrentProcessId());
                         binaryWriter.Write(args.Length);
                         foreach (var arg in args)
                         {
@@ -182,7 +180,6 @@ namespace Meziantou.Framework
                     var buffer = ms.ToArray();
                     client.Write(buffer, 0, buffer.Length);
                     client.Flush();
-                    client.WaitForPipeDrain();
                 }
 
                 return true;
@@ -191,6 +188,17 @@ namespace Meziantou.Framework
             {
                 return false;
             }
+        }
+
+        private static int GetCurrentProcessId()
+        {
+#if NET5_0
+            return Environment.ProcessId;
+#elif NET461 || NETCOREAPP3_1
+            return System.Diagnostics.Process.GetCurrentProcess().Id;
+#else
+#error Platform not supported
+#endif
         }
 
         public void Dispose()

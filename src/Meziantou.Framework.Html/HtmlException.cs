@@ -31,16 +31,16 @@ namespace Meziantou.Framework.Html
             if (message == null)
                 return -1;
 
-            const string prefix = "HTML";
+            const string Prefix = "HTML";
 
-            if (!message.StartsWith(prefix, StringComparison.Ordinal))
+            if (!message.StartsWith(Prefix, StringComparison.Ordinal))
                 return -1;
 
-            var pos = message.IndexOf(':', prefix.Length);
+            var pos = message.IndexOf(':', Prefix.Length);
             if (pos < 0)
                 return -1;
 
-            if (int.TryParse(message.Substring(prefix.Length, pos - prefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var i))
+            if (int.TryParse(message[Prefix.Length..pos], NumberStyles.None, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return -1;

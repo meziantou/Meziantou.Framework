@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Versioning
     internal sealed class ReadOnlyList<T> : IList<T>, IReadOnlyList<T>
     {
         private readonly List<T> _items;
-        private bool _frozen = false;
+        private bool _frozen;
 
         public ReadOnlyList()
         {

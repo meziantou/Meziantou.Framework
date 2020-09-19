@@ -10,7 +10,7 @@ namespace Meziantou.Framework.WPF
             return new SyncDelegateCommand(WrapAction(execute), CanExecuteTrue);
         }
 
-        public static IDelegateCommand Create(Action<object>? execute)
+        public static IDelegateCommand Create(Action<object?>? execute)
         {
             return new SyncDelegateCommand(execute ?? DefaultExecute, CanExecuteTrue);
         }
@@ -20,7 +20,7 @@ namespace Meziantou.Framework.WPF
             return new SyncDelegateCommand(WrapAction(execute), WrapAction(canExecute));
         }
 
-        public static IDelegateCommand Create(Action<object>? execute, Func<object, bool>? canExecute)
+        public static IDelegateCommand Create(Action<object?>? execute, Func<object?, bool>? canExecute)
         {
             return new SyncDelegateCommand(execute ?? DefaultExecute, canExecute ?? CanExecuteTrue);
         }
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.WPF
             return new AsyncDelegateCommand(WrapAction(execute), CanExecuteTrue);
         }
 
-        public static IDelegateCommand Create(Func<object, Task>? execute)
+        public static IDelegateCommand Create(Func<object?, Task>? execute)
         {
             return new AsyncDelegateCommand(execute ?? DefaultExecuteAsync, CanExecuteTrue);
         }
@@ -40,20 +40,20 @@ namespace Meziantou.Framework.WPF
             return new AsyncDelegateCommand(WrapAction(execute), WrapAction(canExecute));
         }
 
-        public static IDelegateCommand Create(Func<object, Task>? execute, Func<object, bool>? canExecute)
+        public static IDelegateCommand Create(Func<object?, Task>? execute, Func<object?, bool>? canExecute)
         {
             return new AsyncDelegateCommand(execute ?? DefaultExecuteAsync, canExecute ?? CanExecuteTrue);
         }
 
-        private static void DefaultExecute(object _)
+        private static void DefaultExecute(object? _)
         {
         }
 
-        private static Task DefaultExecuteAsync(object _) => Task.CompletedTask;
+        private static Task DefaultExecuteAsync(object? _) => Task.CompletedTask;
 
-        private static bool CanExecuteTrue(object _) => true;
+        private static bool CanExecuteTrue(object? _) => true;
 
-        private static Func<object, Task> WrapAction(Func<Task>? action)
+        private static Func<object?, Task> WrapAction(Func<Task>? action)
         {
             if (action == null)
                 return DefaultExecuteAsync;
@@ -61,7 +61,7 @@ namespace Meziantou.Framework.WPF
             return _ => action();
         }
 
-        private static Action<object> WrapAction(Action? action)
+        private static Action<object?> WrapAction(Action? action)
         {
             if (action == null)
                 return DefaultExecute;
@@ -69,7 +69,7 @@ namespace Meziantou.Framework.WPF
             return _ => action();
         }
 
-        private static Func<object, bool> WrapAction(Func<bool>? action)
+        private static Func<object?, bool> WrapAction(Func<bool>? action)
         {
             if (action == null)
                 return CanExecuteTrue;

@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteHtmlEncode(string format, params object?[] args)
         {
-            Write(_htmlEncoder.Encode(string.Format(format, args)));
+            Write(_htmlEncoder.Encode(string.Format(provider: null, format, args)));
         }
 
         public virtual void WriteHtmlAttributeEncode(object? value)
@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteHtmlAttributeEncode(string format, params object?[] args)
         {
-            Write(_htmlEncoder.Encode(string.Format(format, args)));
+            Write(_htmlEncoder.Encode(string.Format(provider: null, format, args)));
         }
 
         public virtual void WriteUrlEncode(object? value)
@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Templating
 
         public virtual void WriteUrlEncode(string format, params object?[] args)
         {
-            var urlEncode = _urlEncoder.Encode(string.Format(format, args));
+            var urlEncode = _urlEncoder.Encode(string.Format(provider: null, format, args));
             Write(urlEncode);
         }
 
@@ -96,7 +96,7 @@ namespace Meziantou.Framework.Templating
 
         public void EndSection(string name)
         {
-            HtmlEmailSection section;
+            HtmlEmailSection? section;
             if (!string.IsNullOrEmpty(name))
             {
                 section = _currentSections.LastOrDefault(_ => string.Equals(_.Name, name, StringComparison.Ordinal));

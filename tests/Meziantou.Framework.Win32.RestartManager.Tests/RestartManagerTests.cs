@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+﻿using System;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Win32.Tests
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
                     var processes = RestartManager.GetProcessesLockingFile(path);
-                    Assert.Equal(Process.GetCurrentProcess().Id, processes.Single().Id);
+                    Assert.Equal(Environment.ProcessId, processes.Single().Id);
                 }
             }
             finally

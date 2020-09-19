@@ -8,8 +8,8 @@ namespace Meziantou.Framework.Win32.Natives
     {
         internal const int CREDUI_MAX_USERNAME_LENGTH = 513;
 
-        [DllImport("credui.dll")]
-        internal static extern CredentialUIReturnCodes CredUICmdLinePromptForCredentials(
+        [DllImport("credui.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static extern CredentialUIReturnCodes CredUICmdLinePromptForCredentialsW(
             string targetName,
             IntPtr reserved1,
             int iError,
@@ -20,14 +20,14 @@ namespace Meziantou.Framework.Win32.Natives
             [MarshalAs(UnmanagedType.Bool)] ref bool pfSave,
             CredentialUIFlags flags);
 
-        [DllImport("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("credui.dll", EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         internal static extern CredentialUIReturnCodes CredUIParseUserName(string userName, StringBuilder user, int userMaxChars, StringBuilder domain, int domainMaxChars);
 
         [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CredPackAuthenticationBuffer(int dwFlags, StringBuilder pszUserName, StringBuilder pszPassword, IntPtr pPackedCredentials, ref int pcbPackedCredentials);
 
-        [DllImport("credui.dll", CharSet = CharSet.Auto)]
-        internal static extern bool CredUnPackAuthenticationBuffer(int dwFlags,
+        [DllImport("credui.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static extern bool CredUnPackAuthenticationBufferW(int dwFlags,
             IntPtr pAuthBuffer,
             uint cbAuthBuffer,
             StringBuilder pszUserName,
@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Win32.Natives
             StringBuilder pszPassword,
             ref int pcchMaxPassword);
 
-        [DllImport("credui.dll", EntryPoint = "CredUIPromptForWindowsCredentialsW", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("credui.dll", EntryPoint = "CredUIPromptForWindowsCredentialsW", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         internal static extern int CredUIPromptForWindowsCredentials(ref CredentialUIInfo creditUR,
             int authError,
             ref uint authPackage,

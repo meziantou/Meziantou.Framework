@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
+    [SupportedOSPlatform("windows")]
     public sealed class FileNameComparer : IComparer<string?>
     {
         private FileNameComparer()

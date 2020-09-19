@@ -1,13 +1,15 @@
-﻿using Meziantou.Framework.Win32.Natives;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class AccessToken : IDisposable
     {
         private IntPtr _token;
@@ -175,7 +177,7 @@ namespace Meziantou.Framework.Win32
                         }
 
                     case NativeMethods.ERROR_INVALID_HANDLE:
-                        throw new ArgumentException("Invalid impersonation token");
+                        throw new Win32Exception(errorCode, "Invalid impersonation token");
 
                     default:
                         throw new Win32Exception(errorCode);
@@ -218,7 +220,7 @@ namespace Meziantou.Framework.Win32
 
         private void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
         {
-            if (!NativeMethods.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
+            if (!NativeMethods.LookupPrivilegeValueW(lpSystemName: null, privilegeName, out var luid))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             var tp = new NativeMethods.TOKEN_PRIVILEGES

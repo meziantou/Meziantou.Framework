@@ -3,10 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
     {
         private const byte MaxSubAuthorities = 15;
@@ -60,7 +62,7 @@ namespace Meziantou.Framework.Win32
 
         private static string ConvertSidToStringSid(IntPtr sid)
         {
-            if (NativeMethods.ConvertSidToStringSid(sid, out var result))
+            if (NativeMethods.ConvertSidToStringSidW(sid, out var result))
                 return result;
 
             throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -74,7 +76,7 @@ namespace Meziantou.Framework.Win32
             var bufDomainName = new StringBuilder(domainNameLen);
             var sidNameUse = 0;
 
-            if (NativeMethods.LookupAccountSid(systemName: null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
+            if (NativeMethods.LookupAccountSidW(systemName: null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
             {
                 domain = bufDomainName.ToString();
                 name = bufUserName.ToString();

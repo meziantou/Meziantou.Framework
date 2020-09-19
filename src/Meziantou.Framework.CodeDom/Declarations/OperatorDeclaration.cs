@@ -2,13 +2,7 @@
 {
     public class OperatorDeclaration : MemberDeclaration, IModifiers
     {
-        private TypeReference? _returnType;
-
-        public TypeReference? ReturnType
-        {
-            get => _returnType;
-            set => _returnType = value;
-        }
+        public TypeReference? ReturnType { get; set; }
 
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
         public StatementCollection Statements { get; }

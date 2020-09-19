@@ -1,7 +1,6 @@
 ﻿#nullable disable
 using System;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace Meziantou.Framework.Html
 {
@@ -45,14 +44,14 @@ namespace Meziantou.Framework.Html
             get
             {
                 if (RawParserState == HtmlParserState.TagOpen && RawValue != null && RawValue.StartsWith('/'))
-                    return RawValue.Substring(1);
+                    return RawValue[1..];
 
                 if (RawValue != null && (RawParserState == HtmlParserState.AttValue || RawParserState == HtmlParserState.AttName) &&
                     ((RawValue.StartsWith('\'') && RawValue.EndsWith('\'')) ||
                     (RawValue.StartsWith('"') && RawValue.EndsWith('"'))))
                 {
                     var quote = RawValue[0];
-                    return RawValue.Substring(1, RawValue.Length - 2).Replace(quote + quote.ToString(CultureInfo.CurrentCulture), quote.ToString(CultureInfo.CurrentCulture));
+                    return RawValue[1..^1].Replace(new string(quote, 2), new string(quote, 1), StringComparison.Ordinal);
                 }
 
                 return RawValue;

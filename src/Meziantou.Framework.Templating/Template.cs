@@ -19,13 +19,11 @@ namespace Meziantou.Framework.Templating
         private const string DefaultWriterParameterName = "__output__";
 
         private static readonly object s_lock = new object();
-        private static readonly Type? s_defaultWriterType = null; // dynamic by default
 
-        private MethodInfo? _runMethodInfo = null;
+        private MethodInfo? _runMethodInfo;
         private string? _className;
         private string? _runMethodName;
         private string? _writerParameterName;
-        private Type? _writerType;
         private readonly List<TemplateArgument> _arguments = new List<TemplateArgument>();
         private readonly List<string> _usings = new List<string>();
         private readonly List<string> _referencePaths = new List<string>();
@@ -51,11 +49,7 @@ namespace Meziantou.Framework.Templating
             set => _writerParameterName = value;
         }
 
-        public Type? OutputType
-        {
-            get => _writerType ?? s_defaultWriterType;
-            set => _writerType = value;
-        }
+        public Type? OutputType { get; set; }
 
         public string? BaseClassFullTypeName { get; set; }
 
@@ -69,7 +63,7 @@ namespace Meziantou.Framework.Templating
         public IReadOnlyList<string> Usings => _usings;
         public IReadOnlyList<string> ReferencePaths => _referencePaths;
 
-        public bool Debug { get; set; } = false;
+        public bool Debug { get; set; }
 
         public void AddReference(Type type)
         {
@@ -134,7 +128,7 @@ namespace Meziantou.Framework.Templating
             var friendlyName = type.Name;
             if (type.IsGenericType)
             {
-                var iBacktick = friendlyName.IndexOf('`');
+                var iBacktick = friendlyName.IndexOf('`', StringComparison.Ordinal);
                 if (iBacktick > 0)
                 {
                     friendlyName = friendlyName.Remove(iBacktick);
@@ -289,7 +283,7 @@ namespace Meziantou.Framework.Templating
                 blocks.Add(block);
             }
 
-            blocks.Sort();
+            blocks.Sort(ParsedBlockComparer.IndexComparer);
             Blocks = blocks;
         }
 

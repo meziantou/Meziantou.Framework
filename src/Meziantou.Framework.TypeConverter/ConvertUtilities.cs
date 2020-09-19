@@ -57,6 +57,7 @@ namespace Meziantou.Framework
             return TryChangeType(converter, input, provider: null, out value);
         }
 
+        [SuppressMessage("Usage", "MA0011:IFormatProvider is missing", Justification = "By design")]
         public static bool TryChangeType(object? input, Type conversionType, out object? value)
         {
             return TryChangeType(DefaultConverter, input, conversionType, out value);
@@ -95,6 +96,7 @@ namespace Meziantou.Framework
             return ChangeType(converter, input, conversionType, defaultValue: null, provider: null);
         }
 
+        [SuppressMessage("Usage", "MA0011:IFormatProvider is missing", Justification = "By design")]
         public static object? ChangeType(object? input, Type conversionType, object? defaultValue)
         {
             return ChangeType(DefaultConverter, input, conversionType, defaultValue);

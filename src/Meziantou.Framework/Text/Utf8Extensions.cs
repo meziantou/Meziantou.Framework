@@ -2,6 +2,7 @@
 #elif NETCOREAPP3_1
 using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Meziantou.Framework.Text
@@ -13,6 +14,7 @@ namespace Meziantou.Framework.Text
             return new SpanUtf8BytesRuneEnumerator(utf8Bytes);
         }
 
+        [StructLayout(LayoutKind.Auto)]
         public ref struct SpanUtf8BytesRuneEnumerator
         {
             private ReadOnlySpan<byte> _remaining;

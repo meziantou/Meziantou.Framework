@@ -6,7 +6,7 @@
     <Version>2.20.6</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES</DefineConstants>
   </PropertyGroup>
-
+<!--
   <ItemGroup>
     <None Update="DebounceExtensions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -29,6 +29,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ThrottleExtensions.tt</DependentUpon>
     </Compile>
-  </ItemGroup>
+  </ItemGroup> -->
 
 </Project>

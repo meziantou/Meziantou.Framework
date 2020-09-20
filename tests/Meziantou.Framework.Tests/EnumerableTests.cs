@@ -86,6 +86,19 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
+        public async Task ParallelForEachAsync()
+        {
+            var bag = new ConcurrentBag<int>();
+            await Enumerable.Range(1, 100).ParallelForEachAsync(async i =>
+            {
+                await Task.Yield();
+                bag.Add(i);
+            }).ConfigureAwait(false);
+
+            Assert.Equal(100, bag.Count);
+        }
+
+        [Fact]
         public void MaxTests_01()
         {
             // Arrange

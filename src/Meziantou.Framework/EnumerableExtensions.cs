@@ -212,22 +212,74 @@ namespace Meziantou.Framework
             }
         }
 
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
+        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken = default)
         {
-            return ForEachAsync(source, action, CancellationToken.None);
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            foreach (var item in source)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await action(item).ConfigureAwait(false);
+            }
         }
 
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken)
+        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, CancellationToken, Task> action, CancellationToken cancellationToken = default)
         {
-            return ForEachAsync(source, Environment.ProcessorCount, action, cancellationToken);
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            foreach (var item in source)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await action(item, cancellationToken).ConfigureAwait(false);
+            }
         }
 
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
+        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, int, Task> action, CancellationToken cancellationToken = default)
         {
-            return ForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var index = 0;
+            foreach (var item in source)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await action(item, index).ConfigureAwait(false);
+                index++;
+            }
         }
 
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
+        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, int, CancellationToken, Task> action, CancellationToken cancellationToken = default)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var index = 0;
+            foreach (var item in source)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await action(item, index, cancellationToken).ConfigureAwait(false);
+                index++;
+            }
+        }
+
+        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
+        {
+            return ParallelForEachAsync(source, action, CancellationToken.None);
+        }
+
+        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken)
+        {
+            return ParallelForEachAsync(source, Environment.ProcessorCount, action, cancellationToken);
+        }
+
+        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
+        {
+            return ParallelForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
+        }
+
+        public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -503,7 +555,7 @@ namespace Meziantou.Framework
 
         public static IEnumerable<T> AsOnlyEnumerable<T>(this IEnumerable<T> enumerable)
         {
-            foreach(var item in enumerable)
+            foreach (var item in enumerable)
                 yield return item;
         }
     }

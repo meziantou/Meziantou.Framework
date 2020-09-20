@@ -1,6 +1,4 @@
-﻿#if NET461 || NETSTANDARD2_0
-#elif NETCOREAPP3_1
-using System;
+﻿using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -39,6 +37,3 @@ namespace Meziantou.Framework.Text
         }
     }
 }
-#else
-#error Platform not supported
-#endif

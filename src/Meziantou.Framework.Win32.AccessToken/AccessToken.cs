@@ -140,15 +140,13 @@ namespace Meziantou.Framework.Win32
             static T Identity(T arg) => arg;
         }
 
-        [return: MaybeNull]
-        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func)
+        private TResult? GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func)
             where T : struct
         {
             return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg))!;
         }
 
-        [return: MaybeNull]
-        private TResult GetTokenInformation<T, TResult>(TokenInformationClass type, Func<IntPtr, T, TResult> func)
+        private TResult? GetTokenInformation<T, TResult>(TokenInformationClass type, Func<IntPtr, T, TResult> func)
             where T : struct
         {
             if (!NativeMethods.GetTokenInformation(_token, type, IntPtr.Zero, 0, out var dwLength))

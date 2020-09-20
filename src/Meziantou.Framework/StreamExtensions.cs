@@ -22,9 +22,6 @@ namespace Meziantou.Framework
             return totalRead;
         }
 
-#if NETCOREAPP3_1
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1835:Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'", Justification = "Not supported in net461")]
-#endif
         public static async Task<int> ReadUntilCountOrEndAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             var totalRead = 0;

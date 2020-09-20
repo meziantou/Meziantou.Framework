@@ -200,7 +200,6 @@ namespace Meziantou.Framework
             return number.ToString(CultureInfo.InvariantCulture);
         }
 
-#if NET5_0
         [Pure]
         public static string ToStringInvariant(this System.Half number)
         {
@@ -215,7 +214,6 @@ namespace Meziantou.Framework
 
             return number.ToString(CultureInfo.InvariantCulture);
         }
-#endif
 
         [Pure]
         public static string ToStringInvariant(this float number)

@@ -348,7 +348,7 @@ namespace Meziantou.Framework
 
         protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out CultureInfo? value)
         {
-            if (IsWindows())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -362,17 +362,6 @@ namespace Meziantou.Framework
 
             value = null;
             return false;
-        }
-
-        private static bool IsWindows()
-        {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET461
-            return true;
-#else
-#error Platform not supported
-#endif
         }
 
         protected virtual bool TryConvert(object? input, IFormatProvider? provider, out DateTimeOffset value)

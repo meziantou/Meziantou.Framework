@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
-    public static partial class TaskExtensions
+    public static partial class TaskEx
     {
         public static async Task<(T0, T1)> WhenAll<T0, T1>(Task<T0> task0, Task<T1> task1)
         {

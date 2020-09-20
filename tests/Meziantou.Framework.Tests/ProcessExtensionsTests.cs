@@ -128,7 +128,7 @@ namespace Meziantou.Framework.Tests
             AssertExtensions.AllItemsAreUnique(processes.ToList());
         }
 
-        [Fact(Skip = "fail on CI")]
+        [RunIfWindowsFact]
         public void GetDescendantProcesses()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -200,7 +200,7 @@ namespace Meziantou.Framework.Tests
             Assert.True(hasParent, "The process has no parents");
         }
 
-        [Fact(Skip = "fail on CI")]
+        [RunIfWindowsFact]
         public void KillProcess_EntireProcessTree_False()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");

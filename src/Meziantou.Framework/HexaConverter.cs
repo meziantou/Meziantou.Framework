@@ -1,21 +1,27 @@
 ﻿using System;
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework
 {
-    public static class ByteArrayExtensions
+    public static class HexaConverter
     {
-        public static string ToHexa(this byte[] bytes)
+        public static string ToHexaString(byte[] bytes)
         {
-            return ToHexa(bytes, default);
+            return ToHexaString(bytes, default);
         }
 
-        public static string ToHexa(this byte[] bytes, HexaOptions options)
+        public static string ToHexaString(byte[] bytes, HexaOptions options)
         {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
+            return ToHexaString(bytes.AsSpan(), options);
+        }
 
+        public static string ToHexaString(this ReadOnlySpan<byte> bytes)
+        {
+            return ToHexaString(bytes, default);
+        }
+
+        public static string ToHexaString(ReadOnlySpan<byte> bytes, HexaOptions options)
+        {
             if (bytes.Length == 0)
                 return string.Empty;
 
@@ -27,90 +33,7 @@ namespace Meziantou.Framework
             };
         }
 
-#if NETCOREAPP3_1
-        private static string ToHexaUpperCase(this byte[] bytes)
-        {
-            return string.Create(bytes.Length * 2, bytes, (span, state) =>
-            {
-                const int AddToAlpha = 55;
-                const int AddToDigit = -7;
-
-                for (var i = 0; i < state.Length; i++)
-                {
-                    var b = state[i] >> 4;
-                    span[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-
-                    b = state[i] & 0xF;
-                    span[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-                }
-            });
-        }
-
-        private static string ToHexaLowerCase(this byte[] bytes)
-        {
-            return string.Create(bytes.Length * 2, bytes, (span, state) =>
-            {
-                const int AddToAlpha = 87;
-                const int AddToDigit = -39;
-
-                for (var i = 0; i < state.Length; i++)
-                {
-                    var b = state[i] >> 4;
-                    span[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-
-                    b = state[i] & 0xF;
-                    span[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-                }
-            });
-        }
-#elif NET461 || NETSTANDARD2_0
-        private static string ToHexaUpperCase(this byte[] bytes)
-        {
-            const int AddToAlpha = 55;
-            const int AddToDigit = -7;
-
-            var c = new char[bytes.Length * 2];
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var b = bytes[i] >> 4;
-                c[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-
-                b = bytes[i] & 0xF;
-                c[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-            }
-
-            return new string(c);
-        }
-
-        private static string ToHexaLowerCase(this byte[] bytes)
-        {
-            const int AddToAlpha = 87;
-            const int AddToDigit = -39;
-
-            var c = new char[bytes.Length * 2];
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var b = bytes[i] >> 4;
-                c[i * 2] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-
-                b = bytes[i] & 0xF;
-                c[(i * 2) + 1] = (char)(AddToAlpha + b + (((b - 10) >> 31) & AddToDigit));
-            }
-
-            return new string(c);
-        }
-#else
-#error plateform not supported
-#endif
-
-        [Obsolete("Use ParseHexa")]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static byte[] FromHexa(string str)
-        {
-            return ParseHexa(str);
-        }
-
-        public static byte[] ParseHexa(string str)
+        public static byte[] ParseHexaString(string str)
         {
             if (str == null)
                 throw new ArgumentNullException(nameof(str));
@@ -166,7 +89,7 @@ namespace Meziantou.Framework
             }
         }
 
-        public static bool TryParseHexa(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
+        public static bool TryParseHexaString(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
         {
             if (str == null || str.Length % 2 != 0)
             {
@@ -214,25 +137,64 @@ namespace Meziantou.Framework
             }
         }
 
-        public static string ToHexa(this ReadOnlySpan<byte> bytes)
+        public static bool TryParseHexaString(string? str, Span<byte> bytes, out int writtenBytes)
         {
-            return ToHexa(bytes, default);
-        }
-
-        public static string ToHexa(this ReadOnlySpan<byte> bytes, HexaOptions options)
-        {
-            if (bytes == null)
-                throw new ArgumentNullException(nameof(bytes));
-
-            if (bytes.Length == 0)
-                return string.Empty;
-
-            return options switch
+            if (str == null || str.Length % 2 != 0)
             {
-                HexaOptions.LowerCase => ToHexaLowerCase(bytes),
-                HexaOptions.UpperCase => ToHexaUpperCase(bytes),
-                _ => throw new ArgumentOutOfRangeException(nameof(options)),
-            };
+                writtenBytes = 0;
+                return false;
+            }
+
+            // handle 0x or 0X notation
+            if (str.Length >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
+            {
+                const int PrefixLength = 2;
+                var length = (str.Length / 2) - 1;
+                if (length > bytes.Length)
+                {
+                    writtenBytes = 0;
+                    return false;
+                }
+
+                for (var i = 0; i < length; i++)
+                {
+                    if (!TryGetHexValue(str[i * 2 + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
+                    {
+                        writtenBytes = i;
+                        return false;
+                    }
+
+                    bytes[i] = (byte)(value1 << 4);
+                    bytes[i] += (byte)value2;
+                }
+
+                writtenBytes = length;
+                return true;
+            }
+            else
+            {
+                var length = str.Length / 2;
+                if (length > bytes.Length)
+                {
+                    writtenBytes = 0;
+                    return false;
+                }
+
+                for (var i = 0; i < length; i++)
+                {
+                    if (!TryGetHexValue(str[i * 2], out var value1) || !TryGetHexValue(str[(i * 2) + 1], out var value2))
+                    {
+                        writtenBytes = i;
+                        return false;
+                    }
+
+                    bytes[i] = (byte)(value1 << 4);
+                    bytes[i] += (byte)value2;
+                }
+
+                writtenBytes = length;
+                return true;
+            }
         }
 
         private static string ToHexaUpperCase(this ReadOnlySpan<byte> bytes)
@@ -269,49 +231,6 @@ namespace Meziantou.Framework
             }
 
             return new string(c);
-        }
-
-        public static bool TryParseHexa(string? str, Span<byte> bytes)
-        {
-            if (str == null || str.Length % 2 != 0)
-                return false;
-
-            // handle 0x or 0X notation
-            if (str.Length >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
-            {
-                const int PrefixLength = 2;
-                var length = (str.Length / 2) - 1;
-                if (length > bytes.Length)
-                    return false;
-
-                for (var i = 0; i < length; i++)
-                {
-                    if (!TryGetHexValue(str[i * 2 + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
-                        return false;
-
-                    bytes[i] = (byte)(value1 << 4);
-                    bytes[i] += (byte)value2;
-                }
-
-                return true;
-            }
-            else
-            {
-                var length = str.Length / 2;
-                if (length > bytes.Length)
-                    return false;
-
-                for (var i = 0; i < length; i++)
-                {
-                    if (!TryGetHexValue(str[i * 2], out var value1) || !TryGetHexValue(str[(i * 2) + 1], out var value2))
-                        return false;
-
-                    bytes[i] = (byte)(value1 << 4);
-                    bytes[i] += (byte)value2;
-                }
-
-                return true;
-            }
         }
 
         private static bool TryGetHexValue(char c, out int value)

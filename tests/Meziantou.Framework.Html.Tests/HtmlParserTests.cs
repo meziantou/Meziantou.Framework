@@ -115,13 +115,11 @@ namespace Meziantou.Framework.Html.Tests
         [Fact]
         public void HtmlParser_ReadCharacterSetFromMetaHttpEquiv()
         {
-            var html = "<html><head><meta http-equiv='Content-Type' content='text/html; charset=UTF-7' /></head></html>";
+            var html = "<html><head><meta http-equiv='Content-Type' content='text/html; charset=UTF-8' /></head></html>";
             using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
-#pragma warning disable SYSLIB0001 // Type or member is obsolete
-            Assert.Equal(Encoding.UTF7, document.DetectedEncoding);
-#pragma warning restore SYSLIB0001 // Type or member is obsolete
+            Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
         }
     }
 }

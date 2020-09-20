@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
-    public static class EnumerableExtensions
+    public static partial class EnumerableExtensions
     {
         public static void AddRange<T>(this ICollection<T> collection, params T[]? items)
         {
@@ -209,106 +206,6 @@ namespace Meziantou.Framework
             {
                 action(item, index);
                 index++;
-            }
-        }
-
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken = default)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            foreach (var item in source)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await action(item).ConfigureAwait(false);
-            }
-        }
-
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, CancellationToken, Task> action, CancellationToken cancellationToken = default)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            foreach (var item in source)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await action(item, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, int, Task> action, CancellationToken cancellationToken = default)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var index = 0;
-            foreach (var item in source)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await action(item, index).ConfigureAwait(false);
-                index++;
-            }
-        }
-
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, int, CancellationToken, Task> action, CancellationToken cancellationToken = default)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var index = 0;
-            foreach (var item in source)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                await action(item, index, cancellationToken).ConfigureAwait(false);
-                index++;
-            }
-        }
-
-        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
-        {
-            return ParallelForEachAsync(source, action, CancellationToken.None);
-        }
-
-        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken)
-        {
-            return ParallelForEachAsync(source, Environment.ProcessorCount, action, cancellationToken);
-        }
-
-        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
-        {
-            return ParallelForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
-        }
-
-        public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var exceptions = new ConcurrentBag<Exception>();
-
-            var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
-                        select Task.Run(async () =>
-                        {
-                            using (partition)
-                            {
-                                while (partition.MoveNext())
-                                {
-                                    try
-                                    {
-                                        await action(partition.Current).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        exceptions.Add(ex);
-                                    }
-                                }
-                            }
-                        }, cancellationToken);
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-            if (!exceptions.IsEmpty)
-            {
-                throw new AggregateException(exceptions);
             }
         }
 

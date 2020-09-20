@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net5.0</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>2.20.6</Version>
+    <Version>3.0.0</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES</DefineConstants>
   </PropertyGroup>
 

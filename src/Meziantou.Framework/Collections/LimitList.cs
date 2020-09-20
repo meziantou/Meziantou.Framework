@@ -118,7 +118,17 @@ namespace Meziantou.Framework.Collections
 
         public int IndexOf(T item)
         {
-            return _list.IndexOf(item);
+            var equalityComparer = EqualityComparer<T>.Default;
+            var index = 0;
+            foreach (var listItem in _list)
+            {
+                if (equalityComparer.Equals(listItem, item))
+                    return index;
+
+                index++;
+            }
+
+            return -1;
         }
 
         public void RemoveAt(int index)

@@ -99,7 +99,7 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task RunAsTask_Cancel()
         {
-            var start = DateTime.Now;
+            var stopwatch = Stopwatch.StartNew();
 
             using var cts = new CancellationTokenSource();
             Task task;
@@ -112,7 +112,18 @@ namespace Meziantou.Framework.Tests
                 task = ProcessExtensions.RunAsTask("ping", "127.0.0.1 -c 10", cts.Token);
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
+            // Wait for the process to start
+            while (true)
+            {
+                var processes = Process.GetProcesses();
+                if (processes.Any(p => p.ProcessName.EqualsIgnoreCase("ping") || p.ProcessName.EqualsIgnoreCase("ping.exe")))
+                    break;
+
+                await Task.Delay(100);
+
+                Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10), "Cannot find the process");
+            }
+
             cts.Cancel();
 
             await Assert.ThrowsAsync<TaskCanceledException>(() => task).ConfigureAwait(false);

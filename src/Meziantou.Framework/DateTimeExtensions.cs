@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Meziantou.Framework
 {
-    public static class DateTimeUtilities
+    public static class DateTimeExtensions
     {
         [Pure]
 #if NETCOREAPP3_1

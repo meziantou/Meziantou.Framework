@@ -4,7 +4,7 @@ using System.Diagnostics.Contracts;
 
 namespace Meziantou.Framework
 {
-    public static class StringBuilderUtilities
+    public static class StringBuilderExtensions
     {
         [Pure]
         public static bool StartsWith(this StringBuilder stringBuilder, char prefix)

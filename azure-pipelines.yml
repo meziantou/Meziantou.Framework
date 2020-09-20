@@ -15,7 +15,7 @@ variables:
   solution: Meziantou.Framework.sln
   buildConfiguration: Release
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-  DOTNET_VERSION: '5.0.x'
+  DOTNET_VERSION: '5.0.100-rc.1.20452.10'
 
 stages:
 - stage: build
@@ -113,7 +113,7 @@ stages:
 
     - download: current
       artifact: NuGetPackages
-      
+
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'

@@ -60,12 +60,11 @@ namespace Meziantou.Framework
             cancellationToken.ThrowIfCancellationRequested();
 
             var logs = new List<ProcessOutput>();
-            ProcessResult result;
-            using (var process = Process.Start(psi))
-            {
-                if (process == null)
-                    throw new InvalidOperationException("The process is null");
+            int exitCode;
 
+            using (var process = new Process())
+            {
+                process.StartInfo = psi;
                 if (psi.RedirectStandardError)
                 {
                     process.ErrorDataReceived += (sender, e) =>
@@ -75,9 +74,7 @@ namespace Meziantou.Framework
                             logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
                         }
                     };
-                    process.BeginErrorReadLine();
                 }
-
                 if (psi.RedirectStandardOutput)
                 {
                     process.OutputDataReceived += (sender, e) =>
@@ -87,6 +84,18 @@ namespace Meziantou.Framework
                             logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
                         }
                     };
+                }
+
+                if (!process.Start())
+                    throw new Win32Exception("Cannot start the process");
+
+                if (psi.RedirectStandardError)
+                {
+                    process.BeginErrorReadLine();
+                }
+
+                if (psi.RedirectStandardOutput)
+                {
                     process.BeginOutputReadLine();
                 }
 
@@ -95,39 +104,44 @@ namespace Meziantou.Framework
                     process.StandardInput.Close();
                 }
 
-                if (process.HasExited)
-                    return new ProcessResult(process.ExitCode, logs);
-
                 CancellationTokenRegistration registration = default;
-                if (cancellationToken.CanBeCanceled)
+                try
                 {
-                    registration = cancellationToken.Register(() =>
+                    if (cancellationToken.CanBeCanceled && !process.HasExited)
                     {
-                        try
-                        {
-                            process.Kill(entireProcessTree: true);
-                        }
-                        catch (InvalidOperationException)
+                        registration = cancellationToken.Register(() =>
                         {
                             try
                             {
-                                // Try to at least kill the root process
-                                process.Kill();
+                                process.Kill(entireProcessTree: true);
                             }
                             catch (InvalidOperationException)
                             {
+                                try
+                                {
+                                    // Try to at least kill the root process
+                                    process.Kill();
+                                }
+                                catch (InvalidOperationException)
+                                {
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+
+                    await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                    process.WaitForExit();
+                }
+                finally
+                {
+                    await registration.DisposeAsync().ConfigureAwait(false);
                 }
 
-                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                await registration.DisposeAsync().ConfigureAwait(false);
-                result = new ProcessResult(process.ExitCode, logs);
+                exitCode = process.ExitCode;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            return result;
+            return new ProcessResult(exitCode, logs);
         }
 
         [Obsolete("Exist in .NET 5.0")]

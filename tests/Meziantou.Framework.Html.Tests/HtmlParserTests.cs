@@ -105,13 +105,11 @@ namespace Meziantou.Framework.Html.Tests
         [Fact]
         public void HtmlParser_ReadCharacterSet2()
         {
-            var html = "<html><head><meta charset='UTF-7'></head></html>";
-            using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
+            var html = "<html><head><meta charset='UTF-8'></head></html>";
+            using var memoryStream = new MemoryStream(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
-#pragma warning disable SYSLIB0001 // Type or member is obsolete
-            Assert.Equal(Encoding.UTF7, document.DetectedEncoding);
-#pragma warning restore SYSLIB0001 // Type or member is obsolete
+            Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
         }
 
         [Fact]

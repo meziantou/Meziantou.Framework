@@ -39,33 +39,9 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        internal static bool Contains(this string str, char value, StringComparison stringComparison)
+        public static bool ContainsIgnoreCase(this string str, string value)
         {
-#if NET5_0 || NETCOREAPP3_1
-            return str.Contains(value, stringComparison);
-#elif NET461 || NETSTANDARD2_0
-            return str.IndexOf(value.ToString(), stringComparison) >= 0;
-#else
-#error Platform not supported
-#endif
-        }
-
-        [Pure]
-        public static bool Contains(this string? str, string? value, StringComparison stringComparison)
-        {
-            if (str == null)
-                return value == null;
-
-            if (value == null)
-                return false;
-
-            return str.IndexOf(value, stringComparison) >= 0;
-        }
-
-        [Pure]
-        public static bool ContainsIgnoreCase(this string? str, string? value)
-        {
-            return Contains(str, value, StringComparison.OrdinalIgnoreCase);
+            return str.Contains(value, StringComparison.OrdinalIgnoreCase);
         }
 
         [Pure]
@@ -91,12 +67,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        [return: NotNullIfNotNull(parameterName: "str")]
-        public static string? Replace(this string? str, string oldValue, string newValue, StringComparison comparison)
+        public static string Replace(this string str, string oldValue, string newValue, StringComparison comparison)
         {
-            if (str == null)
-                return null;
-
             var sb = new StringBuilder();
 
             var previousIndex = 0;

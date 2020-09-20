@@ -10,7 +10,6 @@
     <LatestTargetFramework>net5.0</LatestTargetFramework>
   </PropertyGroup>
 
-  <!-- sourcelink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
   <PropertyGroup>
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
@@ -21,10 +20,12 @@
     <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 
+    <!-- sourcelink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
     <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
   </PropertyGroup>
 

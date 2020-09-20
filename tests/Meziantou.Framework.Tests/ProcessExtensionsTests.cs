@@ -20,11 +20,9 @@ namespace Meziantou.Framework.Tests
             static Task<ProcessResult> CreateProcess()
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None);
-                }
+                    return ProcessExtensions.RunAsTaskAsync("cmd", "/C echo test", CancellationToken.None);
 
-                return ProcessExtensions.RunAsTask("echo", "test", CancellationToken.None);
+                return ProcessExtensions.RunAsTaskAsync("echo", "test", CancellationToken.None);
             }
 
             var result = await CreateProcess().ConfigureAwait(false);
@@ -55,7 +53,7 @@ namespace Meziantou.Framework.Tests
                 };
             }
 
-            var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
+            var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
             Assert.Equal(1, result.Output.Count);
             Assert.Equal("test", result.Output[0].Text);
@@ -83,7 +81,7 @@ namespace Meziantou.Framework.Tests
                 };
             }
 
-            var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
+            var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
             Assert.Equal(0, result.Output.Count);
         }
@@ -93,7 +91,7 @@ namespace Meziantou.Framework.Tests
         {
             var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
 
-            await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTask(CancellationToken.None)).ConfigureAwait(false);
+            await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTaskAsync(CancellationToken.None)).ConfigureAwait(false);
         }
 
         [Fact]
@@ -105,11 +103,11 @@ namespace Meziantou.Framework.Tests
             Task task;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                task = ProcessExtensions.RunAsTask("ping.exe", "127.0.0.1 -n 10", cts.Token);
+                task = ProcessExtensions.RunAsTaskAsync("ping.exe", "127.0.0.1 -n 10", cts.Token);
             }
             else
             {
-                task = ProcessExtensions.RunAsTask("ping", "127.0.0.1 -c 10", cts.Token);
+                task = ProcessExtensions.RunAsTaskAsync("ping", "127.0.0.1 -c 10", cts.Token);
             }
 
             // Wait for the process to start

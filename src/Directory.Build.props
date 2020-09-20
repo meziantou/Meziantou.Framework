@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Analyzers -->
   <ItemGroup>
     <PackageReference Include="Meziantou.Analyzer" Version="1.0.566">
       <PrivateAssets>all</PrivateAssets>
@@ -12,6 +13,7 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Source file for compatibility with previous versions of .NET -->
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/NullableAttributes.cs" Link="Internals/NullableAttributes.cs" />
 	  <Compile Include="$(MSBuildThisFileDirectory)/PlatformAttributes.cs" Link="Internals/PlatformAttributes.cs" />

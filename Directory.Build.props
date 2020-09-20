@@ -1,24 +1,13 @@
 <Project>
 
+  <!-- Build options -->
   <PropertyGroup>
     <LangVersion>preview</LangVersion>
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
-    <!--<TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>-->
+    <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-
     <LatestTargetFramework>net5.0</LatestTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Authors>Meziantou</Authors>
-    <Company>Meziantou</Company>
-    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-
-    <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
@@ -32,4 +21,17 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!-- Package configuration_-->
+  <PropertyGroup>
+    <Authors>Meziantou</Authors>
+    <Company>Meziantou</Company>
+    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    
+    <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
 </Project>

@@ -9,12 +9,12 @@ namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
-        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, CancellationToken cancellationToken = default)
         {
-            return RunAsTask(fileName, arguments, workingDirectory: null, cancellationToken);
+            return RunAsTaskAsync(fileName, arguments, workingDirectory: null, cancellationToken);
         }
 
-        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
         {
             var psi = new ProcessStartInfo
             {
@@ -35,10 +35,10 @@ namespace Meziantou.Framework
                 psi.WorkingDirectory = workingDirectory;
             }
 
-            return RunAsTask(psi, cancellationToken);
+            return RunAsTaskAsync(psi, cancellationToken);
         }
 
-        public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
         {
             if (redirectOutput)
             {
@@ -52,10 +52,10 @@ namespace Meziantou.Framework
                 psi.RedirectStandardOutput = false;
             }
 
-            return RunAsTask(psi, cancellationToken);
+            return RunAsTaskAsync(psi, cancellationToken);
         }
 
-        public static async Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
+        public static async Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 

@@ -79,13 +79,6 @@ stages:
     pool:
       vmImage: 'windows-2019'
     steps:
-    - checkout: self
-      clean: true
-      fetchDepth: 10
-      lfs: true
-      submodules: recursive
-      persistCredentials: false
-
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
@@ -119,21 +112,23 @@ stages:
         packageType: 'sdk'
         version: $(DOTNET_VERSION)
 
-    - powershell: |
-        Write-Host "Searching nupkg in folder: $(Pipeline.Workspace)"
-        $files = Get-ChildItem $(Pipeline.Workspace)/NuGetPackages/* -Include *.nupkg
-        foreach($file in $files) {
-            Write-Host "Pushing NuGet package: $($file.FullName)"
-            if ($env:Build_SourceBranch -eq 'refs/heads/master')
-            {
-              # Push both nupkg and snupkg
-              & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
-            }
-            else
-            {
-              Write-Host "Not on the default branch => Do not push"
-            }
-        }
-      ignoreLASTEXITCODE: true
+    - task: PowerShell@2
       displayName: Publish NuGet packages
       continueOnError: true
+      inputs:
+        ignoreLASTEXITCODE: true
+        script: |
+          Write-Host "Searching nupkg in folder: $(Pipeline.Workspace)"
+          $files = Get-ChildItem $(Pipeline.Workspace)/NuGetPackages/* -Include *.nupkg
+          foreach($file in $files) {
+              Write-Host "Pushing NuGet package: $($file.FullName)"
+              if ($env:Build_SourceBranch -eq 'refs/heads/master')
+              {
+                # Push both nupkg and snupkg
+                & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+              }
+              else
+              {
+                Write-Host "Not on the default branch => Do not push"
+              }
+          }

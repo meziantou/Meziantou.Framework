@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Csv
 
         public Task WriteValueAsync(string? value)
         {
-            return WriteEscapedValue(value);
+            return WriteEscapedValueAsync(value);
         }
 
         public async Task WriteValuesAsync(IEnumerable<string?> values)
@@ -62,7 +62,7 @@ namespace Meziantou.Framework.Csv
             await WriteValuesAsync(values).ConfigureAwait(false);
         }
 
-        private async Task WriteEscapedValue(string? value)
+        private async Task WriteEscapedValueAsync(string? value)
         {
             var writer = BaseWriter;
             if (!_isFirstRowValue)

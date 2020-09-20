@@ -3,6 +3,6 @@
   <!-- Ensure the latest framework is a target of the project -->
   <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project must target $(LatestTargetFramework)" />
-  </Target>  
-  
+  </Target>
+
 </Project>

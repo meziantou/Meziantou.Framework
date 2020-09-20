@@ -1,4 +1,9 @@
 root = false
 
 [*.cs]
+
+# Validate platform compatibility
 dotnet_diagnostic.CA1416.severity = none
+
+# Async suffix
+dotnet_diagnostic.VSTHRD200.severity = none

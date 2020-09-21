@@ -130,7 +130,6 @@ namespace Meziantou.Framework
                     }
 
                     await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                    process.WaitForExit();
                 }
                 finally
                 {

@@ -198,8 +198,11 @@ namespace Meziantou.Framework.Tests
                 try
                 {
                     var parent = Process.GetProcessById(parentId);
-                    hasParent = true;
-                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), "Parent process must have the current process as descendant");
+                    if (parent.StartTime <= current.StartTime)
+                    {
+                        hasParent = true;
+                        Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
+                    }
                 }
                 catch (ArgumentException)
                 {

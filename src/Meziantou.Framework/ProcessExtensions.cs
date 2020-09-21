@@ -119,6 +119,68 @@ namespace Meziantou.Framework
             }
         }
 
+        //[SupportedOSPlatform("windows")]
+        public static IEnumerable<Process> GetAncestorProcesses(this Process process)
+        {
+            if (process == null)
+                throw new ArgumentNullException(nameof(process));
+
+            return GetAncestorProcesses();
+
+            IEnumerable<Process> GetAncestorProcesses()
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    throw new PlatformNotSupportedException("Only supported on Windows");
+
+                foreach (var entry in GetAncestorProcessIdsIterator())
+                {
+                    Process? p = null;
+                    try
+                    {
+                        p = entry.ToProcess();
+                        if (p == null || p.StartTime > process.StartTime)
+                            continue;
+                    }
+                    catch (ArgumentException)
+                    {
+                        // process might have exited since the snapshot, ignore it
+                    }
+
+                    if (p != null)
+                    {
+                        yield return p;
+                    }
+                }
+
+                IEnumerable<ProcessEntry> GetAncestorProcessIdsIterator()
+                {
+                    var returnedProcesses = new HashSet<int>();
+                    var processId = process.Id;
+                    var processes = GetProcesses().ToList();
+                    var found = true;
+                    while (found)
+                    {
+                        found = false;
+                        foreach (var entry in processes)
+                        {
+                            if (entry.ProcessId == processId)
+                            {
+                                if (returnedProcesses.Add(entry.ParentProcessId))
+                                {
+                                    yield return entry;
+                                    processId = entry.ParentProcessId;
+                                    found = true;
+                                }
+                            }
+                        }
+
+                        if (!found)
+                            yield break;
+                    }
+                }
+            }
+        }
+
         public static int? GetParentProcessId(this Process process)
         {
             if (process == null)

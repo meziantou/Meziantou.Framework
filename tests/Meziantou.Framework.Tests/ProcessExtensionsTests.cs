@@ -124,7 +124,7 @@ namespace Meziantou.Framework.Tests
 
             cts.Cancel();
 
-            await Assert.ThrowsAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
         }
 
         [RunIfWindowsFact]
@@ -183,41 +183,6 @@ namespace Meziantou.Framework.Tests
             var descendants = grandParent.GetDescendantProcesses();
             Assert.True(descendants.Any(p => p.Id == current.Id), "Descendants must contains current process");
             Assert.True(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
-        }
-
-        [RunIfWindowsAdministratorFact]
-        public void GetAncestorProcessIds()
-        {
-            var current = Process.GetCurrentProcess();
-            var parentId = current.GetAncestorProcessIds().First();
-
-            try
-            {
-                var parent = Process.GetProcessById(parentId);
-                if (parent.StartTime <= current.StartTime)
-                {
-                    hasParent = true;
-                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
-                }
-            }
-            catch (ArgumentException)
-            {
-            }
-        }
-
-        [RunIfWindowsAdministratorFact]
-        public void GetAncestorProcesses()
-        {
-            var current = Process.GetCurrentProcess();
-            var parent = current.GetAncestorProcesses().First();
-
-            try
-            {
-                Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
-            }
-            catch (ArgumentException)
-            {
-            }
         }
 
         [RunIfWindowsFact]

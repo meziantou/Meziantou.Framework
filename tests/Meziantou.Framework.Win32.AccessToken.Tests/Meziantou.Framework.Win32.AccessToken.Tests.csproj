@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net5.0-windows</TargetFrameworks>
@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.Jobs\Meziantou.Framework.Win32.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.AccessToken\Meziantou.Framework.Win32.AccessToken.csproj" />
   </ItemGroup>
 
 </Project>

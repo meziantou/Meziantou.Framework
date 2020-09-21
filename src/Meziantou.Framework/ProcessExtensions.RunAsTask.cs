@@ -71,7 +71,10 @@ namespace Meziantou.Framework
                     {
                         if (e.Data != null)
                         {
-                            logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                            lock (logs)
+                            {
+                                logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                            }
                         }
                     };
                 }
@@ -81,7 +84,10 @@ namespace Meziantou.Framework
                     {
                         if (e.Data != null)
                         {
-                            logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                            lock (logs)
+                            {
+                                logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                            }
                         }
                     };
                 }

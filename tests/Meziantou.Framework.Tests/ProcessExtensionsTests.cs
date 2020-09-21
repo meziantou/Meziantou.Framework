@@ -124,7 +124,7 @@ namespace Meziantou.Framework.Tests
 
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => task).ConfigureAwait(false);
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
         }
 
         [RunIfWindowsFact]

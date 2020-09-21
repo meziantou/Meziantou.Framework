@@ -59,7 +59,7 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        public bool IsAdministrator()
+        public static bool IsAdministrator()
         {
             using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
             if (!IsAdministrator(token) && token.GetElevationType() == TokenElevationType.Limited)

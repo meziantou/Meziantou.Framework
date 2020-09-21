@@ -7,40 +7,40 @@ using System.Threading.Tasks;
 namespace Meziantou.Framework.Threading
 {
     [DebuggerDisplay("Signaled: {signaled}")]
-    public sealed class AsyncLock
+    public sealed class AsyncAutoResetEvent
     {
         private readonly Queue<WaiterCompletionSource> _signalAwaiters = new Queue<WaiterCompletionSource>();
         private readonly bool _allowInliningAwaiters;
-        private readonly Action<object> _onCancellationRequestHandler;
+        internal readonly Action<object> _onCancellationRequestHandler;
         private bool _signaled;
 
-        public AsyncLock()
+        public AsyncAutoResetEvent()
             : this(allowInliningAwaiters: false)
         {
         }
 
-        public AsyncLock(bool allowInliningAwaiters)
+        public AsyncAutoResetEvent(bool allowInliningAwaiters)
         {
             _allowInliningAwaiters = allowInliningAwaiters;
             _onCancellationRequestHandler = OnCancellationRequest;
         }
 
-        public ValueTask<AsyncLockObject> LockAsync()
+        public Task WaitAsync()
         {
-            return LockAsync(CancellationToken.None);
+            return WaitAsync(CancellationToken.None);
         }
 
-        public ValueTask<AsyncLockObject> LockAsync(CancellationToken cancellationToken)
+        public Task WaitAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
-                return ValueTask.FromCanceled<AsyncLockObject>(cancellationToken);
+                return Task.FromCanceled(cancellationToken);
 
             lock (_signalAwaiters)
             {
                 if (_signaled)
                 {
                     _signaled = false;
-                    return new ValueTask<AsyncLockObject>(new AsyncLockObject(this));
+                    return Task.CompletedTask;
                 }
                 else
                 {
@@ -54,31 +54,12 @@ namespace Meziantou.Framework.Threading
                         _signalAwaiters.Enqueue(waiter);
                     }
 
-                    return new ValueTask<AsyncLockObject>(waiter.Task);
+                    return waiter.Task;
                 }
             }
         }
 
-        public bool TryLock(out AsyncLockObject lockObject)
-        {
-            if (_signaled)
-            {
-                lock (_signalAwaiters)
-                {
-                    if (_signaled)
-                    {
-                        _signaled = false;
-                        lockObject = new AsyncLockObject(this);
-                        return true;
-                    }
-                }
-            }
-
-            lockObject = new AsyncLockObject();
-            return false;
-        }
-
-        internal void Release()
+        public void Set()
         {
             WaiterCompletionSource? toRelease = null;
             lock (_signalAwaiters)
@@ -93,10 +74,10 @@ namespace Meziantou.Framework.Threading
                 }
             }
 
-            if (toRelease is not null)
+            if (toRelease is object)
             {
                 toRelease.Registration.Dispose();
-                toRelease.TrySetResult(new AsyncLockObject(this));
+                toRelease.TrySetResult();
             }
         }
 
@@ -143,9 +124,9 @@ namespace Meziantou.Framework.Threading
             return found;
         }
 
-        private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockObject>
+        private sealed class WaiterCompletionSource : TaskCompletionSource
         {
-            internal WaiterCompletionSource(AsyncLock owner, bool allowInliningContinuations, CancellationToken cancellationToken)
+            internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
                 : base(GetOptions(allowInliningContinuations))
             {
                 CancellationToken = cancellationToken;

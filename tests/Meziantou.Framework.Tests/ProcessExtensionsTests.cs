@@ -212,6 +212,29 @@ namespace Meziantou.Framework.Tests
             Assert.True(hasParent, "The process has no parents");
         }
 
+        [RunIfWindowsAdministratorFact]
+        public void GetAncestorProcesses()
+        {
+            var current = Process.GetCurrentProcess();
+            var parents = current.GetAncestorProcesses().ToList();
+
+            AssertExtensions.AllItemsAreUnique(parents);
+            var hasParent = false;
+            foreach (var parent in parents)
+            {
+                try
+                {
+                    hasParent = true;
+                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
+                }
+                catch (ArgumentException)
+                {
+                }
+            }
+
+            Assert.True(hasParent, "The process has no parents");
+        }
+
         [RunIfWindowsFact]
         public void KillProcess_EntireProcessTree_False()
         {

@@ -189,50 +189,35 @@ namespace Meziantou.Framework.Tests
         public void GetAncestorProcessIds()
         {
             var current = Process.GetCurrentProcess();
-            var parents = current.GetAncestorProcessIds().ToList();
+            var parentId = current.GetAncestorProcessIds().First();
 
-            AssertExtensions.AllItemsAreUnique(parents);
-            var hasParent = false;
-            foreach (var parentId in parents)
+            try
             {
-                try
+                var parent = Process.GetProcessById(parentId);
+                if (parent.StartTime <= current.StartTime)
                 {
-                    var parent = Process.GetProcessById(parentId);
-                    if (parent.StartTime <= current.StartTime)
-                    {
-                        hasParent = true;
-                        Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
-                    }
-                }
-                catch (ArgumentException)
-                {
+                    hasParent = true;
+                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
                 }
             }
-
-            Assert.True(hasParent, "The process has no parents");
+            catch (ArgumentException)
+            {
+            }
         }
 
         [RunIfWindowsAdministratorFact]
         public void GetAncestorProcesses()
         {
             var current = Process.GetCurrentProcess();
-            var parents = current.GetAncestorProcesses().ToList();
+            var parent = current.GetAncestorProcesses().First();
 
-            AssertExtensions.AllItemsAreUnique(parents);
-            var hasParent = false;
-            foreach (var parent in parents)
+            try
             {
-                try
-                {
-                    hasParent = true;
-                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
-                }
-                catch (ArgumentException)
-                {
-                }
+                Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), $"Parent process '{parent.ProcessName}' must have the current process as descendant");
             }
-
-            Assert.True(hasParent, "The process has no parents");
+            catch (ArgumentException)
+            {
+            }
         }
 
         [RunIfWindowsFact]

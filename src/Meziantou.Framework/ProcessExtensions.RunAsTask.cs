@@ -78,6 +78,7 @@ namespace Meziantou.Framework
                         }
                     };
                 }
+
                 if (psi.RedirectStandardOutput)
                 {
                     process.OutputDataReceived += (sender, e) =>

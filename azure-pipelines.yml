@@ -127,6 +127,8 @@ stages:
       continueOnError: true
       inputs:
         ignoreLASTEXITCODE: true
+        targetType: inline
+        pwsh: true
         script: |
           Write-Host "Searching nupkg in folder: $(Pipeline.Workspace)"
           $files = Get-ChildItem $(Pipeline.Workspace)/NuGetPackages/* -Include *.nupkg

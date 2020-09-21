@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Threading
         private readonly Queue<WaiterCompletionSource> _signalAwaiters = new Queue<WaiterCompletionSource>();
         private readonly bool _allowInliningAwaiters;
         private readonly Action<object> _onCancellationRequestHandler;
-        private bool _signaled;
+        private bool _signaled = true;
 
         public AsyncLock()
             : this(allowInliningAwaiters: false)

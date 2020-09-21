@@ -14,13 +14,14 @@ namespace Meziantou.Framework.Threading
         internal readonly Action<object> _onCancellationRequestHandler;
         private bool _signaled;
 
-        public AsyncAutoResetEvent()
-            : this(allowInliningAwaiters: false)
+        public AsyncAutoResetEvent(bool initialState)
+            : this(initialState, allowInliningAwaiters: false)
         {
         }
 
-        public AsyncAutoResetEvent(bool allowInliningAwaiters)
+        public AsyncAutoResetEvent(bool initialState, bool allowInliningAwaiters)
         {
+            _signaled = initialState;
             _allowInliningAwaiters = allowInliningAwaiters;
             _onCancellationRequestHandler = OnCancellationRequest;
         }

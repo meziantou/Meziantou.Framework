@@ -34,8 +34,8 @@ namespace Meziantou.Framework
         public static bool operator <=(FullPath path1, FullPath path2) => path1.CompareTo(path2) <= 0;
         public static bool operator >=(FullPath path1, FullPath path2) => path1.CompareTo(path2) >= 0;
 
-        public static FullPath operator +(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
-        public static FullPath operator /(FullPath rootPath, string relativePath) => FromPath(rootPath, relativePath);
+        public static FullPath operator +(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
+        public static FullPath operator /(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
 
         public string Value => _value ?? "";
 
@@ -89,8 +89,7 @@ namespace Meziantou.Framework
             var directorySeparator = Path.DirectorySeparatorChar;
 
             int i;
-            int si = -1;
-
+            var si = -1;
             for (i = 0; (i < path1.Length) && (i < path2.Length); ++i)
             {
                 if ((path1[i] != path2[i]) && (compareCase || (char.ToUpperInvariant(path1[i]) != char.ToUpperInvariant(path2[i]))))
@@ -151,6 +150,11 @@ namespace Meziantou.Framework
             return false;
         }
 
+        public static FullPath GetTempPath() => FromPath(Path.GetTempPath());
+        public static FullPath GetTempFileName() => FromPath(Path.GetTempFileName());
+        public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
+        public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
+
         public static FullPath FromPath(string path)
         {
             var fullPath = Path.GetFullPath(path);
@@ -161,12 +165,12 @@ namespace Meziantou.Framework
             return new FullPath(fullPathWithoutTrailingDirectorySeparator);
         }
 
-        public static FullPath FromPath(string rootPath, string relativePath) => FromPath(Path.Combine(rootPath, relativePath));
-        public static FullPath FromPath(string rootPath, string path1, string path2) => FromPath(Path.Combine(rootPath, path1, path2));
-        public static FullPath FromPath(string rootPath, string path1, string path2, string path3) => FromPath(Path.Combine(rootPath, path1, path2, path3));
-        public static FullPath FromPath(params string[] paths) => FromPath(Path.Combine(paths));
+        public static FullPath Combine(string rootPath, string relativePath) => FromPath(Path.Combine(rootPath, relativePath));
+        public static FullPath Combine(string rootPath, string path1, string path2) => FromPath(Path.Combine(rootPath, path1, path2));
+        public static FullPath Combine(string rootPath, string path1, string path2, string path3) => FromPath(Path.Combine(rootPath, path1, path2, path3));
+        public static FullPath Combine(params string[] paths) => FromPath(Path.Combine(paths));
 
-        public static FullPath FromPath(FullPath rootPath, string relativePath)
+        public static FullPath Combine(FullPath rootPath, string relativePath)
         {
             if (rootPath.IsEmpty)
                 return FromPath(relativePath);
@@ -174,7 +178,7 @@ namespace Meziantou.Framework
             return FromPath(Path.Combine(rootPath._value!, relativePath));
         }
 
-        public static FullPath FromPath(FullPath rootPath, string path1, string path2)
+        public static FullPath Combine(FullPath rootPath, string path1, string path2)
         {
             if (rootPath.IsEmpty)
                 return FromPath(Path.Combine(path1, path2));
@@ -182,7 +186,7 @@ namespace Meziantou.Framework
             return FromPath(Path.Combine(rootPath._value!, path1, path2));
         }
 
-        public static FullPath FromPath(FullPath rootPath, string path1, string path2, string path3)
+        public static FullPath Combine(FullPath rootPath, string path1, string path2, string path3)
         {
             if (rootPath.IsEmpty)
                 return FromPath(Path.Combine(path1, path2, path3));
@@ -190,7 +194,7 @@ namespace Meziantou.Framework
             return FromPath(Path.Combine(rootPath._value!, path1, path2, path3));
         }
 
-        public static FullPath From(FileSystemInfo? fsi)
+        public static FullPath FromFileSystemInfo(FileSystemInfo? fsi)
         {
             if (fsi == null)
                 return Empty;

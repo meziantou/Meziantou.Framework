@@ -137,6 +137,9 @@ namespace Meziantou.Framework
                     }
 
                     await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+#pragma warning disable MA0042 // Do not use blocking call
+                    process.WaitForExit(); // https://github.com/dotnet/runtime/issues/42556
+#pragma warning restore MA0042
                 }
                 finally
                 {

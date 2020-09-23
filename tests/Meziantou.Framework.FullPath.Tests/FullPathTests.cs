@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Tests
         public void CombinePath()
         {
             var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
-            var expected = FullPath.FromPath("test", "a", "b");
+            var expected = FullPath.Combine("test", "a", "b");
             Assert.Equal(expected, actual);
         }
 
@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Tests
         public void MakeRelativeTo(string childPath, string expected)
         {
             var rootPath = FullPath.FromPath("test");
-            var path1 = FullPath.FromPath("test", childPath);
+            var path1 = FullPath.Combine("test", childPath);
 
             Assert.Equal(expected, path1.MakePathRelativeTo(rootPath));
         }
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.Tests
         public void IsChildOf_True(string root, string path)
         {
             var rootPath = FullPath.FromPath(root);
-            var childPath = FullPath.FromPath(root, path);
+            var childPath = FullPath.Combine(root, path);
 
             Assert.True(childPath.IsChildOf(rootPath));
         }

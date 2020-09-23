@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Html
             _parentNode?.ClearCaches(index + 1);
         }
 
-        protected void OnPropertyChanged([CallerMemberName]string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             if (!RaisePropertyChanged)
                 return;

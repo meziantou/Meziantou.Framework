@@ -113,13 +113,13 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         // Callback signatures.
         internal delegate HResult PrjStartDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId);
-        internal delegate HResult PrjGetDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId, [MarshalAs(UnmanagedType.LPWStr), In]string searchExpression, IntPtr dirEntryBufferHandle);
+        internal delegate HResult PrjGetDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId, [MarshalAs(UnmanagedType.LPWStr), In] string searchExpression, IntPtr dirEntryBufferHandle);
         internal delegate HResult PrjEndDirectoryEnumerationCb(in PrjCallbackData callbackData, in Guid enumerationId);
 
         internal delegate HResult PrjGetPlaceholderInfoCb(in PrjCallbackData callbackData);
         internal delegate HResult PrjGetFileDataCb(in PrjCallbackData callbackData, ulong byteOffset, uint length);
         internal delegate HResult PrjQueryFileNameCb(in PrjCallbackData callbackData);
-        internal delegate HResult PrjNotificationCb(in PrjCallbackData callbackData, bool isDirectory, PRJ_NOTIFICATION notification, [MarshalAs(UnmanagedType.LPWStr), In]string destinationFileName, [In, Out]IntPtr operationParameters);
+        internal delegate HResult PrjNotificationCb(in PrjCallbackData callbackData, bool isDirectory, PRJ_NOTIFICATION notification, [MarshalAs(UnmanagedType.LPWStr), In] string destinationFileName, [In, Out] IntPtr operationParameters);
         internal delegate HResult PrjCancelCommandCb(in PrjCallbackData callbackData);
 
         // Callback data passed to each of the callbacks above.

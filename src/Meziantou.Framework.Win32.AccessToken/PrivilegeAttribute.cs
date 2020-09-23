@@ -1,5 +1,5 @@
-﻿using Meziantou.Framework.Win32.Natives;
-using System;
+﻿using System;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {

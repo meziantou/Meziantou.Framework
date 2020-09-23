@@ -252,7 +252,7 @@ namespace Meziantou.Framework.Versioning
             return false;
         }
 
-        private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)]out IReadOnlyList<string>? labels)
+        private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
         {
             if (index < versionString.Length && versionString[index] == '-')
             {
@@ -337,7 +337,7 @@ namespace Meziantou.Framework.Versioning
             return TryReadMetadataIdentifier(label, ref index, out _) && index == label.Length;
         }
 
-        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)]out string? value)
+        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
         {
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))

@@ -1,10 +1,10 @@
-﻿using Meziantou.Framework.Win32.Natives;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
+using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {

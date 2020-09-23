@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Globalization;
 
 namespace Meziantou.Framework
 {

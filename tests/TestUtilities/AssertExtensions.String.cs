@@ -1,6 +1,6 @@
-﻿using Xunit;
-using System;
+﻿using System;
 using System.Linq;
+using Xunit;
 
 namespace TestUtilities
 {

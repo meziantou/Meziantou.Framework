@@ -1,6 +1,6 @@
-﻿using Meziantou.Framework.IO;
+﻿using System.IO;
+using Meziantou.Framework.IO;
 using Xunit;
-using System.IO;
 
 namespace Meziantou.Framework.Tests.IO
 {

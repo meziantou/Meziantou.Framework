@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Win32.Natives
         [PreserveSig]
         int Show([In] IntPtr parent);
 
-        void SetFileTypes([In] uint cFileTypes, [In] [MarshalAs(UnmanagedType.LPArray)]COMDLG_FILTERSPEC[] rgFilterSpec);
+        void SetFileTypes([In] uint cFileTypes, [In][MarshalAs(UnmanagedType.LPArray)] COMDLG_FILTERSPEC[] rgFilterSpec);
 
         void SetFileTypeIndex([In] uint iFileType);
 

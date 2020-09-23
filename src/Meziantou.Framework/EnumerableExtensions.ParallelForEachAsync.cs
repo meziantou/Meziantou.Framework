@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Meziantou.Framework
 {
     public static partial class EnumerableExtensions
-    {      
+    {
         public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
         {
             return ParallelForEachAsync(source, action, CancellationToken.None);

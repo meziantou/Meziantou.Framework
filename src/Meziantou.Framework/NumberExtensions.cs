@@ -27,13 +27,13 @@ namespace Meziantou.Framework
         [Pure]
         public static float MakeSameSignAs(this float number, float sign)
         {
-            return Math.Abs(number) * Math.Sign(sign);
+            return MathF.CopySign(number, sign);
         }
 
         [Pure]
         public static double MakeSameSignAs(this double number, double sign)
         {
-            return Math.Abs(number) * Math.Sign(sign);
+            return Math.CopySign(number, sign);
         }
 
         [Pure]
@@ -201,13 +201,13 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static string ToStringInvariant(this System.Half number)
+        public static string ToStringInvariant(this Half number)
         {
             return ToStringInvariant(number, format: null);
         }
 
         [Pure]
-        public static string ToStringInvariant(this System.Half number, string? format)
+        public static string ToStringInvariant(this Half number, string? format)
         {
             if (format != null)
                 return number.ToString(format, CultureInfo.InvariantCulture);

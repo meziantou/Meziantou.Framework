@@ -235,22 +235,23 @@ dotnet_naming_symbols.all_members.applicable_kinds = *
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 
 ## Analyzers
-# IDE0002: Name can be simplified
+# Name can be simplified
+dotnet_diagnostic.IDE0001.severity = suggestion
 dotnet_diagnostic.IDE0002.severity = suggestion
 
-# IDE0005: Remove unnecessary imports
+# Remove unnecessary imports
 dotnet_diagnostic.IDE0005.severity = suggestion
 
-# IDE1006: Naming rule violation
+# Naming rule violation
 dotnet_diagnostic.IDE1006.severity = suggestion
 
-# MA0006: use String.Equals
+# use String.Equals
 dotnet_diagnostic.MA0006.severity = none
 
-# MA0051: Method too long
+# Method too long
 dotnet_diagnostic.MA0051.severity = none
 
-# MA0071: Redondant else
+# Redondant else
 dotnet_diagnostic.MA0071.severity = none
 
 # Meziantou Analyzer

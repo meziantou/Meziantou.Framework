@@ -276,7 +276,7 @@ namespace Meziantou.Framework.Tests
 
             Assert.Equal(new[] { 1, 2 }, items);
 
-            IEnumerator<int> CustomEnumerator()
+            static IEnumerator<int> CustomEnumerator()
             {
                 yield return 1;
                 yield return 2;
@@ -294,7 +294,7 @@ namespace Meziantou.Framework.Tests
 
             Assert.Equal(new[] { 1, 2 }, items);
 
-            async IAsyncEnumerator<int> CustomEnumerator()
+            static async IAsyncEnumerator<int> CustomEnumerator()
             {
                 await Task.Yield();
                 yield return 1;

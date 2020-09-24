@@ -6,6 +6,16 @@ namespace Meziantou.Framework
 {
     public static partial class EnumerableExtensions
     {
+        /// <summary>
+        /// Allow to use the foreach keyword with an IEnumerator
+        /// </summary>
+        public static IEnumerator<T> GetEnumerator<T>(this IEnumerator<T> enumerator) => enumerator;
+
+        /// <summary>
+        /// Allow to use the foreach keyword with an IAsyncEnumerator
+        /// </summary>
+        public static IAsyncEnumerator<T> GetAsyncEnumerator<T>(this IAsyncEnumerator<T> enumerator) => enumerator;
+
         public static void AddRange<T>(this ICollection<T> collection, params T[]? items)
         {
             if (collection == null)
@@ -102,26 +112,25 @@ namespace Meziantou.Framework
 
         public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
         {
-            return Sort(list, Comparer<T>.Default);
+            return Sort(list, comparer: null);
         }
 
-        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T> comparer)
+        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
         {
             return list.OrderBy(item => item, comparer);
         }
 
         public static int IndexOf<T>(this IEnumerable<T> list, T value)
         {
-            return list.IndexOf(value, EqualityComparer<T>.Default);
+            return list.IndexOf(value, comparer: null);
         }
 
-        public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T> comparer)
+        public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T>? comparer)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
 
+            comparer ??= EqualityComparer<T>.Default;
             var index = 0;
             foreach (var item in list)
             {

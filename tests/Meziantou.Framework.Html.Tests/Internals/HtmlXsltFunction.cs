@@ -38,8 +38,8 @@ namespace Meziantou.Framework.Html.Tests
             if (argument == null)
                 return defaultValue;
 
-            if (argument is T)
-                return (T)argument;
+            if (argument is T convertedValue)
+                return convertedValue;
 
             if (argument is XPathNodeIterator it)
             {

@@ -184,12 +184,7 @@ namespace Meziantou.Framework.Tests
             var converted = converter.TryChangeType("", cultureInfo, out Uri value);
 
             Assert.True(converted);
-            // Different behavior in .NET461 and .NET Core 2
-#if NET461
-            Assert.Equal("", value.ToString());
-#else
             Assert.Null(value);
-#endif
         }
 
         [Fact]

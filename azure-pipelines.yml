@@ -13,14 +13,42 @@ pr:
 
 variables:
   solution: Meziantou.Framework.sln
-  buildConfiguration: Release
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-  DOTNET_VERSION: '3.1.x'
+  DOTNET_VERSION: '5.0.100-rc.1.20452.10'
 
 stages:
 - stage: build
   jobs:
+  - job: "lint_csharp"
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: $(DOTNET_VERSION)
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Install dotnet format'
+      inputs:
+        command: 'custom'
+        custom: 'tool'
+        arguments: 'update -g dotnet-format'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'dotnet format'
+      inputs:
+        command: 'custom'
+        custom: 'format'
+        arguments: '--check -v:normal'
+
   - job: "build_windows"
+    strategy:
+      matrix:
+        Debug:
+          BuildConfiguration: 'Debug'
+        Release:
+          BuildConfiguration: 'Release'
     pool:
       vmImage: windows-2019
     steps:
@@ -45,6 +73,12 @@ stages:
         nobuild: true
 
   - job: "build_linux"
+    strategy:
+      matrix:
+        Debug:
+          BuildConfiguration: 'Debug'
+        Release:
+          BuildConfiguration: 'Release'
     pool:
       vmImage: 'ubuntu-20.04'
     steps:
@@ -79,13 +113,6 @@ stages:
     pool:
       vmImage: 'windows-2019'
     steps:
-    - checkout: self
-      clean: true
-      fetchDepth: 10
-      lfs: true
-      submodules: recursive
-      persistCredentials: false
-
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
@@ -96,7 +123,7 @@ stages:
       inputs:
         command: 'pack'
         packagesToPack: 'src/**/*.csproj'
-        configuration: '$(BuildConfiguration)'
+        configuration: 'Release'
         packDirectory: '$(Build.ArtifactStagingDirectory)'
         versioningScheme: 'off'
 
@@ -110,30 +137,33 @@ stages:
       vmImage: 'windows-2019'
     steps:
     - checkout: none
-
     - download: current
       artifact: NuGetPackages
-      
+
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
         version: $(DOTNET_VERSION)
 
-    - powershell: |
-        Write-Host "Searching nupkg in folder: $(Pipeline.Workspace)"
-        $files = Get-ChildItem $(Pipeline.Workspace)/NuGetPackages/* -Include *.nupkg
-        foreach($file in $files) {
-            Write-Host "Pushing NuGet package: $($file.FullName)"
-            if ($env:Build_SourceBranch -eq 'refs/heads/master')
-            {
-              # Push both nupkg and snupkg
-              & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
-            }
-            else
-            {
-              Write-Host "Not on the default branch => Do not push"
-            }
-        }
-      ignoreLASTEXITCODE: true
+    - task: PowerShell@2
       displayName: Publish NuGet packages
       continueOnError: true
+      inputs:
+        ignoreLASTEXITCODE: true
+        targetType: inline
+        pwsh: true
+        script: |
+          Write-Host "Searching nupkg in folder: $(Pipeline.Workspace)"
+          $files = Get-ChildItem $(Pipeline.Workspace)/NuGetPackages/* -Include *.nupkg
+          foreach($file in $files) {
+              Write-Host "Pushing NuGet package: $($file.FullName)"
+              if ($env:Build_SourceBranch -eq 'refs/heads/master')
+              {
+                # Push both nupkg and snupkg
+                & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+              }
+              else
+              {
+                Write-Host "Not on the default branch => Do not push"
+              }
+          }

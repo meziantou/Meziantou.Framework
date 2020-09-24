@@ -214,7 +214,7 @@ namespace Meziantou.Framework.Html
         {
             var eqc = EscapeQuoteChar;
             var s = GetValue();
-            if (string.IsNullOrWhiteSpace(s) || s.IndexOf('"') < 0)
+            if (string.IsNullOrWhiteSpace(s) || s.IndexOf('"', StringComparison.Ordinal) < 0)
             {
                 writer.Write('"');
                 writer.Write(s);
@@ -223,7 +223,7 @@ namespace Meziantou.Framework.Html
             }
 
             writer.Write('\'');
-            writer.Write(eqc ? s.Replace("'", "&apos;") : s);
+            writer.Write(eqc ? s.Replace("'", "&apos;", StringComparison.Ordinal) : s);
             writer.Write('\'');
         }
 
@@ -233,9 +233,9 @@ namespace Meziantou.Framework.Html
                 return null;
 
             if (quoteChar == '"')
-                return text.Replace("&quot;", quoteChar.ToString(CultureInfo.InvariantCulture));
+                return text.Replace("&quot;", quoteChar.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
 
-            return text.Replace("&apos;", quoteChar.ToString(CultureInfo.InvariantCulture));
+            return text.Replace("&apos;", quoteChar.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal);
         }
 
         private string GetValue()
@@ -261,11 +261,11 @@ namespace Meziantou.Framework.Html
                 {
                     if (QuoteChar == '"')
                     {
-                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&quot;");
+                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&quot;", StringComparison.Ordinal);
                     }
                     else if (QuoteChar == '\'')
                     {
-                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&apos;");
+                        s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&apos;", StringComparison.Ordinal);
                     }
                 }
                 writer.Write(s);

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0;netcoreapp3.1</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+</Project>

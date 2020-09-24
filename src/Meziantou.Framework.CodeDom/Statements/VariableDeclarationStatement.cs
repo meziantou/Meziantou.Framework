@@ -3,7 +3,6 @@
     public class VariableDeclarationStatement : Statement
     {
         private Expression? _initExpression;
-        private TypeReference? _type;
 
         public VariableDeclarationStatement()
         {
@@ -18,11 +17,7 @@
 
         public string? Name { get; set; }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public Expression? InitExpression
         {

@@ -34,7 +34,7 @@ namespace Meziantou.Framework
 
         public override string ToString() => ToString(format: null, formatProvider: null);
 
-        public string ToString(ByteSizeUnit unit) => ToString(unit, null);
+        public string ToString(ByteSizeUnit unit) => ToString(unit, formatProvider: null);
 
         public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
 
@@ -79,7 +79,7 @@ namespace Meziantou.Framework
             var numberFormat = "G";
             if (index > 0)
             {
-                if (!int.TryParse(format.Substring(index), NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+                if (!int.TryParse(format[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
                     throw new ArgumentException($"format '{format}' is invalid", nameof(format));
 
                 numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
@@ -176,7 +176,7 @@ namespace Meziantou.Framework
 
         private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
         {
-            var last = unit[unit.Length - 1];
+            var last = unit[^1];
             if (last != 'b' && last != 'B')
             {
                 result = default;
@@ -188,13 +188,13 @@ namespace Meziantou.Framework
             {
                 parsedLength = 2;
                 var isI = false;
-                var c = char.ToUpperInvariant(unit[unit.Length - 2]);
+                var c = char.ToUpperInvariant(unit[^2]);
                 if (c == 'i' || c == 'I')
                 {
                     parsedLength = 3;
                     if (unit.Length > 2)
                     {
-                        c = char.ToUpperInvariant(unit[unit.Length - 3]);
+                        c = char.ToUpperInvariant(unit[^3]);
                         isI = true;
                     }
                     else

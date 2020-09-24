@@ -2,10 +2,12 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public static class LsaPrivateData
     {
         public static void RemoveValue(string key)
@@ -145,13 +147,13 @@ namespace Meziantou.Framework.Win32
         }
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
-        private static extern uint LsaRetrievePrivateData(IntPtr PolicyHandle, ref LSA_UNICODE_STRING KeyName, out IntPtr PrivateData);
+        private static extern uint LsaRetrievePrivateData(IntPtr policyHandle, ref LSA_UNICODE_STRING keyName, out IntPtr privateData);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
-        private static extern uint LsaStorePrivateData(IntPtr policyHandle, ref LSA_UNICODE_STRING KeyName, ref LSA_UNICODE_STRING PrivateData);
+        private static extern uint LsaStorePrivateData(IntPtr policyHandle, ref LSA_UNICODE_STRING keyName, ref LSA_UNICODE_STRING privateData);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
-        private static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING SystemName, ref LSA_OBJECT_ATTRIBUTES ObjectAttributes, uint DesiredAccess, out IntPtr PolicyHandle);
+        private static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING systemName, ref LSA_OBJECT_ATTRIBUTES objectAttributes, uint desiredAccess, out IntPtr policyHandle);
 
         [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
         private static extern int LsaNtStatusToWinError(uint status);

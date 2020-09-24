@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace Meziantou.Framework
@@ -20,6 +21,8 @@ namespace Meziantou.Framework
             var rightVisitor = new ReplaceExpressionVisitor(expr2.Parameters[0], parameter);
             var right = rightVisitor.Visit(expr2.Body);
 
+            Debug.Assert(left != null, "left is null");
+            Debug.Assert(right != null, "right is null");
             return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(left, right), parameter);
         }
 
@@ -38,6 +41,8 @@ namespace Meziantou.Framework
             var rightVisitor = new ReplaceExpressionVisitor(expr2.Parameters[0], parameter);
             var right = rightVisitor.Visit(expr2.Body);
 
+            Debug.Assert(left != null, "left is null");
+            Debug.Assert(right != null, "right is null");
             return Expression.Lambda<Func<T, bool>>(Expression.OrElse(left, right), parameter);
         }
 
@@ -52,7 +57,7 @@ namespace Meziantou.Framework
                 _newValue = newValue;
             }
 
-            public override Expression Visit(Expression node)
+            public override Expression? Visit(Expression? node)
             {
                 return node == _oldValue ? _newValue : base.Visit(node);
             }

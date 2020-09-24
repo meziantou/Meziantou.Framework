@@ -46,7 +46,7 @@ namespace Meziantou.Framework.CodeDom
             var declaringType = type.DeclaringType;
             if (declaringType != null)
             {
-                string? typeName = name;
+                var typeName = name;
                 string? lastNamespace = null;
                 while (declaringType != null)
                 {

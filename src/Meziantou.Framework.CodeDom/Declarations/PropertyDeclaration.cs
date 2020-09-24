@@ -4,8 +4,6 @@
     {
         private PropertyAccessorDeclaration? _setter;
         private PropertyAccessorDeclaration? _getter;
-        private TypeReference? _type;
-        private TypeReference? _privateImplementationType;
 
         public PropertyDeclaration()
             : this(name: null, type: null)
@@ -20,11 +18,7 @@
 
         public Modifiers Modifiers { get; set; }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public PropertyAccessorDeclaration? Getter
         {
@@ -38,10 +32,6 @@
             set => SetParent(ref _setter, value);
         }
 
-        public TypeReference? PrivateImplementationType
-        {
-            get => _privateImplementationType;
-            set => _privateImplementationType = value;
-        }
+        public TypeReference? PrivateImplementationType { get; set; }
     }
 }

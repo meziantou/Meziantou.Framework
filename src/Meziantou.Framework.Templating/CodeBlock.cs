@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Templating
         {
             if (Text.StartsWith(EvalPrefixString, StringComparison.Ordinal))
             {
-                return Template.OutputParameterName + ".Write(\"{0}\", " + Text.Substring(EvalPrefixString.Length) + ");";
+                return Template.OutputParameterName + ".Write(\"{0}\", " + Text[EvalPrefixString.Length..] + ");";
             }
 
             return Text;

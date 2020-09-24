@@ -2,8 +2,6 @@
 {
     public class NewObjectExpression : Expression
     {
-        private TypeReference? _type;
-
         public NewObjectExpression()
         {
             Arguments = new CodeObjectCollection<Expression>(this);
@@ -24,11 +22,7 @@
             }
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public CodeObjectCollection<Expression> Arguments { get; }
     }

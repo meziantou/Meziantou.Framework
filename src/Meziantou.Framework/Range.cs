@@ -12,7 +12,8 @@ namespace Meziantou.Framework
     }
 
     [StructLayout(LayoutKind.Auto)]
-    public readonly struct Range<T> : IEquatable<Range<T>> where T : IComparable<T>
+    public readonly struct Range<T> : IEquatable<Range<T>>
+        where T : IComparable<T>
     {
         public Range(T from, T to)
         {
@@ -109,5 +110,23 @@ namespace Meziantou.Framework
 
             return true;
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(From, To);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Range<T> range && Equals(range);
+        }
+
+        public override string? ToString()
+        {
+            return $"Range {From}-{To}";
+        }
+
+        public static bool operator ==(Range<T> left, Range<T> right) => left.Equals(right);
+        public static bool operator !=(Range<T> left, Range<T> right) => !(left == right);
     }
 }

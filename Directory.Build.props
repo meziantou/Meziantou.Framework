@@ -1,27 +1,17 @@
 <Project>
 
+  <!-- Build options -->
   <PropertyGroup>
     <LangVersion>preview</LangVersion>
     <Features>strict</Features>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <Authors>Meziantou</Authors>
-    <Company>Meziantou</Company>
-    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-
-    <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <LatestTargetFramework>net5.0</LatestTargetFramework>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp2.1'">
+  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFramework)'">
     <NoWarn>$(NoWarn);8600;8601;8602;8603;8604</NoWarn>
   </PropertyGroup>
 
@@ -31,4 +21,17 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!-- Package configuration_-->
+  <PropertyGroup>
+    <Authors>Meziantou</Authors>
+    <Company>Meziantou</Company>
+    <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    
+    <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
 </Project>

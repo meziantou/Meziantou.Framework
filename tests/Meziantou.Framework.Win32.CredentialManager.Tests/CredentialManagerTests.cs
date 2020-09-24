@@ -47,7 +47,7 @@ namespace Meziantou.Framework.Win32.Tests
             CredentialManager.WriteCredential(_credentialName2, "John", "Doe", "Test", CredentialPersistence.Session);
             try
             {
-                var creds = CredentialManager.EnumerateCrendentials(_prefix + "*");
+                var creds = CredentialManager.EnumerateCredentials(_prefix + "*");
                 Assert.Equal(2, creds.Count);
             }
             finally
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Win32.Tests
                 CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
                 try
                 {
-                    var credentials = CredentialManager.EnumerateCrendentials();
+                    var credentials = CredentialManager.EnumerateCredentials();
                     foreach (var credential in credentials)
                     {
                         _ = credential.UserName;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,28 +9,36 @@ namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
-        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, CancellationToken cancellationToken = default)
         {
-            return RunAsTask(fileName, arguments, workingDirectory: null, cancellationToken);
+            return RunAsTaskAsync(fileName, arguments, workingDirectory: null, cancellationToken);
         }
 
-        public static Task<ProcessResult> RunAsTask(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(string fileName, string? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
         {
             var psi = new ProcessStartInfo
             {
                 FileName = fileName,
-                Arguments = arguments,
-                WorkingDirectory = workingDirectory,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 ErrorDialog = false,
                 UseShellExecute = false,
             };
 
-            return RunAsTask(psi, cancellationToken);
+            if (arguments != null)
+            {
+                psi.Arguments = arguments;
+            }
+
+            if (workingDirectory != null)
+            {
+                psi.WorkingDirectory = workingDirectory;
+            }
+
+            return RunAsTaskAsync(psi, cancellationToken);
         }
 
-        public static Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
+        public static Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
         {
             if (redirectOutput)
             {
@@ -43,27 +52,31 @@ namespace Meziantou.Framework
                 psi.RedirectStandardOutput = false;
             }
 
-            return RunAsTask(psi, cancellationToken);
+            return RunAsTaskAsync(psi, cancellationToken);
         }
 
-        public static async Task<ProcessResult> RunAsTask(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
+        public static async Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var logs = new List<ProcessOutput>();
-            ProcessResult result;
-            using (var process = Process.Start(psi))
+            int exitCode;
+
+            using (var process = new Process())
             {
+                process.StartInfo = psi;
                 if (psi.RedirectStandardError)
                 {
                     process.ErrorDataReceived += (sender, e) =>
                     {
                         if (e.Data != null)
                         {
-                            logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                            lock (logs)
+                            {
+                                logs.Add(new ProcessOutput(ProcessOutputType.StandardError, e.Data));
+                            }
                         }
                     };
-                    process.BeginErrorReadLine();
                 }
 
                 if (psi.RedirectStandardOutput)
@@ -72,9 +85,24 @@ namespace Meziantou.Framework
                     {
                         if (e.Data != null)
                         {
-                            logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                            lock (logs)
+                            {
+                                logs.Add(new ProcessOutput(ProcessOutputType.StandardOutput, e.Data));
+                            }
                         }
                     };
+                }
+
+                if (!process.Start())
+                    throw new Win32Exception("Cannot start the process");
+
+                if (psi.RedirectStandardError)
+                {
+                    process.BeginErrorReadLine();
+                }
+
+                if (psi.RedirectStandardOutput)
+                {
                     process.BeginOutputReadLine();
                 }
 
@@ -83,42 +111,50 @@ namespace Meziantou.Framework
                     process.StandardInput.Close();
                 }
 
-                if (process.HasExited)
-                    return new ProcessResult(process.ExitCode, logs);
-
                 CancellationTokenRegistration registration = default;
-                if (cancellationToken.CanBeCanceled)
+                try
                 {
-                    registration = cancellationToken.Register(() =>
+                    if (cancellationToken.CanBeCanceled && !process.HasExited)
                     {
-                        try
-                        {
-                            process.Kill(entireProcessTree: true);
-                        }
-                        catch (InvalidOperationException)
+                        registration = cancellationToken.Register(() =>
                         {
                             try
                             {
-                                // Try to at least kill the root process
-                                process.Kill();
+                                process.Kill(entireProcessTree: true);
                             }
                             catch (InvalidOperationException)
                             {
+                                try
+                                {
+                                    // Try to at least kill the root process
+                                    process.Kill();
+                                }
+                                catch (InvalidOperationException)
+                                {
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+
+                    await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+#pragma warning disable MA0042 // Do not use blocking call
+                    process.WaitForExit(); // https://github.com/dotnet/runtime/issues/42556
+#pragma warning restore MA0042
+                }
+                finally
+                {
+                    await registration.DisposeAsync().ConfigureAwait(false);
                 }
 
-                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-                process.WaitForExit();
-                registration.Dispose();
-                result = new ProcessResult(process.ExitCode, logs);
+                exitCode = process.ExitCode;
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            return result;
+            return new ProcessResult(exitCode, logs);
         }
 
+        [Obsolete("Exist in .NET 5.0")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)
         {
             // https://source.dot.net/#System.Diagnostics.Process/System/Diagnostics/Process.cs,b6a5b00714a61f06

@@ -36,33 +36,33 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern bool IsTokenRestricted(IntPtr tokenHandle);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool DuplicateToken(IntPtr tokenHandle, SecurityImpersonationLevel ImpersonationLevel, out IntPtr duplicateTokenHandle);
+        internal static extern bool DuplicateToken(IntPtr tokenHandle, SecurityImpersonationLevel impersonationLevel, out IntPtr duplicateTokenHandle);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool disableAllPrivileges, ref TOKEN_PRIVILEGES NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
+        internal static extern bool AdjustTokenPrivileges(IntPtr tokenHandle, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint bufferLength, IntPtr previousState, ref uint returnLength);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool AdjustTokenPrivileges(IntPtr TokenHandle, bool disableAllPrivileges, IntPtr NewState, uint BufferLength, IntPtr PreviousState, ref uint ReturnLength);
+        internal static extern bool AdjustTokenPrivileges(IntPtr tokenHandle, bool disableAllPrivileges, IntPtr newState, uint bufferLength, IntPtr previousState, ref uint returnLength);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool CheckTokenMembership(IntPtr TokenHandle, byte[] SidToCheck, ref bool IsMember);
+        internal static extern bool CheckTokenMembership(IntPtr tokenHandle, byte[] sidToCheck, ref bool isMember);
+
+        [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+        internal static extern bool LookupPrivilegeValueW([MarshalAs(UnmanagedType.LPWStr)] string? lpSystemName, [MarshalAs(UnmanagedType.LPWStr)] string lpName, out LUID lpLuid);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal extern static int LookupAccountSidW(string? systemName, IntPtr pSid, StringBuilder szName, ref int nameSize, StringBuilder szDomain, ref int domainSize, ref int eUse);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+        internal static extern bool ConvertSidToStringSidW(IntPtr sid, [MarshalAs(UnmanagedType.LPWStr)] out string pStringSid);
+
+        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        private static extern bool LookupPrivilegeNameW(string? lpSystemName, ref LUID lpLuid, StringBuilder? lpName, ref int cchName);
+
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern bool ConvertStringSidToSidW([In, MarshalAs(UnmanagedType.LPWStr)] string pStringSid, ref IntPtr sid);
 
         [DllImport("advapi32.dll", SetLastError = true)]
-        internal static extern bool LookupPrivilegeValue([MarshalAs(UnmanagedType.LPTStr)] string? lpSystemName, [MarshalAs(UnmanagedType.LPTStr)] string lpName, out LUID lpLuid);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal extern static int LookupAccountSid(string? systemName, IntPtr pSid, StringBuilder szName, ref int nameSize, StringBuilder szDomain, ref int domainSize, ref int eUse);
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool ConvertSidToStringSid(IntPtr sid, [MarshalAs(UnmanagedType.LPTStr)] out string pStringSid);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern bool LookupPrivilegeName(string? lpSystemName, ref LUID lpLuid, StringBuilder? lpName, ref int cchName);
-
-        [DllImport("advapi32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        internal static extern bool ConvertStringSidToSid([In, MarshalAs(UnmanagedType.LPTStr)] string pStringSid, ref IntPtr sid);
-
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern bool CreateWellKnownSid(int sidType, IntPtr domainSid, IntPtr resultSid, ref uint resultSidLength);
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -74,9 +74,9 @@ namespace Meziantou.Framework.Win32.Natives
         internal static string LookupPrivilegeName(LUID luid)
         {
             var luidNameLen = 0;
-            LookupPrivilegeName(lpSystemName: null, ref luid, lpName: null, ref luidNameLen);
+            LookupPrivilegeNameW(lpSystemName: null, ref luid, lpName: null, ref luidNameLen);
             var sb = new StringBuilder(luidNameLen);
-            if (LookupPrivilegeName(lpSystemName: null, ref luid, sb, ref luidNameLen))
+            if (LookupPrivilegeNameW(lpSystemName: null, ref luid, sb, ref luidNameLen))
                 return sb.ToString();
 
             throw new Win32Exception(Marshal.GetLastWin32Error());

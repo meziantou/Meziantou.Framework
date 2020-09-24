@@ -1,8 +1,11 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class OpenFolderDialog
     {
         public DialogResult ShowDialog()
@@ -41,7 +44,10 @@ namespace Meziantou.Framework.Win32
 
             if (!string.IsNullOrEmpty(InitialDirectory))
             {
-                NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out var item);
+                var result = NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out var item);
+                if (result != NativeMethods.S_OK)
+                    throw new Win32Exception(result);
+
                 if (item != null)
                 {
                     dialog.SetFolder(item);

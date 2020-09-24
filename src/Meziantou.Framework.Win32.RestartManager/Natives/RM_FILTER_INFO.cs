@@ -21,12 +21,12 @@ namespace Meziantou.Framework.Win32.Natives
         /// <summary>
         /// The offset in bytes to the next structure.
         /// </summary>
-        public uint cbNextOffset;
+        public uint NextOffset;
 
         /// <summary>
         /// If the value of FilterTrigger is RmFilterTriggerFile, this member contains a pointer to a string value that contains the application filename.
         /// </summary>
-        public string strFilename;
+        public string Filename;
 
         /// <summary>
         /// If the value of FilterTrigger is RmFilterTriggerProcess, this member is a RM_PROCESS_INFO structure for the application.
@@ -36,6 +36,6 @@ namespace Meziantou.Framework.Win32.Natives
         /// <summary>
         /// If the value of FilterTrigger is RmFilterTriggerService this member is a pointer to a string value that contains the short service name.
         /// </summary>
-        public string strServiceShortName;
+        public string ServiceShortName;
     }
 }

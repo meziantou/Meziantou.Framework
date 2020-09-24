@@ -20,7 +20,7 @@ namespace Meziantou.Framework
             return defaultValue;
         }
 
-        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, [MaybeNullWhen(returnValue: false)]out TResult value)
+        public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, [MaybeNullWhen(returnValue: false)] out TResult value)
             where TKey : notnull
         {
             if (dict == null)

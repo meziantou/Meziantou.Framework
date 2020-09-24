@@ -88,7 +88,7 @@ namespace Meziantou.Framework.Scheduling
                 if (!IsEmpty(ByMonths))
                 {
                     sb.Append(";BYMONTH=");
-                    sb.Append(string.Join(",", ByMonths.Select(month => (int)month)));
+                    sb.Append(string.Join(",", ByMonths.Cast<int>()));
                 }
 
                 if (!IsEmpty(ByMonthDays))

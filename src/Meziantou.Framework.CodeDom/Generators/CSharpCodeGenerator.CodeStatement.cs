@@ -17,8 +17,8 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        protected readonly WriteStatementOptions _defaultWriteStatementOptions = new WriteStatementOptions();
-        protected readonly WriteStatementOptions _inlineStatementWriteStatementOptions = new WriteStatementOptions() { EndStatement = false };
+        private readonly WriteStatementOptions _defaultWriteStatementOptions = new WriteStatementOptions();
+        private readonly WriteStatementOptions _inlineStatementWriteStatementOptions = new WriteStatementOptions() { EndStatement = false };
 
         protected virtual void WriteStatement(IndentedTextWriter writer, Statement statement)
         {

@@ -27,6 +27,6 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern bool CloseHandle(IntPtr handle);
 
         [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern bool IsProcessInJob(IntPtr process, JobObject hJob, out bool result);        
+        internal static extern bool IsProcessInJob(IntPtr process, JobObject hJob, out bool result);
     }
 }

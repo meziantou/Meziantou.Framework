@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Win32.Natives
     [StructLayout(LayoutKind.Sequential)]
     internal struct SECURITY_ATTRIBUTES
     {
-        public int nLength;
-        public IntPtr lpSecurityDescriptor;
-        public bool bInheritHandle;
+        public int Length;
+        public IntPtr SecurityDescriptor;
+        public bool InheritHandle;
     }
 }

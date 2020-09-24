@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Win32.Natives
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool CloseHandle(IntPtr handle);
 
-        [DllImport("Kernel32.dll", SetLastError = true)]
-        internal static extern ChangeJournalSafeHandle CreateFile(
+        [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static extern ChangeJournalSafeHandle CreateFileW(
             string fileName,
             [MarshalAs(UnmanagedType.U4)] FileAccess fileAccess,
             [MarshalAs(UnmanagedType.U4)] FileShare fileShare,

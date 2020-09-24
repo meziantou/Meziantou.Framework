@@ -2,14 +2,7 @@
 {
     public class DelegateDeclaration : TypeDeclaration, IParametrableType
     {
-        private TypeReference? _returnType;
-
-        public TypeReference? ReturnType
-        {
-            get => _returnType;
-            set => _returnType = value;
-        }
-
+        public TypeReference? ReturnType { get; set; }
         public CodeObjectCollection<TypeParameter> Parameters { get; }
         public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
 

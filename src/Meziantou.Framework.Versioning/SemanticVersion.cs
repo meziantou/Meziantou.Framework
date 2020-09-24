@@ -252,7 +252,7 @@ namespace Meziantou.Framework.Versioning
             return false;
         }
 
-        private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)]out IReadOnlyList<string>? labels)
+        private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
         {
             if (index < versionString.Length && versionString[index] == '-')
             {
@@ -337,7 +337,7 @@ namespace Meziantou.Framework.Versioning
             return TryReadMetadataIdentifier(label, ref index, out _) && index == label.Length;
         }
 
-        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)]out string? value)
+        private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
         {
             var last = index;
             while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
@@ -347,7 +347,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                value = versionString.Substring(index, last - index);
+                value = versionString[index..last];
                 if (value[0] != '0' || value.Any(c => !IsDigit(c)))
                 {
                     index = last;
@@ -375,7 +375,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                value = versionString.Substring(index, last - index);
+                value = versionString[index..last];
                 index = last;
                 return true;
             }
@@ -394,7 +394,7 @@ namespace Meziantou.Framework.Versioning
 
             if (last > index)
             {
-                var str = versionString.Substring(index, last - index);
+                var str = versionString[index..last];
                 if (str.Length == 1 && str[0] == '0')
                 {
                     value = 0;

@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Html
 {
     public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNamespaceResolver
     {
-        private const int MaxRecursion = 300; // TODO configurable
+        private const int MaxRecursion = 300;
 
         public const string XmlnsPrefix = "xmlns";
         public const string XmlnsNamespaceURI = "http://www.w3.org/2000/xmlns/";
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.Html
             _parentNode?.ClearCaches(index + 1);
         }
 
-        protected void OnPropertyChanged([CallerMemberName]string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             if (!RaisePropertyChanged)
                 return;
@@ -198,9 +198,9 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public virtual HtmlNodeList ChildNodes => _childNodes ?? (_childNodes = new HtmlNodeList(this));
+        public virtual HtmlNodeList ChildNodes => _childNodes ??= new HtmlNodeList(this);
 
-        public virtual HtmlAttributeList Attributes => _attributes ?? (_attributes = new HtmlAttributeList(this));
+        public virtual HtmlAttributeList Attributes => _attributes ??= new HtmlAttributeList(this);
 
         public virtual bool RaisePropertyChanged { get; set; }
         public virtual int StreamOrder { get; set; }
@@ -234,7 +234,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            var pos = name.IndexOf(':');
+            var pos = name.IndexOf(':', StringComparison.Ordinal);
             if (pos < 0)
             {
                 prefix = string.Empty;
@@ -243,7 +243,7 @@ namespace Meziantou.Framework.Html
             }
 
             prefix = Utilities.Nullify(name.Substring(0, pos), trim: true);
-            localName = Utilities.Nullify(name.Substring(pos + 1), trim: true);
+            localName = Utilities.Nullify(name[(pos + 1)..], trim: true);
             if (prefix == null || localName == null)
             {
                 prefix = string.Empty;
@@ -283,6 +283,7 @@ namespace Meziantou.Framework.Html
             OnPropertyChanged(nameof(Name));
         }
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "Change the behavior of the method")]
         public string LocalName
         {
             get => _localName;
@@ -430,7 +431,7 @@ namespace Meziantou.Framework.Html
             _errors = null;
         }
 
-        public virtual IEnumerable<HtmlError> Errors => _errors ?? (_errors = new Collection<HtmlError>());
+        public virtual IEnumerable<HtmlError> Errors => _errors ??= new Collection<HtmlError>();
 
         public virtual string OuterHtml
         {
@@ -567,7 +568,7 @@ namespace Meziantou.Framework.Html
             get
             {
                 if (HasChildNodes)
-                    return ChildNodes[ChildNodes.Count - 1];
+                    return ChildNodes[^1];
 
                 return null;
             }
@@ -971,11 +972,10 @@ namespace Meziantou.Framework.Html
         public virtual void ReplaceChild(HtmlNode newChild, HtmlNode oldChild)
         {
             if (newChild is HtmlAttribute)
-                throw new ArgumentException(message: null, nameof(newChild));
+                throw new ArgumentException(message: "newChild must not be an HtmlAttribute", nameof(newChild));
 
-            var att = oldChild as HtmlAttribute;
-            if (att != null)
-                throw new ArgumentException(message: null, nameof(oldChild));
+            if (oldChild is HtmlAttribute)
+                throw new ArgumentException(message: "oldChild must not be an HtmlAttribute", nameof(oldChild));
 
             ChildNodes.Replace(newChild, oldChild);
         }
@@ -1064,6 +1064,7 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Design", "MA0041:Make method static", Justification = "By design")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
         public Uri BaseAddress => null;
 
         public abstract void WriteTo(TextWriter writer);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS0618 // Type or member is obsolete
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -19,11 +20,9 @@ namespace Meziantou.Framework.Tests
             static Task<ProcessResult> CreateProcess()
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    return ProcessExtensions.RunAsTask("cmd", "/C echo test", CancellationToken.None);
-                }
+                    return ProcessExtensions.RunAsTaskAsync("cmd", "/C echo test", CancellationToken.None);
 
-                return ProcessExtensions.RunAsTask("echo", "test", CancellationToken.None);
+                return ProcessExtensions.RunAsTaskAsync("echo", "test", CancellationToken.None);
             }
 
             var result = await CreateProcess().ConfigureAwait(false);
@@ -54,7 +53,7 @@ namespace Meziantou.Framework.Tests
                 };
             }
 
-            var result = await psi.RunAsTask(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
+            var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
             Assert.Equal(1, result.Output.Count);
             Assert.Equal("test", result.Output[0].Text);
@@ -82,7 +81,7 @@ namespace Meziantou.Framework.Tests
                 };
             }
 
-            var result = await psi.RunAsTask(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
+            var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
             Assert.Equal(0, result.Output.Count);
         }
@@ -92,29 +91,40 @@ namespace Meziantou.Framework.Tests
         {
             var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
 
-            await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTask(CancellationToken.None)).ConfigureAwait(false);
+            await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTaskAsync(CancellationToken.None)).ConfigureAwait(false);
         }
 
         [Fact]
         public async Task RunAsTask_Cancel()
         {
-            DateTime start = DateTime.Now;
+            var stopwatch = Stopwatch.StartNew();
 
             using var cts = new CancellationTokenSource();
             Task task;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                task = ProcessExtensions.RunAsTask("ping.exe", "127.0.0.1 -n 10", cts.Token);
+                task = ProcessExtensions.RunAsTaskAsync("ping.exe", "127.0.0.1 -n 10", cts.Token);
             }
             else
             {
-                task = ProcessExtensions.RunAsTask("ping", "127.0.0.1 -c 10", cts.Token);
+                task = ProcessExtensions.RunAsTaskAsync("ping", "127.0.0.1 -c 10", cts.Token);
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(1)); // Wait for the process to start
+            // Wait for the process to start
+            while (true)
+            {
+                var processes = Process.GetProcesses();
+                if (processes.Any(p => p.ProcessName.EqualsIgnoreCase("ping") || p.ProcessName.EqualsIgnoreCase("ping.exe")))
+                    break;
+
+                await Task.Delay(100);
+
+                Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10), "Cannot find the process");
+            }
+
             cts.Cancel();
 
-            await Assert.ThrowsAsync<TaskCanceledException>(() => task).ConfigureAwait(false);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
         }
 
         [RunIfWindowsFact]
@@ -127,7 +137,7 @@ namespace Meziantou.Framework.Tests
             AssertExtensions.AllItemsAreUnique(processes.ToList());
         }
 
-        [Fact(Skip = "fail on CI")]
+        [RunIfWindowsFact]
         public void GetDescendantProcesses()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -175,31 +185,7 @@ namespace Meziantou.Framework.Tests
             Assert.True(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
         }
 
-        [RunIfWindowsAdministratorFact]
-        public void GetAncestorProcessIds()
-        {
-            var current = Process.GetCurrentProcess();
-            var parents = current.GetAncestorProcessIds().ToList();
-
-            AssertExtensions.AllItemsAreUnique(parents);
-            bool hasParent = false;
-            foreach (var parentId in parents)
-            {
-                try
-                {
-                    var parent = Process.GetProcessById(parentId);
-                    hasParent = true;
-                    Assert.True(parent.GetDescendantProcesses().Any(p => p.Id == current.Id), "Parent process must have the current process as descendant");
-                }
-                catch (ArgumentException)
-                {
-                }
-            }
-
-            Assert.True(hasParent, "The process has no parents");
-        }
-
-        [Fact(Skip = "fail on CI")]
+        [RunIfWindowsFact]
         public void KillProcess_EntireProcessTree_False()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");

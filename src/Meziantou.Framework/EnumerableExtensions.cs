@@ -1,17 +1,22 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
-    public static class EnumerableExtensions
+    public static partial class EnumerableExtensions
     {
-        public static void AddRange<T>(this ICollection<T> collection, params T[] items)
+        /// <summary>
+        /// Allow to use the foreach keyword with an IEnumerator
+        /// </summary>
+        public static IEnumerator<T> GetEnumerator<T>(this IEnumerator<T> enumerator) => enumerator;
+
+        /// <summary>
+        /// Allow to use the foreach keyword with an IAsyncEnumerator
+        /// </summary>
+        public static IAsyncEnumerator<T> GetAsyncEnumerator<T>(this IAsyncEnumerator<T> enumerator) => enumerator;
+
+        public static void AddRange<T>(this ICollection<T> collection, params T[]? items)
         {
             if (collection == null)
                 throw new ArgumentNullException(nameof(collection));
@@ -51,12 +56,12 @@ namespace Meziantou.Framework
             list[index] = newItem;
         }
 
-        public static void AddOrReplace<T>(this IList<T> list, [AllowNull] T oldItem, T newItem)
+        public static void AddOrReplace<T>(this IList<T> list, T? oldItem, T newItem)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
 
-            var index = list.IndexOf(oldItem);
+            var index = list.IndexOf(oldItem!);
             if (index < 0)
             {
                 list.Add(newItem);
@@ -67,44 +72,39 @@ namespace Meziantou.Framework
             }
         }
 
-        [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<T>? WhereNotNull<T>(this IEnumerable<T?>? source) where T : class
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source) where T : class
         {
             if (source == null)
-                return null;
+                throw new ArgumentNullException(nameof(source));
 
             return source.Where(item => item != null)!;
         }
 
-        [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<string>? WhereNotNullOrEmpty(this IEnumerable<string?>? source)
+        public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
         {
             if (source == null)
-                return null;
+                throw new ArgumentNullException(nameof(source));
 
             return source.Where(item => !string.IsNullOrEmpty(item))!;
         }
 
-        [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<string>? WhereNotNullOrWhiteSpace(this IEnumerable<string?>? source)
+        public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source)
         {
             if (source == null)
-                return null;
+                throw new ArgumentNullException(nameof(source));
 
             return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
         }
 
-        [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<TSource>? DistinctBy<TSource, TKey>(this IEnumerable<TSource>? source, Func<TSource, TKey> keySelector)
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
         {
             return DistinctBy(source, keySelector, EqualityComparer<TKey>.Default);
         }
 
-        [return: NotNullIfNotNull(parameterName: "source")]
-        public static IEnumerable<TSource>? DistinctBy<TSource, TKey>(this IEnumerable<TSource>? source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
-                return null;
+                throw new ArgumentNullException(nameof(source));
 
             var hash = new HashSet<TKey>(comparer);
             return source.Where(p => hash.Add(keySelector(p)));
@@ -112,26 +112,25 @@ namespace Meziantou.Framework
 
         public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
         {
-            return Sort(list, Comparer<T>.Default);
+            return Sort(list, comparer: null);
         }
 
-        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T> comparer)
+        public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
         {
             return list.OrderBy(item => item, comparer);
         }
 
         public static int IndexOf<T>(this IEnumerable<T> list, T value)
         {
-            return list.IndexOf(value, EqualityComparer<T>.Default);
+            return list.IndexOf(value, comparer: null);
         }
 
-        public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T> comparer)
+        public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T>? comparer)
         {
             if (list == null)
                 throw new ArgumentNullException(nameof(list));
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
 
+            comparer ??= EqualityComparer<T>.Default;
             var index = 0;
             foreach (var item in list)
             {
@@ -197,6 +196,9 @@ namespace Meziantou.Framework
 
         public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> action)
         {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
             foreach (var item in source)
             {
                 action(item);
@@ -205,6 +207,9 @@ namespace Meziantou.Framework
 
         public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource, int> action)
         {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
             var index = 0;
             foreach (var item in source)
             {
@@ -213,55 +218,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action)
-        {
-            return ForEachAsync(source, action, CancellationToken.None);
-        }
-
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> action, CancellationToken cancellationToken)
-        {
-            return ForEachAsync(source, Environment.ProcessorCount, action, cancellationToken);
-        }
-
-        public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action)
-        {
-            return ForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
-        }
-
-        public static async Task ForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
-        {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var exceptions = new ConcurrentBag<Exception>();
-
-            var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
-                        select Task.Run(async () =>
-                        {
-                            using (partition)
-                            {
-                                while (partition.MoveNext())
-                                {
-                                    try
-                                    {
-                                        await action(partition.Current).ConfigureAwait(false);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        exceptions.Add(ex);
-                                    }
-                                }
-                            }
-                        }, cancellationToken);
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
-            if (exceptions.Count > 0)
-            {
-                throw new AggregateException(exceptions);
-            }
-        }
-
-        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector)
+            where TValue : IComparable
         {
             if (enumerable == null)
                 throw new ArgumentNullException(nameof(enumerable));
@@ -501,27 +459,10 @@ namespace Meziantou.Framework
             return TimeSpan.FromTicks(result / count);
         }
 
-        public static IEnumerable<T> AsActualEnumerable<T>(this IEnumerable<T> enumerable)
+        public static IEnumerable<T> AsOnlyEnumerable<T>(this IEnumerable<T> enumerable)
         {
-            return new ActualEnumerable<T>(enumerable);
-        }
-
-        private sealed class ActualEnumerable<T> : IEnumerable<T>
-        {
-            private readonly IEnumerable<T> _enumerable;
-
-            public ActualEnumerable(IEnumerable<T> enumerable) => _enumerable = enumerable;
-
-            public IEnumerator<T> GetEnumerator()
-            {
-                // Don't use _enumerable.GetEnumerator here because the call-site may have special optimization on the returned enumerator
-                foreach (var value in _enumerable)
-                {
-                    yield return value;
-                }
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            foreach (var item in enumerable)
+                yield return item;
         }
     }
 }

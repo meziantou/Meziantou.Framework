@@ -39,14 +39,14 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void Replace_ShouldReplaceAllOccurences()
         {
-            var actual = "abcABC".Replace("ab", "ba", System.StringComparison.OrdinalIgnoreCase);
+            var actual = "abcABC".Replace("ab", "ba", StringComparison.OrdinalIgnoreCase);
             Assert.Equal("bacbaC", actual);
         }
 
         [Fact]
         public void Replace_ShouldUseStringComparison()
         {
-            var actual = "abcABC".Replace("ab", "ba", System.StringComparison.Ordinal);
+            var actual = "abcABC".Replace("ab", "ba", StringComparison.Ordinal);
             Assert.Equal("bacABC", actual);
         }
 
@@ -62,7 +62,6 @@ namespace Meziantou.Framework.Tests
         }
 
         [Theory]
-        [InlineData(null, null, true)]
         [InlineData("", "", true)]
         [InlineData("abc", "abc", true)]
         [InlineData("abc", "aBc", true)]

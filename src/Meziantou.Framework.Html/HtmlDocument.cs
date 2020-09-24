@@ -466,7 +466,7 @@ namespace Meziantou.Framework.Html
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
 
-            if (prefix.IndexOf(':') >= 0)
+            if (prefix.Contains(':', StringComparison.Ordinal))
                 throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
             if (localName == null)
@@ -501,7 +501,7 @@ namespace Meziantou.Framework.Html
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
 
-            if (prefix.IndexOf(':') >= 0)
+            if (prefix.Contains(':', StringComparison.Ordinal))
                 throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
             if (localName == null)
@@ -510,7 +510,8 @@ namespace Meziantou.Framework.Html
             return new HtmlElement(prefix, localName, namespaceURI, this);
         }
 
-        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
+        [SuppressMessage("Performance", "MA0038", Justification = "By design")]
         public HtmlDocument CreateDocument()
         {
             return new HtmlDocument();
@@ -610,14 +611,14 @@ namespace Meziantou.Framework.Html
             return true;
         }
 
-        private void OnParsing(object sender, HtmlDocumentParseEventArgs e)
+        private void OnParsing(HtmlDocumentParseEventArgs e)
         {
-            Parsing?.Invoke(sender, e);
+            Parsing?.Invoke(this, e);
         }
 
-        private void OnParsed(object sender, HtmlDocumentParseEventArgs e)
+        private void OnParsed(HtmlDocumentParseEventArgs e)
         {
-            Parsed?.Invoke(sender, e);
+            Parsed?.Invoke(this, e);
         }
 
         private bool OnParsing(HtmlReader reader, ref HtmlNode currentNode, ref HtmlAttribute currentAttribute, out bool cont)
@@ -629,7 +630,7 @@ namespace Meziantou.Framework.Html
                 CurrentAttribute = currentAttribute,
             };
 
-            OnParsing(this, e);
+            OnParsing(e);
             DetectedEncoding = e.DetectedEncoding;
             currentNode = e.CurrentNode;
             currentAttribute = e.CurrentAttribute;
@@ -646,7 +647,7 @@ namespace Meziantou.Framework.Html
                 CurrentAttribute = currentAttribute,
             };
 
-            OnParsed(this, e);
+            OnParsed(e);
             DetectedEncoding = e.DetectedEncoding;
             currentNode = e.CurrentNode;
             currentAttribute = e.CurrentAttribute;
@@ -692,7 +693,7 @@ namespace Meziantou.Framework.Html
                         bool processingInstruction;
                         if (htmlReader.State.Value.StartsWith('?'))
                         {
-                            elementName = htmlReader.State.Value.Substring(1);
+                            elementName = htmlReader.State.Value[1..];
                             processingInstruction = true;
                         }
                         else
@@ -1205,6 +1206,7 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
+        [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
         public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
         {
             if (node == null)

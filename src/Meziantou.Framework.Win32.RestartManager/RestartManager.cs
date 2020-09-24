@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class RestartManager : IDisposable
     {
         private int SessionHandle { get; }
@@ -87,7 +89,7 @@ namespace Meziantou.Framework.Win32
                     {
                         try
                         {
-                            var process = Process.GetProcessById(array[i].Process.dwProcessId);
+                            var process = Process.GetProcessById(array[i].Process.ProcessId);
                             if (process != null)
                                 processes.Add(process);
                         }

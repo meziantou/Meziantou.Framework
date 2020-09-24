@@ -23,8 +23,8 @@ namespace Meziantou.Framework.Win32
             }
 
             name = name
-                .Replace(":", "")
-                .Replace(Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture), "");
+                .Replace(":", "", StringComparison.Ordinal)
+                .Replace(Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture), "", StringComparison.Ordinal);
 
             return $"\\\\.\\{name}:";
         }

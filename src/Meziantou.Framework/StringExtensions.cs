@@ -39,21 +39,9 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool Contains(this string? str, string? value, StringComparison stringComparison)
+        public static bool ContainsIgnoreCase(this string str, string value)
         {
-            if (str == null)
-                return value == null;
-
-            if (value == null)
-                return false;
-
-            return str.IndexOf(value, stringComparison) >= 0;
-        }
-
-        [Pure]
-        public static bool ContainsIgnoreCase(this string? str, string? value)
-        {
-            return Contains(str, value, StringComparison.OrdinalIgnoreCase);
+            return str.Contains(value, StringComparison.OrdinalIgnoreCase);
         }
 
         [Pure]
@@ -79,12 +67,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        [return: NotNullIfNotNull(parameterName: "str")]
-        public static string? Replace(this string? str, string oldValue, string newValue, StringComparison comparison)
+        public static string Replace(this string str, string oldValue, string newValue, StringComparison comparison)
         {
-            if (str == null)
-                return null;
-
             var sb = new StringBuilder();
 
             var previousIndex = 0;
@@ -109,7 +93,7 @@ namespace Meziantou.Framework
             if (string.IsNullOrEmpty(str))
                 return false;
 
-            return str[str.Length - 1] == c;
+            return str[^1] == c;
         }
 
         [Pure]
@@ -157,13 +141,13 @@ namespace Meziantou.Framework
                     if (next == '\n')
                     {
                         Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 2));
-                        _str = span.Slice(index + 2);
+                        _str = span[(index + 2)..];
                         return true;
                     }
                 }
 
                 Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 1));
-                _str = span.Slice(index + 1);
+                _str = span[(index + 1)..];
                 return true;
             }
 

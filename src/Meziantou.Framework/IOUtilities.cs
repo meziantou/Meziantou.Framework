@@ -1,14 +1,16 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
-    public static class IOUtilities
+#if PUBLIC_IO_UTILITIES
+    public
+#else
+    internal
+#endif
+    static partial class IOUtilities
     {
         private static readonly string[] s_reservedFileNames = new[]
          {
@@ -16,22 +18,6 @@ namespace Meziantou.Framework
             "com0", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
             "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
         };
-
-        /// <summary>
-        /// Determines whether the specified exception is a sharing violation exception.
-        /// </summary>
-        /// <param name="exception">The exception. May not be null.</param>
-        /// <returns>
-        /// 	<c>true</c> if the specified exception is a sharing violation exception; otherwise, <c>false</c>.
-        /// </returns>
-        public static bool IsSharingViolation(IOException exception)
-        {
-            if (exception == null)
-                throw new ArgumentNullException(nameof(exception));
-
-            var hr = exception.HResult;
-            return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION
-        }
 
         /// <summary>
         /// Makes sure a directory exists for a given file path.
@@ -137,7 +123,7 @@ namespace Meziantou.Framework
             if (Array.IndexOf(s_reservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
                 IsAllDots(fileName))
             {
-                return string.Format(reservedNameFormat, fileName);
+                return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);
             }
 
             var invalid = Path.GetInvalidFileNameChars();
@@ -226,163 +212,5 @@ namespace Meziantou.Framework
                 CopyDirectory(subdir, temppath);
             }
         }
-
-        public static void Delete(string path)
-        {
-            var di = new DirectoryInfo(path);
-            if (di.Exists)
-            {
-                Delete(di);
-                return;
-            }
-
-            var fi = new FileInfo(path);
-            if (fi.Exists)
-            {
-                Delete(fi);
-            }
-        }
-
-        public static void Delete(FileSystemInfo fileSystemInfo)
-        {
-            if (!fileSystemInfo.Exists)
-                return;
-
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
-            {
-                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
-                {
-                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        try
-                        {
-                            RetryOnSharingViolation(() => childInfo.Delete());
-                        }
-                        catch (FileNotFoundException)
-                        {
-                        }
-                        catch (DirectoryNotFoundException)
-                        {
-                        }
-                    }
-                    else
-                    {
-                        Delete(childInfo);
-                    }
-                }
-            }
-            try
-            {
-                RetryOnSharingViolation(() => fileSystemInfo.Attributes = FileAttributes.Normal);
-                RetryOnSharingViolation(() => fileSystemInfo.Delete());
-            }
-            catch (FileNotFoundException)
-            {
-            }
-            catch (DirectoryNotFoundException)
-            {
-            }
-        }
-
-        [SuppressMessage("Design", "MA0045:Do not use blocking call (make method async)", Justification = "This method is intended to be sync")]
-        private static void RetryOnSharingViolation(Action action)
-        {
-            var attempt = 0;
-            while (attempt < 10)
-            {
-                try
-                {
-                    action();
-                    return;
-                }
-                catch (IOException ex) when (IsSharingViolation(ex))
-                {
-                }
-
-                attempt++;
-                Thread.Sleep(50);
-            }
-        }
-
-#if NETCOREAPP3_1
-        public static ValueTask DeleteAsync(string path)
-        {
-            var di = new DirectoryInfo(path);
-            if (di.Exists)
-            {
-                return DeleteAsync(di);
-            }
-
-            var fi = new FileInfo(path);
-            if (fi.Exists)
-            {
-                return DeleteAsync(fi);
-            }
-
-            return default;
-        }
-
-        public static async ValueTask DeleteAsync(FileSystemInfo fileSystemInfo)
-        {
-            if (!fileSystemInfo.Exists)
-                return;
-
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
-            {
-                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
-                {
-                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        try
-                        {
-                            await RetryOnSharingViolationAsync(() => childInfo.Delete()).ConfigureAwait(false);
-                        }
-                        catch (FileNotFoundException)
-                        {
-                        }
-                        catch (DirectoryNotFoundException)
-                        {
-                        }
-                    }
-                    else
-                    {
-                        Delete(childInfo);
-                    }
-                }
-            }
-
-            try
-            {
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal).ConfigureAwait(false);
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete()).ConfigureAwait(false);
-            }
-            catch (FileNotFoundException)
-            {
-            }
-            catch (DirectoryNotFoundException)
-            {
-            }
-        }
-
-        private static async ValueTask RetryOnSharingViolationAsync(Action action)
-        {
-            var attempt = 0;
-            while (attempt < 10)
-            {
-                try
-                {
-                    action();
-                    return;
-                }
-                catch (IOException ex) when (IsSharingViolation(ex))
-                {
-                }
-
-                attempt++;
-                await Task.Delay(50).ConfigureAwait(false);
-            }
-        }
-#elif NETSTANDARD2_0 || NET461
-#endif
     }
 }

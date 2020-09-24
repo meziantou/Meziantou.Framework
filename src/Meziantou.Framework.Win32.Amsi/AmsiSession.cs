@@ -1,8 +1,10 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32
 {
+    [SupportedOSPlatform("windows")]
     public sealed class AmsiSession : IDisposable
     {
         private readonly AmsiContext _context;

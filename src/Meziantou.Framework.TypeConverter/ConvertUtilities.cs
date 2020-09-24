@@ -9,7 +9,7 @@ namespace Meziantou.Framework
     {
         public static IConverter DefaultConverter { get; } = new DefaultConverter();
 
-        public static bool TryChangeType<T>(object? input, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)]out T value)
+        public static bool TryChangeType<T>(object? input, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out T value)
         {
             return TryChangeType(DefaultConverter, input, provider, out value);
         }
@@ -50,7 +50,7 @@ namespace Meziantou.Framework
             return TryChangeType(DefaultConverter, input, out value);
         }
 
-        public static bool TryChangeType<T>(this IConverter converter, object? input, [MaybeNullWhen(returnValue: false)]out T value)
+        public static bool TryChangeType<T>(this IConverter converter, object? input, [MaybeNullWhen(returnValue: false)] out T value)
         {
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
@@ -59,7 +59,7 @@ namespace Meziantou.Framework
 
         public static bool TryChangeType(object? input, Type conversionType, out object? value)
         {
-            return TryChangeType(DefaultConverter, input, conversionType, out value);
+            return TryChangeType(DefaultConverter, input, conversionType, provider: null, out value);
         }
 
         public static bool TryChangeType(this IConverter converter, object? input, Type conversionType, out object? value)
@@ -97,7 +97,7 @@ namespace Meziantou.Framework
 
         public static object? ChangeType(object? input, Type conversionType, object? defaultValue)
         {
-            return ChangeType(DefaultConverter, input, conversionType, defaultValue);
+            return ChangeType(DefaultConverter, input, conversionType, defaultValue, provider: null);
         }
 
         public static object? ChangeType(this IConverter converter, object? input, Type conversionType, object? defaultValue)

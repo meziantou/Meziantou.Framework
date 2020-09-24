@@ -11,6 +11,7 @@ namespace Meziantou.Framework
 {
     public static partial class ProcessExtensions
     {
+        [Obsolete("Already implemented in .NET 3.1")]
         public static void Kill(this Process process, bool entireProcessTree = false)
         {
             if (process == null)
@@ -50,12 +51,13 @@ namespace Meziantou.Framework
 #endif
         }
 
+        //[SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             var children = new List<Process>();
@@ -63,12 +65,13 @@ namespace Meziantou.Framework
             return children;
         }
 
+        //[SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetChildProcesses(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             var children = new List<Process>();
@@ -76,12 +79,13 @@ namespace Meziantou.Framework
             return children;
         }
 
+        //[SupportedOSPlatform("windows")]
         public static IEnumerable<int> GetAncestorProcessIds(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             return GetAncestorProcessIdsIterator();
@@ -115,12 +119,74 @@ namespace Meziantou.Framework
             }
         }
 
+        //[SupportedOSPlatform("windows")]
+        public static IEnumerable<Process> GetAncestorProcesses(this Process process)
+        {
+            if (process == null)
+                throw new ArgumentNullException(nameof(process));
+
+            return GetAncestorProcesses();
+
+            IEnumerable<Process> GetAncestorProcesses()
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    throw new PlatformNotSupportedException("Only supported on Windows");
+
+                foreach (var entry in GetAncestorProcessIdsIterator())
+                {
+                    Process? p = null;
+                    try
+                    {
+                        p = entry.ToProcess();
+                        if (p == null || p.StartTime > process.StartTime)
+                            continue;
+                    }
+                    catch (ArgumentException)
+                    {
+                        // process might have exited since the snapshot, ignore it
+                    }
+
+                    if (p != null)
+                    {
+                        yield return p;
+                    }
+                }
+
+                IEnumerable<ProcessEntry> GetAncestorProcessIdsIterator()
+                {
+                    var returnedProcesses = new HashSet<int>();
+                    var processId = process.Id;
+                    var processes = GetProcesses().ToList();
+                    var found = true;
+                    while (found)
+                    {
+                        found = false;
+                        foreach (var entry in processes)
+                        {
+                            if (entry.ProcessId == processId)
+                            {
+                                if (returnedProcesses.Add(entry.ParentProcessId))
+                                {
+                                    yield return entry;
+                                    processId = entry.ParentProcessId;
+                                    found = true;
+                                }
+                            }
+                        }
+
+                        if (!found)
+                            yield break;
+                    }
+                }
+            }
+        }
+
         public static int? GetParentProcessId(this Process process)
         {
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-            if (IsWindows())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var processId = process.Id;
                 foreach (var entry in GetProcesses())
@@ -144,7 +210,7 @@ namespace Meziantou.Framework
                         const string Prefix = "PPid:";
                         if (line.StartsWith(Prefix, StringComparison.Ordinal))
                         {
-                            if (int.TryParse(line.Substring(Prefix.Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var ppid))
+                            if (int.TryParse(line[Prefix.Length..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var ppid))
                                 return ppid;
                         }
                     }
@@ -173,9 +239,10 @@ namespace Meziantou.Framework
             return parentProcess;
         }
 
+        //[SupportedOSPlatform("windows")]
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
-            if (!IsWindows())
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
@@ -192,6 +259,7 @@ namespace Meziantou.Framework
             }
         }
 
+        //[SupportedOSPlatform("windows")]
         private static void GetChildProcesses(Process process, List<Process> children, int maxDepth, int currentDepth)
         {
             var entries = new List<ProcessEntry>(100);
@@ -228,17 +296,6 @@ namespace Meziantou.Framework
                     }
                 }
             }
-        }
-
-        private static bool IsWindows()
-        {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET461
-            return true;
-#else
-#error Platform not supported
-#endif
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]

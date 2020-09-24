@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Tests
             var dt = new DateTime(2015, 05, 17);
 
             // Act
-            var actual = DateTimeUtilities.StartOfWeek(dt, DayOfWeek.Sunday);
+            var actual = DateTimeExtensions.StartOfWeek(dt, DayOfWeek.Sunday);
 
             // Assert
             var expected = new DateTime(2015, 05, 17);
@@ -28,7 +28,7 @@ namespace Meziantou.Framework.Tests
             var dt = new DateTime(2015, 05, 17);
 
             // Act
-            var actual = DateTimeUtilities.StartOfWeek(dt, DayOfWeek.Monday);
+            var actual = DateTimeExtensions.StartOfWeek(dt, DayOfWeek.Monday);
 
             // Assert
             var expected = new DateTime(2015, 05, 11);
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.Tests
             var week = 1;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2005, 01, 03);
@@ -58,7 +58,7 @@ namespace Meziantou.Framework.Tests
             var week = 52;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2005, 12, 26);
@@ -73,7 +73,7 @@ namespace Meziantou.Framework.Tests
             var week = 1;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2006, 1, 2);
@@ -88,7 +88,7 @@ namespace Meziantou.Framework.Tests
             var week = 52;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2006, 12, 25);
@@ -103,7 +103,7 @@ namespace Meziantou.Framework.Tests
             var week = 1;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2007, 12, 31);
@@ -118,7 +118,7 @@ namespace Meziantou.Framework.Tests
             var week = 52;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2008, 12, 22);
@@ -133,7 +133,7 @@ namespace Meziantou.Framework.Tests
             var week = 1;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2008, 12, 29);
@@ -148,7 +148,7 @@ namespace Meziantou.Framework.Tests
             var week = 53;
 
             // Act
-            var actual = DateTimeUtilities.FirstDateOfWeekIso8601(year, week);
+            var actual = DateTimeExtensions.FirstDateOfWeekIso8601(year, week);
 
             // Assert
             var expected = new DateTime(2009, 12, 28);
@@ -162,7 +162,7 @@ namespace Meziantou.Framework.Tests
             var dt = new DateTime(2018, 2, 3, 4, 5, 6, 7, DateTimeKind.Utc);
 
             // Act
-            var actual = DateTimeUtilities.TruncateMilliseconds(dt);
+            var actual = DateTimeExtensions.TruncateMilliseconds(dt);
 
             // Assert
             var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);

@@ -50,8 +50,10 @@ namespace Meziantou.Framework.Tests
         public async Task TestSingleInstance()
         {
             var applicationId = Guid.NewGuid();
-            using var singleInstance = new SingleInstance(applicationId);
-            singleInstance.StartServer = false;
+            using var singleInstance = new SingleInstance(applicationId)
+            {
+                StartServer = false,
+            };
 
             Assert.True(singleInstance.StartApplication());
             Assert.True(singleInstance.StartApplication());

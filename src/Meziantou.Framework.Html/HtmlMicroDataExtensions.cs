@@ -1,5 +1,6 @@
 ﻿#nullable disable
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Html
 {
@@ -102,6 +103,7 @@ namespace Meziantou.Framework.Html
         }
 
         // check http://www.w3.org/TR/microdata/#the-microdata-model 5.4 Values
+        [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Better readability")]
         public static string GetItemValue(this HtmlNode node)
         {
             if (node == null)

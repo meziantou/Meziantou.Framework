@@ -114,7 +114,7 @@ namespace Meziantou.Framework
 
         private static string GetString(string name, CultureInfo? culture) => LocalizationProvider.Current.GetString(name, culture);
 
-        private static string GetString(string name, CultureInfo? culture, int value) => string.Format(LocalizationProvider.Current.GetString(name, culture), value);
+        private static string GetString(string name, CultureInfo? culture, int value) => string.Format(culture, LocalizationProvider.Current.GetString(name, culture), value);
 
         int IComparable.CompareTo(object? obj)
         {
@@ -126,14 +126,17 @@ namespace Meziantou.Framework
 
         public int CompareTo(RelativeDate other) => DateTime.CompareTo(other.DateTime);
 
-        public override bool Equals(object? obj) => obj is RelativeDate && Equals((RelativeDate)obj);
+        public override bool Equals(object? obj) => obj is RelativeDate date && Equals(date);
 
         public bool Equals(RelativeDate other) => DateTime == other.DateTime;
 
         public override int GetHashCode() => -10323184 + DateTime.GetHashCode();
 
         public static bool operator ==(RelativeDate date1, RelativeDate date2) => date1.Equals(date2);
-
         public static bool operator !=(RelativeDate date1, RelativeDate date2) => !(date1 == date2);
+        public static bool operator <(RelativeDate left, RelativeDate right) => left.CompareTo(right) < 0;
+        public static bool operator <=(RelativeDate left, RelativeDate right) => left.CompareTo(right) <= 0;
+        public static bool operator >(RelativeDate left, RelativeDate right) => left.CompareTo(right) > 0;
+        public static bool operator >=(RelativeDate left, RelativeDate right) => left.CompareTo(right) >= 0;
     }
 }

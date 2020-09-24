@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,7 +12,7 @@ namespace Meziantou.Framework
             var totalRead = 0;
             while (count > 0)
             {
-                int read = stream.Read(buffer, offset + totalRead, count);
+                var read = stream.Read(buffer, offset + totalRead, count);
                 if (read == 0)
                     return totalRead;
 
@@ -22,17 +23,22 @@ namespace Meziantou.Framework
             return totalRead;
         }
 
-        public static async Task<int> ReadUntilCountOrEndAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        public static Task<int> ReadUntilCountOrEndAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            return ReadUntilCountOrEndAsync(stream, buffer.AsMemory(offset, count), cancellationToken);
+        }
+
+        public static async Task<int> ReadUntilCountOrEndAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             var totalRead = 0;
-            while (count > 0)
+            while (!buffer.IsEmpty)
             {
-                int read = await stream.ReadAsync(buffer, offset + totalRead, count, cancellationToken).ConfigureAwait(false);
+                var read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                 if (read == 0)
                     return totalRead;
 
                 totalRead += read;
-                count -= read;
+                buffer = buffer[read..];
             }
 
             return totalRead;

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.CodeOwners
 {
     [StructLayout(LayoutKind.Auto)]
-    public readonly struct CodeOwnersEntry
+    public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     {
         private CodeOwnersEntry(string pattern, CodeOwnersEntryType entryType, string member)
         {
@@ -31,10 +31,15 @@ namespace Meziantou.Framework.CodeOwners
 
         public override bool Equals(object? obj)
         {
-            return obj is CodeOwnersEntry entry &&
-                   EntryType == entry.EntryType &&
-                   string.Equals(Pattern, entry.Pattern, StringComparison.Ordinal) &&
-                   string.Equals(Member, entry.Member, StringComparison.Ordinal);
+            return obj is CodeOwnersEntry entry && Equals(entry);
+
+        }
+
+        public bool Equals(CodeOwnersEntry other)
+        {
+            return EntryType == other.EntryType &&
+                   string.Equals(Pattern, other.Pattern, StringComparison.Ordinal) &&
+                   string.Equals(Member, other.Member, StringComparison.Ordinal);
         }
 
         public override int GetHashCode()
@@ -45,5 +50,8 @@ namespace Meziantou.Framework.CodeOwners
             hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Member);
             return hashCode;
         }
+
+        public static bool operator ==(CodeOwnersEntry left, CodeOwnersEntry right) => left.Equals(right);
+        public static bool operator !=(CodeOwnersEntry left, CodeOwnersEntry right) => !(left == right);
     }
 }

@@ -44,7 +44,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return _items.Count;
+                return Items.Count;
             }
         }
 
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return ((ICollection)_items).SyncRoot;
+                return ((ICollection)Items).SyncRoot;
             }
         }
 
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return ((ICollection)_items).IsSynchronized;
+                return ((ICollection)Items).IsSynchronized;
             }
         }
 
@@ -89,7 +89,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return ((IList)_items).IsReadOnly;
+                return ((IList)Items).IsReadOnly;
             }
         }
 
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return ((IList)_items).IsFixedSize;
+                return ((IList)Items).IsFixedSize;
             }
         }
 
@@ -137,7 +137,7 @@ namespace Meziantou.Framework.WPF.Collections
         public IEnumerator<T> GetEnumerator()
         {
             AssertIsOnDispatcherThread();
-            return _items.GetEnumerator();
+            return Items.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -145,19 +145,19 @@ namespace Meziantou.Framework.WPF.Collections
         public void CopyTo(T[] array, int arrayIndex)
         {
             AssertIsOnDispatcherThread();
-            _items.CopyTo(array, arrayIndex);
+            Items.CopyTo(array, arrayIndex);
         }
 
         public int IndexOf(T item)
         {
             AssertIsOnDispatcherThread();
-            return _items.IndexOf(item);
+            return Items.IndexOf(item);
         }
 
         public bool Contains(T item)
         {
             AssertIsOnDispatcherThread();
-            return _items.Contains(item);
+            return Items.Contains(item);
         }
 
         public T this[int index]
@@ -165,7 +165,7 @@ namespace Meziantou.Framework.WPF.Collections
             get
             {
                 AssertIsOnDispatcherThread();
-                return _items[index];
+                return Items[index];
             }
         }
 
@@ -298,7 +298,7 @@ namespace Meziantou.Framework.WPF.Collections
 
         void ICollection.CopyTo(Array array, int index)
         {
-            ((ICollection)_items).CopyTo(array, index);
+            ((ICollection)Items).CopyTo(array, index);
         }
 
         int IList.Add(object? value)
@@ -329,7 +329,7 @@ namespace Meziantou.Framework.WPF.Collections
             // it will immediatly modify both collections as we are on the dispatcher thread
             AssertType(value, nameof(value));
             AssertIsOnDispatcherThread();
-            return _items.IndexOf((T)value!);
+            return Items.IndexOf((T)value!);
         }
 
         void IList.Insert(int index, object? value)

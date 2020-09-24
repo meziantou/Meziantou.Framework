@@ -33,12 +33,12 @@ namespace Meziantou.Framework.Scheduling
             return recurrenceRule;
         }
 
-        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule)
+        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)] out RecurrenceRule? recurrenceRule)
         {
             return TryParse(rrule, out recurrenceRule, out _);
         }
 
-        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)]out RecurrenceRule? recurrenceRule, out string? error)
+        public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)] out RecurrenceRule? recurrenceRule, out string? error)
         {
             recurrenceRule = null;
             error = null;
@@ -144,7 +144,7 @@ namespace Meziantou.Framework.Scheduling
 
         private static Tuple<string, string> SplitPart(string str)
         {
-            var index = str.IndexOf('=');
+            var index = str.IndexOf('=', StringComparison.Ordinal);
             if (index < 0)
                 throw new FormatException($"'{str}' is invalid.");
 
@@ -152,7 +152,7 @@ namespace Meziantou.Framework.Scheduling
             if (string.IsNullOrEmpty(name))
                 throw new FormatException($"'{str}' is invalid.");
 
-            var value = str.Substring(index + 1);
+            var value = str[(index + 1)..];
             return Tuple.Create(name, value);
         }
 
@@ -266,7 +266,7 @@ namespace Meziantou.Framework.Scheduling
                 }
                 else
                 {
-                    return new ByDay(ParseDayOfWeek(str.Substring(i)), int.Parse(str.Substring(0, i), CultureInfo.InvariantCulture));
+                    return new ByDay(ParseDayOfWeek(str[i..]), int.Parse(str.Substring(0, i), CultureInfo.InvariantCulture));
                 }
             }
 
@@ -288,9 +288,9 @@ namespace Meziantou.Framework.Scheduling
             };
         }
 
-        protected static IEnumerable<T>? FilterBySetPosition<T>(IList<T>? source, IList<int>? setPositions)
+        protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int>? setPositions)
         {
-            if (source == null || setPositions == null || !setPositions.Any())
+            if (setPositions == null || !setPositions.Any())
                 return source;
 
             var result = new List<T>();
@@ -320,7 +320,7 @@ namespace Meziantou.Framework.Scheduling
             return list == null || list.Count == 0;
         }
 
-        private protected static IEnumerable<T>? Intersect<T>(params IEnumerable<T>?[] enumerables)
+        private protected static IEnumerable<T> Intersect<T>(params IEnumerable<T>?[] enumerables)
         {
             IEnumerable<T>? result = null;
             foreach (var enumerable in enumerables)
@@ -338,7 +338,7 @@ namespace Meziantou.Framework.Scheduling
                 }
             }
 
-            return result;
+            return result ?? Enumerable.Empty<T>();
         }
 
         private protected static List<DateTime>? ResultByWeekDaysInMonth(DateTime startOfMonth, IList<ByDay> byWeekDays)

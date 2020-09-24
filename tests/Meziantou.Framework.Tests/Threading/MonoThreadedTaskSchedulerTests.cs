@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Tests.Threading
         private const string ThreadName = "Test";
 
         private readonly MonoThreadedTaskScheduler _taskScheduler;
-        private int _count = 0;
+        private int _count;
 
         public MonoThreadedTaskSchedulerTests()
         {

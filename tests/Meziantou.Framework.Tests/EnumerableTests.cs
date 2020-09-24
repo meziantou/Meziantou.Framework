@@ -34,10 +34,62 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
+        public void AddOrReplaceTests_01()
+        {
+            // Arrange
+            var list = new List<int>() { 1, 2, 3 };
+
+            // Act
+            list.AddOrReplace(10, 5);
+
+            // Assert
+            Assert.Equal(new[] { 1, 2, 3, 5 }, list);
+        }
+
+        [Fact]
+        public void AddOrReplaceTests_02()
+        {
+            // Arrange
+            var list = new List<string>();
+
+            // Act
+            list.AddOrReplace(null, "");
+
+            // Assert
+            Assert.Equal(new[] { "" }, list);
+        }
+
+        [Fact]
+        public void AddOrReplaceTests_03()
+        {
+            // Arrange
+            var list = new List<int> { 1, 2, 3 };
+
+            // Act
+            list.AddOrReplace(2, 5);
+
+            // Assert
+            Assert.Equal(new[] { 1, 5, 3 }, list);
+        }
+
+        [Fact]
         public async Task ForEachAsync()
         {
             var bag = new ConcurrentBag<int>();
             await Enumerable.Range(1, 100).ForEachAsync(async i =>
+            {
+                await Task.Yield();
+                bag.Add(i);
+            }).ConfigureAwait(false);
+
+            Assert.Equal(100, bag.Count);
+        }
+
+        [Fact]
+        public async Task ParallelForEachAsync()
+        {
+            var bag = new ConcurrentBag<int>();
+            await Enumerable.Range(1, 100).ParallelForEachAsync(async i =>
             {
                 await Task.Yield();
                 bag.Add(i);
@@ -212,5 +264,42 @@ namespace Meziantou.Framework.Tests
             Assert.Equal(new[] { "", "a" }, actual);
         }
 #nullable disable
+
+        [Fact]
+        public void ForeachEnumerator()
+        {
+            var items = new List<int>();
+            foreach (var item in CustomEnumerator())
+            {
+                items.Add(item);
+            }
+
+            Assert.Equal(new[] { 1, 2 }, items);
+
+            static IEnumerator<int> CustomEnumerator()
+            {
+                yield return 1;
+                yield return 2;
+            }
+        }
+
+        [Fact]
+        public async Task ForeachAsyncEnumerator()
+        {
+            var items = new List<int>();
+            await foreach (var item in CustomEnumerator())
+            {
+                items.Add(item);
+            }
+
+            Assert.Equal(new[] { 1, 2 }, items);
+
+            static async IAsyncEnumerator<int> CustomEnumerator()
+            {
+                await Task.Yield();
+                yield return 1;
+                yield return 2;
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@
 //#define HTML_XPATH_TRACE
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;
@@ -29,6 +30,7 @@ namespace Meziantou.Framework.Html
         internal static bool EnableTrace { get; set; }
 #endif
 
+        [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "Change the behavior of the method")]
         public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode, HtmlNodeNavigatorOptions options)
         {
             if (currentNode == null)
@@ -108,8 +110,7 @@ namespace Meziantou.Framework.Html
 
         public override bool IsSamePosition(XPathNavigator other)
         {
-            var nav = other as HtmlNodeNavigator;
-            if (nav == null)
+            if (other is not HtmlNodeNavigator nav)
                 return false;
 
             if (Document != null)
@@ -197,8 +198,7 @@ namespace Meziantou.Framework.Html
 
         public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
         {
-            var element = CurrentNode as HtmlElement;
-            if (element == null)
+            if (CurrentNode is not HtmlElement element)
                 return false;
 
             HtmlAttribute att = null;
@@ -301,8 +301,7 @@ namespace Meziantou.Framework.Html
 
         public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
-            var attribute = CurrentNode as HtmlAttribute;
-            if (attribute == null || !attribute.IsNamespace)
+            if (CurrentNode is not HtmlAttribute attribute || !attribute.IsNamespace)
                 return false;
 
             HtmlAttribute att;
@@ -480,37 +479,15 @@ namespace Meziantou.Framework.Html
         {
             get
             {
-                XPathNodeType nt;
-                switch (CurrentNode.NodeType)
+                var nt = CurrentNode.NodeType switch
                 {
-                    case HtmlNodeType.Attribute:
-                        nt = XPathNodeType.Attribute;
-                        break;
-
-                    case HtmlNodeType.Comment:
-                        nt = XPathNodeType.Comment;
-                        break;
-
-                    case HtmlNodeType.Document:
-                        nt = XPathNodeType.Root;
-                        break;
-
-                    case HtmlNodeType.DocumentType:
-                    case HtmlNodeType.Element:
-                        //case HtmlNodeType.EndElement:
-                        nt = XPathNodeType.Element;
-                        break;
-
-                    case HtmlNodeType.ProcessingInstruction:
-                        nt = XPathNodeType.ProcessingInstruction;
-                        break;
-
-                    case HtmlNodeType.None:
-                    case HtmlNodeType.Text:
-                    default:
-                        nt = XPathNodeType.Text;
-                        break;
-                }
+                    HtmlNodeType.Attribute => XPathNodeType.Attribute,
+                    HtmlNodeType.Comment => XPathNodeType.Comment,
+                    HtmlNodeType.Document => XPathNodeType.Root,
+                    HtmlNodeType.DocumentType or HtmlNodeType.Element => XPathNodeType.Element,
+                    HtmlNodeType.ProcessingInstruction => XPathNodeType.ProcessingInstruction,
+                    _ => XPathNodeType.Text,
+                };
                 Trace("=" + nt);
                 return nt;
             }

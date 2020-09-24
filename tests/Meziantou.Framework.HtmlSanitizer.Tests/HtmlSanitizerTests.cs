@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
@@ -37,7 +36,6 @@ namespace Meziantou.Framework.Sanitizers.Tests
         }
 
         [DebuggerStepThrough]
-        [SuppressMessage("Design", "MA0045:Do not use blocking call (make method async)", Justification = "<Pending>")]
         private static void AreEquivalent(string expected, string actual, bool ignoreSpaces)
         {
             var parser = new HtmlParser();

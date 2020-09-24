@@ -46,7 +46,7 @@ namespace Meziantou.Framework
 
                 if (arg[0] == '-' || arg[0] == '/')
                 {
-                    arg = arg.Substring(1);
+                    arg = arg[1..];
                     var indexOfSeparator = arg.IndexOfAny(new[] { ':', '=' });
 
                     var name = arg;
@@ -54,7 +54,7 @@ namespace Meziantou.Framework
                     if (indexOfSeparator >= 0)
                     {
                         name = arg.Substring(0, indexOfSeparator).Trim();
-                        value = arg.Substring(indexOfSeparator + 1);
+                        value = arg[(indexOfSeparator + 1)..];
                     }
 
                     _namedArguments[name] = value;

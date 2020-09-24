@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public async Task WhenAll()
         {
-            var (a, b) = await TaskExtensions.WhenAll(Task.FromResult(0), Task.FromResult("test"));
+            var (a, b) = await TaskEx.WhenAll(Task.FromResult(0), Task.FromResult("test"));
 
             Assert.Equal(0, a);
             Assert.Equal("test", b);

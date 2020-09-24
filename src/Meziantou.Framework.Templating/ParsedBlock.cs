@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Meziantou.Framework.Templating
 {
-    public class ParsedBlock : IComparable, IComparable<ParsedBlock>
+    public class ParsedBlock
     {
         public ParsedBlock(Template template, string text, int index)
         {
@@ -28,20 +28,7 @@ namespace Meziantou.Framework.Templating
 
         protected static string? EscapeVerbatimString(string? s)
         {
-            return s?.Replace("\"", "\"\"");
-        }
-
-        int IComparable<ParsedBlock>.CompareTo(ParsedBlock? other)
-        {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
-
-            return Index.CompareTo(other.Index);
-        }
-
-        int IComparable.CompareTo(object? obj)
-        {
-            return ((IComparable<ParsedBlock>)this).CompareTo(obj as ParsedBlock);
+            return s?.Replace("\"", "\"\"", StringComparison.Ordinal);
         }
     }
 }

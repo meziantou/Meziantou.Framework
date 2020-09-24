@@ -46,7 +46,7 @@ namespace Meziantou.Framework.Win32.Natives
         /// The string must be allocated before calling the RmStartSession function.
         /// </param>
         /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-        [DllImport("rstrtmgr.dll", CharSet = CharSet.Auto)]
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
         public static extern RmResult RmStartSession(out int pSessionHandle, int dwSessionFlags, string strSessionKey);
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Meziantou.Framework.Win32.Natives
         /// A null-terminated string that contains the session key of an existing session.
         /// </param>
         /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
-        [DllImport("rstrtmgr.dll", CharSet = CharSet.Auto)]
+        [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
         public static extern RmResult RmJoinSession(out int pSessionHandle, string strSessionKey);
 
         /// <summary>

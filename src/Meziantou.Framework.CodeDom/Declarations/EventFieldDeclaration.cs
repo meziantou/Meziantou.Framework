@@ -2,10 +2,8 @@
 {
     public class EventFieldDeclaration : MemberDeclaration, IModifiers
     {
-        private TypeReference? _type;
         private StatementCollection? _removeAccessor;
         private StatementCollection? _addAccessor;
-        private TypeReference? _privateImplementationType;
 
         public EventFieldDeclaration()
           : this(name: null, type: null)
@@ -24,11 +22,7 @@
             Type = type;
         }
 
-        public TypeReference? Type
-        {
-            get => _type;
-            set => _type = value;
-        }
+        public TypeReference? Type { get; set; }
 
         public StatementCollection? AddAccessor
         {
@@ -42,11 +36,7 @@
             set => SetParent(ref _removeAccessor, value);
         }
 
-        public TypeReference? PrivateImplementationType
-        {
-            get => _privateImplementationType;
-            set => _privateImplementationType = value;
-        }
+        public TypeReference? PrivateImplementationType { get; set; }
 
         public Modifiers Modifiers { get; set; }
     }

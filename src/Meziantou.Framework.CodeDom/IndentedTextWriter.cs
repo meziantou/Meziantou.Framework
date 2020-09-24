@@ -14,10 +14,10 @@ namespace Meziantou.Framework.CodeDom
 
         public override Encoding Encoding => InnerWriter.Encoding;
 
+        [AllowNull]
         public override string NewLine
         {
             get => InnerWriter.NewLine;
-            [param: AllowNull]
             set => InnerWriter.NewLine = value;
         }
 

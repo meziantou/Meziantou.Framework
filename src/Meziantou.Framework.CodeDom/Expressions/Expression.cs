@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Meziantou.Framework.CodeDom
 {
@@ -27,7 +28,7 @@ namespace Meziantou.Framework.CodeDom
             else
             {
                 var underlyingType = Enum.GetUnderlyingType(type);
-                var typedValue = Convert.ChangeType(value, underlyingType);
+                var typedValue = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
                 return new CastExpression(new LiteralExpression(typedValue), new TypeReference(type));
             }
         }

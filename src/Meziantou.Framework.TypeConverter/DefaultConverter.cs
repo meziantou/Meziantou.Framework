@@ -53,7 +53,7 @@ namespace Meziantou.Framework
             {
                 if (s[0] == 'x' || s[0] == 'X')
                 {
-                    s = s.Substring(1);
+                    s = s[1..];
                     return true;
                 }
 
@@ -61,7 +61,7 @@ namespace Meziantou.Framework
                 {
                     if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
                     {
-                        s = s.Substring(2);
+                        s = s[2..];
                         return true;
                     }
                 }
@@ -348,7 +348,7 @@ namespace Meziantou.Framework
 
         protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out CultureInfo? value)
         {
-            if (IsWindows())
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -362,17 +362,6 @@ namespace Meziantou.Framework
 
             value = null;
             return false;
-        }
-
-        private static bool IsWindows()
-        {
-#if NETSTANDARD2_0 || NETCOREAPP3_1
-            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET461
-            return true;
-#else
-#error Platform not supported
-#endif
         }
 
         protected virtual bool TryConvert(object? input, IFormatProvider? provider, out DateTimeOffset value)

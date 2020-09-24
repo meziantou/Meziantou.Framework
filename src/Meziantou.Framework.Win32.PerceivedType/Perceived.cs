@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace Meziantou.Framework.Win32
@@ -116,6 +117,7 @@ namespace Meziantou.Framework.Win32
         /// </summary>
         /// <param name="fileName">The file name. May not be null..</param>
         /// <returns>An instance of the PerceivedType type.</returns>
+        [SupportedOSPlatform("windows")]
         public static Perceived GetPerceivedType(string fileName)
         {
             if (fileName == null)
@@ -154,7 +156,7 @@ namespace Meziantou.Framework.Win32
                                 ct = key.GetStringValue("Content Type");
                                 if (ct != null)
                                 {
-                                    var pos = ct.IndexOf('/');
+                                    var pos = ct.IndexOf('/', StringComparison.Ordinal);
                                     if (pos > 0)
                                     {
                                         type = Extensions.GetEnumValue(ct.Substring(0, pos), PerceivedType.Custom);

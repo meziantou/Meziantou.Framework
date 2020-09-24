@@ -9,7 +9,13 @@ namespace Meziantou.Framework
     {
         private DateTime DateTime { get; }
 
-        public RelativeDate(DateTime dateTime) => DateTime = dateTime;
+        public RelativeDate(DateTime dateTime)
+        {
+            if (dateTime.Kind == DateTimeKind.Unspecified)
+                throw new ArgumentException("Cannot determine is the argument is a local datetime or UTC datetime", nameof(dateTime));
+
+            DateTime = dateTime;
+        }
 
         public static RelativeDate Get(DateTime dateTime) => new RelativeDate(dateTime);
 

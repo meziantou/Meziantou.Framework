@@ -12,8 +12,7 @@ namespace Meziantou.Framework.Tests
         public void DefaultDate_ToString()
         {
             DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
-            var result = new RelativeDate(default).ToString();
-            Assert.Equal("2018 years ago", result);
+            Assert.Throws<ArgumentException>(() => new RelativeDate(default).ToString());
         }
 
         [Theory]

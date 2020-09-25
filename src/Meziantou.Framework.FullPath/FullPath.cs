@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -23,7 +24,10 @@ namespace Meziantou.Framework
 
         public static FullPath Empty => default;
 
+        [MemberNotNullWhen(returnValue: false, nameof(_value))]
         public bool IsEmpty => _value is null;
+
+        public string Value => _value ?? "";
 
         public static implicit operator string(FullPath fullPath) => fullPath.ToString();
 
@@ -34,10 +38,7 @@ namespace Meziantou.Framework
         public static bool operator <=(FullPath path1, FullPath path2) => path1.CompareTo(path2) <= 0;
         public static bool operator >=(FullPath path1, FullPath path2) => path1.CompareTo(path2) >= 0;
 
-        public static FullPath operator +(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
         public static FullPath operator /(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
-
-        public string Value => _value ?? "";
 
         public FullPath Parent
         {
@@ -72,15 +73,12 @@ namespace Meziantou.Framework
             if (IsEmpty)
                 throw new InvalidOperationException("The path is empty");
 
-            Debug.Assert(_value != null);
-
             if (rootPath.IsEmpty)
                 return _value;
 
             if (rootPath == this)
                 return ".";
 
-            Debug.Assert(rootPath._value != null);
             return PathDifference(rootPath._value + Path.DirectorySeparatorChar, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
         }
 
@@ -131,9 +129,6 @@ namespace Meziantou.Framework
             if (rootPath.IsEmpty)
                 throw new ArgumentException("Root path is empty", nameof(rootPath));
 
-            Debug.Assert(_value != null);
-            Debug.Assert(rootPath._value != null);
-
             if (_value.Length <= rootPath._value.Length)
                 return false;
 
@@ -175,7 +170,7 @@ namespace Meziantou.Framework
             if (rootPath.IsEmpty)
                 return FromPath(relativePath);
 
-            return FromPath(Path.Combine(rootPath._value!, relativePath));
+            return FromPath(Path.Combine(rootPath._value, relativePath));
         }
 
         public static FullPath Combine(FullPath rootPath, string path1, string path2)
@@ -183,7 +178,15 @@ namespace Meziantou.Framework
             if (rootPath.IsEmpty)
                 return FromPath(Path.Combine(path1, path2));
 
-            return FromPath(Path.Combine(rootPath._value!, path1, path2));
+            return FromPath(Path.Combine(rootPath._value, path1, path2));
+        }
+
+        public static FullPath Combine(FullPath rootPath, params string[] paths)
+        {
+            if (rootPath.IsEmpty)
+                return FromPath(Path.Combine(paths));
+
+            return FromPath(Path.Combine(rootPath._value, Path.Combine(paths)));
         }
 
         public static FullPath Combine(FullPath rootPath, string path1, string path2, string path3)
@@ -191,7 +194,7 @@ namespace Meziantou.Framework
             if (rootPath.IsEmpty)
                 return FromPath(Path.Combine(path1, path2, path3));
 
-            return FromPath(Path.Combine(rootPath._value!, path1, path2, path3));
+            return FromPath(Path.Combine(rootPath._value, path1, path2, path3));
         }
 
         public static FullPath FromFileSystemInfo(FileSystemInfo? fsi)

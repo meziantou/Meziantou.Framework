@@ -301,5 +301,29 @@ namespace Meziantou.Framework.Tests
                 yield return 2;
             }
         }
+
+        [Fact]
+        public void IsDistinct_MultipleNulls()
+        {
+            var array = new[] { "a", null, null };
+
+            Assert.False(array.IsDistinct());
+        }
+
+        [Fact]
+        public void IsDistinct_MultipleIdenticalValues()
+        {
+            var array = new[] { "a", "b", "a" };
+
+            Assert.False(array.IsDistinct());
+        }
+
+        [Fact]
+        public void IsDistinct()
+        {
+            var array = new[] { "a", "b", "c" };
+
+            Assert.True(array.IsDistinct());
+        }
     }
 }

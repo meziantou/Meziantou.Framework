@@ -110,6 +110,46 @@ namespace Meziantou.Framework
             return source.Where(p => hash.Add(keySelector(p)));
         }
 
+        public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return IsDistinctBy(source, keySelector, EqualityComparer<TKey>.Default);
+        }
+
+        public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var hash = new HashSet<TKey>(comparer);
+            foreach (var item in source)
+            {
+                if (!hash.Add(keySelector(item)))
+                    return false;
+            }
+
+            return true;
+        }
+
+        public static bool IsDistinct<TSource>(this IEnumerable<TSource> source)
+        {
+            return IsDistinct(source, EqualityComparer<TSource>.Default);
+        }
+
+        public static bool IsDistinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var hash = new HashSet<TSource>(comparer);
+            foreach (var item in source)
+            {
+                if (!hash.Add(item))
+                    return false;
+            }
+
+            return true;
+        }
+
         public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
         {
             return Sort(list, comparer: null);

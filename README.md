@@ -1,4 +1,4 @@
-[![Build Status](https://meziantou.visualstudio.com/GitHub%20projects/_apis/build/status/meziantou.Meziantou.Framework?branchName=master)](https://meziantou.visualstudio.com/GitHub%20projects/_build/latest?definitionId=41?branchName=master)
+[![Build Status](https://dev.azure.com/meziantou/GitHub%20projects/_apis/build/status/Meziantou.Framework?branchName=master)](https://dev.azure.com/meziantou/GitHub%20projects/_build/latest?definitionId=41&branchName=master)
 [![GitHub license](https://img.shields.io/github/license/meziantou/Meziantou.Framework.svg)](https://github.com/meziantou/Meziantou.Framework/blob/master/LICENSE)
 
 # NuGet packages

@@ -15,7 +15,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         internal static extern HResult PrjStartVirtualizing(string virtualizationRootPath, in PrjCallbacks callbacks, IntPtr instanceContext, in PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext);
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
-        internal static extern void PrjStopVirtualizing(IntPtr namespaceVirtualizationContext);
+        internal static extern HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext);
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
         internal static extern HResult PrjFillDirEntryBuffer(string fileName, in PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle);
@@ -52,6 +52,22 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
         internal static extern HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
+
+        [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+        internal static extern HResult PrjCompleteCommand(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
+
+        [StructLayout(LayoutKind.Explicit)]
+        internal struct PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS
+        {
+            [FieldOffset(0)]
+            public PRJ_COMPLETE_COMMAND_TYPE CommandType;
+
+            [FieldOffset(4)]
+            public PRJ_NOTIFY_TYPES NotificationMask;
+
+            [FieldOffset(4)]
+            public IntPtr DirEntryBufferHandle;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct PRJ_PLACEHOLDER_INFO

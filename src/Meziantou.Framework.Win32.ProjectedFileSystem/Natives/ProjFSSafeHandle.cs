@@ -18,8 +18,8 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         protected override bool ReleaseHandle()
         {
-            NativeMethods.PrjStopVirtualizing(handle);
-            return true;
+            var result = NativeMethods.PrjStopVirtualizing(handle);
+            return result.IsSuccess;
         }
     }
 }

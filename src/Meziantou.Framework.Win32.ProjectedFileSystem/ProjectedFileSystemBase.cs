@@ -15,9 +15,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
     {
         // Remaining work
         // * Use VersionInfo
-        // * FileNotFound
-        // * DirectoryNotFound
-        // * Async loading (https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand)
+        // * Async loading, GetEntries should return ValueTask (https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjcompletecommand)
         // * https://docs.microsoft.com/en-us/windows/desktop/api/projectedfslib/nf-projectedfslib-prjupdatefileifneeded
 
         private readonly Guid _virtualizationInstanceId;
@@ -186,10 +184,11 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         private HResult QueryFileNameCallback(in NativeMethods.PrjCallbackData callbackData)
         {
             var fileName = callbackData.FilePathName;
-            if (GetEntry(fileName) != null)
-                return HResult.S_OK;
+            var entry = GetEntry(fileName);
+            if (entry is null)
+                return HResult.E_FILENOTFOUND;
 
-            return HResult.E_FILENOTFOUND;
+            return HResult.S_OK;
         }
 
         private static HResult NotificationCallback(in NativeMethods.PrjCallbackData callbackData, bool isDirectory, NativeMethods.PRJ_NOTIFICATION notification, string destinationFileName, IntPtr operationParameters)
@@ -254,7 +253,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         private HResult GetPlaceholderInfoCallback(in NativeMethods.PrjCallbackData callbackData)
         {
             var entry = GetEntry(callbackData.FilePathName);
-            if (entry == null)
+            if (entry is null)
                 return HResult.E_FILENOTFOUND;
 
             var info = new NativeMethods.PRJ_PLACEHOLDER_INFO();
@@ -280,7 +279,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             ulong writeStartOffset;
             uint writeLength;
 
-            var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
+            using var safeHandle = new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false);
 
             var maxBufferSize = (uint)BufferSize;
             if (length <= maxBufferSize)

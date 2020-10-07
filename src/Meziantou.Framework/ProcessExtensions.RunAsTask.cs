@@ -38,6 +38,30 @@ namespace Meziantou.Framework
             return RunAsTaskAsync(psi, cancellationToken);
         }
 
+        public static Task<ProcessResult> RunAsTaskAsync(string fileName, IEnumerable<string>? arguments, string? workingDirectory, CancellationToken cancellationToken = default)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                ErrorDialog = false,
+                UseShellExecute = false,
+            };
+
+            if (arguments != null)
+            {
+                psi.ArgumentList.AddRange(arguments);
+            }
+
+            if (workingDirectory != null)
+            {
+                psi.WorkingDirectory = workingDirectory;
+            }
+
+            return RunAsTaskAsync(psi, cancellationToken);
+        }
+
         public static Task<ProcessResult> RunAsTaskAsync(this ProcessStartInfo psi, bool redirectOutput, CancellationToken cancellationToken = default)
         {
             if (redirectOutput)

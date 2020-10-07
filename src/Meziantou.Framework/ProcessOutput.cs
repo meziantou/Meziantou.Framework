@@ -18,5 +18,14 @@ namespace Meziantou.Framework
             type = Type;
             text = Text;
         }
+
+        public override string ToString()
+        {
+            return Type switch
+            {
+                ProcessOutputType.StandardError => "error: " + Text,
+                _ => Text
+            };
+        }
     }
 }

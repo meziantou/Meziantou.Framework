@@ -96,6 +96,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		azure-pipelines.yml = azure-pipelines.yml
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.CredentialManagerConsole", "Samples\Meziantou.Framework.Win32.CredentialManagerConsole\Meziantou.Framework.Win32.CredentialManagerConsole.csproj", "{5CD15C59-CE65-4A91-BAB9-076C65A4E5E6}"
@@ -158,7 +159,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ValueSt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ValueStopwatch.Tests", "tests\Meziantou.Framework.ValueStopwatch.Tests\Meziantou.Framework.ValueStopwatch.Tests.csproj", "{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.AccessToken.Tests", "tests\Meziantou.Framework.Win32.AccessToken.Tests\Meziantou.Framework.Win32.AccessToken.Tests.csproj", "{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Win32.AccessToken.Tests", "tests\Meziantou.Framework.Win32.AccessToken.Tests\Meziantou.Framework.Win32.AccessToken.Tests.csproj", "{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.DependencyScanning", "src\Meziantou.Framework.DependencyScanning\Meziantou.Framework.DependencyScanning.csproj", "{C6DE2115-E164-45B5-8669-219E9B25EB3E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.DependencyScanning.Tests", "tests\Meziantou.Framework.DependencyScanning.Tests\Meziantou.Framework.DependencyScanning.Tests.csproj", "{448C1A4B-ABCD-4A84-8A96-990345C4A73E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -438,6 +443,14 @@ Global
 		{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6DE2115-E164-45B5-8669-219E9B25EB3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6DE2115-E164-45B5-8669-219E9B25EB3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6DE2115-E164-45B5-8669-219E9B25EB3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6DE2115-E164-45B5-8669-219E9B25EB3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -511,6 +524,8 @@ Global
 		{9AF843FC-0B45-473B-8C87-84BAA60D4043} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{4A2F21D1-B6B5-443B-975B-D2AB2F5DB5FF} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{C6DE2115-E164-45B5-8669-219E9B25EB3E} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{448C1A4B-ABCD-4A84-8A96-990345C4A73E} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

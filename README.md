@@ -11,6 +11,7 @@
 | Meziantou.Framework.CodeOwners | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.CodeOwners.svg)](https://www.nuget.org/packages/Meziantou.Framework.CodeOwners/) |
 | Meziantou.Framework.CommandLine | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.CommandLine.svg)](https://www.nuget.org/packages/Meziantou.Framework.CommandLine/) |
 | Meziantou.Framework.Csv | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Csv.svg)](https://www.nuget.org/packages/Meziantou.Framework.Csv/) |
+| Meziantou.Framework.DependencyScanning | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.FullPath.svg)](https://www.nuget.org/packages/Meziantou.Framework.DependencyScanning/) |
 | Meziantou.Framework.FullPath | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.FullPath.svg)](https://www.nuget.org/packages/Meziantou.Framework.FullPath/) |
 | Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |
 | Meziantou.Framework.HtmlSanitizer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) |

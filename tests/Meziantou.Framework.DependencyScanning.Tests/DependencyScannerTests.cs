@@ -6,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace Meziantou.Framework.DependencyScanning.Tests
 {
-    public sealed class PerformanceTests
+    public sealed class DependencyScannerTests
     {
         private readonly ITestOutputHelper _testOutputHelper;
 
-        public PerformanceTests(ITestOutputHelper testOutputHelper)
+        public DependencyScannerTests(ITestOutputHelper testOutputHelper)
         {
             _testOutputHelper = testOutputHelper;
         }
@@ -20,7 +20,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         {
             var stopwatch = ValueStopwatch.StartNew();
             using var directory = TemporaryDirectory.Create();
-            const int FileCount = 100_000;
+            const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
                 File.WriteAllText(directory.GetFullPath($"text{i}.txt"), "");
@@ -44,7 +44,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         {
             var stopwatch = ValueStopwatch.StartNew();
             using var directory = TemporaryDirectory.Create();
-            const int FileCount = 100_000;
+            const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
                 File.WriteAllText(directory.GetFullPath($"text{i}.txt"), "");

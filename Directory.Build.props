@@ -2,7 +2,7 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <LangVersion>preview</LangVersion>
+    <LangVersion>9.0</LangVersion>
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>

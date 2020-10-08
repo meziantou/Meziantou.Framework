@@ -2,7 +2,6 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace Meziantou.Framework.DependencyScanning
@@ -10,13 +9,13 @@ namespace Meziantou.Framework.DependencyScanning
     [StructLayout(LayoutKind.Auto)]
     public readonly struct ScanFileContext : IAsyncDisposable
     {
-        private readonly ChannelWriter<Dependency> _channel;
         private readonly Lazy<Stream> _content;
+        private readonly DependencyFound _onDependencyFound;
 
-        internal ScanFileContext(string fullPath, ChannelWriter<Dependency> channel, IFileSystem fileSystem, CancellationToken cancellationToken)
+        internal ScanFileContext(string fullPath, DependencyFound onDependencyFound, IFileSystem fileSystem, CancellationToken cancellationToken)
         {
             FullPath = fullPath;
-            _channel = channel;
+            _onDependencyFound = onDependencyFound;
             FileSystem = fileSystem;
             CancellationToken = cancellationToken;
 
@@ -30,7 +29,7 @@ namespace Meziantou.Framework.DependencyScanning
 
         public ValueTask ReportDependency(Dependency dependency)
         {
-            return _channel.WriteAsync(dependency, CancellationToken);
+            return _onDependencyFound(dependency);
         }
 
         internal void ResetStream()

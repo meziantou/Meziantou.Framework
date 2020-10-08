@@ -165,6 +165,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Depende
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.DependencyScanning.Tests", "tests\Meziantou.Framework.DependencyScanning.Tests\Meziantou.Framework.DependencyScanning.Tests.csproj", "{448C1A4B-ABCD-4A84-8A96-990345C4A73E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", "{6724AE78-2FA9-4280-B200-C897E3F80875}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyScanningBenchmarks", "benchmarks\DependencyScanningBenchmarks\DependencyScanningBenchmarks.csproj", "{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -451,6 +455,10 @@ Global
 		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{448C1A4B-ABCD-4A84-8A96-990345C4A73E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -526,6 +534,7 @@ Global
 		{11D16DA2-52EF-4AE6-8AD8-CECB0CBB498D} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{C6DE2115-E164-45B5-8669-219E9B25EB3E} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{448C1A4B-ABCD-4A84-8A96-990345C4A73E} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{1BA5EE1E-C62F-4F25-91BB-C9710B5F84B6} = {6724AE78-2FA9-4280-B200-C897E3F80875}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

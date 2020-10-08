@@ -287,3 +287,4 @@ __pycache__/
 *.odx.cs
 *.xsd.cs
 dotCover.Output.xml
+**/BenchmarkDotNet.Artifacts/

@@ -7,7 +7,7 @@ trigger:
 
 pr:
   autoCancel: false
-  drafts: true
+  #drafts: true
   branches:
     include:
     - '*'

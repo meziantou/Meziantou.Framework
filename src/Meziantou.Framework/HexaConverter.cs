@@ -5,12 +5,12 @@ namespace Meziantou.Framework
 {
     public static class HexaConverter
     {
-        public static string ToHexaString(byte[] bytes)
+        public static string ToHexaString(this byte[] bytes)
         {
             return ToHexaString(bytes, default);
         }
 
-        public static string ToHexaString(byte[] bytes, HexaOptions options)
+        public static string ToHexaString(this byte[] bytes, HexaOptions options)
         {
             return ToHexaString(bytes.AsSpan(), options);
         }
@@ -20,7 +20,7 @@ namespace Meziantou.Framework
             return ToHexaString(bytes, default);
         }
 
-        public static string ToHexaString(ReadOnlySpan<byte> bytes, HexaOptions options)
+        public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
         {
             if (bytes.Length == 0)
                 return string.Empty;
@@ -197,7 +197,7 @@ namespace Meziantou.Framework
             }
         }
 
-        private static string ToHexaUpperCase(this ReadOnlySpan<byte> bytes)
+        private static string ToHexaUpperCase(ReadOnlySpan<byte> bytes)
         {
             const int AddToAlpha = 55;
             const int AddToDigit = -7;
@@ -215,7 +215,7 @@ namespace Meziantou.Framework
             return new string(c);
         }
 
-        private static string ToHexaLowerCase(this ReadOnlySpan<byte> bytes)
+        private static string ToHexaLowerCase(ReadOnlySpan<byte> bytes)
         {
             const int AddToAlpha = 87;
             const int AddToDigit = -39;

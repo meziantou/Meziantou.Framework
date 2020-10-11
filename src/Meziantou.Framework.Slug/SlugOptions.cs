@@ -44,7 +44,7 @@ namespace Meziantou.Framework
 
         private static bool IsInRange(UnicodeRange range, Rune rune)
         {
-            return rune.Value >= range.FirstCodePoint && rune.Value <= (range.FirstCodePoint + range.Length);
+            return rune.Value >= range.FirstCodePoint && rune.Value < (range.FirstCodePoint + range.Length);
         }
 
         public virtual string Replace(Rune rune)

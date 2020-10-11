@@ -5,11 +5,18 @@ namespace Meziantou.Framework.Tests
     public class SlugTests
     {
         [Theory]
+        [InlineData("a", "a")]
+        [InlineData("z", "z")]
+        [InlineData("A", "A")]
+        [InlineData("Z", "Z")]
+        [InlineData("0", "0")]
+        [InlineData("9", "9")]
         [InlineData("test", "test")]
         [InlineData("TeSt", "TeSt")]
         [InlineData("testé", "teste")]
         [InlineData("TeSt test", "TeSt-test")]
         [InlineData("TeSt test ", "TeSt-test")]
+        [InlineData("TeSt:test ", "TeSt-test")]
         public void Slug_WithDefaultOptions(string text, string expected)
         {
             var slug = Slug.Create(text);

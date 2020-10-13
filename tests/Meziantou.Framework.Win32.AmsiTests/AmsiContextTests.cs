@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
     [Collection("AmsiContextTests")]
     public class AmsiContextTests
     {
-        [RunIfNotOnAzurePipeline]
+        [RunIfNotOnAzurePipelineFact]
         public void AmsiShouldDetectMalware_Buffer()
         {
             using var application = AmsiContext.Create("MyApplication");
@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
             Assert.False(application.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR"));
         }
 
-        [RunIfNotOnAzurePipeline]
+        [RunIfNotOnAzurePipelineFact]
         public void AmsiShouldDetectMalware_String()
         {
             using var application = AmsiContext.Create("MyApplication");
@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
             Assert.False(application.IsMalware("0000", "EICAR"));
         }
 
-        [RunIfNotOnAzurePipeline]
+        [RunIfNotOnAzurePipelineFact]
         public void AmsiSessionShouldDetectMalware_Buffer()
         {
             using var application = AmsiContext.Create("MyApplication");
@@ -36,7 +36,7 @@ namespace Meziantou.Framework.Win32.AmsiTests
             Assert.False(session.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR"));
         }
 
-        [RunIfNotOnAzurePipeline]
+        [RunIfNotOnAzurePipelineFact]
         public void AmsiSessionShouldDetectMalware_String()
         {
             using var application = AmsiContext.Create("MyApplication");

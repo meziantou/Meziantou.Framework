@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using TestUtilities;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace Meziantou.Framework.Win32.Tests
@@ -17,10 +18,16 @@ namespace Meziantou.Framework.Win32.Tests
         {
             using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
             PrintToken(token);
+        }
+
+        [RunIfNotOnAzurePipelineFact]
+        public void LinkedAccessTokenTest()
+        {
+            using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+            PrintToken(token);
 
             using var linkedToken = token.GetLinkedToken();
             PrintToken(linkedToken);
-
         }
 
         [Fact]

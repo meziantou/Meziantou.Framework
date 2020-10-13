@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace Meziantou.Framework
@@ -17,7 +18,7 @@ namespace Meziantou.Framework
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
             process.Kill(entireProcessTree);
 #elif NETSTANDARD2_0 || NET461
             if (!entireProcessTree)
@@ -51,7 +52,7 @@ namespace Meziantou.Framework
 #endif
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
         {
             if (process == null)
@@ -65,7 +66,7 @@ namespace Meziantou.Framework
             return children;
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         public static IReadOnlyList<Process> GetChildProcesses(this Process process)
         {
             if (process == null)
@@ -79,7 +80,7 @@ namespace Meziantou.Framework
             return children;
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         public static IEnumerable<int> GetAncestorProcessIds(this Process process)
         {
             if (process == null)
@@ -119,7 +120,7 @@ namespace Meziantou.Framework
             }
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         public static IEnumerable<Process> GetAncestorProcesses(this Process process)
         {
             if (process == null)
@@ -239,7 +240,7 @@ namespace Meziantou.Framework
             return parentProcess;
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         public static IEnumerable<ProcessEntry> GetProcesses()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -259,7 +260,7 @@ namespace Meziantou.Framework
             }
         }
 
-        //[SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("windows")]
         private static void GetChildProcesses(Process process, List<Process> children, int maxDepth, int currentDepth)
         {
             var entries = new List<ProcessEntry>(100);

@@ -47,7 +47,7 @@ namespace Meziantou.Framework
             if (!StartServer)
                 return;
 
-#if NETCOREAPP2_1 || NETCOREAPP3_1
+#if NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 

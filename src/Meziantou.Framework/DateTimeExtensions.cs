@@ -7,7 +7,7 @@ namespace Meziantou.Framework
     public static class DateTimeExtensions
     {
         [Pure]
-#if NETCOREAPP3_1
+#if NETCOREAPP3_1 || NET5_0
         [Obsolete("Use System.Globalization.ISOWeek")]
 #elif NET461 || NETSTANDARD2_0
 #else

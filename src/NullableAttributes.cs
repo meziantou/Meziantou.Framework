@@ -9,7 +9,7 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
-#if NETSTANDARD2_0 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETSTANDARD2_0 || NET45 || NET461 || NET472 || NETCOREAPP2_0 || NETCOREAPP2_1
     /// <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB

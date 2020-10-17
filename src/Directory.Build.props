@@ -15,10 +15,10 @@
 
   <!-- Source file for compatibility with previous versions of .NET -->
   <ItemGroup>
-    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'netcoreapp3.1'"
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472' or '$(TargetFramework)' == 'netcoreapp3.1'"
              Include="$(MSBuildThisFileDirectory)/NullableAttributes.cs"
              Link="Internals/NullableAttributes.cs" />
-	  <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'netcoreapp3.1'"
+	  <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472' or '$(TargetFramework)' == 'netcoreapp3.1'"
              Include="$(MSBuildThisFileDirectory)/PlatformAttributes.cs"
              Link="Internals/PlatformAttributes.cs" />
   </ItemGroup>

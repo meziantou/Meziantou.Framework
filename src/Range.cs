@@ -1,5 +1,5 @@
 ﻿#pragma warning disable 
-#if NETSTANDARD2_0 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1
+#if NETSTANDARD2_0 || NET45 || NET461|| NET472 || NETCOREAPP2_0 || NETCOREAPP2_1
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Index.cs
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Range.cs
 

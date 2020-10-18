@@ -27,6 +27,13 @@ namespace Meziantou.Framework
             return FullPath.Combine(FullPath, relativePath);
         }
 
+        public void CreateEmptyFile(string relativePath)
+        {
+            var path = GetFullPath(relativePath);
+            Directory.CreateDirectory(path.Parent);
+            using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+        }
+
         private static FullPath CreateUniqueDirectory(FullPath filePath)
         {
             using (var mutex = new Mutex(initiallyOwned: false, name: "Meziantou.Framework.TemporaryDirectory"))

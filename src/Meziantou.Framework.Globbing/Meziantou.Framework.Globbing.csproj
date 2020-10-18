@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0;netcoreapp3.1;net472</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <PackageReference Include="System.Memory" Version="4.5.4" />
+    <PackageReference Include="Microsoft.IO.Redist" Version="4.7.1" />
+    <Compile Include="..\Range.cs" Link="Internals\Range.cs" />
+  </ItemGroup>
+
+</Project>

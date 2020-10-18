@@ -1,6 +1,6 @@
 ﻿#pragma warning disable
 #if NET5_0
-#elif NETSTANDARD2_0 || NETSTANDARD2_1 || NET45 || NET461 || NETCOREAPP2_0 || NETCOREAPP2_1 || NETCOREAPP3_1
+#elif NETSTANDARD2_0 || NETSTANDARD2_1 || NET45 || NET461 || NET472 || NETCOREAPP2_0 || NETCOREAPP2_1 || NETCOREAPP3_1
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 

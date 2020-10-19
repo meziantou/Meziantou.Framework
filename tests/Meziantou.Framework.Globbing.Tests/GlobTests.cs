@@ -32,8 +32,8 @@ namespace Meziantou.Framework.Globbing.Tests
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
             var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
-            Assert.True(glob.ShouldTraverseFolder(folderPath));
-            Assert.True(globi.ShouldTraverseFolder(folderPath));
+            Assert.True(glob.IsPartialMatch(folderPath));
+            Assert.True(globi.IsPartialMatch(folderPath));
         }
 
         [Theory]
@@ -44,8 +44,8 @@ namespace Meziantou.Framework.Globbing.Tests
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
             var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
-            Assert.False(glob.ShouldTraverseFolder(folderPath));
-            Assert.False(globi.ShouldTraverseFolder(folderPath));
+            Assert.False(glob.IsPartialMatch(folderPath));
+            Assert.False(globi.IsPartialMatch(folderPath));
         }
 
         [Theory]

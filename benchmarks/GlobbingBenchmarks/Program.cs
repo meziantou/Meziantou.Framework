@@ -10,6 +10,7 @@ namespace GlobbingBenchmarks
 {
     [MemoryDiagnoser]
     [ReturnValueValidator]
+    [MarkdownExporterAttribute.Default]
     public class DependencyScannerBenchmark
     {
         private const int N = 100_000;
@@ -105,6 +106,7 @@ namespace GlobbingBenchmarks
         [Benchmark]
         public int Meziantou_Globbing()
         {
+            
             var glob = Glob.Parse(Pattern, GlobOptions.None);
             return glob.EnumerateFiles(GetPath()).Count();
         }

@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Globbing
 
         protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
         {
-            return base.ShouldRecurseIntoEntry(ref entry) && _globs.ShouldTraverseFolder(GetRelativeDirectory(ref entry), entry.FileName);
+            return base.ShouldRecurseIntoEntry(ref entry) && _globs.IsPartialMatch(GetRelativeDirectory(ref entry), entry.FileName);
         }
 
         protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)

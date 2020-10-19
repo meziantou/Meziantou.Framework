@@ -43,17 +43,17 @@ namespace Meziantou.Framework.Globbing
             return match;
         }
 
-        public bool ShouldTraverseFolder(string folderPath) => ShouldTraverseFolder(folderPath.AsSpan());
-        public bool ShouldTraverseFolder(ReadOnlySpan<char> folderPath) => ShouldTraverseFolder(folderPath, ReadOnlySpan<char>.Empty);
+        public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
+        public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, ReadOnlySpan<char>.Empty);
 
-        internal bool ShouldTraverseFolder(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
+        internal bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
             foreach (var glob in _globs)
             {
                 if (glob.Mode == GlobMode.Exclude)
                     continue;
 
-                if (glob.ShouldTraverseFolder(folderPath, filename))
+                if (glob.IsPartialMatch(folderPath, filename))
                     return true;
             }
 

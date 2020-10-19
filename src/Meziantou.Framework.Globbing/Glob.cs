@@ -148,19 +148,19 @@ namespace Meziantou.Framework.Globbing
             return !pathEnumerator.MoveNext();
         }
 
-        public bool ShouldTraverseFolder(string folderPath) => ShouldTraverseFolder(folderPath.AsSpan());
+        public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
 
-        public bool ShouldTraverseFolder(ReadOnlySpan<char> folderPath)
+        public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
         {
-            return ShouldTraverseFolder(new PathSegmentEnumerator(folderPath, ReadOnlySpan<char>.Empty), _segments);
+            return IsPartialMatch(new PathSegmentEnumerator(folderPath, ReadOnlySpan<char>.Empty), _segments);
         }
 
-        internal bool ShouldTraverseFolder(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
+        internal bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
-            return ShouldTraverseFolder(new PathSegmentEnumerator(folderPath, filename), _segments);
+            return IsPartialMatch(new PathSegmentEnumerator(folderPath, filename), _segments);
         }
 
-        private static bool ShouldTraverseFolder(PathSegmentEnumerator pathEnumerator, ReadOnlySpan<Segment> patternSegments)
+        private static bool IsPartialMatch(PathSegmentEnumerator pathEnumerator, ReadOnlySpan<Segment> patternSegments)
         {
             foreach (var patternSegment in patternSegments)
             {

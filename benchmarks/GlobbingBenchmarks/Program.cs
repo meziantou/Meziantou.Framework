@@ -106,7 +106,7 @@ namespace GlobbingBenchmarks
         [Benchmark]
         public int Meziantou_Globbing()
         {
-            
+
             var glob = Glob.Parse(Pattern, GlobOptions.None);
             return glob.EnumerateFiles(GetPath()).Count();
         }
@@ -114,7 +114,7 @@ namespace GlobbingBenchmarks
         [Benchmark]
         public int Meziantou_Globbing_IgnoreCase()
         {
-            var glob = Glob.Parse(Pattern, GlobOptions.CaseInsensitive);
+            var glob = Glob.Parse(Pattern, GlobOptions.IgnoreCase);
             return glob.EnumerateFiles(GetPath()).Count();
         }
 

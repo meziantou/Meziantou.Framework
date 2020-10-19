@@ -6,6 +6,6 @@ namespace Meziantou.Framework.Globbing
     public enum GlobOptions
     {
         None = 0,
-        CaseInsensitive = 0x1,
+        IgnoreCase = 0x1,
     }
 }

@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Globbing
                 return false;
             }
 
-            var ignoreCase = options.HasFlag(GlobOptions.CaseInsensitive);
+            var ignoreCase = options.HasFlag(GlobOptions.IgnoreCase);
 
             var exclude = false;
             var segments = new List<Segment>();

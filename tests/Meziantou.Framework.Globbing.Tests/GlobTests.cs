@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Globbing.Tests
         public void ShouldRecurse(string pattern, string folderPath)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
-            var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsPartialMatch(folderPath));
             Assert.True(globi.IsPartialMatch(folderPath));
         }
@@ -43,7 +43,7 @@ namespace Meziantou.Framework.Globbing.Tests
         public void ShouldNotRecurse(string pattern, string folderPath)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
-            var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.False(glob.IsPartialMatch(folderPath));
             Assert.False(globi.IsPartialMatch(folderPath));
         }
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.Globbing.Tests
         public void Match(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
-            var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsMatch(path));
             Assert.True(globi.IsMatch(path));
         }
@@ -151,7 +151,7 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("{a\\,,b}", "B")]
         public void MatchIgnoreCase(string pattern, string path)
         {
-            var glob = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
+            var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsMatch(path));
         }
 
@@ -170,14 +170,14 @@ namespace Meziantou.Framework.Globbing.Tests
         public void DoesNotMatch(string pattern, string folderPath)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
-            var globi = Glob.Parse(pattern, GlobOptions.CaseInsensitive);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.False(glob.IsMatch(folderPath));
             Assert.False(globi.IsMatch(folderPath));
         }
 
         [Theory]
         [InlineData(GlobOptions.None)]
-        [InlineData(GlobOptions.CaseInsensitive)]
+        [InlineData(GlobOptions.IgnoreCase)]
         public void EnumerateFolder1(GlobOptions options)
         {
             using var directory = TemporaryDirectory.Create();
@@ -193,7 +193,7 @@ namespace Meziantou.Framework.Globbing.Tests
 
         [Theory]
         [InlineData(GlobOptions.None)]
-        [InlineData(GlobOptions.CaseInsensitive)]
+        [InlineData(GlobOptions.IgnoreCase)]
         public void EnumerateFolder2(GlobOptions options)
         {
             using var directory = TemporaryDirectory.Create();
@@ -207,7 +207,7 @@ namespace Meziantou.Framework.Globbing.Tests
 
         [Theory]
         [InlineData(GlobOptions.None)]
-        [InlineData(GlobOptions.CaseInsensitive)]
+        [InlineData(GlobOptions.IgnoreCase)]
         public void GlobCollection1(GlobOptions options)
         {
             using var directory = TemporaryDirectory.Create();

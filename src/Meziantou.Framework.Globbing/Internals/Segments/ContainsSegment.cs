@@ -13,9 +13,16 @@ namespace Meziantou.Framework.Globbing.Internals
             _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
-        public override bool Match(ReadOnlySpan<char> segment)
+        public override bool IsMatch(ref PathReader pathReader)
         {
-            return segment.Contains(_value.AsSpan(), _stringComparison);
+            var currentSegment = pathReader.CurrentSegment;
+            if (currentSegment.Contains(_value.AsSpan(), _stringComparison))
+            {
+                pathReader.ConsumeInSegment(currentSegment.Length);
+                return true;
+            }
+
+            return false;
         }
 
         public override string ToString()

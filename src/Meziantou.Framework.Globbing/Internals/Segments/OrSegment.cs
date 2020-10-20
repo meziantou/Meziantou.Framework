@@ -1,42 +1,43 @@
-﻿using System;
-
-namespace Meziantou.Framework.Globbing.Internals
+﻿namespace Meziantou.Framework.Globbing.Internals
 {
-    internal sealed class CombinedSubSegment : SubSegment
+    internal sealed class OrSegment : Segment
     {
-        private readonly SubSegment[] _subSegments;
+        private readonly Segment[] _subSegments;
         private readonly bool _inverse;
 
-        public CombinedSubSegment(SubSegment[] subSegments, bool inverse)
+        public OrSegment(Segment[] subSegments, bool inverse)
         {
             _subSegments = subSegments;
             _inverse = inverse;
         }
 
-        public override bool Match(ReadOnlySpan<char> segment, out int readCharCount)
+        public override bool IsMatch(ref PathReader pathReader)
         {
-            var result = MatchCore(segment, out readCharCount);
+            var copy = pathReader;
+            var result = MatchCore(ref copy);
             if (_inverse)
             {
                 result = !result;
                 if (result)
-                {
-                    readCharCount = 0;
-                }
-            }
-
-            return result;
-        }
-
-        private bool MatchCore(ReadOnlySpan<char> segment, out int readCharCount)
-        {
-            foreach (var subsegment in _subSegments)
-            {
-                if (subsegment.Match(segment, out readCharCount))
                     return true;
             }
 
-            readCharCount = 0;
+            pathReader = copy;
+            return result;
+        }
+
+        private bool MatchCore(ref PathReader pathReader)
+        {
+            foreach (var subsegment in _subSegments)
+            {
+                var copy = pathReader;
+                if (subsegment.IsMatch(ref copy))
+                {
+                    pathReader = copy;
+                    return true;
+                }
+            }
+
             return false;
         }
 

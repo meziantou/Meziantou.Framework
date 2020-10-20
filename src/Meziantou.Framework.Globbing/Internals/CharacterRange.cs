@@ -21,6 +21,8 @@ namespace Meziantou.Framework.Globbing.Internals
 
         public bool IsSingleCharacterRange => Min == Max;
 
+        public bool IsInRange(char c) => c >= Min && c <= Max;
+
         public override string ToString()
         {
             return $"[{Min}-{Max}]";

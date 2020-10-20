@@ -63,7 +63,7 @@ namespace Meziantou.Framework.Globbing
     /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
     public sealed class Glob
     {
-        private readonly Segment[] _segments;
+        internal readonly Segment[] _segments;
 
         public GlobMode Mode { get; }
 
@@ -105,79 +105,98 @@ namespace Meziantou.Framework.Globbing
 
         public bool IsMatch(ReadOnlySpan<char> path)
         {
-            var pathEnumerator = new PathSegmentEnumerator(path, ReadOnlySpan<char>.Empty);
-            return IsMatch(pathEnumerator, _segments);
+            var pathEnumerator = new PathReader(path, ReadOnlySpan<char>.Empty);
+            return IsMatchCore(pathEnumerator, _segments);
         }
 
-        public bool IsMatch(string directory, string filename) => IsMatch(directory, filename);
+        public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
 
         public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
         {
-            var pathEnumerator = new PathSegmentEnumerator(directory, filename);
-            return IsMatch(pathEnumerator, _segments);
+            if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
+                throw new ArgumentException("Filename contains a directory separator", nameof(filename));
+
+            return IsMatchCore(directory, filename);
         }
 
-        private static bool IsMatch(PathSegmentEnumerator pathEnumerator, ReadOnlySpan<Segment> patternSegments)
+        internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
         {
-            for (int i = 0; i < patternSegments.Length; i++)
+            var pathEnumerator = new PathReader(directory, filename);
+            return IsMatchCore(pathEnumerator, _segments);
+        }
+
+        private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
+        {
+            for (var i = 0; i < patternSegments.Length; i++)
             {
                 var patternSegment = patternSegments[i];
                 if (patternSegment is RecursiveMatchAllSegment)
                 {
                     var remainingPatternSegments = patternSegments[(i + 1)..];
-                    if (IsMatch(pathEnumerator, remainingPatternSegments))
+                    if (remainingPatternSegments.IsEmpty) // Last segment
                         return true;
 
-                    while (pathEnumerator.MoveNext())
+                    if (IsMatchCore(pathReader, remainingPatternSegments))
+                        return true;
+
+                    pathReader.ConsumeSegment();
+                    while (!pathReader.IsEndOfPath)
                     {
-                        if (IsMatch(pathEnumerator, remainingPatternSegments))
+                        if (IsMatchCore(pathReader, remainingPatternSegments))
                             return true;
+
+                        pathReader.ConsumeSegment();
                     }
 
                     return false;
                 }
 
-                if (!pathEnumerator.MoveNext())
+                if (pathReader.IsEndOfPath)
                     return false;
 
-                if (!patternSegment.Match(pathEnumerator.Current))
+                if (!patternSegment.IsMatch(ref pathReader))
                     return false;
+
+                if (!pathReader.IsEndOfCurrentSegment)
+                    return false;
+
+                pathReader.ConsumeEndOfSegment();
             }
 
             // Ensure the path is fully parsed
-            return !pathEnumerator.MoveNext();
+            return pathReader.IsEndOfPath;
         }
 
         public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
 
         public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
         {
-            return IsPartialMatch(new PathSegmentEnumerator(folderPath, ReadOnlySpan<char>.Empty), _segments);
+            return IsPartialMatchCore(new PathReader(folderPath, ReadOnlySpan<char>.Empty), _segments);
         }
 
-        internal bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
+        internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
-            return IsPartialMatch(new PathSegmentEnumerator(folderPath, filename), _segments);
+            return IsPartialMatchCore(new PathReader(folderPath, filename), _segments);
         }
 
-        private static bool IsPartialMatch(PathSegmentEnumerator pathEnumerator, ReadOnlySpan<Segment> patternSegments)
+        private static bool IsPartialMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
         {
             foreach (var patternSegment in patternSegments)
             {
-                if (patternSegment is RecursiveMatchAllSegment)
+                if (ShouldRecurse(patternSegment))
                     return true;
 
-                if (!pathEnumerator.MoveNext())
+                if (pathReader.IsEndOfPath)
                     return true;
 
-                if (!patternSegment.Match(pathEnumerator.Current))
+                if (!patternSegment.IsMatch(ref pathReader))
                     return false;
 
+                pathReader.ConsumeSegment();
                 patternSegments = patternSegments[1..];
             }
 
-            // Ensure the path is fully parsed
-            return pathEnumerator.MoveNext();
+            return true;
         }
 
         public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
@@ -194,7 +213,12 @@ namespace Meziantou.Framework.Globbing
 
         internal bool ShouldRecurseSubdirectories()
         {
-            return _segments.Length > 1 || _segments[0] is RecursiveMatchAllSegment;
+            return _segments.Length > 1 || ShouldRecurse(_segments[0]);
+        }
+
+        private static bool ShouldRecurse(Segment patternSegment)
+        {
+            return patternSegment.IsRecursiveMatchAll;
         }
 
         public override string ToString()

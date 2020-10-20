@@ -31,7 +31,7 @@ namespace Meziantou.Framework.Globbing
                 if (match && glob.Mode == GlobMode.Include)
                     continue;
 
-                if (glob.IsMatch(directory, filename))
+                if (glob.IsMatchCore(directory, filename))
                 {
                     if (glob.Mode == GlobMode.Exclude)
                         return false;
@@ -53,7 +53,7 @@ namespace Meziantou.Framework.Globbing
                 if (glob.Mode == GlobMode.Exclude)
                     continue;
 
-                if (glob.IsPartialMatch(folderPath, filename))
+                if (glob.IsPartialMatchCore(folderPath, filename))
                     return true;
             }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -49,17 +50,20 @@ namespace Meziantou.Framework.Globbing.Tests
         }
 
         [Theory]
+        [InlineData("a/b", "a/b")]
         [InlineData("a?c", "abc")]
         [InlineData("a?c", "adc")]
         [InlineData("*.txt", ".txt")]
         [InlineData("*.txt", "test.txt")]
         [InlineData(".*", ".gitignore")]
+        [InlineData("*.*", "a.txt")]
         [InlineData("!*.txt", "a.txt")]
         [InlineData("*/test.txt", "a/test.txt")]
         [InlineData("a/*.txt", "a/test.txt")]
         [InlineData("**/test.txt", "test.txt")]
         [InlineData("**/test.txt", "a/test.txt")]
         [InlineData("**/test.txt", "a/b/test.txt")]
+        [InlineData("src/**/test.txt", "src/a/b/test.txt")]
         [InlineData("test/**", "test/a.txt")]
         [InlineData("test/**", "test/a/b/c.txt")]
         [InlineData("a/**/test.txt", "a/test.txt")]
@@ -96,12 +100,19 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("fol[d]e[r][0-1]a", "folder0a")]
         [InlineData("fol[d]e[r][0-1]*", "folder0ab")]
         [InlineData("folder[0-1]/**/f{ab,il}[aei]*.{txt,png,ico}", "folder0/folder1/file001.txt")]
+        [InlineData("*[abc].{txt,png,ico}", "file001a.txt")]
         public void Match(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
             var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsMatch(path));
+            Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+
             Assert.True(globi.IsMatch(path));
+            Assert.True(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+
+            Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
+            Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
         }
 
         [Theory]
@@ -153,6 +164,8 @@ namespace Meziantou.Framework.Globbing.Tests
         {
             var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsMatch(path));
+            Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+
         }
 
         [Theory]
@@ -162,17 +175,31 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("**/*.txt", "test.png")]
         [InlineData("**/*.txt", "a/test.png")]
         [InlineData("**/*.txt", "a/b/test.png")]
+        [InlineData("src/**/test.txt", "src/a/b/test.png")]
         [InlineData("test/*.txt", "test/test.png")]
         [InlineData("test/*.txt", "foo/bar.txt")]
         [InlineData("test/[ab].txt", "test/c.txt")]
         [InlineData("[!a-d]", "a")]
         [InlineData("[!a-d]", "d")]
-        public void DoesNotMatch(string pattern, string folderPath)
+        [InlineData("[!a-df-g][!z]", "eb")]
+        [InlineData("[!a-df-g][!z]", "ee")]
+        [InlineData("folder[0-1]/**/f{ab,il}[aei]*.{txt,png,ico}", "file001.txt")]
+        [InlineData("a/b", "ab")]
+        [InlineData("a/b", "acb")]
+        [InlineData("file*test*", "test")]
+        [InlineData("file*test*", "testa")]
+        [InlineData("file*test*", "btesta")]
+        [InlineData("file*test*", "fil_btesta")]
+        public void DoesNotMatch(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
             var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-            Assert.False(glob.IsMatch(folderPath));
-            Assert.False(globi.IsMatch(folderPath));
+
+            Assert.False(glob.IsMatch(path));
+            Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+
+            Assert.False(globi.IsMatch(path));
+            Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
         }
 
         [Theory]

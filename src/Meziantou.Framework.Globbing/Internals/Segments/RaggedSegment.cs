@@ -1,22 +1,23 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.Globbing.Internals
 {
     internal sealed class RaggedSegment : Segment
     {
-        private readonly SubSegment[] _segments;
+        internal readonly Segment[] _segments;
 
-        public RaggedSegment(SubSegment[] segments)
+        public RaggedSegment(Segment[] segments)
         {
             _segments = segments;
         }
 
-        public override bool Match(ReadOnlySpan<char> segment)
+        public override bool IsMatch(ref PathReader pathReader)
         {
-            ReadOnlySpan<SubSegment> patternSegments = _segments;
-            return Match(segment, patternSegments);
+            ReadOnlySpan<Segment> patternSegments = _segments;
+            return Match(ref pathReader, patternSegments);
 
-            static bool Match(ReadOnlySpan<char> pathSegment, ReadOnlySpan<SubSegment> patternSegments)
+            static bool Match(ref PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
             {
                 for (var i = 0; i < patternSegments.Length; i++)
                 {
@@ -24,13 +25,23 @@ namespace Meziantou.Framework.Globbing.Internals
                     if (patternSegment is MatchAllSubSegment)
                     {
                         var remainingPatternSegments = patternSegments[(i + 1)..];
-                        if (Match(pathSegment, remainingPatternSegments))
-                            return true;
-
-                        while (!pathSegment.IsEmpty)
+                        if (remainingPatternSegments.IsEmpty) // Last subsegment
                         {
-                            pathSegment = pathSegment[1..];
-                            if (Match(pathSegment, remainingPatternSegments))
+                            Debug.Fail("Shouldn't happen");
+                            return true;
+                        }
+
+                        var copyReader = pathReader;
+                        if (Match(ref copyReader, remainingPatternSegments))
+                        {
+                            pathReader = copyReader;
+                            return true;
+                        }
+
+                        while (!pathReader.IsEndOfPath)
+                        {
+                            pathReader.ConsumeInSegment(1);
+                            if (Match(ref pathReader, remainingPatternSegments))
                                 return true;
                         }
 
@@ -38,14 +49,12 @@ namespace Meziantou.Framework.Globbing.Internals
                     }
                     else
                     {
-                        if (!patternSegment.Match(pathSegment, out var readCharCount))
+                        if (!patternSegment.IsMatch(ref pathReader))
                             return false;
-
-                        pathSegment = pathSegment[readCharCount..];
                     }
                 }
 
-                return pathSegment.IsEmpty;
+                return pathReader.IsEndOfPath || pathReader.IsPathSeparator();
             }
         }
 

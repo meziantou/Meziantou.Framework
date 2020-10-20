@@ -4,23 +4,31 @@ namespace Meziantou.Framework.Globbing.Internals
 {
     internal sealed class EndsWithSegment : Segment
     {
-        private readonly string _value;
         private readonly StringComparison _stringComparison;
 
         public EndsWithSegment(string value, bool ignoreCase)
         {
-            _value = value;
+            Value = value;
             _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
-        public override bool Match(ReadOnlySpan<char> segment)
+        public string Value { get; }
+
+        public override bool IsMatch(ref PathReader pathReader)
         {
-            return segment.EndsWith(_value.AsSpan(), _stringComparison);
+            var currentSegment = pathReader.CurrentSegment;
+            if (currentSegment.EndsWith(Value.AsSpan(), _stringComparison))
+            {
+                pathReader.ConsumeInSegment(currentSegment.Length);
+                return true;
+            }
+
+            return false;
         }
 
         public override string ToString()
         {
-            return _value + '*';
+            return '*' + Value;
         }
     }
 }

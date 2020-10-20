@@ -22,7 +22,7 @@
     </PackageReference>
   </ItemGroup>
 
-  <!-- Package configuration_-->
+  <!-- Package configuration -->
   <PropertyGroup>
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>

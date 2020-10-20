@@ -2,29 +2,29 @@
 
 namespace Meziantou.Framework.Globbing.Internals
 {
-    internal sealed class LiteralSetSubSegment : SubSegment
+    internal sealed class LiteralSetSegment : Segment
     {
-        private readonly string[] _values;
         private readonly StringComparison _comparison;
 
-        public LiteralSetSubSegment(string[] values, bool ignoreCase)
+        public LiteralSetSegment(string[] values, bool ignoreCase)
         {
-            _values = values;
+            Values = values;
             _comparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
-        public override bool Match(ReadOnlySpan<char> segment, out int readCharCount)
+        public string[] Values { get; }
+
+        public override bool IsMatch(ref PathReader pathReader)
         {
-            foreach (var value in _values)
+            foreach (var value in Values)
             {
-                if (segment.StartsWith(value.AsSpan(), _comparison))
+                if (pathReader.CurrentText.StartsWith(value.AsSpan(), _comparison))
                 {
-                    readCharCount = value.Length;
+                    pathReader.ConsumeInSegment(value.Length);
                     return true;
                 }
             }
 
-            readCharCount = 0;
             return false;
         }
 
@@ -34,7 +34,7 @@ namespace Meziantou.Framework.Globbing.Internals
             sb.Append('{');
 
             var first = true;
-            foreach (var value in _values)
+            foreach (var value in Values)
             {
                 if (!first)
                 {

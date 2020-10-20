@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Meziantou.Framework.Globbing.Internals;
+using Meziantou.Framework.Globbing.Internals.Segments;
 
 namespace Meziantou.Framework.Globbing
 {
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.Globbing
 
             var exclude = false;
             var segments = new List<Segment>();
-            List<SubSegment>? subSegments = null;
+            List<Segment>? subSegments = null;
             List<string>? setSubsegment = null;
             List<CharacterRange>? rangeSubsegment = null;
             char? rangeStart = null;
@@ -91,7 +92,7 @@ namespace Meziantou.Framework.Globbing
                         }
                         else if (c == '?')
                         {
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAnySubSegment.Instance);
+                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAnyCharacterSegment.Instance);
                             continue;
                         }
                         else if (c == '*')
@@ -119,7 +120,7 @@ namespace Meziantou.Framework.Globbing
                             }
 
                             // Merge 2 consecutive '*'
-                            if (subSegments != null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
+                            if (currentLiteral.Length == 0 && subSegments != null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
                                 continue;
 
                             AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAllSubSegment.Instance);
@@ -160,7 +161,7 @@ namespace Meziantou.Framework.Globbing
                         {
                             setSubsegment.Add(currentLiteral.AsSpan().ToString());
                             currentLiteral.Clear();
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSubSegment(setSubsegment.ToArray(), ignoreCase));
+                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSegment(setSubsegment.ToArray(), ignoreCase));
                             setSubsegment = null;
                             parserContext = GlobParserContext.Segment;
                             continue;
@@ -242,7 +243,7 @@ namespace Meziantou.Framework.Globbing
                 FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
 
                 errorMessage = null;
-                result = new Glob(segments.ToArray(), exclude ? GlobMode.Exclude : GlobMode.Include);
+                result = CreateGlob(segments, exclude, ignoreCase);
                 return true;
             }
             finally
@@ -250,16 +251,16 @@ namespace Meziantou.Framework.Globbing
                 currentLiteral.Dispose();
             }
 
-            static void AddSubsegment(ref List<SubSegment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, SubSegment? subSegment)
+            static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
             {
                 if (subSegments == null)
                 {
-                    subSegments = new List<SubSegment>();
+                    subSegments = new List<Segment>();
                 }
 
                 if (currentLiteral.Length > 0)
                 {
-                    subSegments.Add(new LiteralSubSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                    subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
                     currentLiteral.Clear();
                 }
 
@@ -269,13 +270,13 @@ namespace Meziantou.Framework.Globbing
                 }
             }
 
-            static void FinishSegment(List<Segment> segments, ref List<SubSegment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
+            static void FinishSegment(List<Segment> segments, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
             {
                 if (subSegments != null)
                 {
                     if (currentLiteral.Length > 0)
                     {
-                        subSegments.Add(new LiteralSubSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                        subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
                         currentLiteral.Clear();
                     }
 
@@ -290,6 +291,35 @@ namespace Meziantou.Framework.Globbing
             }
         }
 
+        private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase)
+        {
+            // Optimize segments
+            if (segments.Count >= 2)
+            {
+
+                if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
+                {
+                    var lastSegment = MatchNonEmptyTextSegment.Instance;
+                    segments.RemoveRange(segments.Count - 2, 2);
+                    segments.Add(lastSegment);
+                }
+                if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
+                {
+                    var lastSegment = new MatchAllEndsWithSegment(endsWith.Value, ignoreCase);
+                    segments.RemoveRange(segments.Count - 2, 2);
+                    segments.Add(lastSegment);
+                }
+                else if (segments[^2] is RecursiveMatchAllSegment) // **/segment
+                {
+                    var lastSegment = new LastSegment(segments[^1]);
+                    segments.RemoveRange(segments.Count - 2, 2);
+                    segments.Add(lastSegment);
+                }
+            }
+
+            return new Glob(segments.ToArray(), exclude ? GlobMode.Exclude : GlobMode.Include);
+        }
+
         private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected)
         {
             // Could be "{rest}/" or "{rest}"$
@@ -302,7 +332,7 @@ namespace Meziantou.Framework.Globbing
             return false;
         }
 
-        private static SubSegment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
+        private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
         {
             var singleCharRanges = ranges.Where(r => r.IsSingleCharacterRange).Select(r => r.Min).ToArray();
             var rangeCharRanges = ranges.Where(r => !r.IsSingleCharacterRange).ToArray();
@@ -310,90 +340,106 @@ namespace Meziantou.Framework.Globbing
             if (singleCharRanges.Length > 0)
             {
                 if (rangeCharRanges.Length == 0)
-                    return new CharacterSetSubSegment(new string(singleCharRanges), inverse, ignoreCase);
+                    return CreateCharacterSet(singleCharRanges, inverse, ignoreCase);
             }
             else if (rangeCharRanges.Length == 1)
             {
-                return new RangeSubSegment(rangeCharRanges[0], inverse, ignoreCase);
+                return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
             }
 
             // Inverse flags is set on the combination
-            var segments = rangeCharRanges.Select(r => (SubSegment)new RangeSubSegment(r, inverse: false, ignoreCase));
+            var segments = rangeCharRanges.Select(r => CreateCharacterRange(r, ignoreCase, inverse: false));
 
             if (singleCharRanges.Length > 0)
             {
-                segments = segments.Prepend(new CharacterSetSubSegment(new string(singleCharRanges), inverse: false, ignoreCase));
+                segments = segments.Prepend(CreateCharacterSet(singleCharRanges, inverse: false, ignoreCase));
             }
 
-            return new CombinedSubSegment(segments.ToArray(), inverse);
+            return new OrSegment(segments.ToArray(), inverse);
         }
 
-        private static Segment CreateSegment(List<SubSegment> parts, bool ignoreCase)
+        private static Segment CreateCharacterSet(char[] set, bool inverse, bool ignoreCase)
         {
-            if (parts.Count == 1)
-                return new SingleSubSegment(parts[0]);
+            return inverse ? new CharacterSetInverseSegment(new string(set), ignoreCase) : new CharacterSetSegment(new string(set), ignoreCase);
+        }
+
+        private static Segment CreateCharacterRange(CharacterRange range, bool ignoreCase, bool inverse)
+        {
+            return (ignoreCase, inverse) switch
+            {
+                (ignoreCase: false, inverse: false) => new CharacterRangeSegment(range),
+                (ignoreCase: false, inverse: true) => new CharacterRangeInverseSegment(range),
+                (ignoreCase: true, inverse: false) => new CharacterRangeIgnoreCaseSegment(range),
+                (ignoreCase: true, inverse: true) => new CharacterRangeIgnoreCaseInverseSegment(range),
+            };
+        }
+
+        private static Segment CreateSegment(List<Segment> parts, bool ignoreCase)
+        {
+            Debug.Assert(parts.Count > 0);
 
             // Try to optimize common cases
             if (parts.Count == 2)
             {
-                // Ends with: *.txt
-                if (parts[0] is MatchAllSubSegment && parts[1] is LiteralSubSegment endsWithLiteral)
-                    return new EndsWithSegment(endsWithLiteral.Value, ignoreCase);
-
                 // Starts with: test.*
-                if (parts[1] is MatchAllSubSegment && parts[0] is LiteralSubSegment startsWithLiteral)
+                if (parts[1] is MatchAllSubSegment && parts[0] is LiteralSegment startsWithLiteral)
                     return new StartsWithSegment(startsWithLiteral.Value, ignoreCase);
             }
-            else if (parts.Count == 3)
+
+            if (parts.Count >= 2)
             {
-                // Contains: *test*
-                if (parts[0] is MatchAllSubSegment && parts[2] is MatchAllSubSegment && parts[1] is LiteralSubSegment containsLiteral)
-                    return new ContainsSegment(containsLiteral.Value, ignoreCase);
-
-                // Starts and Ends with: a*b
-                if (parts[1] is MatchAllSubSegment && parts[2] is MatchAllSubSegment && parts[0] is LiteralSubSegment startsLiteral && parts[2] is LiteralSubSegment endsLiteral)
-                    return new StartsEndsWithSegment(startsLiteral.Value, endsLiteral.Value, ignoreCase);
-            }
-
-            return new RaggedSegment(parts.ToArray());
-        }
-
-        [StructLayout(LayoutKind.Auto)]
-        private ref struct SplitEnumerator
-        {
-            private ReadOnlySpan<char> _str;
-            private readonly char _separator;
-
-            public SplitEnumerator(ReadOnlySpan<char> str, char separator)
-            {
-                _str = str;
-                _separator = separator;
-                Current = default;
-            }
-
-            // Needed to be compatible with the foreach operator
-            public SplitEnumerator GetEnumerator() => this;
-
-            public bool MoveNext()
-            {
-                var span = _str;
-                if (span.Length == 0) // Reach the end of the string
-                    return false;
-
-                var index = span.IndexOf(_separator);
-                if (index == -1) // The string is composed of only one line
+                if (parts[^1] is MatchAllSubSegment && parts[^3] is MatchAllSubSegment && parts[^2] is LiteralSegment containsLiteral) // Contains: *test*
                 {
-                    _str = ReadOnlySpan<char>.Empty; // The remaining string is an empty string
-                    Current = span;
-                    return true;
+                    parts.RemoveRange(parts.Count - 3, 3);
+                    parts.Add(new ContainsSegment(containsLiteral.Value, ignoreCase));
+                }
+                else if (parts[^2] is MatchAllSubSegment && parts[^1] is LiteralSegment endsWithLiteral) // Ends with: *.txt
+                {
+                    parts.RemoveRange(parts.Count - 2, 2);
+                    parts.Add(new EndsWithSegment(endsWithLiteral.Value, ignoreCase));
                 }
 
-                Current = span[..index];
-                _str = span[(index + 1)..];
-                return true;
+                // *(pattern) => Check if the first character is known and easily validatable
+                // /, \, Literal[0], CharacterSet [abc], CharacterRange [a-z] if interval is small (<=5), LiteralSet {abc,def}
+                for (var i = 0; i < parts.Count - 1; i++)
+                {
+                    if (parts[i] is MatchAllSubSegment)
+                    {
+
+                        var next = parts[i + 1];
+                        var nextCharacters = next switch
+                        {
+                            LiteralSegment literal => new List<char> { literal.Value[0] },
+                            CharacterSetSegment characterSet => characterSet.Set.ToList(),
+                            LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),
+                            _ => null,
+                        };
+
+                        if (nextCharacters != null)
+                        {
+                            nextCharacters.Add(Path.DirectorySeparatorChar);
+                            if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
+                            {
+                                nextCharacters.Add(Path.AltDirectorySeparatorChar);
+                            }
+
+                            parts.Insert(i, new ConsumeSegmentUntilSegment(nextCharacters.ToArray()));
+                            i++;
+                        }
+
+                    }
+                }
             }
 
-            public ReadOnlySpan<char> Current { get; private set; }
+            if (parts[^1] is MatchAllSubSegment)
+            {
+                parts[^1] = MatchAllEndOfSegment.Instance;
+            }
+
+            if (parts.Count == 1)
+                return parts[0];
+
+            return new RaggedSegment(parts.ToArray());
         }
     }
 }

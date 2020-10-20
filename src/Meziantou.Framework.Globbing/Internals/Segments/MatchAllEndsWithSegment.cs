@@ -2,32 +2,28 @@
 
 namespace Meziantou.Framework.Globbing.Internals
 {
-    internal sealed class LiteralSegment : Segment
+    internal sealed class MatchAllEndsWithSegment : Segment
     {
+        private readonly string _suffix;
         private readonly StringComparison _stringComparison;
 
-        public LiteralSegment(string value, bool ignoreCase)
+        public MatchAllEndsWithSegment(string suffix, bool ignoreCase)
         {
-            Value = value;
+            _suffix = suffix;
             _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         }
 
-        public string Value { get; private set; }
-
         public override bool IsMatch(ref PathReader pathReader)
         {
-            if (pathReader.CurrentText.StartsWith(Value.AsSpan(), _stringComparison))
+            if (pathReader.EndText.EndsWith(_suffix.AsSpan(), _stringComparison))
             {
-                pathReader.ConsumeInSegment(Value.Length);
+                pathReader.ConsumeToEnd();
                 return true;
             }
 
             return false;
         }
 
-        public override string ToString()
-        {
-            return Value;
-        }
+        public override bool IsRecursiveMatchAll => true;
     }
 }

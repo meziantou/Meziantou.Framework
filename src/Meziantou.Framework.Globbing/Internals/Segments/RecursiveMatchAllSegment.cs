@@ -10,7 +10,9 @@ namespace Meziantou.Framework.Globbing.Internals
 
         public static RecursiveMatchAllSegment Instance { get; } = new RecursiveMatchAllSegment();
 
-        public override bool Match(ReadOnlySpan<char> segment) => true;
+        public override bool IsMatch(ref PathReader pathReader) => throw new NotSupportedException();
+
+        public override bool IsRecursiveMatchAll => true;
 
         public override string ToString()
         {

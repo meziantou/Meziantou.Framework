@@ -1,5 +1,4 @@
-﻿using System;
-#if NET472
+﻿#if NET472
 using Microsoft.IO;
 using Microsoft.IO.Enumeration;
 #else
@@ -21,20 +20,12 @@ namespace Meziantou.Framework.Globbing
 
         protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
         {
-            return base.ShouldRecurseIntoEntry(ref entry) && _glob.IsPartialMatchCore(GetRelativeDirectory(ref entry), entry.FileName);
+            return base.ShouldRecurseIntoEntry(ref entry) && _glob.IsPartialMatch(ref entry);
         }
 
         protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
         {
-            return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _glob.IsMatchCore(GetRelativeDirectory(ref entry), entry.FileName);
-        }
-
-        private static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)
-        {
-            if (entry.Directory.Length == entry.RootDirectory.Length)
-                return ReadOnlySpan<char>.Empty;
-
-            return entry.Directory[(entry.RootDirectory.Length + 1)..];
+            return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _glob.IsMatch(ref entry);
         }
     }
 

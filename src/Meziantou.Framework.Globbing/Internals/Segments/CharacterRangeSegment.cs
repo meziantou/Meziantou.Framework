@@ -2,12 +2,12 @@
 {
     internal sealed class CharacterRangeSegment : Segment
     {
-        private readonly CharacterRange _range;
-
         public CharacterRangeSegment(CharacterRange range)
         {
-            _range = range;
+            Range = range;
         }
+
+        internal CharacterRange Range { get; }
 
         internal static bool IsAsciiUpper(int c)
         {
@@ -16,7 +16,7 @@
 
         public override bool IsMatch(ref PathReader pathReader)
         {
-            var result = _range.IsInRange(pathReader.CurrentText[0]);
+            var result = Range.IsInRange(pathReader.CurrentText[0]);
             if (result)
             {
                 pathReader.ConsumeInSegment(1);
@@ -29,9 +29,9 @@
         {
             using var sb = new ValueStringBuilder();
             sb.Append('[');
-            sb.Append(_range.Min);
+            sb.Append(Range.Min);
             sb.Append('-');
-            sb.Append(_range.Max);
+            sb.Append(Range.Max);
             sb.Append(']');
             return sb.ToString();
         }

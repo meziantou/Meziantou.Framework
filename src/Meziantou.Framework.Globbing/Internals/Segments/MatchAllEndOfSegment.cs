@@ -10,7 +10,11 @@
 
         public override bool IsMatch(ref PathReader pathReader)
         {
-            pathReader.ConsumeInSegment(pathReader.CurrentSegmentLength);
+            if (pathReader.CurrentSegmentLength > 0)
+            {
+                pathReader.ConsumeInSegment(pathReader.CurrentSegmentLength);
+            }
+
             return true;
         }
     }

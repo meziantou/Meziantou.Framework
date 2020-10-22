@@ -117,5 +117,28 @@ namespace Meziantou.Framework.Globbing.Tests
                 item => Assert.IsType<CharacterSetSegment>(item),
                 item => Assert.IsType<CharacterRangeSegment>(item));
         }
+
+        [Fact]
+        public void OptimizeSingleCharSet()
+        {
+            var segments = GetSubSegments("*[a-b]def[a][b][c]abc[a][a-b]");
+            Assert.Collection(segments,
+                item => Assert.IsType<ConsumeSegmentUntilSegment>(item),
+                item => Assert.IsType<MatchAllSubSegment>(item),
+                item => Assert.IsType<CharacterRangeSegment>(item),
+                item => Assert.IsType<LiteralSegment>(item),
+                item => Assert.IsType<CharacterRangeSegment>(item));
+        }
+
+        [Fact]
+        public void OptimizeSingleCharSet2()
+        {
+            var segments = GetSubSegments("*[!a]def[a][b][c]abc[a][a-b]");
+            Assert.Collection(segments,
+                item => Assert.IsType<MatchAllSubSegment>(item),
+                item => Assert.IsType<CharacterSetInverseSegment>(item),
+                item => Assert.IsType<LiteralSegment>(item),
+                item => Assert.IsType<CharacterRangeSegment>(item));
+        }
     }
 }

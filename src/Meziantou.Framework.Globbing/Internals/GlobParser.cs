@@ -9,8 +9,10 @@ using Meziantou.Framework.Globbing.Internals.Segments;
 
 namespace Meziantou.Framework.Globbing
 {
-    internal ref struct GlobParser
+    internal static class GlobParser
     {
+        private static readonly char[] s_separator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+
         public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
         {
             result = null;
@@ -161,6 +163,13 @@ namespace Meziantou.Framework.Globbing
                         {
                             setSubsegment.Add(currentLiteral.AsSpan().ToString());
                             currentLiteral.Clear();
+
+                            if (setSubsegment.Any(s => s.IndexOfAny(s_separator) >= 0))
+                            {
+                                errorMessage = "set contains a path separator";
+                                return false;
+                            }
+
                             AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSegment(setSubsegment.ToArray(), ignoreCase));
                             setSubsegment = null;
                             parserContext = GlobParserContext.Segment;
@@ -170,8 +179,9 @@ namespace Meziantou.Framework.Globbing
                     else if (parserContext == GlobParserContext.Range)
                     {
                         Debug.Assert(rangeSubsegment != null);
-                        if (c == ']') // end of literal set
+                        if (c == ']') // end of literal set, except if empty []] or [!]]
                         {
+                            // [a-] => '-' is considered as a character
                             if (rangeStart.HasValue)
                             {
                                 rangeSubsegment.Add(new CharacterRange(rangeStart.GetValueOrDefault()));
@@ -179,40 +189,47 @@ namespace Meziantou.Framework.Globbing
                                 rangeStart = null;
                             }
 
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, ignoreCase));
-                            rangeSubsegment = null;
-                            parserContext = GlobParserContext.Segment;
-                            continue;
-                        }
-                        else
-                        {
-                            if (rangeStart.HasValue)
+                            if (rangeSubsegment.Count > 0)
                             {
-                                var rangeStartValue = rangeStart.GetValueOrDefault();
-                                if (rangeStartValue > c)
+                                if (rangeSubsegment.Any(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
                                 {
-                                    errorMessage = $"Invalid range '{rangeStartValue}' > '{c}'";
+                                    errorMessage = "range contains a path separator";
                                     return false;
                                 }
 
-                                rangeSubsegment.Add(new CharacterRange(rangeStartValue, c));
-                                rangeStart = null;
+                                AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, ignoreCase));
+                                rangeSubsegment = null;
+                                parserContext = GlobParserContext.Segment;
+                                continue;
+                            }
+                        }
+
+                        if (rangeStart.HasValue)
+                        {
+                            var rangeStartValue = rangeStart.GetValueOrDefault();
+                            if (rangeStartValue > c)
+                            {
+                                errorMessage = $"Invalid range '{rangeStartValue}' > '{c}'";
+                                return false;
+                            }
+
+                            rangeSubsegment.Add(new CharacterRange(rangeStartValue, c));
+                            rangeStart = null;
+                        }
+                        else
+                        {
+                            if (i + 1 < pattern.Length && pattern[i + 1] == '-')
+                            {
+                                rangeStart = c;
+                                i++;
                             }
                             else
                             {
-                                if (i + 1 < pattern.Length && pattern[i + 1] == '-')
-                                {
-                                    rangeStart = c;
-                                    i++;
-                                }
-                                else
-                                {
-                                    rangeSubsegment.Add(new CharacterRange(c));
-                                }
+                                rangeSubsegment.Add(new CharacterRange(c));
                             }
-
-                            continue;
                         }
+
+                        continue;
                     }
 
                     switch (c)
@@ -296,7 +313,6 @@ namespace Meziantou.Framework.Globbing
             // Optimize segments
             if (segments.Count >= 2)
             {
-
                 if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
                 {
                     var lastSegment = MatchNonEmptyTextSegment.Instance;
@@ -378,6 +394,31 @@ namespace Meziantou.Framework.Globbing
         {
             Debug.Assert(parts.Count > 0);
 
+            // Concat Literal and single character sets (abc[d])
+            for (var i = parts.Count - 2; i >= 0; i--)
+            {
+                var s1 = GetString(parts[i]);
+                var s2 = GetString(parts[i + 1]);
+
+                if (s1 is null || s2 is null)
+                    continue;
+
+                // Merge
+                var literal = new LiteralSegment(s1 + s2, ignoreCase);
+                parts[i] = literal;
+                parts.RemoveAt(i + 1);
+
+                static string? GetString(Segment segment)
+                {
+                    return segment switch
+                    {
+                        LiteralSegment literal => literal.Value,
+                        CharacterSetSegment set when set.Set.Length == 1 => set.Set,
+                        _ => null,
+                    };
+                }
+            }
+
             // Try to optimize common cases
             if (parts.Count == 2)
             {
@@ -386,14 +427,18 @@ namespace Meziantou.Framework.Globbing
                     return new StartsWithSegment(startsWithLiteral.Value, ignoreCase);
             }
 
-            if (parts.Count >= 2)
+            if (parts.Count > 2)
             {
-                if (parts[^1] is MatchAllSubSegment && parts[^3] is MatchAllSubSegment && parts[^2] is LiteralSegment containsLiteral) // Contains: *test*
+                if (parts.Count > 2 && parts[^1] is MatchAllSubSegment && parts[^3] is MatchAllSubSegment && parts[^2] is LiteralSegment containsLiteral) // Contains: *test*
                 {
                     parts.RemoveRange(parts.Count - 3, 3);
                     parts.Add(new ContainsSegment(containsLiteral.Value, ignoreCase));
                 }
-                else if (parts[^2] is MatchAllSubSegment && parts[^1] is LiteralSegment endsWithLiteral) // Ends with: *.txt
+            }
+
+            if (parts.Count >= 2)
+            {
+                if (parts[^2] is MatchAllSubSegment && parts[^1] is LiteralSegment endsWithLiteral) // Ends with: *.txt
                 {
                     parts.RemoveRange(parts.Count - 2, 2);
                     parts.Add(new EndsWithSegment(endsWithLiteral.Value, ignoreCase));
@@ -405,12 +450,12 @@ namespace Meziantou.Framework.Globbing
                 {
                     if (parts[i] is MatchAllSubSegment)
                     {
-
                         var next = parts[i + 1];
                         var nextCharacters = next switch
                         {
                             LiteralSegment literal => new List<char> { literal.Value[0] },
                             CharacterSetSegment characterSet => characterSet.Set.ToList(),
+                            CharacterRangeSegment characterRange when characterRange.Range.Length < 3 => characterRange.Range.EnumerateCharacters().ToList(),
                             LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),
                             _ => null,
                         };
@@ -426,7 +471,6 @@ namespace Meziantou.Framework.Globbing
                             parts.Insert(i, new ConsumeSegmentUntilSegment(nextCharacters.ToArray()));
                             i++;
                         }
-
                     }
                 }
             }

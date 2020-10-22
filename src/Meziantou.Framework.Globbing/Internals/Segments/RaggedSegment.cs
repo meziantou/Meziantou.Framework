@@ -38,7 +38,7 @@ namespace Meziantou.Framework.Globbing.Internals
                             return true;
                         }
 
-                        while (!pathReader.IsEndOfPath)
+                        while (!pathReader.IsEndOfCurrentSegment)
                         {
                             pathReader.ConsumeInSegment(1);
                             if (Match(ref pathReader, remainingPatternSegments))

@@ -4,8 +4,10 @@ using System.Linq;
 
 #if NET472
 using Microsoft.IO;
+using Microsoft.IO.Enumeration;
 #else
 using System.IO;
+using System.IO.Enumeration;
 #endif
 
 namespace Meziantou.Framework.Globbing
@@ -22,6 +24,7 @@ namespace Meziantou.Framework.Globbing
         public bool IsMatch(string path) => IsMatch(path.AsSpan());
         public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, ReadOnlySpan<char>.Empty);
         public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
+        public bool IsMatch(ref FileSystemEntry entry) => IsMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
 
         public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
         {
@@ -45,8 +48,9 @@ namespace Meziantou.Framework.Globbing
 
         public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
         public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, ReadOnlySpan<char>.Empty);
+        public bool IsPartialMatch(ref FileSystemEntry entry) => IsPartialMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
 
-        internal bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
+        private bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
             foreach (var glob in _globs)
             {

@@ -5,8 +5,10 @@ using Meziantou.Framework.Globbing.Internals;
 
 #if NET472
 using Microsoft.IO;
+using Microsoft.IO.Enumeration;
 #else
 using System.IO;
+using System.IO.Enumeration;
 #endif
 
 namespace Meziantou.Framework.Globbing
@@ -119,6 +121,8 @@ namespace Meziantou.Framework.Globbing
             return IsMatchCore(directory, filename);
         }
 
+        public bool IsMatch(ref FileSystemEntry entry) => IsMatch(GetRelativeDirectory(ref entry), entry.FileName);
+
         internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
         {
             var pathEnumerator = new PathReader(directory, filename);
@@ -134,7 +138,7 @@ namespace Meziantou.Framework.Globbing
                 {
                     var remainingPatternSegments = patternSegments[(i + 1)..];
                     if (remainingPatternSegments.IsEmpty) // Last segment
-                        return true;
+                        return false; // Match only files
 
                     if (IsMatchCore(pathReader, remainingPatternSegments))
                         return true;
@@ -172,6 +176,11 @@ namespace Meziantou.Framework.Globbing
         public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
         {
             return IsPartialMatchCore(new PathReader(folderPath, ReadOnlySpan<char>.Empty), _segments);
+        }
+
+        public bool IsPartialMatch(ref FileSystemEntry entry)
+        {
+            return IsPartialMatchCore(new PathReader(GetRelativeDirectory(ref entry), entry.FileName), _segments);
         }
 
         internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
@@ -241,6 +250,14 @@ namespace Meziantou.Framework.Globbing
             }
 
             return sb.ToString();
+        }
+
+        internal static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)
+        {
+            if (entry.Directory.Length == entry.RootDirectory.Length)
+                return ReadOnlySpan<char>.Empty;
+
+            return entry.Directory[(entry.RootDirectory.Length + 1)..];
         }
     }
 }

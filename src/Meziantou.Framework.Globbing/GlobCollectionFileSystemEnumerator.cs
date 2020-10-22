@@ -22,12 +22,12 @@ namespace Meziantou.Framework.Globbing
 
         protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
         {
-            return base.ShouldRecurseIntoEntry(ref entry) && _globs.IsPartialMatch(GetRelativeDirectory(ref entry), entry.FileName);
+            return base.ShouldRecurseIntoEntry(ref entry) && _globs.IsPartialMatch(ref entry);
         }
 
         protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
         {
-            return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _globs.IsMatch(GetRelativeDirectory(ref entry), entry.FileName);
+            return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _globs.IsMatch(ref entry);
         }
 
         private static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)

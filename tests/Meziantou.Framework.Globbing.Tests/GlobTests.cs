@@ -14,6 +14,11 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("a\\")] // Cannot ends with the escape character '\'
         [InlineData("{a")] // Missing '}'
         [InlineData("[a")] // Missing ']'
+        [InlineData("a[/]b")]  // literal contains '/'
+        [InlineData("a[a/]b")]  // literal contains '/'
+        [InlineData("a[.-0]b")] // literal contains '/'
+        [InlineData("a{/}b")]  // literal contains '/'
+        [InlineData("a{a,/}b")] // literal contains '/'
         public void ParseInvalid(string pattern)
         {
             Assert.False(Glob.TryParse(pattern, GlobOptions.None, out var result));
@@ -64,8 +69,8 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("**/test.txt", "a/test.txt")]
         [InlineData("**/test.txt", "a/b/test.txt")]
         [InlineData("src/**/test.txt", "src/a/b/test.txt")]
-        [InlineData("test/**", "test/a.txt")]
-        [InlineData("test/**", "test/a/b/c.txt")]
+        [InlineData("test/**/*", "test/a.txt")]
+        [InlineData("test/**/*", "test/a/b/c.txt")]
         [InlineData("a/**/test.txt", "a/test.txt")]
         [InlineData("a/**/test.txt", "a/b/test.txt")]
         [InlineData("a/./b", "a/b")]
@@ -86,7 +91,8 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("[-]", "-")]
         [InlineData("[a-]", "a")]
         [InlineData("[a-]", "-")]
-        [InlineData("[--a]", "-")]
+        [InlineData("[,--]", "-")]
+        [InlineData("[--.]", "-")]
         [InlineData("[!a-d]", "e")]
         [InlineData("[a-df-i]", "d")]
         [InlineData("[a-df-i]", "g")]
@@ -101,6 +107,52 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("fol[d]e[r][0-1]*", "folder0ab")]
         [InlineData("folder[0-1]/**/f{ab,il}[aei]*.{txt,png,ico}", "folder0/folder1/file001.txt")]
         [InlineData("*[abc].{txt,png,ico}", "file001a.txt")]
+        [InlineData("*[a-c].{txt,ico}", "file001a.ico")]
+        [InlineData("literal", "literal")]
+        [InlineData("a/literal", "a/literal")]
+        [InlineData("path/*atstand", "path/fooatstand")]
+        [InlineData("path/hats*nd", "path/hatsforstand")]
+        [InlineData("path/?atstand", "path/hatstand")]
+        [InlineData("path/?atstand?", "path/hatstands")]
+        [InlineData("p?th/*a[bcd]", "pAth/fooooac")]
+        [InlineData("p?th/*a[bcd]b[e-g]a[1-4]", "pAth/fooooacbfa2")]
+        [InlineData("p?th/*a[bcd]b[e-g]a[1-4][!wxyz]", "pAth/fooooacbfa2v")]
+        [InlineData("p?th/*a[bcd]b[e-g]a[1-4][!wxyz][!a-c][!1-3].*", "pAth/fooooacbfa2vd4.txt")]
+        [InlineData("path/**/somefile.txt", "path/foo/bar/baz/somefile.txt")]
+        [InlineData("p?th/*a[bcd]b[e-g]a[1-4][!wxyz][!a-c][!1-3].*", "pGth/yGKNY6acbea3rm8.")]
+        [InlineData("**/file.*", "folder/file.csv")]
+        [InlineData("**/file.*", "file.txt")]
+        [InlineData("*file.txt", "file.txt")]
+        [InlineData("THIS_IS_A_DIR/*", "THIS_IS_A_DIR/somefile")]
+        [InlineData("DIR1/*/*", "DIR1/DIR2/file.txt")]
+        [InlineData("~/*~3", "~/abc123~3")]
+        [InlineData("**/Shock* 12", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
+        [InlineData("**/*ave*2", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
+        [InlineData("Stuff, *", "Stuff, x")]
+        [InlineData("\"Stuff*", "\"Stuff")]
+        [InlineData("path/**/somefile.txt", "path//somefile.txt")]
+        [InlineData("**/app*.js", "dist/app.js")]
+        [InlineData("**/app*.js", "dist/app.a72ka8234.js")]
+        [InlineData("**/y", "y")]
+        [InlineData("**/gfx/*.gfx", "HKEY_LOCAL_MACHINE/gfx/foo.gfx")]
+        [InlineData("**/gfx/**/*.gfx", "a_b/gfx/bar/foo.gfx")]
+        [InlineData("foo/bar!.baz", "foo/bar!.baz")]
+        [InlineData("foo/bar[!!].baz", "foo/bar7.baz")]
+        [InlineData("foo/bar[!]].baz", "foo/bar9.baz")]
+        [InlineData("foo/bar[!?].baz", "foo/bar7.baz")]
+        [InlineData("foo/bar[![].baz", "foo/bar7.baz")]
+        [InlineData("myergen/[[]a]tor", "myergen/[a]tor")]
+        [InlineData("myergen/[[]ator", "myergen/[ator")]
+        [InlineData("myergen/[[][]]ator", "myergen/[]ator")]
+        [InlineData("myergen[*]ator", "myergen*ator")]
+        [InlineData("myergen[*][]]ator", "myergen*]ator")]
+        [InlineData("myergen[*]]ator", "myergen*]ator")]
+        [InlineData("myergen[?]ator", "myergen?ator")]
+        [InlineData("**/[#!]*", "#test3")]
+        [InlineData("**/[#!]*", "#this is a comment")]
+        [InlineData("[#!]*", @"#test3")]
+        [InlineData("[#!]*", "#this is a comment")]
+        [InlineData("a/**/b", "a/b")]
         public void Match(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
@@ -113,6 +165,12 @@ namespace Meziantou.Framework.Globbing.Tests
 
             Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
             Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.True(glob.IsMatch(path.Replace('/', '\\')));
+                Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));
+            }
         }
 
         [Theory]
@@ -127,8 +185,8 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("**/test.txt", "tesT.txt")]
         [InlineData("**/test.txt", "a/tEst.txt")]
         [InlineData("**/test.txt", "a/B/tesT.txt")]
-        [InlineData("test/**", "test/a.tXt")]
-        [InlineData("test/**", "test/a/B/c.txt")]
+        [InlineData("test/**/*", "test/a.tXt")]
+        [InlineData("test/**/*", "test/a/B/c.txt")]
         [InlineData("a/**/test.txt", "A/tEst.txt")]
         [InlineData("a/**/test.txt", "A/b/tEst.txt")]
         [InlineData("a/./b", "a/B")]
@@ -165,7 +223,6 @@ namespace Meziantou.Framework.Globbing.Tests
             var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
             Assert.True(glob.IsMatch(path));
             Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
-
         }
 
         [Theory]
@@ -190,6 +247,23 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("file*test*", "testa")]
         [InlineData("file*test*", "btesta")]
         [InlineData("file*test*", "fil_btesta")]
+        [InlineData("literal", "literals/foo")]
+        [InlineData("literal", "literals")]
+        [InlineData("literal", "foo/literal")]
+        [InlineData("literal", "fliteral")]
+        [InlineData("path/hats*nd", "path/hatsblahn")]
+        [InlineData("path/hats*nd", "path/hatsblahndt")]
+        [InlineData("path/?atstand", "path/moatstand")]
+        [InlineData("path/?atstand", "path/batstands")]
+        [InlineData("**/file.csv", "file.txt")]
+        [InlineData("*file.txt", "folder")]
+        [InlineData("Shock* 12", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
+        [InlineData("*ave*2", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
+        [InlineData("*ave 12", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
+        [InlineData("Bumpy/**/AssemblyInfo.cs", "Bumpy.Test/Properties/AssemblyInfo.cs")]
+        [InlineData("abc/**", "abcd")]
+        [InlineData("**/segment1/**/segment2/**", "test/segment1/src/segment2")]
+        [InlineData("**/.*", "foobar.")]
         public void DoesNotMatch(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
@@ -200,6 +274,22 @@ namespace Meziantou.Framework.Globbing.Tests
 
             Assert.False(globi.IsMatch(path));
             Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        }
+
+        [Theory]
+        [InlineData("literal1", "LITERAL1")]
+        [InlineData("*ral*", "LITERAL1")]
+        [InlineData("[list]s", "LS")]
+        [InlineData("[list]s", "iS")]
+        [InlineData("[list]s", "Is")]
+        [InlineData("range/[a-b][C-D]", "range/ac")]
+        [InlineData("range/[a-b][C-D]", "range/Ad")]
+        [InlineData("range/[a-b][C-D]", "range/BD")]
+        public void DoesNotMatch_CaseSensitive(string pattern, string path)
+        {
+            var glob = Glob.Parse(pattern, GlobOptions.None);
+            Assert.False(glob.IsMatch(path));
+            Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
         }
 
         [Theory]

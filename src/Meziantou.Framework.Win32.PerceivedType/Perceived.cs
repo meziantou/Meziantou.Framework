@@ -127,8 +127,7 @@ namespace Meziantou.Framework.Win32
             if (extension == null)
                 throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
 
-            extension = extension.ToLowerInvariant();
-
+            extension = extension.ToUpperInvariant();
             if (s_perceivedTypes.TryGetValue(extension, out var ptype))
                 return ptype;
 

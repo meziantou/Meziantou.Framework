@@ -193,6 +193,7 @@ namespace Meziantou.Framework.Html.Tests
             {
             }
 
+            [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
                 return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();

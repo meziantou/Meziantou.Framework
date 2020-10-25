@@ -96,7 +96,7 @@ namespace Meziantou.Framework.Win32
                     StartUsn = _currentUSN,
                     ReasonMask = Options.ReasonFilter,
                     UsnJournalID = ChangeJournal.Data.ID,
-                    ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? (uint)1 : 0,
+                    ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
                     Timeout = (ulong)Options.Timeout.TotalSeconds,
                 };
 

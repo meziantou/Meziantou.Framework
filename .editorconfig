@@ -235,12 +235,13 @@ dotnet_naming_symbols.all_members.applicable_kinds = *
 dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 
 ## Analyzers
-# Name can be simplified
 dotnet_diagnostic.IDE0001.severity = suggestion
 dotnet_diagnostic.IDE0002.severity = suggestion
-
-# Remove unnecessary imports
+dotnet_diagnostic.IDE0004.severity = suggestion
 dotnet_diagnostic.IDE0005.severity = suggestion
+dotnet_diagnostic.IDE0035.severity = warning
+dotnet_diagnostic.IDE0051.severity = warning
+dotnet_diagnostic.IDE0059.severity = warning
 
 # Naming rule violation
 dotnet_diagnostic.IDE1006.severity = suggestion
@@ -256,3 +257,32 @@ dotnet_diagnostic.MA0071.severity = none
 
 # Meziantou Analyzer
 MA0053.public_class_should_be_sealed = false
+
+dotnet_diagnostic.CA1018.severity = warning
+dotnet_diagnostic.CA1019.severity = warning
+dotnet_diagnostic.CA1036.severity = warning
+dotnet_diagnostic.CA1067.severity = warning
+dotnet_diagnostic.CA1304.severity = warning
+dotnet_diagnostic.CA1305.severity = warning
+dotnet_diagnostic.CA1307.severity = warning
+dotnet_diagnostic.CA1308.severity = warning
+dotnet_diagnostic.CA1309.severity = warning
+dotnet_diagnostic.CA1310.severity = warning
+dotnet_diagnostic.CA1401.severity = warning
+dotnet_diagnostic.CA1708.severity = warning
+dotnet_diagnostic.CA1724.severity = warning
+dotnet_diagnostic.CA1805.severity = warning
+dotnet_diagnostic.CA1813.severity = warning
+dotnet_diagnostic.CA1825.severity = warning
+dotnet_diagnostic.CA2101.severity = warning
+dotnet_diagnostic.CA2242.severity = warning
+dotnet_diagnostic.CA2300.severity = warning
+dotnet_diagnostic.CA2301.severity = warning
+dotnet_diagnostic.CA2302.severity = warning
+dotnet_diagnostic.CA2305.severity = warning
+dotnet_diagnostic.CA2310.severity = warning
+dotnet_diagnostic.CA2311.severity = warning
+dotnet_diagnostic.CA2312.severity = warning
+dotnet_diagnostic.CA2315.severity = warning
+dotnet_diagnostic.CA2321.severity = warning
+dotnet_diagnostic.CA2322.severity = warning

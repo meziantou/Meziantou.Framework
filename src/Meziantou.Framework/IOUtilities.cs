@@ -120,8 +120,7 @@ namespace Meziantou.Framework
             if (reservedCharFormat == null)
                 throw new ArgumentNullException(nameof(reservedCharFormat));
 
-            if (Array.IndexOf(s_reservedFileNames, fileName.ToLowerInvariant()) >= 0 ||
-                IsAllDots(fileName))
+            if (s_reservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
             {
                 return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);
             }

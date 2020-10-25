@@ -110,39 +110,39 @@ namespace Meziantou.Framework.Html
                 return string.Empty;
 
             string value;
-            var name = node.Name.ToLowerInvariant();
+            var name = node.Name.ToUpperInvariant();
             switch (name)
             {
-                case "meta":
+                case "META":
                     value = node.GetAttributeValue("content");
                     break;
 
-                case "audio":
-                case "embed":
-                case "iframe":
-                case "img":
-                case "source":
-                case "track":
-                case "video":
+                case "AUDIO":
+                case "EMBED":
+                case "IFRAME":
+                case "IMG":
+                case "SOURCE":
+                case "TRACK":
+                case "VIDEO":
                     value = node.GetAttributeValue("src");
                     break;
 
-                case "a":
-                case "area":
-                case "link":
+                case "A":
+                case "AREA":
+                case "LINK":
                     value = node.GetAttributeValue("href");
                     break;
 
-                case "object":
+                case "OBJECT":
                     value = node.GetAttributeValue("data");
                     break;
 
-                case "data":
-                case "meter":
+                case "DATA":
+                case "METER":
                     value = node.GetAttributeValue("value");
                     break;
 
-                case "time":
+                case "TIME":
                     value = node.GetNullifiedAttributeValue("datetime") ?? node.InnerText;
                     break;
 

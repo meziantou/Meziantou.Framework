@@ -873,20 +873,20 @@ namespace Meziantou.Framework
             if (bools == null)
                 return false; // arguable...
 
-            bools = bools.Trim().ToLowerInvariant();
-            if (string.Equals(bools, "y", StringComparison.Ordinal) ||
-                string.Equals(bools, "yes", StringComparison.Ordinal) ||
-                string.Equals(bools, "t", StringComparison.Ordinal) ||
-                bools.StartsWith("true", StringComparison.Ordinal))
+            bools = bools.Trim().ToUpperInvariant();
+            if (string.Equals(bools, "Y", StringComparison.Ordinal) ||
+                string.Equals(bools, "YES", StringComparison.Ordinal) ||
+                string.Equals(bools, "T", StringComparison.Ordinal) ||
+                bools.StartsWith("TRUE", StringComparison.Ordinal))
             {
                 value = true;
                 return true;
             }
 
-            return string.Equals(bools, "n", StringComparison.Ordinal) ||
-                string.Equals(bools, "no", StringComparison.Ordinal) ||
-                string.Equals(bools, "f", StringComparison.Ordinal) ||
-                bools.StartsWith("false", StringComparison.Ordinal);
+            return string.Equals(bools, "N", StringComparison.Ordinal) ||
+                string.Equals(bools, "NO", StringComparison.Ordinal) ||
+                string.Equals(bools, "F", StringComparison.Ordinal) ||
+                bools.StartsWith("FALSE", StringComparison.Ordinal);
         }
 
         protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)

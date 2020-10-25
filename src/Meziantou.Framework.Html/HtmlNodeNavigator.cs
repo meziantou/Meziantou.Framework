@@ -415,6 +415,7 @@ namespace Meziantou.Framework.Html
             throw new NotSupportedException();
         }
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override string LocalName
         {
             get
@@ -434,6 +435,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override string Name
         {
             get
@@ -455,6 +457,7 @@ namespace Meziantou.Framework.Html
 
         public override XmlNameTable NameTable => _nameTable;
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override string NamespaceURI
         {
             get
@@ -493,6 +496,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override string Prefix
         {
             get
@@ -510,6 +514,7 @@ namespace Meziantou.Framework.Html
             }
         }
 
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
         public override string Value
         {
             get

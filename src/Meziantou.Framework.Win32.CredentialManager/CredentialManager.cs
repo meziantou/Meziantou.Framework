@@ -265,12 +265,9 @@ namespace Meziantou.Framework.Win32
         {
             if (!string.IsNullOrEmpty(user))
             {
-                var usernameBuf = new StringBuilder(user);
-                var passwordBuf = new StringBuilder();
-
                 inCredSize = 1024;
                 inCredBuffer = Marshal.AllocCoTaskMem(inCredSize);
-                if (Credui.CredPackAuthenticationBuffer(0, usernameBuf, passwordBuf, inCredBuffer, ref inCredSize))
+                if (Credui.CredPackAuthenticationBuffer(0, user ?? "", pszPassword: "", inCredBuffer, ref inCredSize))
                     return;
             }
 

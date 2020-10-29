@@ -1,7 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Meziantou.Framework.Win32.Natives
 {
@@ -51,13 +50,13 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern bool LookupPrivilegeValueW([MarshalAs(UnmanagedType.LPWStr)] string? lpSystemName, [MarshalAs(UnmanagedType.LPWStr)] string lpName, out LUID lpLuid);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal extern static int LookupAccountSidW(string? systemName, IntPtr pSid, StringBuilder szName, ref int nameSize, StringBuilder szDomain, ref int domainSize, ref int eUse);
+        internal extern static int LookupAccountSidW(string? systemName, IntPtr pSid, [Out] char[] szName, ref int nameSize, [Out] char[] szDomain, ref int domainSize, ref int eUse);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
         internal static extern bool ConvertSidToStringSidW(IntPtr sid, [MarshalAs(UnmanagedType.LPWStr)] out string pStringSid);
 
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private static extern bool LookupPrivilegeNameW(string? lpSystemName, ref LUID lpLuid, StringBuilder? lpName, ref int cchName);
+        private static extern bool LookupPrivilegeNameW(string? lpSystemName, ref LUID lpLuid, [Out] char[]? lpName, ref int cchName);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool ConvertStringSidToSidW([In, MarshalAs(UnmanagedType.LPWStr)] string pStringSid, ref IntPtr sid);
@@ -75,9 +74,10 @@ namespace Meziantou.Framework.Win32.Natives
         {
             var luidNameLen = 0;
             LookupPrivilegeNameW(lpSystemName: null, ref luid, lpName: null, ref luidNameLen);
-            var sb = new StringBuilder(luidNameLen);
-            if (LookupPrivilegeNameW(lpSystemName: null, ref luid, sb, ref luidNameLen))
-                return sb.ToString();
+
+            var name = new char[luidNameLen];
+            if (LookupPrivilegeNameW(lpSystemName: null, ref luid, name, ref luidNameLen))
+                return new string(name);
 
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }

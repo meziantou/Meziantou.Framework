@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 
 #if NET472
 using Microsoft.IO;
@@ -12,14 +13,14 @@ using System.IO.Enumeration;
 
 namespace Meziantou.Framework.Globbing
 {
-    public sealed class GlobCollection
+    public sealed class GlobCollection : IReadOnlyList<Glob>
     {
         private readonly Glob[] _globs;
 
-        public GlobCollection(params Glob[] globs)
-        {
-            _globs = globs;
-        }
+        public GlobCollection(params Glob[] globs) => _globs = globs;
+
+        public int Count => _globs.Length;
+        public Glob this[int index] => _globs[index];
 
         public bool IsMatch(string path) => IsMatch(path.AsSpan());
         public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, ReadOnlySpan<char>.Empty);
@@ -75,5 +76,9 @@ namespace Meziantou.Framework.Globbing
             while (enumerator.MoveNext())
                 yield return enumerator.Current;
         }
+
+        public IEnumerator<Glob> GetEnumerator() => ((IEnumerable<Glob>)_globs).GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => _globs.GetEnumerator();
     }
 }

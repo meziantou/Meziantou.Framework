@@ -104,20 +104,20 @@ namespace Meziantou.Framework
         }
 
 #if NETCOREAPP3_1 || NET5_0
-        public static System.Threading.Tasks.ValueTask DeleteAsync(string path)
+        public static System.Threading.Tasks.ValueTask DeleteAsync(string path, CancellationToken cancellationToken = default)
         {
             var di = new DirectoryInfo(path);
             if (di.Exists)
-                return DeleteAsync(di);
+                return DeleteAsync(di, cancellationToken);
 
             var fi = new FileInfo(path);
             if (fi.Exists)
-                return DeleteAsync(fi);
+                return DeleteAsync(fi, cancellationToken);
 
             return default;
         }
 
-        public static async System.Threading.Tasks.ValueTask DeleteAsync(FileSystemInfo fileSystemInfo)
+        public static async System.Threading.Tasks.ValueTask DeleteAsync(FileSystemInfo fileSystemInfo, CancellationToken cancellationToken = default)
         {
             if (!fileSystemInfo.Exists)
                 return;
@@ -130,7 +130,7 @@ namespace Meziantou.Framework
                     {
                         try
                         {
-                            await RetryOnSharingViolationAsync(() => childInfo.Delete()).ConfigureAwait(false);
+                            await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
                         }
                         catch (FileNotFoundException)
                         {
@@ -141,15 +141,15 @@ namespace Meziantou.Framework
                     }
                     else
                     {
-                        await DeleteAsync(childInfo).ConfigureAwait(false);
+                        await DeleteAsync(childInfo, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
 
             try
             {
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal).ConfigureAwait(false);
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete()).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal, cancellationToken).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete(), cancellationToken).ConfigureAwait(false);
             }
             catch (FileNotFoundException)
             {
@@ -159,7 +159,7 @@ namespace Meziantou.Framework
             }
         }
 
-        private static async System.Threading.Tasks.ValueTask RetryOnSharingViolationAsync(Action action)
+        private static async System.Threading.Tasks.ValueTask RetryOnSharingViolationAsync(Action action, CancellationToken cancellationToken)
         {
             var attempt = 0;
             while (attempt < 10)
@@ -174,7 +174,7 @@ namespace Meziantou.Framework
                 }
 
                 attempt++;
-                await System.Threading.Tasks.Task.Delay(50).ConfigureAwait(false);
+                await System.Threading.Tasks.Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
 #elif NETSTANDARD2_0 || NET461

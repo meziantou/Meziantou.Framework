@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Text;
 using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32
@@ -72,14 +71,14 @@ namespace Meziantou.Framework.Win32
         {
             var userNameLen = 256;
             var domainNameLen = 256;
-            var bufUserName = new StringBuilder(userNameLen);
-            var bufDomainName = new StringBuilder(domainNameLen);
+            var bufUserName = new char[userNameLen];
+            var bufDomainName = new char[domainNameLen];
             var sidNameUse = 0;
 
             if (NativeMethods.LookupAccountSidW(systemName: null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
             {
-                domain = bufDomainName.ToString();
-                name = bufUserName.ToString();
+                domain = new string(bufDomainName.AsSpan(0, domainNameLen));
+                name = new string(bufUserName.AsSpan(0, userNameLen));
                 return;
             }
 

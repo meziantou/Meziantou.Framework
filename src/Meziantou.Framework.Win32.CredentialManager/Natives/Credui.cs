@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Win32.Natives
 {
+#pragma warning disable CA1838 // Avoid 'StringBuilder' parameters for P/Invokes
     internal static class Credui
     {
         internal const int CREDUI_MAX_USERNAME_LENGTH = 513;
@@ -24,7 +25,7 @@ namespace Meziantou.Framework.Win32.Natives
         internal static extern CredentialUIReturnCodes CredUIParseUserName(string userName, StringBuilder user, int userMaxChars, StringBuilder domain, int domainMaxChars);
 
         [DllImport("credui.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CredPackAuthenticationBuffer(int dwFlags, StringBuilder pszUserName, StringBuilder pszPassword, IntPtr pPackedCredentials, ref int pcbPackedCredentials);
+        internal static extern bool CredPackAuthenticationBuffer(int dwFlags, string pszUserName, string pszPassword, IntPtr pPackedCredentials, ref int pcbPackedCredentials);
 
         [DllImport("credui.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern bool CredUnPackAuthenticationBufferW(int dwFlags,

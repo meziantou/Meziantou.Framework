@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -297,7 +298,7 @@ namespace Meziantou.Framework.Templating
             return block;
         }
 
-        public void Build()
+        public void Build(CancellationToken cancellationToken)
         {
             if (Blocks == null)
                 throw new InvalidOperationException("Template is not loaded.");
@@ -363,7 +364,7 @@ namespace Meziantou.Framework.Templating
 
                 var source = sw.ToString();
                 SourceCode = source;
-                Compile(source);
+                Compile(source, cancellationToken);
             }
         }
 
@@ -377,7 +378,7 @@ namespace Meziantou.Framework.Templating
             return new CodeBlock(this, text, index);
         }
 
-        protected virtual SyntaxTree CreateSyntaxTree(string source)
+        protected virtual SyntaxTree CreateSyntaxTree(string source, CancellationToken cancellationToken)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -386,7 +387,7 @@ namespace Meziantou.Framework.Templating
                 .WithLanguageVersion(LanguageVersion.Latest)
                 .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
 
-            return CSharpSyntaxTree.ParseText(source, options);
+            return CSharpSyntaxTree.ParseText(source, options, cancellationToken: cancellationToken);
         }
 
         protected virtual MetadataReference[] CreateReferences()
@@ -449,14 +450,14 @@ namespace Meziantou.Framework.Templating
                 .WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
         }
 
-        protected virtual void Compile(string source)
+        protected virtual void Compile(string source, CancellationToken cancellationToken)
         {
-            var syntaxTree = CreateSyntaxTree(source);
+            var syntaxTree = CreateSyntaxTree(source, cancellationToken);
             var compilation = CreateCompilation(syntaxTree);
 
             using var dllStream = new MemoryStream();
             using var pdbStream = new MemoryStream();
-            var emitResult = compilation.Emit(dllStream, pdbStream, options: CreateEmitOptions());
+            var emitResult = compilation.Emit(dllStream, pdbStream, options: CreateEmitOptions(), cancellationToken: cancellationToken);
             if (!emitResult.Success)
             {
                 throw new TemplateException("Template file is not valid." + Environment.NewLine + string.Join(Environment.NewLine, emitResult.Diagnostics));
@@ -510,7 +511,7 @@ namespace Meziantou.Framework.Templating
         {
             if (!IsBuilt)
             {
-                Build();
+                Build(CancellationToken.None);
             }
 
             var p = CreateMethodParameters(writer, parameters);
@@ -551,7 +552,7 @@ namespace Meziantou.Framework.Templating
         {
             if (!IsBuilt)
             {
-                Build();
+                Build(CancellationToken.None);
             }
 
             var parameterInfos = _runMethodInfo!.GetParameters();
@@ -577,7 +578,7 @@ namespace Meziantou.Framework.Templating
         {
             if (!IsBuilt)
             {
-                Build();
+                Build(CancellationToken.None);
             }
 
             _runMethodInfo!.Invoke(null, p);

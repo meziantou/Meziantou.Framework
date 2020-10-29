@@ -16,17 +16,14 @@ namespace Meziantou.Framework
         /// </summary>
         public static IAsyncEnumerator<T> GetAsyncEnumerator<T>(this IAsyncEnumerator<T> enumerator) => enumerator;
 
-        public static void AddRange<T>(this ICollection<T> collection, params T[]? items)
+        public static void AddRange<T>(this ICollection<T> collection, params T[] items)
         {
             if (collection == null)
                 throw new ArgumentNullException(nameof(collection));
 
-            if (items != null)
+            foreach (var item in items)
             {
-                foreach (var item in items)
-                {
-                    collection.Add(item);
-                }
+                collection.Add(item);
             }
         }
 

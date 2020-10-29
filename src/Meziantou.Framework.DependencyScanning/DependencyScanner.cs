@@ -200,7 +200,7 @@ namespace Meziantou.Framework.DependencyScanning
 
             var whenAllTasks = Task.WhenAll(tasks);
             var writerCompleteTask = whenAllTasks.ContinueWith(_ => dependenciesChannel.Writer.Complete(), cancellationToken);
-            await foreach (var value in dependenciesChannel.Reader.ReadAllAsync(cancellationToken).WithCancellation(cancellationToken).ConfigureAwait(false))
+            await foreach (var value in dependenciesChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return value;
             }

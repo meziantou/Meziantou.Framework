@@ -85,7 +85,7 @@ namespace Meziantou.Framework
 #endif
             try
             {
-                _server.BeginWaitForConnection(Listen, state: null!); // TODO-NULLABLE https://github.com/dotnet/runtime/pull/42442
+                _server.BeginWaitForConnection(Listen, state: null);
             }
             catch (ObjectDisposedException)
             {

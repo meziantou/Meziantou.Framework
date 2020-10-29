@@ -29,7 +29,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, argTypes);
             if (fn == null)
-                throw new Exception("XPATH function '" + name + "' is unknown.");
+                throw new ArgumentException("XPATH function '" + name + "' is unknown.", nameof(name));
 
             return fn;
         }

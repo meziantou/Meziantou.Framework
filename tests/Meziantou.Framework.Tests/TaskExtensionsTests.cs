@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void ForgetTest_Faulted()
         {
-            var task = Task.FromException(new Exception(""));
+            var task = Task.FromException(new InvalidOperationException(""));
             task.Forget(); // Should not throw exception
         }
 

@@ -68,7 +68,7 @@ namespace Meziantou.Framework
 
         public ValueTask DisposeAsync()
         {
-            return IOUtilities.DeleteAsync(new DirectoryInfo(FullPath));
+            return IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None);
         }
     }
 }

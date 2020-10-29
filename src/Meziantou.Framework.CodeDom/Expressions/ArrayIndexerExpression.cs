@@ -14,12 +14,9 @@
             Indices = new CodeObjectCollection<Expression>(this);
 
             ArrayExpression = array;
-            if (indices != null)
+            foreach (var index in indices)
             {
-                foreach (var index in indices)
-                {
-                    Indices.Add(index);
-                }
+                Indices.Add(index);
             }
         }
 

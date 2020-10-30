@@ -267,7 +267,7 @@ namespace Meziantou.Framework.Win32
             {
                 inCredSize = 1024;
                 inCredBuffer = Marshal.AllocCoTaskMem(inCredSize);
-                if (Credui.CredPackAuthenticationBuffer(0, user ?? "", pszPassword: "", inCredBuffer, ref inCredSize))
+                if (Credui.CredPackAuthenticationBuffer(0, user, pszPassword: "", inCredBuffer, ref inCredSize))
                     return;
             }
 

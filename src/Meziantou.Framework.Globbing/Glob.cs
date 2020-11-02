@@ -63,6 +63,7 @@ namespace Meziantou.Framework.Globbing
     ///     </list>
     /// </summary>
     /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
+    /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
     public sealed class Glob
     {
         internal readonly Segment[] _segments;

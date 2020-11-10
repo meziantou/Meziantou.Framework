@@ -190,9 +190,6 @@ namespace Meziantou.Framework.Templating
 
         public void AddArguments(params string[] arguments)
         {
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
-
             foreach (var argument in arguments)
             {
                 AddArgument(argument);

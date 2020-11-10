@@ -900,10 +900,7 @@ namespace Meziantou.Framework.Html
                     if (value != null)
                     {
                         var doc = CreateDocument();
-                        if (value != null)
-                        {
-                            doc.LoadHtml(value);
-                        }
+                        doc.LoadHtml(value);
                         foreach (var node in doc.ChildNodes)
                         {
                             ChildNodes.AddNoCheck(node);

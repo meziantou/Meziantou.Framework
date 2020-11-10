@@ -474,7 +474,7 @@ namespace Meziantou.Framework.Html
                     return ns.ToLowerInvariant();
 
                 Trace("=" + ns);
-                return ns ?? string.Empty;
+                return ns;
             }
         }
 

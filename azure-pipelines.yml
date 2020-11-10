@@ -15,7 +15,7 @@ pr:
 variables:
   solution: Meziantou.Framework.sln
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-  DOTNET_VERSION: '5.0.100-rc.2.20479.15'
+  DOTNET_VERSION: '5.0.x'
 
 stages:
 - stage: build

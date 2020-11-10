@@ -35,9 +35,6 @@ namespace Meziantou.Framework.Templating
 
         public virtual string Run(out HtmlEmailMetadata? metadata, params object?[] parameters)
         {
-            if (parameters == null)
-                throw new ArgumentNullException(nameof(parameters));
-
             using var writer = new StringWriter();
             Run(writer, out metadata, parameters);
             return writer.ToString();
@@ -66,8 +63,6 @@ namespace Meziantou.Framework.Templating
         {
             if (writer == null)
                 throw new ArgumentNullException(nameof(writer));
-            if (parameters == null)
-                throw new ArgumentNullException(nameof(parameters));
 
             var p = CreateMethodParameters(writer, parameters);
             InvokeRunMethod(p);

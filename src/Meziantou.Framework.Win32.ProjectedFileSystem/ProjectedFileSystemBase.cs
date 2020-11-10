@@ -72,7 +72,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             var notificationMappingsPtr = IntPtr.Zero;
             try
             {
-                if (false && options != null)
+                if (options != null)
                 {
                     opt.Flags = options.UseNegativePathCache ? NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
 

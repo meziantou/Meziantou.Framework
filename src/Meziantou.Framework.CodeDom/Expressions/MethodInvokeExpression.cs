@@ -26,12 +26,7 @@ namespace Meziantou.Framework.CodeDom
             Parameters = new List<TypeReference>();
             Arguments = new CodeObjectCollection<Expression>(this);
             Method = method;
-
-            if (arguments != null)
-            {
-                Arguments.AddRange(arguments);
-            }
-
+            Arguments.AddRange(arguments);
             if (parameters != null)
             {
                 foreach (var parameter in parameters)

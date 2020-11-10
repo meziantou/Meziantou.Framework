@@ -101,7 +101,7 @@ namespace Meziantou.Framework
 
                 dict.Remove(name);
                 var shortName = Create(dict, maxLength, name);
-                if (shortName == null)
+                if (shortName is null)
                     throw new ArgumentException($"Cannot compute a unique short name with a maximum length of {maxLength.ToStringInvariant()} characters", nameof(names));
 
                 dict.Add(shortName);

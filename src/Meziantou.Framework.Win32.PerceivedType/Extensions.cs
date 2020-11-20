@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace Meziantou.Framework.Win32
 {
     internal static class Extensions
     {
+        [SupportedOSPlatform("windows")]
         public static string? GetStringValue(this RegistryKey key, string name)
         {
             var value = key.GetValue(name);

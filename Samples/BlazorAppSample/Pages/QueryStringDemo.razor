@@ -1,0 +1,29 @@
+﻿@page "/querystring"
+@inject QueryStringService QueryStringService
+
+<h1>QueryString service!</h1>
+
+<input type="text" @bind="Text" />
+<button @onclick="UpdateQueryString">Update QueryString and refresh page</button>
+<button @onclick="UpdateQueryStringJS">Update QueryString without refreshing page</button>
+
+@code {
+    [QueryStringParameter]
+    private string Text { get; set; }
+
+    public override Task SetParametersAsync(ParameterView parameters)
+    {
+        QueryStringService.SetParametersFromQueryString(this);
+        return base.SetParametersAsync(parameters);
+    }
+
+    async Task UpdateQueryString()
+    {
+        await QueryStringService.UpdateQueryString(this, reloadPage: true);
+    }
+
+    async Task UpdateQueryStringJS()
+    {
+        await QueryStringService.UpdateQueryString(this, reloadPage: false);
+    }
+}

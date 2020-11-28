@@ -1,0 +1,39 @@
+﻿@page "/clipboard"
+@inject ClipboardService ClipboardService
+
+<h1>Clipboard!</h1>
+
+
+<input type="text" @bind="text" />
+<button @onclick="CopyToClipboard">Copy to clipboard</button>
+<button @onclick="CopyFromClipboard">Copy from clipboard</button>
+@error
+
+@code {
+    string text;
+    string error;
+
+    async Task CopyFromClipboard()
+    {
+        try
+        {
+            text = await ClipboardService.ReadTextAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.ToString();
+        }
+    }
+
+    async Task CopyToClipboard()
+    {
+        try
+        {
+            await ClipboardService.WriteTextAsync(text);
+        }
+        catch (Exception ex)
+        {
+            error = ex.ToString();
+        }
+    }
+}

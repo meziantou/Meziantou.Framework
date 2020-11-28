@@ -1,0 +1,31 @@
+﻿@page "/inputenumselect"
+
+<h1>InputEnumSelect!</h1>
+
+<EditForm Model="model">
+    <div>
+        <InputEnumSelect @bind-Value="@model.Season" />
+        <span>Selected value: @model.Season</span>
+    </div>
+</EditForm>
+
+@code {
+    Model model = new Model();
+
+    public class Model
+    {
+        public Season Season { get; set; }
+    }
+
+    public enum Season
+    {
+        [System.ComponentModel.DataAnnotations.Display(Name = "Printemps")]
+        Spring,
+        [System.ComponentModel.DataAnnotations.Display(Name = "Été")]
+        Summer,
+        [System.ComponentModel.DataAnnotations.Display(Name = "Automne")]
+        Autumn,
+        [System.ComponentModel.DataAnnotations.Display(Name = "Hiver")]
+        Winter,
+    }
+}

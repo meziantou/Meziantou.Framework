@@ -1,0 +1,2 @@
+[*.cs]
+dotnet_diagnostic.MA0004.severity = none    # MA0004: Use .ConfigureAwait(false)

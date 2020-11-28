@@ -1,0 +1,77 @@
+﻿@typeparam TRowData
+@*
+    <CascadingValue> allows descendant components (defined in ChildContent) to receive the specified value.
+    Child components need to declare a cascading parameter with the same type as "Value" (i.e. Grid<TRowData>).
+    This allows GridColumn to get the Grid instance by using a CascadingParameter
+
+        [CascadingParameter]public Grid<TRowData> OwnerGrid { get; set; }
+
+    IsFixed="true" indicates that "Value" will not change. This is a
+    performance optimization that allows the framework to skip setting up
+    change notifications.
+*@
+<CascadingValue IsFixed="true" Value="this">@ChildContent</CascadingValue>
+
+<table @attributes="@TableAttributes">
+    <thead>
+        <tr>
+            @foreach (var column in columns)
+            {
+                @column.HeaderTemplate
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            if (Items != null)
+            {
+                var index = 0;
+                foreach (var item in Items)
+                {
+                    @* Use @key to help the diff algorithm when updating the collection *@
+                    <tr @key="item.GetHashCode()" class="@(RowClass?.Invoke(item, index++))">
+                        @foreach (var column in columns)
+                        {
+                            @column.CellTemplate(item)
+                        }
+                    </tr>
+                }
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? TableAttributes { get; set; }
+
+    [Parameter]
+    public IEnumerable<TRowData>? Items { get; set; }
+
+    // This fragment should contains all the GridColumn
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public Func<TRowData, int, string>? RowClass { get; set; }
+
+    private readonly List<DataGridColumn<TRowData>> columns = new List<DataGridColumn<TRowData>>();
+
+    // GridColumn uses this method to add a column
+    internal void AddColumn(DataGridColumn<TRowData> column)
+    {
+        columns.Add(column);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // The first render will instantiate the GridColumn defined in the ChildContent.
+            // GridColumn calls AddColumn during its initialization. This means that until
+            // the first render is completed, the columns collection is empty.
+            // Calling StateHasChanged() will re-render the component, so the second time it will know the columns
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,66 @@
+﻿@* T is the type of objects to enumerate in the repeater *@
+@* It should be inferred automatically based on the Items property *@
+@* You can specify it manually by using <Repeater T=Person /> *@
+@typeparam T
+
+@if (Items == null)
+{
+    @LoadingTemplate
+}
+else
+{
+    if (EmptyTemplate != null && !Items.Any())
+    {
+        @EmptyTemplate
+    }
+    else
+    {
+        @RepeaterContainerTemplate(
+            @: @{
+                var first = true;
+                foreach (var item in Items)
+                {
+                    if (!first && ItemSeparatorTemplate != null)
+                    {
+                        @ItemSeparatorTemplate
+                    }
+
+                    @if (ItemTemplate != null)
+                    {
+                        @ItemTemplate(item);
+                    }
+                    first = false;
+                }
+            }
+            )
+    }
+}
+
+@code {
+    [Parameter]
+    public IEnumerable<T>? Items { get; set; }
+
+    [Parameter]
+    public RenderFragment? LoadingTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment<RenderFragment>? RepeaterContainerTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment<T>? ItemTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment? ItemSeparatorTemplate { get; set; }
+
+    [Parameter]
+    public RenderFragment? EmptyTemplate { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // Create empty template in case the user doesn't provide it
+        if (RepeaterContainerTemplate == null)
+        {
+            RepeaterContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
+        }
+    }
+}

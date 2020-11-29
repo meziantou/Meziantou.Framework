@@ -8,7 +8,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers
 {
     public sealed class InlineImgTagHelper : InlineTagHelper
     {
-        private static readonly FileExtensionContentTypeProvider s_contentTypeProvider = new FileExtensionContentTypeProvider();
+        private static readonly FileExtensionContentTypeProvider s_contentTypeProvider = new();
 
         [HtmlAttributeName("src")]
         public string? Src { get; set; }

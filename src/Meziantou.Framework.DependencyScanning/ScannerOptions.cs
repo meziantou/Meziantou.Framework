@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class ScannerOptions
     {
-        private static readonly ReadOnlyCollection<DependencyScanner> s_defaultScanners = new ReadOnlyCollection<DependencyScanner>(new DependencyScanner[]
+        private static readonly ReadOnlyCollection<DependencyScanner> s_defaultScanners = new(new DependencyScanner[]
         {
             new DockerfileDependencyScanner(),
             new GitSubmoduleDependencyScanner(),

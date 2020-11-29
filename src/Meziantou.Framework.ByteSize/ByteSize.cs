@@ -172,7 +172,7 @@ namespace Meziantou.Framework
 
         public static bool operator >(ByteSize value1, ByteSize value2) => value1.CompareTo(value2) > 0;
 
-        public static implicit operator ByteSize(long value) => new ByteSize(value);
+        public static implicit operator ByteSize(long value) => new(value);
 
         private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
         {
@@ -272,14 +272,14 @@ namespace Meziantou.Framework
             return false;
         }
 
-        public static ByteSize From(byte value, ByteSizeUnit unit) => new ByteSize(value * (long)unit);
-        public static ByteSize From(short value, ByteSizeUnit unit) => new ByteSize(value * (long)unit);
-        public static ByteSize From(int value, ByteSizeUnit unit) => new ByteSize(value * (long)unit);
-        public static ByteSize From(long value, ByteSizeUnit unit) => new ByteSize(value * (long)unit);
-        public static ByteSize From(float value, ByteSizeUnit unit) => new ByteSize((long)(value * (long)unit));
-        public static ByteSize From(double value, ByteSizeUnit unit) => new ByteSize((long)(value * (long)unit));
+        public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);
+        public static ByteSize From(short value, ByteSizeUnit unit) => new(value * (long)unit);
+        public static ByteSize From(int value, ByteSizeUnit unit) => new(value * (long)unit);
+        public static ByteSize From(long value, ByteSizeUnit unit) => new(value * (long)unit);
+        public static ByteSize From(float value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+        public static ByteSize From(double value, ByteSizeUnit unit) => new((long)(value * (long)unit));
 
-        public static ByteSize FromFileLength(FileInfo fileInfo) => new ByteSize(fileInfo.Length);
+        public static ByteSize FromFileLength(FileInfo fileInfo) => new(fileInfo.Length);
         public static ByteSize FromFileLength(string filePath) => FromFileLength(new FileInfo(filePath));
     }
 }

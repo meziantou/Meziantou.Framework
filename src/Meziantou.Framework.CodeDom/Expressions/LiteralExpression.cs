@@ -13,8 +13,8 @@
 
         public object? Value { get; set; }
 
-        public static LiteralExpression Null() => new LiteralExpression(value: null);
-        public static LiteralExpression True() => new LiteralExpression(value: true);
-        public static LiteralExpression False() => new LiteralExpression(value: false);
+        public static LiteralExpression Null() => new(value: null);
+        public static LiteralExpression True() => new(value: true);
+        public static LiteralExpression False() => new(value: false);
     }
 }

@@ -7,7 +7,7 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class PythonRequirementsDependencyScanner : DependencyScanner
     {
-        private static readonly Regex s_pypiReferenceRegex = new Regex(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
+        private static readonly Regex s_pypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
 
         public override bool ShouldScanFile(CandidateFileContext file)
         {

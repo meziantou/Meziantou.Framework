@@ -13,7 +13,7 @@ namespace Meziantou.Framework
         private static readonly char[] s_expressionPartSeparator = new char[] { '.' };
         private static readonly char[] s_indexExprStartChars = new char[] { '[', '(' };
         private static readonly char[] s_indexExprEndChars = new char[] { ']', ')' };
-        private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> s_propertyCache = new ConcurrentDictionary<Type, PropertyDescriptorCollection>();
+        private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> s_propertyCache = new();
 
         public static object? Eval(object container, string expression)
         {

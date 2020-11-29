@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
     {
-        private readonly List<HtmlNode> _list = new List<HtmlNode>();
+        private readonly List<HtmlNode> _list = new();
         private readonly HtmlNode _parent;
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;

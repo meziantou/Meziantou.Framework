@@ -7,7 +7,7 @@ namespace Meziantou.Framework.CodeDom
 {
     public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
     {
-        private readonly List<Expression> _expressions = new List<Expression>();
+        private readonly List<Expression> _expressions = new();
 
         public ExpressionCollectionStatement()
         {
@@ -111,6 +111,6 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public static implicit operator ExpressionCollectionStatement(Expression expression) => new ExpressionCollectionStatement { expression };
+        public static implicit operator ExpressionCollectionStatement(Expression expression) => new() { expression };
     }
 }

@@ -12,8 +12,8 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class PackagesConfigDependencyScanner : DependencyScanner
     {
-        private static readonly Version s_versionZero = new Version(0, 0, 0, 0);
-        private static readonly Version s_versionOne = new Version(1, 0, 0, 0);
+        private static readonly Version s_versionZero = new(0, 0, 0, 0);
+        private static readonly Version s_versionOne = new(1, 0, 0, 0);
 
         private static readonly XName s_packageName = XName.Get("package");
         private static readonly XName s_idName = XName.Get("id");

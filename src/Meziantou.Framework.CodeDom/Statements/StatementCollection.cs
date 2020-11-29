@@ -10,8 +10,8 @@
         {
         }
 
-        public static implicit operator StatementCollection(Statement codeStatement) => new StatementCollection { codeStatement };
+        public static implicit operator StatementCollection(Statement codeStatement) => new() { codeStatement };
 
-        public static implicit operator StatementCollection(Expression codeExpression) => new StatementCollection { codeExpression };
+        public static implicit operator StatementCollection(Expression codeExpression) => new() { codeExpression };
     }
 }

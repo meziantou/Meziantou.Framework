@@ -11,6 +11,6 @@ namespace Meziantou.Framework.DependencyScanning.Internals
 
         public ValueTask DisposeAsync() => default;
 
-        public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(result: false);
+        public ValueTask<bool> MoveNextAsync() => new(result: false);
     }
 }

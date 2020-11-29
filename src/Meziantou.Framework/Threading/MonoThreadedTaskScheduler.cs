@@ -8,9 +8,9 @@ namespace Meziantou.Framework.Threading
 {
     public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
     {
-        private readonly ConcurrentQueue<Task> _tasks = new ConcurrentQueue<Task>();
-        private readonly AutoResetEvent _stop = new AutoResetEvent(initialState: false);
-        private readonly AutoResetEvent _dequeue = new AutoResetEvent(initialState: false);
+        private readonly ConcurrentQueue<Task> _tasks = new();
+        private readonly AutoResetEvent _stop = new(initialState: false);
+        private readonly AutoResetEvent _dequeue = new(initialState: false);
 
         public MonoThreadedTaskScheduler()
             : this(threadName: null)

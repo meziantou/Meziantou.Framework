@@ -131,7 +131,7 @@ namespace DependencyScanningBenchmarks
 
         private sealed class DummyScanner : DependencyScanner
         {
-            internal static readonly Dependency Dependency = new Dependency("", "", DependencyType.Unknown, new TextLocation("", 1, 1, 1));
+            internal static readonly Dependency Dependency = new("", "", DependencyType.Unknown, new TextLocation("", 1, 1, 1));
 
             public override ValueTask ScanAsync(ScanFileContext context)
             {

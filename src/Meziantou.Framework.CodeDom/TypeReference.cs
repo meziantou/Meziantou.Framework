@@ -244,10 +244,10 @@ namespace Meziantou.Framework.CodeDom
             return type;
         }
 
-        public static implicit operator TypeReference(TypeDeclaration typeDeclaration) => new TypeReference(typeDeclaration);
+        public static implicit operator TypeReference(TypeDeclaration typeDeclaration) => new(typeDeclaration);
 
-        public static implicit operator TypeReference(Type type) => new TypeReference(type);
+        public static implicit operator TypeReference(Type type) => new(type);
 
-        public static implicit operator TypeReference(TypeParameter type) => new TypeReference(type);
+        public static implicit operator TypeReference(TypeParameter type) => new(type);
     }
 }

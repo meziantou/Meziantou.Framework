@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Threading
     [DebuggerDisplay("Signaled: {signaled}")]
     public sealed class AsyncLock
     {
-        private readonly Queue<WaiterCompletionSource> _signalAwaiters = new Queue<WaiterCompletionSource>();
+        private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
         private readonly bool _allowInliningAwaiters;
         private readonly Action<object> _onCancellationRequestHandler;
         private bool _signaled = true;

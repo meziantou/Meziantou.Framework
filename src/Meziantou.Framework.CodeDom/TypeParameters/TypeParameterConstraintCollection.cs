@@ -2,6 +2,6 @@
 {
     public class TypeParameterConstraintCollection : CodeObjectCollection<TypeParameterConstraint>
     {
-        public static implicit operator TypeParameterConstraintCollection(TypeParameterConstraint codeConstraint) => new TypeParameterConstraintCollection { codeConstraint };
+        public static implicit operator TypeParameterConstraintCollection(TypeParameterConstraint codeConstraint) => new() { codeConstraint };
     }
 }

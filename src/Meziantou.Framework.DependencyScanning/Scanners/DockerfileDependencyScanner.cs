@@ -7,7 +7,7 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class DockerfileDependencyScanner : DependencyScanner
     {
-        private static readonly Regex s_fromRegex = new Regex(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        private static readonly Regex s_fromRegex = new(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
 
         public override async ValueTask ScanAsync(ScanFileContext context)
         {

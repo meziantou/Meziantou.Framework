@@ -13,7 +13,7 @@ namespace Meziantou.Framework.WPF.Collections
     public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
     {
         private readonly Dispatcher _dispatcher;
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
 
         private ImmutableList<T> _items = ImmutableList<T>.Empty;
         private DispatchedObservableCollection<T>? _observableCollection;

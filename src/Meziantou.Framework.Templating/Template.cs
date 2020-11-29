@@ -19,15 +19,15 @@ namespace Meziantou.Framework.Templating
         private const string DefaultRunMethodName = "Run";
         private const string DefaultWriterParameterName = "__output__";
 
-        private static readonly object s_lock = new object();
+        private static readonly object s_lock = new();
 
         private MethodInfo? _runMethodInfo;
         private string? _className;
         private string? _runMethodName;
         private string? _writerParameterName;
-        private readonly List<TemplateArgument> _arguments = new List<TemplateArgument>();
-        private readonly List<string> _usings = new List<string>();
-        private readonly List<string> _referencePaths = new List<string>();
+        private readonly List<TemplateArgument> _arguments = new();
+        private readonly List<string> _usings = new();
+        private readonly List<string> _referencePaths = new();
 
         [NotNull]
         private string? ClassName

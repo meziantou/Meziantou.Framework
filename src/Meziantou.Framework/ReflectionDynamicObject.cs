@@ -12,7 +12,7 @@ namespace Meziantou.Framework
         private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-        private static readonly ConcurrentDictionary<Type, TypeCache> s_cache = new ConcurrentDictionary<Type, TypeCache>();
+        private static readonly ConcurrentDictionary<Type, TypeCache> s_cache = new();
 
         private readonly object? _originalObject;
         private readonly TypeCache _typeCache;

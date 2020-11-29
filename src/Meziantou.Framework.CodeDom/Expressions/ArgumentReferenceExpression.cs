@@ -35,6 +35,6 @@
             }
         }
 
-        public static implicit operator ArgumentReferenceExpression(MethodArgumentDeclaration methodArgumentDeclaration) => new ArgumentReferenceExpression(methodArgumentDeclaration);
+        public static implicit operator ArgumentReferenceExpression(MethodArgumentDeclaration methodArgumentDeclaration) => new(methodArgumentDeclaration);
     }
 }

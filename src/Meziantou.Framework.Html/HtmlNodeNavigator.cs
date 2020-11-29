@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlNodeNavigator : XPathNavigator
     {
-        private readonly NameTable _nameTable = new NameTable();
+        private readonly NameTable _nameTable = new();
         private HtmlNode _currentNode;
         private readonly HtmlNode _rootNode;
 

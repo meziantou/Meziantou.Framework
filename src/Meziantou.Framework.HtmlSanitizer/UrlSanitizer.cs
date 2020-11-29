@@ -33,10 +33,10 @@ namespace Meziantou.Framework.Sanitizers
          *
          * This regular expression was taken from the Closure sanitization library.
          */
-        private static readonly Regex s_safeUrlRegex = new Regex("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex s_safeUrlRegex = new("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
-        private static readonly Regex s_dataUrlPattern = new Regex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+        private static readonly Regex s_dataUrlPattern = new("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
         private static readonly char[] s_whitespaces = new[] { '\t', '\r', '\n', ' ', '\f' };
 

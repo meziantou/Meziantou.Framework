@@ -17,9 +17,9 @@ namespace Meziantou.Framework
             DateTime = dateTime;
         }
 
-        public static RelativeDate Get(DateTime dateTime) => new RelativeDate(dateTime);
+        public static RelativeDate Get(DateTime dateTime) => new(dateTime);
 
-        public static RelativeDate Get(DateTimeOffset dateTime) => new RelativeDate(dateTime.UtcDateTime);
+        public static RelativeDate Get(DateTimeOffset dateTime) => new(dateTime.UtcDateTime);
 
         public override string ToString() => ToString(format: null, formatProvider: null);
 

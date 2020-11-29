@@ -147,8 +147,8 @@ namespace Meziantou.Framework.Windows.Tests
         {
             private readonly object _obj;
 
-            private readonly List<NotifyCollectionChangedEventArgs> _collectionChangedArgs = new List<NotifyCollectionChangedEventArgs>();
-            private readonly List<PropertyChangedEventArgs> _propertyChangedArgs = new List<PropertyChangedEventArgs>();
+            private readonly List<NotifyCollectionChangedEventArgs> _collectionChangedArgs = new();
+            private readonly List<PropertyChangedEventArgs> _propertyChangedArgs = new();
 
             public EventAssert(object obj)
             {

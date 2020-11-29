@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>, IList, IReadOnlyList<HtmlAttribute>
     {
-        private readonly List<HtmlAttribute> _attributes = new List<HtmlAttribute>();
+        private readonly List<HtmlAttribute> _attributes = new();
 
         public event NotifyCollectionChangedEventHandler CollectionChanged;
 

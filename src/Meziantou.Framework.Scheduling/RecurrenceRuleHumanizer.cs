@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Scheduling
 {
     public abstract class RecurrenceRuleHumanizer
     {
-        protected static readonly CultureInfo EnglishCultureInfo = new CultureInfo("en");
-        protected static readonly CultureInfo FrenchCultureInfo = new CultureInfo("fr");
+        protected static readonly CultureInfo EnglishCultureInfo = new("en");
+        protected static readonly CultureInfo FrenchCultureInfo = new("fr");
 
         public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
 

@@ -31,6 +31,6 @@ namespace Meziantou.Framework.Win32
 
         public static bool operator >(Usn usn1, Usn usn2) => usn1.Value > usn2.Value;
 
-        public static implicit operator Usn(long value) => new Usn(value);
+        public static implicit operator Usn(long value) => new(value);
     }
 }

@@ -6,11 +6,11 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlOptions
     {
-        private readonly Dictionary<string, HtmlElementReadOptions> _readOptions = new Dictionary<string, HtmlElementReadOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, HtmlElementWriteOptions> _writeOptions = new Dictionary<string, HtmlElementWriteOptions>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _emptyNamespacesForXPath = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _emptyNamespaces = new HashSet<string>(StringComparer.Ordinal);
-        private readonly HashSet<string> _parsedScriptTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, HtmlElementReadOptions> _readOptions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, HtmlElementWriteOptions> _writeOptions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _emptyNamespacesForXPath = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _emptyNamespaces = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _parsedScriptTypes = new(StringComparer.OrdinalIgnoreCase);
 
         public HtmlOptions()
         {

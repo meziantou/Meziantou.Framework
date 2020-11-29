@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32
     {
         internal readonly AmsiContextSafeHandle _handle;
 
-        private static readonly AmsiSessionSafeHandle s_defaultSession = new AmsiSessionSafeHandle();
+        private static readonly AmsiSessionSafeHandle s_defaultSession = new();
 
         private AmsiContext(AmsiContextSafeHandle context)
         {

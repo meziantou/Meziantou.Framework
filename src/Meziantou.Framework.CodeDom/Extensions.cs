@@ -73,13 +73,13 @@ namespace Meziantou.Framework.CodeDom
             };
         }
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, params Expression[] arguments) => new MethodInvokeExpression(expression, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, params Expression[] arguments) => new(expression, arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, string memberName, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(expression, memberName), arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, string memberName, params Expression[] arguments) => new(new MemberReferenceExpression(expression, memberName), arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, TypeReference[] parameters, params Expression[] arguments) => new MethodInvokeExpression(expression, parameters, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, TypeReference[] parameters, params Expression[] arguments) => new(expression, parameters, arguments);
 
-        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => new MethodInvokeExpression(new MemberReferenceExpression(expression, memberName), parameters, arguments);
+        public static MethodInvokeExpression CreateInvokeMethodExpression(this Expression expression, string memberName, TypeReference[] parameters, params Expression[] arguments) => new(new MemberReferenceExpression(expression, memberName), parameters, arguments);
 
         public static MethodInvokeExpression CreateInvokeMethodExpression(this VariableDeclarationStatement expression, params Expression[] arguments) => CreateInvokeMethodExpression(new VariableReferenceExpression(expression), arguments);
 
@@ -104,9 +104,9 @@ namespace Meziantou.Framework.CodeDom
 
         public static MemberReferenceExpression CreateMemberReferenceExpression(this MethodArgumentDeclaration argument, string name, params string[] names) => CreateMemberReferenceExpression(new ArgumentReferenceExpression(argument), name, names);
 
-        public static BinaryExpression CreateIsNullExpression(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, new TypeReferenceExpression(typeof(object)).CreateMemberReferenceExpression(nameof(object.ReferenceEquals)).CreateInvokeMethodExpression(expression), new LiteralExpression(value: true));
+        public static BinaryExpression CreateIsNullExpression(this Expression expression) => new(BinaryOperator.Equals, new TypeReferenceExpression(typeof(object)).CreateMemberReferenceExpression(nameof(object.ReferenceEquals)).CreateInvokeMethodExpression(expression), new LiteralExpression(value: true));
 
-        public static BinaryExpression CreateEqualsNullExpression(this Expression expression) => new BinaryExpression(BinaryOperator.Equals, expression, new LiteralExpression(value: null));
+        public static BinaryExpression CreateEqualsNullExpression(this Expression expression) => new(BinaryOperator.Equals, expression, new LiteralExpression(value: null));
 
         public static MethodInvokeExpression CreateIsNullOrEmptyExpression(this Expression expression) => new TypeReferenceExpression(typeof(string)).CreateInvokeMethodExpression(nameof(string.IsNullOrEmpty), expression);
 

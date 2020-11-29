@@ -5,7 +5,7 @@ namespace Meziantou.Framework.IO
 {
     public sealed class TeeTextWriter : TextWriter
     {
-        private readonly object _lock = new object();
+        private readonly object _lock = new();
 
         public TextWriter Stream1 { get; }
         public TextWriter Stream2 { get; }

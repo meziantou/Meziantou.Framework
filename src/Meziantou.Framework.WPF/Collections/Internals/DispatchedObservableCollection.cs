@@ -10,7 +10,7 @@ namespace Meziantou.Framework.WPF.Collections
 {
     internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBase<T>, IReadOnlyObservableCollection<T>, IList<T>, IList
     {
-        private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new ConcurrentQueue<PendingEvent<T>>();
+        private readonly ConcurrentQueue<PendingEvent<T>> _pendingEvents = new();
         private readonly ConcurrentObservableCollection<T> _collection;
         private readonly Dispatcher _dispatcher;
 

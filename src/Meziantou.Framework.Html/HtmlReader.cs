@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlReader
     {
-        private readonly StringBuilder _rawValue = new StringBuilder();
+        private readonly StringBuilder _rawValue = new();
         private string _currentElement;
         private string _typeAttribute; // only for <script type=""...> parsing
         private bool _attIsScriptType; // only for <script type=""...> parsing

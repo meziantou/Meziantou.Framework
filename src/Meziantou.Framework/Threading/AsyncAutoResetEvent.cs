@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Threading
     [DebuggerDisplay("Signaled: {signaled}")]
     public sealed class AsyncAutoResetEvent
     {
-        private readonly Queue<WaiterCompletionSource> _signalAwaiters = new Queue<WaiterCompletionSource>();
+        private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();
         private readonly bool _allowInliningAwaiters;
         internal readonly Action<object> _onCancellationRequestHandler;
         private bool _signaled;

@@ -35,6 +35,6 @@
             }
         }
 
-        public static implicit operator VariableReferenceExpression(VariableDeclarationStatement variableDeclarationStatement) => new VariableReferenceExpression(variableDeclarationStatement);
+        public static implicit operator VariableReferenceExpression(VariableDeclarationStatement variableDeclarationStatement) => new(variableDeclarationStatement);
     }
 }

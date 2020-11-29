@@ -9,7 +9,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
 {
     internal static class XmlUtilities
     {
-        private static readonly XmlReaderSettings? s_settings = new XmlReaderSettings { CloseInput = false, Async = true, };
+        private static readonly XmlReaderSettings? s_settings = new() { CloseInput = false, Async = true, };
 
         public static Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, CancellationToken cancellationToken)
         {

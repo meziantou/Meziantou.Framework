@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Threading
         private readonly Task<Releaser> _readerReleaser;
         private readonly Task<Releaser> _writerReleaser;
 
-        private readonly Queue<TaskCompletionSource<Releaser>> _waitingWriters = new Queue<TaskCompletionSource<Releaser>>();
-        private TaskCompletionSource<Releaser> _waitingReader = new TaskCompletionSource<Releaser>();
+        private readonly Queue<TaskCompletionSource<Releaser>> _waitingWriters = new();
+        private TaskCompletionSource<Releaser> _waitingReader = new();
         private int _readersWaiting;
         private int _status;
 

@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Collections
 {
     public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
     {
-        private readonly LinkedList<T> _list = new LinkedList<T>();
+        private readonly LinkedList<T> _list = new();
 
         public int MaximumCount { get; }
         public int Count => _list.Count;

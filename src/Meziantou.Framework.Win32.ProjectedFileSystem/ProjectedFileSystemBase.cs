@@ -21,7 +21,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
         private readonly Guid _virtualizationInstanceId;
         private ProjFSSafeHandle? _instanceHandle;
 
-        private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new ConcurrentDictionary<Guid, DirectoryEnumerationSession>();
+        private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
         private long _context;
 
         public string RootFolder { get; }

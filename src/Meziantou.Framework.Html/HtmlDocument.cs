@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Html
     [DebuggerDisplay("{Name}")]
     public sealed class HtmlDocument : HtmlNode
     {
-        private HtmlOptions _options = new HtmlOptions();
+        private HtmlOptions _options = new();
         private string _filePath;
         private HtmlElement _baseElement;
         private bool _baseElementSearched;

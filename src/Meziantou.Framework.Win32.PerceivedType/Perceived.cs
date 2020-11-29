@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Win32
     /// </summary>
     public sealed class Perceived
     {
-        private static readonly Dictionary<string, Perceived> s_perceivedTypes = new Dictionary<string, Perceived>(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, Perceived> s_perceivedTypes = new(StringComparer.OrdinalIgnoreCase);
 
         private static object SyncObject { get; } = new object();
 

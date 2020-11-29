@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Win32
             private Usn _currentUSN;
             private bool _eof;
 
-            private readonly List<JournalEntry> _entries = new List<JournalEntry>();
+            private readonly List<JournalEntry> _entries = new();
             private int _currentIndex;
 
             public ChangeJournal ChangeJournal { get; }

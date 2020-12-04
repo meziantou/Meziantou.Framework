@@ -19,7 +19,7 @@ namespace Meziantou.Framework
 
         public static TemporaryDirectory Create()
         {
-            return new TemporaryDirectory(CreateUniqueDirectory(FullPath.Combine(Path.GetTempPath(), "TD", DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture))));
+            return new TemporaryDirectory(CreateUniqueDirectory(FullPath.Combine(Path.GetTempPath(), "TD", DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture))));
         }
 
         public FullPath GetFullPath(string relativePath)

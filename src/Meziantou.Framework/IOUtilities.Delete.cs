@@ -73,8 +73,8 @@ namespace Meziantou.Framework
             }
             try
             {
-                RetryOnSharingViolation(() => fileSystemInfo.Attributes = FileAttributes.Normal);
-                RetryOnSharingViolation(() => fileSystemInfo.Delete());
+                RetryOnSharingViolation(() => RemoveReadOnlyAttributes(fileSystemInfo));
+                RetryOnSharingViolation(() => DeleteFileSystemInfo(fileSystemInfo));
             }
             catch (FileNotFoundException)
             {
@@ -103,7 +103,27 @@ namespace Meziantou.Framework
             }
         }
 
-#if NETCOREAPP3_1 || NET5_0
+        private static void RemoveReadOnlyAttributes(FileSystemInfo fileSystemInfo)
+        {
+            var newAttributes = fileSystemInfo.Attributes & ~FileAttributes.ReadOnly;
+            if (fileSystemInfo.Attributes != newAttributes)
+            {
+                fileSystemInfo.Attributes = newAttributes;
+            }
+        }
+
+        private static void DeleteFileSystemInfo(FileSystemInfo fsi)
+        {
+            if (fsi is DirectoryInfo di)
+            {
+                di.Delete(recursive: true);
+            }
+            else
+            {
+                fsi.Delete();
+            }
+        }
+
         public static System.Threading.Tasks.ValueTask DeleteAsync(string path, CancellationToken cancellationToken = default)
         {
             var di = new DirectoryInfo(path);
@@ -148,8 +168,8 @@ namespace Meziantou.Framework
 
             try
             {
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Attributes = FileAttributes.Normal, cancellationToken).ConfigureAwait(false);
-                await RetryOnSharingViolationAsync(() => fileSystemInfo.Delete(), cancellationToken).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttributes(fileSystemInfo), cancellationToken).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => DeleteFileSystemInfo(fileSystemInfo), cancellationToken).ConfigureAwait(false);
             }
             catch (FileNotFoundException)
             {
@@ -177,9 +197,5 @@ namespace Meziantou.Framework
                 await System.Threading.Tasks.Task.Delay(50, cancellationToken).ConfigureAwait(false);
             }
         }
-#elif NETSTANDARD2_0 || NET461
-#else
-#error Platform not supported
-#endif
     }
 }

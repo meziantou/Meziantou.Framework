@@ -71,9 +71,10 @@ namespace Meziantou.Framework
                     }
                 }
             }
+
             try
             {
-                RetryOnSharingViolation(() => RemoveReadOnlyAttributes(fileSystemInfo));
+                RetryOnSharingViolation(() => RemoveReadOnlyAttribute(fileSystemInfo));
                 RetryOnSharingViolation(() => DeleteFileSystemInfo(fileSystemInfo));
             }
             catch (FileNotFoundException)
@@ -103,7 +104,7 @@ namespace Meziantou.Framework
             }
         }
 
-        private static void RemoveReadOnlyAttributes(FileSystemInfo fileSystemInfo)
+        private static void RemoveReadOnlyAttribute(FileSystemInfo fileSystemInfo)
         {
             var newAttributes = fileSystemInfo.Attributes & ~FileAttributes.ReadOnly;
             if (fileSystemInfo.Attributes != newAttributes)
@@ -168,7 +169,7 @@ namespace Meziantou.Framework
 
             try
             {
-                await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttributes(fileSystemInfo), cancellationToken).ConfigureAwait(false);
+                await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(fileSystemInfo), cancellationToken).ConfigureAwait(false);
                 await RetryOnSharingViolationAsync(() => DeleteFileSystemInfo(fileSystemInfo), cancellationToken).ConfigureAwait(false);
             }
             catch (FileNotFoundException)

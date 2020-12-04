@@ -17,7 +17,12 @@ namespace Meziantou.Framework
             // The checks are already performed in the static methods
             // No need to check if the path is null or absolute here
             Debug.Assert(path != null);
+#if NETCOREAPP3_1 || NET5_0
             Debug.Assert(Path.IsPathFullyQualified(path));
+#elif NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
             Debug.Assert(Path.GetFullPath(path) == path);
             _value = path;
         }
@@ -119,7 +124,13 @@ namespace Meziantou.Framework
             if (relPath.Length == 0 && path2.Length - 1 == si)
                 return "." + directorySeparator; // Truncate the file name
 
+#if NETSTANDARD2_0
+            return relPath.Append(path2.AsSpan(si + 1).ToString()).ToString();
+#elif NETCOREAPP3_1 || NET5_0
             return relPath.Append(path2.AsSpan(si + 1)).ToString();
+#else
+#error Platform not supported
+#endif
         }
 
         public bool IsChildOf(FullPath rootPath)
@@ -153,11 +164,28 @@ namespace Meziantou.Framework
         public static FullPath FromPath(string path)
         {
             var fullPath = Path.GetFullPath(path);
-            var fullPathWithoutTrailingDirectorySeparator = Path.TrimEndingDirectorySeparator(fullPath);
+            var fullPathWithoutTrailingDirectorySeparator = TrimEndingDirectorySeparator(fullPath);
             if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
                 return Empty;
 
             return new FullPath(fullPathWithoutTrailingDirectorySeparator);
+        }
+
+        private static string TrimEndingDirectorySeparator(string path)
+        {
+#if NETCOREAPP3_1 || NET5_0
+            return Path.TrimEndingDirectorySeparator(path);
+#elif NETSTANDARD2_0
+            if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) && !path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                return path;
+
+            if (path.StartsWith("\\", StringComparison.Ordinal))
+                throw new ArgumentException("UNC paths are not supported", nameof(path));
+
+            return path.Substring(0, path.Length - 1);
+#else
+#error Platform not supported
+#endif
         }
 
         public static FullPath Combine(string rootPath, string relativePath) => FromPath(Path.Combine(rootPath, relativePath));

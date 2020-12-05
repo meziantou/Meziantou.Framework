@@ -67,11 +67,11 @@ namespace Meziantou.Framework.DependencyScanning
                 if (string.IsNullOrEmpty(value))
                     continue;
 
-                var index = value.IndexOf('/');
+                var index = value.IndexOf('/', StringComparison.Ordinal);
                 if (index > 0)
                 {
                     var packageName = value.Substring(0, index);
-                    var version = value.Substring(index + 1);
+                    var version = value[(index + 1)..];
 
                     await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, s_sdkName.LocalName, column: index + 1, value.Length - index - 1))).ConfigureAwait(false);
                 }

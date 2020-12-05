@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using Meziantou.Framework.DependencyScanning.Scanners;
 using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -100,7 +101,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         }
 
         [Fact]
-        public async Task PackagesReferencesDependencies()
+        public async Task MsBuildReferencesDependencies()
         {
             const string Original = @"<Project Sdk=""Microsoft.NET.Sdk"">
 
@@ -132,11 +133,36 @@ namespace Meziantou.Framework.DependencyScanning.Tests
 ";
 
             AddFile("test.csproj", Original);
-            var result = await GetDependencies(new PackageReferencesDependencyScanner());
+            var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
             AssertContainDependency(result,
                 (DependencyType.NuGet, "TestPackage", "4.2.1", 10, 6));
 
             await UpdateDependencies(result, "2.0.0");
+            AssertFileContentEqual("test.csproj", Expected);
+        }
+
+        [Fact]
+        public async Task MsBuildSdkReferencesDependencies()
+        {
+            const string Original = @"<Project Sdk=""MSBuild.Sdk.Extras/2.0.54"">
+    <Sdk Name=""My.Custom.Sdk1"" Version=""1.0.0"" />
+    <Import Sdk=""My.Custom.Sdk2/2.0.55"" />
+</Project>
+";
+            const string Expected = @"<Project Sdk=""MSBuild.Sdk.Extras/1.2.3"">
+    <Sdk Name=""My.Custom.Sdk1"" Version=""1.2.3"" />
+    <Import Sdk=""My.Custom.Sdk2/1.2.3"" />
+</Project>
+";
+
+            AddFile("test.csproj", Original);
+            var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
+            AssertContainDependency(result,
+                (DependencyType.NuGet, "MSBuild.Sdk.Extras", "2.0.54", 1, 2),
+                (DependencyType.NuGet, "My.Custom.Sdk1", "1.0.0", 2, 6),
+                (DependencyType.NuGet, "My.Custom.Sdk2", "2.0.55", 3, 6));
+
+            await UpdateDependencies(result, "1.2.3");
             AssertFileContentEqual("test.csproj", Expected);
         }
 
@@ -175,7 +201,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
 ";
 
             AddFile("test.csproj", Original);
-            var result = await GetDependencies(new PackageReferencesDependencyScanner());
+            var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
             AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 6));
 
             await UpdateDependencies(result, "2.0.0");
@@ -353,6 +379,41 @@ CMD  /code/run-app
 
             await UpdateDependencies(result, "2.0.0");
             AssertFileContentEqual("Dockerfile", Expected);
+        }
+
+        [Fact]
+        public async Task GlobalJsonFromDependencies()
+        {
+            const string Original = @"{
+  ""sdk"": {
+    ""version"": ""3.1.100"",
+    ""rollForward"": ""disable""
+  },
+  ""msbuild-sdks"": {
+    ""My.Custom.Sdk"": ""5.0.0"",
+    ""My.Other.Sdk"": ""1.0.0-beta""
+  }
+}";
+            const string Expected = @"{
+  ""sdk"": {
+    ""version"": ""3.1.400"",
+    ""rollForward"": ""disable""
+  },
+  ""msbuild-sdks"": {
+    ""My.Custom.Sdk"": ""3.1.400"",
+    ""My.Other.Sdk"": ""3.1.400""
+  }
+}";
+
+            AddFile("global.json", Original);
+            var result = await GetDependencies(new DotNetGlobalJsonDependencyScanner());
+            AssertContainDependency(result,
+                (DependencyType.DotNetSdk, ".NET SDK", "3.1.100", 3, 24),
+                (DependencyType.NuGet, "My.Custom.Sdk", "5.0.0", 7, 28),
+                (DependencyType.NuGet, "My.Other.Sdk", "1.0.0-beta", 8, 32));
+
+            await UpdateDependencies(result, "3.1.400");
+            AssertFileContentEqual("global.json", Expected);
         }
 
         [RunIfWindowsFact]

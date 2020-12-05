@@ -8,5 +8,6 @@
         PyPi,
         DockerImage,
         GitSubmodule,
+        DotNetSdk,
     }
 }

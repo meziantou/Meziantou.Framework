@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Meziantou.Framework.DependencyScanning.Scanners;
 
 namespace Meziantou.Framework.DependencyScanning
 {
@@ -8,10 +9,11 @@ namespace Meziantou.Framework.DependencyScanning
         private static readonly ReadOnlyCollection<DependencyScanner> s_defaultScanners = new(new DependencyScanner[]
         {
             new DockerfileDependencyScanner(),
+            new DotNetGlobalJsonDependencyScanner(),
             new GitSubmoduleDependencyScanner(),
             new NpmPackageJsonDependencyScanner(),
             new NuSpecDependencyScanner(),
-            new PackageReferencesDependencyScanner(),
+            new MsBuildReferencesDependencyScanner(),
             new PackagesConfigDependencyScanner(),
             new ProjectJsonDependencyScanner(),
             new PythonRequirementsDependencyScanner(),

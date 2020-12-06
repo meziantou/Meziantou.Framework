@@ -56,11 +56,11 @@ namespace Meziantou.Framework.Tests
                 return 1;
             }
 
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-            public override void SetLength(long value) => throw new NotImplementedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
 
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }
 }

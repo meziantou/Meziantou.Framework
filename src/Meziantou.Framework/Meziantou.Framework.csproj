@@ -1,10 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;netstandard2.0</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>3.0.2</Version>
+    <Version>3.0.3</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES;PUBLIC_STRING_EXTENSIONS</DefineConstants>
+    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,4 +32,25 @@
     </Compile>
   </ItemGroup>
 
+  <!-- .NET Standard 2.0 target is only to support some specific projects.
+       I don't want to support all functionalities in .NET Standard 2.0 as I only have limited time.
+       So, I enable the functionalities that are used.
+  -->
+  <Choose>
+    <When Condition="$(TargetFramework) == 'netstandard2.0'">
+      <PropertyGroup>
+        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
+
+        <Compile Include="EnumerableExtensions.cs" />
+        <Compile Include="EnumerableExtensions.ParallelForEachAsync.cs" />
+        <Compile Include="IOUtilities.cs" />
+        <Compile Include="IOUtilities.Delete.cs" />
+        <Compile Include="StringExtensions.cs" />
+      </ItemGroup>
+    </When>
+  </Choose>
 </Project>

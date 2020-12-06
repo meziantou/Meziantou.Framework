@@ -13,9 +13,9 @@ namespace Meziantou.Framework.DependencyScanning
         private static readonly XName s_idName = XName.Get("id");
         private static readonly XName s_versionName = XName.Get("version");
 
-        public override bool ShouldScanFile(CandidateFileContext file)
+        public override bool ShouldScanFile(CandidateFileContext context)
         {
-            return file.FileName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase);
+            return context.FileName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase);
         }
 
         public override async ValueTask ScanAsync(ScanFileContext context)

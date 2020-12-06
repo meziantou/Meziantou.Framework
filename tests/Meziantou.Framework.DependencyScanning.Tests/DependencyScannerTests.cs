@@ -23,7 +23,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
-                File.WriteAllText(directory.GetFullPath($"text{i}.txt"), "");
+                await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
             }
 
             _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
@@ -47,7 +47,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
-                File.WriteAllText(directory.GetFullPath($"text{i}.txt"), "");
+                await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
             }
 
             _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());

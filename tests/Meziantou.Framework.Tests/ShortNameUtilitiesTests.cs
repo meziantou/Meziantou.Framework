@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -40,7 +41,7 @@ namespace Meziantou.Framework.Tests
             var names = new List<string> { "aaaa", "aaab", "aaa", "aab", "other" };
 
             // Act
-            var shortNames = ShortName.Create(names, 3);
+            var shortNames = ShortName.Create(names, 3, StringComparer.Ordinal);
 
             // Assert
             Assert.Equal("aa0", shortNames["aaaa"]);

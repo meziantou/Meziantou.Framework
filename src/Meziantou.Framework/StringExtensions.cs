@@ -46,7 +46,13 @@ namespace Meziantou.Framework
         [Pure]
         public static bool ContainsIgnoreCase(this string str, string value)
         {
+#if NETSTANDARD2_0
+            return str.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
+#elif NET5_0
             return str.Contains(value, StringComparison.OrdinalIgnoreCase);
+#else
+#error Platform not supported
+#endif
         }
 
         [Pure]
@@ -93,12 +99,13 @@ namespace Meziantou.Framework
         }
 
         [Pure]
+        [SuppressMessage("Style", "IDE0056:Use index operator", Justification = ".NET Standard 2.0 compatibility")]
         public static bool EndsWith(this string? str, char c)
         {
             if (string.IsNullOrEmpty(str))
                 return false;
 
-            return str[^1] == c;
+            return str[str.Length - 1] == c;
         }
 
         [Pure]

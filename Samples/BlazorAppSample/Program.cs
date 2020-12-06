@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorAppSample
 {
-    public class Program
+    public static class Program
     {
         public static async Task Main(string[] args)
         {
@@ -26,7 +26,7 @@ namespace BlazorAppSample
                 .AddHttpMessageHandler(() => new DefaultBrowserOptionsMessageHandler() { DefaultBrowserRequestCache = BrowserRequestCache.NoCache });
 
 
-            await builder.Build().RunAsync();
+            await builder.Build().RunAsync().ConfigureAwait(false);
         }
     }
 }

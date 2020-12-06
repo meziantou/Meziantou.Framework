@@ -261,10 +261,10 @@ namespace Meziantou.Framework.Tests
                 ProcessExtensions.Kill(shellProcess, entireProcessTree: true);
 
                 shellProcess.WaitForExit(1000);
-                Assert.True(shellProcess.HasExited, $"Shell process ({shellProcess.Id}) has not exited");
+                Assert.True(shellProcess.HasExited, $"Shell process ({shellProcess.Id.ToStringInvariant()}) has not exited");
 
                 pingProcess.WaitForExit(1000);
-                Assert.True(pingProcess.HasExited, $"Ping process ({pingProcess.Id}) has not exited");
+                Assert.True(pingProcess.HasExited, $"Ping process ({pingProcess.Id.ToStringInvariant()}) has not exited");
             }
             finally
             {

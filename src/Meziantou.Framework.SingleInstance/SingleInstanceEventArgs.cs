@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework
 {
@@ -10,8 +11,9 @@ namespace Meziantou.Framework
             Arguments = arguments;
         }
 
-        public int ProcessId { get; set; }
+        public int ProcessId { get; }
 
+        [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Cannot change the signature, breaking change")]
         public string[] Arguments { get; }
     }
 }

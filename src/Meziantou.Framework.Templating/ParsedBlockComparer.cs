@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Templating
 {
-    internal sealed class ParsedBlockComparer
+    internal static class ParsedBlockComparer
     {
         public static IComparer<ParsedBlock> IndexComparer { get; } = new ParsedBlockIndexComparer();
 

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Meziantou.Framework.Win32
 {
     [Flags]
-    [SuppressMessage("Design", "MA0062:Non-flags enums should not be marked with \"FlagsAttribute\"", Justification = "It is how the enum is defined in Windows")]
+    [SuppressMessage("Usage", "CA2217:Do not mark enums with FlagsAttribute", Justification = "Values from Windows definition")]
     public enum GroupSidAttributes : uint
     {
         SE_GROUP_MANDATORY = 0x00000001,

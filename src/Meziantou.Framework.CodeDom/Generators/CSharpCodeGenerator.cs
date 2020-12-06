@@ -8,41 +8,35 @@ namespace Meziantou.Framework.CodeDom
 {
     public partial class CSharpCodeGenerator
     {
-        private static readonly IDictionary<string, string> s_predefinedTypes;
-        private static readonly string[] s_keywords;
-
-        static CSharpCodeGenerator()
+        private static readonly IDictionary<string, string> s_predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            s_predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                [typeof(bool).FullName!] = "bool",
-                [typeof(byte).FullName!] = "byte",
-                [typeof(char).FullName!] = "char",
-                [typeof(decimal).FullName!] = "decimal",
-                [typeof(double).FullName!] = "double",
-                [typeof(float).FullName!] = "float",
-                [typeof(int).FullName!] = "int",
-                [typeof(long).FullName!] = "long",
-                [typeof(object).FullName!] = "object",
-                [typeof(sbyte).FullName!] = "sbyte",
-                [typeof(short).FullName!] = "short",
-                [typeof(string).FullName!] = "string",
-                [typeof(uint).FullName!] = "uint",
-                [typeof(ulong).FullName!] = "ulong",
-                [typeof(ushort).FullName!] = "ushort",
-                [typeof(void).FullName!] = "void",
-            };
+            [typeof(bool).FullName!] = "bool",
+            [typeof(byte).FullName!] = "byte",
+            [typeof(char).FullName!] = "char",
+            [typeof(decimal).FullName!] = "decimal",
+            [typeof(double).FullName!] = "double",
+            [typeof(float).FullName!] = "float",
+            [typeof(int).FullName!] = "int",
+            [typeof(long).FullName!] = "long",
+            [typeof(object).FullName!] = "object",
+            [typeof(sbyte).FullName!] = "sbyte",
+            [typeof(short).FullName!] = "short",
+            [typeof(string).FullName!] = "string",
+            [typeof(uint).FullName!] = "uint",
+            [typeof(ulong).FullName!] = "ulong",
+            [typeof(ushort).FullName!] = "ushort",
+            [typeof(void).FullName!] = "void",
+        };
 
-            s_keywords = new string[]
-            {
-                "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float", "decimal",
-                "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if", "else", "while", "for", "foreach", "do", "switch",
-                "case", "default", "lock", "try", "throw", "catch", "finally", "goto", "break", "continue", "return", "public", "private", "internal",
-                "protected", "static", "readonly", "sealed", "const", "fixed", "stackalloc", "volatile", "new", "override", "abstract", "virtual",
-                "event", "extern", "ref", "out", "in", "is", "as", "params", "__arglist", "__makeref", "__reftype", "__refvalue", "this", "base",
-                "namespace", "using", "class", "struct", "interface", "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit",
-            };
-        }
+        private static readonly string[] s_keywords = new string[]
+        {
+            "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float", "decimal",
+            "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if", "else", "while", "for", "foreach", "do", "switch",
+            "case", "default", "lock", "try", "throw", "catch", "finally", "goto", "break", "continue", "return", "public", "private", "internal",
+            "protected", "static", "readonly", "sealed", "const", "fixed", "stackalloc", "volatile", "new", "override", "abstract", "virtual",
+            "event", "extern", "ref", "out", "in", "is", "as", "params", "__arglist", "__makeref", "__reftype", "__refvalue", "this", "base",
+            "namespace", "using", "class", "struct", "interface", "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit",
+        };
 
         public string Write(CodeObject codeObject)
         {

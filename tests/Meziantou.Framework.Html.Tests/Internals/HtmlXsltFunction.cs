@@ -178,6 +178,7 @@ namespace Meziantou.Framework.Html.Tests
         }
 
         [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "They may be needed later")]
+        [SuppressMessage("Usage", "CA1801:Review unused parameters", Justification = "They may be needed later")]
         public static IXsltContextFunction GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
         {
             if (string.Equals(name, "lowercase", StringComparison.Ordinal))

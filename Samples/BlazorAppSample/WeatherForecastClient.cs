@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BlazorAppSample
@@ -14,9 +15,9 @@ namespace BlazorAppSample
             _httpClient = httpClient;
         }
 
-        public async Task<IReadOnlyList<WeatherForecast>> GetAsync()
+        public async Task<IReadOnlyList<WeatherForecast>> GetAsync(CancellationToken cancellationToken = default)
         {
-            return await _httpClient.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+            return await _httpClient.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json", cancellationToken).ConfigureAwait(false);
         }
     }
 }

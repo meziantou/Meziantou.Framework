@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
+﻿using System.Globalization;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -16,12 +15,11 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
-        [SuppressMessage("Globalization", "CA1305:Specify IFormatProvider", Justification = "Use current culture for testing purpose")]
         public void UseCulture()
         {
             CultureInfoUtilities.UseCulture(CultureInfo.GetCultureInfo("fr-FR"), () =>
             {
-                Assert.Equal("12,00", 12.ToString("F2"));
+                Assert.Equal("12,00", 12.ToString("F2", CultureInfo.CurrentCulture));
             });
         }
     }

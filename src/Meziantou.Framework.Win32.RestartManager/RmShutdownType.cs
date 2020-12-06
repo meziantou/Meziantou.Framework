@@ -1,8 +1,11 @@
-﻿namespace Meziantou.Framework.Win32
+﻿using System;
+
+namespace Meziantou.Framework.Win32
 {
     /// <summary>
     /// Configures the shut down of applications.
     /// </summary>
+    [Flags]
     public enum RmShutdownType
     {
         /// <summary>

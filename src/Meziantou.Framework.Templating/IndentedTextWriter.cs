@@ -19,7 +19,7 @@ namespace Meziantou.Framework.Templating
         ///     Gets the encoding for the text writer to use.
         /// </summary>
         /// <returns>
-        ///     An <see cref="T:System.Text.Encoding" /> that indicates the encoding for the text writer to use.
+        ///     An <see cref="System.Text.Encoding" /> that indicates the encoding for the text writer to use.
         /// </returns>
         public override Encoding Encoding => InnerWriter.Encoding;
 
@@ -52,10 +52,10 @@ namespace Meziantou.Framework.Templating
         }
 
         /// <summary>
-        ///     Gets the <see cref="T:System.IO.TextWriter" /> to use.
+        ///     Gets the <see cref="TextWriter" /> to use.
         /// </summary>
         /// <returns>
-        ///     The <see cref="T:System.IO.TextWriter" /> to use.
+        ///     The <see cref="TextWriter" /> to use.
         /// </returns>
         public TextWriter InnerWriter { get; }
 
@@ -63,7 +63,7 @@ namespace Meziantou.Framework.Templating
         ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and default tab string.
         /// </summary>
         /// <param name="writer">
-        ///     The <see cref="T:System.IO.TextWriter" /> to use for output.
+        ///     The <see cref="TextWriter" /> to use for output.
         /// </param>
         public IndentedTextWriter(TextWriter writer)
             : this(writer, DefaultTabString)
@@ -74,7 +74,7 @@ namespace Meziantou.Framework.Templating
         ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and tab string.
         /// </summary>
         /// <param name="writer">
-        ///     The <see cref="T:System.IO.TextWriter" /> to use for output.
+        ///     The <see cref="TextWriter" /> to use for output.
         /// </param>
         /// <param name="tabString"> The tab string to use for indentation. </param>
         public IndentedTextWriter(TextWriter writer, string tabString)
@@ -103,7 +103,7 @@ namespace Meziantou.Framework.Templating
         /// <summary>
         ///     Outputs the tab string once for each level of indentation according to the
         ///     <see
-        ///         cref="P:System.CodeDom.Compiler.IndentedTextWriter.Indent" />
+        ///         cref="System.CodeDom.Compiler.IndentedTextWriter.Indent" />
         ///     property.
         /// </summary>
         private void OutputTabs()

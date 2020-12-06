@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Threading
                 else
                 {
                     _readersWaiting += 1;
-                    return _waitingReader.Task.ContinueWith(t => t.Result);
+                    return _waitingReader.Task;
                 }
             }
         }

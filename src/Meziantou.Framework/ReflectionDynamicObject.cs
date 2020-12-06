@@ -114,7 +114,7 @@ namespace Meziantou.Framework
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
         {
-            Type? type = _typeCache.Type;
+            var type = _typeCache.Type;
             var flags = _originalObject == null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
             flags |= BindingFlags.InvokeMethod;
 
@@ -321,7 +321,7 @@ namespace Meziantou.Framework
                 var typeCache = new TypeCache(type);
                 typeCache.Constructors.AddRange(type.GetConstructors());
 
-                Type? currentType = type;
+                var currentType = type;
                 while (currentType != null)
                 {
                     // Instances

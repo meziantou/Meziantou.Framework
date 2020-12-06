@@ -7,6 +7,7 @@ namespace Meziantou.Framework
     public static class EnumeratorExtensions
     {
         [SuppressMessage("Design", "MA0016:Prefer return collection abstraction instead of implementation", Justification = "Like Enumerable.ToList<T>()")]
+        [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Like Enumerable.ToList<T>()")]
         public static List<T> ToList<T>(this IEnumerator<T> enumerator)
         {
             var list = new List<T>();

@@ -44,9 +44,9 @@ namespace Meziantou.Framework.CodeDom.Tests
             Assert.Equal(new[] { typeof(int).FullName }, typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList());
         }
 
-        private class TestNested
+        private sealed class TestNested
         {
-            public class TestNested2
+            public sealed class TestNested2
             {
             }
         }

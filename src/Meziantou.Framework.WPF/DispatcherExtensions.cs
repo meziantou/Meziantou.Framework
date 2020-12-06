@@ -22,6 +22,7 @@ namespace Meziantou.Framework.WPF
                 _dispatcher = dispatcher;
             }
 
+            [SuppressMessage("Design", "CA1024:Use properties where appropriate", Justification = "Must be a method to be awaitable")]
             public SwitchToUiAwaitable GetAwaiter()
             {
                 return this;

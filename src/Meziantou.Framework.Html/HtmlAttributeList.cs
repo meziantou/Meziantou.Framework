@@ -66,9 +66,9 @@ namespace Meziantou.Framework.Html
             return att;
         }
 
-        public void Add(HtmlAttribute attribute)
+        public void Add(HtmlAttribute item)
         {
-            Add(attribute, replace: true);
+            Add(item, replace: true);
         }
 
         public void Add(HtmlAttribute attribute, bool replace)
@@ -249,19 +249,19 @@ namespace Meziantou.Framework.Html
             return Remove(att);
         }
 
-        public bool Remove(HtmlAttribute attribute)
+        public bool Remove(HtmlAttribute item)
         {
-            if (attribute == null)
-                throw new ArgumentNullException(nameof(attribute));
+            if (item == null)
+                throw new ArgumentNullException(nameof(item));
 
-            if (attribute.ParentNode != Parent)
-                throw new ArgumentException(message: null, nameof(attribute));
+            if (item.ParentNode != Parent)
+                throw new ArgumentException(message: null, nameof(item));
 
-            if (!_attributes.Remove(attribute))
-                throw new ArgumentException(message: null, nameof(attribute));
+            if (!_attributes.Remove(item))
+                throw new ArgumentException(message: null, nameof(item));
 
-            attribute.ParentNode = null;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, attribute));
+            item.ParentNode = null;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
             return true;
         }
 

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     [Flags]
-    [SuppressMessage("Design", "MA0062:Non-flags enums should not be marked with \"FlagsAttribute\"", Justification = "As defined in the documentation")]
+    [SuppressMessage("Usage", "CA2217:Do not mark enums with FlagsAttribute", Justification = "Values from Windows definition")]
     public enum PRJ_NOTIFY_TYPES : uint
     {
         NONE = 0x00000000,

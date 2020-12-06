@@ -424,7 +424,7 @@ CMD  /code/run-app
             await ExecuteProcess("git", "init", remote.FullPath);
             await ExecuteProcess("git", "config user.name test", remote.FullPath);
             await ExecuteProcess("git", "config user.email test@example.com", remote.FullPath);
-            File.WriteAllText(remote.GetFullPath("test.txt"), "content");
+            await File.WriteAllTextAsync(remote.GetFullPath("test.txt"), "content");
             await ExecuteProcess("git", "add .", remote.FullPath);
             await ExecuteProcess("git", "commit -m commit-message", remote.FullPath);
 
@@ -440,7 +440,7 @@ CMD  /code/run-app
             await ExecuteProcess("git", "init", _directory.FullPath);
             await ExecuteProcess("git", "config user.name test", _directory.FullPath);
             await ExecuteProcess("git", "config user.email test@example.com", _directory.FullPath);
-            File.WriteAllText(_directory.GetFullPath("test.txt"), "content");
+            await File.WriteAllTextAsync(_directory.GetFullPath("test.txt"), "content");
             await ExecuteProcess("git", "add .", _directory.FullPath);
             await ExecuteProcess("git", "commit -m commit-message", _directory.FullPath);
 
@@ -448,7 +448,6 @@ CMD  /code/run-app
             await ExecuteProcess2("git", new string[] { "submodule", "add", remote.FullPath, "submodule_path" }, _directory.FullPath);
 
             // List files
-            // TODO log file attribute
             var files = Directory.GetFiles(_directory.FullPath, "*", SearchOption.AllDirectories);
             _testOutputHelper.WriteLine("Content of " + _directory.FullPath);
             foreach (var file in files)

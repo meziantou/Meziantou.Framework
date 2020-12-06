@@ -7,7 +7,7 @@ trigger:
 
 pr:
   autoCancel: false
-  #drafts: true
+  drafts: true
   branches:
     include:
     - '*'
@@ -15,7 +15,6 @@ pr:
 variables:
   solution: Meziantou.Framework.sln
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-  DOTNET_VERSION: '5.0.x'
 
 stages:
 - stage: build
@@ -27,7 +26,7 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: $(DOTNET_VERSION)
+        useGlobalJson: true
 
     - task: DotNetCoreCLI@2
       displayName: 'Install dotnet format'
@@ -56,7 +55,7 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: $(DOTNET_VERSION)
+        useGlobalJson: true
 
     - task: DotNetCoreCLI@2
       displayName: dotnet build
@@ -86,7 +85,7 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: $(DOTNET_VERSION)
+        useGlobalJson: true
 
     - task: DotNetCoreCLI@2
       displayName: dotnet build
@@ -117,7 +116,7 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: $(DOTNET_VERSION)
+        useGlobalJson: true
 
     - task: DotNetCoreCLI@2
       displayName: dotnet pack
@@ -137,14 +136,13 @@ stages:
     pool:
       vmImage: 'windows-2019'
     steps:
-    - checkout: none
     - download: current
       artifact: NuGetPackages
 
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: $(DOTNET_VERSION)
+        useGlobalJson: true
 
     - task: PowerShell@2
       displayName: Publish NuGet packages

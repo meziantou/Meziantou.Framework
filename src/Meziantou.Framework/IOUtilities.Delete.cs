@@ -56,6 +56,7 @@ namespace Meziantou.Framework
                     {
                         try
                         {
+                            RetryOnSharingViolation(() => RemoveReadOnlyAttribute(childInfo));
                             RetryOnSharingViolation(() => childInfo.Delete());
                         }
                         catch (FileNotFoundException)

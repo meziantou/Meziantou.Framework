@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Meziantou.Framework
 {
-    public static class StringBuilderExtensions
+    public static partial class StringBuilderExtensions
     {
         [Pure]
         public static bool StartsWith(this StringBuilder stringBuilder, char prefix)

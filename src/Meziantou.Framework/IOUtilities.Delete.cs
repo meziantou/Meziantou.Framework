@@ -48,33 +48,33 @@ namespace Meziantou.Framework
             if (!fileSystemInfo.Exists)
                 return;
 
-            if (fileSystemInfo is DirectoryInfo directoryInfo)
-            {
-                foreach (var childInfo in directoryInfo.GetFileSystemInfos())
-                {
-                    if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        try
-                        {
-                            RetryOnSharingViolation(() => RemoveReadOnlyAttribute(childInfo));
-                            RetryOnSharingViolation(() => childInfo.Delete());
-                        }
-                        catch (FileNotFoundException)
-                        {
-                        }
-                        catch (DirectoryNotFoundException)
-                        {
-                        }
-                    }
-                    else
-                    {
-                        Delete(childInfo);
-                    }
-                }
-            }
-
             try
             {
+                if (fileSystemInfo is DirectoryInfo directoryInfo)
+                {
+                    foreach (var childInfo in directoryInfo.GetFileSystemInfos())
+                    {
+                        if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                        {
+                            try
+                            {
+                                RetryOnSharingViolation(() => RemoveReadOnlyAttribute(childInfo));
+                                RetryOnSharingViolation(() => childInfo.Delete());
+                            }
+                            catch (FileNotFoundException)
+                            {
+                            }
+                            catch (DirectoryNotFoundException)
+                            {
+                            }
+                        }
+                        else
+                        {
+                            Delete(childInfo);
+                        }
+                    }
+                }
+
                 RetryOnSharingViolation(() => RemoveReadOnlyAttribute(fileSystemInfo));
                 RetryOnSharingViolation(() => DeleteFileSystemInfo(fileSystemInfo));
             }

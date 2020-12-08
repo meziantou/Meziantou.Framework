@@ -35,5 +35,12 @@ namespace Meziantou.Framework.Tests
                 }
             }
         }
+
+        [Fact]
+        public void DisposedDeletedDirectory()
+        {
+            using var dir = TemporaryDirectory.Create();
+            Directory.Delete(dir.FullPath);
+        }
     }
 }

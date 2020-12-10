@@ -14,8 +14,8 @@ namespace Meziantou.Framework
             if (dict == null)
                 throw new ArgumentNullException(nameof(dict));
 
-            if (TryGetValueOrDefault(dict, key, out TResult result))
-                return result;
+            if (TryGetValueOrDefault(dict, key, out TResult? result))
+                return result!;
 
             return defaultValue;
         }

@@ -155,7 +155,7 @@ namespace Meziantou.Framework
         public static async ValueTask<T> LastAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
         {
             var hasValue = false;
-            T result = default;
+            T result = default!;
             await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 if (predicate(item))
@@ -178,7 +178,7 @@ namespace Meziantou.Framework
 
         public static async ValueTask<T?> LastOrDefaultAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
         {
-            T result = default;
+            T? result = default;
             await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
                 if (predicate(item))

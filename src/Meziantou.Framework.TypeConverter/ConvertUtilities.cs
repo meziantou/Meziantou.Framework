@@ -130,41 +130,41 @@ namespace Meziantou.Framework
             return defaultValue;
         }
 
-        public static T ChangeType<T>(object? input)
+        public static T? ChangeType<T>(object? input)
         {
             return ChangeType<T>(DefaultConverter, input);
         }
 
-        public static T ChangeType<T>(this IConverter converter, object? input)
+        public static T? ChangeType<T>(this IConverter converter, object? input)
         {
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
             return ChangeType(converter, input, default(T)!);
         }
 
-        public static T ChangeType<T>(object? input, T defaultValue)
+        public static T? ChangeType<T>(object? input, T defaultValue)
         {
             return ChangeType(DefaultConverter, input, defaultValue);
         }
 
-        public static T ChangeType<T>(this IConverter converter, object? input, T defaultValue)
+        public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue)
         {
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
             return ChangeType(converter, input, defaultValue, provider: null);
         }
 
-        public static T ChangeType<T>(object? input, T defaultValue, IFormatProvider? provider)
+        public static T? ChangeType<T>(object? input, T defaultValue, IFormatProvider? provider)
         {
             return ChangeType(DefaultConverter, input, defaultValue, provider);
         }
 
-        public static T ChangeType<T>(this IConverter converter, object? input, T defaultValue, IFormatProvider? provider)
+        public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue, IFormatProvider? provider)
         {
             if (converter == null)
                 throw new ArgumentNullException(nameof(converter));
 
-            if (TryChangeType(converter, input, provider, out T value))
+            if (TryChangeType(converter, input, provider, out T? value))
                 return value;
 
             return defaultValue;

@@ -13,7 +13,7 @@ namespace Meziantou.Framework.WPF
             return new SwitchToUiAwaitable(dispatcher);
         }
 
-        public struct SwitchToUiAwaitable : INotifyCompletion
+        public readonly struct SwitchToUiAwaitable : INotifyCompletion
         {
             private readonly Dispatcher _dispatcher;
 

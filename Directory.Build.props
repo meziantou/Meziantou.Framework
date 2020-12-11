@@ -20,7 +20,12 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.638">
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.639">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>
@@ -33,7 +38,7 @@
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    
+
     <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
@@ -44,7 +49,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    
+
     <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">True</ContinuousIntegrationBuild>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">True</ContinuousIntegrationBuild>
     <ContinuousIntegrationBuild Condition="'$(GITLAB_CI)' == 'true'">True</ContinuousIntegrationBuild>

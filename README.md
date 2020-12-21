@@ -5,6 +5,9 @@
 
 | Name | Version |
 | :--- | :---: |
+| Meziantou.AspNetCore.Components               | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components/) |
+| Meziantou.AspNetCore.Components.WebAssembly   | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.WebAssembly.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.WebAssembly/) |
+| Meziantou.AspNetCore.Mvc                      | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Mvc.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Mvc/) |
 | Meziantou.Framework                           | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.svg)](https://www.nuget.org/packages/Meziantou.Framework/) |
 | Meziantou.Framework.ByteSize                  | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ByteSize.svg)](https://www.nuget.org/packages/Meziantou.Framework.ByteSize/) |
 | Meziantou.Framework.CodeDom                   | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.CodeDom.svg)](https://www.nuget.org/packages/Meziantou.Framework.CodeDom/) |
@@ -19,6 +22,7 @@
 | Meziantou.Framework.RelativeDate              | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.RelativeDate.svg)](https://www.nuget.org/packages/Meziantou.Framework.RelativeDate/) |
 | Meziantou.Framework.Scheduling                | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Scheduling.svg)](https://www.nuget.org/packages/Meziantou.Framework.Scheduling/) |
 | Meziantou.Framework.SingleInstance            | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SingleInstance.svg)](https://www.nuget.org/packages/Meziantou.Framework.SingleInstance/) |
+| Meziantou.Framework.Slug                      | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Slug.svg)](https://www.nuget.org/packages/Meziantou.Framework.Slug/) |
 | Meziantou.Framework.Templating                | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating/) |
 | Meziantou.Framework.Templating.Html           | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating.Html/) |
 | Meziantou.Framework.TemporaryDirectory        | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TemporaryDirectory.svg)](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/) |

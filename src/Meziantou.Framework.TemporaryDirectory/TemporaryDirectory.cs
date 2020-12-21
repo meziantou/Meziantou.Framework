@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -10,6 +11,8 @@ namespace Meziantou.Framework
     [DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     {
+        private static readonly HashSet<string> s_createdDirectories = new(StringComparer.OrdinalIgnoreCase);
+
         public FullPath FullPath { get; }
 
         private TemporaryDirectory(FullPath path)
@@ -34,7 +37,7 @@ namespace Meziantou.Framework
             using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         }
 
-        private static FullPath CreateUniqueDirectory(FullPath filePath)
+        private static FullPath CreateUniqueDirectory(FullPath folderPath)
         {
             using (var mutex = new Mutex(initiallyOwned: false, name: "Meziantou.Framework.TemporaryDirectory"))
             {
@@ -43,14 +46,15 @@ namespace Meziantou.Framework
                 {
                     var count = 1;
 
-                    var tempPath = filePath.Value + "_";
-                    while (Directory.Exists(filePath))
+                    var tempPath = folderPath.Value + "_";
+                    while (s_createdDirectories.Contains(folderPath) || Directory.Exists(folderPath))
                     {
-                        filePath = FullPath.FromPath(tempPath + count.ToString(CultureInfo.InvariantCulture));
+                        folderPath = FullPath.FromPath(tempPath + count.ToString(CultureInfo.InvariantCulture));
                         count++;
                     }
 
-                    Directory.CreateDirectory(filePath);
+                    s_createdDirectories.Add(folderPath);
+                    Directory.CreateDirectory(folderPath);
                 }
                 finally
                 {
@@ -58,7 +62,7 @@ namespace Meziantou.Framework
                 }
             }
 
-            return filePath;
+            return folderPath;
         }
 
         public void Dispose()

@@ -1,0 +1,114 @@
+name: publish
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    branches:
+      - '*'
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+  NuGetDirectory: ${{ github.workspace}}/nuget
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  lint_csharp:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      
+    - name: Add dotnet-format problem matcher
+      uses: xt0rted/dotnet-format-problem-matcher@v1
+
+    - name: Install dotnet format
+      run: dotnet tool update --global dotnet-format
+
+    - name: Run dotnet format
+      run: dotnet format --check --verbosity:diagnostic
+
+  create_nuget:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+    - run: dotnet pack Meziantou.Framework.sln --configuration Release --output ${{ env.NuGetDirectory }} /bl
+    - uses: actions/upload-artifact@v2
+      with:
+        name: nuget
+        if-no-files-found: error
+        retention-days: 3
+        path: ${{ env.NuGetDirectory }}/**/*
+
+  build_and_test:
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      TestResultsDirectory: ${{ github.workspace}}/TestResults
+    strategy:
+      matrix:
+        include:
+        - runs-on: windows-2019
+          solution: 'Meziantou.Framework.sln'
+          configuration: Debug
+        - runs-on: windows-2019
+          solution: 'Meziantou.Framework.sln'
+          configuration: Release
+        - runs-on: 'ubuntu-20.04'
+          solution: 'Meziantou.Framework.Linux.slnf'
+          configuration: Debug
+        - runs-on: 'ubuntu-20.04'
+          solution: 'Meziantou.Framework.Linux.slnf'
+          configuration: Release
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+    - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /bl
+      name: Build
+    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" -- xunit.parallelizeAssembly=true
+      name: Run tests
+    - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
+        if-no-files-found: error
+        retention-days: 3
+        path: ${{ env.TestResultsDirectory }}/*.trx
+
+  deploy:
+    runs-on: 'ubuntu-20.04'
+    needs: [ lint_csharp, create_nuget, build_and_test ]
+    steps:
+    - uses: actions/download-artifact@v2
+      with:
+        name: nuget
+        path: ${{ env.NuGetDirectory }}
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+    - run: |
+        Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
+        $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+        foreach($file in $files) {
+            Write-Host "Pushing NuGet package: $($file.FullName)"
+            if ($env:Build_SourceBranch -eq 'refs/heads/main')
+            {
+              & dotnet nuget push "$($file.FullName)" --api-key "$(NuGetApiKey)" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+            }
+            else
+            {
+              Write-Host "Not on the default branch => Do not push"
+            }
+        }
+      name: Publish NuGet packages
+      if: always()
+      env:
+        NuGetApiKey: ${{ secrets.NuGetApiKey }}

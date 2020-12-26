@@ -5,4 +5,8 @@
     <TargetFrameworks>net5.0</TargetFrameworks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Remove="*" />
+  </ItemGroup>
+  
 </Project>

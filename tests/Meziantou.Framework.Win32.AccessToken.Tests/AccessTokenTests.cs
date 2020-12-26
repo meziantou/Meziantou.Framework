@@ -1,4 +1,5 @@
-﻿using TestUtilities;
+﻿using System.ComponentModel;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,14 +21,20 @@ namespace Meziantou.Framework.Win32.Tests
             PrintToken(token);
         }
 
-        [RunIfNotOnAzurePipelineFact]
+        [Fact]
         public void LinkedAccessTokenTest()
         {
             using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
             PrintToken(token);
 
-            using var linkedToken = token.GetLinkedToken();
-            PrintToken(linkedToken);
+            try
+            {
+                using var linkedToken = token.GetLinkedToken();
+                PrintToken(linkedToken);
+            }
+            catch (Win32Exception) when (RunIfNotOnCIFactAttribute.IsOnCI())
+            {
+            }
         }
 
         [Fact]

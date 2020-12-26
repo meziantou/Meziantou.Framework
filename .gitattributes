@@ -1,3 +1,3 @@
-* text=lf
+* -text
 *.cmd text eol=crlf
 *.sln text eol=crlf

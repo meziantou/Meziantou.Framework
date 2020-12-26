@@ -79,7 +79,9 @@ namespace Meziantou.Framework
 
             // convert the namespace UUID to network order (step 3)
             Span<byte> namespaceBytes = stackalloc byte[16];
-            Debug.Assert(@namespace.TryWriteBytes(namespaceBytes));
+            if (!@namespace.TryWriteBytes(namespaceBytes))
+                throw new InvalidOperationException("Cannot convert Guid to byte array");
+
             ReorderBytes(namespaceBytes);
 
             Span<byte> hash = stackalloc byte[version == DeterministicGuidVersion.Version3 ? 16 : 20];
@@ -90,11 +92,13 @@ namespace Meziantou.Framework
 
             if (version == DeterministicGuidVersion.Version3)
             {
-                Debug.Assert(MD5.TryHashData(combinedBytes, hash, out _));
+                if (!MD5.TryHashData(combinedBytes, hash, out _))
+                    throw new InvalidOperationException("Cannot compute MD5 hash");
             }
             else
             {
-                Debug.Assert(SHA1.TryHashData(combinedBytes, hash, out _));
+                if (!SHA1.TryHashData(combinedBytes, hash, out _))
+                    throw new InvalidOperationException("Cannot compute SHA1 hash");
             }
 
             var newGuid = hash.Slice(0, 16);

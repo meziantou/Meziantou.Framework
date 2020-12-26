@@ -99,12 +99,18 @@ namespace Meziantou.Framework.DependencyScanning
             // Start enumerating
             var enumeratorTask = Task.Run(async () =>
             {
-                using var enumerator = new ScannerFileEnumerator<T>(path, options);
-                while (enumerator.MoveNext())
+                try
                 {
-                    await filesToScanChannel.Writer.WriteAsync(enumerator.Current, cancellationToken).ConfigureAwait(false);
+                    using var enumerator = new ScannerFileEnumerator<T>(path, options);
+                    while (enumerator.MoveNext())
+                    {
+                        await filesToScanChannel.Writer.WriteAsync(enumerator.Current, cancellationToken).ConfigureAwait(false);
+                    }
                 }
-                filesToScanChannel.Writer.Complete();
+                finally
+                {
+                    filesToScanChannel.Writer.Complete();
+                }
             }, cancellationToken);
 
             // Parse files
@@ -172,12 +178,18 @@ namespace Meziantou.Framework.DependencyScanning
             // Start enumerating
             var enumeratorTask = Task.Run(async () =>
             {
-                using var enumerator = new ScannerFileEnumerator<T>(path, options);
-                while (enumerator.MoveNext())
+                try
                 {
-                    await filesToScanChannel.Writer.WriteAsync(enumerator.Current, cancellationToken).ConfigureAwait(false);
+                    using var enumerator = new ScannerFileEnumerator<T>(path, options);
+                    while (enumerator.MoveNext())
+                    {
+                        await filesToScanChannel.Writer.WriteAsync(enumerator.Current, cancellationToken).ConfigureAwait(false);
+                    }
                 }
-                filesToScanChannel.Writer.Complete();
+                finally
+                {
+                    filesToScanChannel.Writer.Complete();
+                }
             }, cancellationToken);
 
             // Parse files
@@ -219,8 +231,7 @@ namespace Meziantou.Framework.DependencyScanning
                 yield return value;
             }
 
-            await writerCompleteTask.ConfigureAwait(false);
-            await whenAllTasks.ConfigureAwait(false);
+            await Task.WhenAll(enumeratorTask, writerCompleteTask, whenAllTasks).ConfigureAwait(false);
         }
 
         public GlobCollection? FilePatterns { get; set; }

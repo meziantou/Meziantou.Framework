@@ -31,7 +31,6 @@ namespace Meziantou.Framework.DependencyScanning.Internals
         {
             try
             {
-
                 using var xmlReader = XmlReader.Create(stream, s_settings);
                 return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
             }
@@ -48,6 +47,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
                 OmitXmlDeclaration = document.Declaration == null,
                 CloseOutput = false,
                 Async = true,
+                Indent = false,
             };
             using var xmlWriter = XmlWriter.Create(stream, settings);
             await document.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);

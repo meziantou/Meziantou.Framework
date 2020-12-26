@@ -1,0 +1,3 @@
+* text=lf
+*.cmd text eol=crlf
+*.sln text eol=crlf

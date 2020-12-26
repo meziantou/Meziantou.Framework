@@ -17,6 +17,7 @@ namespace Meziantou.Framework.DependencyScanning
             new PackagesConfigDependencyScanner(),
             new ProjectJsonDependencyScanner(),
             new PythonRequirementsDependencyScanner(),
+            new GitHubActionsScanner(),
         });
 
         internal static ScannerOptions Default { get; } = new ScannerOptions();

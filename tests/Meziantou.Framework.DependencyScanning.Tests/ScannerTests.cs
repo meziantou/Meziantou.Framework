@@ -59,7 +59,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.Npm, "b", "1.2.3", 8, 8));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("package.json", Expected);
+            AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -98,7 +98,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.NuGet, "yet-another-package", "1.0.0", 9, 14));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("test.nuspec", Expected);
+            AssertFileContentEqual("test.nuspec", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.NuGet, "TestPackage", "4.2.1", 10, 6));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("test.csproj", Expected);
+            AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -164,7 +164,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.NuGet, "My.Custom.Sdk2", "2.0.55", 3, 6));
 
             await UpdateDependencies(result, "1.2.3");
-            AssertFileContentEqual("test.csproj", Expected);
+            AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -206,7 +206,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 6));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("test.csproj", Expected);
+            AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -252,7 +252,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.NuGet, "d", "1.0.3", 13, 8));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("project.json", Expected);
+            AssertFileContentEqual("project.json", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -269,7 +269,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.PyPi, "C", "1.3.0", 3, 4));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("requirements.txt", Expected);
+            AssertFileContentEqual("requirements.txt", Expected, ignoreNewLines: false);
         }
 
         [Fact]
@@ -291,7 +291,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             AssertContainDependency(result, (DependencyType.NuGet, "A", "4.2.1", 3, 4));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("packages.config", Expected);
+            AssertFileContentEqual("packages.config", Expected, ignoreNewLines: true);
         }
 
         [Fact]
@@ -354,8 +354,8 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 (DependencyType.NuGet, "NUnit", "3.11.0", 15, 6));
 
             await UpdateDependencies(result, "3.12.0-beta00");
-            AssertFileContentEqual("packages.config", Expected);
-            AssertFileContentEqual("file.csproj", ExpectedCsproj);
+            AssertFileContentEqual("packages.config", Expected, ignoreNewLines: true);
+            AssertFileContentEqual("file.csproj", ExpectedCsproj, ignoreNewLines: true);
         }
 
         [Fact]
@@ -379,7 +379,7 @@ CMD  /code/run-app
                 (DependencyType.DockerImage, "a.com/c", "1.2.3", 3, 14));
 
             await UpdateDependencies(result, "2.0.0");
-            AssertFileContentEqual("Dockerfile", Expected);
+            AssertFileContentEqual("Dockerfile", Expected, ignoreNewLines: false);
         }
 
         [Fact]
@@ -414,7 +414,7 @@ CMD  /code/run-app
                 (DependencyType.NuGet, "My.Other.Sdk", "1.0.0-beta", 8, 32));
 
             await UpdateDependencies(result, "3.1.400");
-            AssertFileContentEqual("global.json", Expected);
+            AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
         }
 
         [RunIfWindowsFact]
@@ -490,6 +490,7 @@ CMD  /code/run-app
         [Fact]
         public async Task GitHubActions()
         {
+            const string Path = ".github/workflows/sample.yml";
             const string Original = @"name: demo
 on: [push]
 jobs:
@@ -529,8 +530,10 @@ jobs:
         image: redis:v3.0.0
 ";
 
-            AddFile(".github/workflows/sample.yml", Original);
-            var result = await GetDependencies(new GitHubActionsScanner());
+            AddFile(Path, Original);
+            var scanner = new GitHubActionsScanner();
+            Assert.True(scanner.ShouldScanFile(Path));
+            var result = await GetDependencies(scanner);
             AssertContainDependency(result,
                 (DependencyType.GitHubActions, "actions/checkout", "v2", 7, 32),
                 (DependencyType.GitHubActions, "actions/setup-node", "v1", 8, 34),
@@ -540,7 +543,7 @@ jobs:
                 (DependencyType.DockerImage, "redis", "1.0", 18, 22));
 
             await UpdateDependencies(result, "v3.0.0");
-            AssertFileContentEqual(".github/workflows/sample.yml", Expected);
+            AssertFileContentEqual(Path, Expected, ignoreNewLines: false);
         }
 
         [Fact]
@@ -570,7 +573,7 @@ services:
                 (DependencyType.DockerImage, "node", "10", 3, 15));
 
             await UpdateDependencies(result, "v3.0.0");
-            AssertFileContentEqual("custom/sample.yml", Expected);
+            AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
         }
 
         private async Task<List<Dependency>> GetDependencies(DependencyScanner scanner)
@@ -580,6 +583,15 @@ services:
             {
                 dependencies.Add(dep);
             }
+
+            // Execute in parallel and compare the number of found dependencies
+            var dependencies2 = new List<Dependency>();
+            await foreach (var dep in DependencyScanner.ScanDirectoryAsync(_directory.FullPath, new ScannerOptions { DegreeOfParallelism = 16, Scanners = new[] { scanner } }))
+            {
+                dependencies2.Add(dep);
+            }
+
+            Assert.Equal(dependencies.Count, dependencies2.Count);
 
             return dependencies;
         }
@@ -613,10 +625,10 @@ services:
             }
         }
 
-        private void AssertFileContentEqual(string path, string expected)
+        private void AssertFileContentEqual(string path, string expected, bool ignoreNewLines)
         {
             var fullPath = _directory.GetFullPath(path);
-            Assert.Equal(expected, File.ReadAllText(fullPath));
+            AssertExtensions.StringEquals(expected, File.ReadAllText(fullPath), ignoreNewLines);
         }
 
         public void Dispose()

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
     [StructLayout(LayoutKind.Sequential)]
     internal struct EnabledScannersArray64 : IEnabledScannersArray
     {
-        public static int MaxValues { get; } = Marshal.SizeOf<EnabledScannersArray64>() * 8;
+        public static int MaxValues { get; } = Marshal.SizeOf<EnabledScannersArray64>() * 8; // Number of bits
 
         private ulong _value;
 

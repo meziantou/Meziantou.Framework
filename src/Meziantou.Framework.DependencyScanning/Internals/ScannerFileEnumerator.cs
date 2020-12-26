@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
 
@@ -14,6 +15,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
         private readonly FileSystemEntryPredicate _shouldScan;
         private readonly FileSystemEntryPredicate _shouldRecurse;
 
+        [SuppressMessage("Usage", "MA0099:Use Explicit enum value instead of 0", Justification = "FileAttributes doesn't have a named value for 0")]
         private static EnumerationOptions GetEnumerationOptions(ScannerOptions options)
         {
             return new EnumerationOptions
@@ -21,6 +23,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
                 RecurseSubdirectories = options.RecurseSubdirectories,
                 IgnoreInaccessible = true,
                 ReturnSpecialDirectories = false,
+                AttributesToSkip = 0,
             };
         }
 

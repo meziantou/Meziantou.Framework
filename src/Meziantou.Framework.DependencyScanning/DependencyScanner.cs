@@ -23,6 +23,9 @@ namespace Meziantou.Framework.DependencyScanning
             if (options.Scanners.Count == 0)
                 return EmptyAsyncEnumerable<Dependency>.Instance;
 
+            if (options.DegreeOfParallelism == 1)
+                return ScanDirectorySingleThreadedAsync(path, options, cancellationToken);
+
             if (options.Scanners.Count <= EnabledScannersArray32.MaxValues)
                 return ScanDirectoryParallelAsync<EnabledScannersArray32>(path, options, cancellationToken);
 
@@ -64,7 +67,9 @@ namespace Meziantou.Framework.DependencyScanning
                     for (var i = 0; i < options.Scanners.Count; i++)
                     {
                         if (!entry.Scanners.Get(i))
+                        {
                             continue;
+                        }
 
                         var scanner = options.Scanners[i];
 
@@ -135,6 +140,14 @@ namespace Meziantou.Framework.DependencyScanning
             }, cancellationToken), startIndex: 1, options.DegreeOfParallelism);
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        private static async IAsyncEnumerable<Dependency> ScanDirectorySingleThreadedAsync(string path, ScannerOptions options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var result = new List<Dependency>();
+            await ScanDirectoryAsync(path, options, dep => { result.Add(dep); return default; }, cancellationToken).ConfigureAwait(false);
+            foreach (var item in result)
+                yield return item;
         }
 
         private static async IAsyncEnumerable<Dependency> ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, [EnumeratorCancellation] CancellationToken cancellationToken = default)

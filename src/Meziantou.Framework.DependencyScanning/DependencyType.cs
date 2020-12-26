@@ -9,5 +9,6 @@
         DockerImage,
         GitSubmodule,
         DotNetSdk,
+        GitHubActions,
     }
 }

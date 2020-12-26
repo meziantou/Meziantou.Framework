@@ -9,7 +9,7 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
     {
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals("package.json", StringComparison.Ordinal);
         }

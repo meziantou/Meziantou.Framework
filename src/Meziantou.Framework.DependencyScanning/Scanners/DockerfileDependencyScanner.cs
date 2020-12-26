@@ -29,7 +29,7 @@ namespace Meziantou.Framework.DependencyScanning
             }
         }
 
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals("Dockerfile", StringComparison.OrdinalIgnoreCase);
         }

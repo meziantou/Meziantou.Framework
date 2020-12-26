@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
+using Meziantou.Framework.Globbing;
 using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -484,6 +485,92 @@ CMD  /code/run-app
 
                 Assert.False(true, "git command failed. Logs:\n" + string.Join("\n", result.Output));
             }
+        }
+
+        [Fact]
+        public async Task GitHubActions()
+        {
+            const string Original = @"name: demo
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+      - uses: docker://test/setup:v3
+      - run: npm install -g bats
+      - run: bats -v
+    container:
+      image: node:10.16-jessie
+    services:
+      nginx:
+        image: nginx:latest
+      redis:
+        image: redis:1.0
+";
+            const string Expected = @"name: demo
+on: [push]
+jobs:
+  check-bats-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.0
+      - uses: actions/setup-node@v3.0.0
+      - uses: docker://test/setup:v3.0.0
+      - run: npm install -g bats
+      - run: bats -v
+    container:
+      image: node:v3.0.0
+    services:
+      nginx:
+        image: nginx:v3.0.0
+      redis:
+        image: redis:v3.0.0
+";
+
+            AddFile(".github/workflows/sample.yml", Original);
+            var result = await GetDependencies(new GitHubActionsScanner());
+            AssertContainDependency(result,
+                (DependencyType.GitHubActions, "actions/checkout", "v2", 7, 32),
+                (DependencyType.GitHubActions, "actions/setup-node", "v1", 8, 34),
+                (DependencyType.DockerImage, "test/setup", "v3", 9, 35),
+                (DependencyType.DockerImage, "node", "10.16-jessie", 13, 19),
+                (DependencyType.DockerImage, "nginx", "latest", 16, 22),
+                (DependencyType.DockerImage, "redis", "1.0", 18, 22));
+
+            await UpdateDependencies(result, "v3.0.0");
+            AssertFileContentEqual(".github/workflows/sample.yml", Expected);
+        }
+
+        [Fact]
+        public async Task Regex()
+        {
+            const string Original = @"
+container:
+  image: node:10
+services:
+  abc
+";
+            const string Expected = @"
+container:
+  image: node:v3.0.0
+services:
+  abc
+";
+
+            AddFile("custom/sample.yml", Original);
+            var result = await GetDependencies(new RegexScanner()
+            {
+                FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
+                DependencyType = DependencyType.DockerImage,
+                RegexPattern = "image: (?<name>[a-z]+):(?<version>[0-9]+)",
+            });
+            AssertContainDependency(result,
+                (DependencyType.DockerImage, "node", "10", 3, 15));
+
+            await UpdateDependencies(result, "v3.0.0");
+            AssertFileContentEqual("custom/sample.yml", Expected);
         }
 
         private async Task<List<Dependency>> GetDependencies(DependencyScanner scanner)

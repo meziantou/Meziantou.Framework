@@ -7,7 +7,7 @@ namespace Meziantou.Framework.DependencyScanning
 {
     public sealed class GitSubmoduleDependencyScanner : DependencyScanner
     {
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals(".gitmodules", StringComparison.Ordinal);
         }

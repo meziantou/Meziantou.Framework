@@ -70,7 +70,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
             }
 
-            public override bool ShouldScanFile(CandidateFileContext file) => true;
+            protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
         }
 
         private sealed class DummyScannerNeverMatch : DependencyScanner
@@ -80,7 +80,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
             }
 
-            public override bool ShouldScanFile(CandidateFileContext file) => false;
+            protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
         }
     }
 }

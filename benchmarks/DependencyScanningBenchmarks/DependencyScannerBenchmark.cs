@@ -129,7 +129,6 @@ namespace DependencyScanningBenchmarks
             }
         }
 
-
         private sealed class DummyScanner : DependencyScanner
         {
             internal static readonly Dependency Dependency = new("", "", DependencyType.Unknown, new TextLocation("", 1, 1, 1));
@@ -139,7 +138,7 @@ namespace DependencyScanningBenchmarks
                 return context.ReportDependency(Dependency);
             }
 
-            public override bool ShouldScanFile(CandidateFileContext file) => true;
+            protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
         }
 
         private sealed class DummyScannerNeverMatch : DependencyScanner
@@ -149,7 +148,7 @@ namespace DependencyScanningBenchmarks
                 return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
             }
 
-            public override bool ShouldScanFile(CandidateFileContext file) => false;
+            protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
         }
     }
 }

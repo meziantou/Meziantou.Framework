@@ -9,7 +9,7 @@ namespace Meziantou.Framework.DependencyScanning
     {
         private static readonly Regex s_pypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
 
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals("requirements.txt", StringComparison.Ordinal);
         }

@@ -8,7 +8,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
     {
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals("global.json", StringComparison.Ordinal);
         }

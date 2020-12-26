@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.Globbing;
 
 namespace Meziantou.Framework.DependencyScanning
 {
@@ -209,12 +210,22 @@ namespace Meziantou.Framework.DependencyScanning
             await whenAllTasks.ConfigureAwait(false);
         }
 
+        public GlobCollection? FilePatterns { get; set; }
+
         public bool ShouldScanFile(ReadOnlySpan<char> fullPath)
         {
-            return ShouldScanFile(new CandidateFileContext(Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath)));
+            return ShouldScanFileCore(new CandidateFileContext(Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath)));
         }
 
-        public abstract bool ShouldScanFile(CandidateFileContext context);
+        public bool ShouldScanFile(CandidateFileContext context)
+        {
+            if (FilePatterns != null)
+                return FilePatterns.IsMatch(context.Directory, context.FileName);
+
+            return ShouldScanFileCore(context);
+        }
+
+        protected abstract bool ShouldScanFileCore(CandidateFileContext context);
 
         public abstract ValueTask ScanAsync(ScanFileContext context);
 

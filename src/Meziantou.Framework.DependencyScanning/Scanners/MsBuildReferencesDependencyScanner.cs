@@ -13,7 +13,7 @@ namespace Meziantou.Framework.DependencyScanning
         private static readonly XName s_sdkName = XName.Get("Sdk");
         private static readonly XName s_nameName = XName.Get("Name");
 
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
                 || context.FileName.EndsWith(".props", StringComparison.OrdinalIgnoreCase)

@@ -88,5 +88,24 @@ namespace Meziantou.Framework.DependencyScanning
         {
             return FormattableString.Invariant($"{FilePath}:{LineNumber},{LinePosition}-{LinePosition + Length}");
         }
+
+        internal static TextLocation FromIndex(string filePath, string text, int index, int length)
+        {
+            var line = 1;
+            var lineIndex = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                if (i == index)
+                    return new TextLocation(filePath, line, index - lineIndex, length);
+
+                if (text[i] == '\n')
+                {
+                    lineIndex = i;
+                    line++;
+                }
+            }
+
+            throw new ArgumentException("Index was not found in the text", nameof(index));
+        }
     }
 }

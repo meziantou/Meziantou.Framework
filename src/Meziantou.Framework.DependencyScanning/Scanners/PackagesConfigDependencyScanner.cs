@@ -25,7 +25,7 @@ namespace Meziantou.Framework.DependencyScanning
 
         public bool SearchForReferencesInAssociatedCsprojFiles { get; set; } = true;
 
-        public override bool ShouldScanFile(CandidateFileContext context)
+        protected override bool ShouldScanFileCore(CandidateFileContext context)
         {
             return context.FileName.Equals("packages.config", StringComparison.OrdinalIgnoreCase);
         }

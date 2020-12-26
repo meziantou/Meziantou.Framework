@@ -319,7 +319,7 @@ namespace Meziantou.Framework.Globbing
                     segments.RemoveRange(segments.Count - 2, 2);
                     segments.Add(lastSegment);
                 }
-                if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
+                else if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
                 {
                     var lastSegment = new MatchAllEndsWithSegment(endsWith.Value, ignoreCase);
                     segments.RemoveRange(segments.Count - 2, 2);

@@ -28,8 +28,10 @@ namespace Meziantou.Framework.Globbing.Tests
         }
 
         [Theory]
+        [InlineData("**/*", "test")]
         [InlineData("test/*.txt", "test")]
         [InlineData("**/a.txt", "test/a")]
+        [InlineData("**/*", "test/a")]
         [InlineData("**/*.txt", "test/a")]
         [InlineData("test/**/a*.txt", "test/a")]
         [InlineData("test/**/a*.txt", "test/a/b/c/d")]
@@ -153,6 +155,8 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("[#!]*", @"#test3")]
         [InlineData("[#!]*", "#this is a comment")]
         [InlineData("a/**/b", "a/b")]
+        [InlineData("**/*", "a")]
+        [InlineData("**/*", "a/b")]
         public void Match(string pattern, string path)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);

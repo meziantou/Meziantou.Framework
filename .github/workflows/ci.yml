@@ -92,9 +92,9 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.x'
-    - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /bl
+    - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /p:UseSourceLink=false /bl
       name: Build
-    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" -- xunit.parallelizeAssembly=true
+    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} /p:UseSourceLink=false --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage"
       name: Run tests
     - uses: actions/upload-artifact@v2
       if: always()

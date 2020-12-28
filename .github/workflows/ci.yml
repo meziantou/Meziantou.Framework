@@ -94,7 +94,7 @@ jobs:
         dotnet-version: '3.1.x'
     - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /bl
       name: Build
-    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" -- xunit.parallelizeAssembly=true
+    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" -- xunit.parallelizeAssembly=true
       name: Run tests
     - uses: actions/upload-artifact@v2
       if: always()

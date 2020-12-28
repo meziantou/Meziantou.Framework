@@ -511,7 +511,6 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
-        [SuppressMessage("Performance", "MA0038", Justification = "By design")]
         public HtmlDocument CreateDocument()
         {
             return new HtmlDocument();
@@ -1202,7 +1201,6 @@ namespace Meziantou.Framework.Html
             return ImportNode(node, HtmlCloneOptions.All);
         }
 
-        [SuppressMessage("Design", "MA0038:Make method static", Justification = "By design")]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
         public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
         {

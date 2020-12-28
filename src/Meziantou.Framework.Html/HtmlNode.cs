@@ -1063,7 +1063,6 @@ namespace Meziantou.Framework.Html
             ParentNode?.GetNamespaceAttributes(namespaces);
         }
 
-        [SuppressMessage("Design", "MA0041:Make method static", Justification = "By design")]
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
         public Uri BaseAddress => null;
 

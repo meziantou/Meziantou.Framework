@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Tests
 {
     public sealed class SingleInstanceTests
     {
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public async Task TestSingleInstance_NotifyFirstInstance()
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));

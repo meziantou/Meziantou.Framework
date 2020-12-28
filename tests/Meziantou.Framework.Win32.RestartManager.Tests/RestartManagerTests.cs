@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -14,7 +13,7 @@ namespace Meziantou.Framework.Win32.Tests
 #if NET461 || NETCOREAPP3_1
             _currentProcessId = System.Diagnostics.Process.GetCurrentProcess().Id;
 #else
-            _currentProcessId = Environment.ProcessId;
+            _currentProcessId = System.Environment.ProcessId;
 #endif
         }
 

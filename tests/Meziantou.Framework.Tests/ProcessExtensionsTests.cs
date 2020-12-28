@@ -127,7 +127,7 @@ namespace Meziantou.Framework.Tests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void GetProcesses()
         {
             var processes = ProcessExtensions.GetProcesses();
@@ -137,7 +137,7 @@ namespace Meziantou.Framework.Tests
             AssertExtensions.AllItemsAreUnique(processes.ToList());
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void GetDescendantProcesses()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -161,7 +161,8 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-        [Fact]
+
+        [RunIfFact(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
         public void GetParentProcessId()
         {
             var current = Process.GetCurrentProcess();
@@ -171,7 +172,7 @@ namespace Meziantou.Framework.Tests
             Assert.NotEqual(current.Id, parent);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void GetParent()
         {
             var current = Process.GetCurrentProcess();
@@ -185,7 +186,7 @@ namespace Meziantou.Framework.Tests
             Assert.True(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void KillProcess_EntireProcessTree_False()
         {
             using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -216,7 +217,7 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void KillProcess_EntireProcessTree_True()
         {
             var start = DateTime.UtcNow;

@@ -24,7 +24,7 @@ jobs:
 
     - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
-            
+
     - name: Add dotnet-format problem matcher
       uses: xt0rted/dotnet-format-problem-matcher@v1
 
@@ -75,6 +75,12 @@ jobs:
           solution: 'Meziantou.Framework.Linux.slnf'
           configuration: Debug
         - runs-on: 'ubuntu-20.04'
+          solution: 'Meziantou.Framework.Linux.slnf'
+          configuration: Release
+        - runs-on: 'macos-10.15'
+          solution: 'Meziantou.Framework.Linux.slnf'
+          configuration: Debug
+        - runs-on: 'macos-10.15'
           solution: 'Meziantou.Framework.Linux.slnf'
           configuration: Release
       fail-fast: false

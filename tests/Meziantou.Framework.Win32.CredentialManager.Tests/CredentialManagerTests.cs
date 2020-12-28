@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Win32.Tests
             _mutex = new Mutex(initiallyOwned: false, typeof(CredentialManagerTests).FullName);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void CredentialManager_01()
         {
             CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -40,7 +40,7 @@ namespace Meziantou.Framework.Win32.Tests
             Assert.Null(cred);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void CredentialManager_Enumerate()
         {
             CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void CredentialManager_LimitComment()
         {
             var comment = new string('a', 255);
@@ -74,7 +74,7 @@ namespace Meziantou.Framework.Win32.Tests
             Assert.Null(cred);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void CredentialManager_LimitSecret()
         {
             var secret = new string('a', 512 * 5 / 2);
@@ -88,7 +88,7 @@ namespace Meziantou.Framework.Win32.Tests
             Assert.Null(cred);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/32")]
         public void CredentialManager_EnumerateCredential()
         {

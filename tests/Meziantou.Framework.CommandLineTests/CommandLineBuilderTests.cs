@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -48,10 +47,10 @@ namespace Meziantou.Framework.CommandLineTests
             var args = CommandLineBuilder.WindowsQuotedArgument(value);
             var path = GetArgumentPrinterPath();
 
-            ValidateArguments(path, args, new[] { expected });
+            ValidateArguments("dotnet", "\"" + path + "\" " + args, new[] { expected });
         }
 
-        [RunIfWindowsTheory]
+        [RunIfTheory(FactOperatingSystem.Windows)]
         [MemberData(nameof(GetArguments))]
         public void WindowsCmdArgument_Test(string value, string expected)
         {
@@ -59,7 +58,7 @@ namespace Meziantou.Framework.CommandLineTests
             var batPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid() + ".cmd");
 
             var path = GetArgumentPrinterPath();
-            var fileContent = "\"" + path + "\" " + args;
+            var fileContent = "dotnet \"" + path + "\" " + args;
             File.WriteAllText(batPath, fileContent);
 
             var cmdArguments = "/Q /C \"" + batPath + "\"";
@@ -70,7 +69,7 @@ namespace Meziantou.Framework.CommandLineTests
 
         private FullPath GetArgumentPrinterPath()
         {
-            var fileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "ArgumentsPrinter.exe" : "ArgumentsPrinter";
+            var fileName = "ArgumentsPrinter.dll";
             var testedPaths = new List<FullPath>();
 
             var configurations = new[] { "Debug", "Release" };
@@ -86,7 +85,18 @@ namespace Meziantou.Framework.CommandLineTests
                 testedPaths.Add(path);
             }
 
-            throw new XunitException($"File not found:\n- {string.Join("- ", testedPaths)}\nHave you built the ArgumentsPrinter project?");
+            var existingFiles = new List<string>();
+            foreach (var testedPath in testedPaths)
+            {
+                var path = testedPath.Parent;
+                if (Directory.Exists(path))
+                {
+                    existingFiles.AddRange(Directory.GetFiles(path, "*", SearchOption.AllDirectories));
+                }
+            }
+
+            existingFiles.Sort(StringComparer.Ordinal);
+            throw new XunitException($"File not found:\n{string.Join("\n", testedPaths)}\n. List of existing files:\n{string.Join("\n", existingFiles)}\nHave you built the ArgumentsPrinter project?");
         }
 
         private void ValidateArguments(string fileName, string arguments, string[] expectedArguments)

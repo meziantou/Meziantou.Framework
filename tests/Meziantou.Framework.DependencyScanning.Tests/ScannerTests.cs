@@ -417,7 +417,7 @@ CMD  /code/run-app
             AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
         }
 
-        [RunIfWindowsFact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public async Task GitSubmodulesFromDependencies()
         {
             // Initialize remote repository

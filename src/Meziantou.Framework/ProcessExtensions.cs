@@ -182,6 +182,8 @@ namespace Meziantou.Framework
             }
         }
 
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
         public static int? GetParentProcessId(this Process process)
         {
             if (process == null)
@@ -227,6 +229,8 @@ namespace Meziantou.Framework
             return null;
         }
 
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
         public static Process? GetParentProcess(this Process process)
         {
             var parentProcessId = GetParentProcessId(process);

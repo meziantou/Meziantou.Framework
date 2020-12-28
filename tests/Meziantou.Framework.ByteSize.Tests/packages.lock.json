@@ -2,6 +2,12 @@
   "version": 1,
   "dependencies": {
     ".NETCoreApp,Version=v3.1": {
+      "coverlet.collector": {
+        "type": "Direct",
+        "requested": "[1.3.0, )",
+        "resolved": "1.3.0",
+        "contentHash": "t8pnf5SX2ya0RX4vjoxsbhDMQCZJcpPun2neHKJ4FouMmObylo25FvoOydvf3Bl+l+IzWw7u2vjEeCBHnleB9g=="
+      },
       "Meziantou.Analyzer": {
         "type": "Direct",
         "requested": "[1.0.642, )",
@@ -1126,6 +1132,12 @@
       }
     },
     ".NETFramework,Version=v4.6.1": {
+      "coverlet.collector": {
+        "type": "Direct",
+        "requested": "[1.3.0, )",
+        "resolved": "1.3.0",
+        "contentHash": "t8pnf5SX2ya0RX4vjoxsbhDMQCZJcpPun2neHKJ4FouMmObylo25FvoOydvf3Bl+l+IzWw7u2vjEeCBHnleB9g=="
+      },
       "Meziantou.Analyzer": {
         "type": "Direct",
         "requested": "[1.0.642, )",
@@ -1242,6 +1254,12 @@
       }
     },
     ".NETCoreApp,Version=v5.0": {
+      "coverlet.collector": {
+        "type": "Direct",
+        "requested": "[1.3.0, )",
+        "resolved": "1.3.0",
+        "contentHash": "t8pnf5SX2ya0RX4vjoxsbhDMQCZJcpPun2neHKJ4FouMmObylo25FvoOydvf3Bl+l+IzWw7u2vjEeCBHnleB9g=="
+      },
       "Meziantou.Analyzer": {
         "type": "Direct",
         "requested": "[1.0.642, )",

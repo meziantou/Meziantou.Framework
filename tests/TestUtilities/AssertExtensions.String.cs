@@ -29,12 +29,12 @@ namespace TestUtilities
             var actualFormat2 = Replace2(actual);
 
             var index = expectedFormat2.Zip(actualFormat2, (c1, c2) => c1 == c2).TakeWhile(b => b).Count() + 1;
-            Assert.True(false, $@"Expect: <{expectedFormat1}>
-Actual: <{actualFormat1}>
-
-Expect: <{expectedFormat2}>
-Actual: <{actualFormat2}>
-         {new string(' ', index)}^");
+            Assert.True(false, $"Expect: <{expectedFormat1}>\n" +
+                               $"Actual: <{actualFormat1}>\n" +
+                               $"\n" +
+                               $"Expect: <{expectedFormat2}>\n" +
+                               $"Actual: <{actualFormat2}>\n" +
+                               $"         {new string(' ', index)}^");
 
             static string Replace1(string value)
             {

@@ -120,15 +120,15 @@ namespace Meziantou.Framework.Templating.Tests
             {
                 Debug = true,
             };
-            template.Load(@"Hello <%= 
-#if DEBUG
-""debug""
-#elif RELEASE
-""release""
-#else
-#error Error
-#endif
-%>!");
+            template.Load("Hello <%= \n" +
+                          "#if DEBUG\n" +
+                          "\"debug\"\n" +
+                          "#elif RELEASE\n" +
+                          "\"release\"\n" +
+                          "#else\n" +
+                          "#error Error\n" +
+                          "#endif\n" +
+                          "%>!");
 
             // Act 
             var result = template.Run();
@@ -145,15 +145,15 @@ namespace Meziantou.Framework.Templating.Tests
             {
                 Debug = false,
             };
-            template.Load(@"Hello <%= 
-#if DEBUG
-""debug""
-#elif RELEASE
-""release""
-#else
-#error Error
-#endif
-%>!");
+            template.Load("Hello <%= \n" +
+                          "#if DEBUG\n" +
+                          "\"debug\"\n" +
+                          "#elif RELEASE\n" +
+                          "\"release\"\n" +
+                          "#else\n" +
+                          "#error Error\n" +
+                          "#endif\n" +
+                          "%>!");
 
             // Act 
             var result = template.Run();

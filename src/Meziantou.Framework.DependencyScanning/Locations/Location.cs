@@ -17,8 +17,15 @@ namespace Meziantou.Framework.DependencyScanning
 
         internal async Task UpdateAsync(string newVersion, CancellationToken cancellationToken)
         {
-            using var stream = File.Open(FilePath, FileMode.Open, FileAccess.ReadWrite);
-            await UpdateAsync(stream, newVersion, cancellationToken).ConfigureAwait(false);
+            var stream = File.Open(FilePath, FileMode.Open, FileAccess.ReadWrite);
+            try
+            {
+                await UpdateAsync(stream, newVersion, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                await stream.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         internal protected abstract Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken);

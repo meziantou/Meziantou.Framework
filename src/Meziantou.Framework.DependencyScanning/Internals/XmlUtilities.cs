@@ -49,8 +49,15 @@ namespace Meziantou.Framework.DependencyScanning.Internals
                 Async = true,
                 Indent = false,
             };
-            using var xmlWriter = XmlWriter.Create(stream, settings);
-            await document.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);
+            var xmlWriter = XmlWriter.Create(stream, settings);
+            try
+            {
+                await document.SaveAsync(xmlWriter, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                await xmlWriter.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
         public static string CreateXPath(XElement element)

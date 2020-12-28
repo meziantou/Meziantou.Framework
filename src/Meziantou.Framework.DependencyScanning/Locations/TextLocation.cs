@@ -72,11 +72,18 @@ namespace Meziantou.Framework.DependencyScanning
                     throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
                 stream.SetLength(0);
-                using var writer = StreamUtilities.CreateWriter(stream, encoding);
-                var contentAsMemory = content.AsMemory();
-                await writer.WriteAsync(contentAsMemory[0..(currentIndex + column)], cancellationToken).ConfigureAwait(false);
-                await writer.WriteAsync(newVersion.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await writer.WriteAsync(contentAsMemory[(currentIndex + column + Length)..], cancellationToken).ConfigureAwait(false);
+                var writer = StreamUtilities.CreateWriter(stream, encoding);
+                try
+                {
+                    var contentAsMemory = content.AsMemory();
+                    await writer.WriteAsync(contentAsMemory[0..(currentIndex + column)], cancellationToken).ConfigureAwait(false);
+                    await writer.WriteAsync(newVersion.AsMemory(), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteAsync(contentAsMemory[(currentIndex + column + Length)..], cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await writer.DisposeAsync().ConfigureAwait(false);
+                }
             }
             else
             {

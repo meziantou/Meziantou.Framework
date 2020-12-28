@@ -29,45 +29,44 @@ namespace Meziantou.Framework.CodeOwners.Tests
         [Fact]
         public void ParseCodeOwners()
         {
-            const string Content = @"
-# This is a comment.
-# Each line is a file pattern followed by one or more owners.
-
-# These owners will be the default owners for everything in
-# the repo. Unless a later match takes precedence,
-# @global-owner1 and @global-owner2 will be requested for
-# review when someone opens a pull request.
-*       @global-owner1 @global-owner2
-
-# Order is important; the last matching pattern takes the most
-# precedence. When someone opens a pull request that only
-# modifies JS files, only @js-owner and not the global
-# owner(s) will be requested for a review.
-*.js    @js-owner
-
-# You can also use email addresses if you prefer. They'll be
-# used to look up users just like we do for commit author
-# emails.
-*.go docs@example.com
-
-# In this example, @doctocat owns any files in the build/logs
-# directory at the root of the repository and any of its
-# subdirectories.
-/build/logs/ @doctocat
-
-# The `docs/*` pattern will match files like
-# `docs/getting-started.md` but not further nested files like
-# `docs/build-app/troubleshooting.md`.
-docs/*  docs@example.com
-
-# In this example, @octocat owns any file in an apps directory
-# anywhere in your repository.
-apps/ @octocat
-
-# In this example, @doctocat owns any file in the `/docs`
-# directory in the root of your repository.
-/docs/ @doctocat
-";
+            const string Content = "\n" +
+                                   "# This is a comment.\n" +
+                                   "# Each line is a file pattern followed by one or more owners.\n" +
+                                   "\n" +
+                                   "# These owners will be the default owners for everything in\n" +
+                                   "# the repo. Unless a later match takes precedence,\n" +
+                                   "# @global-owner1 and @global-owner2 will be requested for\n" +
+                                   "# review when someone opens a pull request.\n" +
+                                   "*       @global-owner1 @global-owner2\n" +
+                                   "\n" +
+                                   "# Order is important; the last matching pattern takes the most\n" +
+                                   "# precedence. When someone opens a pull request that only\n" +
+                                   "# modifies JS files, only @js-owner and not the global\n" +
+                                   "# owner(s) will be requested for a review.\n" +
+                                   "*.js    @js-owner\n" +
+                                   "\n" +
+                                   "# You can also use email addresses if you prefer. They'll be\n" +
+                                   "# used to look up users just like we do for commit author\n" +
+                                   "# emails.\n" +
+                                   "*.go docs@example.com\n" +
+                                   "\n" +
+                                   "# In this example, @doctocat owns any files in the build/logs\n" +
+                                   "# directory at the root of the repository and any of its\n" +
+                                   "# subdirectories.\n" +
+                                   "/build/logs/ @doctocat\n" +
+                                   "\n" +
+                                   "# The `docs/*` pattern will match files like\n" +
+                                   "# `docs/getting-started.md` but not further nested files like\n" +
+                                   "# `docs/build-app/troubleshooting.md`.\n" +
+                                   "docs/*  docs@example.com\n" +
+                                   "\n" +
+                                   "# In this example, @octocat owns any file in an apps directory\n" +
+                                   "# anywhere in your repository.\n" +
+                                   "apps/ @octocat\n" +
+                                   "\n" +
+                                   "# In this example, @doctocat owns any file in the `/docs`\n" +
+                                   "# directory in the root of your repository.\n" +
+                                   "/docs/ @doctocat\n";
 
             var actual = CodeOwnersParser.Parse(Content).ToArray();
 

@@ -4,9 +4,9 @@
     ".NETCoreApp,Version=v3.1": {
       "Meziantou.Analyzer": {
         "type": "Direct",
-        "requested": "[1.0.639, )",
-        "resolved": "1.0.639",
-        "contentHash": "nqh1chfjrjB7rmtXAntlE/KTds46T690YmqyigGqDltUviG+R1t7gtfQo5dmjQARh0Q7CogLhrQQUtz/qmWl8w=="
+        "requested": "[1.0.642, )",
+        "resolved": "1.0.642",
+        "contentHash": "K1abrwwn8WET9MNxAZ5JS4Jy6hltX2iUqFBAFHDuqF+Y9/cI/P8l6MvzuAW8zg8rcuVS3iGs6x/hNAEDr7uObQ=="
       },
       "Microsoft.CodeAnalysis.NetAnalyzers": {
         "type": "Direct",
@@ -44,9 +44,9 @@
     ".NETStandard,Version=v2.0": {
       "Meziantou.Analyzer": {
         "type": "Direct",
-        "requested": "[1.0.639, )",
-        "resolved": "1.0.639",
-        "contentHash": "nqh1chfjrjB7rmtXAntlE/KTds46T690YmqyigGqDltUviG+R1t7gtfQo5dmjQARh0Q7CogLhrQQUtz/qmWl8w=="
+        "requested": "[1.0.642, )",
+        "resolved": "1.0.642",
+        "contentHash": "K1abrwwn8WET9MNxAZ5JS4Jy6hltX2iUqFBAFHDuqF+Y9/cI/P8l6MvzuAW8zg8rcuVS3iGs6x/hNAEDr7uObQ=="
       },
       "Microsoft.CodeAnalysis.NetAnalyzers": {
         "type": "Direct",
@@ -98,9 +98,9 @@
     ".NETCoreApp,Version=v5.0": {
       "Meziantou.Analyzer": {
         "type": "Direct",
-        "requested": "[1.0.639, )",
-        "resolved": "1.0.639",
-        "contentHash": "nqh1chfjrjB7rmtXAntlE/KTds46T690YmqyigGqDltUviG+R1t7gtfQo5dmjQARh0Q7CogLhrQQUtz/qmWl8w=="
+        "requested": "[1.0.642, )",
+        "resolved": "1.0.642",
+        "contentHash": "K1abrwwn8WET9MNxAZ5JS4Jy6hltX2iUqFBAFHDuqF+Y9/cI/P8l6MvzuAW8zg8rcuVS3iGs6x/hNAEDr7uObQ=="
       },
       "Microsoft.CodeAnalysis.NetAnalyzers": {
         "type": "Direct",

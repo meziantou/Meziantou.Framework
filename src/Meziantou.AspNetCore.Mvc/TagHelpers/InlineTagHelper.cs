@@ -62,7 +62,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers
 
         private static async Task<string> ReadFileContentAsStringAsync(IFileInfo file)
         {
-            using var stream = file.CreateReadStream();
+            await using var stream = file.CreateReadStream();
             using var textReader = new StreamReader(stream);
             return await textReader.ReadToEndAsync();
         }
@@ -70,7 +70,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers
         [SuppressMessage("Usage", "MA0032:Use a cancellation token", Justification = "We don't want to cancel this task as it fills the cache for the next one and should be quick")]
         private static async Task<string> ReadFileContentAsBase64Async(IFileInfo file)
         {
-            using var stream = file.CreateReadStream();
+            await using var stream = file.CreateReadStream();
             using var writer = new MemoryStream();
 
             await stream.CopyToAsync(writer);

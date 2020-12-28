@@ -75,12 +75,19 @@ namespace Meziantou.Framework.DependencyScanning
             var result = new List<(string, XDocument)>();
             foreach (var file in files)
             {
-                using var stream = context.FileSystem.OpenRead(file);
-                var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(stream, context.CancellationToken).ConfigureAwait(false);
-                if (doc == null)
-                    continue;
+                var stream = context.FileSystem.OpenRead(file);
+                try
+                {
+                    var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(stream, context.CancellationToken).ConfigureAwait(false);
+                    if (doc == null)
+                        continue;
 
-                result.Add((file, doc));
+                    result.Add((file, doc));
+                }
+                finally
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                }
             }
 
             return result;

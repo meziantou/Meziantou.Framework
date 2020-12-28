@@ -280,7 +280,7 @@ namespace Meziantou.Framework
             public async ValueTask<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
             {
                 _cancellationToken = cancellationToken;
-                using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
+                await using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
                 {
                     return await Task.ConfigureAwait(false);
                 }

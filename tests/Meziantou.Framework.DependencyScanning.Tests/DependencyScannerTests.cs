@@ -22,7 +22,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         public async Task LargeDirectory()
         {
             var stopwatch = ValueStopwatch.StartNew();
-            using var directory = TemporaryDirectory.Create();
+            await using var directory = TemporaryDirectory.Create();
             const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
@@ -46,7 +46,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         public async Task LargeDirectory_NoScannerMatch()
         {
             var stopwatch = ValueStopwatch.StartNew();
-            using var directory = TemporaryDirectory.Create();
+            await using var directory = TemporaryDirectory.Create();
             const int FileCount = 10_000;
             for (var i = 0; i < FileCount; i++)
             {
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         [InlineData(2)]
         public async Task ReportScanException(int degreeOfParallelism)
         {
-            using var directory = TemporaryDirectory.Create();
+            await using var directory = TemporaryDirectory.Create();
             await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>
@@ -90,7 +90,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         [InlineData(2)]
         public async Task ReportScanException_IAsyncEnumerablt(int degreeOfParallelism)
         {
-            using var directory = TemporaryDirectory.Create();
+            await using var directory = TemporaryDirectory.Create();
             await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
             await Assert.ThrowsAsync<InvalidOperationException>(async () =>

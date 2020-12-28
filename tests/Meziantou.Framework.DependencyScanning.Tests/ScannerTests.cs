@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable MA0101
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -421,7 +422,7 @@ CMD  /code/run-app
         public async Task GitSubmodulesFromDependencies()
         {
             // Initialize remote repository
-            using var remote = TemporaryDirectory.Create();
+            await using var remote = TemporaryDirectory.Create();
             await ExecuteProcess("git", "init", remote.FullPath);
             await ExecuteProcess("git", "config user.name test", remote.FullPath);
             await ExecuteProcess("git", "config user.email test@example.com", remote.FullPath);

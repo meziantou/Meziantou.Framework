@@ -44,13 +44,21 @@ namespace Meziantou.Framework.DependencyScanning
 
                 stream.SetLength(0);
 
-                using var textWriter = StreamUtilities.CreateWriter(stream, encoding);
-                using var jsonWriter = new JsonTextWriter(textWriter)
+                var textWriter = StreamUtilities.CreateWriter(stream, encoding);
+                try
                 {
-                    Formatting = Formatting.Indented,
-                };
+                    using var jsonWriter = new JsonTextWriter(textWriter)
+                    {
+                        Formatting = Formatting.Indented,
+                    };
 
-                await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+                    await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+
+                }
+                finally
+                {
+                    await textWriter.DisposeAsync().ConfigureAwait(false);
+                }
             }
             else
             {

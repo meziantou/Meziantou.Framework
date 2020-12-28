@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable MA0101 // String contains an implicit end of line character
+using System;
 using TestUtilities;
 using Xunit;
 

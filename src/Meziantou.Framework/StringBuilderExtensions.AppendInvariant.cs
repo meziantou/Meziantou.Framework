@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -162,6 +163,7 @@ namespace Meziantou.Framework
             return sb;
         }
 
+        [SuppressMessage("Performance", "MA0028:Optimize StringBuilder usage", Justification = "Performance")]
         public static StringBuilder AppendInvariant<T>(this StringBuilder sb, T? value)
             where T : IFormattable
         {

@@ -7,6 +7,17 @@ namespace Meziantou.Framework.Win32.Tests
 {
     public class RestartManagerTests
     {
+        private readonly int _currentProcessId;
+
+        public RestartManagerTests()
+        {
+#if NET461 || NETCOREAPP3_1
+            _currentProcessId = System.Diagnostics.Process.GetCurrentProcess().Id;
+#else
+            _currentProcessId = Environment.ProcessId;
+#endif
+        }
+
         [Fact]
         public void GetProcessesLockingFile()
         {
@@ -16,7 +27,7 @@ namespace Meziantou.Framework.Win32.Tests
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
                     var processes = RestartManager.GetProcessesLockingFile(path);
-                    Assert.Equal(Environment.ProcessId, processes.Single().Id);
+                    Assert.Equal(_currentProcessId, processes.Single().Id);
                 }
             }
             finally

@@ -131,7 +131,6 @@ namespace Meziantou.Framework.Globbing.Tests
         [InlineData("**/Shock* 12", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
         [InlineData("**/*ave*2", "HKEY_LOCAL_MACHINE/SOFTWARE/Adobe/Shockwave 12")]
         [InlineData("Stuff, *", "Stuff, x")]
-        [InlineData("\"Stuff*", "\"Stuff")]
         [InlineData("path/**/somefile.txt", "path//somefile.txt")]
         [InlineData("**/app*.js", "dist/app.js")]
         [InlineData("**/app*.js", "dist/app.a72ka8234.js")]
@@ -170,7 +169,12 @@ namespace Meziantou.Framework.Globbing.Tests
             Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
             Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
 
+#if NET472
+#elif NETCOREAPP3_1
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+#else
             if (OperatingSystem.IsWindows())
+#endif
             {
                 Assert.True(glob.IsMatch(path.Replace('/', '\\')));
                 Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));

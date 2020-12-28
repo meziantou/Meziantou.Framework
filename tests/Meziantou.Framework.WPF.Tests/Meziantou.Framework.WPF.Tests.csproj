@@ -1,8 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0-windows</TargetFrameworks>
+    <TargetFrameworks>net5.0-windows;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net461</TargetFrameworks>
+    <UseWpf>true</UseWpf>
   </PropertyGroup>
+
+  <ItemGroup Condition=" $(TargetFramework) == 'net461' ">
+    <Reference Include="System.Windows" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.WPF\Meziantou.Framework.WPF.csproj" />

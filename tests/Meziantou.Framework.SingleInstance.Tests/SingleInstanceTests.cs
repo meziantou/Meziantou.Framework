@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Meziantou.Framework.Collections;
 using TestUtilities;
 using Xunit;
 
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.Tests
             // Be sure the server is ready
             await Task.Delay(50);
 
-            var events = new SynchronizedList<SingleInstanceEventArgs>();
+            var events = new List<SingleInstanceEventArgs>();
             singleInstance.NewInstance += SingleInstance_NewInstance;
 
             Assert.True(singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }), "Cannot notify first instance 1");
@@ -42,9 +42,13 @@ namespace Meziantou.Framework.Tests
             void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
             {
                 Assert.Equal(singleInstance, sender);
-                events.Add(e);
+                lock (events)
+                {
+                    events.Add(e);
+                }
             }
         }
+
 
         [Fact]
         public async Task TestSingleInstance()

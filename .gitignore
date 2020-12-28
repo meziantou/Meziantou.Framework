@@ -288,3 +288,4 @@ __pycache__/
 *.xsd.cs
 dotCover.Output.xml
 **/BenchmarkDotNet.Artifacts/
+*.binlog

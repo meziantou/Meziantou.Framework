@@ -22,9 +22,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Setup .NET Core
+    - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
-      
+            
     - name: Add dotnet-format problem matcher
       uses: xt0rted/dotnet-format-problem-matcher@v1
 
@@ -38,8 +38,12 @@ jobs:
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET Core
+    - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core (3.1)
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.x'
     - run: dotnet pack Meziantou.Framework.sln --configuration Release --output ${{ env.NuGetDirectory }} /bl
     - uses: actions/upload-artifact@v2
       with:
@@ -47,6 +51,12 @@ jobs:
         if-no-files-found: error
         retention-days: 3
         path: ${{ env.NuGetDirectory }}/**/*
+    - uses: actions/upload-artifact@v2
+      with:
+        name: binlog
+        if-no-files-found: error
+        retention-days: 3
+        path: '**/*.binlog'
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}
@@ -70,8 +80,12 @@ jobs:
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
-    - name: Setup .NET Core
+    - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core (3.1)
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.x'
     - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /bl
       name: Build
     - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" -- xunit.parallelizeAssembly=true
@@ -92,7 +106,7 @@ jobs:
       with:
         name: nuget
         path: ${{ env.NuGetDirectory }}
-    - name: Setup .NET Core
+    - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
     - run: |
         Write-Host "Current ref: $env:GITHUB_REF"

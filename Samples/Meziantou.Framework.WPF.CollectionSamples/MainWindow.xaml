@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Meziantou.Framework.WPF.CollectionSamples"
+        xmlns:utilities="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF" utilities:WindowUtilities.CloseOnEscapeKeyDown="True"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Window.DataContext>

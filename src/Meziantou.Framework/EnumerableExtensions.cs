@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace Meziantou.Framework
@@ -496,10 +497,23 @@ namespace Meziantou.Framework
             return TimeSpan.FromTicks(result / count);
         }
 
-        public static IEnumerable<T> AsOnlyEnumerable<T>(this IEnumerable<T> enumerable)
+        public static IEnumerable<T> ToOnlyEnumerable<T>(this IEnumerable<T> enumerable)
         {
             foreach (var item in enumerable)
                 yield return item;
+        }
+
+        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            return new ReadOnlyCollection<T>(source.ToList());
+        }
+
+        public static ICollection<T> ToCollection<T>(this IEnumerable<T> sequence)
+        {
+            return sequence is ICollection<T> collection ? collection : sequence.ToList();
         }
     }
 }

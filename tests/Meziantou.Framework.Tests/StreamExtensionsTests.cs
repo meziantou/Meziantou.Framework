@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -8,55 +9,107 @@ namespace Meziantou.Framework.Tests
 {
     public sealed class StreamExtensionsTests
     {
-        [Fact]
-        public void ReadUntilEndTests()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ReadToEndTests(bool canSeek)
         {
-            using var stream = new CustomStream();
-            var buffer = new byte[5];
-            stream.ReadUntilCountOrEnd(buffer, 0, 5);
+            using var stream = new MemoryStream();
+            Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
+            stream.Seek(0, SeekOrigin.Begin);
+            using var byteByByteStream = new CustomStream(stream, canSeek);
 
-            Assert.Equal(new byte[] { 0, 1, 2, 0, 0 }, buffer);
+            var result = byteByByteStream.ReadToEnd();
+
+            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, result);
         }
 
-        [Fact]
-        public async Task ReadUntilEndAsyncTests()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadToEndAsyncTests(bool canSeek)
         {
-            using var stream = new CustomStream();
-            var buffer = new byte[5];
-            await stream.ReadUntilCountOrEndAsync(buffer, 0, 5);
+            using var stream = new MemoryStream();
+            Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
+            stream.Seek(0, SeekOrigin.Begin);
+            using var byteByByteStream = new CustomStream(stream, canSeek);
 
-            Assert.Equal(new byte[] { 0, 1, 2, 0, 0 }, buffer);
+            var result = await byteByByteStream.ReadToEndAsync();
+
+            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, result);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void TryReadAllTests(bool canSeek)
+        {
+            using var stream = new MemoryStream();
+            Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
+            stream.Seek(0, SeekOrigin.Begin);
+            using var byteByByteStream = new CustomStream(stream, canSeek);
+
+            var buffer = new byte[5];
+            byteByByteStream.TryReadAll(buffer, 0, 5);
+
+            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, buffer);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task TryReadAllAsyncTests(bool canSeek)
+        {
+            using var stream = new MemoryStream();
+            Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
+            stream.Seek(0, SeekOrigin.Begin);
+            using var byteByByteStream = new CustomStream(stream, canSeek);
+
+            var buffer = new byte[5];
+            await byteByByteStream.TryReadAllAsync(buffer, 0, 5);
+
+            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, buffer);
         }
 
         private sealed class CustomStream : Stream
         {
-            public override bool CanRead => throw new NotSupportedException();
-            public override bool CanSeek => throw new NotSupportedException();
+            private readonly Stream _stream;
+            private readonly bool _canSeek;
+
+            public CustomStream(Stream stream, bool canSeek)
+            {
+                _stream = stream;
+                _canSeek = canSeek;
+            }
+
+            public override bool CanRead => _stream.CanRead;
+            public override bool CanSeek => _stream.CanSeek;
             public override bool CanWrite => throw new NotSupportedException();
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override long Length => _stream.Length;
+            public override long Position { get => _stream.Position; set => throw new NotSupportedException(); }
             public override void Flush() => throw new NotSupportedException();
 
             public override int Read(byte[] buffer, int offset, int count)
             {
-                if (offset == 3)
-                    return 0;
-
-                buffer[offset] = (byte)offset;
-                return 1;
+                return _stream.Read(buffer, offset, 1);
             }
 
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (offset == 3)
-                    return 0;
-
-                buffer[offset] = (byte)offset;
-                await Task.Yield();
-                return 1;
+                return _stream.ReadAsync(buffer, offset, 1, cancellationToken);
             }
 
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override int Read(Span<byte> buffer)
+            {
+                return _stream.Read(buffer[0..1]);
+            }
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+            {
+                return _stream.ReadAsync(buffer[0..1], cancellationToken);
+            }
+
+            public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 
             public override void SetLength(long value) => throw new NotSupportedException();
 

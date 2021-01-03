@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -32,6 +34,21 @@ namespace Meziantou.Framework.Tests.Collections
 
             dict.AddRange(new KeyValuePair<int, string>[] { new(4, "a"), new(5, "e") });
             Assert.Equal(new[] { 4, 5 }, dict.Keys);
+        }
+
+        [Fact]
+        public void JsonSerializable()
+        {
+            UnsafeListDictionary<int, string> dict = new();
+            dict.Add(1, "a");
+            dict.Add(2, "b");
+            dict.Add(3, "c");
+
+            var json = JsonSerializer.Serialize(dict);
+            Assert.StartsWith("{", json, StringComparison.Ordinal);
+            var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
+
+            Assert.Equal(dict, deserialized);
         }
     }
 }

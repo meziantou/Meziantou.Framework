@@ -60,6 +60,7 @@ jobs:
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 30
     env:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:

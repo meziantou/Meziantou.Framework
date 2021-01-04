@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WPF.Tests
 {
     public sealed class DispatcherExtensionsTests
     {
-        [Fact]
-        public async Task SwitchToUi()
+        [Fact(Timeout = 5000)]
+        public async Task SwitchToUIThreadTests()
         {
             var dispatcher = Dispatcher.CurrentDispatcher;
             var currentThreadId = Thread.CurrentThread;
@@ -18,7 +18,7 @@ namespace Meziantou.Framework.WPF.Tests
             {
                 Assert.NotEqual(currentThreadId, Thread.CurrentThread);
 
-                var switchTask = dispatcher.SwitchToUi();
+                var switchTask = dispatcher.SwitchToUiThread();
                 manualResetEvent.Set();
                 await switchTask;
 

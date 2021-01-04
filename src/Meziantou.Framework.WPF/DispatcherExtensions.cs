@@ -8,7 +8,7 @@ namespace Meziantou.Framework.WPF
     public static class DispatcherExtensions
     {
         // https://medium.com/@kevingosse/switching-back-to-the-ui-thread-in-wpf-uwp-in-modern-c-5dc1cc8efa5e
-        public static SwitchToUiAwaitable SwitchToUi(this Dispatcher dispatcher)
+        public static SwitchToUiAwaitable SwitchToUiThread(this Dispatcher dispatcher)
         {
             return new SwitchToUiAwaitable(dispatcher);
         }

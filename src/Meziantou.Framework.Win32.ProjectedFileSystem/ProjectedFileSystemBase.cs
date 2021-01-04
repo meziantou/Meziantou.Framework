@@ -20,6 +20,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         private readonly Guid _virtualizationInstanceId;
         private ProjFSSafeHandle? _instanceHandle;
+        private NativeMethods.PrjCallbacks _callbacks;
 
         private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
         private long _context;
@@ -56,7 +57,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             }
 
             // Set up the callback table for the projection provider.
-            var callbackTable = new NativeMethods.PrjCallbacks
+            _callbacks = new NativeMethods.PrjCallbacks
             {
                 StartDirectoryEnumerationCallback = StartDirectoryEnumerationCallback,
                 EndDirectoryEnumerationCallback = EndDirectoryEnumerationCallback,
@@ -95,7 +96,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var context = ++_context;
-                var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in callbackTable, new IntPtr(context), in opt, out _instanceHandle);
+                var hr = NativeMethods.PrjStartVirtualizing(RootFolder, in _callbacks, new IntPtr(context), in opt, out _instanceHandle);
                 hr.EnsureSuccess();
             }
             finally
@@ -141,6 +142,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
             if (_instanceHandle == null)
                 return;
 
+            _callbacks = default;
             _instanceHandle.Dispose();
             _instanceHandle = null;
         }

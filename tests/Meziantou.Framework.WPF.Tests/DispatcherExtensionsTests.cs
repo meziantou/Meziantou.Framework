@@ -7,41 +7,28 @@ namespace Meziantou.Framework.WPF.Tests
 {
     public sealed class DispatcherExtensionsTests
     {
-        [Fact(Timeout = 5000)]
+        [Fact(Timeout = 95000)]
         public async Task SwitchToUIThreadTests()
         {
-            var dispatcher = Dispatcher.CurrentDispatcher;
-            var currentThreadId = Thread.CurrentThread;
-
-            var manualResetEvent = new ManualResetEventSlim();
-            var t = Task.Run(async () =>
+            Dispatcher dispatcher = null;
+            var t = new Thread(() =>
             {
-                Assert.NotEqual(currentThreadId, Thread.CurrentThread);
-
-                var switchTask = dispatcher.SwitchToUiThread();
-                manualResetEvent.Set();
-                await switchTask;
-
-                Assert.Equal(currentThreadId, Thread.CurrentThread);
+                dispatcher = Dispatcher.CurrentDispatcher;
+                Dispatcher.Run();
             });
+            t.IsBackground = true;
+            t.Start();
 
-            manualResetEvent.Wait();
-            DoEvents();
+            while ((dispatcher = Volatile.Read(ref dispatcher)) == null)
+            {
+                await Task.Delay(1);
+            }
 
-            await t;
-        }
+            Assert.NotEqual(t.ManagedThreadId, Thread.CurrentThread.ManagedThreadId);
+            await dispatcher.SwitchToDispatcherThread();
+            Assert.Equal(t.ManagedThreadId, Thread.CurrentThread.ManagedThreadId);
 
-        private static void DoEvents()
-        {
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new DispatcherOperationCallback(ExitFrame), frame);
-            Dispatcher.PushFrame(frame);
-        }
-
-        private static object ExitFrame(object frame)
-        {
-            ((DispatcherFrame)frame).Continue = false;
-            return null;
+            dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
         }
     }
 }

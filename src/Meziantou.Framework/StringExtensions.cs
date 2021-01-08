@@ -116,5 +116,51 @@ namespace Meziantou.Framework
 
             return str[0] == c;
         }
+
+        /// <summary>
+        /// Removes the trailing occurrence of a specified string from the current string.
+        /// </summary>
+        [Pure]
+        public static string RemoveSuffix(this string str, string suffix)
+        {
+            return RemoveSuffix(str, suffix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Removes the trailing occurrence of a specified string from the current string.
+        /// </summary>
+        [Pure]
+        public static string RemoveSuffix(this string str, string suffix, StringComparison stringComparison)
+        {
+            if (str.EndsWith(suffix, stringComparison))
+            {
+                return str.Substring(0, str.Length - suffix.Length);
+            }
+
+            return str;
+        }
+
+        /// <summary>
+        /// Removes the leading occurrence of a specified string from the current string.
+        /// </summary>
+        [Pure]
+        public static string RemovePrefix(this string str, string suffix)
+        {
+            return RemovePrefix(str, suffix, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Removes the leading occurrence of a specified string from the current string.
+        /// </summary>
+        [Pure]
+        public static string RemovePrefix(this string str, string suffix, StringComparison stringComparison)
+        {
+            if (str.StartsWith(suffix, stringComparison))
+            {
+                return str[suffix.Length..];
+            }
+
+            return str;
+        }
     }
 }

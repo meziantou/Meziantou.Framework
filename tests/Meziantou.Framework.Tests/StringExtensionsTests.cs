@@ -125,5 +125,33 @@ namespace Meziantou.Framework.Tests
                 { "\ncd", new[] { ("", "\n"), ("cd", "") } },
             };
         }
+
+        [Theory]
+        [InlineData("", "", StringComparison.Ordinal, "")]
+        [InlineData("abc", "c", StringComparison.Ordinal, "ab")]
+        [InlineData("abcc", "c", StringComparison.Ordinal, "abc")]
+        [InlineData("abcc", "cc", StringComparison.Ordinal, "ab")]
+        [InlineData("abcC", "c", StringComparison.Ordinal, "abcC")]
+        [InlineData("abC", "c", StringComparison.OrdinalIgnoreCase, "ab")]
+        [InlineData("abC", "C", StringComparison.OrdinalIgnoreCase, "ab")]
+        [InlineData("abc", "C", StringComparison.OrdinalIgnoreCase, "ab")]
+        public void RemoveSuffix(string str, string suffx, StringComparison comparison, string expected)
+        {
+            Assert.Equal(expected, str.RemoveSuffix(suffx, comparison));
+        }
+
+        [Theory]
+        [InlineData("", "", StringComparison.Ordinal, "")]
+        [InlineData("abc", "a", StringComparison.Ordinal, "bc")]
+        [InlineData("aabc", "a", StringComparison.Ordinal, "abc")]
+        [InlineData("aabc", "aa", StringComparison.Ordinal, "bc")]
+        [InlineData("Aabc", "a", StringComparison.Ordinal, "Aabc")]
+        [InlineData("Abc", "a", StringComparison.OrdinalIgnoreCase, "bc")]
+        [InlineData("Abc", "A", StringComparison.OrdinalIgnoreCase, "bc")]
+        [InlineData("abc", "A", StringComparison.OrdinalIgnoreCase, "bc")]
+        public void RemovePrefix(string str, string suffx, StringComparison comparison, string expected)
+        {
+            Assert.Equal(expected, str.RemovePrefix(suffx, comparison));
+        }
     }
 }

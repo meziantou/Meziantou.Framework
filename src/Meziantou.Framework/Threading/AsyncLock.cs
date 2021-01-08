@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Meziantou.Framework.Threading
 {
-    [DebuggerDisplay("Signaled: {signaled}")]
+    [DebuggerDisplay("Signaled: {_signaled}")]
     public sealed class AsyncLock
     {
         private readonly Queue<WaiterCompletionSource> _signalAwaiters = new();

@@ -19,7 +19,7 @@
     <ReportAnalyzer>true</ReportAnalyzer>
 
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
-    <RestoreSources>https://api.nuget.org/v3/index.json</RestoreSources>
+    <RestoreSources>https://api.nuget.org/v3/index.json;$(MSBuildThisFileDirectory)/packages</RestoreSources>
     <!--<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RestoreLockedMode Condition="'$(_ContinuousIntegrationBuild)' == 'true'">true</RestoreLockedMode>-->
     <IsPackable>False</IsPackable>

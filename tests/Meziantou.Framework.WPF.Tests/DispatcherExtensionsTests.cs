@@ -15,8 +15,10 @@ namespace Meziantou.Framework.WPF.Tests
             {
                 dispatcher = Dispatcher.CurrentDispatcher;
                 Dispatcher.Run();
-            });
-            t.IsBackground = true;
+            })
+            {
+                IsBackground = true,
+            };
             t.Start();
 
             while ((dispatcher = Volatile.Read(ref dispatcher)) == null)

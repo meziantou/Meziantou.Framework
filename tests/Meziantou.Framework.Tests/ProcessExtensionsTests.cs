@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Tests
 
             var result = await CreateProcess().ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
-            Assert.Equal(1, result.Output.Count);
+            Assert.Single(result.Output);
             Assert.Equal("test", result.Output[0].Text);
             Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
         }
@@ -55,7 +55,7 @@ namespace Meziantou.Framework.Tests
 
             var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
-            Assert.Equal(1, result.Output.Count);
+            Assert.Single(result.Output);
             Assert.Equal("test", result.Output[0].Text);
             Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
         }
@@ -83,7 +83,7 @@ namespace Meziantou.Framework.Tests
 
             var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
             Assert.Equal(0, result.ExitCode);
-            Assert.Equal(0, result.Output.Count);
+            Assert.Empty(result.Output);
         }
 
         [Fact]

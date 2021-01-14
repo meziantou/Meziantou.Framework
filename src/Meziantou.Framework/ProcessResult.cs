@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Meziantou.Framework
 {
@@ -8,10 +7,10 @@ namespace Meziantou.Framework
         internal ProcessResult(int exitCode, IReadOnlyList<ProcessOutput> output)
         {
             ExitCode = exitCode;
-            Output = output ?? throw new ArgumentNullException(nameof(output));
+            Output = new ProcessOutputCollection(output);
         }
 
         public int ExitCode { get; }
-        public IReadOnlyList<ProcessOutput> Output { get; }
+        public ProcessOutputCollection Output { get; }
     }
 }

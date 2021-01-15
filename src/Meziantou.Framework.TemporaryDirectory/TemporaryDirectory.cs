@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -11,18 +11,25 @@ namespace Meziantou.Framework
     [DebuggerDisplay("{FullPath}")]
     public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     {
-        private static readonly HashSet<string> s_createdDirectories = new(StringComparer.OrdinalIgnoreCase);
+        private const string LockFileName = "lock";
+        private const string DirectoryName = "a";
+
+        private readonly FullPath _path;
+        private readonly Stream _lockFile;
 
         public FullPath FullPath { get; }
 
-        private TemporaryDirectory(FullPath path)
+        private TemporaryDirectory(FullPath path, FullPath innerPath, Stream lockFile)
         {
-            FullPath = path;
+            _path = path;
+            FullPath = innerPath;
+            _lockFile = lockFile;
         }
 
         public static TemporaryDirectory Create()
         {
-            return new TemporaryDirectory(CreateUniqueDirectory(FullPath.Combine(Path.GetTempPath(), "TD", DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture))));
+            var (path, innerPath, lockFile) = CreateUniqueDirectory(FullPath.Combine(Path.GetTempPath(), "TD", DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)));
+            return new TemporaryDirectory(path, innerPath, lockFile);
         }
 
         public FullPath GetFullPath(string relativePath)
@@ -37,42 +44,82 @@ namespace Meziantou.Framework
             using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
         }
 
-        private static FullPath CreateUniqueDirectory(FullPath folderPath)
+        private static (FullPath path, FullPath innerPath, Stream lockFile) CreateUniqueDirectory(FullPath folderPath)
         {
-            using (var mutex = new Mutex(initiallyOwned: false, name: "Meziantou.Framework.TemporaryDirectory"))
+            /*
+             * Structure
+             * - temp/<folder>/lock => allows to detect concurrency
+             * - temp/<folder>/<returned_value>/
+             */
+
+            var count = 1;
+            while (true)
             {
-                mutex.WaitOne();
+                Stream? lockFileStream = null;
                 try
                 {
-                    var count = 1;
-
                     var tempPath = folderPath.Value + "_";
-                    while (s_createdDirectories.Contains(folderPath) || Directory.Exists(folderPath))
+                    while (Directory.Exists(folderPath))
                     {
                         folderPath = FullPath.FromPath(tempPath + count.ToString(CultureInfo.InvariantCulture));
+
+                        if (count == int.MaxValue)
+                            throw new InvalidOperationException("Cannot create a temporary directory");
+
                         count++;
                     }
 
-                    s_createdDirectories.Add(folderPath);
                     Directory.CreateDirectory(folderPath);
-                }
-                finally
-                {
-                    mutex.ReleaseMutex();
-                }
-            }
+                    var lockFilePath = folderPath / LockFileName;
+                    lockFileStream = new FileStream(lockFilePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None);
+                    var innerFolderPath = folderPath / DirectoryName;
+                    if (Directory.Exists(innerFolderPath))
+                    {
+                        lockFileStream.Dispose();
+                        continue;
+                    }
 
-            return folderPath;
+                    Directory.CreateDirectory(innerFolderPath);
+
+                    // Assert folder is empty
+                    if (Directory.EnumerateFileSystemEntries(innerFolderPath).Any())
+                    {
+                        lockFileStream.Dispose();
+                        continue;
+                    }
+
+                    return (folderPath, innerFolderPath, lockFileStream);
+                }
+                catch (IOException)
+                {
+                    // The folder may already in use
+                }
+                catch
+                {
+                    lockFileStream?.Dispose();
+                    throw;
+                }
+
+                lockFileStream?.Dispose();
+            }
         }
 
         public void Dispose()
         {
-            IOUtilities.Delete(new DirectoryInfo(FullPath));
+            _lockFile.Dispose();
+            IOUtilities.Delete(new DirectoryInfo(_path));
         }
 
-        public ValueTask DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
-            return IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None);
+#if NET5_0 || NETCOREAPP3_1
+            await _lockFile.DisposeAsync().ConfigureAwait(false);
+#elif NETSTANDARD2_0
+            _lockFile.Dispose();
+#else
+#error Platform not supported
+#endif
+            await IOUtilities.DeleteAsync(new DirectoryInfo(_path), CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

@@ -10,12 +10,13 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void CreateInParallel()
         {
-            const int Iterations = 100;
+            const int Iterations = 400;
             var dirs = new TemporaryDirectory[Iterations];
 
             Parallel.For(0, Iterations, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
             {
                 dirs[i] = TemporaryDirectory.Create();
+                dirs[i].CreateEmptyFile("test.txt");
             });
 
             try
@@ -39,8 +40,30 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void DisposedDeletedDirectory()
         {
-            using var dir = TemporaryDirectory.Create();
-            Directory.Delete(dir.FullPath);
+            FullPath path;
+            using (var dir = TemporaryDirectory.Create())
+            {
+                path = dir.FullPath;
+                File.WriteAllText(dir.GetFullPath("a.txt"), "content");
+            }
+
+            Assert.False(Directory.Exists(path));
+        }
+
+        [Fact]
+        public async Task DisposeAsyncDeletedDirectory()
+        {
+            FullPath path;
+            await using (var dir = TemporaryDirectory.Create())
+            {
+                path = dir.FullPath;
+
+#pragma warning disable MA0042 // Do not use blocking calls in an async method
+                File.WriteAllText(dir.GetFullPath("a.txt"), "content");
+#pragma warning restore MA0042
+            }
+
+            Assert.False(Directory.Exists(path));
         }
     }
 }

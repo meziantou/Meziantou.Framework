@@ -58,9 +58,13 @@ namespace Meziantou.Framework.Tests
             {
                 path = dir.FullPath;
 
-#pragma warning disable MA0042 // Do not use blocking calls in an async method
+#if NET461
                 File.WriteAllText(dir.GetFullPath("a.txt"), "content");
-#pragma warning restore MA0042
+#elif NETCOREAPP3_1 || NET5_0
+                await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
+#else
+#error Platform not supported
+#endif
             }
 
             Assert.False(Directory.Exists(path));

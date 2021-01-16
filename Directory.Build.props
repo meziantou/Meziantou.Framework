@@ -8,7 +8,9 @@
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
     <LatestTargetFramework>net5.0</LatestTargetFramework>
-
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <SkipLocalsInit>true</SkipLocalsInit>
+    
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>

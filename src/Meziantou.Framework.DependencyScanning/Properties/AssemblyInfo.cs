@@ -2,4 +2,3 @@
 
 [assembly: InternalsVisibleTo("Meziantou.Framework.DependencyScanning.Tests")]
 [assembly: InternalsVisibleTo("DependencyScanningBenchmarks")]
-[module: SkipLocalsInit]

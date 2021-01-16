@@ -3,6 +3,10 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs" />
+
+    <Compile Condition="'$(SkipLocalsInit)' == 'true'"
+             Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.SkipLocalsInit.cs"
+             Link="Properties/AssemblyInfo.SkipLocalsInit.cs" />
     
     <Compile Condition="'$(CompatibilityRange)' == 'true'"
              Include="$(MSBuildThisFileDirectory)/common/Range.cs"

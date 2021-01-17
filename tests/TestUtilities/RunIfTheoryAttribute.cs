@@ -11,7 +11,7 @@ namespace TestUtilities
         {
             OperatingSystems = operatingSystems;
 
-            if (operatingSystems != FactOperatingSystem.None)
+            if (operatingSystems != FactOperatingSystem.All)
             {
                 if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return;

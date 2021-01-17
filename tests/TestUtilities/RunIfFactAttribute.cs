@@ -7,11 +7,12 @@ namespace TestUtilities
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class RunIfFactAttribute : FactAttribute
     {
-        public RunIfFactAttribute(FactOperatingSystem operatingSystems)
+        public RunIfFactAttribute(FactOperatingSystem operatingSystems, bool enableOnGitHubActions = true)
         {
             OperatingSystems = operatingSystems;
+            EnableOnGitHubActions = enableOnGitHubActions;
 
-            if (operatingSystems != FactOperatingSystem.None)
+            if (operatingSystems != FactOperatingSystem.All)
             {
                 if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return;
@@ -23,9 +24,26 @@ namespace TestUtilities
                     return;
 
                 Skip = "Run only on " + operatingSystems;
+                return;
+            }
+
+            if (!enableOnGitHubActions)
+            {
+                if (IsOnGitHubActions())
+                {
+                    Skip = "Does not run on GitHub Actions";
+                    return;
+                }
             }
         }
 
+        public static bool IsOnGitHubActions()
+        {
+            return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+        }
+
         public FactOperatingSystem OperatingSystems { get; }
+
+        public bool EnableOnGitHubActions { get; }
     }
 }

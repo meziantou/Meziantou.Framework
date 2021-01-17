@@ -106,12 +106,20 @@ namespace Meziantou.Framework
 
         public void Dispose()
         {
+            // First delete the temporary folder content
+            IOUtilities.Delete(new DirectoryInfo(FullPath));
+
+            // Release the lock file and delete the parent directory
             _lockFile.Dispose();
             IOUtilities.Delete(new DirectoryInfo(_path));
         }
 
         public async ValueTask DisposeAsync()
         {
+            // First delete the temporary folder content
+            await IOUtilities.DeleteAsync(new DirectoryInfo(FullPath), CancellationToken.None).ConfigureAwait(false);
+
+            // Release the lock file and delete the parent directory
 #if NET5_0 || NETCOREAPP3_1
             await _lockFile.DisposeAsync().ConfigureAwait(false);
 #elif NETSTANDARD2_0

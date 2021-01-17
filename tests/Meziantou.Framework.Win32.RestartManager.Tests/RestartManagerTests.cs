@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Win32.Tests
 #endif
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void GetProcessesLockingFile()
         {
             var path = Path.GetTempFileName();
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void IsFileLocked_True()
         {
             var path = Path.GetTempFileName();
@@ -53,7 +54,7 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void IsFileLocked_False()
         {
             var path = Path.GetTempFileName();

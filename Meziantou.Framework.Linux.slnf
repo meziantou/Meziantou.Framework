@@ -63,6 +63,15 @@
       "tests\\Meziantou.Framework.TypeConverter.Tests\\Meziantou.Framework.TypeConverter.Tests.csproj",
       "tests\\Meziantou.Framework.ValueStopwatch.Tests\\Meziantou.Framework.ValueStopwatch.Tests.csproj",
       "tests\\Meziantou.Framework.Versioning.Tests\\Meziantou.Framework.Versioning.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.AccessToken.Tests\\Meziantou.Framework.Win32.AccessToken.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.AmsiTests\\Meziantou.Framework.Win32.AmsiTests.csproj",
+      "tests\\Meziantou.Framework.Win32.ChangeJournal.Tests\\Meziantou.Framework.Win32.ChangeJournal.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.CredentialManager.Tests\\Meziantou.Framework.Win32.CredentialManager.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.Jobs.Tests\\Meziantou.Framework.Win32.Jobs.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.Lsa.Tests\\Meziantou.Framework.Win32.Lsa.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.PerceivedType.Tests\\Meziantou.Framework.Win32.PerceivedType.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.ProjectedFileSystem.Tests\\Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj",
+      "tests\\Meziantou.Framework.Win32.RestartManager.Tests\\Meziantou.Framework.Win32.RestartManager.Tests.csproj",
       "tests\\TestUtilities\\TestUtilities.csproj"
     ]
   }

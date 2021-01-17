@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests
@@ -7,7 +8,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
     [Collection("JobObjectTests")]
     public class JobObjectTests
     {
-        [Fact(Timeout = 5000)]
+        [RunIfFact(FactOperatingSystem.Windows, Timeout = 5000)]
         public void ShouldKillProcessOnTerminate()
         {
             using var job = new JobObject();
@@ -33,7 +34,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             process.WaitForExit();
         }
 
-        [Fact(Timeout = 5000)]
+        [RunIfFact(FactOperatingSystem.Windows, Timeout = 5000)]
         public void KillOnJobClose_ShouldKillProcessOnClose()
         {
             using var job = new JobObject();
@@ -59,7 +60,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             process.WaitForExit();
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void CreateAndOpenJobObject()
         {
             var objectName = Guid.NewGuid().ToString("N");
@@ -70,21 +71,21 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             Assert.False(openedJob.IsInvalid);
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void SetUILimits()
         {
             using var job = new JobObject();
             job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void IsAssignedToProcess_NotAssociated()
         {
             using var job = new JobObject();
             Assert.False(job.IsAssignedToProcess(Process.GetCurrentProcess()));
         }
 
-        [Fact]
+        [RunIfFact(FactOperatingSystem.Windows)]
         public void IsAssignedToProcess_Associated()
         {
             using var job = new JobObject();

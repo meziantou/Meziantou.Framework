@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Meziantou.Framework.ResxSourceGenerator" Version="1.0.0" />
     <AdditionalFiles Include="**/*.resx" />
-    <AdditionalFiles Include="file1.resx" Namespace="CustomNamespace" ClassName="CustomClassName" ResourceFileName="CustomResourceFileName" />
+    <AdditionalFiles Include="file1.resx" Namespace="CustomNamespace" ClassName="CustomClassName" ResourceName="CustomResourceFileName" />
   </ItemGroup>
 
 </Project>

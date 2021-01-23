@@ -1,7 +1,4 @@
-﻿#if NET5_0
-#pragma warning disable IDE0057 // Need to support netstandard2.0
-#endif
-#pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
+﻿#pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System;
 using System.Collections.Generic;
@@ -20,6 +17,39 @@ namespace Meziantou.Framework.ResxSourceGenerator
     [Generator]
     public sealed class ResxGenerator : ISourceGenerator
     {
+        private static readonly DiagnosticDescriptor s_invalidResx = new(
+            id: "MFRG0001",
+            title: "Couldn't parse Resx file",
+            messageFormat: "Couldn't parse Resx file '{0}'.",
+            category: "ResxGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        private static readonly DiagnosticDescriptor s_invalidPropertiesForNamespace = new(
+            id: "MFRG0002",
+            title: "Couldn't compute namespace",
+            messageFormat: "Couldn't compute namespace for file '{0}'.",
+            category: "ResxGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        private static readonly DiagnosticDescriptor s_invalidPropertiesForResourceName = new(
+            id: "MFRG0003",
+            title: "Couldn't compute resource name",
+            messageFormat: "Couldn't compute resource name for file '{0}'.",
+            category: "ResxGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        private static readonly DiagnosticDescriptor s_inconsistentProperties = new(
+            id: "MFRG0004",
+            title: "Inconsistent properties",
+            messageFormat: "Property '{0}' values for '{1}' are inconsistent.",
+            category: "ResxGenerator",
+            DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+
         public void Initialize(GeneratorInitializationContext context)
         {
         }
@@ -41,10 +71,25 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroug.Key);
 
                 var ns = GetMetadataValue(context, "Namespace", "DefaultResourcesNamespace", resxGroug) ?? defaultNamespace;
-                var resourceName = GetMetadataValue(context, "ResourceFileName", globalName: null, resxGroug) ?? defaultResourceName;
+                var resourceName = GetMetadataValue(context, "ResourceName", globalName: null, resxGroug) ?? defaultResourceName;
                 var className = GetMetadataValue(context, "ClassName", globalName: null, resxGroug) ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroug.Key));
 
+                if (ns == null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForNamespace, location: null, resxGroug.First().Path));
+                    continue;
+                }
+
+                if (ns == null)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForResourceName, location: null, resxGroug.First().Path));
+                    continue;
+                }
+
                 var entries = LoadResourceFiles(context, resxGroug);
+                if (entries == null)
+                    continue;
+
                 var content = GenerateCode(ns, className, entries);
 
                 content += $@"
@@ -305,7 +350,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
             return sb.ToString();
         }
 
-        private static string ComputeResourceName(string rootNamespace, string projectDir, string resourcePath)
+        private static string? ComputeResourceName(string rootNamespace, string projectDir, string resourcePath)
         {
             var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
             var fullResourcePath = Path.GetFullPath(resourcePath);
@@ -315,14 +360,14 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
             if (fullResourcePath.StartsWith(fullProjectDir, StringComparison.Ordinal))
             {
-                var relativePath = fullResourcePath.Substring(fullProjectDir.Length);
+                var relativePath = fullResourcePath[fullProjectDir.Length..];
                 return rootNamespace + '.' + relativePath.Replace('/', '.').Replace('\\', '.');
             }
 
-            return resourcePath; // TODO error
+            return null;
         }
 
-        private static string ComputeNamespace(string rootNamespace, string projectDir, string resourcePath)
+        private static string? ComputeNamespace(string rootNamespace, string projectDir, string resourcePath)
         {
             var fullProjectDir = EnsureEndSeparator(Path.GetFullPath(projectDir));
             var fullResourcePath = EnsureEndSeparator(Path.GetDirectoryName(Path.GetFullPath(resourcePath))!);
@@ -332,14 +377,14 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
             if (fullResourcePath.StartsWith(fullProjectDir, StringComparison.Ordinal))
             {
-                var relativePath = fullResourcePath.Substring(fullProjectDir.Length);
+                var relativePath = fullResourcePath[fullProjectDir.Length..];
                 return rootNamespace + '.' + relativePath.Replace('/', '.').Replace('\\', '.').TrimEnd('.');
             }
 
-            return resourcePath; // TODO error
+            return null;
         }
 
-        private static List<ResxEntry> LoadResourceFiles(GeneratorExecutionContext context, IGrouping<string, AdditionalText> resxGroug)
+        private static List<ResxEntry>? LoadResourceFiles(GeneratorExecutionContext context, IGrouping<string, AdditionalText> resxGroug)
         {
             var entries = new List<ResxEntry>();
             foreach (var entry in resxGroug.OrderBy(file => file.Path, StringComparer.Ordinal))
@@ -348,26 +393,34 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 if (content == null)
                     continue;
 
-                var document = XDocument.Parse(content.ToString());
-                foreach (var element in document.XPathSelectElements("/root/data"))
+                try
                 {
-                    var name = element.Attribute("name")?.Value;
-                    var type = element.Attribute("type")?.Value;
-                    var comment = element.Attribute("comment")?.Value;
-                    var value = element.Element("value")?.Value;
-
-                    var existingEntry = entries.Find(e => e.Name == name);
-                    if (existingEntry != null)
+                    var document = XDocument.Parse(content.ToString());
+                    foreach (var element in document.XPathSelectElements("/root/data"))
                     {
-                        if (existingEntry.Comment == null)
+                        var name = element.Attribute("name")?.Value;
+                        var type = element.Attribute("type")?.Value;
+                        var comment = element.Attribute("comment")?.Value;
+                        var value = element.Element("value")?.Value;
+
+                        var existingEntry = entries.Find(e => e.Name == name);
+                        if (existingEntry != null)
                         {
-                            existingEntry.Comment = comment;
+                            if (existingEntry.Comment == null)
+                            {
+                                existingEntry.Comment = comment;
+                            }
+                        }
+                        else
+                        {
+                            entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type });
                         }
                     }
-                    else
-                    {
-                        entries.Add(new ResxEntry { Name = name, Value = value, Comment = comment, Type = type });
-                    }
+                }
+                catch
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(s_invalidResx, location: null, entry.Path));
+                    return null;
                 }
             }
 
@@ -387,7 +440,12 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 if (context.AnalyzerConfigOptions.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
                 {
                     if (result != null && value != result)
-                        return null; // TODO error
+                    {
+                        context.ReportDiagnostic(Diagnostic.Create(s_inconsistentProperties, location: null, name, file.Path));
+                        return null;
+                    }
+
+                    result = value;
                 }
             }
 
@@ -440,7 +498,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
         private static string EnsureEndSeparator(string path)
         {
-            if (path[path.Length - 1] == Path.DirectorySeparatorChar)
+            if (path[^1] == Path.DirectorySeparatorChar)
                 return path;
 
             return path + Path.DirectorySeparatorChar;
@@ -453,10 +511,9 @@ namespace Meziantou.Framework.ResxSourceGenerator
             if (indexOf < 0)
                 return pathWithoutExtension;
 
-            if (Regex.IsMatch(pathWithoutExtension.Substring(indexOf + 1), "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)))
-                return pathWithoutExtension.Substring(0, indexOf);
-
-            return pathWithoutExtension;
+            return Regex.IsMatch(pathWithoutExtension[(indexOf + 1)..], "^[a-zA-Z]{2}(-[a-zA-Z]{2})?$", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
+                ? pathWithoutExtension[0..indexOf]
+                : pathWithoutExtension;
         }
 
         private sealed class ResxEntry

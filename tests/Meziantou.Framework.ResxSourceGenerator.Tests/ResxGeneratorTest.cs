@@ -16,11 +16,6 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
 {
     public class ResxGeneratorTest
     {
-        private static GeneratorDriverRunResult GenerateFiles(params (string ResxPath, string ResxContent)[] files)
-        {
-            return GenerateFiles(files, optionProvider: null);
-        }
-
         private static GeneratorDriverRunResult GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider)
         {
             var compilation = CSharpCompilation.Create("compilation",
@@ -46,8 +41,13 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 new XElement("data", new XAttribute("name", "HelloWorld"), new XElement("value", "Hello {0}!"))
                 );
 
-            var result = GenerateFiles(("test.resx", element.ToString()));
+            var result = GenerateFiles(new[] { ("test.resx", element.ToString()) }, new OptionProvider
+            {
+                Namespace = "test",
+                ResourceName = "test",
+            });
 
+            Assert.Empty(result.Diagnostics);
             Assert.Single(result.GeneratedTrees);
             Assert.Equal("test.resx.cs", Path.GetFileName(result.GeneratedTrees[0].FilePath));
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
@@ -79,11 +79,17 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 new XElement("data", new XAttribute("name", "BBB"), new XElement("value", "Value"))
                 );
 
-            var result = GenerateFiles(
-                ("test.resx", element1.ToString()),
-                ("test.en.resx", element2.ToString()),
-                ("test.fr-FR.resx", element3.ToString()),
-                ("test.NewResource.fr.resx", element4.ToString()));
+            var result = GenerateFiles(new (string, string)[]
+                {
+                    (FullPath.GetTempPath() / "test.resx", element1.ToString()),
+                    (FullPath.GetTempPath() / "test.en.resx", element2.ToString()),
+                    (FullPath.GetTempPath() / "test.fr-FR.resx", element3.ToString()),
+                    (FullPath.GetTempPath() / "test.NewResource.fr.resx", element4.ToString()),
+                }, new OptionProvider
+                {
+                    ProjectDir = FullPath.GetTempPath(),
+                    RootNamespace = "Test",
+                });
 
             Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath),
                 tree =>
@@ -111,6 +117,7 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 RootNamespace = "proj",
             });
 
+            Assert.Empty(result.Diagnostics);
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
             Assert.Contains("namespace proj" + Environment.NewLine, fileContent, StringComparison.Ordinal);
         }
@@ -126,6 +133,19 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
 
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
             Assert.Contains("namespace proj.A" + Environment.NewLine, fileContent, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public void WrongResx_Warning()
+        {
+            var result = GenerateFiles(new[] { ("test.resx", "invalid xml") }, new OptionProvider
+            {
+                ResourceName = "resource",
+                Namespace = "test",
+            });
+
+            Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
+            Assert.Empty(result.GeneratedTrees);
         }
 
         private sealed class OptionProvider : AnalyzerConfigOptionsProvider
@@ -150,13 +170,15 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
 
                 public override bool TryGetValue(string key, [NotNullWhen(true)] out string value)
                 {
-                    if (key.StartsWith("build_metadata.", StringComparison.Ordinal))
+                    const string BuildMetadata = "build_metadata.AdditionalFiles.";
+                    const string BuildProperties = "build_property.";
+                    if (key.StartsWith(BuildMetadata, StringComparison.Ordinal))
                     {
-                        key = key.Substring("build_metadata.".Length);
+                        key = key[BuildMetadata.Length..];
                     }
-                    else if (key.StartsWith("build_property.", StringComparison.Ordinal))
+                    else if (key.StartsWith(BuildProperties, StringComparison.Ordinal))
                     {
-                        key = key.Substring("build_property.".Length);
+                        key = key[BuildProperties.Length..];
                     }
                     else
                     {

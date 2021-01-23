@@ -20,6 +20,7 @@
 | Meziantou.Framework.Html                      | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |
 | Meziantou.Framework.HtmlSanitizer             | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) |
 | Meziantou.Framework.RelativeDate              | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.RelativeDate.svg)](https://www.nuget.org/packages/Meziantou.Framework.RelativeDate/) |
+| Meziantou.Framework.ResxSourceGenerator       | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ResxSourceGenerator.svg)](https://www.nuget.org/packages/Meziantou.Framework.ResxSourceGenerator/) |
 | Meziantou.Framework.Scheduling                | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Scheduling.svg)](https://www.nuget.org/packages/Meziantou.Framework.Scheduling/) |
 | Meziantou.Framework.SingleInstance            | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SingleInstance.svg)](https://www.nuget.org/packages/Meziantou.Framework.SingleInstance/) |
 | Meziantou.Framework.Slug                      | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Slug.svg)](https://www.nuget.org/packages/Meziantou.Framework.Slug/) |

@@ -501,4 +501,9 @@ dotnet_diagnostic.MA0095.severity = warning    # MA0095: A class that implements
 dotnet_diagnostic.MA0096.severity = warning    # MA0096: A class that implements IComparable<T> should also implement IEquatable<T>
 dotnet_diagnostic.MA0097.severity = warning    # MA0097: A class that implements IComparable<T> or IComparable should override comparison operators
 dotnet_diagnostic.MA0098.severity = suggestion # MA0098: Use indexer instead of extension methods
+dotnet_diagnostic.MA0099.severity = warning    # MA0099: Use Explicit enum value instead of 0
+dotnet_diagnostic.MA0100.severity = warning    # MA0100: Await task before disposing resources
+dotnet_diagnostic.MA0101.severity = suggestion # MA0101: String contains an implicit end of line character
 MA0053.public_class_should_be_sealed = false
+
+dotnet_diagnostic.RS2008.severity = none

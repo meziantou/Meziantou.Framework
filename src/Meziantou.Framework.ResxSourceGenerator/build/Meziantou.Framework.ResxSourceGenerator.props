@@ -1,0 +1,11 @@
+﻿<Project>
+  <ItemGroup>
+    <!-- Keep in sync with ResxGenerator.cs -->
+    <CompilerVisibleProperty Include="ProjectDir" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="Namespace" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="ClassName" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="ResourceName" />
+  </ItemGroup>
+</Project>

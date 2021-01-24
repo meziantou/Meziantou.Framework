@@ -51,6 +51,17 @@ jobs:
         if-no-files-found: error
         retention-days: 3
         path: ${{ env.NuGetDirectory }}/**/*
+    - run: |
+        dotnet tool update --global dotnet-validate --version 0.0.1-preview.42
+        
+        Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
+        $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+        foreach($file in $files) {
+            dotnet-validate package local "$file"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Invalid package $file"
+            }
+        }
     - uses: actions/upload-artifact@v2
       with:
         name: binlog

@@ -16,10 +16,14 @@ namespace Meziantou.Framework.Html.Tool
 
             var replaceValueCommand = new Command("replace-value")
             {
-                new Option<Glob>(
+                new Option<string?>(
+                    "--file",
+                    description: "Path of the file to update") { IsRequired = false },
+
+                new Option<Glob?>(
                     "--file-pattern",
                     parseArgument: arg => Glob.Parse(arg.GetValueOrDefault<string>(), GlobOptions.None),
-                    description: "Glob pattern to find files to update") { IsRequired = true },
+                    description: "Glob pattern to find files to update") { IsRequired = false },
 
                 new Option<string>(
                     "--xpath",
@@ -31,15 +35,30 @@ namespace Meziantou.Framework.Html.Tool
             };
 
             replaceValueCommand.Description = "Replace element/attribute values in an html file";
-            replaceValueCommand.Handler = CommandHandler.Create((Glob glob, string xpath, string newValue) => ReplaceValue(glob, xpath, newValue));
+            replaceValueCommand.Handler = CommandHandler.Create((string? filePath, Glob? glob, string xpath, string newValue) => ReplaceValue(filePath, glob, xpath, newValue));
 
             rootCommand.AddCommand(replaceValueCommand);
             return rootCommand.InvokeAsync(args);
         }
 
-        private static async Task<int> ReplaceValue(Glob glob, string xpath, string newValue)
+        private static async Task<int> ReplaceValue(string? filePath, Glob? glob, string xpath, string newValue)
         {
-            foreach (var file in glob.EnumerateFiles(Environment.CurrentDirectory))
+            if (filePath != null)
+            {
+                await UpdateFileAsync(filePath).ConfigureAwait(false);
+            }
+
+            if (glob != null)
+            {
+                foreach (var file in glob.EnumerateFiles(Environment.CurrentDirectory))
+                {
+                    await UpdateFileAsync(file).ConfigureAwait(false);
+                }
+            }
+
+            return 0;
+
+            async Task UpdateFileAsync(string file)
             {
                 var stream = File.OpenRead(file);
                 try
@@ -63,8 +82,6 @@ namespace Meziantou.Framework.Html.Tool
                     await stream.DisposeAsync().ConfigureAwait(false);
                 }
             }
-
-            return 0;
         }
     }
 }

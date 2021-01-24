@@ -16,13 +16,12 @@ namespace Meziantou.Framework.Html.Tool
 
             var replaceValueCommand = new Command("replace-value")
             {
-                new Option<string?>(
+                new Option<string>(
                     "--file",
                     description: "Path of the file to update") { IsRequired = false },
 
-                new Option<Glob?>(
+                new Option<string>(
                     "--file-pattern",
-                    parseArgument: arg => Glob.Parse(arg.GetValueOrDefault<string>(), GlobOptions.None),
                     description: "Glob pattern to find files to update") { IsRequired = false },
 
                 new Option<string>(
@@ -35,21 +34,27 @@ namespace Meziantou.Framework.Html.Tool
             };
 
             replaceValueCommand.Description = "Replace element/attribute values in an html file";
-            replaceValueCommand.Handler = CommandHandler.Create((string? filePath, Glob? glob, string xpath, string newValue) => ReplaceValue(filePath, glob, xpath, newValue));
+            replaceValueCommand.Handler = CommandHandler.Create((string? file, string? filePattern, string xpath, string newValue) => ReplaceValue(file, filePattern, xpath, newValue));
 
             rootCommand.AddCommand(replaceValueCommand);
             return rootCommand.InvokeAsync(args);
         }
 
-        private static async Task<int> ReplaceValue(string? filePath, Glob? glob, string xpath, string newValue)
+        private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string xpath, string newValue)
         {
             if (filePath != null)
             {
                 await UpdateFileAsync(filePath).ConfigureAwait(false);
             }
 
-            if (glob != null)
+            if (globPattern != null)
             {
+                if (!Glob.TryParse(globPattern, GlobOptions.None, out var glob))
+                {
+                    Console.Error.WriteLine($"Glob pattern '{globPattern}' is invalid");
+                    return -1;
+                }
+
                 foreach (var file in glob.EnumerateFiles(Environment.CurrentDirectory))
                 {
                     await UpdateFileAsync(file).ConfigureAwait(false);
@@ -60,27 +65,27 @@ namespace Meziantou.Framework.Html.Tool
 
             async Task UpdateFileAsync(string file)
             {
+                var doc = new HtmlDocument();
                 var stream = File.OpenRead(file);
                 try
                 {
-                    var doc = new HtmlDocument();
                     doc.Load(stream);
-
-                    var count = 0;
-                    var nodes = doc.SelectNodes(xpath);
-                    foreach (var node in nodes)
-                    {
-                        node.Value = newValue;
-                        count++;
-                    }
-
-                    doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
-                    Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
                 }
                 finally
                 {
                     await stream.DisposeAsync().ConfigureAwait(false);
                 }
+
+                var count = 0;
+                var nodes = doc.SelectNodes(xpath);
+                foreach (var node in nodes)
+                {
+                    node.Value = newValue;
+                    count++;
+                }
+
+                doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
+                Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
             }
         }
     }

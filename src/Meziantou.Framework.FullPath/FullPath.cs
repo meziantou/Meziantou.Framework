@@ -59,6 +59,8 @@ namespace Meziantou.Framework
 
         public string? Name => Path.GetFileName(_value);
 
+        public string? NameWithoutExtension => Path.GetFileNameWithoutExtension(_value);
+
         public string? Extension => Path.GetExtension(_value);
 
         public int CompareTo(FullPath other) => FullPathComparer.Default.Compare(this, other);
@@ -154,6 +156,18 @@ namespace Meziantou.Framework
                 return true;
 
             return false;
+        }
+
+        public void CreateParentDirectory()
+        {
+            if (IsEmpty)
+                return;
+
+            var parent = Path.GetDirectoryName(Value);
+            if (parent != null)
+            {
+                Directory.CreateDirectory(parent);
+            }
         }
 
         public static FullPath GetTempPath() => FromPath(Path.GetTempPath());

@@ -3,9 +3,9 @@
 <CascadingValue Value="@this" IsFixed="true">
     @if (fields != null)
     {
-        @foreach (var field in fields)
-        {;
-            @if(FieldTemplate != null)
+        foreach (var field in fields)
+        {
+            if(FieldTemplate != null)
             {
                 @FieldTemplate(field)
             }

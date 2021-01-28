@@ -1,0 +1,72 @@
+﻿@page "/generic-form"
+
+<h1>Generic Form!</h1>
+
+<EditForm Model="MyModel">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <GenericForm @bind-Model="MyModel" EditorClass="form-control" EnableFieldValidation="false">
+        <FieldTemplate Context="field">
+            <div class="form-group">
+                <label for="@field.EditorId">@field.DisplayName</label>
+                @field.EditorTemplate
+                @field.FieldValidationTemplate
+            </div>
+        </FieldTemplate>
+    </GenericForm>
+</EditForm>
+
+<button type="button" @onclick="() => StateHasChanged()">Refresh</button>
+
+<div>
+@MyModel
+</div>
+
+@code {
+    public Model MyModel { get; set; } = new Model();
+
+    public record Model
+    {
+        [System.ComponentModel.DataAnnotations.MinLength(3)]
+        [System.ComponentModel.DataAnnotations.Display(Name = "String Value with custom name")]
+        public string StringValue { get; set; } = "meziantou";
+        [System.ComponentModel.DisplayName("Custom name")]
+        public string StringValueWithCustomName { get; set; } = "Gérald Barré";
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
+        public DateTime DateValue { get; set; } = DateTime.Now;
+        public DateTime DateTimeValue { get; set; } = DateTime.Now;
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
+        public DateTimeOffset DateOffsetValue { get; set; } = DateTimeOffset.Now;
+        public DateTimeOffset DateTimeOffsetValue { get; set; } = DateTimeOffset.Now;
+        public bool BooleanValue { get; set; }
+        public short Int16Value { get; set; }
+        public int Int32Value { get; set; }
+        public long Int64Value { get; set; }
+        public float SingleValue { get; set; }
+        public double DoubleValue { get; set; }
+        public decimal DecimalValue { get; set; }
+
+        // This is not visible in the form
+        public string ReadOnly { get; }
+
+        // This is not visible in the form
+        [System.ComponentModel.DataAnnotations.Editable(false)]
+        public string NotEditable { get; }
+
+        [System.ComponentModel.Editor(typeof(InputTextArea), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
+        public string TextArea { get; set; }
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.EmailAddress)]
+        public string Email { get; set; }
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Password)]
+        public string Password { get; set; }
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.MultilineText)]
+        public string MultilineText { get; set; }
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.PhoneNumber)]
+        public string PhoneNumber { get; set; }
+    }
+}

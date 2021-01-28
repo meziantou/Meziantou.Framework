@@ -1,25 +1,23 @@
 ﻿@typeparam TModel
 
-<CascadingValue Value="@this" IsFixed="true">
-    @if (fields != null)
+@if (fields != null)
+{
+    foreach (var field in fields)
     {
-        foreach (var field in fields)
+        if(FieldTemplate != null)
         {
-            if(FieldTemplate != null)
-            {
-                @FieldTemplate(field)
-            }
-            else
-            {
-                <div>
-                    <label for="@field.EditorId">@field.DisplayName</label>
-                    @field.EditorTemplate
-                    @field.FieldValidationTemplate
-                </div>
-            }            
+            @FieldTemplate(field)
         }
+        else
+        {
+            <div>
+                <label for="@field.EditorId">@field.DisplayName</label>
+                @field.EditorTemplate
+                @field.FieldValidationTemplate
+            </div>
+        }            
     }
-</CascadingValue>
+}
 
 @code{
     internal string BaseEditorId { get; } = Guid.NewGuid().ToString();

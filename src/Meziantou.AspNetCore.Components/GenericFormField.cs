@@ -251,6 +251,9 @@ namespace Meziantou.AspNetCore.Components
                 return (typeof(InputDateTime<DateTimeOffset>), null);
             }
 
+            if (property.PropertyType == typeof(Uri))
+                return (typeof(InputUrl<Uri>), null);
+
             if (property.PropertyType.IsEnum)
             {
                 if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))

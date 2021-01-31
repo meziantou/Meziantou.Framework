@@ -4,7 +4,7 @@
     {
         public TypeReference? ReturnType { get; set; }
 
-        public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
+        public MethodArgumentCollection Arguments { get; }
         public StatementCollection Statements { get; }
         public Modifiers Modifiers { get; set; }
 
@@ -16,7 +16,7 @@
         public OperatorDeclaration(string? name)
         {
             Statements = new StatementCollection(this);
-            Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
+            Arguments = new MethodArgumentCollection(this);
             Name = name;
         }
     }

@@ -57,5 +57,16 @@ namespace Meziantou.Framework.CodeDom
             value.Parent = parent;
             return value;
         }
+
+        public override string ToString()
+        {
+            return ToCsharpString();
+        }
+
+        public string ToCsharpString()
+        {
+            var generator = new CSharpCodeGenerator();
+            return generator.Write(this);
+        }
     }
 }

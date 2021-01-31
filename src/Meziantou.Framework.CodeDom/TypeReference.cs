@@ -124,7 +124,24 @@ namespace Meziantou.Framework.CodeDom
                     return _typeParameter.Name;
 
                 if (_typeDeclaration != null)
-                    return _typeDeclaration.Namespace + '.' + _typeDeclaration.Name;
+                {
+                    var result = _typeDeclaration.Name;
+                    var type = _typeDeclaration;
+                    var parentType = type.AnscestorOfType<TypeDeclaration>();
+                    while (parentType != null)
+                    {
+                        result = parentType.Name + '+' + result;
+                        parentType = parentType.AnscestorOfType<TypeDeclaration>();
+                    }
+
+                    var ns = _typeDeclaration.Namespace;
+                    if (ns != null)
+                    {
+                        result = ns + '.' + result;
+                    }
+
+                    return result;
+                }
 
                 return _typeName;
             }

@@ -1,13 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;netstandard2.0</TargetFrameworks>
     <Description>C# code generator</Description>
-    <Version>4.0.0</Version>    
+    <Version>4.0.1</Version>    
   </PropertyGroup>
-
-  <ItemGroup Condition="$(TargetFramework) == 'net461'">
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" PrivateAssets="All" />
-  </ItemGroup>
 
 </Project>

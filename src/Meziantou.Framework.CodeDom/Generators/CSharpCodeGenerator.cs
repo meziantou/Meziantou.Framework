@@ -339,7 +339,7 @@ namespace Meziantou.Framework.CodeDom
                 }
                 else
                 {
-                    var declaringType = member.GetSelfOrParentOfType<TypeDeclaration>();
+                    var declaringType = member.SelfOrAnscestorOfType<TypeDeclaration>();
                     if (declaringType != null)
                     {
                         WriteIdentifier(writer, declaringType.Name);
@@ -365,7 +365,7 @@ namespace Meziantou.Framework.CodeDom
             WriteStatements(writer, member.Statements);
         }
 
-        protected virtual void WriteMethodArguments(IndentedTextWriter writer, CodeObjectCollection<MethodArgumentDeclaration> args)
+        protected virtual void WriteMethodArguments(IndentedTextWriter writer, MethodArgumentCollection args)
         {
             Write(writer, args, ", ");
         }

@@ -7,11 +7,11 @@
 
         public ConstructorDeclaration()
         {
-            Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
+            Arguments = new MethodArgumentCollection(this);
             Statements = new StatementCollection(this);
         }
 
-        public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
+        public MethodArgumentCollection Arguments { get; }
 
         public StatementCollection? Statements
         {
@@ -27,6 +27,6 @@
 
         public Modifiers Modifiers { get; set; }
 
-        public TypeDeclaration? ParentType => Parent.GetSelfOrParentOfType<TypeDeclaration>();
+        public TypeDeclaration? ParentType => Parent.SelfOrAnscestorOfType<TypeDeclaration>();
     }
 }

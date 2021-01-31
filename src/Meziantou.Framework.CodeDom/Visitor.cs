@@ -176,6 +176,10 @@ namespace Meziantou.Framework.CodeDom
                     VisitMethodArgumentDeclaration(methodArgumentDeclaration);
                     break;
 
+                case MethodArgumentCollection methodArgumentCollection:
+                    VisitMethodArgumentCollection(methodArgumentCollection);
+                    break;
+
                 case MethodDeclaration methodDeclaration:
                     VisitMethodDeclaration(methodDeclaration);
                     break;
@@ -515,7 +519,7 @@ namespace Meziantou.Framework.CodeDom
         {
             VisitMemberDeclaration(operatorDeclaration);
             VisitTypeReferenceIfNotNull(operatorDeclaration.ReturnType);
-            VisitCollection(operatorDeclaration.Arguments);
+            VisitMethodArgumentCollection(operatorDeclaration.Arguments);
             Visit(operatorDeclaration.Statements);
         }
 
@@ -565,7 +569,7 @@ namespace Meziantou.Framework.CodeDom
             VisitTypeReferenceIfNotNull(methodDeclaration.ReturnType);
             VisitTypeReferenceIfNotNull(methodDeclaration.PrivateImplementationType);
             VisitCollection(methodDeclaration.Parameters);
-            VisitCollection(methodDeclaration.Arguments);
+            VisitMethodArgumentCollection(methodDeclaration.Arguments);
             Visit(methodDeclaration.Statements);
         }
 
@@ -849,7 +853,12 @@ namespace Meziantou.Framework.CodeDom
             VisitCollection(statements);
         }
 
-        private void VisitCollection<T>(CodeObjectCollection<T> items) where T : CodeObject
+        public virtual void VisitMethodArgumentCollection(MethodArgumentCollection arguments)
+        {
+            VisitCollection(arguments);
+        }
+
+        private void VisitCollection<T>(IEnumerable<T> items) where T : CodeObject
         {
             if (items == null)
                 return;

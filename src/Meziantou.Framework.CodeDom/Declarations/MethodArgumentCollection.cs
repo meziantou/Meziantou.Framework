@@ -5,20 +5,20 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.CodeDom
 {
-    public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> where T : CodeObject
+    public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclaration>, IReadOnlyList<MethodArgumentDeclaration>
     {
-        private readonly List<T> _list = new();
+        private readonly List<MethodArgumentDeclaration> _list = new();
 
-        public CodeObjectCollection()
+        public MethodArgumentCollection()
         {
         }
 
-        public CodeObjectCollection(CodeObject parent)
+        public MethodArgumentCollection(CodeObject parent)
         {
             Parent = parent ?? throw new ArgumentNullException(nameof(parent));
         }
 
-        public IEnumerator<T> GetEnumerator()
+        public IEnumerator<MethodArgumentDeclaration> GetEnumerator()
         {
             return _list.GetEnumerator();
         }
@@ -28,7 +28,7 @@ namespace Meziantou.Framework.CodeDom
             return ((IEnumerable)_list).GetEnumerator();
         }
 
-        public void AddRange(IEnumerable<T> items)
+        public void AddRange(IEnumerable<MethodArgumentDeclaration> items)
         {
             foreach (var item in items)
             {
@@ -36,10 +36,9 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        void ICollection<T>.Add(T item) => Add(item);
+        void ICollection<MethodArgumentDeclaration>.Add(MethodArgumentDeclaration item) => Add(item);
 
-        public TCodeObject Add<TCodeObject>(TCodeObject item)
-            where TCodeObject : T
+        public MethodArgumentDeclaration Add(MethodArgumentDeclaration item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -47,6 +46,11 @@ namespace Meziantou.Framework.CodeDom
             _list.Add(item);
             item.Parent = Parent;
             return item;
+        }
+
+        public MethodArgumentDeclaration Add(TypeReference type, string name)
+        {
+            return Add(new MethodArgumentDeclaration(type, name));
         }
 
         public void Clear()
@@ -58,17 +62,17 @@ namespace Meziantou.Framework.CodeDom
             _list.Clear();
         }
 
-        public bool Contains(T item)
+        public bool Contains(MethodArgumentDeclaration item)
         {
             return _list.Contains(item);
         }
 
-        public void CopyTo(T[] array, int arrayIndex)
+        public void CopyTo(MethodArgumentDeclaration[] array, int arrayIndex)
         {
             _list.CopyTo(array, arrayIndex);
         }
 
-        public bool Remove(T item)
+        public bool Remove(MethodArgumentDeclaration item)
         {
             var remove = _list.Remove(item);
             if (remove)
@@ -80,14 +84,14 @@ namespace Meziantou.Framework.CodeDom
 
         public int Count => _list.Count;
 
-        public bool IsReadOnly => ((IList<T>)_list).IsReadOnly;
+        public bool IsReadOnly => ((IList<MethodArgumentDeclaration>)_list).IsReadOnly;
 
-        public int IndexOf(T item)
+        public int IndexOf(MethodArgumentDeclaration item)
         {
             return _list.IndexOf(item);
         }
 
-        public void Insert(int index, T item)
+        public void Insert(int index, MethodArgumentDeclaration item)
         {
             _list.Insert(index, item);
             item.Parent = Parent;
@@ -104,7 +108,7 @@ namespace Meziantou.Framework.CodeDom
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public T this[int index]
+        public MethodArgumentDeclaration this[int index]
         {
             get => _list[index];
             set
@@ -122,7 +126,7 @@ namespace Meziantou.Framework.CodeDom
             }
         }
 
-        public void Sort(IComparer<T> comparer)
+        public void Sort(IComparer<MethodArgumentDeclaration> comparer)
         {
             _list.Sort(comparer);
         }

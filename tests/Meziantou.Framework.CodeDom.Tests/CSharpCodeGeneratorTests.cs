@@ -1876,5 +1876,33 @@ null
 
             AssertExtensions.StringEquals(@"(a is string)", result);
         }
+
+        [Fact]
+        public void CSharpCodeGenerator_TypeReference_NestedType()
+        {
+            var innerStruct = new StructDeclaration("D");
+            _ = new NamespaceDeclaration("A")
+            {
+                Namespaces =
+                {
+                    new NamespaceDeclaration("B")
+                    {
+                        Types =
+                        {
+                            new ClassDeclaration("C")
+                            {
+                                Types = { innerStruct },
+                            },
+                        },
+                    },
+                },
+            };
+
+            var generator = new CSharpCodeGenerator();
+            var result = generator.Write(new VariableDeclarationStatement(new TypeReference(innerStruct), "demo"));
+
+            AssertExtensions.StringEquals(@"A.B.C.D demo;
+", result);
+        }
     }
 }

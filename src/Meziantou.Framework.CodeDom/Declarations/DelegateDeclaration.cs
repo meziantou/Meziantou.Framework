@@ -4,7 +4,7 @@
     {
         public TypeReference? ReturnType { get; set; }
         public CodeObjectCollection<TypeParameter> Parameters { get; }
-        public CodeObjectCollection<MethodArgumentDeclaration> Arguments { get; }
+        public MethodArgumentCollection Arguments { get; }
 
         public DelegateDeclaration()
             : this(name: null)
@@ -13,7 +13,7 @@
 
         public DelegateDeclaration(string? name)
         {
-            Arguments = new CodeObjectCollection<MethodArgumentDeclaration>(this);
+            Arguments = new MethodArgumentCollection(this);
             Parameters = new CodeObjectCollection<TypeParameter>(this);
             Name = name;
         }

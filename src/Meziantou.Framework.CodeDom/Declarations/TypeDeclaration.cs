@@ -18,7 +18,25 @@
             XmlComments = new XmlCommentCollection(this);
         }
 
-        public string? Namespace => this.GetSelfOrParentOfType<NamespaceDeclaration>()?.Name;
+        public string? Namespace
+        {
+            get
+            {
+                string? result = null;
+                var ns = this.SelfOrAnscestorOfType<NamespaceDeclaration>();
+                while (ns != null)
+                {
+                    if (result != null)
+                    {
+                        result = '.' + result;
+                    }
 
+                    result = ns.Name + result;
+                    ns = ns.AnscestorOfType<NamespaceDeclaration>();
+                }
+
+                return result;
+            }
+        }
     }
 }

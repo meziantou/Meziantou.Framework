@@ -4,8 +4,27 @@ namespace Meziantou.Framework.CodeDom
 {
     public static class Extensions
     {
-        public static T? GetSelfOrParentOfType<T>(this CodeObject? codeObject) where T : CodeObject
+        public static T? SelfOrAnscestorOfType<T>(this CodeObject? codeObject) where T : CodeObject
         {
+            while (codeObject != null)
+            {
+                if (codeObject is T o)
+                {
+                    return o;
+                }
+
+                codeObject = codeObject.Parent;
+            }
+
+            return null;
+        }
+
+        public static T? AnscestorOfType<T>(this CodeObject? codeObject) where T : CodeObject
+        {
+            if (codeObject == null)
+                return null;
+
+            codeObject = codeObject.Parent;
             while (codeObject != null)
             {
                 if (codeObject is T o)
@@ -54,6 +73,17 @@ namespace Meziantou.Framework.CodeDom
         public static MethodArgumentDeclaration AddArgument(this MethodDeclaration method, string name, TypeReference type)
         {
             var argument = new MethodArgumentDeclaration(type, name);
+            method.Arguments.Add(argument);
+            return argument;
+        }
+
+        public static MethodArgumentDeclaration AddArgument(this MethodDeclaration method, string name, TypeReference type, Direction direction)
+        {
+            var argument = new MethodArgumentDeclaration(type, name)
+            {
+                Direction = direction,
+            };
+
             method.Arguments.Add(argument);
             return argument;
         }

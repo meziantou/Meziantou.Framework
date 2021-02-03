@@ -49,7 +49,6 @@ namespace Meziantou.Framework.ResxSourceGenerator
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-
         public void Initialize(GeneratorInitializationContext context)
         {
         }
@@ -449,10 +448,10 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 }
             }
 
-            if (result != null)
+            if (!string.IsNullOrEmpty(result))
                 return result;
 
-            if (globalName != null && context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue))
+            if (globalName != null && context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue) && !string.IsNullOrEmpty(globalValue))
                 return globalValue;
 
             return null;

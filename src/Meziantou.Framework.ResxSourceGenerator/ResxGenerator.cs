@@ -79,7 +79,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
                     continue;
                 }
 
-                if (ns == null)
+                if (resourceName == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForResourceName, location: null, resxGroug.First().Path));
                     continue;
@@ -89,7 +89,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 if (entries == null)
                     continue;
 
-                var content = GenerateCode(ns, className, entries);
+                var content = GenerateCode(ns, className, resourceName, entries);
 
                 content += $@"
 // Debug info:
@@ -104,7 +104,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
             }
         }
 
-        private static string GenerateCode(string? ns, string className, List<ResxEntry> entries)
+        private static string GenerateCode(string? ns, string className, string resourceName, List<ResxEntry> entries)
         {
             var sb = new StringBuilder();
             sb.AppendLine("using System;");
@@ -132,7 +132,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
             {
                 if (resourceMan is null) 
                 {
-                    resourceMan = new System.Resources.ResourceManager(""" + ns + "." + className + @""", typeof(" + className + @").Assembly);
+                    resourceMan = new System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
                 }
 
                 return resourceMan;

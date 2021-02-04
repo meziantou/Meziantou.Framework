@@ -163,6 +163,14 @@ namespace Meziantou.Framework
             return sb;
         }
 
+        public static StringBuilder AppendInvariant(this StringBuilder sb, FormattableString? value)
+        {
+            if (value != null)
+                return sb.Append(value.ToString(CultureInfo.InvariantCulture));
+
+            return sb;
+        }
+
         [SuppressMessage("Performance", "MA0028:Optimize StringBuilder usage", Justification = "Performance")]
         public static StringBuilder AppendInvariant<T>(this StringBuilder sb, T? value)
             where T : IFormattable

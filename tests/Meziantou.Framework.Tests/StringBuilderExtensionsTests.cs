@@ -5,6 +5,22 @@ namespace Meziantou.Framework.Tests
 {
     public class StringBuilderExtensionsTests
     {
+        [Fact]
+        public void AppendInvariant_FormattableString()
+        {
+            CultureInfoUtilities.UseCulture("sv-SE", () =>
+            {
+                var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
+                Assert.Equal("test-42", actual);
+            });
+
+            CultureInfoUtilities.UseCulture("en-US", () =>
+            {
+                var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
+                Assert.Equal("test-42", actual);
+            });
+        }
+
         [Theory]
         [InlineData("", 'a', false)]
         [InlineData("abc", 'c', true)]

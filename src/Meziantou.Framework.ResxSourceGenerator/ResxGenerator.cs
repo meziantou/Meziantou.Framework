@@ -76,30 +76,32 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 if (ns == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForNamespace, location: null, resxGroug.First().Path));
-                    continue;
                 }
 
                 if (resourceName == null)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForResourceName, location: null, resxGroug.First().Path));
-                    continue;
                 }
 
                 var entries = LoadResourceFiles(context, resxGroug);
-                if (entries == null)
-                    continue;
 
-                var content = GenerateCode(ns, className, resourceName, entries);
-
-                content += $@"
+                var content = $@"
 // Debug info:
-// RootNamespace: {rootNamespace}
+// RootNamespace: {GetMetadataValue(context, "RootNamespace", resxGroug)}
+// AssemblyName: {context.Compilation.AssemblyName}
+// FinalRootNamespace: {rootNamespace}
 // ProjectDir: {projectDir}
 // defaultNamespace: {defaultNamespace}
 // defaultResourceName: {defaultResourceName}
 // key: {resxGroug.Key}
 // files: {string.Join(", ", resxGroug.Select(f => f.Path))}
 ";
+
+                if (resourceName != null && entries != null)
+                {
+                    content += GenerateCode(ns, className, resourceName, entries);
+                }
+
                 context.AddSource($"{Path.GetFileName(resxGroug.Key)}.resx.cs", SourceText.From(content, Encoding.UTF8));
             }
         }

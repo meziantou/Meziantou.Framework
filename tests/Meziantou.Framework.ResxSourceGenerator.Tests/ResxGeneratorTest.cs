@@ -145,7 +145,6 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
             });
 
             Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
-            Assert.Empty(result.GeneratedTrees);
         }
 
         private sealed class OptionProvider : AnalyzerConfigOptionsProvider

@@ -11,6 +11,7 @@
       "src\\Meziantou.AspNetCore.Components.WebAssembly\\Meziantou.AspNetCore.Components.WebAssembly.csproj",
       "src\\Meziantou.AspNetCore.Components\\Meziantou.AspNetCore.Components.csproj",
       "src\\Meziantou.AspNetCore.Mvc\\Meziantou.AspNetCore.Mvc.csproj",
+      "src\\Meziantou.Extensions.Logging.Xunit\\Meziantou.Extensions.Logging.Xunit.csproj",
       "src\\Meziantou.Framework.ByteSize\\Meziantou.Framework.ByteSize.csproj",
       "src\\Meziantou.Framework.CodeDom\\Meziantou.Framework.CodeDom.csproj",
       "src\\Meziantou.Framework.CodeOwners\\Meziantou.Framework.CodeOwners.csproj",

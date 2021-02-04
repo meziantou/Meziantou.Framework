@@ -198,7 +198,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Strongl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.StronglyTypedId.Tests", "tests\Meziantou.Framework.StronglyTypedId.Tests\Meziantou.Framework.StronglyTypedId.Tests.csproj", "{A93AFF92-DC97-4902-BA8D-B85D0B1140B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StronglyTypedIdSample", "Samples\StronglyTypedIdSample\StronglyTypedIdSample.csproj", "{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StronglyTypedIdSample", "Samples\StronglyTypedIdSample\StronglyTypedIdSample.csproj", "{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Extensions.Logging.Xunit", "src\Meziantou.Extensions.Logging.Xunit\Meziantou.Extensions.Logging.Xunit.csproj", "{62244782-4927-4EA5-BEE7-F63B8601644A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -546,6 +548,10 @@ Global
 		{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62244782-4927-4EA5-BEE7-F63B8601644A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62244782-4927-4EA5-BEE7-F63B8601644A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62244782-4927-4EA5-BEE7-F63B8601644A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62244782-4927-4EA5-BEE7-F63B8601644A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -636,6 +642,7 @@ Global
 		{56C0C2C6-4168-4F62-BA97-4183DB34CADC} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{A93AFF92-DC97-4902-BA8D-B85D0B1140B3} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{77020B0B-A9F6-401F-9E23-47E4E8BDBCF0} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
+		{62244782-4927-4EA5-BEE7-F63B8601644A} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

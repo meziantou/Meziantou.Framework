@@ -53,6 +53,11 @@ namespace Meziantou.Framework.CodeDom
             return Add(new MethodArgumentDeclaration(type, name));
         }
 
+        public MethodArgumentDeclaration Add(TypeReference type, string name, Direction direction)
+        {
+            return Add(new MethodArgumentDeclaration(type, name) { Direction = direction });
+        }
+
         public void Clear()
         {
             foreach (var item in _list)

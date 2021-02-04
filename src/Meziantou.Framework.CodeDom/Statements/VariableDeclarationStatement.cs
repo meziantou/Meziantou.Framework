@@ -8,7 +8,7 @@
         {
         }
 
-        public VariableDeclarationStatement(TypeReference? type, string? name, Expression? initExpression = null)
+        public VariableDeclarationStatement(string? name, TypeReference? type, Expression? initExpression = null)
         {
             Type = type;
             Name = name;

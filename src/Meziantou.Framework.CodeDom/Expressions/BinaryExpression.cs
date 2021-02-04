@@ -29,26 +29,5 @@
             get => _rightExpression;
             set => SetParent(ref _rightExpression, value);
         }
-
-        public static BinaryExpression And(Expression expr1, Expression expr2, params Expression[] expressions)
-        {
-            return Create(BinaryOperator.And, expr1, expr2, expressions);
-        }
-
-        public static BinaryExpression Or(Expression expr1, Expression expr2, params Expression[] expressions)
-        {
-            return Create(BinaryOperator.Or, expr1, expr2, expressions);
-        }
-
-        private static BinaryExpression Create(BinaryOperator op, Expression expr1, Expression expr2, params Expression[] expressions)
-        {
-            var result = new BinaryExpression(op, expr1, expr2);
-            foreach (var expr in expressions)
-            {
-                result = new BinaryExpression(op, result, expr);
-            }
-
-            return result;
-        }
     }
 }

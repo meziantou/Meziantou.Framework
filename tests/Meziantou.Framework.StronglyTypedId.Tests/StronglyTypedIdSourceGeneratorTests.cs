@@ -13,7 +13,7 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
 {
     public sealed class StronglyTypedIdSourceGeneratorTests
     {
-        private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, string[] assemblyLocations = null)
+        private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
         {
             var refs = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
             assemblyLocations ??= Array.Empty<string>();
@@ -31,11 +31,18 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
             Assert.Empty(diagnostics);
 
+            var runResult = driver.GetRunResult();
+
             // Validate the output project compiles
             using var ms = new MemoryStream();
             var result = outputCompilation.Emit(ms);
-
-            return (driver.GetRunResult(), outputCompilation, result.Success ? ms.ToArray() : null);
+            if (mustCompile && !result.Success)
+            {
+                var diags = string.Join("\n", result.Diagnostics);
+                var generated = await runResult.GeneratedTrees[1].GetRootAsync();
+                Assert.False(true, "Project cannot build:\n" + diags + "\n\n\n" + generated.ToFullString());
+            }
+            return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
         }
 
         [Fact]
@@ -158,6 +165,70 @@ public partial struct Test : System.IEquatable<Test>
             Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
 
             Assert.NotNull(result.Assembly);
+        }
+
+        [Fact]
+        public async Task GenerateStruct_ToString()
+        {
+            var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(int))]
+public partial struct Test {}
+";
+            var result = await GenerateFiles(sourceCode);
+
+            Assert.Empty(result.GeneratorResult.Diagnostics);
+            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+
+            var alc = new AssemblyLoadContext("test", isCollectible: true);
+            try
+            {
+                alc.LoadFromStream(new MemoryStream(result.Assembly));
+                foreach (var a in alc.Assemblies)
+                {
+                    CultureInfoUtilities.UseCulture("sv-SE", () =>
+                    {
+                        var type = a.GetType("Test");
+                        var from = (MethodInfo)type.GetMember("FromInt32").Single();
+                        var instance = from.Invoke(null, new object[] { -42 });
+                        var str = instance.ToString();
+
+                        Assert.Equal("Test { Value = -42 }", str);
+                    });
+                }
+            }
+            finally
+            {
+                alc.Unload();
+            }
+        }
+
+        [Fact]
+        public async Task GenerateStruct_Parse_ReadOnlySpan()
+        {
+            var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(int))]
+public partial struct Test {}
+";
+            var result = await GenerateFiles(sourceCode);
+
+            Assert.Empty(result.GeneratorResult.Diagnostics);
+            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+
+            var alc = new AssemblyLoadContext("test", isCollectible: true);
+            try
+            {
+                alc.LoadFromStream(new MemoryStream(result.Assembly));
+                foreach (var a in alc.Assemblies)
+                {
+                    var type = a.GetType("Test");
+                    var parse = type.GetMember("Parse").Length;
+                    Assert.Equal(2, parse);
+                }
+            }
+            finally
+            {
+                alc.Unload();
+            }
         }
 
         [Theory]

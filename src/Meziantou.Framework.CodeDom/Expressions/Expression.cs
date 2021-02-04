@@ -66,5 +66,32 @@ namespace Meziantou.Framework.CodeDom
         public static implicit operator Expression(decimal value) => new LiteralExpression(value);
         public static implicit operator Expression(string value) => new LiteralExpression(value);
         public static implicit operator Expression(bool value) => new LiteralExpression(value);
+
+        public static LiteralExpression Null() => new(value: null);
+        public static LiteralExpression True() => new(value: true);
+        public static LiteralExpression False() => new(value: false);
+
+        public static MemberReferenceExpression Member(Type type, string name, params string[] names) => new TypeReferenceExpression(type).Member(name, names);
+
+        public static BinaryExpression ReferenceEqualsNull(Expression expression) => new(BinaryOperator.Equals, new TypeReferenceExpression(typeof(object)).Member(nameof(object.ReferenceEquals)).InvokeMethod(expression, Null()), new LiteralExpression(value: true));
+        public static MethodInvokeExpression IsNullOrEmpty(Expression expression) => new TypeReferenceExpression(typeof(string)).InvokeMethod(nameof(string.IsNullOrEmpty), expression);
+        public static MethodInvokeExpression IsNullOrWhitespace(Expression expression) => new TypeReferenceExpression(typeof(string)).InvokeMethod(nameof(string.IsNullOrWhiteSpace), expression);
+        public static BinaryExpression EqualsNull(Expression expr) => new(BinaryOperator.Equals, expr, Null());
+        public static BinaryExpression NotEqualsNull(Expression expr) => new(BinaryOperator.NotEquals, leftExpression: expr, Null());
+
+        public static BinaryExpression Add(Expression expr1, Expression expr2, params Expression[] expressions) => Create(BinaryOperator.Add, expr1, expr2, expressions);
+        public static BinaryExpression And(Expression expr1, Expression expr2, params Expression[] expressions) => Create(BinaryOperator.And, expr1, expr2, expressions);
+        public static BinaryExpression Or(Expression expr1, Expression expr2, params Expression[] expressions) => Create(BinaryOperator.Or, expr1, expr2, expressions);
+
+        private static BinaryExpression Create(BinaryOperator op, Expression expr1, Expression expr2, params Expression[] expressions)
+        {
+            var result = new BinaryExpression(op, expr1, expr2);
+            foreach (var expr in expressions)
+            {
+                result = new BinaryExpression(op, result, expr);
+            }
+
+            return result;
+        }
     }
 }

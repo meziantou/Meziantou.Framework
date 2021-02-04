@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Meziantou.Framework.CodeDom;
@@ -47,7 +48,7 @@ namespace Meziantou.Framework.StronglyTypedId
 // ------------------------------------------------------------------------------
 
 [System.Diagnostics.Conditional(""StronglyTypedId_Debug"")]
-[System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Property)]
+[System.AttributeUsage(System.AttributeTargets.Struct)]
 internal sealed class StronglyTypedIdAttribute : System.Attribute
 {
     public StronglyTypedIdAttribute(System.Type idType) { }
@@ -56,21 +57,15 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
             foreach (var stronglyTypeStruct in GetStructs(context))
             {
-                var idType = stronglyTypeStruct.AttributeInfo.IdType;
-                if (!IsValidType(context.Compilation, idType))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(s_unsuportedType, stronglyTypeStruct.AttributeInfo.AttributeSyntax.GetLocation(), idType));
-                    continue;
-                }
-
                 var codeUnit = new CompilationUnit
                 {
                     NullableContext = CodeDom.NullableContext.Enable,
                 };
 
                 var structDeclaration = CreateStruct(codeUnit, stronglyTypeStruct);
-                GenerateStructMembers(structDeclaration, context.Compilation, stronglyTypeStruct);
-                GenerateSystemTextJsonConvert(structDeclaration, context.Compilation, idType);
+                GenerateStructMembers(context.Compilation, structDeclaration, stronglyTypeStruct);
+                GenerateTypeConverter(structDeclaration, context.Compilation, stronglyTypeStruct.AttributeInfo.IdType);
+                GenerateSystemTextJsonConvert(structDeclaration, context.Compilation, stronglyTypeStruct.AttributeInfo.IdType);
                 var result = codeUnit.ToCsharpString();
                 context.AddSource(stronglyTypeStruct.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
             }
@@ -118,43 +113,105 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     var arguments = attribute.ArgumentList.Arguments;
                     var operation = semanticModel.GetOperation(arguments[0].Expression, context.CancellationToken);
                     if (operation is ITypeOfOperation idTypeOperation && idTypeOperation.TypeOperand != null)
-                        return new AttributeInfo(attribute, idTypeOperation.TypeOperand);
+                    {
+                        var idType = GetIdType(semanticModel.Compilation, idTypeOperation.TypeOperand);
+                        if (idType != null)
+                            return new AttributeInfo(attribute, idType.Value);
+
+                        context.ReportDiagnostic(Diagnostic.Create(s_unsuportedType, attribute.GetLocation(), idTypeOperation.TypeOperand));
+                    }
                 }
             }
 
             return null;
         }
 
-        private static bool IsValidType(Compilation compilation, ITypeSymbol symbol)
+        private static IdType? GetIdType(Compilation compilation, ITypeSymbol symbol)
         {
-            var types = new List<string>
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Boolean")))
+                return IdType.System_Boolean;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Byte")))
+                return IdType.System_Byte;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.DateTime")))
+                return IdType.System_DateTime;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.DateTimeOffset")))
+                return IdType.System_DateTimeOffset;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Decimal")))
+                return IdType.System_Decimal;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Double")))
+                return IdType.System_Double;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Guid")))
+                return IdType.System_Guid;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int16")))
+                return IdType.System_Int16;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int32")))
+                return IdType.System_Int32;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int64")))
+                return IdType.System_Int64;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.SByte")))
+                return IdType.System_SByte;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Single")))
+                return IdType.System_Single;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.String")))
+                return IdType.System_String;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt16")))
+                return IdType.System_UInt16;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt32")))
+                return IdType.System_UInt32;
+
+            if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt64")))
+                return IdType.System_UInt64;
+
+            return null;
+        }
+
+        private static TypeReference GetTypeReference(IdType type)
+        {
+            return type switch
             {
-                "System.Boolean",
-                "System.Byte",
-                "System.DateTime",
-                "System.DateTimeOffset",
-                "System.Decimal",
-                "System.Double",
-                "System.Guid",
-                "System.Int16",
-                "System.Int32",
-                "System.Int64",
-                "System.SByte",
-                "System.Single",
-                "System.String",
-                "System.UInt16",
-                "System.UInt32",
-                "System.UInt64",
+                IdType.System_Boolean => new TypeReference(typeof(bool)),
+                IdType.System_Byte => new TypeReference(typeof(byte)),
+                IdType.System_DateTime => new TypeReference(typeof(DateTime)),
+                IdType.System_DateTimeOffset => new TypeReference(typeof(DateTimeOffset)),
+                IdType.System_Decimal => new TypeReference(typeof(decimal)),
+                IdType.System_Double => new TypeReference(typeof(double)),
+                IdType.System_Guid => new TypeReference(typeof(Guid)),
+                IdType.System_Int16 => new TypeReference(typeof(short)),
+                IdType.System_Int32 => new TypeReference(typeof(int)),
+                IdType.System_Int64 => new TypeReference(typeof(long)),
+                IdType.System_SByte => new TypeReference(typeof(sbyte)),
+                IdType.System_Single => new TypeReference(typeof(float)),
+                IdType.System_String => new TypeReference(typeof(string)),
+                IdType.System_UInt16 => new TypeReference(typeof(ushort)),
+                IdType.System_UInt32 => new TypeReference(typeof(uint)),
+                IdType.System_UInt64 => new TypeReference(typeof(ulong)),
+                _ => throw new ArgumentException("Type not supported", nameof(type)),
             };
+        }
 
-            foreach (var type in types)
-            {
-                var typeSymbol = compilation.GetTypeByMetadataName(type);
-                if (SymbolEqualityComparer.Default.Equals(symbol, typeSymbol))
-                    return true;
-            }
+        private static bool IsNullable(IdType idType)
+        {
+            return idType == IdType.System_String;
+        }
 
-            return false;
+        private static string GetShortName(TypeReference typeReference)
+        {
+            var index = typeReference.ClrFullTypeName.LastIndexOf('.');
+            return typeReference.ClrFullTypeName[(index + 1)..];
         }
 
         private static StructDeclaration CreateStruct(CompilationUnit unit, StronglyTypedStruct source)
@@ -229,12 +286,11 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             return false;
         }
 
-        private static void GenerateStructMembers(StructDeclaration structDeclaration, Compilation compilation, StronglyTypedStruct stronglyTypedStruct)
+        private static void GenerateStructMembers(Compilation compilation, StructDeclaration structDeclaration, StronglyTypedStruct stronglyTypedStruct)
         {
             var idType = stronglyTypedStruct.AttributeInfo.IdType;
-            var typeReference = new TypeReference(idType.ToDisplayString());
-            var shortName = idType.Name;
-            var isNullable = idType.IsReferenceType;
+            var typeReference = GetTypeReference(idType);
+            var shortName = GetShortName(typeReference);
 
             // Field
             var valueField = structDeclaration.AddMember(new FieldDeclaration("_value", typeReference) { Modifiers = Modifiers.Private | Modifiers.ReadOnly });
@@ -242,6 +298,21 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             // Value
             var valueProperty = structDeclaration.AddMember(new PropertyDeclaration("Value", typeReference) { Modifiers = Modifiers.Public });
             valueProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(valueField));
+
+            // ValueAsString
+            var valueAsStringProperty = structDeclaration.AddMember(new PropertyDeclaration("ValueAsString", typeof(string)) { Modifiers = Modifiers.Public });
+            valueAsStringProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(ValueToStringExpression()));
+
+            Expression ValueToStringExpression()
+            {
+                if (idType == IdType.System_String)
+                    return valueProperty;
+
+                if (idType == IdType.System_Boolean || idType == IdType.System_Guid)
+                    return valueProperty.Member("ToString").InvokeMethod();
+
+                return valueProperty.Member("ToString").InvokeMethod(Expression.Member(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)));
+            }
 
             // ctor
             var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = Modifiers.Private });
@@ -259,29 +330,23 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             {
                 var toStringMethod = structDeclaration.AddMember(new MethodDeclaration("ToString") { Modifiers = Modifiers.Public | Modifiers.Override });
                 toStringMethod.ReturnType = typeof(string);
-                if (isNullable)
+                if (IsNullable(idType))
                 {
-                    toStringMethod.Statements = new StatementCollection
+                    toStringMethod.Statements = new ConditionStatement
                     {
-                        new ConditionStatement()
-                        {
-                            Condition = new BinaryExpression(BinaryOperator.Equals, valueProperty, LiteralExpression.Null()),
-                            TrueStatements = new ReturnStatement(new LiteralExpression("")),
-                            FalseStatements = new ReturnStatement(new MethodInvokeExpression(new MemberReferenceExpression(valueProperty, "ToString"))),
-                        },
+                        Condition = Expression.EqualsNull(valueProperty),
+                        TrueStatements = new ReturnStatement(structDeclaration.Name + " { Value = <null> }"),
+                        FalseStatements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", valueAsStringProperty, " }")),
                     };
                 }
                 else
                 {
-                    toStringMethod.Statements = new StatementCollection
-                    {
-                        new ReturnStatement(new MethodInvokeExpression(new MemberReferenceExpression(valueProperty, "ToString"))),
-                    };
+                    toStringMethod.Statements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", valueAsStringProperty, " }"));
                 }
             }
 
             // if Guid => New
-            if (SymbolEqualityComparer.Default.Equals(idType, compilation.GetTypeByMetadataName("System.Guid")))
+            if (idType == IdType.System_Guid)
             {
                 var newMethod = structDeclaration.AddMember(new MethodDeclaration("New") { Modifiers = Modifiers.Public | Modifiers.Static });
                 newMethod.ReturnType = structDeclaration;
@@ -293,24 +358,18 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             {
                 var getHashCodeMethod = structDeclaration.AddMember(new MethodDeclaration("GetHashCode") { Modifiers = Modifiers.Public | Modifiers.Override });
                 getHashCodeMethod.ReturnType = typeof(int);
-                if (isNullable)
+                if (IsNullable(idType))
                 {
-                    getHashCodeMethod.Statements = new StatementCollection
+                    getHashCodeMethod.Statements = new ConditionStatement
                     {
-                        new ConditionStatement()
-                        {
-                            Condition = new BinaryExpression(BinaryOperator.Equals, valueProperty, LiteralExpression.Null()),
-                            TrueStatements = new ReturnStatement(new LiteralExpression(0)),
-                            FalseStatements = new ReturnStatement(new MethodInvokeExpression(new MemberReferenceExpression(valueProperty, "GetHashCode"))),
-                        },
+                        Condition = Expression.EqualsNull(valueProperty),
+                        TrueStatements = new ReturnStatement(0),
+                        FalseStatements = new ReturnStatement(valueProperty.Member("GetHashCode").InvokeMethod()),
                     };
                 }
                 else
                 {
-                    getHashCodeMethod.Statements = new StatementCollection
-                    {
-                        new ReturnStatement(new MethodInvokeExpression(new MemberReferenceExpression(valueProperty, "GetHashCode"))),
-                    };
+                    getHashCodeMethod.Statements = new ReturnStatement(valueProperty.Member("GetHashCode").InvokeMethod());
                 }
             }
 
@@ -323,11 +382,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 var equalsTypedMethodArg = equalsTypedMethod.Arguments.Add(structDeclaration, "other");
                 equalsTypedMethod.Statements = new StatementCollection
                 {
-                    new ReturnStatement(
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(typeof(object), "Equals"),
-                            valueProperty,
-                            new MemberReferenceExpression(equalsTypedMethodArg, valueProperty))),
+                    new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, valueProperty, new MemberReferenceExpression(equalsTypedMethodArg, valueProperty))),
                 };
             }
 
@@ -342,8 +397,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     new ConditionStatement()
                     {
                         Condition = new IsInstanceOfTypeExpression(equalsMethodArg, structDeclaration),
-                        TrueStatements = new ReturnStatement(new MethodInvokeExpression(new MemberReferenceExpression(new ThisExpression(), "Equals"), new CastExpression(equalsMethodArg, structDeclaration))),
-                        FalseStatements = new ReturnStatement(LiteralExpression.False()),
+                        TrueStatements = new ReturnStatement(new MethodInvokeExpression(new ThisExpression().Member("Equals"), new CastExpression(equalsMethodArg, structDeclaration))),
+                        FalseStatements = new ReturnStatement(Expression.False()),
                     },
                 };
             }
@@ -375,9 +430,123 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                         new UnaryExpression(UnaryOperator.Not,
                             new BinaryExpression(BinaryOperator.Equals, notEqualsOperatorMethodArg1, notEqualsOperatorMethodArg2))));
             }
+
+            // Parse
+            var valueTypes = new List<TypeReference>() { new TypeReference(typeof(string)) };
+            var readOnlySpan = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
+            var charSymbol = compilation.GetTypeByMetadataName("System.Char");
+            var idTypeReference = GetTypeReference(idType);
+            if (readOnlySpan != null && charSymbol != null && idTypeReference.TypeName != null)
+            {
+                if (compilation.GetTypeByMetadataName(idTypeReference.TypeName)?.GetMembers("TryParse").OfType<IMethodSymbol>()
+                        .Any(m => m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, readOnlySpan.Construct(charSymbol))) == true)
+                {
+                    valueTypes.Add(new TypeReference(typeof(ReadOnlySpan<char>)));
+                }
+            }
+
+            foreach (var valueType in valueTypes)
+            {
+                if (!stronglyTypedStruct.IsParseDefined())
+                {
+                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
+                    parseMethod.ReturnType = structDeclaration;
+                    var valueArg = parseMethod.AddArgument("value", valueType);
+                    parseMethod.Statements = new StatementCollection();
+                    var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
+                    parseMethod.Statements.Add(new ConditionStatement
+                    {
+                        Condition = new MemberReferenceExpression(structDeclaration, "TryParse").InvokeMethod(valueArg, new MethodInvokeArgumentExpression(result) { Direction = Direction.Out }),
+                        TrueStatements = new ReturnStatement(result),
+                        FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(FormatException), Expression.Add("Value '", valueArg.Member("ToString").InvokeMethod(), "' is not valid"))),
+                    });
+                }
+
+                // TryParse
+                if (!stronglyTypedStruct.IsTryParseDefined())
+                {
+                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Public | Modifiers.Static });
+                    parseMethod.ReturnType = typeof(bool);
+                    var valueArg = parseMethod.AddArgument("value", valueType);
+                    var resultArg = parseMethod.AddArgument("result", structDeclaration, Direction.Out);
+
+                    if (idType == IdType.System_String)
+                    {
+                        parseMethod.Statements = new StatementCollection()
+                        {
+                            new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, valueArg)),
+                            new ReturnStatement(Expression.False()),
+                        };
+                    }
+                    else
+                    {
+                        parseMethod.Statements = new StatementCollection();
+                        var result = parseMethod.Statements.Add(new VariableDeclarationStatement("id", GetTypeReference(idType)));
+                        parseMethod.Statements.Add(new ConditionStatement
+                        {
+                            Condition = CreateTryParseExpression(),
+                            TrueStatements = new StatementCollection
+                            {
+                                new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, result)),
+                                new ReturnStatement(Expression.False()),
+                            },
+                            FalseStatements = new StatementCollection
+                            {
+                                new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
+                                new ReturnStatement(Expression.False()),
+                            },
+                        });
+
+                        Expression CreateTryParseExpression()
+                        {
+                            switch (idType)
+                            {
+                                case IdType.System_Boolean:
+                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                        valueArg,
+                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+
+                                case IdType.System_DateTime:
+                                case IdType.System_DateTimeOffset:
+                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                        valueArg,
+                                        new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
+                                        new MemberReferenceExpression(typeof(DateTimeStyles), nameof(DateTimeStyles.None)),
+                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+
+                                case IdType.System_Guid:
+                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                        valueArg,
+                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+
+                                case IdType.System_Decimal:
+                                case IdType.System_Double:
+                                case IdType.System_Single:
+                                case IdType.System_Byte:
+                                case IdType.System_SByte:
+                                case IdType.System_Int16:
+                                case IdType.System_Int32:
+                                case IdType.System_Int64:
+                                case IdType.System_UInt16:
+                                case IdType.System_UInt32:
+                                case IdType.System_UInt64:
+                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                        valueArg,
+                                        new MemberReferenceExpression(typeof(NumberStyles), nameof(NumberStyles.Any)),
+                                        new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
+                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+
+                                default:
+                                    throw new InvalidOperationException("Type not supported");
+                            }
+                        }
+                    }
+
+                }
+            }
         }
 
-        private static void GenerateSystemTextJsonConvert(StructDeclaration structDeclaration, Compilation compilation, ITypeSymbol idType)
+        private static void GenerateSystemTextJsonConvert(StructDeclaration structDeclaration, Compilation compilation, IdType idType)
         {
             var type = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1");
             if (type == null)
@@ -394,7 +563,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 var valueArg = writeMethod.AddArgument("value", structDeclaration);
                 var optionsArg = writeMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
 
-                if (idType.SpecialType == SpecialType.System_Boolean)
+                if (idType == IdType.System_Boolean)
                 {
                     writeMethod.Statements = new StatementCollection
                     {
@@ -418,7 +587,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     {
                         new MethodInvokeExpression(
                             new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(new MemberReferenceExpression(valueArg, "Value"), typeof(int))),
+                            new CastExpression(valueArg.Member("Value"), typeof(int))),
                     };
                 }
                 else if (CanUseWriteNumberValueWithCastToUInt())
@@ -427,7 +596,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     {
                         new MethodInvokeExpression(
                             new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(new MemberReferenceExpression(valueArg, "Value"), typeof(uint))),
+                            new CastExpression(valueArg.Member("Value"), typeof(uint))),
                     };
                 }
                 else if (CanUseWriteStringValue())
@@ -454,33 +623,33 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
                 bool CanUseWriteNumberValue()
                 {
-                    return idType.SpecialType == SpecialType.System_Decimal
-                        || idType.SpecialType == SpecialType.System_Double
-                        || idType.SpecialType == SpecialType.System_Int32
-                        || idType.SpecialType == SpecialType.System_Int64
-                        || idType.SpecialType == SpecialType.System_Single
-                        || idType.SpecialType == SpecialType.System_UInt32
-                        || idType.SpecialType == SpecialType.System_UInt64;
+                    return idType == IdType.System_Decimal
+                        || idType == IdType.System_Double
+                        || idType == IdType.System_Int32
+                        || idType == IdType.System_Int64
+                        || idType == IdType.System_Single
+                        || idType == IdType.System_UInt32
+                        || idType == IdType.System_UInt64;
                 }
 
                 bool CanUseWriteNumberValueWithCastToInt()
                 {
-                    return idType.SpecialType == SpecialType.System_Int16
-                        || idType.SpecialType == SpecialType.System_SByte;
+                    return idType == IdType.System_Int16
+                        || idType == IdType.System_SByte;
                 }
 
                 bool CanUseWriteNumberValueWithCastToUInt()
                 {
-                    return idType.SpecialType == SpecialType.System_Byte
-                        || idType.SpecialType == SpecialType.System_UInt16;
+                    return idType == IdType.System_Byte
+                        || idType == IdType.System_UInt16;
                 }
 
                 bool CanUseWriteStringValue()
                 {
-                    return idType.SpecialType == SpecialType.System_DateTime
-                        || SymbolEqualityComparer.Default.Equals(idType, compilation.GetTypeByMetadataName("System.DateTimeOffset"))
-                        || SymbolEqualityComparer.Default.Equals(idType, compilation.GetTypeByMetadataName("System.Guid"))
-                        || idType.SpecialType == SpecialType.System_String;
+                    return idType == IdType.System_DateTime
+                        || idType == IdType.System_DateTimeOffset
+                        || idType == IdType.System_Guid
+                        || idType == IdType.System_String;
                 }
             }
 
@@ -493,7 +662,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 _ = readMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
 
                 readMethod.Statements = new StatementCollection();
-                var valueVariable = readMethod.Statements.Add(new VariableDeclarationStatement(structDeclaration, "value", new DefaultValueExpression(structDeclaration)));
+                var valueVariable = readMethod.Statements.Add(new VariableDeclarationStatement("value", structDeclaration, new DefaultValueExpression(structDeclaration)));
                 readMethod.Statements.Add(new ConditionStatement
                 {
                     Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
@@ -507,14 +676,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 {
                     return new BinaryExpression(
                         op,
-                        readerArg.CreateMemberReferenceExpression("TokenType"),
+                        readerArg.Member("TokenType"),
                         new MemberReferenceExpression(new TypeReference("System.Text.Json.JsonTokenType"), tokenType));
                 }
 
                 StatementCollection CreateObjectParsing()
                 {
                     var statements = new StatementCollection();
-                    var valueRead = statements.Add(new VariableDeclarationStatement(typeof(bool), "valueRead", LiteralExpression.False()));
+                    var valueRead = statements.Add(new VariableDeclarationStatement("valueRead", typeof(bool), Expression.False()));
                     statements.Add(ReaderRead());
                     statements.Add(new WhileStatement()
                     {
@@ -523,15 +692,15 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                         {
                             new ConditionStatement()
                             {
-                                Condition = BinaryExpression.And(
+                                Condition = Expression.And(
                                     UnaryExpression.Not(valueRead),
                                     CompareTokenType(BinaryOperator.Equals, "PropertyName"),
-                                    readerArg.CreateMemberReferenceExpression("ValueTextEquals").CreateInvokeMethodExpression(new LiteralExpression("Value"))),
+                                    readerArg.Member("ValueTextEquals").InvokeMethod(new LiteralExpression("Value"))),
                                 TrueStatements = new StatementCollection
                                 {
                                     ReaderRead(),
                                     ReadValue(),
-                                    new AssignStatement(valueRead, LiteralExpression.True()),
+                                    new AssignStatement(valueRead, Expression.True()),
                                     ReaderRead(),
                                 },
                                 FalseStatements = new StatementCollection
@@ -547,12 +716,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
                 Statement ReaderRead()
                 {
-                    return new MethodInvokeExpression(readerArg.CreateMemberReferenceExpression("Read"));
+                    return new MethodInvokeExpression(readerArg.Member("Read"));
                 }
 
                 Statement ReaderSkip()
                 {
-                    return new MethodInvokeExpression(readerArg.CreateMemberReferenceExpression("Skip"));
+                    return new MethodInvokeExpression(readerArg.Member("Skip"));
                 }
 
                 Statement ReadValue()
@@ -562,8 +731,103 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                             valueVariable,
                             new NewObjectExpression(
                                 structDeclaration,
-                                new MethodInvokeExpression(new MemberReferenceExpression(readerArg, "Get" + idType.Name))));
+                                new MethodInvokeExpression(new MemberReferenceExpression(readerArg, "Get" + GetShortName(GetTypeReference(idType))))));
                 }
+            }
+        }
+
+        private static void GenerateTypeConverter(StructDeclaration structDeclaration, Compilation compilation, IdType idType)
+        {
+            var type = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter");
+            if (type == null)
+                return;
+
+            var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "TypeConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
+            structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("System.ComponentModel.TypeConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
+            converter.BaseType = new TypeReference("System.ComponentModel.TypeConverter");
+
+            // public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            {
+                var method = converter.AddMember(new MethodDeclaration("CanConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
+                method.ReturnType = typeof(bool);
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+                var typeArg = method.AddArgument("sourceType", typeof(Type));
+
+                method.Statements = new ReturnStatement(
+                    Expression.Or(
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeof(string))),
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(structDeclaration))));
+            }
+
+            // public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            {
+                var method = converter.AddMember(new MethodDeclaration("ConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
+                method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
+                var valueArg = method.AddArgument("value", typeof(object));
+                method.Statements = new StatementCollection
+                {
+                    new ConditionStatement
+                    {
+                        Condition = Expression.EqualsNull(valueArg),
+                        TrueStatements = new ReturnStatement(IsNullable(idType) ? new MemberReferenceExpression(structDeclaration, "From" + GetShortName(GetTypeReference(idType))).InvokeMethod(new CastExpression(valueArg, GetTypeReference(idType))) : Expression.Null()),
+                        FalseStatements = new ConditionStatement
+                        {
+                            Condition = new IsInstanceOfTypeExpression(valueArg, GetTypeReference(idType)),
+                            TrueStatements = new ReturnStatement(new MemberReferenceExpression(structDeclaration, "From" + GetShortName(GetTypeReference(idType))).InvokeMethod(new CastExpression(valueArg, GetTypeReference(idType)))),
+                            FalseStatements = new ConditionStatement
+                            {
+                                Condition = new IsInstanceOfTypeExpression(valueArg, typeof(string)),
+                                TrueStatements = new ReturnStatement(new MemberReferenceExpression(structDeclaration, "Parse").InvokeMethod(new CastExpression(valueArg, typeof(string)))),
+                                FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to " + structDeclaration.Name))),
+                            },
+                        },
+                    },
+                };
+            }
+
+            // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            {
+                var method = converter.AddMember(new MethodDeclaration("CanConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
+                method.ReturnType = typeof(bool);
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+                var typeArg = method.AddArgument("destinationType", typeof(Type));
+                method.Statements = new ReturnStatement(
+                    Expression.Or(
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(structDeclaration)),
+                        new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeof(string)))));
+            }
+
+            // public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            {
+                var method = converter.AddMember(new MethodDeclaration("ConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
+                method.ReturnType = typeof(object);
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
+                var valueArg = method.AddArgument("value", typeof(object));
+                var destinationTypeArg = method.AddArgument("destinationType", typeof(Type));
+                method.Statements = new StatementCollection()
+                {
+                    new ConditionStatement
+                    {
+                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
+                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, structDeclaration).Member("ValueAsString")),
+                    },
+                    new ConditionStatement
+                    {
+                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(structDeclaration)),
+                        TrueStatements = new ReturnStatement(valueArg),
+                    },
+                    new ConditionStatement
+                    {
+                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
+                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, structDeclaration).Member("Value")),
+                    },
+                    new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to '", destinationTypeArg, "'"))),
+                };
             }
         }
 
@@ -604,9 +868,21 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("op_Inequality").OfType<IMethodSymbol>()
                     .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
+
+            public bool IsTryParseDefined()
+            {
+                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic);
+            }
+
+            public bool IsParseDefined()
+            {
+                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic);
+            }
         }
 
-        private record AttributeInfo(AttributeSyntax AttributeSyntax, ITypeSymbol IdType);
+        private record AttributeInfo(AttributeSyntax AttributeSyntax, IdType IdType);
 
         private sealed class Receiver : ISyntaxReceiver
         {
@@ -619,6 +895,26 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     Structs.Add((StructDeclarationSyntax)syntaxNode);
                 }
             }
+        }
+
+        private enum IdType
+        {
+            System_Boolean,
+            System_Byte,
+            System_DateTime,
+            System_DateTimeOffset,
+            System_Decimal,
+            System_Double,
+            System_Guid,
+            System_Int16,
+            System_Int32,
+            System_Int64,
+            System_SByte,
+            System_Single,
+            System_String,
+            System_UInt16,
+            System_UInt32,
+            System_UInt64,
         }
     }
 }

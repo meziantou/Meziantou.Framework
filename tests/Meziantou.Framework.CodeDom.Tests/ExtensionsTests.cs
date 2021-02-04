@@ -7,7 +7,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         [Fact]
         public void GetMember()
         {
-            var member = new TypeReferenceExpression(typeof(string)).CreateMemberReferenceExpression("Test", "Name");
+            var member = new TypeReferenceExpression(typeof(string)).Member("Test", "Name");
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
@@ -17,8 +17,8 @@ namespace Meziantou.Framework.CodeDom.Tests
         [Fact]
         public void CreateInvokeMethodExpression_VariableDeclaration()
         {
-            var v = new VariableDeclarationStatement(typeof(string), "a");
-            var member = v.CreateInvokeMethodExpression(LiteralExpression.Null());
+            var v = new VariableDeclarationStatement("a", typeof(string));
+            var member = v.InvokeMethod(LiteralExpression.Null());
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
@@ -28,12 +28,12 @@ namespace Meziantou.Framework.CodeDom.Tests
         [Fact]
         public void CreateInvokeMethodExpression_VariableDeclaration_WithMemberName()
         {
-            var v = new VariableDeclarationStatement(typeof(string), "a");
-            var member = v.CreateInvokeMethodExpression("Test", "Name");
+            var v = new VariableDeclarationStatement("a", typeof(string));
+            var member = v.InvokeMethod("Test", "Name");
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
-            Assert.Equal("a.Test(\"Name\")", csharp);
+            Assert.Equal("a(\"Test\", \"Name\")", csharp);
         }
     }
 }

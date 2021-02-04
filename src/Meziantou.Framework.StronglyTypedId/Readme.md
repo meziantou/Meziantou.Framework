@@ -4,5 +4,5 @@ The source generator generates ctor / property / equality members / JSON convert
 
 ````csharp
 [StronglyTypedId(typeof(int))]
-internal partial struct UserId { }
+public partial struct UserId { }
 ````

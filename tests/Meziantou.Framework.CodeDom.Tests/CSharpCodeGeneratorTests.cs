@@ -1079,7 +1079,7 @@ void Sample()
         {
             var statement = new UsingStatement
             {
-                Statement = new VariableDeclarationStatement(type: null, "disposable", new NewObjectExpression(new TypeReference("Disposable"))),
+                Statement = new VariableDeclarationStatement("disposable", type: null, initExpression: new NewObjectExpression(new TypeReference("Disposable"))),
                 Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable")),
             };
 
@@ -1137,7 +1137,7 @@ void Sample()
         public void CSharpCodeGenerator_Iteration()
         {
             var statement = new IterationStatement();
-            var variable = new VariableDeclarationStatement(type: null, "i", 0);
+            var variable = new VariableDeclarationStatement("i", type: null, initExpression: 0);
             statement.Initialization = variable;
             statement.Condition = new BinaryExpression(BinaryOperator.LessThan, variable, 10);
             statement.IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, variable);
@@ -1780,7 +1780,7 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_NewArray()
         {
-            var variable = new VariableDeclarationStatement(typeof(int[]), "a", new NewArrayExpression(typeof(int), 1, 2));
+            var variable = new VariableDeclarationStatement("a", typeof(int[]), new NewArrayExpression(typeof(int), 1, 2));
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(variable);
@@ -1813,7 +1813,7 @@ void Sample()
         [Fact]
         public void CSharpCodeGenerator_NullableType()
         {
-            var prop = new VariableDeclarationStatement(new TypeReference(typeof(string)).MakeNullable(), "a");
+            var prop = new VariableDeclarationStatement("a", new TypeReference(typeof(string)).MakeNullable());
 
             var generator = new CSharpCodeGenerator();
             var result = generator.Write(prop);
@@ -1899,7 +1899,7 @@ null
             };
 
             var generator = new CSharpCodeGenerator();
-            var result = generator.Write(new VariableDeclarationStatement(new TypeReference(innerStruct), "demo"));
+            var result = generator.Write(new VariableDeclarationStatement("demo", new TypeReference(innerStruct)));
 
             AssertExtensions.StringEquals(@"A.B.C.D demo;
 ", result);

@@ -63,15 +63,21 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
             foreach (var resxGroug in resxGroups)
             {
-                var rootNamespace = GetMetadataValue(context, "RootNamespace", resxGroug) ?? context.Compilation.AssemblyName ?? "";
-                var projectDir = GetMetadataValue(context, "ProjectDir", resxGroug) ?? context.Compilation.AssemblyName ?? "";
+                var rootNamespaceConfiguration = GetMetadataValue(context, "RootNamespace", resxGroug);
+                var projectDirConfiguration = GetMetadataValue(context, "ProjectDir", resxGroug);
+                var namespaceConfiguration = GetMetadataValue(context, "Namespace", "DefaultResourcesNamespace", resxGroug);
+                var resourceNameConfiguration = GetMetadataValue(context, "ResourceName", globalName: null, resxGroug);
+                var classNameConfiguration = GetMetadataValue(context, "ClassName", globalName: null, resxGroug);
+                var assemblyName = context.Compilation.AssemblyName;
 
+                var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
+                var projectDir = projectDirConfiguration ?? assemblyName ?? "";
                 var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroug.Key);
                 var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroug.Key);
 
-                var ns = GetMetadataValue(context, "Namespace", "DefaultResourcesNamespace", resxGroug) ?? defaultNamespace;
-                var resourceName = GetMetadataValue(context, "ResourceName", globalName: null, resxGroug) ?? defaultResourceName;
-                var className = GetMetadataValue(context, "ClassName", globalName: null, resxGroug) ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroug.Key));
+                var ns = namespaceConfiguration ?? defaultNamespace;
+                var resourceName = resourceNameConfiguration ?? defaultResourceName;
+                var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroug.Key));
 
                 if (ns == null)
                 {
@@ -87,14 +93,21 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
                 var content = $@"
 // Debug info:
-// RootNamespace: {GetMetadataValue(context, "RootNamespace", resxGroug)}
-// AssemblyName: {context.Compilation.AssemblyName}
-// FinalRootNamespace: {rootNamespace}
-// ProjectDir: {projectDir}
-// defaultNamespace: {defaultNamespace}
-// defaultResourceName: {defaultResourceName}
 // key: {resxGroug.Key}
 // files: {string.Join(", ", resxGroug.Select(f => f.Path))}
+// RootNamespace (metadata): {rootNamespaceConfiguration}
+// ProjectDir (metadata): {projectDirConfiguration}
+// Namespace / DefaultResourcesNamespace (metadata): {namespaceConfiguration}
+// ResourceName (metadata): {resourceNameConfiguration}
+// ClassName (metadata): {classNameConfiguration}
+// AssemblyName: {assemblyName}
+// RootNamespace (computed): {rootNamespace}
+// ProjectDir (computed): {projectDir}
+// defaultNamespace: {defaultNamespace}
+// defaultResourceName: {defaultResourceName}
+// Namespace: {ns}
+// ResourceName: {resourceName}
+// ClassName: {className}
 ";
 
                 if (resourceName != null && entries != null)

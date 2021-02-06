@@ -106,7 +106,7 @@ jobs:
         dotnet-version: '3.1.x'
     - run: dotnet build ${{ matrix.solution }} --configuration ${{ matrix.configuration }} /p:UseSourceLink=false /bl
       name: Build
-    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} /p:UseSourceLink=false --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min -- xunit.parallelizeAssembly=false
+    - run: dotnet test ${{ matrix.solution }}  --configuration ${{ matrix.configuration }} /p:UseSourceLink=false --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min -- xunit.parallelizeAssembly=false
       name: Run tests
     - uses: actions/upload-artifact@v2
       if: always()

@@ -3,10 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    
+    <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj" 
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj"
                       PrivateAssets="all"
                       ReferenceOutputAssembly="false"
                       OutputItemType="Analyzer" />

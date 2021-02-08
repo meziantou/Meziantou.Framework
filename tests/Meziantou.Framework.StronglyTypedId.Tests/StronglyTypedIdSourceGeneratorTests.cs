@@ -15,9 +15,14 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
     {
         private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
         {
-            var refs = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
+            var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
+            var newtonsoftJsonRef = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
             assemblyLocations ??= Array.Empty<string>();
-            var references = assemblyLocations.Concat(refs).Select(loc => MetadataReference.CreateFromFile(loc)).ToArray();
+            var references = assemblyLocations
+                .Concat(netcoreRef)
+                .Concat(newtonsoftJsonRef)
+                .Select(loc => MetadataReference.CreateFromFile(loc))
+                .ToArray();
 
             var compilation = CSharpCompilation.Create("compilation",
                 new[] { CSharpSyntaxTree.ParseText(file) },
@@ -36,12 +41,14 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
             // Validate the output project compiles
             using var ms = new MemoryStream();
             var result = outputCompilation.Emit(ms);
-            if (mustCompile && !result.Success)
+            if (mustCompile)
             {
                 var diags = string.Join("\n", result.Diagnostics);
-                var generated = await runResult.GeneratedTrees[1].GetRootAsync();
-                Assert.False(true, "Project cannot build:\n" + diags + "\n\n\n" + generated.ToFullString());
+                var generated = (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString();
+                Assert.True(result.Success, "Project cannot build:\n" + diags + "\n\n\n" + generated);
+                Assert.Empty(result.Diagnostics);
             }
+
             return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
         }
 
@@ -295,12 +302,25 @@ public partial struct Test {}
                     var from = (MethodInfo)type.GetMember(fromMethodName).Single();
                     var instance = from.Invoke(null, new object[] { value });
 
-                    var json = System.Text.Json.JsonSerializer.Serialize(instance);
-                    var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
-                    var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
+                    // System.Text.Json
+                    {
+                        var json = System.Text.Json.JsonSerializer.Serialize(instance);
+                        var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
+                        var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
 
-                    Assert.Equal(instance, deserialized);
-                    Assert.Equal(instance, deserialized2);
+                        Assert.Equal(instance, deserialized);
+                        Assert.Equal(instance, deserialized2);
+                    }
+
+                    // Newtonsoft.Json
+                    {
+                        var json = Newtonsoft.Json.JsonConvert.SerializeObject(instance);
+                        var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
+                        var deserialized2 = Newtonsoft.Json.JsonConvert.DeserializeObject(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
+
+                        Assert.Equal(instance, deserialized);
+                        Assert.Equal(instance, deserialized2);
+                    }
 
                     var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
                     var defaultInstance = from.Invoke(null, new object[] { defaultValue });

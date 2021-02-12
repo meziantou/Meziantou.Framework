@@ -35,17 +35,15 @@ jobs:
       run: dotnet format --check --verbosity:diagnostic
       
   analyze_infersharp:
-    runs-on: windows-2019
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v2
 
     - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
-
-    - name: Run dotnet format
-      run: dotnet format --check --verbosity:diagnostic
     
-    - run: dotnet pack Meziantou.Framework.sln --configuration Release --output ${{ env.NuGetDirectory }} /bl
+    - run: dotnet build Meziantou.Framework.Linux.slnf --configuration Release /bl
+      
     - name: Run Infer#      
       uses: microsoft/infersharpaction@v0.2
       id: runinfersharp
@@ -54,6 +52,13 @@ jobs:
     - name: Infer# analysis results
       run: echo "${{ steps.runinfersharp.outputs.results }}"
       
+    - uses: actions/upload-artifact@v2
+      with:
+        name: binlog
+        if-no-files-found: error
+        retention-days: 3
+        path: '**/*.binlog'
+  
   create_nuget:
     runs-on: windows-2019
     steps:

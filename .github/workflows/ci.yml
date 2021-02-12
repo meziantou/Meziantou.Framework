@@ -33,7 +33,27 @@ jobs:
 
     - name: Run dotnet format
       run: dotnet format --check --verbosity:diagnostic
+      
+  analyze_infersharp:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
 
+    - name: Setup .NET Core (global.json)
+      uses: actions/setup-dotnet@v1
+
+    - name: Run dotnet format
+      run: dotnet format --check --verbosity:diagnostic
+    
+    - run: dotnet pack Meziantou.Framework.sln --configuration Release --output ${{ env.NuGetDirectory }} /bl
+    - name: Run Infer#      
+      uses: microsoft/infersharpaction@v0.2
+      id: runinfersharp
+      with:
+        binary-path: 'src'
+    - name: Infer# analysis results
+      run: echo "${{ steps.runinfersharp.outputs.results }}"
+      
   create_nuget:
     runs-on: windows-2019
     steps:

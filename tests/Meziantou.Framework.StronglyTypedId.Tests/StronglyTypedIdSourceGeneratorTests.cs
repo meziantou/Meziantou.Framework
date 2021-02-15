@@ -1,5 +1,6 @@
 ﻿#pragma warning disable MA0101 // String contains an implicit end of line character
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -113,7 +114,28 @@ namespace A
             Assert.Empty(result.GeneratorResult.Diagnostics);
             Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
 
-            ValidateType(result.Assembly, "A.B.Test", "FromInt32", 10);
+            var alc = new AssemblyLoadContext("test", isCollectible: true);
+            try
+            {
+                alc.LoadFromStream(new MemoryStream(result.Assembly));
+                foreach (var a in alc.Assemblies)
+                {
+                    var type = a.GetType("A.B.Test");
+                    var from = (MethodInfo)type.GetMember("FromInt32").Single();
+                    var instance = from.Invoke(null, new object[] { 10 });
+                    var json = System.Text.Json.JsonSerializer.Serialize(instance);
+                    var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
+                    var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
+
+                    Assert.Equal("10", json);
+                    Assert.Equal(instance, deserialized);
+                    Assert.Equal(instance, deserialized2);
+                }
+            }
+            finally
+            {
+                alc.Unload();
+            }
         }
 
         [Fact]
@@ -230,101 +252,6 @@ public partial struct Test {}
                     var type = a.GetType("Test");
                     var parse = type.GetMember("Parse").Length;
                     Assert.Equal(2, parse);
-                }
-            }
-            finally
-            {
-                alc.Unload();
-            }
-        }
-
-        [Theory]
-        [InlineData("System.Boolean", "FromBoolean")]
-        [InlineData("System.Byte", "FromByte")]
-        [InlineData("System.DateTime", "FromDateTime")]
-        [InlineData("System.DateTimeOffset", "FromDateTimeOffset")]
-        [InlineData("System.Decimal", "FromDecimal")]
-        [InlineData("System.Double", "FromDouble")]
-        [InlineData("System.Guid", "FromGuid")]
-        [InlineData("System.Int16", "FromInt16")]
-        [InlineData("System.Int32", "FromInt32")]
-        [InlineData("System.Int64", "FromInt64")]
-        [InlineData("System.SByte", "FromSByte")]
-        [InlineData("System.Single", "FromSingle")]
-        [InlineData("System.String", "FromString")]
-        [InlineData("System.UInt16", "FromUInt16")]
-        [InlineData("System.UInt32", "FromUInt32")]
-        [InlineData("System.UInt64", "FromUInt64")]
-        public async Task CodeCompile(string type, string fromMethodName)
-        {
-            var sourceCode = @"
-[StronglyTypedId(typeof(" + type + @"))]
-public partial struct Test {}
-";
-            var result = await GenerateFiles(sourceCode);
-
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
-
-            var value = Type.GetType(type, throwOnError: true).FullName switch
-            {
-                "System.Boolean" => (object)true,
-                "System.Byte" => (byte)1,
-                "System.DateTime" => DateTime.UtcNow,
-                "System.DateTimeOffset" => DateTimeOffset.UtcNow,
-                "System.Decimal" => 1m,
-                "System.Double" => 1d,
-                "System.Guid" => Guid.NewGuid(),
-                "System.Int16" => (short)1,
-                "System.Int32" => 1,
-                "System.Int64" => 1L,
-                "System.SByte" => (sbyte)1,
-                "System.Single" => 1f,
-                "System.String" => "test",
-                "System.UInt16" => (ushort)1,
-                "System.UInt32" => (uint)1,
-                "System.UInt64" => (ulong)1,
-                _ => throw new InvalidOperationException("Type not supported"),
-            };
-
-            ValidateType(result.Assembly, "Test", fromMethodName, value);
-        }
-
-        private static void ValidateType(byte[] assembly, string typeName, string fromMethodName, object value)
-        {
-            var alc = new AssemblyLoadContext("test", isCollectible: true);
-            try
-            {
-                alc.LoadFromStream(new MemoryStream(assembly));
-                foreach (var a in alc.Assemblies)
-                {
-                    var type = a.GetType(typeName);
-                    var from = (MethodInfo)type.GetMember(fromMethodName).Single();
-                    var instance = from.Invoke(null, new object[] { value });
-
-                    // System.Text.Json
-                    {
-                        var json = System.Text.Json.JsonSerializer.Serialize(instance);
-                        var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
-                        var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
-
-                        Assert.Equal(instance, deserialized);
-                        Assert.Equal(instance, deserialized2);
-                    }
-
-                    // Newtonsoft.Json
-                    {
-                        var json = Newtonsoft.Json.JsonConvert.SerializeObject(instance);
-                        var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
-                        var deserialized2 = Newtonsoft.Json.JsonConvert.DeserializeObject(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
-
-                        Assert.Equal(instance, deserialized);
-                        Assert.Equal(instance, deserialized2);
-                    }
-
-                    var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
-                    var defaultInstance = from.Invoke(null, new object[] { defaultValue });
-                    Assert.NotEqual(instance, defaultInstance);
                 }
             }
             finally

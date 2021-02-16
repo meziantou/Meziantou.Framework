@@ -28,6 +28,23 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 { typeof(IdUInt16), "FromUInt16", (ushort) 42},
                 { typeof(IdUInt32), "FromUInt32", (uint) 42},
                 { typeof(IdUInt64), "FromUInt64", (ulong) 42},
+
+                { typeof(IdClassBoolean), "FromBoolean", true },
+                { typeof(IdClassByte), "FromByte", (byte)42 },
+                { typeof(IdClassDateTime), "FromDateTime", DateTime.UtcNow },
+                { typeof(IdClassDateTimeOffset), "FromDateTimeOffset", DateTimeOffset.UtcNow },
+                { typeof(IdClassDecimal), "FromDecimal", 42m },
+                { typeof(IdClassDouble), "FromDouble", 42d },
+                { typeof(IdClassGuid), "FromGuid", Guid.NewGuid() },
+                { typeof(IdClassInt16), "FromInt16", (short)42 },
+                { typeof(IdClassInt32), "FromInt32", 42 },
+                { typeof(IdClassInt64), "FromInt64", 42L },
+                { typeof(IdClassSByte), "FromSByte", (sbyte)42 },
+                { typeof(IdClassSingle), "FromSingle", 42f },
+                { typeof(IdClassString), "FromString", "test" },
+                { typeof(IdClassUInt16), "FromUInt16", (ushort) 42},
+                { typeof(IdClassUInt32), "FromUInt32", (uint) 42},
+                { typeof(IdClassUInt64), "FromUInt64", (ulong) 42},
             };
         }
 
@@ -73,6 +90,13 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
             var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
             var defaultInstance = from.Invoke(null, new object[] { defaultValue });
             Assert.NotEqual(instance, defaultInstance);
+        }
+
+        [Fact]
+        public void TestNullableClass()
+        {
+            IdClassInt32 value = IdClassInt32.FromInt32(42);
+            Assert.False(value == null);
         }
 
         [StronglyTypedId(typeof(bool))]
@@ -122,5 +146,53 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 
         [StronglyTypedId(typeof(ulong))]
         private partial struct IdUInt64 { }
+
+        [StronglyTypedId(typeof(bool))]
+        private partial class IdClassBoolean { }
+
+        [StronglyTypedId(typeof(byte))]
+        private partial class IdClassByte { }
+
+        [StronglyTypedId(typeof(DateTime))]
+        private partial class IdClassDateTime { }
+
+        [StronglyTypedId(typeof(DateTimeOffset))]
+        private partial class IdClassDateTimeOffset { }
+
+        [StronglyTypedId(typeof(decimal))]
+        private partial class IdClassDecimal { }
+
+        [StronglyTypedId(typeof(double))]
+        private partial class IdClassDouble { }
+
+        [StronglyTypedId(typeof(Guid))]
+        private partial class IdClassGuid { }
+
+        [StronglyTypedId(typeof(short))]
+        private partial class IdClassInt16 { }
+
+        [StronglyTypedId(typeof(int))]
+        private partial class IdClassInt32 { }
+
+        [StronglyTypedId(typeof(long))]
+        private partial class IdClassInt64 { }
+
+        [StronglyTypedId(typeof(sbyte))]
+        private partial class IdClassSByte { }
+
+        [StronglyTypedId(typeof(float))]
+        private partial class IdClassSingle { }
+
+        [StronglyTypedId(typeof(string))]
+        private partial class IdClassString { }
+
+        [StronglyTypedId(typeof(ushort))]
+        private partial class IdClassUInt16 { }
+
+        [StronglyTypedId(typeof(uint))]
+        private partial class IdClassUInt32 { }
+
+        [StronglyTypedId(typeof(ulong))]
+        private partial class IdClassUInt64 { }
     }
 }

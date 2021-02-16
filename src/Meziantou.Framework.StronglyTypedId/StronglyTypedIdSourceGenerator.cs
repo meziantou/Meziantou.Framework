@@ -21,6 +21,10 @@ namespace Meziantou.Framework.StronglyTypedId
         // - XmlSerializer / NewtonsoftJsonConvert / MongoDbConverter / Elaticsearch / YamlConverter
         // - TypeConverter / IConvertible
 
+        private const string FieldName = "_value";
+        private const string PropertyName = "Value";
+        private const string PropertyAsStringName = "ValueAsString";
+
         private static readonly DiagnosticDescriptor s_unsuportedType = new(
             id: "MFSTID0001",
             title: "Not support type",
@@ -297,18 +301,31 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             var shortName = GetShortName(typeReference);
 
             // Field
-            var valueField = structDeclaration.AddMember(new FieldDeclaration("_value", typeReference) { Modifiers = Modifiers.Private | Modifiers.ReadOnly });
+            if (!stronglyTypedStruct.IsFieldDefined())
+            {
+                _ = structDeclaration.AddMember(new FieldDeclaration(FieldName, typeReference) { Modifiers = Modifiers.Private | Modifiers.ReadOnly });
+            }
 
             // Value
-            var valueProperty = structDeclaration.AddMember(new PropertyDeclaration("Value", typeReference) { Modifiers = Modifiers.Public });
-            valueProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(valueField));
+            if (!stronglyTypedStruct.IsValueDefined())
+            {
+                var valuePropertyDeclaration = structDeclaration.AddMember(new PropertyDeclaration(PropertyName, typeReference) { Modifiers = Modifiers.Public });
+                valuePropertyDeclaration.Getter = new PropertyAccessorDeclaration(new ReturnStatement(new MemberReferenceExpression(new ThisExpression(), FieldName)));
+            }
 
             // ValueAsString
-            var valueAsStringProperty = structDeclaration.AddMember(new PropertyDeclaration("ValueAsString", typeof(string)) { Modifiers = Modifiers.Public });
-            valueAsStringProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(ValueToStringExpression()));
+            if (!stronglyTypedStruct.IsValueAsStringDefined())
+            {
+                var valueAsStringProperty = structDeclaration.AddMember(new PropertyDeclaration(PropertyAsStringName, typeof(string)) { Modifiers = Modifiers.Public });
+                valueAsStringProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(ValueToStringExpression()));
+            }
+
+            MemberReferenceExpression CreateValuePropertyRef() => new(new ThisExpression(), PropertyName);
+            MemberReferenceExpression CreateValueAsStringPropertyRef() => new(new ThisExpression(), PropertyAsStringName);
 
             Expression ValueToStringExpression()
             {
+                var valueProperty = CreateValuePropertyRef();
                 if (idType == IdType.System_String)
                     return valueProperty;
 
@@ -325,9 +342,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
 
             // ctor
-            var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = Modifiers.Private });
-            var constructorArg = constructor.Arguments.Add(typeReference, "value");
-            constructor.Statements = new StatementCollection { new AssignStatement(valueField, constructorArg) };
+            if (!stronglyTypedStruct.IsCtorDefined())
+            {
+                var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = Modifiers.Private });
+                var constructorArg = constructor.Arguments.Add(typeReference, "value");
+                constructor.Statements = new StatementCollection { new AssignStatement(new MemberReferenceExpression(new ThisExpression(), FieldName), constructorArg) };
+            }
 
             // From
             var fromMethod = structDeclaration.AddMember(new MethodDeclaration("From" + shortName) { Modifiers = Modifiers.Public | Modifiers.Static });
@@ -344,14 +364,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 {
                     toStringMethod.Statements = new ConditionStatement
                     {
-                        Condition = Expression.EqualsNull(valueProperty),
+                        Condition = Expression.EqualsNull(CreateValuePropertyRef()),
                         TrueStatements = new ReturnStatement(structDeclaration.Name + " { Value = <null> }"),
-                        FalseStatements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", valueAsStringProperty, " }")),
+                        FalseStatements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", CreateValueAsStringPropertyRef(), " }")),
                     };
                 }
                 else
                 {
-                    toStringMethod.Statements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", valueAsStringProperty, " }"));
+                    toStringMethod.Statements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", CreateValueAsStringPropertyRef(), " }"));
                 }
             }
 
@@ -372,14 +392,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 {
                     getHashCodeMethod.Statements = new ConditionStatement
                     {
-                        Condition = Expression.EqualsNull(valueProperty),
+                        Condition = Expression.EqualsNull(CreateValuePropertyRef()),
                         TrueStatements = new ReturnStatement(0),
-                        FalseStatements = new ReturnStatement(valueProperty.Member("GetHashCode").InvokeMethod()),
+                        FalseStatements = new ReturnStatement(CreateValuePropertyRef().Member("GetHashCode").InvokeMethod()),
                     };
                 }
                 else
                 {
-                    getHashCodeMethod.Statements = new ReturnStatement(valueProperty.Member("GetHashCode").InvokeMethod());
+                    getHashCodeMethod.Statements = new ReturnStatement(CreateValuePropertyRef().Member("GetHashCode").InvokeMethod());
                 }
             }
 
@@ -393,7 +413,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 var equalsTypedMethodArg = equalsTypedMethod.Arguments.Add(structDeclaration, "other");
                 equalsTypedMethod.Statements = new StatementCollection
                 {
-                    new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, valueProperty, new MemberReferenceExpression(equalsTypedMethodArg, valueProperty))),
+                    new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, CreateValuePropertyRef(), new MemberReferenceExpression(equalsTypedMethodArg, "Value"))),
                 };
 
                 if (stronglyTypedStruct.IsClass)
@@ -1013,55 +1033,76 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingStructSymbol, string Name, AttributeInfo AttributeInfo)
+        private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo)
         {
-            public bool IsClass => ExistingStructSymbol != null && ExistingStructSymbol.IsReferenceType;
+            public bool IsClass => ExistingTypeSymbol != null && ExistingTypeSymbol.IsReferenceType;
+
+            public bool IsCtorDefined()
+            {
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(".ctor").OfType<IMethodSymbol>()
+                    .Any(m => !m.IsStatic && m.Parameters.Length == 1);
+            }
+
+            public bool IsFieldDefined()
+            {
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(FieldName).Any();
+            }
+
+            public bool IsValueDefined()
+            {
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(PropertyName).Any();
+            }
+
+            public bool IsValueAsStringDefined()
+            {
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(PropertyAsStringName).Any();
+            }
 
             public bool IsToStringDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers(nameof(ToString)).OfType<IMethodSymbol>()
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(ToString)).OfType<IMethodSymbol>()
                     .Any(m => !m.IsStatic && m.Parameters.Length == 0 && m.ReturnType?.SpecialType == SpecialType.System_String);
             }
 
             public bool IsGetHashcodeDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers(nameof(GetHashCode)).OfType<IMethodSymbol>()
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(GetHashCode)).OfType<IMethodSymbol>()
                     .Any(m => !m.IsStatic && m.Parameters.Length == 0 && m.ReturnType?.SpecialType == SpecialType.System_Int32);
             }
 
             public bool IsEqualsDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
                     .Any(m => !m.IsStatic && m.Parameters.Length == 1 && m.Parameters[0].Type.SpecialType == SpecialType.System_Object && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
 
             public bool IsIEquatableEqualsDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
-                    .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[0].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
+                    .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
 
             public bool IsOpEqualsDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("op_Equality").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("op_Equality").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
 
             public bool IsOpNotEqualsDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("op_Inequality").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingStructSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("op_Inequality").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
 
             public bool IsTryParseDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
                     .Any(m => m.IsStatic);
             }
 
             public bool IsParseDefined()
             {
-                return ExistingStructSymbol != null && ExistingStructSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
                     .Any(m => m.IsStatic);
             }
         }

@@ -194,5 +194,20 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 
         [StronglyTypedId(typeof(ulong))]
         private partial class IdClassUInt64 { }
+
+        [StronglyTypedId(typeof(int))]
+        private partial struct IdCtorDefined
+        {
+            public IdCtorDefined(int value)
+            {
+                _value = value;
+            }
+        }
+
+        [StronglyTypedId(typeof(int))]
+        private partial struct IdToStringDefined
+        {
+            public override string ToString() => "";
+        }
     }
 }

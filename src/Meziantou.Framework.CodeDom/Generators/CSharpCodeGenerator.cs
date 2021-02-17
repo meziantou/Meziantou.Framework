@@ -196,6 +196,10 @@ namespace Meziantou.Framework.CodeDom
                     WriteDelegateDeclaration(writer, o);
                     break;
 
+                case RecordDeclaration o:
+                    WriteRecordDeclaration(writer, o);
+                    break;
+
                 default:
                     throw new NotSupportedException();
             }
@@ -568,6 +572,29 @@ namespace Meziantou.Framework.CodeDom
         protected virtual void WriteClassDeclaration(IndentedTextWriter writer, ClassDeclaration type)
         {
             writer.Write("class ");
+            WriteIdentifier(writer, type.Name);
+            WriteGenericParameters(writer, type);
+
+            var baseTypes = GetBaseTypes(type);
+            if (baseTypes.Any())
+            {
+                writer.Write(" : ");
+                WriteTypeReferences(writer, baseTypes, ", ");
+            }
+
+            writer.WriteLine();
+            WriteGenericParameterConstraints(writer, type);
+
+            writer.WriteLine("{");
+            writer.Indent++;
+            WriteLines(writer, Concat(type.Members, type.Types), endOfLine: null);
+            writer.Indent--;
+            writer.WriteLine("}");
+        }
+
+        protected virtual void WriteRecordDeclaration(IndentedTextWriter writer, RecordDeclaration type)
+        {
+            writer.Write("record ");
             WriteIdentifier(writer, type.Name);
             WriteGenericParameters(writer, type);
 

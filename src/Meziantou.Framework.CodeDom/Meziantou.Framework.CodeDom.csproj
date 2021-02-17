@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net5.0;netstandard2.0</TargetFrameworks>
     <Description>C# code generator</Description>
-    <Version>4.0.2</Version>    
+    <Version>4.0.3</Version>    
   </PropertyGroup>
 
 </Project>

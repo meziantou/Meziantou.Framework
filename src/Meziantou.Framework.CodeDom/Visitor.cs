@@ -244,6 +244,10 @@ namespace Meziantou.Framework.CodeDom
                     VisitStructDeclaration(structDeclaration);
                     break;
 
+                case RecordDeclaration recordDeclaration:
+                    VisitRecordDeclaration(recordDeclaration);
+                    break;
+
                 case ThisExpression thisExpression:
                     VisitThisExpression(thisExpression);
                     break;
@@ -841,6 +845,16 @@ namespace Meziantou.Framework.CodeDom
             VisitTypeDeclarationContainer(classDeclaration);
             VisitTypeReferenceCollection(classDeclaration.Implements);
             VisitTypeReferenceIfNotNull(classDeclaration.BaseType);
+        }
+
+        public virtual void VisitRecordDeclaration(RecordDeclaration recordDeclaration)
+        {
+            VisitTypeDeclaration(recordDeclaration);
+            VisitMemberContainer(recordDeclaration);
+            VisitParametrableType(recordDeclaration);
+            VisitTypeDeclarationContainer(recordDeclaration);
+            VisitTypeReferenceCollection(recordDeclaration.Implements);
+            VisitTypeReferenceIfNotNull(recordDeclaration.BaseType);
         }
 
         public virtual void VisitExpressions(CodeObjectCollection<Expression> expressions)

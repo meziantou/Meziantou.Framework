@@ -25,9 +25,9 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 { typeof(IdSByte), "FromSByte", (sbyte)42 },
                 { typeof(IdSingle), "FromSingle", 42f },
                 { typeof(IdString), "FromString", "test" },
-                { typeof(IdUInt16), "FromUInt16", (ushort) 42},
-                { typeof(IdUInt32), "FromUInt32", (uint) 42},
-                { typeof(IdUInt64), "FromUInt64", (ulong) 42},
+                { typeof(IdUInt16), "FromUInt16", (ushort) 42 },
+                { typeof(IdUInt32), "FromUInt32", (uint) 42 },
+                { typeof(IdUInt64), "FromUInt64", (ulong) 42 },
 
                 { typeof(IdClassBoolean), "FromBoolean", true },
                 { typeof(IdClassByte), "FromByte", (byte)42 },
@@ -42,9 +42,11 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 { typeof(IdClassSByte), "FromSByte", (sbyte)42 },
                 { typeof(IdClassSingle), "FromSingle", 42f },
                 { typeof(IdClassString), "FromString", "test" },
-                { typeof(IdClassUInt16), "FromUInt16", (ushort) 42},
-                { typeof(IdClassUInt32), "FromUInt32", (uint) 42},
-                { typeof(IdClassUInt64), "FromUInt64", (ulong) 42},
+                { typeof(IdClassUInt16), "FromUInt16", (ushort) 42 },
+                { typeof(IdClassUInt32), "FromUInt32", (uint) 42 },
+                { typeof(IdClassUInt64), "FromUInt64", (ulong) 42 },
+
+                { typeof(IdRecordInt32), "FromInt32", 42 },
             };
         }
 
@@ -208,6 +210,11 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         private partial struct IdToStringDefined
         {
             public override string ToString() => "";
+        }
+
+        [StronglyTypedId(typeof(int))]
+        private partial record IdRecordInt32
+        {
         }
     }
 }

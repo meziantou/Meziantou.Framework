@@ -93,7 +93,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 if (attributeInfo == null)
                     continue;
 
-                result.Add(new(symbol.ContainingSymbol, symbol, symbol.Name, attributeInfo));
+                result.Add(new(symbol.ContainingSymbol, symbol, symbol.Name, attributeInfo, typeDeclaration));
             }
 
             return result;
@@ -121,7 +121,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     {
                         var idType = GetIdType(semanticModel.Compilation, idTypeOperation.TypeOperand);
                         if (idType != null)
-                            return new AttributeInfo(attribute, idType.Value);
+                            return new AttributeInfo(attribute, idType.Value, idTypeOperation.TypeOperand);
 
                         context.ReportDiagnostic(Diagnostic.Create(s_unsuportedType, attribute.GetLocation(), idTypeOperation.TypeOperand));
                     }
@@ -221,9 +221,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         private static ClassOrStructDeclaration CreateType(CompilationUnit unit, StronglyTypedType source)
         {
-            TypeDeclaration result = source.IsClass
-                ? new ClassDeclaration(source.Name) { Modifiers = Modifiers.Partial }
-                : new StructDeclaration(source.Name) { Modifiers = Modifiers.Partial };
+            TypeDeclaration result = source switch
+            {
+                { IsClass: true } => new ClassDeclaration(source.Name) { Modifiers = Modifiers.Partial },
+                { IsRecord: true } => new RecordDeclaration(source.Name) { Modifiers = Modifiers.Partial },
+                _ => new StructDeclaration(source.Name) { Modifiers = Modifiers.Partial },
+            };
 
             var root = result;
 
@@ -416,7 +419,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, CreateValuePropertyRef(), new MemberReferenceExpression(equalsTypedMethodArg, "Value"))),
                 };
 
-                if (stronglyTypedStruct.IsClass)
+                if (stronglyTypedStruct.IsReferenceType)
                 {
                     equalsTypedMethodArg.Type = equalsTypedMethodArg.Type?.MakeNullable();
                     equalsTypedMethod.Statements.Insert(0, new ConditionStatement
@@ -451,7 +454,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 equalsOperatorMethod.ReturnType = typeof(bool);
                 var equalsOperatorMethodArg1 = equalsOperatorMethod.Arguments.Add(structDeclaration, "a");
                 var equalsOperatorMethodArg2 = equalsOperatorMethod.Arguments.Add(structDeclaration, "b");
-                if (stronglyTypedStruct.IsClass)
+                if (stronglyTypedStruct.IsReferenceType)
                 {
                     equalsOperatorMethodArg1.Type = equalsOperatorMethodArg1.Type?.MakeNullable();
                     equalsOperatorMethodArg2.Type = equalsOperatorMethodArg2.Type?.MakeNullable();
@@ -472,7 +475,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 notEqualsOperatorMethod.ReturnType = typeof(bool);
                 var notEqualsOperatorMethodArg1 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "a");
                 var notEqualsOperatorMethodArg2 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "b");
-                if (stronglyTypedStruct.IsClass)
+                if (stronglyTypedStruct.IsReferenceType)
                 {
                     notEqualsOperatorMethodArg1.Type = notEqualsOperatorMethodArg1.Type?.MakeNullable();
                     notEqualsOperatorMethodArg2.Type = notEqualsOperatorMethodArg2.Type?.MakeNullable();
@@ -524,7 +527,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     parseMethod.ReturnType = typeof(bool);
                     var valueArg = parseMethod.AddArgument("value", valueType);
                     var resultArg = parseMethod.AddArgument("result", structDeclaration, Direction.Out);
-                    if (stronglyTypedStruct.IsClass)
+                    if (stronglyTypedStruct.IsReferenceType)
                     {
                         resultArg.Type = resultArg.Type?.MakeNullable();
                     }
@@ -1033,14 +1036,20 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo)
+        private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
         {
-            public bool IsClass => ExistingTypeSymbol != null && ExistingTypeSymbol.IsReferenceType;
+            public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
+
+            public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
+
+            public bool IsStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.StructDeclaration);
+
+            public bool IsReferenceType => IsClass || IsRecord;
 
             public bool IsCtorDefined()
             {
                 return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(".ctor").OfType<IMethodSymbol>()
-                    .Any(m => !m.IsStatic && m.Parameters.Length == 1);
+                    .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, AttributeInfo.IdTypeSymbol));
             }
 
             public bool IsFieldDefined()
@@ -1107,7 +1116,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private record AttributeInfo(AttributeSyntax AttributeSyntax, IdType IdType);
+        private record AttributeInfo(AttributeSyntax AttributeSyntax, IdType IdType, ITypeSymbol IdTypeSymbol);
 
         private sealed class Receiver : ISyntaxReceiver
         {
@@ -1120,6 +1129,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     Types.Add((TypeDeclarationSyntax)syntaxNode);
                 }
                 else if (syntaxNode.IsKind(SyntaxKind.ClassDeclaration))
+                {
+                    Types.Add((TypeDeclarationSyntax)syntaxNode);
+                }
+                else if (syntaxNode.IsKind(SyntaxKind.RecordDeclaration))
                 {
                     Types.Add((TypeDeclarationSyntax)syntaxNode);
                 }

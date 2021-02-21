@@ -150,52 +150,52 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         private partial struct IdUInt64 { }
 
         [StronglyTypedId(typeof(bool))]
-        private partial class IdClassBoolean { }
+        private sealed partial class IdClassBoolean { }
 
         [StronglyTypedId(typeof(byte))]
-        private partial class IdClassByte { }
+        private sealed partial class IdClassByte { }
 
         [StronglyTypedId(typeof(DateTime))]
-        private partial class IdClassDateTime { }
+        private sealed partial class IdClassDateTime { }
 
         [StronglyTypedId(typeof(DateTimeOffset))]
-        private partial class IdClassDateTimeOffset { }
+        private sealed partial class IdClassDateTimeOffset { }
 
         [StronglyTypedId(typeof(decimal))]
-        private partial class IdClassDecimal { }
+        private sealed partial class IdClassDecimal { }
 
         [StronglyTypedId(typeof(double))]
-        private partial class IdClassDouble { }
+        private sealed partial class IdClassDouble { }
 
         [StronglyTypedId(typeof(Guid))]
-        private partial class IdClassGuid { }
+        private sealed partial class IdClassGuid { }
 
         [StronglyTypedId(typeof(short))]
-        private partial class IdClassInt16 { }
+        private sealed partial class IdClassInt16 { }
 
         [StronglyTypedId(typeof(int))]
-        private partial class IdClassInt32 { }
+        private sealed partial class IdClassInt32 { }
 
         [StronglyTypedId(typeof(long))]
-        private partial class IdClassInt64 { }
+        private sealed partial class IdClassInt64 { }
 
         [StronglyTypedId(typeof(sbyte))]
-        private partial class IdClassSByte { }
+        private sealed partial class IdClassSByte { }
 
         [StronglyTypedId(typeof(float))]
-        private partial class IdClassSingle { }
+        private sealed partial class IdClassSingle { }
 
         [StronglyTypedId(typeof(string))]
-        private partial class IdClassString { }
+        private sealed partial class IdClassString { }
 
         [StronglyTypedId(typeof(ushort))]
-        private partial class IdClassUInt16 { }
+        private sealed partial class IdClassUInt16 { }
 
         [StronglyTypedId(typeof(uint))]
-        private partial class IdClassUInt32 { }
+        private sealed partial class IdClassUInt32 { }
 
         [StronglyTypedId(typeof(ulong))]
-        private partial class IdClassUInt64 { }
+        private sealed partial class IdClassUInt64 { }
 
         [StronglyTypedId(typeof(int))]
         private partial struct IdCtorDefined
@@ -213,7 +213,7 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         }
 
         [StronglyTypedId(typeof(int))]
-        private partial record IdRecordInt32
+        private sealed partial record IdRecordInt32
         {
         }
     }

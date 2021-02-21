@@ -30,8 +30,9 @@ namespace Meziantou.Framework.Tests
         {
             var stopwatch = ValueStopwatch.StartNew();
             await Task.Delay(200);
-            Assert.True(stopwatch.GetElapsedTime().TotalMilliseconds > 0);
+            var elapsed = stopwatch.GetElapsedTime();
+            Assert.True(elapsed.TotalMilliseconds > 0);
+            Assert.True(elapsed.TotalMilliseconds < 5000);
         }
     }
-
 }

@@ -37,11 +37,19 @@ namespace Meziantou.Framework
             return FullPath.Combine(FullPath, relativePath);
         }
 
-        public void CreateEmptyFile(string relativePath)
+        public FullPath CreateEmptyFile(string relativePath)
         {
             var path = GetFullPath(relativePath);
             Directory.CreateDirectory(path.Parent);
             using var stream = new FileStream(path, FileMode.Create, FileAccess.Write);
+            return path;
+        }
+
+        public FullPath CreateDirectory(string relativePath)
+        {
+            var path = GetFullPath(relativePath);
+            Directory.CreateDirectory(path);
+            return path;
         }
 
         private static (FullPath path, FullPath innerPath, Stream lockFile) CreateUniqueDirectory(FullPath folderPath)

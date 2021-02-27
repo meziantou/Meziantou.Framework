@@ -177,6 +177,11 @@ namespace Meziantou.Framework
 
         public static FullPath FromPath(string path)
         {
+            if (PathInternal.IsExtended(path))
+            {
+                path = path.Substring(4);
+            }
+
             var fullPath = Path.GetFullPath(path);
             var fullPathWithoutTrailingDirectorySeparator = TrimEndingDirectorySeparator(fullPath);
             if (string.IsNullOrEmpty(fullPathWithoutTrailingDirectorySeparator))
@@ -245,6 +250,26 @@ namespace Meziantou.Framework
                 return Empty;
 
             return FromPath(fsi.FullName);
+        }
+
+        public bool IsSymbolicLink()
+        {
+            if (IsEmpty)
+                return false;
+
+            return Symlink.IsSymbolicLink(_value);
+        }
+
+        public bool TryGetSymbolicLinkTarget([NotNullWhen(true)] out FullPath? result)
+        {
+            if (!IsEmpty && Symlink.TryGetSymLinkTarget(_value, out var path))
+            {
+                result = FullPath.FromPath(path);
+                return true;
+            }
+
+            result = null;
+            return false;
         }
     }
 }

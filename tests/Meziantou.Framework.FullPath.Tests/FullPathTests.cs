@@ -1,4 +1,7 @@
-﻿using System.Text.Json;
+﻿using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -133,6 +136,107 @@ namespace Meziantou.Framework.Tests
         public void JsonDeserialize_NonEmpty()
         {
             Assert.Equal(FullPath.FromPath(@"c:\test"), JsonSerializer.Deserialize<FullPath>(@"""c:\\test"""));
+        }
+
+        [Fact]
+        public async Task ResolveSymlink_FileAbsolutePath()
+        {
+            await using var temp = TemporaryDirectory.Create();
+            var path = temp.CreateEmptyFile("a.txt");
+            Assert.False(path.IsSymbolicLink());
+            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+
+            // Create symlink
+            var symlink = temp.GetFullPath("b.txt");
+            CreateSymlink(symlink, path, SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+
+            Assert.True(File.Exists(symlink), "File does not exist");
+            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
+            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
+            Assert.Equal(path, target);
+        }
+
+        [Fact]
+        public async Task ResolveSymlink_FileRelativePath()
+        {
+            await using var temp = TemporaryDirectory.Create();
+            var path = temp.CreateEmptyFile("a.txt");
+            Assert.False(path.IsSymbolicLink());
+            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+
+            // Create symlink
+            var symlink = temp.GetFullPath("b.txt");
+            CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
+
+            Assert.True(File.Exists(symlink), "File does not exist");
+            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
+            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
+            Assert.Equal(path, target);
+        }
+
+        [Fact]
+        public async Task ResolveSymlink_DirectoryAbsolutePath()
+        {
+            await using var temp = TemporaryDirectory.Create();
+            var path = temp.CreateDirectory("a");
+            Assert.False(path.IsSymbolicLink());
+            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+
+            // Create symlink
+            var symlink = temp.GetFullPath("b");
+            CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+
+            Assert.True(Directory.Exists(symlink), "Directory does not exist");
+            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
+            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
+            Assert.Equal(path, target);
+        }
+
+        [Fact]
+        public async Task ResolveSymlink_DirectoryRelativePath()
+        {
+            await using var temp = TemporaryDirectory.Create();
+            var path = temp.CreateDirectory("a");
+            Assert.False(path.IsSymbolicLink());
+            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+
+            // Create symlink
+            var symlink = temp.GetFullPath("b");
+            CreateSymlink(symlink, "a", SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+
+            Assert.True(Directory.Exists(symlink), "Directory does not exist");
+            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
+            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
+            Assert.Equal(path, target);
+        }
+
+        private static bool IsWindows()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        }
+
+        private static void CreateSymlink(string source, string target, SymbolicLink options)
+        {
+            if (IsWindows())
+            {
+                CreateSymbolicLink(source, target, options);
+            }
+#if NETCOREAPP3_1 || NET5_0
+            else
+            {
+                Assert.Equal(0, Mono.Unix.Native.Syscall.symlink(target, source));
+            }
+#endif
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags);
+
+        private enum SymbolicLink
+        {
+            File = 0,
+            Directory = 1,
+            AllowUnpriviledgedCreate = 2,
         }
     }
 }

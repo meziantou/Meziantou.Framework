@@ -559,6 +559,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                             },
                         });
 
+                        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Less readable")]
                         Expression CreateTryParseExpression()
                         {
                             switch (idType)

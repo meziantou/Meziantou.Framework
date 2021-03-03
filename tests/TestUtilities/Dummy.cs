@@ -12,6 +12,7 @@ namespace TestUtilities
             _outputHelper = outputHelper;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "xUnit1004:Test methods should not be skipped", Justification = "<Pending>")]
         [Fact(Skip = "For testing purpose")]
         public void Test()
         {

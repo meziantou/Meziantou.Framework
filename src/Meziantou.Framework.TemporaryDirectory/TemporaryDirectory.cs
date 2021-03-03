@@ -130,7 +130,7 @@ namespace Meziantou.Framework
             // Release the lock file and delete the parent directory
 #if NET5_0 || NETCOREAPP3_1
             await _lockFile.DisposeAsync().ConfigureAwait(false);
-#elif NETSTANDARD2_0
+#elif NETSTANDARD2_0 || NET472
             _lockFile.Dispose();
 #else
 #error Platform not supported

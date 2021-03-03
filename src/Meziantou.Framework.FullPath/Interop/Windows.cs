@@ -1,4 +1,5 @@
 ﻿#pragma warning disable MA0048
+#pragma warning disable IDE1006 // Naming Styles
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -58,7 +59,7 @@ namespace Meziantou.Framework
                 int dwFlagsAndAttributes)
             {
                 lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
-                return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
+                return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes: null, dwCreationDisposition, dwFlagsAndAttributes, IntPtr.Zero);
             }
 
             [StructLayout(LayoutKind.Sequential)]
@@ -78,7 +79,7 @@ namespace Meziantou.Framework
                 internal DateTimeOffset ToDateTimeOffset() => DateTimeOffset.FromFileTime(ToTicks());
             }
 
-            internal partial class FileOperations
+            internal static partial class FileOperations
             {
                 internal const int OPEN_EXISTING = 3;
                 internal const int COPY_FILE_FAIL_IF_EXISTS = 0x00000001;
@@ -231,7 +232,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsValidDriveChar(char value)
         {
-            return ((value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z'));
+            return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
         }
 
         private static bool EndsWithPeriodOrSpace(string path)
@@ -239,7 +240,7 @@ namespace System.IO
             if (string.IsNullOrEmpty(path))
                 return false;
 
-            char c = path[path.Length - 1];
+            var c = path[^1];
             return c == ' ' || c == '.';
         }
 
@@ -374,19 +375,13 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeFindHandle : SafeHandle
     {
-        public SafeFindHandle() : base(IntPtr.Zero, true) { }
+        public SafeFindHandle() : base(IntPtr.Zero, ownsHandle: true) { }
 
         protected override bool ReleaseHandle()
         {
             return Interop.Kernel32.FindClose(handle);
         }
 
-        public override bool IsInvalid
-        {
-            get
-            {
-                return handle == IntPtr.Zero || handle == new IntPtr(-1);
-            }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero || handle == new IntPtr(-1);
     }
 }

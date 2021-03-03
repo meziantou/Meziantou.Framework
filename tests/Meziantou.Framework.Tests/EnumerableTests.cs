@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -251,7 +250,7 @@ namespace Meziantou.Framework.Tests
 
 #nullable enable
         [Fact]
-        [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Ensure the type is non nullable")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
         public void WhereNotNull()
         {
             // Arrange

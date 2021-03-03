@@ -58,7 +58,7 @@ namespace Meziantou.Framework.Tests
             {
                 path = dir.FullPath;
 
-#if NET461
+#if NET461 || NET472
                 File.WriteAllText(dir.GetFullPath("a.txt"), "content");
 #elif NETCOREAPP3_1 || NET5_0
                 await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");

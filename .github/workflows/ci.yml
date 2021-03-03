@@ -45,7 +45,7 @@ jobs:
     - run: dotnet build Meziantou.Framework.Linux.slnf --configuration Release /bl
       
     - name: Run Infer#      
-      uses: microsoft/infersharpaction@v0.2
+      uses: microsoft/infersharpaction@v1.0
       id: runinfersharp
       with:
         binary-path: 'src'

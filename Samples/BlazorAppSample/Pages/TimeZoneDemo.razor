@@ -1,0 +1,19 @@
+﻿@page "/timezone"
+@inject TimeZoneService TimeZoneService
+
+<h1>TimeZone!</h1>
+
+Current date: @now
+
+@code {
+    DateTimeOffset? now;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            now = await TimeZoneService.GetLocalDateTime(DateTimeOffset.UtcNow);
+            StateHasChanged();
+        }
+    }
+}

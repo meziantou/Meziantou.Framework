@@ -3,16 +3,19 @@
 
 <h1>TimeZone!</h1>
 
-Current date: @now
+<p>Current date: @now</p>
+<p>Local Now to UTC: @localToUtc</p>
 
 @code {
     DateTimeOffset? now;
-    
+    DateTimeOffset? localToUtc;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            now = await TimeZoneService.GetLocalDateTime(DateTimeOffset.UtcNow);
+            now = await TimeZoneService.GetLocalDateTimeAsync(DateTimeOffset.UtcNow);
+            localToUtc = await TimeZoneService.GetUtcDateTimeAsync(DateTime.Now);
             StateHasChanged();
         }
     }

@@ -22,7 +22,7 @@ namespace Meziantou.AspNetCore.Components
             _jsRuntime = jsRuntime;
         }
 
-        public async ValueTask<DateTimeOffset> GetLocalDateTime(DateTimeOffset dateTime)
+        public async ValueTask<TimeSpan> GetOffsetAsync()
         {
             if (_userOffset == null)
             {
@@ -31,7 +31,22 @@ namespace Meziantou.AspNetCore.Components
                 _userOffset = TimeSpan.FromMinutes(-offsetInMinutes);
             }
 
-            return dateTime.ToOffset(_userOffset.Value);
+            return _userOffset.GetValueOrDefault();
+        }
+
+        public async ValueTask<DateTimeOffset> GetLocalDateTimeAsync(DateTimeOffset dateTime)
+        {
+            var offset = await GetOffsetAsync();
+            return dateTime.ToOffset(offset);
+        }
+
+        public async ValueTask<DateTimeOffset> GetUtcDateTimeAsync(DateTime dateTime)
+        {
+            if (dateTime.Kind == DateTimeKind.Utc)
+                return new DateTimeOffset(dateTime, TimeSpan.Zero);
+
+            var offset = await GetOffsetAsync();
+            return new DateTimeOffset(DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified).Add(-offset), TimeSpan.Zero);
         }
 
         public async ValueTask DisposeAsync()

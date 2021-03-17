@@ -27,7 +27,7 @@ namespace Meziantou.AspNetCore.Components
             if (_userOffset == null)
             {
                 var module = await Module;
-                var offsetInMinutes = await module.InvokeAsync<int>("blazorGetTimezoneOffset");
+                var offsetInMinutes = await module.InvokeAsync<int>("blazorGetTimezoneOffset", _cts.Token);
                 _userOffset = TimeSpan.FromMinutes(-offsetInMinutes);
             }
 

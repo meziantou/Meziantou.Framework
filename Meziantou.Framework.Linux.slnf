@@ -5,7 +5,6 @@
       "Samples\\BlazorAppSample\\BlazorAppSample.csproj",
       "Samples\\DependencyScannerSample\\DependencyScannerSample.csproj",
       "Samples\\SingleInstanceConsoleAppSample\\SingleInstanceConsoleAppSample.csproj",
-      "Samples\\StronglyTypedIdSample\\StronglyTypedIdSample.csproj",
       "benchmarks\\DependencyScanningBenchmarks\\DependencyScanningBenchmarks.csproj",
       "benchmarks\\GlobbingBenchmarks\\GlobbingBenchmarks.csproj",
       "src\\Meziantou.AspNetCore.Components.WebAssembly\\Meziantou.AspNetCore.Components.WebAssembly.csproj",

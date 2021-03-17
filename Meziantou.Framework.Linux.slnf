@@ -12,6 +12,7 @@
       "src\\Meziantou.AspNetCore.Mvc\\Meziantou.AspNetCore.Mvc.csproj",
       "src\\Meziantou.Extensions.Logging.Xunit\\Meziantou.Extensions.Logging.Xunit.csproj",
       "src\\Meziantou.Framework.ByteSize\\Meziantou.Framework.ByteSize.csproj",
+	  "src\\Meziantou.Framework.ChromiumTracing\\Meziantou.Framework.ChromiumTracing.csproj",
       "src\\Meziantou.Framework.CodeDom\\Meziantou.Framework.CodeDom.csproj",
       "src\\Meziantou.Framework.CodeOwners\\Meziantou.Framework.CodeOwners.csproj",
       "src\\Meziantou.Framework.CommandLine\\Meziantou.Framework.CommandLine.csproj",

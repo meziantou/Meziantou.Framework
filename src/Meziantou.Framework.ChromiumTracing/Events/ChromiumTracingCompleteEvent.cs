@@ -1,0 +1,22 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace Meziantou.Framework.ChromiumTracing
+{
+    public sealed class ChromiumTracingCompleteEvent : ChromiumTracingEvent
+    {
+        public override string Type => "X";
+
+        [JsonPropertyName("dur")]
+        [JsonConverter(typeof(TimeSpanToTimestampJsonConverter))]
+        public TimeSpan Duration { get; set; }
+
+        [JsonPropertyName("tdur")]
+        [JsonConverter(typeof(TimeSpanToTimestampJsonConverter))]
+        public TimeSpan? ThreadDuration { get; set; }
+
+        [JsonPropertyName("estack")]
+        public IEnumerable<string>? EndStackTrace { get; set; }
+    }
+}

@@ -202,6 +202,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Loggin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.StronglyTypedId.GeneratorTests", "tests\Meziantou.Framework.StronglyTypedId.GeneratorTests\Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj", "{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ChromiumTracing", "src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj", "{1529BF3D-59DB-4610-96DB-134BFB3B6E23}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -552,6 +554,10 @@ Global
 		{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1529BF3D-59DB-4610-96DB-134BFB3B6E23}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1529BF3D-59DB-4610-96DB-134BFB3B6E23}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1529BF3D-59DB-4610-96DB-134BFB3B6E23}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1529BF3D-59DB-4610-96DB-134BFB3B6E23}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -643,6 +649,7 @@ Global
 		{A93AFF92-DC97-4902-BA8D-B85D0B1140B3} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{62244782-4927-4EA5-BEE7-F63B8601644A} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{1529BF3D-59DB-4610-96DB-134BFB3B6E23} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

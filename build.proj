@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectReference Include="**/*.*proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(OS)' != 'Windows_NT' ">
+    <ProjectReference Remove="src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
+    <ProjectReference Remove="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
+  </ItemGroup>
+</Project>

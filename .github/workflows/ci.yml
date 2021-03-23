@@ -31,7 +31,7 @@ jobs:
     - name: Install dotnet format
       run: |
         dotnet tool update --global dotnet-format
-        dotnet format --check --verbosity:diagnostic
+        dotnet format --check --verbosity:diagnostic Meziantou.Framework.sln
 
   create_nuget:
     runs-on: windows-2019

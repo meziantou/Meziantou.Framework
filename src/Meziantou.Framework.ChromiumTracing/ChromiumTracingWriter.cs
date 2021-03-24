@@ -75,9 +75,11 @@ namespace Meziantou.Framework.ChromiumTracing
             }
         }
 
-        public async Task WriteEventAsync<T>(T tracingEvent, CancellationToken cancellationToken = default)
-            where T : ChromiumTracingEvent
+        public async Task WriteEventAsync<T>(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
         {
+            if (tracingEvent == null)
+                return;
+
             if (_hasItems)
             {
                 await _stream.WriteAsync(s_arrayItemSeparator, cancellationToken).ConfigureAwait(false);
@@ -88,7 +90,7 @@ namespace Meziantou.Framework.ChromiumTracing
                 _hasItems = true;
             }
 
-            await JsonSerializer.SerializeAsync(_stream, tracingEvent, s_options, cancellationToken).ConfigureAwait(false);
+            await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), s_options, cancellationToken).ConfigureAwait(false);
         }
     }
 }

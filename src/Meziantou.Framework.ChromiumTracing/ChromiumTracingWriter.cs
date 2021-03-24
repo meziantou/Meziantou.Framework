@@ -75,7 +75,7 @@ namespace Meziantou.Framework.ChromiumTracing
             }
         }
 
-        public async Task WriteEventAsync<T>(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
+        public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
         {
             if (tracingEvent == null)
                 return;

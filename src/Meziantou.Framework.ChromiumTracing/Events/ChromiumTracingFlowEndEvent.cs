@@ -4,6 +4,7 @@ namespace Meziantou.Framework.ChromiumTracing
 {
     public sealed class ChromiumTracingFlowEndEvent : ChromiumTracingFlowEvent
     {
+        [JsonPropertyName("ph")]
         public override string Type => "f";
 
         [JsonPropertyName("bp")]

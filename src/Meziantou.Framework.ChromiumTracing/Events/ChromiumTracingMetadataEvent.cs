@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.ChromiumTracing
 {
     public sealed class ChromiumTracingMetadataEvent : ChromiumTracingEvent
     {
+        [JsonPropertyName("ph")]
         public override string Type => "M";
 
         public static ChromiumTracingMetadataEvent ProcessName(int pid, string name)

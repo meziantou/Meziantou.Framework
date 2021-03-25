@@ -6,6 +6,7 @@ namespace Meziantou.Framework.ChromiumTracing
 {
     public sealed class ChromiumTracingCompleteEvent : ChromiumTracingEvent
     {
+        [JsonPropertyName("ph")]
         public override string Type => "X";
 
         [JsonPropertyName("dur")]

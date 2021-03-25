@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.ChromiumTracing
 {
     public sealed class ChromiumTracingClockSyncEvent : ChromiumTracingEvent
     {
+        [JsonPropertyName("ph")]
         public override string Type => "c";
 
+        [JsonPropertyName("name")]
         public override string? Name
         {
             get => "clock_sync";

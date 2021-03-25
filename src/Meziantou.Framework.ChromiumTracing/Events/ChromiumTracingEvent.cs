@@ -6,6 +6,7 @@ namespace Meziantou.Framework.ChromiumTracing
 {
     public abstract class ChromiumTracingEvent
     {
+        // Note: overriden members should also set the attribute (https://github.com/dotnet/runtime/issues/50078)
         [JsonPropertyName("ph")]
         public abstract string Type { get; }
 

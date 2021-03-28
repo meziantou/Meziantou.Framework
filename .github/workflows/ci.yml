@@ -11,6 +11,7 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
   NuGetDirectory: ${{ github.workspace}}/nuget
+  NuGetSource: "https://api.nuget.org/v3/index.json"
 
 defaults:
   run:
@@ -28,9 +29,9 @@ jobs:
     - name: Add dotnet-format problem matcher
       uses: xt0rted/dotnet-format-problem-matcher@v1
 
-    - name: Install dotnet format
+    - name: Run dotnet format
       run: |
-        dotnet tool update --global dotnet-format
+        dotnet tool restore
         dotnet format --check --verbosity:diagnostic Meziantou.Framework.sln
 
   create_nuget:
@@ -39,29 +40,36 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core (5.0)
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
     - name: Setup .NET Core (3.1)
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.x'
     - run: dotnet pack build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
-    - uses: actions/upload-artifact@v2
-      with:
-        name: nuget
-        if-no-files-found: error
-        retention-days: 3
-        path: ${{ env.NuGetDirectory }}/**/*
-    - run: |
-        dotnet tool update --global dotnet-validate --version 0.0.1-preview.42
+    - name: Run dotnet validate
+      run: |
+        dotnet tool restore
 
         Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
         $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
         foreach($file in $files) {
-            dotnet-validate package local "$file"
+            dotnet validate package local "$file"
             if ($LASTEXITCODE -ne 0) {
               Write-Error "Invalid package $file"
             }
         }
     - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: nuget
+        if-no-files-found: error
+        retention-days: 3
+        path: ${{ env.NuGetDirectory }}/**/*
+    - uses: actions/upload-artifact@v2
+      if: always()
       with:
         name: binlog
         if-no-files-found: error
@@ -93,6 +101,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
+    - name: Setup .NET Core (5.0)
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '5.0.x'
     - name: Setup .NET Core (3.1)
       uses: actions/setup-dotnet@v1
       with:
@@ -127,7 +139,7 @@ jobs:
             Write-Host "Pushing NuGet package: $($file.FullName)"
             if ($env:GITHUB_REF -eq 'refs/heads/main')
             {
-              & dotnet nuget push "$($file.FullName)" --api-key "$env:NuGetApiKey" --source https://api.nuget.org/v3/index.json --force-english-output --skip-duplicate
+              & dotnet nuget push "$($file.FullName)" --api-key "$env:NuGetApiKey" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
             }
             else
             {

@@ -19,7 +19,6 @@
     <ReportAnalyzer>true</ReportAnalyzer>
 
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
-    <RestoreSources>https://api.nuget.org/v3/index.json</RestoreSources>
     <!--<RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <RestoreLockedMode Condition="'$(_ContinuousIntegrationBuild)' == 'true'">true</RestoreLockedMode>-->
     <IsPackable>False</IsPackable>
@@ -32,11 +31,6 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="5.0.3">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-
     <PackageReference Include="Meziantou.Analyzer" Version="1.0.647">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>

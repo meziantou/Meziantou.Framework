@@ -21,27 +21,36 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
                 using var jsonReader = new JsonTextReader(sr);
                 var doc = await JToken.ReadFromAsync(jsonReader, context.CancellationToken).ConfigureAwait(false);
 
-                var token = doc.SelectToken("$.sdk.version");
-                if (token?.Value<string>() is string version)
-                {
-                    await context.ReportDependency(new Dependency(".NET SDK", version, DependencyType.DotNetSdk, new JsonLocation(context.FullPath, LineInfo.FromJToken(token), token.Path))).ConfigureAwait(false);
-                }
-
-                var sdksToken = doc.SelectToken("$.msbuild-sdks");
-                if (sdksToken is JObject sdks)
-                {
-                    foreach (var sdk in sdks.Properties())
-                    {
-                        version = sdk.Value.Value<string>();
-                        if (version != null)
-                        {
-                            await context.ReportDependency(new Dependency(sdk.Name, version, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(sdk.Value), sdk.Value.Path))).ConfigureAwait(false);
-                        }
-                    }
-                }
+                await ExtractSdk(context, doc).ConfigureAwait(false);
+                await ExtractMsBuildSdks(context, doc).ConfigureAwait(false);
             }
             catch (JsonException)
             {
+            }
+        }
+
+        private static async Task ExtractMsBuildSdks(ScanFileContext context, JToken doc)
+        {
+            var sdksToken = doc.SelectToken("$.msbuild-sdks");
+            if (sdksToken is JObject sdks)
+            {
+                foreach (var sdk in sdks.Properties())
+                {
+                    var sdkVersion = sdk.Value.Value<string>();
+                    if (sdkVersion != null)
+                    {
+                        await context.ReportDependency(new Dependency(sdk.Name, sdkVersion, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(sdk.Value), sdk.Value.Path))).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
+        private static async Task ExtractSdk(ScanFileContext context, JToken doc)
+        {
+            var token = doc.SelectToken("$.sdk.version");
+            if (token?.Value<string>() is string version)
+            {
+                await context.ReportDependency(new Dependency(".NET SDK", version, DependencyType.DotNetSdk, new JsonLocation(context.FullPath, LineInfo.FromJToken(token), token.Path))).ConfigureAwait(false);
             }
         }
     }

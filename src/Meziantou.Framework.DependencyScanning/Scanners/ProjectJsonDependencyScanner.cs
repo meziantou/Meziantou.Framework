@@ -27,7 +27,7 @@ namespace Meziantou.Framework.DependencyScanning
                     {
                         JToken valueElement = dep;
                         var packageName = dep.Name;
-                        string version;
+                        string? version;
                         if (dep.Value.Type == JTokenType.String)
                         {
                             version = dep.Value.Value<string>();
@@ -46,8 +46,10 @@ namespace Meziantou.Framework.DependencyScanning
                             continue;
                         }
 
-
-                        await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(dep), valueElement.Path))).ConfigureAwait(false);
+                        if (version != null)
+                        {
+                            await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(dep), valueElement.Path))).ConfigureAwait(false);
+                        }
                     }
                 }
             }

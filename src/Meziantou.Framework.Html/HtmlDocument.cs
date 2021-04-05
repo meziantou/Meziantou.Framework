@@ -854,7 +854,7 @@ namespace Meziantou.Framework.Html
                         if (currentAtt.Name.EqualsIgnoreCase(XmlnsPrefix))
                         {
                             element = current as HtmlElement;
-                            if (element != null && !Options.EmptyNamespaces.Contains(currentAtt.Value))
+                            if (element != null && !Options.EmptyNamespaces.Contains(currentAtt.Value, StringComparer.Ordinal))
                             {
                                 element.NamespaceURI = currentAtt.Value;
                             }

@@ -183,7 +183,8 @@ namespace Meziantou.Framework.Html.Tool
                             uriPath = node.Value;
                         }
 
-                        var assetPath = Path.Combine(Path.GetDirectoryName(file), uriPath);
+                        var parentFolder = Path.GetDirectoryName(file);
+                        var assetPath = parentFolder is not null ? Path.Combine(parentFolder, uriPath) : uriPath;
                         if (!File.Exists(assetPath))
                             continue;
 

@@ -17,7 +17,7 @@ namespace Meziantou.AspNetCore.Components
             builder.AddAttribute(2, "type", "url");
             builder.AddAttribute(3, "class", CssClass);
             builder.AddAttribute(4, "value", BindConverter.FormatValue(CurrentValueAsString));
-            builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string>(this, value => CurrentValueAsString = value, CurrentValueAsString));
+            builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString));
             builder.CloseElement();
         }
 
@@ -66,7 +66,7 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        private static bool TryParseString(string? value, out TValue result)
+        private static bool TryParseString(string? value, out TValue? result)
         {
             if (value != null)
             {
@@ -80,7 +80,7 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        private static bool TryParseUri(string? value, out TValue result)
+        private static bool TryParseUri(string? value, out TValue? result)
         {
             if (Uri.TryCreate(value, UriKind.RelativeOrAbsolute, out var uri))
             {

@@ -14,7 +14,7 @@ namespace Meziantou.AspNetCore.Components
             return services;
         }
 
-        public static string GetQueryStringParameterValue(this NavigationManager navigationManager, string parameterName)
+        public static string? GetQueryStringParameterValue(this NavigationManager navigationManager, string parameterName)
         {
             var values = GetQueryStringParameterValues(navigationManager, parameterName);
             if (values == null || values.Count == 0)

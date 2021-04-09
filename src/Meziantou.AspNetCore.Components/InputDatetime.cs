@@ -20,7 +20,7 @@ namespace Meziantou.AspNetCore.Components
             builder.AddAttribute(2, "type", "datetime-local");
             builder.AddAttribute(3, "class", CssClass);
             builder.AddAttribute(4, "value", BindConverter.FormatValue(CurrentValueAsString));
-            builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string>(this, value => CurrentValueAsString = value, CurrentValueAsString));
+            builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString));
             builder.CloseElement();
         }
 
@@ -69,7 +69,7 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        private static bool TryParseDateTime(string value, out TValue? result)
+        private static bool TryParseDateTime(string? value, out TValue? result)
         {
             var success = BindConverter.TryConvertToDateTime(value, CultureInfo.InvariantCulture, DateFormat, out var parsedValue);
             if (success)
@@ -84,7 +84,7 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        private static bool TryParseDateTimeOffset(string value, out TValue result)
+        private static bool TryParseDateTimeOffset(string? value, out TValue? result)
         {
             var success = BindConverter.TryConvertToDateTimeOffset(value, CultureInfo.InvariantCulture, DateFormat, out var parsedValue);
             if (success)

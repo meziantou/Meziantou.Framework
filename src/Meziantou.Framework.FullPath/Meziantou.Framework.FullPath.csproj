@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0;netcoreapp3.1;net472</TargetFrameworks>
+    <TargetFrameworks>net6.0;net5.0;netcoreapp3.1;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.5</Version>
     <CompatibilityRange>true</CompatibilityRange>
@@ -11,7 +11,7 @@
     <PackageReference Include="System.Text.Json" Version="5.0.1" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'netcoreapp3.1' or $(TargetFramework) == 'net5.0'">
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp3.1'))">
     <PackageReference Include="Mono.Posix.NETStandard" Version="1.0.0" />
-  </ItemGroup>  
+  </ItemGroup>
 </Project>

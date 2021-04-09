@@ -37,6 +37,8 @@ else
 }
 
 @code {
+    private static RenderFragment<RenderFragment> s_defaultContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
+
     [Parameter]
     public IEnumerable<T>? Items { get; set; }
 
@@ -44,7 +46,7 @@ else
     public RenderFragment? LoadingTemplate { get; set; }
 
     [Parameter]
-    public RenderFragment<RenderFragment>? RepeaterContainerTemplate { get; set; }
+    public RenderFragment<RenderFragment> RepeaterContainerTemplate { get; set; } = s_defaultContainerTemplate;
 
     [Parameter]
     public RenderFragment<T>? ItemTemplate { get; set; }
@@ -58,9 +60,6 @@ else
     protected override void OnParametersSet()
     {
         // Create empty template in case the user doesn't provide it
-        if (RepeaterContainerTemplate == null)
-        {
-            RepeaterContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
-        }
+        RepeaterContainerTemplate ??= s_defaultContainerTemplate;
     }
 }

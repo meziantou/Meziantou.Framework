@@ -2,9 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <PropertyGroup>
-    <IsPackable>True</IsPackable>
-    <Nullable>enable</Nullable>
-    <SkipLocalsInit>true</SkipLocalsInit>
+    <IsSampleProject>False</IsSampleProject>
   </PropertyGroup>
 
 </Project>

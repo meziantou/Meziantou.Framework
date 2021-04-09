@@ -16,7 +16,7 @@ namespace Meziantou.Framework.StronglyTypedId
     public sealed class StronglyTypedIdSourceGenerator : ISourceGenerator
     {
         // Possible improvements
-        // 
+        //
         // - XmlSerializer / NewtonsoftJsonConvert / MongoDbConverter / Elaticsearch / YamlConverter
         // - TypeConverter / IConvertible
 
@@ -63,20 +63,20 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             var options = (CSharpParseOptions)((CSharpCompilation)context.Compilation).SyntaxTrees[0].Options;
             var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options, cancellationToken: context.CancellationToken));
 
-            foreach (var stronglyTypeType in GetTypes(context, compilation))
+            foreach (var stronglyTypedType in GetTypes(context, compilation))
             {
                 var codeUnit = new CompilationUnit
                 {
                     NullableContext = CodeDom.NullableContext.Enable,
                 };
 
-                var structDeclaration = CreateType(codeUnit, stronglyTypeType);
-                GenerateTypeMembers(compilation, structDeclaration, stronglyTypeType);
-                GenerateTypeConverter(structDeclaration, compilation, stronglyTypeType.AttributeInfo.IdType);
-                GenerateSystemTextJsonConverter(structDeclaration, compilation, stronglyTypeType.AttributeInfo.IdType);
-                GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypeType.AttributeInfo.IdType);
+                var structDeclaration = CreateType(codeUnit, stronglyTypedType);
+                GenerateTypeMembers(compilation, structDeclaration, stronglyTypedType);
+                GenerateTypeConverter(structDeclaration, compilation, stronglyTypedType.AttributeInfo.IdType);
+                GenerateSystemTextJsonConverter(structDeclaration, compilation, stronglyTypedType);
+                GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypedType);
                 var result = codeUnit.ToCsharpString();
-                context.AddSource(stronglyTypeType.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
+                context.AddSource(stronglyTypedType.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
             }
         }
 
@@ -513,6 +513,11 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     var valueArg = parseMethod.AddArgument("value", valueType);
                     parseMethod.Statements = new StatementCollection();
                     var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
+                    if (stronglyTypedStruct.IsReferenceType)
+                    {
+                        result.Type = result.Type?.MakeNullable();
+                    }
+
                     parseMethod.Statements.Add(new ConditionStatement
                     {
                         Condition = new MemberReferenceExpression(structDeclaration, "TryParse").InvokeMethod(valueArg, new MethodInvokeArgumentExpression(result) { Direction = Direction.Out }),
@@ -531,6 +536,11 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     if (stronglyTypedStruct.IsReferenceType)
                     {
                         resultArg.Type = resultArg.Type?.MakeNullable();
+                    }
+
+                    if (compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                    {
+                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(System.Diagnostics.CodeAnalysis.NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(LiteralExpression.True()) } });
                     }
 
                     if (idType == IdType.System_String)
@@ -610,79 +620,103 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private static void GenerateSystemTextJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, IdType idType)
+        private static void GenerateSystemTextJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {
             var type = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1");
             if (type == null)
                 return;
 
+            var idType = stronglyTypedType.AttributeInfo.IdType;
+            var typeReference = new TypeReference(structDeclaration);
+            if (stronglyTypedType.IsReferenceType)
+            {
+                typeReference = typeReference.MakeNullable();
+            }
+
             var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "JsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
             structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("System.Text.Json.Serialization.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
-            converter.BaseType = new TypeReference("System.Text.Json.Serialization.JsonConverter").MakeGeneric(structDeclaration);
+            converter.BaseType = new TypeReference("System.Text.Json.Serialization.JsonConverter").MakeGeneric(typeReference);
 
             // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
             {
                 var writeMethod = converter.AddMember(new MethodDeclaration("Write") { Modifiers = Modifiers.Public | Modifiers.Override });
                 var writerArg = writeMethod.AddArgument("writer", new TypeReference("System.Text.Json.Utf8JsonWriter"));
-                var valueArg = writeMethod.AddArgument("value", structDeclaration);
+                var valueArg = writeMethod.AddArgument("value", typeReference);
                 var optionsArg = writeMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
 
-                if (idType == IdType.System_Boolean)
+                if (stronglyTypedType.IsReferenceType)
                 {
-                    writeMethod.Statements = new StatementCollection
+                    writeMethod.Statements = new ConditionStatement
                     {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteBooleanValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
-                    };
-                }
-                else if (CanUseWriteNumberValue())
-                {
-                    writeMethod.Statements = new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
-                    };
-                }
-                else if (CanUseWriteNumberValueWithCastToInt())
-                {
-                    writeMethod.Statements = new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(valueArg.Member("Value"), typeof(int))),
-                    };
-                }
-                else if (CanUseWriteNumberValueWithCastToUInt())
-                {
-                    writeMethod.Statements = new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(valueArg.Member("Value"), typeof(uint))),
-                    };
-                }
-                else if (CanUseWriteStringValue())
-                {
-                    writeMethod.Statements = new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteStringValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
+                        Condition = Expression.EqualsNull(valueArg),
+                        TrueStatements = writerArg.Member("WriteNullValue").InvokeMethod(),
+                        FalseStatements = GetWriteStatement(),
                     };
                 }
                 else
                 {
-                    // JsonSerializer.Serialize(writer, value.Value, options)
-                    writeMethod.Statements = new StatementCollection
+                    writeMethod.Statements = GetWriteStatement();
+                }
+
+                StatementCollection GetWriteStatement()
+                {
+                    if (idType == IdType.System_Boolean)
                     {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(new TypeReference("System.Text.Json.JsonSerializer"), "Serialize"),
-                            writerArg,
-                            new MemberReferenceExpression(valueArg, "Value"),
-                            optionsArg),
-                    };
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(writerArg, "WriteBooleanValue"),
+                                new MemberReferenceExpression(valueArg, "Value")),
+                        };
+                    }
+                    else if (CanUseWriteNumberValue())
+                    {
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(writerArg, "WriteNumberValue"),
+                                new MemberReferenceExpression(valueArg, "Value")),
+                        };
+                    }
+                    else if (CanUseWriteNumberValueWithCastToInt())
+                    {
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(writerArg, "WriteNumberValue"),
+                                new CastExpression(valueArg.Member("Value"), typeof(int))),
+                        };
+                    }
+                    else if (CanUseWriteNumberValueWithCastToUInt())
+                    {
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(writerArg, "WriteNumberValue"),
+                                new CastExpression(valueArg.Member("Value"), typeof(uint))),
+                        };
+                    }
+                    else if (CanUseWriteStringValue())
+                    {
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(writerArg, "WriteStringValue"),
+                                new MemberReferenceExpression(valueArg, "Value")),
+                        };
+                    }
+                    else
+                    {
+                        // JsonSerializer.Serialize(writer, value.Value, options)
+                        return new StatementCollection
+                        {
+                            new MethodInvokeExpression(
+                                new MemberReferenceExpression(new TypeReference("System.Text.Json.JsonSerializer"), "Serialize"),
+                                writerArg,
+                                new MemberReferenceExpression(valueArg, "Value"),
+                                optionsArg),
+                        };
+                    }
                 }
 
                 bool CanUseWriteNumberValue()
@@ -720,13 +754,13 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             // public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 var readMethod = converter.AddMember(new MethodDeclaration("Read") { Modifiers = Modifiers.Public | Modifiers.Override });
-                readMethod.ReturnType = structDeclaration;
+                readMethod.ReturnType = typeReference;
                 var readerArg = readMethod.AddArgument("reader", new TypeReference("System.Text.Json.Utf8JsonReader"), Direction.InOut);
                 _ = readMethod.AddArgument("typeToConvert", typeof(Type));
                 _ = readMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
 
                 readMethod.Statements = new StatementCollection();
-                var valueVariable = readMethod.Statements.Add(new VariableDeclarationStatement("value", structDeclaration, new DefaultValueExpression(structDeclaration)));
+                var valueVariable = readMethod.Statements.Add(new VariableDeclarationStatement("value", typeReference, new DefaultValueExpression(structDeclaration)));
                 readMethod.Statements.Add(new ConditionStatement
                 {
                     Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
@@ -803,11 +837,17 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, IdType idType)
+        private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {
             var type = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter");
             if (type == null)
                 return;
+
+            var typeReference = new TypeReference(structDeclaration);
+            if (stronglyTypedType.IsReferenceType)
+            {
+                typeReference = typeReference.MakeNullable();
+            }
 
             var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "NewtonsoftJsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
             structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("Newtonsoft.Json.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
@@ -858,7 +898,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             // public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
             {
                 var method = converter.AddMember(new MethodDeclaration("ReadJson") { Modifiers = Modifiers.Public | Modifiers.Override });
-                method.ReturnType = typeof(object);
+                method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
                 var readerArg = method.AddArgument("reader", new TypeReference("Newtonsoft.Json.JsonReader"));
                 _ = method.AddArgument("objectType", typeof(Type));
                 _ = method.AddArgument("existingValue", new TypeReference(typeof(object)).MakeNullable());
@@ -866,7 +906,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
                 method.Statements = new StatementCollection();
 
-                var valueVariable = method.Statements.Add(new VariableDeclarationStatement("value", structDeclaration, new DefaultValueExpression(structDeclaration)));
+                var valueVariable = method.Statements.Add(new VariableDeclarationStatement("value", typeReference, new DefaultValueExpression(structDeclaration)));
                 method.Statements.Add(new ConditionStatement
                 {
                     Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
@@ -935,7 +975,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                             valueVariable,
                             new NewObjectExpression(
                                 structDeclaration,
-                                serializerArg.Member("Deserialize").InvokeMethod(new[] { GetTypeReference(idType) }, readerArg)))
+                                serializerArg.Member("Deserialize").InvokeMethod(new[] { GetTypeReference(stronglyTypedType.AttributeInfo.IdType) }, readerArg)))
                         {
                             NullableContext = CodeDom.NullableContext.Disable,
                         };

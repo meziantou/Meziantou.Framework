@@ -48,7 +48,7 @@ namespace Meziantou.Framework
         {
 #if NETSTANDARD2_0
             return str.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
-#elif NET5_0
+#elif NET5_0 || NET6_0
             return str.Contains(value, StringComparison.OrdinalIgnoreCase);
 #else
 #error Platform not supported

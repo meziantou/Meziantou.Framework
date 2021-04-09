@@ -3,14 +3,14 @@
   <!-- Build options -->
   <PropertyGroup>
     <_ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true' or '$(GITLAB_CI)' == 'true'">True</_ContinuousIntegrationBuild>
-    
+
     <LangVersion>9.0</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-    <LatestTargetFramework>net5.0</LatestTargetFramework>
+    <LatestTargetFramework>net6.0</LatestTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SkipLocalsInit>true</SkipLocalsInit>
-    
+    <ValidateProjectTargets>true</ValidateProjectTargets>
+
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>

@@ -25,6 +25,9 @@
     // OnInitialized is called only once in the component lifecycle
     protected override void OnInitialized()
     {
+        if (OwnerGrid is null)
+            throw new InvalidOperationException("The column must be a child of a DataGrid component");
+
         OwnerGrid.AddColumn(this);
     }
 
@@ -46,7 +49,7 @@
                 // Use the provided title or infer it from the expression
                 var title = Title;
                 if (title == null && Expression != null)
-                {                
+                {
                     title = GetMemberName(Expression);
                 }
 

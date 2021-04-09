@@ -27,7 +27,8 @@ namespace Meziantou.Framework.WPF.Collections
         {
             if (!IsOnDispatcherThread())
             {
-                throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + Thread.CurrentThread.ManagedThreadId.ToString(CultureInfo.InvariantCulture));
+                var currentThreadId = Environment.CurrentManagedThreadId;
+                throw new InvalidOperationException("The collection must be accessed from the dispatcher thread only. Current thread ID: " + currentThreadId.ToString(CultureInfo.InvariantCulture));
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -17,7 +18,7 @@ namespace Meziantou.AspNetCore.Components
             builder.AddMultipleAttributes(1, AdditionalAttributes);
             builder.AddAttribute(2, "class", CssClass);
             builder.AddAttribute(3, "value", BindConverter.FormatValue(CurrentValueAsString));
-            builder.AddAttribute(4, "onchange", EventCallback.Factory.CreateBinder<string>(this, value => CurrentValueAsString = value, CurrentValueAsString, culture: null));
+            builder.AddAttribute(4, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString, culture: null));
 
             // Add an option element per enum value
             var enumType = InputEnumSelect<TEnum>.GetEnumType();
@@ -32,12 +33,12 @@ namespace Meziantou.AspNetCore.Components
             builder.CloseElement(); // close the select element
         }
 
-        protected override bool TryParseValueFromString(string? value, out TEnum result, out string validationErrorMessage)
+        protected override bool TryParseValueFromString(string? value, [MaybeNullWhen(false)] out TEnum result, [NotNullWhen(false)] out string? validationErrorMessage)
         {
             // Let's Blazor convert the value for us 😊
-            if (BindConverter.TryConvertTo(value, CultureInfo.CurrentCulture, out TEnum parsedValue))
+            if (BindConverter.TryConvertTo(value, CultureInfo.CurrentCulture, out TEnum? parsedValue))
             {
-                result = parsedValue;
+                result = parsedValue!;
                 validationErrorMessage = "";
                 return true;
             }
@@ -48,7 +49,7 @@ namespace Meziantou.AspNetCore.Components
                 var nullableType = Nullable.GetUnderlyingType(typeof(TEnum));
                 if (nullableType != null)
                 {
-                    result = default;
+                    result = default!;
                     validationErrorMessage = "";
                     return true;
                 }
@@ -63,15 +64,22 @@ namespace Meziantou.AspNetCore.Components
         // Get the display text for an enum value:
         // - Use the DisplayAttribute if set on the enum member, so this support localization
         // - Fallback on Humanizer to decamelize the enum member name
-        private static string GetDisplayName(TEnum value)
+        private static string? GetDisplayName(TEnum value)
         {
-            // Read the Display attribute name
-            var member = value.GetType().GetMember(value.ToString())[0];
-            var displayAttribute = member.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
-                return displayAttribute.GetName();
+            if (value == null)
+                return null;
 
-            return value.ToString();
+            // Read the Display attribute name
+            var valueAsString = value.ToString();
+            if (valueAsString != null)
+            {
+                var member = value.GetType().GetMember(valueAsString)[0];
+                var displayAttribute = member.GetCustomAttribute<DisplayAttribute>();
+                if (displayAttribute != null)
+                    return displayAttribute.GetName();
+            }
+
+            return valueAsString;
         }
 
         // Get the actual enum type. It unwrap Nullable<T> if needed

@@ -49,7 +49,7 @@ namespace Meziantou.AspNetCore.Components
 
         public PropertyInfo Property { get; }
         public string EditorId => _form.BaseEditorId + '_' + Property.Name;
-        public TModel Owner => _form.Model;
+        public TModel Owner => _form.Model!;
 
         public string DisplayName
         {
@@ -101,7 +101,7 @@ namespace Meziantou.AspNetCore.Components
 
         public Type PropertyType => Property.PropertyType;
 
-        public object Value
+        public object? Value
         {
             get => Property.GetValue(Owner);
             set

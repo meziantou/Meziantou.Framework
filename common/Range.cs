@@ -1,4 +1,4 @@
-﻿#pragma warning disable 
+﻿#pragma warning disable
 #if NETSTANDARD2_0 || NET45 || NET461|| NET472 || NETCOREAPP2_0 || NETCOREAPP2_1
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Index.cs
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Range.cs
@@ -276,7 +276,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
-#elif NETSTANDARD2_1 || NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0
+#elif NETSTANDARD2_1 || NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
 #else
 #error Platform not supported
 #endif

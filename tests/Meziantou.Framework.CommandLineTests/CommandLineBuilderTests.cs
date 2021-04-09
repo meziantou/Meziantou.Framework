@@ -75,7 +75,7 @@ namespace Meziantou.Framework.CommandLineTests
             var configurations = new[] { "Debug", "Release" };
             foreach (var configuration in configurations)
             {
-                var path = FullPath.Combine(Environment.CurrentDirectory, "..", "..", "..", "..", "ArgumentsPrinter", "bin", configuration, "net5.0", fileName);
+                var path = FullPath.Combine(Environment.CurrentDirectory, "..", "..", "..", "..", "ArgumentsPrinter", "bin", configuration, "net6.0", fileName);
                 if (File.Exists(path))
                 {
                     _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");

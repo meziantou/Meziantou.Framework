@@ -7,7 +7,7 @@
     <Compile Condition="'$(SkipLocalsInit)' == 'true'"
              Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.SkipLocalsInit.cs"
              Link="Properties/AssemblyInfo.SkipLocalsInit.cs" />
-    
+
     <Compile Condition="'$(CompatibilityRange)' == 'true'"
              Include="$(MSBuildThisFileDirectory)/common/Range.cs"
              Link="Properties/Range.cs" />
@@ -15,19 +15,19 @@
     <Compile Condition="'$(CompatibilityRecord)' == 'true'"
              Include="$(MSBuildThisFileDirectory)/common/IsExternalInit.cs"
              Link="Properties/IsExternalInit.cs" />
-    
+
     <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472' or '$(TargetFramework)' == 'netcoreapp3.1'"
              Include="$(MSBuildThisFileDirectory)/common/NullableAttributes.cs"
              Link="Properties/NullableAttributes.cs" />
-    
+
     <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net472' or '$(TargetFramework)' == 'netcoreapp3.1'"
              Include="$(MSBuildThisFileDirectory)/common/PlatformAttributes.cs"
              Link="Properties/PlatformAttributes.cs" />
   </ItemGroup>
-  
+
   <!-- Ensure the latest framework is a target of the project -->
-  <!--<Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(TargetFramework.Contains('$(LatestTargetFramework)')) == false and $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
-    <Error Text="The project must target $(LatestTargetFramework)" />
-  </Target>-->
+  <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
+    <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />
+  </Target>
 
 </Project>

@@ -47,7 +47,7 @@ namespace Meziantou.Framework
             if (!StartServer)
                 return;
 
-#if NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0
+#if NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0 || NET6_0
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
                 throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
@@ -192,7 +192,7 @@ namespace Meziantou.Framework
 
         private static int GetCurrentProcessId()
         {
-#if NET5_0
+#if NET5_0 || NET6_0
             return Environment.ProcessId;
 #elif NET461 || NETCOREAPP3_1
             return System.Diagnostics.Process.GetCurrentProcess().Id;

@@ -101,7 +101,7 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        private static object ConvertValue(StringValues value, Type type)
+        private static object? ConvertValue(StringValues value, Type type)
         {
             if (type == typeof(string))
                 return value[0];
@@ -122,7 +122,7 @@ namespace Meziantou.AspNetCore.Components
             return typeof(T).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
         }
 
-        private static string GetQueryStringParameterName(PropertyInfo property)
+        private static string? GetQueryStringParameterName(PropertyInfo property)
         {
             var attribute = property.GetCustomAttribute<QueryStringParameterAttribute>();
             if (attribute == null)

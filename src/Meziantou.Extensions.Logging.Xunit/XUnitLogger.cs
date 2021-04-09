@@ -16,13 +16,13 @@ namespace Meziantou.Extensions.Logging.Xunit
     public class XUnitLogger : ILogger
     {
         private readonly ITestOutputHelper _testOutputHelper;
-        private readonly string _categoryName;
+        private readonly string? _categoryName;
         private readonly LoggerExternalScopeProvider _scopeProvider;
 
         public static ILogger CreateLogger(ITestOutputHelper testOutputHelper) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "");
         public static ILogger<T> CreateLogger<T>(ITestOutputHelper testOutputHelper) => new XUnitLogger<T>(testOutputHelper, new LoggerExternalScopeProvider());
 
-        public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string categoryName)
+        public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName)
         {
             _testOutputHelper = testOutputHelper;
             _scopeProvider = scopeProvider;

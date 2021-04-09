@@ -27,6 +27,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers
                 return;
             }
 
+            System.Diagnostics.Debug.Assert(Src != null);
             if (!s_contentTypeProvider.TryGetContentType(Src, out var contentType))
             {
                 contentType = "application/octet-stream";

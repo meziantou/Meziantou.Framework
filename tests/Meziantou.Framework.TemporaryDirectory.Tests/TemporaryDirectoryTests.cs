@@ -60,7 +60,7 @@ namespace Meziantou.Framework.Tests
 
 #if NET461 || NET472
                 File.WriteAllText(dir.GetFullPath("a.txt"), "content");
-#elif NETCOREAPP3_1 || NET5_0
+#elif NETCOREAPP3_1 || NET5_0 || NET6_0
                 await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
 #else
 #error Platform not supported

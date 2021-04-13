@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Collections
 
         public void Clear() => _dictionary.Clear();
 
-        public struct KeyEnumerator : IEnumerator<T>
+        public readonly struct KeyEnumerator : IEnumerator<T>
         {
             private readonly IEnumerator<KeyValuePair<T, byte>> _kvpEnumerator;
 

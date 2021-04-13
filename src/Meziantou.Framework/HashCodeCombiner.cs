@@ -11,7 +11,7 @@ namespace Meziantou.Framework
     {
         private int _hash;
 
-        public int HashCode => _hash.GetHashCode();
+        public readonly int HashCode => _hash.GetHashCode();
 
         public static implicit operator int(HashCodeCombiner hashCodeCombiner) => hashCodeCombiner.HashCode;
 

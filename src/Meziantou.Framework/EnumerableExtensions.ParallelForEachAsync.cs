@@ -1,9 +1,12 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+#if NET5_0 || NETSTANDARD2_0
+using System.Collections.Concurrent;
+using System.Linq;
+#endif
 
 namespace Meziantou.Framework
 {
@@ -24,13 +27,21 @@ namespace Meziantou.Framework
             return ParallelForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
         }
 
+#if NET6_0
+        public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            return Parallel.ForEachAsync(source, new ParallelOptions { MaxDegreeOfParallelism = degreeOfParallelism, CancellationToken = cancellationToken }, (item, ct) => new ValueTask(action(item)));
+        }
+#elif NET5_0 || NETSTANDARD2_0
         public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
             var exceptions = new ConcurrentBag<Exception>();
-
             var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
                         select Task.Run(async () =>
                         {
@@ -56,5 +67,8 @@ namespace Meziantou.Framework
                 throw new AggregateException(exceptions);
             }
         }
+#else
+#error Platform not supported
+#endif
     }
 }

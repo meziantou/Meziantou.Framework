@@ -24,9 +24,9 @@ namespace Meziantou.Framework.Text
                 _current = default;
             }
 
-            public SpanUtf8BytesRuneEnumerator GetEnumerator() => this;
+            public readonly SpanUtf8BytesRuneEnumerator GetEnumerator() => this;
 
-            public Rune Current => _current;
+            public readonly Rune Current => _current;
 
             public bool MoveNext()
             {

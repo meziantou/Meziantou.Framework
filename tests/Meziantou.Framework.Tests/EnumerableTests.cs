@@ -257,6 +257,7 @@ namespace Meziantou.Framework.Tests
             var list = new List<string?>() { "", null, "a" };
 
             // Act
+            // Do not use var, so we can validate the nullable annotations
             List<string> actual = list.WhereNotNull().ToList();
 
             // Assert

@@ -10,21 +10,25 @@ updates:
     schedule:
       interval: weekly
     rebase-strategy: auto
+    open-pull-requests-limit: 20
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: weekly
     rebase-strategy: auto
+    open-pull-requests-limit: 20
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: weekly
     rebase-strategy: auto
+    open-pull-requests-limit: 20
 
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
       interval: weekly
     rebase-strategy: auto
+    open-pull-requests-limit: 20

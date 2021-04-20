@@ -3,7 +3,7 @@
     <ProjectReference Include="**/*.*proj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(OS)' != 'Windows_NT' ">
+  <ItemGroup Condition="$([MSBuild]::IsOsPlatform('WINDOWS')) == false">
     <ProjectReference Remove="src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
     <ProjectReference Remove="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="Samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />

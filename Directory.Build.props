@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
 
   <!-- Build options -->
   <PropertyGroup>
@@ -31,7 +31,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.656">
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.658">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>
@@ -61,8 +61,8 @@
       </PropertyGroup>
 
       <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All"/>
-        <SourceRoot Include="$(MSBuildThisFileDirectory)/"/>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
+        <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
       </ItemGroup>
     </When>
   </Choose>

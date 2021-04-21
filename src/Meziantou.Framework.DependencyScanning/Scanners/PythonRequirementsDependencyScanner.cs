@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Meziantou.Framework.DependencyScanning.Internals;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     public sealed class PythonRequirementsDependencyScanner : DependencyScanner
     {

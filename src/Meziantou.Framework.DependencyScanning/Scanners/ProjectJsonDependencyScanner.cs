@@ -5,7 +5,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     public sealed class ProjectJsonDependencyScanner : DependencyScanner
     {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     public sealed class PackagesConfigDependencyScanner : DependencyScanner
     {

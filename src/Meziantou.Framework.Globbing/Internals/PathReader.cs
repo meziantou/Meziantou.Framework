@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Globbing.Internals
         public ReadOnlySpan<char> CurrentText { get; private set; }
         public ReadOnlySpan<char> CurrentSegment => CurrentText.Slice(0, CurrentSegmentLength);
 
-        public ReadOnlySpan<char> EndText => _filename.IsEmpty ? CurrentText : _filename;
+        public readonly ReadOnlySpan<char> EndText => _filename.IsEmpty ? CurrentText : _filename;
 
         public int CurrentSegmentLength
         {
@@ -53,9 +53,9 @@ namespace Meziantou.Framework.Globbing.Internals
             }
         }
 
-        public bool IsEndOfCurrentSegment => CurrentText.IsEmpty || IsPathSeparator(CurrentText[0]);
+        public readonly bool IsEndOfCurrentSegment => CurrentText.IsEmpty || IsPathSeparator(CurrentText[0]);
 
-        public ReadOnlySpan<char> LastSegment
+        public readonly ReadOnlySpan<char> LastSegment
         {
             get
             {
@@ -70,7 +70,7 @@ namespace Meziantou.Framework.Globbing.Internals
             }
         }
 
-        public bool IsEndOfPath => CurrentText.IsEmpty;
+        public readonly bool IsEndOfPath => CurrentText.IsEmpty;
 
         public void ConsumeInSegment(int count)
         {
@@ -148,7 +148,7 @@ namespace Meziantou.Framework.Globbing.Internals
             return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;
         }
 
-        public bool IsPathSeparator()
+        public readonly bool IsPathSeparator()
         {
             var c = CurrentText[0];
             return c == Path.DirectorySeparatorChar || c == Path.AltDirectorySeparatorChar;

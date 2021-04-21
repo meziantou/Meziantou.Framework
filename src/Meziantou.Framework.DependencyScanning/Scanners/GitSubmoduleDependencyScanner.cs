@@ -1,9 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Locations;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     public sealed class GitSubmoduleDependencyScanner : DependencyScanner
     {
@@ -14,10 +15,16 @@ namespace Meziantou.Framework.DependencyScanning
 
         public override async ValueTask ScanAsync(ScanFileContext context)
         {
-            using var repository = new LibGit2Sharp.Repository(Path.GetDirectoryName(context.FullPath));
-            foreach (var module in repository.Submodules)
+            try
             {
-                await context.ReportDependency(new Dependency(module.Url, module.WorkDirCommitId.Sha, DependencyType.GitSubmodule, new NonUpdatableLocation(context.FullPath))).ConfigureAwait(false);
+                using var repository = new Repository(Path.GetDirectoryName(context.FullPath));
+                foreach (var module in repository.Submodules)
+                {
+                    await context.ReportDependency(new Dependency(module.Url, module.WorkDirCommitId.Sha, DependencyType.GitSubmodule, new NonUpdatableLocation(context.FullPath))).ConfigureAwait(false);
+                }
+            }
+            catch (LibGit2SharpException)
+            {
             }
         }
     }

@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Globbing
         }
 
         // Needed to be compatible with the foreach operator
-        public SplitEnumerator GetEnumerator() => this;
+        public readonly SplitEnumerator GetEnumerator() => this;
 
         public bool MoveNext()
         {

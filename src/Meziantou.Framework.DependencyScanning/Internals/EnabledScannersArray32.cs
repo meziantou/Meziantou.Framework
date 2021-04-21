@@ -9,10 +9,10 @@ namespace Meziantou.Framework.DependencyScanning.Internals
 
         private uint _value;
 
-        public bool IsEmpty => _value == 0;
+        public readonly bool IsEmpty => _value == 0;
 
         public void Set(int index) => _value |= 1u << index;
 
-        public bool Get(int index) => (_value & (1u << index)) != 0;
+        public readonly bool Get(int index) => (_value & (1u << index)) != 0;
     }
 }

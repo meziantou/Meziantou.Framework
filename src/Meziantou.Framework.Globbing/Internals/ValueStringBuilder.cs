@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Globbing
 
         public int Length
         {
-            get => _pos;
+            readonly get => _pos;
             set
             {
                 Debug.Assert(value >= 0);
@@ -74,7 +74,7 @@ namespace Meziantou.Framework.Globbing
             return RawChars.Slice(0, _pos);
         }
 
-        public ReadOnlySpan<char> AsSpan() => RawChars.Slice(0, _pos);
+        public readonly ReadOnlySpan<char> AsSpan() => RawChars.Slice(0, _pos);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(char c)

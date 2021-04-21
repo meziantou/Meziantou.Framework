@@ -10,7 +10,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
         private SortedList<int, int>? _values;
 
         [MemberNotNullWhen(returnValue: false, nameof(_values))]
-        public bool IsEmpty => _values is null;
+        public readonly bool IsEmpty => _values is null;
 
         public void Set(int index)
         {
@@ -22,7 +22,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals
             _values.Add(index, index);
         }
 
-        public bool Get(int index)
+        public readonly bool Get(int index)
         {
             if (_values is null)
                 return false;

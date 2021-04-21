@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning.Scanners
 {
     // https://docs.microsoft.com/en-us/nuget/reference/nuspec
     public sealed class NuSpecDependencyScanner : DependencyScanner

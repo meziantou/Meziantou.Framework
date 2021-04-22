@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;net5.0</TargetFrameworks>
     <Description>Convert object to an other type</Description>
-    <Version>3.0.0</Version>
+    <Version>3.0.1</Version>
     <DefineConstants>ReflectionUtilities_Internal;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 

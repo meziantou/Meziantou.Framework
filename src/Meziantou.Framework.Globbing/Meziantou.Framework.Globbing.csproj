@@ -4,7 +4,7 @@
     <TargetFrameworks>net6.0;net5.0;netcoreapp3.1;net472</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 

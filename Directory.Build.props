@@ -36,21 +36,26 @@
 
   <!-- Package configuration -->
   <PropertyGroup>
+    <_PackageReadmeFilePath Condition="Exists('$(MSBuildProjectDirectory)\readme.md')">$(MSBuildProjectDirectory)\readme.md</_PackageReadmeFilePath>
+    
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
     <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReadmeFile Condition="Exists('$(MSBuildProjectDirectory)\readme.md')">readme.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <!--<PackageReadmeFile Condition="$(_PackageReadmeFilePath) != ''">readme.md</PackageReadmeFile>-->
 
     <!-- https://github.com/NuGet/Home/wiki/Packaging-License-within-the-nupkg -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-  </PropertyGroup>
+  
+</PropertyGroup>
 
   <ItemGroup>  
-    <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="\" />
-    <None Include="$(MSBuildProjectDirectory)\readme.md" Pack="true" PackagePath="\" Condition="Exists('$(MSBuildProjectDirectory)\readme.md')" />
+    <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" />
+    <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
   <!-- SourceLink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->

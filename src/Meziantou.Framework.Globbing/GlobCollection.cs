@@ -50,8 +50,9 @@ namespace Meziantou.Framework.Globbing
         public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
         public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, ReadOnlySpan<char>.Empty);
         public bool IsPartialMatch(ref FileSystemEntry entry) => IsPartialMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
+        public bool IsPartialMatch(string folderPath, string filename) => IsPartialMatch(folderPath.AsSpan(), filename.AsSpan());
 
-        private bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
+        public bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
             foreach (var glob in _globs)
             {

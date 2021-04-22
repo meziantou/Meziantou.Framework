@@ -577,6 +577,57 @@ services:
             AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
         }
 
+        [Fact]
+        public async Task DotNetToolsDependencies()
+        {
+            const string Original = @"{
+  ""version"": 1,
+  ""isRoot"": true,
+  ""tools"": {
+    ""dotnet-validate"": {
+      ""version"": ""0.0.1-preview.130"",
+      ""commands"": [
+        ""dotnet-validate""
+      ]
+    },
+    ""dotnet-format"": {
+      ""version"": ""5.0.211103"",
+      ""commands"": [
+        ""dotnet-format""
+      ]
+    }
+  }
+}";
+
+            const string Expected = @"{
+  ""version"": 1,
+  ""isRoot"": true,
+  ""tools"": {
+    ""dotnet-validate"": {
+      ""version"": ""2.0.0"",
+      ""commands"": [
+        ""dotnet-validate""
+      ]
+    },
+    ""dotnet-format"": {
+      ""version"": ""2.0.0"",
+      ""commands"": [
+        ""dotnet-format""
+      ]
+    }
+  }
+}";
+
+            AddFile("dotnet-tools.json", Original);
+            var result = await GetDependencies(new DotNetToolManifestDependencyScanner());
+            AssertContainDependency(result,
+                (DependencyType.NuGet, "dotnet-validate", "0.0.1-preview.130", 5, 22),
+                (DependencyType.NuGet, "dotnet-format", "5.0.211103", 11, 20));
+
+            await UpdateDependencies(result, "2.0.0");
+            AssertFileContentEqual("dotnet-tools.json", Expected, ignoreNewLines: true);
+        }
+
         private async Task<List<Dependency>> GetDependencies(DependencyScanner scanner)
         {
             var dependencies = new List<Dependency>();

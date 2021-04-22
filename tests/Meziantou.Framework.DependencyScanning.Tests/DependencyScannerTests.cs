@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Threading.Tasks;
 using Meziantou.Framework.DependencyScanning.Scanners;
+using Meziantou.Framework.Globbing;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -88,7 +90,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(2)]
-        public async Task ReportScanException_IAsyncEnumerablt(int degreeOfParallelism)
+        public async Task ReportScanException_IAsyncEnumerable(int degreeOfParallelism)
         {
             await using var directory = TemporaryDirectory.Create();
             await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
@@ -120,6 +122,30 @@ namespace Meziantou.Framework.DependencyScanning.Tests
 
             Assert.NotEmpty(scanners);
             Assert.Equal(allScanners, scanners);
+        }
+
+        [Fact]
+        public async Task UsingGlobs()
+        {
+            await using var directory = TemporaryDirectory.Create();
+            var file1 = directory.CreateEmptyFile($"packages.json");
+            var file2 = directory.CreateEmptyFile($"node_modules/packages.json");
+
+            var globs = new GlobCollection(Glob.Parse("**/*", GlobOptions.None), Glob.Parse("!**/node_modules/**/*", GlobOptions.None));
+            var options = new ScannerOptions()
+            {
+                RecurseSubdirectories = true,
+                ShouldScanFilePredicate = (ref FileSystemEntry entry) => globs.IsMatch(ref entry),
+                ShouldRecursePredicate = (ref FileSystemEntry entry) => globs.IsPartialMatch(ref entry),
+                Scanners = new DependencyScanner[]
+                {
+                    new DummyScanner(),
+                },
+            };
+            var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options).ToListAsync();
+
+            Assert.Collection(result,
+                dep => Assert.Equal(file1, dep.Location.FilePath));
         }
 
         private sealed class DummyScanner : DependencyScanner
@@ -161,6 +187,5 @@ namespace Meziantou.Framework.DependencyScanning.Tests
 
             protected override bool ShouldScanFileCore(CandidateFileContext file) => throw new InvalidOperationException();
         }
-
     }
 }

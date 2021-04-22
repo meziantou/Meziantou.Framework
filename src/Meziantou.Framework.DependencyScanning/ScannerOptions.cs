@@ -10,14 +10,15 @@ namespace Meziantou.Framework.DependencyScanning
         {
             new DockerfileDependencyScanner(),
             new DotNetGlobalJsonDependencyScanner(),
+            new DotNetToolManifestDependencyScanner(),
+            new GitHubActionsScanner(),
             new GitSubmoduleDependencyScanner(),
+            new MsBuildReferencesDependencyScanner(),
             new NpmPackageJsonDependencyScanner(),
             new NuSpecDependencyScanner(),
-            new MsBuildReferencesDependencyScanner(),
             new PackagesConfigDependencyScanner(),
             new ProjectJsonDependencyScanner(),
             new PythonRequirementsDependencyScanner(),
-            new GitHubActionsScanner(),
         });
 
         internal static ScannerOptions Default { get; } = new ScannerOptions();

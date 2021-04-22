@@ -184,6 +184,16 @@ namespace Meziantou.Framework.Globbing
             return IsPartialMatchCore(new PathReader(GetRelativeDirectory(ref entry), entry.FileName), _segments);
         }
 
+        public bool IsPartialMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+        {
+            if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
+                throw new ArgumentException("Filename contains a directory separator", nameof(filename));
+
+            return IsPartialMatch(directory, filename);
+        }
+
+        public bool IsPartialMatch(string directory, string filename) => IsPartialMatch(directory.AsSpan(), filename.AsSpan());
+
         internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
         {
             return IsPartialMatchCore(new PathReader(folderPath, filename), _segments);

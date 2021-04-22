@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;net5.0;netstandard2.0</TargetFrameworks>
     <CompatibilityRange>true</CompatibilityRange>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

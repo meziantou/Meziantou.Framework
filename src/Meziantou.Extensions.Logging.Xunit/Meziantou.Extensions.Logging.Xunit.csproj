@@ -4,6 +4,7 @@
     <TargetFrameworks>net6.0;net5.0</TargetFrameworks>
     <Description>Microsoft.Extension.Logging.ILogger implementation for xunit</Description>
     <PackageTags>xunit, logger</PackageTags>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

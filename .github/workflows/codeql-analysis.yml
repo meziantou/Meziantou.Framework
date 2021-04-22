@@ -49,16 +49,8 @@ jobs:
         
     - name: Setup .NET Core (global.json)
       uses: actions/setup-dotnet@v1
-    - name: Setup .NET Core (5.0)
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '5.0.x'
-    - name: Setup .NET Core (3.1)
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '3.1.x'
-        
-    - run: dotnet build build.proj --configuration Release
+
+    - run: dotnet build eng/build.proj --configuration Release
       name: Build
 
     - name: Perform CodeQL Analysis

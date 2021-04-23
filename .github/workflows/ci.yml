@@ -34,6 +34,13 @@ jobs:
         dotnet tool restore
         dotnet format --check --verbosity:diagnostic Meziantou.Framework.sln
 
+  validate_readme:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Validate Readme
+      run: .\eng\update-readme.ps1
+
   create_nuget:
     runs-on: windows-2019
     steps:
@@ -115,7 +122,7 @@ jobs:
 
   deploy:
     runs-on: 'ubuntu-20.04'
-    needs: [ lint_csharp, create_nuget, build_and_test ]
+    needs: [ lint_csharp, validate_readme, create_nuget, build_and_test ]
     steps:
     - uses: actions/download-artifact@v2
       with:

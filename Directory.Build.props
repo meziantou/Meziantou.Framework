@@ -28,7 +28,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.658">
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.660">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>
@@ -51,9 +51,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="" />
-    <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" />
-    <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
+    <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
+    <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Visible="false" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
   <!-- SourceLink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->

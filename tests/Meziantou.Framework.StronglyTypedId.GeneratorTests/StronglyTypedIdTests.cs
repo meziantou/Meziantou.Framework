@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using Xunit;
 
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
@@ -99,6 +101,12 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         {
             IdClassInt32 value = IdClassInt32.FromInt32(42);
             Assert.False(value == null);
+        }
+
+        [Fact]
+        public void DisableSomeGenerator()
+        {
+            Assert.Null(typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
         }
 
         [StronglyTypedId(typeof(bool))]
@@ -214,6 +222,11 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 
         [StronglyTypedId(typeof(int))]
         private sealed partial record IdRecordInt32
+        {
+        }
+
+        [StronglyTypedId(typeof(int), generateSystemTextJsonConverter: false)]
+        private sealed partial record IdRecordInt32WithoutSystemTextJson
         {
         }
     }

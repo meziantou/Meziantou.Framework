@@ -7,14 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MongoDB.Bson" Version="2.12.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj"
-                      PrivateAssets="all"
-                      ReferenceOutputAssembly="false"
-                      OutputItemType="Analyzer" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>

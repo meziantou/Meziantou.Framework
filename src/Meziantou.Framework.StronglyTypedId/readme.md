@@ -13,6 +13,7 @@ public partial struct ProjectId { }
 [System.ComponentModel.TypeConverterAttribute(typeof(ProjectIdTypeConverter))]
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]
+[MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof(ProjectIdMongoDBBsonSerializer))]
 public partial struct ProjectId : System.IEquatable<ProjectId>
 {
     public int Value { get; }
@@ -55,6 +56,13 @@ public partial struct ProjectId : System.IEquatable<ProjectId>
         public override bool CanConvert(System.Type type);
         public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object? value, Newtonsoft.Json.JsonSerializer serializer);
         public override object ReadJson(Newtonsoft.Json.JsonReader reader, System.Type objectType, object? existingValue, Newtonsoft.Json.JsonSerializer serializer);
+    }
+
+    // Generated only when MongoDB.Bson.Serialization.Serializers.SerializerBase is accessible
+    private partial class ProjectIdMongoDBBsonSerializer : MongoDB.Bson.Serialization.Serializers.SerializerBase<Meziantou.Framework.StronglyTypedId.GeneratorTests.StronglyTypedIdTests.IdBoolean>
+    {
+        public override ProjectId Deserialize(MongoDB.Bson.Serialization.BsonDeserializationContext context, MongoDB.Bson.Serialization.BsonDeserializationArgs args);
+        public override void Serialize(MongoDB.Bson.Serialization.BsonSerializationContext context, MongoDB.Bson.Serialization.BsonSerializationArgs args, ProjectId value);
     }
 }
 ````

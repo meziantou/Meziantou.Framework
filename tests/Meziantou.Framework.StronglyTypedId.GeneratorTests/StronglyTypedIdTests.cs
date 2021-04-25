@@ -12,12 +12,15 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
     {
         public static TheoryData<Type, string, object> GetData()
         {
+            var now = DateTime.UtcNow;
+            now = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc); // MongoDB serializer truncates milliseconds. 
+
             return new TheoryData<Type, string, object>
             {
                 { typeof(IdBoolean), "FromBoolean", true },
                 { typeof(IdByte), "FromByte", (byte)42 },
-                { typeof(IdDateTime), "FromDateTime", DateTime.UtcNow },
-                { typeof(IdDateTimeOffset), "FromDateTimeOffset", DateTimeOffset.UtcNow },
+                { typeof(IdDateTime), "FromDateTime", now },
+                { typeof(IdDateTimeOffset), "FromDateTimeOffset", new DateTimeOffset(now, TimeSpan.Zero) },
                 { typeof(IdDecimal), "FromDecimal", 42m },
                 { typeof(IdDouble), "FromDouble", 42d },
                 { typeof(IdGuid), "FromGuid", Guid.NewGuid() },
@@ -33,8 +36,8 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 
                 { typeof(IdClassBoolean), "FromBoolean", true },
                 { typeof(IdClassByte), "FromByte", (byte)42 },
-                { typeof(IdClassDateTime), "FromDateTime", DateTime.UtcNow },
-                { typeof(IdClassDateTimeOffset), "FromDateTimeOffset", DateTimeOffset.UtcNow },
+                { typeof(IdClassDateTime), "FromDateTime", now },
+                { typeof(IdClassDateTimeOffset), "FromDateTimeOffset", new DateTimeOffset(now, TimeSpan.Zero) },
                 { typeof(IdClassDecimal), "FromDecimal", 42m },
                 { typeof(IdClassDouble), "FromDouble", 42d },
                 { typeof(IdClassGuid), "FromGuid", Guid.NewGuid() },
@@ -89,6 +92,14 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 var converted = converter.ConvertFrom(str);
 
                 Assert.Equal(instance, converted);
+            }
+
+            // BsonConverter
+            {
+                var json = BsonExtensionMethods.ToJson(instance, type);
+                var deserialized = BsonSerializer.Deserialize(json, type);
+
+                Assert.Equal(instance, deserialized);
             }
 
             var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());

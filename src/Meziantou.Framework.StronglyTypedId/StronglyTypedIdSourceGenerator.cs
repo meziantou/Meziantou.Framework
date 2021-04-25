@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using Meziantou.Framework.CodeDom;
@@ -43,7 +42,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     public StronglyTypedIdAttribute(System.Type idType,
                                     bool generateSystemTextJsonConverter = true,
                                     bool generateNewtonsoftJsonConverter = true,
-                                    bool generateSystemComponentModelTypeConverter = true)
+                                    bool generateSystemComponentModelTypeConverter = true,
+                                    bool generateMongoDBBsonSerialization = true)
     {
     }
 }
@@ -94,6 +94,11 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypedType);
                 }
 
+                if (stronglyTypedType.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
+                {
+                    GenerateMongoDBBsonSerializationConverter(structDeclaration, compilation, stronglyTypedType);
+                }
+
                 var result = codeUnit.ToCsharpString();
                 context.AddSource(stronglyTypedType.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
             }
@@ -134,7 +139,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     continue;
 
                 var arguments = attribute.ConstructorArguments;
-                if (arguments.Length != 4)
+                if (arguments.Length != 5)
                     continue;
 
                 var idTypeArgument = arguments[0];
@@ -145,9 +150,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 AddConverter(arguments[1], StronglyTypedIdConverters.System_Text_Json);
                 AddConverter(arguments[2], StronglyTypedIdConverters.Newtonsoft_Json);
                 AddConverter(arguments[3], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
+                AddConverter(arguments[4], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
                 void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
                 {
-                    if (arguments[1].Value is bool argumentValue && argumentValue)
+                    if (value.Value is bool argumentValue && argumentValue)
                     {
                         converters |= converterValue;
                     }
@@ -436,6 +442,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             System_Text_Json = 0x1,
             Newtonsoft_Json = 0x2,
             System_ComponentModel_TypeConverter = 0x4,
+            MongoDB_Bson_Serialization = 0x8,
         }
 
         private enum IdType

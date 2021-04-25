@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.StronglyTypedId
 {
-    partial class StronglyTypedIdSourceGenerator
+    public partial class StronglyTypedIdSourceGenerator
     {
         private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedType stronglyTypedStruct)
         {

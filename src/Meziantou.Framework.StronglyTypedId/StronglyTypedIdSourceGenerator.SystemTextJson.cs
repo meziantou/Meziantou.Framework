@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.StronglyTypedId
 {
-    partial class StronglyTypedIdSourceGenerator
+    public partial class StronglyTypedIdSourceGenerator
     {
         private static void GenerateSystemTextJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {

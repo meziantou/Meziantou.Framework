@@ -24,7 +24,7 @@ namespace Meziantou.Framework.Html.Tool
             var replaceValueCommand = new Command("replace-value")
             {
                 new Option<string>(
-                    "--file",
+                    "--single-file",
                     description: "Path of the file to update") { IsRequired = false },
 
                 new Option<string>(
@@ -41,19 +41,19 @@ namespace Meziantou.Framework.Html.Tool
             };
 
             replaceValueCommand.Description = "Replace element/attribute values in an html file";
-            replaceValueCommand.Handler = CommandHandler.Create((string? file, string? filePattern, string xpath, string newValue) => ReplaceValue(file, filePattern, xpath, newValue));
+            replaceValueCommand.Handler = CommandHandler.Create((string? singleFile, string? filePattern, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, xpath, newValue));
 
             rootCommand.AddCommand(replaceValueCommand);
         }
 
         private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string xpath, string newValue)
         {
-            if (filePath != null)
+            if (!string.IsNullOrEmpty(filePath))
             {
                 await UpdateFileAsync(filePath, xpath, newValue);
             }
 
-            if (globPattern != null)
+            if (!string.IsNullOrEmpty(globPattern))
             {
                 if (!Glob.TryParse(globPattern, GlobOptions.None, out var glob))
                 {
@@ -95,7 +95,7 @@ namespace Meziantou.Framework.Html.Tool
             var command = new Command("append-version")
             {
                 new Option<string>(
-                    "--file",
+                    "--single-file",
                     description: "Path of the file to update") { IsRequired = false },
 
                 new Option<string>(
@@ -104,14 +104,14 @@ namespace Meziantou.Framework.Html.Tool
             };
 
             command.Description = "Append version to style / script URLs";
-            command.Handler = CommandHandler.Create(async (string? file, string? filePattern) =>
+            command.Handler = CommandHandler.Create(async (string? singleFile, string? filePattern) =>
             {
-                if (file != null)
+                if (!string.IsNullOrEmpty(singleFile))
                 {
-                    await UpdateFileAsync(file).ConfigureAwait(false);
+                    await UpdateFileAsync(singleFile).ConfigureAwait(false);
                 }
 
-                if (filePattern != null)
+                if (!string.IsNullOrEmpty(filePattern))
                 {
                     if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                     {

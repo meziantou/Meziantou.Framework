@@ -6,7 +6,6 @@ using System.Text;
 
 namespace Meziantou.Framework
 {
-
 #if PUBLIC_STRING_EXTENSIONS
     public
 #else

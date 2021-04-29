@@ -6,6 +6,7 @@ namespace Meziantou.Framework
 {
     public static class NumberExtensions
     {
+#if NET5_0 || NET6_0
         [Pure]
         public static decimal MakeSameSignAs(this decimal number, decimal sign)
         {
@@ -35,6 +36,10 @@ namespace Meziantou.Framework
         {
             return Math.CopySign(number, sign);
         }
+#elif NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
 
         [Pure]
         public static string ToEnglishOrdinal(int num)
@@ -200,6 +205,7 @@ namespace Meziantou.Framework
             return number.ToString(CultureInfo.InvariantCulture);
         }
 
+#if NET5_0 || NET6_0
         [Pure]
         public static string ToStringInvariant(this Half number)
         {
@@ -214,6 +220,10 @@ namespace Meziantou.Framework
 
             return number.ToString(CultureInfo.InvariantCulture);
         }
+#elif NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
 
         [Pure]
         public static string ToStringInvariant(this float number)

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;net5.0;netstandard2.0</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>3.0.10</Version>
+    <Version>3.0.11</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES;PUBLIC_STRING_EXTENSIONS</DefineConstants>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
@@ -49,6 +49,7 @@
         <Compile Include="EnumerableExtensions.ParallelForEachAsync.cs" />
         <Compile Include="IOUtilities.cs" />
         <Compile Include="IOUtilities.Delete.cs" />
+        <Compile Include="NumberExtensions.cs" />
         <Compile Include="StringExtensions.cs" />
       </ItemGroup>
     </When>

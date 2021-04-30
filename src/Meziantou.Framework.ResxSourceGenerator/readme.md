@@ -1,4 +1,23 @@
-﻿# Source Generator usage
+﻿# Meziantou.Framework.ResxSourceGenerator
+
+Generate code to access the content of resx files. It does provides more methods than the generator provided by Visual Studio. For instance, it parses placeholders in text and provides method
+
+````xml
+<!-- Sample.resx -->
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="Hello" xml:space="preserve">
+    <value>Hello {0}!</value>
+  </data>
+</root>
+````
+
+````c#
+_ = Sample.Hello; // Hello {0}
+_ = Sample.FormatHello("meziantou"); // Hello meziantou
+````
+
+## How to configure the source generator
 
 ````xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -20,4 +39,3 @@
 
 </Project>
 ````
-

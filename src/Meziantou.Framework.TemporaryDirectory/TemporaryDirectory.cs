@@ -28,7 +28,12 @@ namespace Meziantou.Framework
 
         public static TemporaryDirectory Create()
         {
-            var (path, innerPath, lockFile) = CreateUniqueDirectory(FullPath.Combine(Path.GetTempPath(), "MezTD", DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture)));
+            return Create(FullPath.Combine(Path.GetTempPath(), "MezTD"));
+        }
+
+        public static TemporaryDirectory Create(FullPath rootDirectory)
+        {
+            var (path, innerPath, lockFile) = CreateUniqueDirectory(rootDirectory / DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture));
             return new TemporaryDirectory(path, innerPath, lockFile);
         }
 

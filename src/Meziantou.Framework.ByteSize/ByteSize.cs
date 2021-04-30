@@ -241,6 +241,11 @@ namespace Meziantou.Framework
             throw new FormatException($"The value '{text}' is not valid");
         }
 
+        public static bool TryParse(string text, out ByteSize result)
+        {
+            return TryParse(text, formatProvider: null, out result);
+        }
+
         public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
         {
             text = text.Trim();

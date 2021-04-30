@@ -70,6 +70,5 @@ namespace Meziantou.Framework
 
             return true;
         }
-
     }
 }

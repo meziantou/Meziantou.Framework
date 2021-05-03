@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFrameworks>net5.0</TargetFrameworks>
+    <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
+    <Version>1.0.0</Version>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="LogViewer.razor.css" CssScope="mez-logviewer" />
+  </ItemGroup>
+
+</Project>

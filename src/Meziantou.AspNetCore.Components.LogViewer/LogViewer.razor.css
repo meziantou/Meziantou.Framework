@@ -1,0 +1,113 @@
+﻿.log-viewer {
+    --color-background: #090c10;
+    --color-background-selected: rgba(56, 139, 253, 0.1);
+    --color-background-hover: rgb(22, 27, 34);
+    --color-linenumber: rgb(139, 148, 158);
+    --color-timestamp: rgb(139, 148, 158);
+    --color-log-trace: rgb(139, 148, 158);
+    --color-log-debug: rgb(139, 148, 158);
+    --color-log-information: white;
+    --color-log-warning: orange;
+    --color-log-error: red;
+    --color-log-critical: var(--color-log-error);
+    --color-log-match-background: dimgrey;
+    display: block;
+    width: 100%;
+    background: var(--color-background);
+    font-family: monospace;
+}
+
+.log-entry {
+    display: flex;
+    column-gap: 20px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+    .log-entry.selected {
+        background-color: var(--color-background-selected);
+    }
+
+    .log-entry:hover {
+        background-color: var(--color-background-hover);
+    }
+
+.log-linenumber {
+    color: var(--color-linenumber);
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: right;
+    user-select: none;
+    width: 48px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.log-entry.selected .log-linenumber {
+    text-decoration: underline;
+    color: rgb(88, 166, 255);
+}
+
+.log-timestamp {
+    color: var(--color-timestamp);
+    white-space: nowrap;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.log-toggle-details {
+    cursor: pointer;
+    user-select: none;
+    color: var(--color-log-information);
+    align-self: center;
+    font-size: smaller;
+    margin-right: 5px;
+    display: inline-block;
+}
+
+    .log-toggle-details.opened {
+        transform: rotate(90deg);
+    }
+
+.log-details {
+    color: var(--color-log-information);
+    padding-left: 68px;
+}
+
+.log-message {
+    overflow-wrap: anywhere;
+}
+
+.log-trace {
+    color: var(--color-log-trace);
+}
+
+.log-debug {
+    color: var(--color-log-debug);
+}
+
+.log-information {
+    color: var(--color-log-information);
+}
+
+.log-warning {
+    color: var(--color-log-warning);
+}
+
+.log-error {
+    color: var(--color-log-error);
+}
+
+.log-critical {
+    color: var(--color-log-critical);
+}
+
+.log-message-match {
+    background: var(--color-log-match-background);
+}
+
+.log-message-match-link {
+    color: inherit;
+    text-decoration: underline;
+}
+

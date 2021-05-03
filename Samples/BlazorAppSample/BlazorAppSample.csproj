@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.LogViewer\Meziantou.AspNetCore.Components.LogViewer.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.WebAssembly\Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components\Meziantou.AspNetCore.Components.csproj" />
   </ItemGroup>

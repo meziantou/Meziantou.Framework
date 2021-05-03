@@ -1,0 +1,118 @@
+﻿@if (Data != null)
+{
+	if (CanChangeDisplayFormat)
+	{
+		<div class="format-selector-group">
+		 <a class="format-selector @(Format == LogDetailsDisplayFormat.Table ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Table" @onclick:preventDefault="true">table</a> |
+		 <a class="format-selector @(Format == LogDetailsDisplayFormat.Json ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Json" @onclick:preventDefault="true">json</a>
+		</div>
+	}
+	if (Format == LogDetailsDisplayFormat.Json)
+	{
+		<pre>@FormatDataAsJson(Data)</pre>
+	}
+	else if (Format == LogDetailsDisplayFormat.Table)
+	{
+		<table>
+			@foreach (var (propertyName, propertyValue, isSimpleType) in GetValues(Data))
+			{
+			 <tr>
+			  <th>@propertyName:</th>
+			  <td>
+						@if (propertyValue == null)
+						{
+				   <i>null</i>
+						}
+						else if (isSimpleType)
+						{
+							@propertyValue
+						}
+						else
+						{
+				   <LogEntryDetails Data="propertyValue" Format="Format" CanChangeDisplayFormat="false" />
+						}
+			  </td>
+			 </tr>
+			}
+		</table>
+	}
+}
+
+@code{
+	private static System.Text.Json.JsonSerializerOptions s_options = new System.Text.Json.JsonSerializerOptions()
+	{
+		WriteIndented = true,
+		Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+	};
+
+	[Parameter]
+	public object? Data { get; set; }
+
+	[Parameter]
+	public LogDetailsDisplayFormat Format { get; set; }
+
+	[Parameter]
+	public bool CanChangeDisplayFormat { get; set; } = true;
+
+	private static IEnumerable<(string PropertyName, object? Value, bool IsSimpleType)> GetValues(object data)
+	{
+		if (data is System.Collections.IEnumerable enumerable)
+		{
+			var index = 0;
+			foreach (var item in enumerable)
+			{
+				yield return ($"[{index}]", item, IsSimpleType(item));
+				index++;
+			}
+		}
+		else
+		{
+			foreach (var prop in data.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.FlattenHierarchy))
+			{
+				if (prop.GetMethod == null)
+					continue;
+
+				var value = prop.GetValue(data);
+				yield return (prop.Name, value, IsSimpleType(value));
+			}
+		}
+
+		static bool IsSimpleType(object? data)
+		{
+			if (data == null)
+				return true;
+
+			var type = data.GetType();
+			return
+				type == typeof(char) ||
+				type == typeof(string) ||
+				type == typeof(bool) ||
+				type == typeof(byte) ||
+				type == typeof(sbyte) ||
+				type == typeof(short) ||
+				type == typeof(ushort) ||
+				type == typeof(int) ||
+				type == typeof(uint) ||
+				type == typeof(long) ||
+				type == typeof(ulong) ||
+				type == typeof(Half) ||
+				type == typeof(float) ||
+				type == typeof(double) ||
+				type == typeof(decimal) ||
+				type == typeof(Guid) ||
+				type == typeof(TimeSpan) ||
+				type == typeof(DateTime) ||
+				type == typeof(DateTimeOffset) ||
+				type == typeof(Uri) ||
+				type == typeof(TimeZoneInfo) ||
+				type == typeof(Type) ||
+				type == typeof(Version) ||
+				type.IsEnum;
+		}
+	}
+
+	private static string FormatDataAsJson(object data)
+	{
+		return System.Text.Json.JsonSerializer.Serialize(data, data.GetType(), s_options);
+	}
+}

@@ -6,6 +6,7 @@
 | Name | Version |
 | :--- | :---: |
 | Meziantou.AspNetCore.Components | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components/) |
+| Meziantou.AspNetCore.Components.LogViewer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.LogViewer.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.LogViewer/) |
 | Meziantou.AspNetCore.Components.WebAssembly | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.WebAssembly.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.WebAssembly/) |
 | Meziantou.AspNetCore.Mvc | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Mvc.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Mvc/) |
 | Meziantou.Extensions.Logging.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Extensions.Logging.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Extensions.Logging.Xunit/) |

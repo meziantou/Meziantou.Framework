@@ -1,0 +1,23 @@
+﻿.format-selector-group {
+    color: var(--color-log-debug);
+    font-size: smaller;
+}
+
+.format-selector {
+    color: var(--color-log-debug);
+    text-decoration: none;
+}
+
+    .format-selector.selected, .format-selector:hover {
+        text-decoration: underline;
+    }
+
+pre {
+    color: var(--color-log-information);
+    margin: 0;
+}
+
+th {
+    padding-right: 15px;
+    vertical-align: top;
+}

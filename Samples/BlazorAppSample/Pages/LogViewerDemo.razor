@@ -22,7 +22,16 @@
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test", LogLevel = LogLevel.Error },
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test", LogLevel = LogLevel.Critical },
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test test    test test test\n\ttest test test test test test test", LogLevel = LogLevel.Information },
-	new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test data", LogLevel = LogLevel.Information, Data = new { Null = (object)null, A = "test", B = 10, C = new object[]{ 1, "test", 'c', new[] { 123 } } } },
+		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test data", LogLevel = LogLevel.Information,
+			Data = new
+			{
+				Null = (object)null,
+				A = "test",
+				B = 10,
+				C = new object[] { 1, "test", 'c', new[] { 123 } },
+				D = new Dictionary<string, object> { { "Key1", "value1" }, { "Key2", "value2" } },
+			}
+		},
 		new LogEntry{ Timestamp = DateTime.UtcNow, Message = "test http://example.com 'value' \"value\" test", LogLevel = LogLevel.Information },
 	};
 

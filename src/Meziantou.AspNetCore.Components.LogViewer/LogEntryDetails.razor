@@ -3,8 +3,8 @@
 	if (CanChangeDisplayFormat)
 	{
 		<div class="format-selector-group">
-		 <a class="format-selector @(Format == LogDetailsDisplayFormat.Table ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Table" @onclick:preventDefault="true">table</a> |
-		 <a class="format-selector @(Format == LogDetailsDisplayFormat.Json ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Json" @onclick:preventDefault="true">json</a>
+			<a class="format-selector @(Format == LogDetailsDisplayFormat.Table ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Table" @onclick:preventDefault="true">table</a> |
+			<a class="format-selector @(Format == LogDetailsDisplayFormat.Json ? "selected" : "")" href="#" @onclick="() => Format = LogDetailsDisplayFormat.Json" @onclick:preventDefault="true">json</a>
 		</div>
 	}
 	if (Format == LogDetailsDisplayFormat.Json)
@@ -16,12 +16,12 @@
 		<table>
 			@foreach (var (propertyName, propertyValue, isSimpleType) in GetValues(Data))
 			{
-			 <tr>
-			  <th>@propertyName:</th>
-			  <td>
+				<tr>
+					<th>@propertyName:</th>
+					<td>
 						@if (propertyValue == null)
 						{
-				   <i>null</i>
+							<i>null</i>
 						}
 						else if (isSimpleType)
 						{
@@ -29,10 +29,10 @@
 						}
 						else
 						{
-				   <LogEntryDetails Data="propertyValue" Format="Format" CanChangeDisplayFormat="false" />
+							<LogEntryDetails Data="propertyValue" Format="Format" CanChangeDisplayFormat="false" />
 						}
-			  </td>
-			 </tr>
+					</td>
+				</tr>
 			}
 		</table>
 	}
@@ -56,7 +56,14 @@
 
 	private static IEnumerable<(string PropertyName, object? Value, bool IsSimpleType)> GetValues(object data)
 	{
-		if (data is System.Collections.IEnumerable enumerable)
+		if (data is System.Collections.Generic.IEnumerable<KeyValuePair<string, object>> dict)
+		{
+			foreach (var item in dict)
+			{
+				yield return (item.Key, item.Value, IsSimpleType(item.Value));
+			}
+		}
+		else if (data is System.Collections.IEnumerable enumerable)
 		{
 			var index = 0;
 			foreach (var item in enumerable)

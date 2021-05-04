@@ -4,31 +4,31 @@
 	<div class="log-viewer">
 		@foreach (var (entry, index) in Entries.WithIndex())
 		{
-		 <div class="log-entry @(IsSelected(entry) ? "selected" : "")">
+			<div class="log-entry @(IsSelected(entry) ? "selected" : "")">
 				@if (ShowLineNumbers)
 				{
-			  <a class="log-linenumber" @onclick="(e) => SelectLine(entry, e.CtrlKey)" @onclick:preventDefault="true">@(index + 1)</a>
+					<a class="log-linenumber" @onclick="(e) => SelectLine(entry, e.CtrlKey)" @onclick:preventDefault="true">@(index + 1)</a>
 				}
 
 				@if (ShowTimestamps)
 				{
-			  <span class="log-timestamp">@entry.Timestamp.ToString("R")</span>
+					<span class="log-timestamp">@entry.Timestamp.ToString("R")</span>
 				}
 
-		  <span>
+				<span>
 					@if (entry.Data != null)
 					{
-			   <span class="log-toggle-details @(IsOpened(entry) ? "opened" : "")" @onclick="() => ToggleDetails(entry)">▶</span>
+						<span class="log-toggle-details @(IsOpened(entry) ? "opened" : "")" @onclick="() => ToggleDetails(entry)">▶</span>
 					}
 
-		   <span class="log-message log-@GetLogLevelClassName(entry.LogLevel)">@LogHighlighter.Highlight(entry.Message, LogHighlighters, "mez-logviewer")</span>
-		  </span>
-		 </div>
+					<span class="log-message log-@GetLogLevelClassName(entry.LogLevel)">@LogHighlighter.Highlight(entry.Message, LogHighlighters, "mez-logviewer")</span>
+				</span>
+			</div>
 			@if (IsOpened(entry))
 			{
-			 <div class="log-details">
-			  <LogEntryDetails Data="entry.Data" />
-			 </div>
+				<div class="log-details">
+					<LogEntryDetails Data="entry.Data" />
+				</div>
 			}
 		}
 	</div>

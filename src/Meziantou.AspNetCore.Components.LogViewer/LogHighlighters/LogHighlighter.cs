@@ -59,14 +59,23 @@ namespace Meziantou.AspNetCore.Components
                         {
                             sb.Append("<a " + attributeName + " class='log-message-match-link' target='_blank' href='");
                             sb.Append(HtmlEncoder.Default.Encode(match.Link));
-                            sb.Append("'>");
+                            sb.Append('\'');
                         }
                         else
                         {
-                            sb.Append("<span " + attributeName + " class='log-message-match'>");
+                            sb.Append("<span " + attributeName + " class='log-message-match'");
                         }
 
-                        sb.Append(HtmlEncoder.Default.Encode(matchedText));
+                        if (match.Title != null)
+                        {
+                            sb.Append(" title='")
+                              .Append(HtmlEncoder.Default.Encode(match.Title))
+                              .Append('\'');
+                        }
+
+                        sb.Append('>');
+
+                        sb.Append(HtmlEncoder.Default.Encode(match.ReplacementText ?? matchedText));
 
                         if (match.Link != null)
                         {

@@ -346,15 +346,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             return str;
         }
 
-        private static bool IsPartial(StructDeclarationSyntax syntax)
+        private static Modifiers GetPrivateOrProtectedModifier(StronglyTypedType type)
         {
-            foreach (var modifier in syntax.Modifiers)
-            {
-                if (modifier.IsKind(SyntaxKind.PartialKeyword))
-                    return true;
-            }
+            if (type.IsReferenceType && !type.IsSealed)
+                return Modifiers.Protected;
 
-            return false;
+            return Modifiers.Private;
         }
 
         private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
@@ -363,6 +360,20 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
             public bool IsStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.StructDeclaration);
             public bool IsReferenceType => IsClass || IsRecord;
+
+            public bool IsSealed
+            {
+                get
+                {
+                    foreach (var modifier in TypeDeclarationSyntax.Modifiers)
+                    {
+                        if (modifier.IsKind(SyntaxKind.SealedKeyword))
+                            return true;
+                    }
+
+                    return false;
+                }
+            }
 
             public bool IsCtorDefined()
             {

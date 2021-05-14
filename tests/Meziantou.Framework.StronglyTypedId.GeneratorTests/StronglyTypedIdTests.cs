@@ -257,5 +257,17 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         private sealed partial record IdInt32WithoutCodeGeneratedAttribute
         {
         }
+
+        [StronglyTypedId(typeof(int))]
+        private partial class IdInt32Base
+        {
+        }
+
+        private partial class IdInt32Derived : IdInt32Base
+        {
+            public IdInt32Derived() : base(0)
+            {
+            }
+        }
     }
 }

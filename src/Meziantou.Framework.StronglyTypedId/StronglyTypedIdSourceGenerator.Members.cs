@@ -59,7 +59,7 @@ namespace Meziantou.Framework.StronglyTypedId
             // ctor
             if (!stronglyTypedStruct.IsCtorDefined())
             {
-                var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = Modifiers.Private });
+                var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = GetPrivateOrProtectedModifier(stronglyTypedStruct) });
                 var constructorArg = constructor.Arguments.Add(typeReference, "value");
                 constructor.Statements = new StatementCollection { new AssignStatement(new MemberReferenceExpression(new ThisExpression(), FieldName), constructorArg) };
             }

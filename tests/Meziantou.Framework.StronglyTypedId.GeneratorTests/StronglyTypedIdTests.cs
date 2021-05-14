@@ -120,6 +120,13 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
             Assert.Null(typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
         }
 
+        [Fact]
+        public void CodeGeneratedAttribute()
+        {
+            Assert.NotNull(typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+            Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+        }
+
         [StronglyTypedId(typeof(bool))]
         private partial struct IdBoolean { }
 
@@ -238,6 +245,16 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 
         [StronglyTypedId(typeof(int), generateSystemTextJsonConverter: false)]
         private sealed partial record IdRecordInt32WithoutSystemTextJson
+        {
+        }
+
+        [StronglyTypedId(typeof(int), addCodeGeneratedAttribute: true)]
+        private sealed partial record IdInt32WithCodeGeneratedAttribute
+        {
+        }
+
+        [StronglyTypedId(typeof(int), addCodeGeneratedAttribute: false)]
+        private sealed partial record IdInt32WithoutCodeGeneratedAttribute
         {
         }
     }

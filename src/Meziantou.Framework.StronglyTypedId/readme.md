@@ -67,6 +67,21 @@ public partial struct ProjectId : System.IEquatable<ProjectId>
 }
 ````
 
+# Configuration
+
+You can configure the code generation using the `[StronglyTypedIdAttribute]` attribute:
+
+````c#
+[StronglyTypedId(idType: typeof(long),
+                 generateSystemTextJsonConverter: true,
+                 generateNewtonsoftJsonConverter: true,
+                 generateSystemComponentModelTypeConverter: true,
+                 generateMongoDBBsonSerialization: true,
+                 addCodeGeneratedAttribute: true
+                 )]
+public partial struct ProjectId { }
+````
+
 # Additional resources
 
 - [Strongly-typed Ids using C# Source Generators](https://www.meziantou.net/strongly-typed-ids-with-csharp-source-generators.htm)

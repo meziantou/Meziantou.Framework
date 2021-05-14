@@ -39,11 +39,21 @@ namespace Meziantou.Framework.StronglyTypedId
 [System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
 internal sealed class StronglyTypedIdAttribute : System.Attribute
 {
+    /// <summary>
+    /// Indicate the type is a strongly-typed id
+    /// </summary>
+    /// <param name=""idType"">Type of the generated Value</param>
+    /// <param name=""generateSystemTextJsonConverter"">Specify if the <see cref=""System.Text.Json.Serialization.JsonConverter""/> should be generated</param>
+    /// <param name=""generateNewtonsoftJsonConverter"">Specify if the <see cref=""Newtonsoft.Json.JsonConverter""/> should be generated</param>
+    /// <param name=""generateSystemComponentModelTypeConverter"">Specify if the <see cref=""System.ComponentModel.TypeConverter""/> should be generated</param>
+    /// <param name=""generateMongoDBBsonSerialization"">Specify if the <see cref=""MongoDB.Bson.Serialization.Serializers.SerializerBase{T}""/> should be generated</param>
+    /// <param name=""addCodeGeneratedAttribute"">Add <see cref=""System.CodeDom.Compiler.GeneratedCodeAttribute""/> to the generated members</param>
     public StronglyTypedIdAttribute(System.Type idType,
                                     bool generateSystemTextJsonConverter = true,
                                     bool generateNewtonsoftJsonConverter = true,
                                     bool generateSystemComponentModelTypeConverter = true,
-                                    bool generateMongoDBBsonSerialization = true)
+                                    bool generateMongoDBBsonSerialization = true,
+                                    bool addCodeGeneratedAttribute = true)
     {
     }
 }
@@ -99,6 +109,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     GenerateMongoDBBsonSerializationConverter(structDeclaration, compilation, stronglyTypedType);
                 }
 
+                if (stronglyTypedType.AttributeInfo.AddCodeGeneratedAttribute)
+                {
+                    var visitor = new AddCodeGeneratedAttributeVisitor();
+                    visitor.Visit(codeUnit);
+                }
+
                 var result = codeUnit.ToCsharpString();
                 context.AddSource(stronglyTypedType.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
             }
@@ -139,7 +155,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     continue;
 
                 var arguments = attribute.ConstructorArguments;
-                if (arguments.Length != 5)
+                if (arguments.Length != 6)
                     continue;
 
                 var idTypeArgument = arguments[0];
@@ -159,9 +175,15 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     }
                 }
 
+                var addCodeGeneratedAttribute = false;
+                if (arguments[5].Value is bool addCodeGeneratedAttributeValue)
+                {
+                    addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
+                }
+
                 var idType = GetIdType(semanticModel.Compilation, type);
                 if (idType != null)
-                    return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters);
+                    return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
 
                 context.ReportDiagnostic(Diagnostic.Create(s_unsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), idTypeArgument.Type));
             }
@@ -412,7 +434,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters);
+        private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
 
         private sealed class Receiver : ISyntaxReceiver
         {

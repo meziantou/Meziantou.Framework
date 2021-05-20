@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Tests
 
 
         [Fact]
-        public async Task TestSingleInstance()
+        public void TestSingleInstance()
         {
             var applicationId = Guid.NewGuid();
             using var singleInstance = new SingleInstance(applicationId)
@@ -63,11 +63,16 @@ namespace Meziantou.Framework.Tests
             Assert.True(singleInstance.StartApplication());
 
             // Need to run on another thread because the lock is re-entrant
-            await Task.Run(() =>
+            var isStarted = false;
+            var t = new Thread(() =>
             {
                 using var singleInstance2 = new SingleInstance(applicationId);
-                Assert.False(singleInstance2.StartApplication());
+                isStarted = singleInstance2.StartApplication();
             });
+            t.Start();
+            t.Join();
+
+            Assert.False(Volatile.Read(ref isStarted), "Second instance should not be able to start");
         }
     }
 }

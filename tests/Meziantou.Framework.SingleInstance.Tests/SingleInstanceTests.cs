@@ -49,7 +49,6 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-
         [Fact]
         public void TestSingleInstance()
         {

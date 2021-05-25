@@ -144,7 +144,7 @@ namespace Meziantou.Framework.Tests
             var list = new List<string?>() { "a", "b" };
 
             // Act
-            var max = list.MaxBy(i => i, Comparer<string>.Default);
+            var max = list.MaxBy(i => i, Comparer<string?>.Default);
 
             // Assert
             Assert.Equal("b", max);

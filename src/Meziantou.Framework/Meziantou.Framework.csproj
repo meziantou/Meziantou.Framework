@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;net5.0;netstandard2.0</TargetFrameworks>
     <Description>Lots of utility classes</Description>
-    <Version>3.0.12</Version>
+    <Version>3.0.13</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES;PUBLIC_STRING_EXTENSIONS</DefineConstants>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
@@ -45,8 +45,7 @@
       <ItemGroup>
         <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
 
-        <Compile Include="EnumerableExtensions.cs" />
-        <Compile Include="EnumerableExtensions.ParallelForEachAsync.cs" />
+        <Compile Include="EnumerableExtensions*.cs" />
         <Compile Include="IOUtilities.cs" />
         <Compile Include="IOUtilities.Delete.cs" />
         <Compile Include="NumberExtensions.cs" />

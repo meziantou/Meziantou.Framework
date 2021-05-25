@@ -108,5 +108,30 @@ namespace Meziantou.Framework
         {
             return dt.ToString(format, CultureInfo.InvariantCulture);
         }
+
+#if NET6_0
+        public static string ToStringInvariant(this DateOnly date)
+        {
+            return date.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant(this DateOnly date, string format)
+        {
+            return date.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant(this TimeOnly time)
+        {
+            return time.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringInvariant(this TimeOnly time, string format)
+        {
+            return time.ToString(format, CultureInfo.InvariantCulture);
+        }
+#elif NET5_0 || NETSTANDARD2_0
+#else
+#error Platform not supported
+#endif
     }
 }

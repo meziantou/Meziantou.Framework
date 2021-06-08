@@ -45,12 +45,18 @@ namespace Meziantou.Framework.Win32
             if (!string.IsNullOrEmpty(InitialDirectory))
             {
                 var result = NativeMethods.SHCreateItemFromParsingName(InitialDirectory, IntPtr.Zero, typeof(IShellItem).GUID, out var item);
-                if (result != NativeMethods.S_OK)
-                    throw new Win32Exception(result);
-
-                if (item != null)
+                switch (result)
                 {
-                    dialog.SetFolder(item);
+                    case NativeMethods.S_OK:
+                        if (item != null)
+                        {
+                            dialog.SetFolder(item);
+                        }
+                        break;
+                    case NativeMethods.FILE_NOT_FOUND:
+                        break;
+                    default:
+                        throw new Win32Exception(result);
                 }
             }
 

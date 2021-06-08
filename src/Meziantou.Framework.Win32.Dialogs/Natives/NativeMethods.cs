@@ -8,6 +8,7 @@ namespace Meziantou.Framework.Win32.Natives
 #pragma warning disable IDE1006 // Naming Styles
         internal const int S_OK = 0x00000000;
         internal const int ERROR_CANCELLED = unchecked((int)0x800704C7);
+        internal const int FILE_NOT_FOUND = unchecked((int)0x80070002);
 #pragma warning restore IDE1006 // Naming Styles
 
         [DllImport("user32")]

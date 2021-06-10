@@ -445,6 +445,16 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
+        private static bool IsTypeDefined(Compilation compilation, string typeMetadataName)
+        {
+            return compilation.References
+                .Select(compilation.GetAssemblyOrModuleSymbol)
+                .OfType<IAssemblySymbol>()
+                .Select(assemblySymbol => assemblySymbol.GetTypeByMetadataName(typeMetadataName))
+                .WhereNotNull()
+                .Any(symbol => symbol.CanBeReferencedByName);
+        }
+
         private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
 
         private sealed class Receiver : ISyntaxReceiver

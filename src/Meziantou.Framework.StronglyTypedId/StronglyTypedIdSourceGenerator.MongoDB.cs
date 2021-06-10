@@ -7,8 +7,7 @@ namespace Meziantou.Framework.StronglyTypedId
     {
         private static void GenerateMongoDBBsonSerializationConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {
-            var type = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1");
-            if (type == null)
+            if (IsTypeDefined(compilation, "MongoDB.Bson.Serialization.Serializers.SerializerBase`1"))
                 return;
 
             var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "MongoDBBsonSerializer") { Modifiers = Modifiers.Private | Modifiers.Partial });
@@ -34,7 +33,7 @@ namespace Meziantou.Framework.StronglyTypedId
             {
                 var serialize = converter.AddMember(new MethodDeclaration("Serialize") { Modifiers = Modifiers.Public | Modifiers.Override });
                 var context = serialize.AddArgument("context", new TypeReference("MongoDB.Bson.Serialization.BsonSerializationContext"));
-                var args = serialize.AddArgument("args", new TypeReference("MongoDB.Bson.Serialization.BsonSerializationArgs"));
+                _ = serialize.AddArgument("args", new TypeReference("MongoDB.Bson.Serialization.BsonSerializationArgs"));
                 var value = serialize.AddArgument("value", new TypeReference(structDeclaration));
 
                 serialize.Statements = new StatementCollection();

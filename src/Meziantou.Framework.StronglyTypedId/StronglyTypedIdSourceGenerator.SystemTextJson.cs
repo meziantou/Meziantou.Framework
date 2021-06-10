@@ -8,7 +8,7 @@ namespace Meziantou.Framework.StronglyTypedId
     {
         private static void GenerateSystemTextJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {
-            if (IsTypeDefined(compilation, "System.Text.Json.Serialization.JsonConverter`1"))
+            if (!IsTypeDefined(compilation, "System.Text.Json.Serialization.JsonConverter`1"))
                 return;
 
             var idType = stronglyTypedType.AttributeInfo.IdType;

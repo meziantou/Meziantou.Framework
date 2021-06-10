@@ -452,7 +452,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 .OfType<IAssemblySymbol>()
                 .Select(assemblySymbol => assemblySymbol.GetTypeByMetadataName(typeMetadataName))
                 .WhereNotNull()
-                .Any(symbol => symbol.CanBeReferencedByName);
+                .Any();
         }
 
         private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);

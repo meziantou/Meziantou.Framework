@@ -9,7 +9,7 @@ namespace Meziantou.Framework.StronglyTypedId
     {
         private static void GenerateTypeConverter(ClassOrStructDeclaration typeDeclaration, Compilation compilation, IdType idType)
         {
-            if (IsTypeDefined(compilation, "System.ComponentModel.TypeConverter"))
+            if (!IsTypeDefined(compilation, "System.ComponentModel.TypeConverter"))
                 return;
 
             var converter = typeDeclaration.AddType(new ClassDeclaration(typeDeclaration.Name + "TypeConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });

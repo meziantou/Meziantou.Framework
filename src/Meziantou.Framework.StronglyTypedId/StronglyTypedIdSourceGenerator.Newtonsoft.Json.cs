@@ -8,7 +8,7 @@ namespace Meziantou.Framework.StronglyTypedId
     {
         private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
         {
-            if (IsTypeDefined(compilation, "Newtonsoft.Json.JsonConverter"))
+            if (!IsTypeDefined(compilation, "Newtonsoft.Json.JsonConverter"))
                 return;
 
             var typeReference = new TypeReference(structDeclaration);

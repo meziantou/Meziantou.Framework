@@ -1,6 +1,6 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 using Xunit.Abstractions;
-using FluentAssertions;
 
 namespace TestUtilities
 {

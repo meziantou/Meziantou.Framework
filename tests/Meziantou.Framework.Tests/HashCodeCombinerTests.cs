@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS0618 // Type or member is obsolete
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

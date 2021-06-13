@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

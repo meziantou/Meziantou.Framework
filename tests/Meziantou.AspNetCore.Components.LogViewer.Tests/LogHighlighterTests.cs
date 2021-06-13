@@ -1,5 +1,5 @@
-﻿using Xunit;
-using FluentAssertions;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.AspNetCore.Components.LogViewer.Tests
 {

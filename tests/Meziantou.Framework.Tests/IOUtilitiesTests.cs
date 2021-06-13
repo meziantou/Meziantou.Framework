@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace Meziantou.Framework.Tests

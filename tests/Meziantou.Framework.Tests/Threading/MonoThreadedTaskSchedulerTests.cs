@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Meziantou.Framework.Threading;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Tests.Threading
 {

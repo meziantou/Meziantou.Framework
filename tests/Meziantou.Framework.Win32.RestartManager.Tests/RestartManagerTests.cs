@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
-using TestUtilities;
 using FluentAssertions;
+using TestUtilities;
 
 namespace Meziantou.Framework.Win32.Tests
 {

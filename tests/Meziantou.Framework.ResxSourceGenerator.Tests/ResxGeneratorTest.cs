@@ -6,12 +6,12 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Xml.Linq;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests
 {

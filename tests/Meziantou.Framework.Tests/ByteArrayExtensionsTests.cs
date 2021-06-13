@@ -1,6 +1,6 @@
 ﻿using System;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

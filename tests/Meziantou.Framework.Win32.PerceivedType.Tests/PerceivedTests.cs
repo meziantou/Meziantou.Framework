@@ -1,5 +1,5 @@
-﻿using TestUtilities;
-using FluentAssertions;
+﻿using FluentAssertions;
+using TestUtilities;
 
 namespace Meziantou.Framework.Win32.Tests
 {

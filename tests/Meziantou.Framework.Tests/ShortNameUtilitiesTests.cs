@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
 using System.Diagnostics.CodeAnalysis;
+using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

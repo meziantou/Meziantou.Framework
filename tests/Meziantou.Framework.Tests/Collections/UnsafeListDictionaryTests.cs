@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Tests.Collections
 {

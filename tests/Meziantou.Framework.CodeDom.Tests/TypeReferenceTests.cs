@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {

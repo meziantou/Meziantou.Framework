@@ -1,7 +1,7 @@
-﻿using Meziantou.Framework.Globbing.Internals;
+﻿using FluentAssertions;
+using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Globbing.Tests
 {

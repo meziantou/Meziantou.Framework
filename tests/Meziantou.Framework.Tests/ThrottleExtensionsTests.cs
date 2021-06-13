@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

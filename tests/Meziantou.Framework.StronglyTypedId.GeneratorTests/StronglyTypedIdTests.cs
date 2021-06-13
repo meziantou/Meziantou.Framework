@@ -2,10 +2,10 @@
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
 {

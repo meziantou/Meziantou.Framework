@@ -1,7 +1,7 @@
 ﻿using System.Text;
+using FluentAssertions;
 using TestUtilities;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.AmsiTests
 {

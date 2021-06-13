@@ -2,8 +2,8 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Xunit;
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {

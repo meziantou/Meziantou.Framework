@@ -1,6 +1,6 @@
-﻿using TestUtilities;
+﻿using FluentAssertions;
+using TestUtilities;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Lsa.Tests
 {

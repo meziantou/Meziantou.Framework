@@ -5,10 +5,10 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.StronglyTypedId.Tests
 {

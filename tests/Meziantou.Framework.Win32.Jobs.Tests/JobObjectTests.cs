@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using FluentAssertions;
 using TestUtilities;
 using Xunit;
-using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests
 {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Tests
 
             var applicationId = Guid.NewGuid();
             using var singleInstance = new SingleInstance(applicationId);
-            Assert.True(singleInstance.StartApplication(), "Cannot start the instance");
+            singleInstance.StartApplication().Should().BeTrue("it should start the instance");
 
             // Be sure the server is ready
             await Task.Delay(50);
@@ -25,23 +26,23 @@ namespace Meziantou.Framework.Tests
             var events = new List<SingleInstanceEventArgs>();
             singleInstance.NewInstance += SingleInstance_NewInstance;
 
-            Assert.True(singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }), "Cannot notify first instance 1");
+            singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }).Should().BeTrue("it should notify first instance (1)");
             await Task.Delay(50);
-            Assert.True(singleInstance.NotifyFirstInstance(new[] { "123" }), "Cannot notify first instance 2");
+            singleInstance.NotifyFirstInstance(new[] { "123" }).Should().BeTrue("it should notify the first instance (2)");
 
             while (!cts.Token.IsCancellationRequested && events.Count < 2)
             {
                 await Task.Delay(50);
             }
 
-            Assert.Equal(2, events.Count);
+            events.Should().HaveCount(2);
             var orderedEvents = events.OrderBy(args => args.Arguments.Length).ToList();
-            Assert.Equal(new[] { "123" }, orderedEvents[0].Arguments);
-            Assert.Equal(new[] { "a", "b", "c" }, orderedEvents[1].Arguments);
+            orderedEvents[0].Arguments.Should().Equal(new[] { "123" });
+            orderedEvents[1].Arguments.Should().Equal(new[] { "a", "b", "c" });
 
             void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
             {
-                Assert.Equal(singleInstance, sender);
+                sender.Should().Be(singleInstance);
                 lock (events)
                 {
                     events.Add(e);
@@ -58,8 +59,8 @@ namespace Meziantou.Framework.Tests
                 StartServer = false,
             };
 
-            Assert.True(singleInstance.StartApplication());
-            Assert.True(singleInstance.StartApplication());
+            singleInstance.StartApplication().Should().BeTrue();
+            singleInstance.StartApplication().Should().BeTrue();
 
             // Need to run on another thread because the lock is re-entrant
             var isStarted = false;
@@ -71,7 +72,7 @@ namespace Meziantou.Framework.Tests
             t.Start();
             t.Join();
 
-            Assert.False(Volatile.Read(ref isStarted), "Second instance should not be able to start");
+            Volatile.Read(ref isStarted).Should().BeFalse("the second instance should not be able to start");
         }
     }
 }

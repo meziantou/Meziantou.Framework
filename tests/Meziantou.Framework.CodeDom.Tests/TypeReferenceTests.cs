@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
@@ -21,15 +22,15 @@ namespace Meziantou.Framework.CodeDom.Tests
             var typeReference = new TypeReference(type);
 
             // Assert
-            Assert.Equal(expectedClrFullTypeName, typeReference.ClrFullTypeName);
+            typeReference.ClrFullTypeName.Should().Be(expectedClrFullTypeName);
 
             if (type.IsArray)
             {
-                Assert.Equal(type.GetArrayRank(), typeReference.ArrayRank);
+                typeReference.ArrayRank.Should().Be(type.GetArrayRank());
             }
             else
             {
-                Assert.Equal(0, typeReference.ArrayRank);
+                typeReference.ArrayRank.Should().Be(0);
             }
         }
 
@@ -40,8 +41,8 @@ namespace Meziantou.Framework.CodeDom.Tests
             var typeReference = new TypeReference(typeof(Nullable<>)).MakeGeneric(typeof(int));
 
             // Assert
-            Assert.Equal("System.Nullable<System.Int32>", typeReference.ClrFullTypeName);
-            Assert.Equal(new[] { typeof(int).FullName }, typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList());
+            typeReference.ClrFullTypeName.Should().Be("System.Nullable<System.Int32>");
+            typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList().Should().BeEquivalentTo(new[] { typeof(int).FullName });
         }
 
         private sealed class TestNested

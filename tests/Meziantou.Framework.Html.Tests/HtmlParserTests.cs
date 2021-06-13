@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using System.Text;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
@@ -14,7 +15,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml("<p><i>1<i>2</p>");
 
             var html = document.OuterHtml;
-            Assert.Equal("<p><i>1<i>2</i></i></p>", html);
+            html.Should().Be("<p><i>1<i>2</i></i></p>");
         }
 
         [Fact]
@@ -24,7 +25,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml("<p><img>1<img>2</p>");
 
             var html = document.OuterHtml;
-            Assert.Equal("<p><img />1<img />2</p>", html);
+            html.Should().Be("<p><img />1<img />2</p>");
         }
 
         [Fact]
@@ -33,8 +34,8 @@ namespace Meziantou.Framework.Html.Tests
             var document = new HtmlDocument();
             document.LoadHtml("<script type='text/javascript'>my script</script>");
 
-            Assert.Equal("my script", document.SelectSingleNode("//script").InnerHtml);
-            Assert.Equal("text/javascript", document.SelectSingleNode("//script").GetAttributeValue("type"));
+            document.SelectSingleNode("//script").InnerHtml.Should().Be("my script");
+            document.SelectSingleNode("//script").GetAttributeValue("type").Should().Be("text/javascript");
         }
 
         [Fact]
@@ -45,7 +46,7 @@ namespace Meziantou.Framework.Html.Tests
             document.BaseAddress = new System.Uri("https://www.meziantou.net");
             var absoluteUrl = document.MakeAbsoluteUrl("test.html");
 
-            Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
+            absoluteUrl.Should().Be("https://www.meziantou.net/test.html");
         }
 
         [Fact]
@@ -56,7 +57,7 @@ namespace Meziantou.Framework.Html.Tests
             document.BaseAddress = new System.Uri("https://www.meziantou.net");
             var absoluteUrl = document.MakeAbsoluteUrl("test.html");
 
-            Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
+            absoluteUrl.Should().Be("https://www.meziantou.net/test.html");
         }
 
         [Fact]
@@ -67,8 +68,8 @@ namespace Meziantou.Framework.Html.Tests
 
             var errors = document.Errors.ToList();
 
-            Assert.Single(errors);
-            Assert.Equal(HtmlErrorType.TagNotOpened, errors[0].ErrorType);
+            errors.Should().ContainSingle();
+            errors[0].ErrorType.Should().Be(HtmlErrorType.TagNotOpened);
         }
 
         [Fact]
@@ -79,8 +80,8 @@ namespace Meziantou.Framework.Html.Tests
 
             var errors = document.Errors.ToList();
 
-            Assert.Single(errors);
-            Assert.Equal(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
+            errors.Should().ContainSingle();
+            errors[0].ErrorType.Should().Be(HtmlErrorType.DuplicateAttribute);
         }
 
         [Fact]
@@ -89,7 +90,7 @@ namespace Meziantou.Framework.Html.Tests
             var document = new HtmlDocument();
             document.LoadHtml("<!--Test-->");
 
-            Assert.Equal(HtmlNodeType.Comment, document.FirstChild.NodeType);
+            document.FirstChild.NodeType.Should().Be(HtmlNodeType.Comment);
         }
 
         [Fact]
@@ -99,7 +100,7 @@ namespace Meziantou.Framework.Html.Tests
             using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
-            Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
+            document.DetectedEncoding.Should().Be(Encoding.UTF8);
         }
 
         [Fact]
@@ -109,7 +110,7 @@ namespace Meziantou.Framework.Html.Tests
             using var memoryStream = new MemoryStream(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
-            Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
+            document.DetectedEncoding.Should().Be(Encoding.UTF8);
         }
 
         [Fact]
@@ -119,7 +120,7 @@ namespace Meziantou.Framework.Html.Tests
             using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
             var document = new HtmlDocument();
             document.Load(memoryStream);
-            Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
+            document.DetectedEncoding.Should().Be(Encoding.UTF8);
         }
     }
 }

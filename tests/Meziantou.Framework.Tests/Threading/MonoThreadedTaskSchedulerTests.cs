@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Meziantou.Framework.Threading;
 using Xunit;
 
@@ -32,7 +33,7 @@ namespace Meziantou.Framework.Tests.Threading
                 await EnqueueTask();
             }
 
-            Assert.Equal(Count, _count);
+            _count.Should().Be(Count);
         }
 
         [Fact]
@@ -46,14 +47,14 @@ namespace Meziantou.Framework.Tests.Threading
             }
 
             await Task.WhenAll(tasks);
-            Assert.Equal(Count, _count);
+            _count.Should().Be(Count);
         }
 
         private Task EnqueueTask()
         {
             return Task.Factory.StartNew(() =>
             {
-                Assert.Equal(ThreadName, Thread.CurrentThread.Name);
+                Thread.CurrentThread.Name.Should().Be(ThreadName);
                 _count++;
             }, CancellationToken.None, TaskCreationOptions.None, _taskScheduler);
         }

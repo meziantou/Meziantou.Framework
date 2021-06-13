@@ -1,5 +1,5 @@
-﻿using TestUtilities;
-using Xunit;
+﻿using FluentAssertions;
+using TestUtilities;
 
 namespace Meziantou.Framework.Win32.Tests
 {
@@ -9,14 +9,14 @@ namespace Meziantou.Framework.Win32.Tests
         public void GetPerceivedType01()
         {
             var perceived = Perceived.GetPerceivedType(".txt");
-            Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
+            perceived.PerceivedType.Should().Be(PerceivedType.Text);
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
         public void GetPerceivedType02()
         {
             var perceived = Perceived.GetPerceivedType(".avi");
-            Assert.Equal(PerceivedType.Video, perceived.PerceivedType);
+            perceived.PerceivedType.Should().Be(PerceivedType.Video);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
@@ -16,17 +17,16 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             foreach (var type in types)
             {
-                try
-                {
-                    var instance = (CodeObject)Activator.CreateInstance(type);
-                    var generator = new Visitor();
-                    generator.Visit(instance);
-                }
-                catch (Exception ex)
-                {
-                    Assert.True(false, "Cannot visit " + type.FullName + ": " + ex);
-                }
+                Action visit = () => VisitType(type);
+                visit.Should().NotThrow(type.FullName + " should be visitable");
             }
+        }
+
+        private static void VisitType(Type type)
+        {
+            var instance = (CodeObject)Activator.CreateInstance(type);
+            var generator = new Visitor();
+            generator.Visit(instance);
         }
     }
 }

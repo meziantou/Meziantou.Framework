@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
@@ -26,7 +27,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<{tagName} {attributeName}='test'>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.Equal("test", value);
+            value.Should().Be("test");
         }
 
         [Fact]
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<time>test</time>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.Equal("test", value);
+            value.Should().Be("test");
         }
 
         [Fact]
@@ -46,7 +47,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<dummy>test</dummy>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.Equal("test", value);
+            value.Should().Be("test");
         }
 
         [Fact]
@@ -56,7 +57,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<a>test</a>");
 
             var value = document.FirstChild.GetItemValue();
-            Assert.Equal(string.Empty, value);
+            value.Should().Be(string.Empty);
         }
 
         [Fact]
@@ -66,7 +67,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'></a>");
 
             var value = document.FirstChild.GetItemScopeType();
-            Assert.Equal("https://schema.org/Recipe", value);
+            value.Should().Be("https://schema.org/Recipe");
         }
 
         [Fact]
@@ -76,7 +77,7 @@ namespace Meziantou.Framework.Html.Tests
             document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'><img/></a>");
 
             var value = document.SelectSingleNode("//img").GetItemScopeType();
-            Assert.Equal("https://schema.org/Recipe", value);
+            value.Should().Be("https://schema.org/Recipe");
         }
     }
 }

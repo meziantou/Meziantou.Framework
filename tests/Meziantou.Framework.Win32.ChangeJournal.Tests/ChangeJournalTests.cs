@@ -1,8 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using FluentAssertions;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests
 {
@@ -16,15 +16,15 @@ namespace Meziantou.Framework.Win32.Tests
             var drive = Path.GetPathRoot(file);
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
-            Assert.Null(item);
+            item.Should().BeNull();
 
             File.WriteAllText(file, "test");
-            Assert.NotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)));
-            Assert.NotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)));
-            Assert.NotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
+            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)).Should().NotBeNull();
+            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)).Should().NotBeNull();
+            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
 
             File.Delete(file);
-            Assert.NotNull(changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)));
+            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)).Should().NotBeNull();
         }
 
         [RunIfWindowsAdministratorFact]
@@ -35,11 +35,11 @@ namespace Meziantou.Framework.Win32.Tests
             var drive = Path.GetPathRoot(file);
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
-            Assert.Null(item);
+            item.Should().BeNull();
 
             File.WriteAllText(file, "test");
-            Assert.Null(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)));
-            Assert.NotNull(changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)));
+            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)).Should().BeNull();
+            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
 
             File.Delete(file);
         }
@@ -51,7 +51,7 @@ namespace Meziantou.Framework.Win32.Tests
             var drive = Path.GetPathRoot(file);
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
             var entries = changeJournal.Entries.ToList();
-            Assert.True(entries.Count > 0);
+            entries.Count.Should().BePositive();
         }
     }
 }

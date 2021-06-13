@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests
@@ -25,7 +26,7 @@ namespace Meziantou.Framework.Scheduling.Tests
                 while (enumerator1.MoveNext() && enumerator2.MoveNext())
                 {
                     occurrenceCount++;
-                    Assert.Equal(enumerator2.Current, enumerator1.Current);
+                    enumerator1.Current.Should().Be(enumerator2.Current);
                 }
             }
 
@@ -33,19 +34,15 @@ namespace Meziantou.Framework.Scheduling.Tests
             {
                 while (enumerator1.MoveNext())
                 {
-                    if (maxOccurences > occurrenceCount)
-                    {
-                        Assert.True(false, "There are more occurences than expected.");
-                    }
-
+                    occurrenceCount.Should().BeLessOrEqualTo(maxOccurences.Value);
                     occurrenceCount++;
                 }
             }
             else
             {
-                if (checkEnd && !enumerator1.MoveNext())
+                if (checkEnd)
                 {
-                    Assert.True(false, "There are more occurences than expected.");
+                    enumerator1.MoveNext().Should().BeFalse("there are more occurences than expected.");
                 }
             }
         }

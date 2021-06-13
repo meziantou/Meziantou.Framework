@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Text.Tests
@@ -24,7 +25,7 @@ namespace Meziantou.Framework.Text.Tests
                 new Rune('\u003C'),
                 new Rune('\u221A'),
             };
-            Assert.Equal(expected, runes);
+            runes.Should().Equal(expected);
         }
     }
 }

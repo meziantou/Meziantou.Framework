@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.WPF.Tests
@@ -27,9 +28,9 @@ namespace Meziantou.Framework.WPF.Tests
                 await Task.Delay(1);
             }
 
-            Assert.NotEqual(t.ManagedThreadId, Environment.CurrentManagedThreadId);
+            Environment.CurrentManagedThreadId.Should().NotBe(t.ManagedThreadId);
             await dispatcher.SwitchToDispatcherThread();
-            Assert.Equal(t.ManagedThreadId, Environment.CurrentManagedThreadId);
+            Environment.CurrentManagedThreadId.Should().Be(t.ManagedThreadId);
 
             dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
         }

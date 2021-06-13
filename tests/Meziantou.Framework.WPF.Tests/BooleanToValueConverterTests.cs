@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.WPF.Tests
 {
@@ -37,7 +38,7 @@ namespace Meziantou.Framework.WPF.Tests
                 true => _converter.TrueValue,
             };
 
-            Assert.Equal(expected, Convert(value));
+            Convert(value).Should().Be(expected);
         }
 
         [Fact]
@@ -45,7 +46,7 @@ namespace Meziantou.Framework.WPF.Tests
         {
             _converter.NullValue = null;
 
-            Assert.Equal(_converter.FalseValue, Convert(null));
+            Convert(null).Should().Be(_converter.FalseValue);
         }
     }
 }

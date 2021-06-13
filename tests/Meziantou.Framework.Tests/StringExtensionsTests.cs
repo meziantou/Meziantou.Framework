@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -13,7 +14,7 @@ namespace Meziantou.Framework.Tests
         public void RemoveDiacritics_Test(string str, string expected)
         {
             var actual = str.RemoveDiacritics();
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Theory]
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.Tests
         public void EndsWith_Test(string str, char c, bool expected)
         {
             var actual = str.EndsWith(c);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Theory]
@@ -33,21 +34,21 @@ namespace Meziantou.Framework.Tests
         public void StartsWith_Test(string str, char c, bool expected)
         {
             var actual = str.StartsWith(c);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
         public void Replace_ShouldReplaceAllOccurences()
         {
             var actual = "abcABC".Replace("ab", "ba", StringComparison.OrdinalIgnoreCase);
-            Assert.Equal("bacbaC", actual);
+            actual.Should().Be("bacbaC");
         }
 
         [Fact]
         public void Replace_ShouldUseStringComparison()
         {
             var actual = "abcABC".Replace("ab", "ba", StringComparison.Ordinal);
-            Assert.Equal("bacABC", actual);
+            actual.Should().Be("bacABC");
         }
 
         [Theory]
@@ -58,7 +59,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("aabc", "abc", false)]
         public void EqualsIgnoreCase(string left, string right, bool expectedResult)
         {
-            Assert.Equal(expectedResult, left.EqualsIgnoreCase(right));
+            left.EqualsIgnoreCase(right).Should().Be(expectedResult);
         }
 
         [Theory]
@@ -69,7 +70,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("bc", "abc", false)]
         public void ContainsIgnoreCase(string left, string right, bool expectedResult)
         {
-            Assert.Equal(expectedResult, left.ContainsIgnoreCase(right));
+            left.ContainsIgnoreCase(right).Should().Be(expectedResult);
         }
 
         [Fact]
@@ -83,7 +84,7 @@ namespace Meziantou.Framework.Tests
                     break;
             }
 
-            Assert.Equal(new[] { ("a", "\n"), ("b", "\n") }, actual);
+            actual.Should().Equal(new[] { ("a", "\n"), ("b", "\n") });
         }
 
         [Theory]
@@ -96,7 +97,7 @@ namespace Meziantou.Framework.Tests
                 actual.Add((line.ToString(), separator.ToString()));
             }
 
-            Assert.Equal(expected, actual);
+            actual.Should().Equal(expected);
         }
 
         [Theory]
@@ -109,7 +110,7 @@ namespace Meziantou.Framework.Tests
                 actual.Add(line.ToString());
             }
 
-            Assert.Equal(expected.Select(item => item.Line).ToArray(), actual);
+            actual.Should().Equal(expected.Select(item => item.Line).ToArray());
         }
 
         public static TheoryData<string, (string Line, string Separator)[]> SplitLineData()
@@ -137,7 +138,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("abc", "C", StringComparison.OrdinalIgnoreCase, "ab")]
         public void RemoveSuffix(string str, string suffx, StringComparison comparison, string expected)
         {
-            Assert.Equal(expected, str.RemoveSuffix(suffx, comparison));
+            str.RemoveSuffix(suffx, comparison).Should().Be(expected);
         }
 
         [Theory]
@@ -151,7 +152,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("abc", "A", StringComparison.OrdinalIgnoreCase, "bc")]
         public void RemovePrefix(string str, string suffx, StringComparison comparison, string expected)
         {
-            Assert.Equal(expected, str.RemovePrefix(suffx, comparison));
+            str.RemovePrefix(suffx, comparison).Should().Be(expected);
         }
     }
 }

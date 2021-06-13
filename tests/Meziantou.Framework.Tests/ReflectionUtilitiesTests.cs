@@ -1,4 +1,5 @@
 ﻿using System;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -8,19 +9,19 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void IsFlagsEnum_ShouldDetectNonEnumeration()
         {
-            Assert.False(ReflectionUtilities.IsFlagsEnum(typeof(ReflectionUtilitiesTests)));
+            ReflectionUtilities.IsFlagsEnum(typeof(ReflectionUtilitiesTests)).Should().BeFalse();
         }
 
         [Fact]
         public void IsFlagsEnum_ShouldDetectNonFlagsEnumeration()
         {
-            Assert.False(ReflectionUtilities.IsFlagsEnum(typeof(NonFlagsEnum)));
+            ReflectionUtilities.IsFlagsEnum(typeof(NonFlagsEnum)).Should().BeFalse();
         }
 
         [Fact]
         public void IsFlagsEnum_ShouldDetectFlagsEnumeration()
         {
-            Assert.True(ReflectionUtilities.IsFlagsEnum(typeof(FlagsEnum)));
+            ReflectionUtilities.IsFlagsEnum(typeof(FlagsEnum)).Should().BeTrue();
         }
 
         [Theory]
@@ -29,7 +30,7 @@ namespace Meziantou.Framework.Tests
         [InlineData(typeof(MyNullable<int>), false)]
         public void IsNullableOf_ShouldDetectType(Type type, bool expectedResult)
         {
-            Assert.Equal(expectedResult, ReflectionUtilities.IsNullableOfT(type));
+            ReflectionUtilities.IsNullableOfT(type).Should().Be(expectedResult);
         }
 
         private enum NonFlagsEnum

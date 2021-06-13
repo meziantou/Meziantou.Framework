@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -35,8 +36,8 @@ namespace Meziantou.Framework.Tests
         {
             var (a, b) = await (Task.FromResult(0), Task.FromResult("test"));
 
-            Assert.Equal(0, a);
-            Assert.Equal("test", b);
+            a.Should().Be(0);
+            b.Should().Be("test");
         }
     }
 }

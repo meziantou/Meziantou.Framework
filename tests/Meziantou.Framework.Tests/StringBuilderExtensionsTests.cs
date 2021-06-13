@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -11,13 +12,13 @@ namespace Meziantou.Framework.Tests
             CultureInfoUtilities.UseCulture("sv-SE", () =>
             {
                 var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
-                Assert.Equal("test-42", actual);
+                actual.Should().Be("test-42");
             });
 
             CultureInfoUtilities.UseCulture("en-US", () =>
             {
                 var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
-                Assert.Equal("test-42", actual);
+                actual.Should().Be("test-42");
             });
         }
 
@@ -28,7 +29,7 @@ namespace Meziantou.Framework.Tests
         public void EndsWith_Test(string str, char c, bool expected)
         {
             var actual = new StringBuilder(str).EndsWith(c);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Theory]
@@ -38,7 +39,7 @@ namespace Meziantou.Framework.Tests
         public void StartsWith_Test(string str, char c, bool expected)
         {
             var actual = new StringBuilder(str).StartsWith(c);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Theory]
@@ -50,7 +51,7 @@ namespace Meziantou.Framework.Tests
         {
             var actual = new StringBuilder(str);
             actual.TrimStart(c);
-            Assert.Equal(expected, actual.ToString());
+            actual.ToString().Should().Be(expected);
         }
 
         [Theory]
@@ -62,7 +63,7 @@ namespace Meziantou.Framework.Tests
         {
             var actual = new StringBuilder(str);
             actual.TrimEnd(c);
-            Assert.Equal(expected, actual.ToString());
+            actual.ToString().Should().Be(expected);
         }
 
         [Theory]
@@ -75,7 +76,7 @@ namespace Meziantou.Framework.Tests
         {
             var actual = new StringBuilder(str);
             actual.Trim(c);
-            Assert.Equal(expected, actual.ToString());
+            actual.ToString().Should().Be(expected);
         }
     }
 }

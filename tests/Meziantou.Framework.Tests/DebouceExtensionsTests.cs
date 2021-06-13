@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -23,8 +24,8 @@ namespace Meziantou.Framework.Tests
             debounced(2);
 
             resetEvent.Wait();
-            Assert.Equal(1, count);
-            Assert.Equal(2, lastArg);
+            count.Should().Be(1);
+            lastArg.Should().Be(2);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
@@ -10,8 +11,8 @@ namespace Meziantou.Framework.CodeDom.Tests
             var expression = new AwaitExpression(new SnippetExpression("test"));
             var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            Assert.Equal(expression, configuredExpression);
-            Assert.Equal(true, configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value);
+            configuredExpression.Should().Be(expression);
+            configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value.Should().Be(true);
         }
 
         [Fact]
@@ -20,8 +21,8 @@ namespace Meziantou.Framework.CodeDom.Tests
             var expression = new AwaitExpression();
             var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            Assert.Equal(expression, configuredExpression);
-            Assert.Null(configuredExpression.Expression);
+            configuredExpression.Should().Be(expression);
+            configuredExpression.Expression.Should().BeNull();
         }
     }
 }

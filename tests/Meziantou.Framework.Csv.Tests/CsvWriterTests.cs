@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Csv.Tests
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Csv.Tests
             await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
             await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-            Assert.Equal($"A,B{Environment.NewLine}C,D", sw.ToString());
+            sw.ToString().Should().Be($"A,B{Environment.NewLine}C,D");
         }
 
         [Fact]
@@ -28,7 +29,7 @@ namespace Meziantou.Framework.Csv.Tests
             await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
             await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
 
-            Assert.Equal($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
+            sw.ToString().Should().Be($@"A,""B,""{Environment.NewLine}C,D");
         }
 
         [Fact]
@@ -38,7 +39,7 @@ namespace Meziantou.Framework.Csv.Tests
             var writer = new CsvWriter(sw);
             await writer.WriteRowAsync("A", "\"B").ConfigureAwait(false);
 
-            Assert.Equal("A,\"\"\"B\"", sw.ToString());
+            sw.ToString().Should().Be("A,\"\"\"B\"");
         }
 
         [Fact]
@@ -55,7 +56,7 @@ namespace Meziantou.Framework.Csv.Tests
             await writer.BeginRowAsync().ConfigureAwait(false);
             await writer.WriteValuesAsync("E").ConfigureAwait(false);
 
-            Assert.Equal("A,B,C,D\nE", sw.ToString());
+            sw.ToString().Should().Be("A,B,C,D\nE");
         }
 
         [Fact]
@@ -69,7 +70,7 @@ namespace Meziantou.Framework.Csv.Tests
 
             await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
 
-            Assert.Equal("A\",B", sw.ToString());
+            sw.ToString().Should().Be("A\",B");
         }
 
         [Theory]
@@ -102,10 +103,10 @@ namespace Meziantou.Framework.Csv.Tests
             while ((csvRow = await reader.ReadRowAsync().ConfigureAwait(false)) != null)
             {
                 rowIndex++;
-                Assert.Equal(rows[rowIndex], csvRow.Values.ToList());
+                csvRow.Values.ToList().Should().BeEquivalentTo(rows[rowIndex]);
             }
 
-            Assert.Equal(rows.Count - 1, rowIndex);
+            rowIndex.Should().Be(rows.Count - 1);
         }
     }
 }

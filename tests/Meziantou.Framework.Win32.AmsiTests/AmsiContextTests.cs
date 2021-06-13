@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -12,8 +13,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
         {
             using var application = AmsiContext.Create("MyApplication");
             // https://en.wikipedia.org/wiki/EICAR_test_file
-            Assert.True(application.IsMalware(Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"), "EICAR"));
-            Assert.False(application.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR"));
+            application.IsMalware(Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"), "EICAR").Should().BeTrue();
+            application.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR").Should().BeFalse();
         }
 
         [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
@@ -21,8 +22,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
         {
             using var application = AmsiContext.Create("MyApplication");
             // https://en.wikipedia.org/wiki/EICAR_test_file
-            Assert.True(application.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR"));
-            Assert.False(application.IsMalware("0000", "EICAR"));
+            application.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR").Should().BeTrue();
+            application.IsMalware("0000", "EICAR").Should().BeFalse();
         }
 
         [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
@@ -32,8 +33,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
             using var session = application.CreateSession();
 
             // https://en.wikipedia.org/wiki/EICAR_test_file
-            Assert.True(session.IsMalware(Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"), "EICAR"));
-            Assert.False(session.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR"));
+            session.IsMalware(Encoding.ASCII.GetBytes(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"), "EICAR").Should().BeTrue();
+            session.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR").Should().BeFalse();
         }
 
         [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
@@ -43,8 +44,8 @@ namespace Meziantou.Framework.Win32.AmsiTests
             using var session = application.CreateSession();
 
             // https://en.wikipedia.org/wiki/EICAR_test_file
-            Assert.True(session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR"));
-            Assert.False(session.IsMalware("0000", "EICAR"));
+            session.IsMalware(@"X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*", "EICAR").Should().BeTrue();
+            session.IsMalware("0000", "EICAR").Should().BeFalse();
         }
     }
 }

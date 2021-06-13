@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Threading.Tests
@@ -23,10 +24,10 @@ namespace Meziantou.Framework.Threading.Tests
                         using (await l.WriterLockAsync().ConfigureAwait(false))
                         {
                             count++;
-                            Assert.Equal(1, count);
+                            count.Should().Be(1);
                             value++;
                             count--;
-                            Assert.Equal(0, count);
+                            count.Should().Be(0);
                         }
                     });
                 }
@@ -36,15 +37,15 @@ namespace Meziantou.Framework.Threading.Tests
                     {
                         using (await l.ReaderLockAsync().ConfigureAwait(false))
                         {
-                            Assert.Equal(0, count);
-                            Assert.True(value <= 128);
+                            count.Should().Be(0);
+                            value.Should().BeLessOrEqualTo(128);
                         }
                     });
                 }
             }
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
-            Assert.Equal(64, value);
+            value.Should().Be(64);
         }
     }
 }

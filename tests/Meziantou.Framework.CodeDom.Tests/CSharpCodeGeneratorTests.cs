@@ -1,12 +1,26 @@
 ﻿#pragma warning disable MA0101 // String contains an implicit end of line character
 using System;
-using TestUtilities;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
     public class CSharpCodeGeneratorTests
     {
+        private static void AssertCsharp<T>(T obj, string expectedCsharpCode, bool ignoreNewLines = true) where T : CodeObject
+        {
+            var generator = new CSharpCodeGenerator();
+            var actual = generator.Write(obj);
+
+            if (ignoreNewLines)
+            {
+                expectedCsharpCode = expectedCsharpCode.Replace("\r\n", "\n", StringComparison.Ordinal);
+                actual = actual.Replace("\r\n", "\n", StringComparison.Ordinal);
+            }
+
+            actual.Should().Be(expectedCsharpCode);
+        }
+
         [Fact]
         public void CSharpCodeGenerator_Factorial()
         {
@@ -28,10 +42,7 @@ namespace Meziantou.Framework.CodeDom.Tests
                     new MethodInvokeExpression(method, new BinaryExpression(BinaryOperator.Substract, n, 1)))),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(unit);
-
-            AssertExtensions.StringEquals(@"namespace Meziantou.Framework.CodeDom
+            AssertCsharp(unit, @"namespace Meziantou.Framework.CodeDom
 {
     class Sample
     {
@@ -48,7 +59,7 @@ namespace Meziantou.Framework.CodeDom.Tests
         }
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -56,13 +67,10 @@ namespace Meziantou.Framework.CodeDom.Tests
         {
             var type = new ClassDeclaration("Sample");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -75,10 +83,7 @@ namespace Meziantou.Framework.CodeDom.Tests
             ns.AddType(new ClassDeclaration("Sample1"));
             ns.AddType(new ClassDeclaration("Sample2"));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(unit);
-
-            AssertExtensions.StringEquals(@"// test
+            AssertCsharp(unit, @"// test
 namespace test
 {
     class Sample1
@@ -89,7 +94,7 @@ namespace test
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -106,15 +111,12 @@ namespace test
                 },
             });
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample<T1, T2>
+            AssertCsharp(type, @"class Sample<T1, T2>
     where T1 : struct
     where T2 : class, System.ICloneable, new()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -122,13 +124,10 @@ namespace test
         {
             var type = new StructDeclaration("Sample");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"struct Sample
+            AssertCsharp(type, @"struct Sample
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -136,13 +135,10 @@ namespace test
         {
             var type = new InterfaceDeclaration("Sample");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"interface Sample
+            AssertCsharp(type, @"interface Sample
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -159,15 +155,12 @@ namespace test
                 },
             });
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"interface Sample<T1, T2>
+            AssertCsharp(type, @"interface Sample<T1, T2>
     where T1 : struct
     where T2 : class, System.ICloneable, new()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -188,16 +181,13 @@ namespace test
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"[System.FlagsAttribute]
+            AssertCsharp(type, @"[System.FlagsAttribute]
 internal enum Sample : uint
 {
     A = 1,
     B = 2
 }
-", result);
+");
         }
 
         [Fact]
@@ -213,11 +203,8 @@ internal enum Sample : uint
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(d);
-
-            AssertExtensions.StringEquals(@"public delegate void Sample(string a);
-", result);
+            AssertCsharp(d, @"public delegate void Sample(string a);
+");
         }
 
         [Fact]
@@ -228,10 +215,7 @@ internal enum Sample : uint
             type.AddMember(new FieldDeclaration("_b", typeof(Type), Modifiers.Private));
             type.AddMember(new FieldDeclaration("_c", typeof(int), Modifiers.Protected, 10));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     int _a;
 
@@ -239,7 +223,7 @@ internal enum Sample : uint
 
     protected int _c = 10;
 }
-", result);
+");
         }
 
         [Fact]
@@ -248,14 +232,11 @@ internal enum Sample : uint
             var type = new ClassDeclaration("Sample");
             type.AddMember(new EventFieldDeclaration("A", typeof(EventHandler), Modifiers.Public));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     public event System.EventHandler A;
 }
-", result);
+");
         }
 
         [Fact]
@@ -265,11 +246,8 @@ internal enum Sample : uint
                 new MemberReferenceExpression(new ThisExpression(), "A"),
                 new MemberReferenceExpression(new ThisExpression(), "Handler"));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"this.A += this.Handler;
-", result);
+            AssertCsharp(statement, @"this.A += this.Handler;
+");
         }
 
         [Fact]
@@ -279,11 +257,8 @@ internal enum Sample : uint
                 new MemberReferenceExpression(new ThisExpression(), "A"),
                 new MemberReferenceExpression(new ThisExpression(), "Handler"));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"this.A -= this.Handler;
-", result);
+            AssertCsharp(statement, @"this.A -= this.Handler;
+");
         }
 
         [Fact]
@@ -295,13 +270,10 @@ internal enum Sample : uint
                 Body = new StatementCollection(),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(loop);
-
-            AssertExtensions.StringEquals(@"while (true)
+            AssertCsharp(loop, @"while (true)
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -310,16 +282,14 @@ internal enum Sample : uint
             var type = new ClassDeclaration("Sample");
             var ctor = type.AddMember(new ConstructorDeclaration());
             ctor.Modifiers = Modifiers.Internal;
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
 
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     internal Sample()
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -330,17 +300,14 @@ internal enum Sample : uint
             ctor.Initializer = new ConstructorBaseInitializer();
             ctor.Modifiers = Modifiers.Public;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     public Sample()
         : base()
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -351,17 +318,14 @@ internal enum Sample : uint
             ctor.Initializer = new ConstructorThisInitializer();
             ctor.Modifiers = Modifiers.Public;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     public Sample()
         : this()
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -372,17 +336,14 @@ internal enum Sample : uint
             ctor.Initializer = new ConstructorThisInitializer(new LiteralExpression("arg"));
             ctor.Modifiers = Modifiers.Public;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"class Sample
+            AssertCsharp(type, @"class Sample
 {
     public Sample()
         : this(""arg"")
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -391,10 +352,7 @@ internal enum Sample : uint
             var array = new VariableReferenceExpression("array");
             Expression expression = new ArrayIndexerExpression(array, 10);
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("array[10]", result);
+            AssertCsharp(expression, "array[10]");
         }
 
         [Fact]
@@ -403,10 +361,7 @@ internal enum Sample : uint
             var array = new VariableReferenceExpression("array");
             Expression expression = new ArrayIndexerExpression(array, 10, "test");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals(@"array[10, ""test""]", result);
+            AssertCsharp(expression, @"array[10, ""test""]");
         }
 
         [Fact]
@@ -414,11 +369,8 @@ internal enum Sample : uint
         {
             var statement = new AssignStatement(new VariableReferenceExpression("a"), 10);
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"a = 10;
-", result);
+            AssertCsharp(statement, @"a = 10;
+");
         }
 
         [Fact]
@@ -430,14 +382,11 @@ internal enum Sample : uint
                 TrueStatements = new SnippetStatement("TrueSnippet"),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"if (true)
+            AssertCsharp(statement, @"if (true)
 {
     TrueSnippet
 }
-", result);
+");
         }
 
         [Fact]
@@ -450,10 +399,7 @@ internal enum Sample : uint
                 FalseStatements = new SnippetStatement("FalseSnippet"),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"if (true)
+            AssertCsharp(statement, @"if (true)
 {
     TrueSnippet
 }
@@ -461,7 +407,7 @@ else
 {
     FalseSnippet
 }
-", result);
+");
         }
 
         [Fact]
@@ -472,13 +418,10 @@ else
                 Condition = new LiteralExpression(value: true),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"if (true)
+            AssertCsharp(statement, @"if (true)
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -493,10 +436,7 @@ else
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"try
+            AssertCsharp(statement, @"try
 {
     TrySnippet
 }
@@ -504,7 +444,7 @@ catch
 {
     Catch1
 }
-", result);
+");
         }
 
         [Fact]
@@ -530,10 +470,7 @@ catch
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"try
+            AssertCsharp(statement, @"try
 {
     TrySnippet
 }
@@ -545,7 +482,7 @@ catch (System.Exception ex)
 {
     throw;
 }
-", result);
+");
         }
 
         [Fact]
@@ -557,10 +494,7 @@ catch (System.Exception ex)
                 Finally = new SnippetStatement("FinallyStatement"),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"try
+            AssertCsharp(statement, @"try
 {
     TrySnippet
 }
@@ -568,68 +502,51 @@ finally
 {
     FinallyStatement
 }
-", result);
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Literal_String()
         {
             var literal = new LiteralExpression("test");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(literal);
 
-            AssertExtensions.StringEquals("\"test\"", result);
+            AssertCsharp(literal, "\"test\"");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Literal_StringWithNewLine()
         {
             var literal = new LiteralExpression("line1\r\nline2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(literal);
-
-            AssertExtensions.StringEquals("\"line1\\r\\nline2\"", result, ignoreNewLines: false);
+            AssertCsharp(literal, "\"line1\\r\\nline2\"", ignoreNewLines: false);
         }
 
         [Fact]
         public void CSharpCodeGenerator_Default()
         {
             var expr = new DefaultValueExpression(typeof(string));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expr);
-
-            AssertExtensions.StringEquals("default(string)", result);
+            AssertCsharp(expr, "default(string)");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Cast()
         {
             var expr = new CastExpression(new VariableReferenceExpression("a"), typeof(string));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expr);
-
-            AssertExtensions.StringEquals("((string)a)", result);
+            AssertCsharp(expr, "((string)a)");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Convert()
         {
             var expr = new ConvertExpression(new VariableReferenceExpression("a"), typeof(string));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expr);
-
-            AssertExtensions.StringEquals("(a as string)", result);
+            AssertCsharp(expr, "(a as string)");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Throw()
         {
             var expr = new ThrowStatement(new NewObjectExpression(typeof(Exception)));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expr);
-
-            AssertExtensions.StringEquals(@"throw new System.Exception();
-", result);
+            AssertCsharp(expr, @"throw new System.Exception();
+");
         }
 
         [Fact]
@@ -644,14 +561,11 @@ finally
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute]
+            AssertCsharp(method, @"[TestAttribute]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -672,14 +586,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute(""arg1"")]
+            AssertCsharp(method, @"[TestAttribute(""arg1"")]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -701,14 +612,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute(""arg1"", ""arg2"")]
+            AssertCsharp(method, @"[TestAttribute(""arg1"", ""arg2"")]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -729,14 +637,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute(Name1 = ""arg1"")]
+            AssertCsharp(method, @"[TestAttribute(Name1 = ""arg1"")]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -758,14 +663,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute(Name1 = ""arg1"", Name2 = ""arg2"")]
+            AssertCsharp(method, @"[TestAttribute(Name1 = ""arg1"", Name2 = ""arg2"")]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -788,14 +690,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute(""arg1"", ""arg3"", Name2 = ""arg2"")]
+            AssertCsharp(method, @"[TestAttribute(""arg1"", ""arg3"", Name2 = ""arg2"")]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -811,15 +710,12 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"[TestAttribute1]
+            AssertCsharp(method, @"[TestAttribute1]
 [TestAttribute2]
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -834,13 +730,10 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"void Sample<T>()
+            AssertCsharp(method, @"void Sample<T>()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -855,14 +748,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"void Sample<T>()
+            AssertCsharp(method, @"void Sample<T>()
     where T : class
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -873,11 +763,8 @@ void Sample()
                 Modifiers = Modifiers.Protected | Modifiers.Abstract,
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"protected abstract void Sample();
-", result);
+            AssertCsharp(method, @"protected abstract void Sample();
+");
         }
 
         [Fact]
@@ -892,13 +779,10 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"protected abstract void Sample<T>()
+            AssertCsharp(method, @"protected abstract void Sample<T>()
     where T : class
     ;
-", result);
+");
         }
 
         [Fact]
@@ -910,13 +794,10 @@ void Sample()
                 Statements = new StatementCollection(),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"void Foo.IBar.A()
+            AssertCsharp(method, @"void Foo.IBar.A()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -928,17 +809,14 @@ void Sample()
                 Getter = new ReturnStatement(10),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"int Foo.IBar.A
+            AssertCsharp(prop, @"int Foo.IBar.A
 {
     get
     {
         return 10;
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -953,17 +831,14 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"int A
+            AssertCsharp(prop, @"int A
 {
     private get
     {
         return 10;
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -977,16 +852,13 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"int A
+            AssertCsharp(prop, @"int A
 {
     internal set
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -997,16 +869,13 @@ void Sample()
                 Setter = new PropertyAccessorDeclaration(),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"System.Nullable<int> A
+            AssertCsharp(prop, @"System.Nullable<int> A
 {
     set
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -1019,10 +888,7 @@ void Sample()
                 RemoveAccessor = new StatementCollection(),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"event System.EventHandler Foo.IBar.A
+            AssertCsharp(method, @"event System.EventHandler Foo.IBar.A
 {
     add
     {
@@ -1031,7 +897,7 @@ void Sample()
     {
     }
 }
-", result);
+");
         }
 
         [Fact]
@@ -1039,11 +905,8 @@ void Sample()
         {
             var statement = new ExpressionStatement(new NewObjectExpression(new TypeReference("Disposable")));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"new Disposable();
-", result);
+            AssertCsharp(statement, @"new Disposable();
+");
         }
 
         [Fact]
@@ -1051,10 +914,7 @@ void Sample()
         {
             var directive = new UsingDirective("System");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(directive);
-
-            AssertExtensions.StringEquals("using System;", result);
+            AssertCsharp(directive, "using System;");
         }
 
         [Fact]
@@ -1065,13 +925,10 @@ void Sample()
                 Statement = new NewObjectExpression(new TypeReference("Disposable")),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"using (new Disposable())
+            AssertCsharp(statement, @"using (new Disposable())
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -1083,14 +940,11 @@ void Sample()
                 Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable")),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"using (var disposable = new Disposable())
+            AssertCsharp(statement, @"using (var disposable = new Disposable())
 {
     disposable();
 }
-", result);
+");
         }
 
         [Fact]
@@ -1100,10 +954,7 @@ void Sample()
                 new MemberReferenceExpression(new TypeReference("Console"), "Write"),
                 "test");
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals(@"Console.Write(""test"")", result);
+            AssertCsharp(expression, @"Console.Write(""test"")");
         }
 
         [Fact]
@@ -1114,10 +965,7 @@ void Sample()
                 "test");
             expression.Parameters.Add(typeof(string));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals(@"Console.Write<string>(""test"")", result);
+            AssertCsharp(expression, @"Console.Write<string>(""test"")");
         }
 
         [Fact]
@@ -1127,10 +975,7 @@ void Sample()
                 new MemberReferenceExpression(new TypeReference("Console"), "Write"),
                 new MethodInvokeArgumentExpression(new VariableReferenceExpression("test")) { Direction = Direction.Out });
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("Console.Write(out test)", result);
+            AssertCsharp(expression, "Console.Write(out test)");
         }
 
         [Fact]
@@ -1145,148 +990,121 @@ void Sample()
                 new MemberReferenceExpression(new TypeReference("Console"), "Write"),
                 variable);
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
-
-            AssertExtensions.StringEquals(@"for (var i = 0; (i < 10); (i++))
+            AssertCsharp(statement, @"for (var i = 0; (i < 10); (i++))
 {
     Console.Write(i);
 }
-", result);
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Iteration_Empty()
         {
             var statement = new IterationStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"for (; ; )
+            AssertCsharp(statement, @"for (; ; )
 {
 }
-", result);
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_TypeOf()
         {
             var statement = new TypeOfExpression(typeof(string));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals("typeof(string)", result);
+            AssertCsharp(statement, "typeof(string)");
         }
 
         [Fact]
         public void CSharpCodeGenerator_NextLoopIteration()
         {
             var statement = new GotoNextLoopIterationStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"continue;
-", result);
+            AssertCsharp(statement, @"continue;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_CodeExitLoop()
         {
             var statement = new ExitLoopStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"break;
-", result);
+            AssertCsharp(statement, @"break;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Return()
         {
             var statement = new ReturnStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"return;
-", result);
+            AssertCsharp(statement, @"return;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_ReturnExpression()
         {
             var statement = new ReturnStatement(10);
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"return 10;
-", result);
+            AssertCsharp(statement, @"return 10;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_YieldReturnExpression()
         {
             var statement = new YieldReturnStatement(10);
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"yield return 10;
-", result);
+            AssertCsharp(statement, @"yield return 10;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_YieldBreak()
         {
             var statement = new YieldBreakStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"yield break;
-", result);
+            AssertCsharp(statement, @"yield break;
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Await()
         {
             var statement = new AwaitExpression(new VariableReferenceExpression("awaitable"));
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals("await awaitable", result);
+            AssertCsharp(statement, "await awaitable");
         }
 
         [Fact]
         public void CSharpCodeGenerator_Comment()
         {
             var statement = new CommentStatement("test");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"// test
-", result);
+            AssertCsharp(statement, @"// test
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_CommentMultiLine()
         {
             var statement = new CommentStatement("test1" + Environment.NewLine + Environment.NewLine + "test2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"// test1
+            AssertCsharp(statement, @"// test1
 //
 // test2
-", result);
+");
         }
 
         [Fact]
         public void CSharpCodeGenerator_CommentNull()
         {
             var statement = new CommentStatement();
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(statement);
 
-            AssertExtensions.StringEquals(@"//
-", result);
+            AssertCsharp(statement, @"//
+");
         }
 
         [Fact]
@@ -1295,10 +1113,8 @@ void Sample()
             var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment1");
             expression.CommentsAfter.Add("comment2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals("/* comment1 */ code /* comment2 */", result);
+            AssertCsharp(expression, "/* comment1 */ code /* comment2 */");
         }
 
         [Fact]
@@ -1306,10 +1122,8 @@ void Sample()
         {
             var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment1");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals("/* comment1 */ code", result);
+            AssertCsharp(expression, "/* comment1 */ code");
         }
 
         [Fact]
@@ -1317,10 +1131,8 @@ void Sample()
         {
             var expression = new SnippetExpression("code");
             expression.CommentsAfter.Add("comment2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals("code /* comment2 */", result);
+            AssertCsharp(expression, "code /* comment2 */");
         }
 
         [Fact]
@@ -1328,11 +1140,9 @@ void Sample()
         {
             var expression = new SnippetExpression("code");
             expression.CommentsAfter.Add("comment with */ in the middle");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals(@"code // comment with */ in the middle
-", result);
+            AssertCsharp(expression, @"code // comment with */ in the middle
+");
         }
 
         [Fact]
@@ -1340,11 +1150,9 @@ void Sample()
         {
             var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("comment with */ in the middle");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals(@"// comment with */ in the middle
-code", result);
+            AssertCsharp(expression, @"// comment with */ in the middle
+code");
         }
 
         [Fact]
@@ -1353,10 +1161,8 @@ code", result);
             var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("com1");
             expression.CommentsBefore.Add("com2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals("/* com1 */ /* com2 */ code", result);
+            AssertCsharp(expression, "/* com1 */ /* com2 */ code");
         }
 
         [Fact]
@@ -1365,11 +1171,9 @@ code", result);
             var expression = new SnippetExpression("code");
             expression.CommentsBefore.Add("com1", CommentType.LineComment);
             expression.CommentsBefore.Add("com2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals(@"// com1
-/* com2 */ code", result);
+            AssertCsharp(expression, @"// com1
+/* com2 */ code");
         }
 
         [Fact]
@@ -1378,11 +1182,9 @@ code", result);
             var expression = new SnippetExpression("code");
             expression.CommentsAfter.Add("com1", CommentType.LineComment);
             expression.CommentsAfter.Add("com2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals(@"code // com1
-/* com2 */", result);
+            AssertCsharp(expression, @"code // com1
+/* com2 */");
         }
 
         [Fact]
@@ -1391,13 +1193,11 @@ code", result);
             var expression = new ReturnStatement();
             expression.CommentsAfter.Add("com1", CommentType.LineComment);
             expression.CommentsAfter.Add("com2");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals(@"return;
+            AssertCsharp(expression, @"return;
 // com1
 // com2
-", result);
+");
         }
 
         [Fact]
@@ -1409,14 +1209,12 @@ code", result);
             };
 
             method.XmlComments.AddSummary("Test");
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
 
-            AssertExtensions.StringEquals(@"/// <summary>Test</summary>
+            AssertCsharp(method, @"/// <summary>Test</summary>
 void Sample()
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -1424,10 +1222,7 @@ void Sample()
         {
             var expression = new TypeReferenceExpression(typeof(Console));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("System.Console", result);
+            AssertCsharp(expression, "System.Console");
         }
 
         [Fact]
@@ -1435,10 +1230,7 @@ void Sample()
         {
             var expression = new TypeReferenceExpression(typeof(SampleEnum));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum", result);
+            AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum");
         }
 
         [Fact]
@@ -1446,10 +1238,7 @@ void Sample()
         {
             var expression = new TypeReferenceExpression(typeof(Sample<int>));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>", result);
+            AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>");
         }
 
         [Fact]
@@ -1469,14 +1258,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(member);
-
-            AssertExtensions.StringEquals(@"public static implicit operator int(long value)
+            AssertCsharp(member, @"public static implicit operator int(long value)
 {
     return value;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1497,14 +1283,11 @@ void Sample()
                 },
             });
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(member);
-
-            AssertExtensions.StringEquals(@"public static implicit operator Test(long value)
+            AssertCsharp(member, @"public static implicit operator Test(long value)
 {
     return value;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1524,14 +1307,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(member);
-
-            AssertExtensions.StringEquals(@"public static explicit operator int(long value)
+            AssertCsharp(member, @"public static explicit operator int(long value)
 {
     return value;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1553,14 +1333,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(member);
-
-            AssertExtensions.StringEquals(@"public static int operator +(int a, int b)
+            AssertCsharp(member, @"public static int operator +(int a, int b)
 {
     return value;
 }
-", result);
+");
         }
 
         private static class Sample<T>
@@ -1581,10 +1358,7 @@ void Sample()
         {
             Expression expression = SampleEnum.A;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A", result);
+            AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A");
         }
 
         [Fact]
@@ -1592,10 +1366,7 @@ void Sample()
         {
             Expression expression = SampleEnum.All;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All", result);
+            AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All");
         }
 
         [Fact]
@@ -1603,10 +1374,7 @@ void Sample()
         {
             Expression expression = (SampleEnum)3;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)", result);
+            AssertCsharp(expression, "((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)");
         }
 
         [Fact]
@@ -1614,10 +1382,7 @@ void Sample()
         {
             Expression expression = (SampleEnum)10;
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
-
-            AssertExtensions.StringEquals("((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)", result);
+            AssertCsharp(expression, "((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)");
         }
 
         [Theory]
@@ -1642,10 +1407,8 @@ void Sample()
         public void CSharpCodeGenerator_BinaryExpression(BinaryOperator op, string symbol)
         {
             var expression = new BinaryExpression(op, 1, 2);
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals($"(1 {symbol} 2)", result);
+            AssertCsharp(expression, $"(1 {symbol} 2)");
         }
 
         [Theory]
@@ -1658,10 +1421,8 @@ void Sample()
         public void CSharpCodeGenerator_UnaryExpression_Pre(UnaryOperator op, string symbol)
         {
             var expression = new UnaryExpression(op, 1);
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals($"({symbol}1)", result);
+            AssertCsharp(expression, $"({symbol}1)");
         }
 
         [Theory]
@@ -1670,10 +1431,8 @@ void Sample()
         public void CSharpCodeGenerator_UnaryExpression_Post(UnaryOperator op, string symbol)
         {
             var expression = new UnaryExpression(op, 1);
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(expression);
 
-            AssertExtensions.StringEquals($"(1{symbol})", result);
+            AssertCsharp(expression, $"(1{symbol})");
         }
 
         [Fact]
@@ -1688,15 +1447,12 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"void Test()
+            AssertCsharp(method, @"void Test()
 {
     a = 0;
     b = 0;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1706,16 +1462,13 @@ void Sample()
             c.Members.Add(new MethodDeclaration("A"));
             c.Members.Add(new MethodDeclaration("B"));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(c);
-
-            AssertExtensions.StringEquals(@"class Test
+            AssertCsharp(c, @"class Test
 {
     void A();
 
     void B();
 }
-", result);
+");
         }
 
         [Fact]
@@ -1742,10 +1495,7 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(method);
-
-            AssertExtensions.StringEquals(@"void Test()
+            AssertCsharp(method, @"void Test()
 {
     if (true)
     {
@@ -1757,7 +1507,7 @@ void Sample()
     a = 0;
     b = 0;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1768,13 +1518,10 @@ void Sample()
                 Modifiers = Modifiers.Partial | Modifiers.ReadOnly,
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(type);
-
-            AssertExtensions.StringEquals(@"readonly partial struct Test
+            AssertCsharp(type, @"readonly partial struct Test
 {
 }
-", result);
+");
         }
 
         [Fact]
@@ -1782,11 +1529,8 @@ void Sample()
         {
             var variable = new VariableDeclarationStatement("a", typeof(int[]), new NewArrayExpression(typeof(int), 1, 2));
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(variable);
-
-            AssertExtensions.StringEquals(@"int[] a = new int[1, 2];
-", result);
+            AssertCsharp(variable, @"int[] a = new int[1, 2];
+");
         }
 
         [Fact]
@@ -1800,14 +1544,11 @@ void Sample()
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"int A
+            AssertCsharp(prop, @"int A
 {
     get;
 }
-", result);
+");
         }
 
         [Fact]
@@ -1815,11 +1556,8 @@ void Sample()
         {
             var prop = new VariableDeclarationStatement("a", new TypeReference(typeof(string)).MakeNullable());
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(prop);
-
-            AssertExtensions.StringEquals(@"string? a;
-", result);
+            AssertCsharp(prop, @"string? a;
+");
         }
 
         [Fact]
@@ -1830,11 +1568,8 @@ void Sample()
                 NullableContext = NullableContext.Enable,
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(unit);
-
-            AssertExtensions.StringEquals(@"#nullable enable
-", result);
+            AssertCsharp(unit, @"#nullable enable
+");
         }
 
         [Fact]
@@ -1842,15 +1577,12 @@ void Sample()
         {
             var unit = new UsingStatement
             {
-                Statement = new ExpressionStatement(LiteralExpression.Null()) { NullableContext = NullableContext.Disable },
+                Statement = new ExpressionStatement(Expression.Null()) { NullableContext = NullableContext.Disable },
                 //Body = new StatementCollection(),
                 NullableContext = NullableContext.Enable,
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(unit);
-
-            AssertExtensions.StringEquals(@"#nullable enable
+            AssertCsharp(unit, @"#nullable enable
 using (
 #nullable disable
 null
@@ -1859,7 +1591,7 @@ null
 {
 }
 #nullable disable
-", result);
+");
         }
 
         [Fact]
@@ -1871,10 +1603,7 @@ null
                 Type = new TypeReference(typeof(string)),
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(unit);
-
-            AssertExtensions.StringEquals(@"(a is string)", result);
+            AssertCsharp(unit, @"(a is string)");
         }
 
         [Fact]
@@ -1898,11 +1627,9 @@ null
                 },
             };
 
-            var generator = new CSharpCodeGenerator();
-            var result = generator.Write(new VariableDeclarationStatement("demo", new TypeReference(innerStruct)));
-
-            AssertExtensions.StringEquals(@"A.B.C.D demo;
-", result);
+            var variable = new VariableDeclarationStatement("demo", new TypeReference(innerStruct));
+            AssertCsharp(variable, @"A.B.C.D demo;
+");
         }
     }
 }

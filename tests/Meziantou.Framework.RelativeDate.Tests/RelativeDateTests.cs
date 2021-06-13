@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -12,7 +13,7 @@ namespace Meziantou.Framework.Tests
         public void DefaultDate_ToString()
         {
             DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
-            Assert.Throws<ArgumentException>(() => new RelativeDate(default).ToString());
+            new Func<object>(() => new RelativeDate(default).ToString()).Should().ThrowExactly<ArgumentException>();
         }
 
         [Theory]
@@ -25,13 +26,13 @@ namespace Meziantou.Framework.Tests
             DateTimeService.Clock = new Clock(now);
             var relativeDate = new RelativeDate(dateTime);
             var resultEn = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
-            Assert.Equal(expectedValueEn, resultEn);
+            resultEn.Should().Be(expectedValueEn);
 
             var resultEs = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("es-ES"));
-            Assert.Equal(expectedValueEn, resultEs);
+            resultEs.Should().Be(expectedValueEn);
 
             var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
-            Assert.Equal(expectedValueFr, resultFr);
+            resultFr.Should().Be(expectedValueFr);
         }
 
         public static IEnumerable<object[]> RelativeDate_ToString_Data

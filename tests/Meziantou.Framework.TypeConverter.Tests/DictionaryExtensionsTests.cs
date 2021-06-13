@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("test", "");
 
             // Assert
-            Assert.Equal("42", actual);
+            actual.Should().Be("42");
         }
 
         [Fact]
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("unknown", "");
 
             // Assert
-            Assert.Equal("", actual);
+            actual.Should().Be("");
         }
 
         [Fact]
@@ -51,7 +52,7 @@ namespace Meziantou.Framework.Tests
             var actual = dictionary.GetValueOrDefault("test", 0);
 
             // Assert
-            Assert.Equal(0, actual);
+            actual.Should().Be(0);
         }
     }
 }

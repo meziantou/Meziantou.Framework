@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -11,7 +12,7 @@ namespace Meziantou.Framework.Tests
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
 
-            Assert.Equal("en", value);
+            value.Should().Be("en");
         }
 
         [Fact]
@@ -20,7 +21,7 @@ namespace Meziantou.Framework.Tests
             var converter = new DefaultConverter();
             var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, new CultureInfo("en-US"));
 
-            Assert.Equal("en", value);
+            value.Should().Be("en");
         }
     }
 }

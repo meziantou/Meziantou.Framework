@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using Xunit;
@@ -68,8 +69,8 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                 var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
 
-                Assert.Equal(instance, deserialized);
-                Assert.Equal(instance, deserialized2);
+                deserialized.Should().Be(instance);
+                deserialized2.Should().Be(instance);
             }
 
             // Newtonsoft.Json
@@ -78,20 +79,18 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
                 var deserialized2 = Newtonsoft.Json.JsonConvert.DeserializeObject(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
 
-                Assert.Equal(instance, deserialized);
-                Assert.Equal(instance, deserialized2);
+                deserialized.Should().Be(instance);
+                deserialized2.Should().Be(instance);
             }
 
             // TypeConverter ToString - FromString
             {
                 var converter = TypeDescriptor.GetConverter(type);
-                Assert.True(converter.CanConvertTo(typeof(string)));
+                converter.CanConvertTo(typeof(string)).Should().BeTrue();
                 var str = converter.ConvertTo(instance, typeof(string));
 
-                Assert.True(converter.CanConvertFrom(typeof(string)));
-                var converted = converter.ConvertFrom(str);
-
-                Assert.Equal(instance, converted);
+                converter.CanConvertFrom(typeof(string)).Should().BeTrue();
+                converter.ConvertFrom(str).Should().Be(instance);
             }
 
             // BsonConverter
@@ -99,32 +98,32 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
                 var json = BsonExtensionMethods.ToJson(instance, type);
                 var deserialized = BsonSerializer.Deserialize(json, type);
 
-                Assert.Equal(instance, deserialized);
+                deserialized.Should().Be(instance);
             }
 
             var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
             var defaultInstance = from.Invoke(null, new object[] { defaultValue });
-            Assert.NotEqual(instance, defaultInstance);
+            defaultInstance.Should().NotBe(instance);
         }
 
         [Fact]
         public void TestNullableClass()
         {
             IdClassInt32 value = IdClassInt32.FromInt32(42);
-            Assert.False(value == null);
+            (value == null).Should().BeFalse();
         }
 
         [Fact]
         public void DisableSomeGenerator()
         {
-            Assert.Null(typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
+            typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>().Should().BeNull();
         }
 
         [Fact]
         public void CodeGeneratedAttribute()
         {
-            Assert.NotNull(typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
-            Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+            typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().NotBeNull();
+            typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().BeNull();
         }
 
         [StronglyTypedId(typeof(bool))]
@@ -235,7 +234,7 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         [StronglyTypedId(typeof(int))]
         private partial struct IdToStringDefined
         {
-            public override string ToString() => "";
+            public override readonly string ToString() => "";
         }
 
         [StronglyTypedId(typeof(int))]
@@ -263,7 +262,7 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
         {
         }
 
-        private partial class IdInt32Derived : IdInt32Base
+        private sealed partial class IdInt32Derived : IdInt32Base
         {
             public IdInt32Derived() : base(0)
             {

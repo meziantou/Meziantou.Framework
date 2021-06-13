@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
@@ -13,7 +14,7 @@ namespace Meziantou.Framework.Html.Tests
             var element2 = document.SelectSingleNode("//span[@id='id2']");
 
             var comparer = new HtmlNodeDepthComparer();
-            Assert.Equal(0, comparer.Compare(element1, element2));
+            comparer.Compare(element1, element2).Should().Be(0);
         }
 
         [Fact]
@@ -28,8 +29,8 @@ namespace Meziantou.Framework.Html.Tests
             {
                 Direction = ListSortDirection.Ascending,
             };
-            Assert.Equal(-1, comparer.Compare(element1, element2));
-            Assert.Equal(1, comparer.Compare(element2, element1));
+            comparer.Compare(element1, element2).Should().Be(-1);
+            comparer.Compare(element2, element1).Should().Be(1);
         }
 
         [Fact]
@@ -44,8 +45,8 @@ namespace Meziantou.Framework.Html.Tests
             {
                 Direction = ListSortDirection.Descending,
             };
-            Assert.Equal(1, comparer.Compare(element1, element2));
-            Assert.Equal(-1, comparer.Compare(element2, element1));
+            comparer.Compare(element1, element2).Should().Be(1);
+            comparer.Compare(element2, element1).Should().Be(-1);
         }
     }
 }

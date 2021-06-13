@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
@@ -462,7 +463,7 @@ CMD  /code/run-app
             var result = await GetDependencies(new GitSubmoduleDependencyScanner());
             AssertContainDependency(result, (DependencyType.GitSubmodule, remote.FullPath, head, 0, 0));
 
-            Assert.All(result, result => Assert.False(result.Location.IsUpdatable));
+            result.Should().OnlyContain(item => !item.Location.IsUpdatable);
 
             async Task ExecuteProcess(string process, string args, string workingDirectory)
             {
@@ -478,13 +479,8 @@ CMD  /code/run-app
 
             void AssertProcessResult(ProcessResult result)
             {
-                if (result.ExitCode == 0)
-                {
-                    _testOutputHelper.WriteLine("git command succeeds\n" + string.Join("\n", result.Output));
-                    return;
-                }
-
-                Assert.False(true, "git command failed. Logs:\n" + string.Join("\n", result.Output));
+                result.ExitCode.Should().Be(0, "git command should return 0. Logs:\n" + string.Join("\n", result.Output));
+                _testOutputHelper.WriteLine("git command succeeds\n" + string.Join("\n", result.Output));
             }
         }
 
@@ -533,7 +529,7 @@ jobs:
 
             AddFile(Path, Original);
             var scanner = new GitHubActionsScanner();
-            Assert.True(scanner.ShouldScanFile(Path));
+            scanner.ShouldScanFile(Path).Should().BeTrue();
             var result = await GetDependencies(scanner);
             AssertContainDependency(result,
                 (DependencyType.GitHubActions, "actions/checkout", "v2", 7, 32),
@@ -643,8 +639,7 @@ services:
                 dependencies2.Add(dep);
             }
 
-            Assert.Equal(dependencies.Count, dependencies2.Count);
-
+            dependencies2.Should().HaveCount(dependencies.Count);
             return dependencies;
         }
 
@@ -668,19 +663,26 @@ services:
         {
             foreach (var expected in expectedDepedencies)
             {
-                Assert.True(dependencies.Any(d =>
+                dependencies.Should().Contain(d =>
                     d.Type == expected.Type &&
                     d.Name == expected.Name &&
                     d.Version == expected.Version &&
                     (expected.Line == 0 || ((ILocationLineInfo)d.Location).LineNumber == expected.Line) &&
-                    (expected.Column == 0 || ((ILocationLineInfo)d.Location).LinePosition == expected.Column)), $"Dependency '{expected}' not found. Dependencies ({dependencies.Count()}):\n{string.Join("\n", dependencies)}");
+                    (expected.Column == 0 || ((ILocationLineInfo)d.Location).LinePosition == expected.Column), $"'{expected}' should be detected. Dependencies ({dependencies.Count()}):\n{string.Join("\n", dependencies)}");
             }
         }
 
         private void AssertFileContentEqual(string path, string expected, bool ignoreNewLines)
         {
             var fullPath = _directory.GetFullPath(path);
-            AssertExtensions.StringEquals(expected, File.ReadAllText(fullPath), ignoreNewLines);
+            var actual = File.ReadAllText(fullPath);
+            if (ignoreNewLines)
+            {
+                actual = actual.Replace("\r\n", "\n", StringComparison.Ordinal);
+                expected = expected.Replace("\r\n", "\n", StringComparison.Ordinal);
+            }
+
+            actual.Should().Be(expected);
         }
 
         public void Dispose()

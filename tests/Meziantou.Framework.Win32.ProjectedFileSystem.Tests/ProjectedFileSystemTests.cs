@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
@@ -37,14 +37,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                         },
                 };
 
-                try
-                {
-                    vfs.Start(options);
-                }
-                catch (NotSupportedException ex)
-                {
-                    Assert.True(false, ex.Message);
-                }
+                vfs.Start(options);
 
                 // Get content
                 var files = Directory.GetFiles(fullPath);
@@ -55,19 +48,19 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
                 }
 
                 var directories = Directory.GetDirectories(fullPath);
-                Assert.Single(directories);
-                Assert.Equal("folder", Path.GetFileName(directories[0]));
+                directories.Should().ContainSingle();
+                Path.GetFileName(directories[0]).Should().Be("folder");
 
                 // Get unknown file
                 var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-                Assert.False(fi2.Exists);
-                Assert.Throws<FileNotFoundException>(() => fi2.Length);
+                fi2.Exists.Should().BeFalse();
+                new Func<object>(() => fi2.Length).Should().ThrowExactly<FileNotFoundException>();
 
                 // Get file content
-                Assert.Equal(new byte[] { 1 }, File.ReadAllBytes(Path.Combine(fullPath, "a")));
+                File.ReadAllBytes(Path.Combine(fullPath, "a")).Should().Equal(new byte[] { 1 });
                 using var stream = File.OpenRead(Path.Combine(fullPath, "b"));
-                Assert.Equal(1, stream.ReadByte());
-                Assert.Equal(2, stream.ReadByte());
+                stream.ReadByte().Should().Be(1);
+                stream.ReadByte().Should().Be(2);
             }
             finally
             {

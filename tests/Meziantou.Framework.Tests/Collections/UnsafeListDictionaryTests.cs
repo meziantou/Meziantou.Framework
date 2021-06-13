@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -18,22 +18,22 @@ namespace Meziantou.Framework.Tests.Collections
             dict.Add(2, "b");
             dict.Add(2, "c");
 
-            Assert.Equal(3, dict.Count); // Allows duplicate values
-            Assert.True(dict.ContainsKey(1));
-            Assert.True(dict.ContainsKey(2));
-            Assert.False(dict.ContainsKey(4));
+            dict.Should().HaveCount(3); // Allows duplicate values
+            dict.Should().ContainKey(1);
+            dict.Should().ContainKey(2);
+            dict.Should().NotContainKey(4);
 
             dict[1] = "d";
-            Assert.Equal(3, dict.Count); // Replace existing item
+            dict.Count.Should().Be(3); // Replace existing item
 
-            Assert.Equal(new[] { 1, 2, 2 }, dict.Keys);
-            Assert.Equal(new[] { "d", "b", "c" }, dict.Values);
+            dict.Keys.Should().Equal(new[] { 1, 2, 2 });
+            dict.Values.Should().Equal(new[] { "d", "b", "c" });
 
             dict.Clear();
-            Assert.Equal(0, dict.Count);
+            dict.Count.Should().Be(0);
 
             dict.AddRange(new KeyValuePair<int, string>[] { new(4, "a"), new(5, "e") });
-            Assert.Equal(new[] { 4, 5 }, dict.Keys);
+            dict.Keys.Should().Equal(new[] { 4, 5 });
         }
 
         [Fact]
@@ -45,10 +45,10 @@ namespace Meziantou.Framework.Tests.Collections
             dict.Add(3, "c");
 
             var json = JsonSerializer.Serialize(dict);
-            Assert.StartsWith("{", json, StringComparison.Ordinal);
+            json.Should().StartWith("{");
             var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
 
-            Assert.Equal(dict, deserialized);
+            deserialized.Should().Equal(dict);
         }
     }
 }

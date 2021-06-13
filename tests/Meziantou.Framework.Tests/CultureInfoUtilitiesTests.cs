@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -11,7 +12,7 @@ namespace Meziantou.Framework.Tests
         public void NeutralEquals(string left, string right, bool expectedResult)
         {
             var actual = CultureInfo.GetCultureInfo(left).NeutralEquals(CultureInfo.GetCultureInfo(right));
-            Assert.Equal(expectedResult, actual);
+            actual.Should().Be(expectedResult);
         }
 
         [Fact]
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.Tests
         {
             CultureInfoUtilities.UseCulture(CultureInfo.GetCultureInfo("fr-FR"), () =>
             {
-                Assert.Equal("12,00", 12.ToString("F2", CultureInfo.CurrentCulture));
+                12.ToString("F2", CultureInfo.CurrentCulture).Should().Be("12,00");
             });
         }
     }

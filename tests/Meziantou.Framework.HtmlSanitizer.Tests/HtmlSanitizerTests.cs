@@ -3,6 +3,7 @@ using System.IO;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Sanitizers.Tests
@@ -44,11 +45,11 @@ namespace Meziantou.Framework.Sanitizers.Tests
 
             if (ignoreSpaces)
             {
-                Assert.Equal(FormatDocument(expectedDocument), FormatDocument(actualDocument));
+                FormatDocument(actualDocument).Should().Be(FormatDocument(expectedDocument));
             }
             else
             {
-                Assert.Equal(expectedDocument.Body.InnerHtml, actualDocument.Body.InnerHtml);
+                actualDocument.Body.InnerHtml.Should().Be(expectedDocument.Body.InnerHtml);
             }
         }
 

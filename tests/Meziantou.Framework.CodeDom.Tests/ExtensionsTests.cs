@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
@@ -11,18 +12,18 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
-            Assert.Equal("string.Test.Name", csharp);
+            csharp.Should().Be("string.Test.Name");
         }
 
         [Fact]
         public void CreateInvokeMethodExpression_VariableDeclaration()
         {
             var v = new VariableDeclarationStatement("a", typeof(string));
-            var member = v.InvokeMethod(LiteralExpression.Null());
+            var member = v.InvokeMethod(Expression.Null());
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
-            Assert.Equal("a(null)", csharp);
+            csharp.Should().Be("a(null)");
         }
 
         [Fact]
@@ -33,7 +34,7 @@ namespace Meziantou.Framework.CodeDom.Tests
 
             var csharp = new CSharpCodeGenerator().Write(member);
 
-            Assert.Equal("a(\"Test\", \"Name\")", csharp);
+            csharp.Should().Be("a(\"Test\", \"Name\")");
         }
     }
 }

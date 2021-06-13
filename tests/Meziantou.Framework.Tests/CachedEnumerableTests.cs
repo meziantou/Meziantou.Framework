@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -39,8 +40,8 @@ namespace Meziantou.Framework.Tests
             var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));
             var cachedEnumerable = CachedEnumerable.Create(enumerable);
 
-            Assert.Equal(new[] { 1, 2, 3 }, cachedEnumerable);
-            Assert.Equal(new[] { 1, 2, 3 }, cachedEnumerable);
+            cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
+            cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
         }
 
         [Fact]
@@ -61,32 +62,32 @@ namespace Meziantou.Framework.Tests
             var enumerator2 = cachedEnumerable.GetEnumerator();
 
             // Act & assert
-            Assert.True(enumerator1.MoveNext());
-            Assert.Equal(1, enumerator1.Current);
-            Assert.Equal(1, count);
+            enumerator1.MoveNext().Should().BeTrue();
+            enumerator1.Current.Should().Be(1);
+            count.Should().Be(1);
 
-            Assert.True(enumerator2.MoveNext());
-            Assert.Equal(1, enumerator2.Current);
-            Assert.Equal(1, count);
+            enumerator2.MoveNext().Should().BeTrue();
+            enumerator2.Current.Should().Be(1);
+            count.Should().Be(1);
 
-            Assert.True(enumerator2.MoveNext());
-            Assert.Equal(2, enumerator2.Current);
-            Assert.Equal(2, count);
+            enumerator2.MoveNext().Should().BeTrue();
+            enumerator2.Current.Should().Be(2);
+            count.Should().Be(2);
 
-            Assert.True(enumerator2.MoveNext());
-            Assert.Equal(3, enumerator2.Current);
-            Assert.Equal(3, count);
+            enumerator2.MoveNext().Should().BeTrue();
+            enumerator2.Current.Should().Be(3);
+            count.Should().Be(3);
 
-            Assert.True(enumerator1.MoveNext());
-            Assert.Equal(2, enumerator1.Current);
-            Assert.Equal(3, count);
+            enumerator1.MoveNext().Should().BeTrue();
+            enumerator1.Current.Should().Be(2);
+            count.Should().Be(3);
 
-            Assert.False(enumerator2.MoveNext());
-            Assert.True(enumerator1.MoveNext());
-            Assert.False(enumerator1.MoveNext());
-            Assert.Equal(3, count);
+            enumerator2.MoveNext().Should().BeFalse();
+            enumerator1.MoveNext().Should().BeTrue();
+            enumerator1.MoveNext().Should().BeFalse();
+            count.Should().Be(3);
 
-            Assert.Equal(new[] { 1, 2, 3 }, cachedEnumerable);
+            cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
         }
 
         [Fact]
@@ -118,10 +119,10 @@ namespace Meziantou.Framework.Tests
             await task;
 
             // Act & assert
-            Assert.Equal(maxCount, count);
+            count.Should().Be(maxCount);
             foreach (var result in results)
             {
-                Assert.Equal(Enumerable.Range(1, maxCount), result);
+                result.Should().Equal(Enumerable.Range(1, maxCount));
             }
         }
     }

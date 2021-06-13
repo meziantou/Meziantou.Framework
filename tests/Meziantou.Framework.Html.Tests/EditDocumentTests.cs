@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Html.Tests
 {
@@ -12,8 +13,7 @@ namespace Meziantou.Framework.Html.Tests
             var node = document.SelectSingleNode("/div/p[1]/text()", HtmlNodeNavigatorOptions.LowercasedAll);
             node.Value = "edited";
 
-            var html = document.OuterHtml;
-            Assert.Equal("<div><p>edited</p><p>sample2</p></div>", html);
+            document.OuterHtml.Should().Be("<div><p>edited</p><p>sample2</p></div>");
         }
 
         [Fact]
@@ -27,8 +27,7 @@ namespace Meziantou.Framework.Html.Tests
             anchorElement.InnerText = "sample";
             node.AppendChild(anchorElement);
 
-            var html = document.OuterHtml;
-            Assert.Equal("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>", html);
+            document.OuterHtml.Should().Be("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>");
         }
     }
 }

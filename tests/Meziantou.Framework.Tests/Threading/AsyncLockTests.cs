@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Threading.Tests
@@ -15,7 +16,7 @@ namespace Meziantou.Framework.Threading.Tests
                 {
                     if (asyncLock.TryLock(out var lockObject))
                     {
-                        Assert.True(false, "Should not be able to acquire the lock");
+                        false.Should().BeTrue("Should not be able to acquire the lock");
                     }
                 }
             }

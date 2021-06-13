@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
@@ -21,7 +22,7 @@ namespace Meziantou.Framework.Tests
         {
             var slug = Slug.Create(text);
 
-            Assert.Equal(expected, slug);
+            slug.Should().Be(expected);
         }
 
         [Theory]
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.Tests
             };
             var slug = Slug.Create(text, options);
 
-            Assert.Equal(expected, slug);
+            slug.Should().Be(expected);
         }
     }
 }

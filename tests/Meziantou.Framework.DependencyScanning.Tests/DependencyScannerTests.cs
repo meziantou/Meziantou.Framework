@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Enumeration;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using Xunit;
@@ -41,7 +42,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             }
 
             _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-            Assert.Equal(FileCount, items.Count);
+            items.Should().HaveCount(FileCount);
         }
 
         [Fact]
@@ -65,7 +66,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             }
 
             _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-            Assert.Empty(items);
+            items.Should().BeEmpty();
         }
 
         [Theory]
@@ -76,15 +77,11 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             await using var directory = TemporaryDirectory.Create();
             await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            {
-                await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, _ => ValueTask.CompletedTask);
-            });
+            await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+                .Should().ThrowExactlyAsync<InvalidOperationException>();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            {
-                await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, _ => ValueTask.CompletedTask);
-            });
+            await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+                .Should().ThrowExactlyAsync<InvalidOperationException>();
         }
 
         [Theory]
@@ -95,19 +92,19 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             await using var directory = TemporaryDirectory.Create();
             await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await new Func<Task>(async () =>
             {
                 await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
                 {
                 }
-            });
+            }).Should().ThrowExactlyAsync<InvalidOperationException>();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await new Func<Task>(async () =>
             {
                 await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
                 {
                 }
-            });
+            }).Should().ThrowExactlyAsync<InvalidOperationException>();
         }
 
         [Fact]
@@ -120,8 +117,8 @@ namespace Meziantou.Framework.DependencyScanning.Tests
                 .OrderBy(t => t.FullName)
                 .ToArray();
 
-            Assert.NotEmpty(scanners);
-            Assert.Equal(allScanners, scanners);
+            scanners.Should().NotBeEmpty();
+            scanners.Should().BeEquivalentTo(allScanners);
         }
 
         [Fact]
@@ -144,8 +141,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
             };
             var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options).ToListAsync();
 
-            Assert.Collection(result,
-                dep => Assert.Equal(file1, dep.Location.FilePath));
+            result.Should().SatisfyRespectively(dep => dep.Location.FilePath.Should().Be(file1));
         }
 
         private sealed class DummyScanner : DependencyScanner

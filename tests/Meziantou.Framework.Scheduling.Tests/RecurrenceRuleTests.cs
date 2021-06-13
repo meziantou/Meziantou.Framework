@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests
@@ -26,7 +27,7 @@ namespace Meziantou.Framework.Scheduling.Tests
 
             var text = rrule.Text;
 
-            Assert.Equal("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1", text);
+            text.Should().Be("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
         }
 
         [Fact]
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.Scheduling.Tests
 
             var text = rrule.Text;
 
-            Assert.Equal("FREQ=DAILY;INTERVAL=2;UNTIL=20000131T140000Z", text);
+            text.Should().Be("FREQ=DAILY;INTERVAL=2;UNTIL=20000131T140000Z");
         }
 
         [Fact]
@@ -46,7 +47,7 @@ namespace Meziantou.Framework.Scheduling.Tests
 
             var text = rrule.Text;
 
-            Assert.Equal("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE", text);
+            text.Should().Be("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");
         }
 
         [Fact]
@@ -56,7 +57,7 @@ namespace Meziantou.Framework.Scheduling.Tests
 
             var text = rrule.Text;
 
-            Assert.Equal("FREQ=MONTHLY;UNTIL=20000131T140000Z;BYMONTH=1;BYMONTHDAY=2;BYDAY=TU,WE", text);
+            text.Should().Be("FREQ=MONTHLY;UNTIL=20000131T140000Z;BYMONTH=1;BYMONTHDAY=2;BYDAY=TU,WE");
         }
 
         [Fact]
@@ -66,14 +67,14 @@ namespace Meziantou.Framework.Scheduling.Tests
 
             var text = rrule.Text;
 
-            Assert.Equal("FREQ=YEARLY;UNTIL=20000131T140000Z;BYMONTH=1;BYYEARDAY=1,-1;BYMONTHDAY=2;BYDAY=TU,WE", text);
+            text.Should().Be("FREQ=YEARLY;UNTIL=20000131T140000Z;BYMONTH=1;BYYEARDAY=1,-1;BYMONTHDAY=2;BYDAY=TU,WE");
         }
 
         private static void TestGetHumanText(string rruleText, string cultureInfo, string expectedText)
         {
             var rrule = RecurrenceRule.Parse(rruleText);
             var text = rrule.GetHumanText(new CultureInfo(cultureInfo));
-            Assert.Equal(expectedText, text);
+            text.Should().Be(expectedText);
         }
 
         [Fact]

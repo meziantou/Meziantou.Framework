@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests
@@ -13,7 +14,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: true);
-                Assert.True(result);
+                result.Should().BeTrue();
             });
         }
 
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: false);
-                Assert.False(result);
+                result.Should().BeFalse();
             });
         }
 
@@ -33,7 +34,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("Y\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", defaultValue: null);
-                Assert.True(result);
+                result.Should().BeTrue();
             });
         }
 
@@ -43,7 +44,7 @@ namespace Meziantou.Framework.CommandLineTests
             UsingConsole("no\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.False(result);
+                result.Should().BeFalse();
             });
         }
 
@@ -53,11 +54,11 @@ namespace Meziantou.Framework.CommandLineTests
             var output = UsingConsole("test\r\nYes\r\n", () =>
             {
                 var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-                Assert.True(result);
+                result.Should().BeTrue();
             });
 
-            Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));
-            Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) > 0);
+            output.IndexOf("test?", StringComparison.Ordinal).Should().Be(0);
+            output.LastIndexOf("test?", StringComparison.Ordinal).Should().BePositive();
         }
 
         private static string UsingConsole(string input, Action action)

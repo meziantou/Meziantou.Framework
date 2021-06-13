@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using TestUtilities;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests
 {
@@ -26,7 +27,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             };
 
             using var process = Process.Start(psi);
-            Assert.False(process.WaitForExit(500)); // Ensure process is started
+            process.WaitForExit(500).Should().BeFalse(); // Ensure process is started
 
             job.AssignProcess(process);
             job.Terminate();
@@ -52,7 +53,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             };
 
             using var process = Process.Start(psi);
-            Assert.False(process.WaitForExit(500)); // Ensure process is started
+            process.WaitForExit(500).Should().BeFalse(); // Ensure process is started
 
             job.AssignProcess(process);
             job.Close();
@@ -65,10 +66,10 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
         {
             var objectName = Guid.NewGuid().ToString("N");
             using var job = new JobObject(objectName);
-            Assert.False(job.IsInvalid);
+            job.IsInvalid.Should().BeFalse();
 
             using var openedJob = JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName);
-            Assert.False(openedJob.IsInvalid);
+            openedJob.IsInvalid.Should().BeFalse();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -82,7 +83,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
         public void IsAssignedToProcess_NotAssociated()
         {
             using var job = new JobObject();
-            Assert.False(job.IsAssignedToProcess(Process.GetCurrentProcess()));
+            job.IsAssignedToProcess(Process.GetCurrentProcess()).Should().BeFalse();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -92,7 +93,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests
             var process = Process.GetCurrentProcess();
             job.AssignProcess(process);
 
-            Assert.True(job.IsAssignedToProcess(process));
+            job.IsAssignedToProcess(process).Should().BeTrue();
         }
     }
 }

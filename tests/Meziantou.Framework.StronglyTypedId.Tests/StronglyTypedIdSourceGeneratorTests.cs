@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.StronglyTypedId.Tests
 {
@@ -34,7 +35,7 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
                 generators: new ISourceGenerator[] { generator });
 
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
-            Assert.Empty(diagnostics);
+            diagnostics.Should().BeEmpty();
 
             var runResult = driver.GetRunResult();
 
@@ -45,8 +46,8 @@ namespace Meziantou.Framework.StronglyTypedId.Tests
             {
                 var diags = string.Join("\n", result.Diagnostics);
                 var generated = (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString();
-                Assert.True(result.Success, "Project cannot build:\n" + diags + "\n\n\n" + generated);
-                Assert.Empty(result.Diagnostics);
+                result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
+                result.Diagnostics.Should().BeEmpty();
             }
 
             return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
@@ -69,8 +70,8 @@ namespace A
 }";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
             var alc = new AssemblyLoadContext("test", isCollectible: true);
             try
@@ -85,9 +86,9 @@ namespace A
                     var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                     var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
 
-                    Assert.Equal("10", json);
-                    Assert.Equal(instance, deserialized);
-                    Assert.Equal(instance, deserialized2);
+                    json.Should().Be("10");
+                    deserialized.Should().Be(instance);
+                    deserialized2.Should().Be(instance);
                 }
             }
             finally
@@ -110,8 +111,8 @@ namespace A
 }";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
             var alc = new AssemblyLoadContext("test", isCollectible: true);
             try
@@ -126,9 +127,9 @@ namespace A
                     var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                     var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
 
-                    Assert.Equal("10", json);
-                    Assert.Equal(instance, deserialized);
-                    Assert.Equal(instance, deserialized2);
+                    json.Should().Be("10");
+                    deserialized.Should().Be(instance);
+                    deserialized2.Should().Be(instance);
                 }
             }
             finally
@@ -146,8 +147,8 @@ public partial struct Test {}
 ";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
             var alc = new AssemblyLoadContext("test", isCollectible: true);
             try
@@ -162,8 +163,8 @@ public partial struct Test {}
                     var emptyInstance = from.Invoke(null, new object[] { Guid.Empty });
                     var instance = from.Invoke(null, new object[] { guid });
                     var newInstance = newMethod.Invoke(null, null);
-                    Assert.NotEqual(instance, newInstance);
-                    Assert.NotEqual(emptyInstance, newInstance);
+                    newInstance.Should().NotBe(instance);
+                    newInstance.Should().NotBe(emptyInstance);
                 }
             }
             finally
@@ -189,10 +190,10 @@ public partial struct Test : System.IEquatable<Test>
 ";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
-            Assert.NotNull(result.Assembly);
+            result.Assembly.Should().NotBeNull();
         }
 
         [Fact]
@@ -204,8 +205,8 @@ public partial struct Test {}
 ";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
             var alc = new AssemblyLoadContext("test", isCollectible: true);
             try
@@ -220,7 +221,7 @@ public partial struct Test {}
                         var instance = from.Invoke(null, new object[] { -42 });
                         var str = instance.ToString();
 
-                        Assert.Equal("Test { Value = -42 }", str);
+                        str.Should().Be("Test { Value = -42 }");
                     });
                 }
             }
@@ -239,8 +240,8 @@ public partial struct Test {}
 ";
             var result = await GenerateFiles(sourceCode);
 
-            Assert.Empty(result.GeneratorResult.Diagnostics);
-            Assert.Equal(2, result.GeneratorResult.GeneratedTrees.Length);
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
 
             var alc = new AssemblyLoadContext("test", isCollectible: true);
             try
@@ -250,7 +251,7 @@ public partial struct Test {}
                 {
                     var type = a.GetType("Test");
                     var parse = type.GetMember("Parse").Length;
-                    Assert.Equal(2, parse);
+                    parse.Should().Be(2);
                 }
             }
             finally

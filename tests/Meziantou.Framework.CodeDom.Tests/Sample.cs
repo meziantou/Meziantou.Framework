@@ -1,5 +1,6 @@
 ﻿using System;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.CodeDom.Tests
 {
@@ -10,8 +11,8 @@ namespace Meziantou.Framework.CodeDom.Tests
         {
             var expression = new MemberReferenceExpression(typeof(HashCode), nameof(HashCode.Combine));
 
-            Assert.NotNull(expression.TargetObject);
-            Assert.NotNull(expression.Name);
+            expression.TargetObject.Should().NotBeNull();
+            expression.Name.Should().NotBeNull();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Csv.Tests
 {
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Csv.Tests
             var actual = row.GetValueOrDefault("test", 0);
 
             // Assert
-            Assert.Equal(42, actual);
+            actual.Should().Be(42);
         }
     }
 }

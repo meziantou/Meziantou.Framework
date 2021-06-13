@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.CodeOwners.Tests
 {
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.CodeOwners.Tests
         public void ParseEmptyCodeOwners()
         {
             var actual = CodeOwnersParser.Parse("").ToArray();
-            Assert.Empty(actual);
+            actual.Should().BeEmpty();
         }
 
         [Fact]
@@ -23,7 +24,7 @@ namespace Meziantou.Framework.CodeOwners.Tests
                 CodeOwnersEntry.FromUsername("*", "user2"),
             };
 
-            Assert.Equal(expected, actual);
+            actual.Should().Equal(expected);
         }
 
         [Fact]
@@ -82,7 +83,7 @@ namespace Meziantou.Framework.CodeOwners.Tests
                 CodeOwnersEntry.FromUsername("/docs/", "doctocat"),
             };
 
-            Assert.Equal(expected, actual);
+            actual.Should().Equal(expected);
         }
 
         [Fact]
@@ -96,14 +97,16 @@ namespace Meziantou.Framework.CodeOwners.Tests
                 CodeOwnersEntry.FromUsername("*", "user2"),
             };
 
-            Assert.Equal(expected, actual);
+            actual.Should().Equal(expected);
         }
 
         [Fact]
         public void ParseTwice()
         {
             const string Content = "* @user1 @user2  ";
-            Assert.Equal(CodeOwnersParser.Parse(Content).ToArray(), CodeOwnersParser.Parse(Content).ToArray());
+            var parse1 = CodeOwnersParser.Parse(Content).ToArray();
+            var parse2 = CodeOwnersParser.Parse(Content).ToArray();
+            parse1.Should().Equal(parse2);
         }
     }
 }

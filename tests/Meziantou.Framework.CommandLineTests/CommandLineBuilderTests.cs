@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using FluentAssertions;
+using FluentAssertions.Execution;
 using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
@@ -117,10 +119,7 @@ namespace Meziantou.Framework.CommandLineTests
             process.WaitForExit();
 
             var errors = process.StandardError.ReadToEnd();
-            if (!string.IsNullOrWhiteSpace(errors))
-            {
-                Assert.True(false, "Errors: " + errors);
-            }
+            errors.Should().BeNullOrEmpty();
 
             var actualArguments = process.StandardOutput.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             _testOutputHelper.WriteLine("----------");
@@ -129,8 +128,11 @@ namespace Meziantou.Framework.CommandLineTests
                 _testOutputHelper.WriteLine(arg);
             }
 
-            Assert.Equal(expectedArguments, actualArguments);
-            Assert.Equal(0, process.ExitCode);
+            using (new AssertionScope())
+            {
+                process.ExitCode.Should().Be(0);
+                actualArguments.Should().BeEquivalentTo(expectedArguments);
+            }
         }
     }
 }

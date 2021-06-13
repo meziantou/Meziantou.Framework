@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Xunit;
+using FluentAssertions;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace Meziantou.Framework.Tests
@@ -16,7 +17,7 @@ namespace Meziantou.Framework.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var result = IOUtilities.IsChildPathOf(parent, child);
-                Assert.Equal(expectedResult, result);
+                result.Should().Be(expectedResult);
             }
         }
 
@@ -30,7 +31,7 @@ namespace Meziantou.Framework.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var result = IOUtilities.ArePathEqual(path1, path2);
-                Assert.Equal(expectedResult, result);
+                result.Should().Be(expectedResult);
             }
         }
 
@@ -45,7 +46,7 @@ namespace Meziantou.Framework.Tests
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var result = IOUtilities.MakeRelativePath(path1, path2);
-                Assert.Equal(expectedResult, result);
+                result.Should().Be(expectedResult);
             }
         }
 
@@ -56,7 +57,7 @@ namespace Meziantou.Framework.Tests
         public void ToValidFileName(string fileName, string expectedResult)
         {
             var result = IOUtilities.ToValidFileName(fileName);
-            Assert.Equal(expectedResult, result);
+            result.Should().Be(expectedResult);
         }
     }
 }

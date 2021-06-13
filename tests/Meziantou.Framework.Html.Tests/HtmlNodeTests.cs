@@ -1,4 +1,5 @@
 ﻿using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Html.Tests
 {
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var doc = new HtmlDocument();
             doc.AppendChild(doc.CreateText("abc"));
-            Assert.Equal("abc", doc.InnerText);
+            doc.InnerText.Should().Be("abc");
         }
 
         [Fact]
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("abc<p>def</p>");
-            Assert.Equal("abcdef", doc.InnerText);
+            doc.InnerText.Should().Be("abcdef");
         }
 
         [Fact]
@@ -25,7 +26,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("<p>def</p>");
-            Assert.Null(doc.SelectSingleNode("/p").ParentElement);
+            doc.SelectSingleNode("/p").ParentElement.Should().BeNull();
         }
 
         [Fact]
@@ -33,7 +34,7 @@ namespace Meziantou.Framework.Html.Tests
         {
             var doc = new HtmlDocument();
             doc.LoadHtml("<p>def</p>");
-            Assert.Equal("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
+            doc.SelectSingleNode("/p/node()").ParentElement.Name.Should().Be("p");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -82,7 +83,7 @@ namespace Meziantou.Framework.Tests
         public void ReflectionDynamicObject_StringConstructor_ThrowException()
         {
             var rdo = new ReflectionDynamicObject(typeof(Test3));
-            Assert.Throws<ArgumentException>(() => rdo.CreateInstance("tests"));
+            new Func<object>(() => rdo.CreateInstance("tests")).Should().ThrowExactly<ArgumentException>();
         }
 
 #pragma warning disable IDE0051 // Remove unused private members

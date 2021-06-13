@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS0618 // Type or member is obsolete
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -12,7 +13,7 @@ namespace Meziantou.Framework.Tests
             hashCodeCombiner.Add(new object());
             int hashCode = hashCodeCombiner;
 
-            Assert.Equal(hashCodeCombiner.HashCode, hashCode);
+            hashCode.Should().Be(hashCodeCombiner.HashCode);
         }
 
         [Fact]
@@ -20,7 +21,7 @@ namespace Meziantou.Framework.Tests
         {
             var hashCodeCombiner = new HashCodeCombiner();
             hashCodeCombiner.Add(new object());
-            Assert.NotEqual(0, hashCodeCombiner.HashCode);
+            hashCodeCombiner.HashCode.Should().NotBe(0);
         }
 
         [Fact]
@@ -35,9 +36,9 @@ namespace Meziantou.Framework.Tests
             var hashCodeCombiner3 = new HashCodeCombiner();
             hashCodeCombiner3.Add((object)new[] { new object() });
 
-            Assert.NotEqual(hashCodeCombiner1.HashCode, hashCodeCombiner2.HashCode);
-            Assert.NotEqual(hashCodeCombiner2.HashCode, hashCodeCombiner3.HashCode);
-            Assert.NotEqual(hashCodeCombiner3.HashCode, hashCodeCombiner1.HashCode);
+            hashCodeCombiner2.HashCode.Should().NotBe(hashCodeCombiner1.HashCode);
+            hashCodeCombiner3.HashCode.Should().NotBe(hashCodeCombiner2.HashCode);
+            hashCodeCombiner1.HashCode.Should().NotBe(hashCodeCombiner3.HashCode);
         }
     }
 }

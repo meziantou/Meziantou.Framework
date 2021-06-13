@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -23,8 +24,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("42", cultureInfo, out int value);
 
-            Assert.True(converted);
-            Assert.Equal(42, value);
+            converted.Should().BeTrue();
+            value.Should().Be(42);
         }
 
         [Fact]
@@ -34,7 +35,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out int _);
 
-            Assert.False(converted);
+            converted.Should().BeFalse();
         }
 
         [Fact]
@@ -44,8 +45,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("42", cultureInfo, out int? value);
 
-            Assert.True(converted);
-            Assert.Equal(42, value);
+            converted.Should().BeTrue();
+            value.Should().Be(42);
         }
 
         [Fact]
@@ -55,8 +56,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out int? value);
 
-            Assert.True(converted);
-            Assert.Null(value);
+            converted.Should().BeTrue();
+            value.Should().BeNull();
         }
 
         [Fact]
@@ -66,8 +67,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("2", cultureInfo, out SampleEnum value);
 
-            Assert.True(converted);
-            Assert.Equal(SampleEnum.Option2, value);
+            converted.Should().BeTrue();
+            value.Should().Be(SampleEnum.Option2);
         }
 
         [Fact]
@@ -77,8 +78,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("Option1, Option2", cultureInfo, out SampleEnum value);
 
-            Assert.True(converted);
-            Assert.Equal(SampleEnum.Option1 | SampleEnum.Option2, value);
+            converted.Should().BeTrue();
+            value.Should().Be(SampleEnum.Option1 | SampleEnum.Option2);
         }
 
         [Fact]
@@ -88,8 +89,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("Option1, 2", cultureInfo, out SampleEnum value);
 
-            Assert.True(converted);
-            Assert.Equal(SampleEnum.Option1 | SampleEnum.Option2, value);
+            converted.Should().BeTrue();
+            value.Should().Be(SampleEnum.Option1 | SampleEnum.Option2);
         }
 
         [Fact]
@@ -99,8 +100,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("3000000000", cultureInfo, out long? value);
 
-            Assert.True(converted);
-            Assert.Equal(3000000000L, value);
+            converted.Should().BeTrue();
+            value.Should().Be(3000000000L);
         }
 
         [Fact]
@@ -110,8 +111,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("fr-FR", cultureInfo, out CultureInfo value);
 
-            Assert.True(converted);
-            Assert.Equal("fr-FR", value.Name);
+            converted.Should().BeTrue();
+            value.Name.Should().Be("fr-FR");
         }
 
         [Fact]
@@ -121,8 +122,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("es", cultureInfo, out CultureInfo value);
 
-            Assert.True(converted);
-            Assert.Equal("es", value.Name);
+            converted.Should().BeTrue();
+            value.Name.Should().Be("es");
         }
 
         [Fact]
@@ -134,12 +135,12 @@ namespace Meziantou.Framework.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Assert.True(converted);
-                Assert.Equal("en-US", value.Name);
+                converted.Should().BeTrue();
+                value.Name.Should().Be("en-US");
             }
             else
             {
-                Assert.False(converted);
+                converted.Should().BeFalse();
             }
         }
 
@@ -150,7 +151,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo _);
 
-            Assert.False(converted);
+            converted.Should().BeFalse();
         }
 
         [Fact]
@@ -160,8 +161,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out CultureInfo value);
 
-            Assert.True(converted);
-            Assert.Equal(CultureInfo.InvariantCulture, value);
+            converted.Should().BeTrue();
+            value.Should().Be(CultureInfo.InvariantCulture);
         }
 
         [Fact]
@@ -172,8 +173,8 @@ namespace Meziantou.Framework.Tests
             string inputValue = null;
             var converted = converter.TryChangeType<CultureInfo>(inputValue, cultureInfo, out var value);
 
-            Assert.True(converted);
-            Assert.Null(value);
+            converted.Should().BeTrue();
+            value.Should().BeNull();
         }
 
         [Fact]
@@ -183,8 +184,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("", cultureInfo, out Uri value);
 
-            Assert.True(converted);
-            Assert.Null(value);
+            converted.Should().BeTrue();
+            value.Should().BeNull();
         }
 
         [Fact]
@@ -194,8 +195,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("test.png", cultureInfo, out Uri value);
 
-            Assert.True(converted);
-            Assert.Equal(new Uri("test.png", UriKind.Relative), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new Uri("test.png", UriKind.Relative));
         }
 
         [Fact]
@@ -205,8 +206,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("https://meziantou.net", cultureInfo, out Uri value);
 
-            Assert.True(converted);
-            Assert.Equal(new Uri("https://meziantou.net", UriKind.Absolute), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new Uri("https://meziantou.net", UriKind.Absolute));
         }
 
         [Fact]
@@ -216,8 +217,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("12:30", cultureInfo, out TimeSpan value);
 
-            Assert.True(converted);
-            Assert.Equal(new TimeSpan(12, 30, 0), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new TimeSpan(12, 30, 0));
         }
 
         [Fact]
@@ -227,8 +228,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("2d8a54aa-569b-404f-933b-693918885dba", cultureInfo, out Guid value);
 
-            Assert.True(converted);
-            Assert.Equal(new Guid("2d8a54aa-569b-404f-933b-693918885dba"), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new Guid("2d8a54aa-569b-404f-933b-693918885dba"));
         }
 
         [Fact]
@@ -238,8 +239,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("42.24", cultureInfo, out decimal value);
 
-            Assert.True(converted);
-            Assert.Equal(42.24m, value);
+            converted.Should().BeTrue();
+            value.Should().Be(42.24m);
         }
 
         [Fact]
@@ -249,8 +250,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[] value);
 
-            Assert.True(converted);
-            Assert.Equal(new byte[] { 0x0A, 0xFF }, value);
+            converted.Should().BeTrue();
+            value.Should().Equal(new byte[] { 0x0A, 0xFF });
         }
 
         [Fact]
@@ -260,8 +261,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[] value);
 
-            Assert.True(converted);
-            Assert.Equal(new byte[] { 1, 2, 3, 4 }, value);
+            converted.Should().BeTrue();
+            value.Should().Equal(new byte[] { 1, 2, 3, 4 });
         }
 
         [Fact]
@@ -271,7 +272,7 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] _);
 
-            Assert.False(converted);
+            converted.Should().BeFalse();
         }
 
         [Fact]
@@ -281,8 +282,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("2018/06/24 14:21:01", cultureInfo, out DateTime value);
 
-            Assert.True(converted);
-            Assert.Equal(new DateTime(2018, 06, 24, 14, 21, 01), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new DateTime(2018, 06, 24, 14, 21, 01));
         }
 
         [Fact]
@@ -292,8 +293,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("2018/06/24 14:21:01+0230", cultureInfo, out DateTimeOffset value);
 
-            Assert.True(converted);
-            Assert.Equal(new DateTimeOffset(2018, 06, 24, 14, 21, 01, new TimeSpan(2, 30, 0)), value);
+            converted.Should().BeTrue();
+            value.Should().Be(new DateTimeOffset(2018, 06, 24, 14, 21, 01, new TimeSpan(2, 30, 0)));
         }
 
         [Fact]
@@ -303,8 +304,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[] value);
 
-            Assert.True(converted);
-            Assert.Equal(new byte[] { 0x0d, 0x01, 0x02 }, value);
+            converted.Should().BeTrue();
+            value.Should().Equal(new byte[] { 0x0d, 0x01, 0x02 });
         }
 
         [Fact]
@@ -314,8 +315,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[] value);
 
-            Assert.True(converted);
-            Assert.Equal(new byte[] { 0x0d, 0x01 }, value);
+            converted.Should().BeTrue();
+            value.Should().Equal(new byte[] { 0x0d, 0x01 });
         }
 
         [Theory]
@@ -330,8 +331,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(text, cultureInfo, out bool value);
 
-            Assert.True(converted);
-            Assert.True(value);
+            converted.Should().BeTrue();
+            value.Should().BeTrue();
         }
 
         [Theory]
@@ -346,8 +347,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(text, cultureInfo, out bool value);
 
-            Assert.True(converted);
-            Assert.False(value);
+            converted.Should().BeTrue();
+            value.Should().BeFalse();
         }
     }
 }

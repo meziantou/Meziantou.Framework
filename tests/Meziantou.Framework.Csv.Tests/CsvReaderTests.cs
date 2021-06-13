@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using FluentAssertions;
+using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Csv.Tests
@@ -24,15 +26,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Null(row3);
+            using (new AssertionScope())
+            {
+                row1[0].Should().Be("value1.1");
+                row1[1].Should().Be("value1.2");
+                row1[2].Should().Be("value1.3");
 
-            Assert.Equal("value1.1", row1[0]);
-            Assert.Equal("value1.2", row1[1]);
-            Assert.Equal("value1.3", row1[2]);
+                row2[0].Should().Be("value2.1");
+                row2[1].Should().Be("value2.2");
+                row2[2].Should().Be("value2.3");
 
-            Assert.Equal("value2.1", row2[0]);
-            Assert.Equal("value2.2", row2[1]);
-            Assert.Equal("value2.3", row2[2]);
+                row3.Should().BeNull();
+            }
         }
 
         [Fact]
@@ -52,15 +57,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Null(row3);
+            using (new AssertionScope())
+            {
+                row1["column1"].Should().Be("value1.1");
+                row1["column2"].Should().Be("value1.2");
+                row1["column3"].Should().Be("value1.3");
 
-            Assert.Equal("value1.1", row1["column1"]);
-            Assert.Equal("value1.2", row1["column2"]);
-            Assert.Equal("value1.3", row1["column3"]);
+                row2["column1"].Should().Be("value2.1");
+                row2["column2"].Should().Be("value2.2");
+                row2["column3"].Should().Be("value2.3");
 
-            Assert.Equal("value2.1", row2["column1"]);
-            Assert.Equal("value2.2", row2["column2"]);
-            Assert.Equal("value2.3", row2["column3"]);
+                row3.Should().BeNull();
+            }
         }
 
         [Fact]
@@ -80,15 +88,18 @@ namespace Meziantou.Framework.Csv.Tests
             var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
             var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Null(row3);
+            using (new AssertionScope())
+            {
+                row1["column1"].Should().Be("value1.1");
+                row1["column2"].Should().Be("value1.2\r\nline2");
+                row1["column3"].Should().Be("value1.3");
 
-            Assert.Equal("value1.1", row1["column1"]);
-            Assert.Equal("value1.2\r\nline2", row1["column2"]);
-            Assert.Equal("value1.3", row1["column3"]);
+                row2["column1"].Should().Be("value2.1");
+                row2["column2"].Should().Be("value2.2");
+                row2["column3"].Should().Be("value2.3");
 
-            Assert.Equal("value2.1", row2["column1"]);
-            Assert.Equal("value2.2", row2["column2"]);
-            Assert.Equal("value2.3", row2["column3"]);
+                row3.Should().BeNull();
+            }
         }
 
         [Fact]
@@ -101,7 +112,7 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Equal("a\"c", row1[0]);
+            row1[0].Should().Be("a\"c");
         }
 
         [Fact]
@@ -114,7 +125,7 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Equal("\"bc", row1[0]);
+            row1[0].Should().Be("\"bc");
         }
 
         [Fact]
@@ -127,7 +138,7 @@ namespace Meziantou.Framework.Csv.Tests
             var reader = new CsvReader(sr);
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Equal("ab\"", row1[0]);
+            row1[0].Should().Be("ab\"");
         }
 
         [Fact]
@@ -144,8 +155,8 @@ namespace Meziantou.Framework.Csv.Tests
             };
             var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
 
-            Assert.Equal("ab", row1[0]);
-            Assert.Equal("cd", row1[1]);
+            row1[0].Should().Be("ab");
+            row1[1].Should().Be("cd");
         }
     }
 }

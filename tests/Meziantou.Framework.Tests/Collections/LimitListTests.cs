@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -18,7 +19,7 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddFirst(2);
 
             // Assert
-            Assert.Equal(new int[] { 2, 1 }, list.ToList());
+            list.ToList().Should().Equal(new int[] { 2, 1 });
         }
 
         [Fact]
@@ -34,7 +35,7 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddFirst(4);
 
             // Assert
-            Assert.Equal(new int[] { 4, 3, 2 }, list.ToList());
+            list.ToList().Should().Equal(new int[] { 4, 3, 2 });
         }
 
         [Fact]
@@ -48,7 +49,7 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddLast(2);
 
             // Assert
-            Assert.Equal(new int[] { 1, 2 }, list.ToList());
+            list.ToList().Should().Equal(new int[] { 1, 2 });
         }
 
         [Fact]
@@ -64,7 +65,7 @@ namespace Meziantou.Framework.Tests.Collections
             list.AddLast(4);
 
             // Assert
-            Assert.Equal(new int[] { 2, 3, 4 }, list.ToList());
+            list.ToList().Should().Equal(new int[] { 2, 3, 4 });
         }
 
         [Fact]
@@ -80,7 +81,7 @@ namespace Meziantou.Framework.Tests.Collections
             var index = list.IndexOf(2);
 
             // Assert
-            Assert.Equal(1, index);
+            index.Should().Be(1);
         }
 
         [Fact]
@@ -97,7 +98,7 @@ namespace Meziantou.Framework.Tests.Collections
             var index = list.IndexOf(1);
 
             // Assert
-            Assert.Equal(-1, index);
+            index.Should().Be(-1);
         }
 
         [Fact]
@@ -112,7 +113,7 @@ namespace Meziantou.Framework.Tests.Collections
             var count = list.Count;
 
             // Assert
-            Assert.Equal(2, count);
+            count.Should().Be(2);
         }
 
         [Fact]
@@ -127,7 +128,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(2);
 
             // Assert
-            Assert.True(result);
+            result.Should().BeTrue();
         }
 
         [Fact]
@@ -142,7 +143,7 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Contains(3);
 
             // Assert
-            Assert.False(result);
+            result.Should().BeFalse();
         }
 
         [Fact]
@@ -157,9 +158,8 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(1);
 
             // Assert
-            Assert.True(result);
-            Assert.Single(list);
-            Assert.Equal(2, list[0]);
+            result.Should().BeTrue();
+            list.Should().Equal(2);
         }
 
         [Fact]
@@ -175,10 +175,8 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(2);
 
             // Assert
-            Assert.True(result);
-            Assert.Equal(2, list.Count);
-            Assert.Equal(1, list[0]);
-            Assert.Equal(3, list[1]);
+            result.Should().BeTrue();
+            list.Should().Equal(1, 3);
         }
 
         [Fact]
@@ -192,9 +190,8 @@ namespace Meziantou.Framework.Tests.Collections
             var result = list.Remove(4);
 
             // Assert
-            Assert.False(result);
-            Assert.Single(list);
-            Assert.Equal(1, list[0]);
+            result.Should().BeFalse();
+            list.Should().Equal(1);
         }
 
         [Fact]
@@ -208,8 +205,7 @@ namespace Meziantou.Framework.Tests.Collections
             list[0] = 10;
 
             // Assert
-            Assert.Single(list);
-            Assert.Equal(10, list[0]);
+            list.Should().Equal(10);
         }
 
         [Fact]
@@ -223,9 +219,7 @@ namespace Meziantou.Framework.Tests.Collections
             list[1] = 10;
 
             // Assert
-            Assert.Equal(2, list.Count);
-            Assert.Equal(1, list[0]);
-            Assert.Equal(10, list[1]);
+            list.Should().Equal(1, 10);
         }
 
         [Fact]
@@ -235,7 +229,7 @@ namespace Meziantou.Framework.Tests.Collections
             var list = new LimitList<int>(3);
 
             // Act/Assert
-            Assert.Throws<ArgumentOutOfRangeException>(() => list[1] = 10);
+            new Func<object>(() => list[1] = 10).Should().ThrowExactly<ArgumentOutOfRangeException>();
         }
 
         [Fact]
@@ -251,9 +245,7 @@ namespace Meziantou.Framework.Tests.Collections
             list.RemoveAt(1);
 
             // Assert
-            Assert.Equal(2, list.Count);
-            Assert.Equal(1, list[0]);
-            Assert.Equal(3, list[1]);
+            list.Should().Equal(1, 3);
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -21,7 +22,7 @@ namespace Meziantou.Framework.Tests
 
             var result = byteByByteStream.ReadToEnd();
 
-            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, result);
+            result.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
         }
 
         [Theory]
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.Tests
 
             var result = await byteByByteStream.ReadToEndAsync();
 
-            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, result);
+            result.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
         }
 
         [Theory]
@@ -52,7 +53,7 @@ namespace Meziantou.Framework.Tests
             var buffer = new byte[5];
             byteByByteStream.TryReadAll(buffer, 0, 5);
 
-            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, buffer);
+            buffer.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
         }
 
         [Theory]
@@ -68,7 +69,7 @@ namespace Meziantou.Framework.Tests
             var buffer = new byte[5];
             await byteByByteStream.TryReadAllAsync(buffer, 0, 5);
 
-            Assert.Equal(new byte[] { 0, 1, 2, 3, 4 }, buffer);
+            buffer.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
         }
 
         private sealed class CustomStream : Stream

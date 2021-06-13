@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests
 {
@@ -47,15 +48,15 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 ResourceName = "test",
             });
 
-            Assert.Empty(result.Diagnostics);
-            Assert.Single(result.GeneratedTrees);
-            Assert.Equal("test.resx.cs", Path.GetFileName(result.GeneratedTrees[0].FilePath));
+            result.Diagnostics.Should().BeEmpty();
+            result.GeneratedTrees.Should().ContainSingle();
+            Path.GetFileName(result.GeneratedTrees[0].FilePath).Should().Be("test.resx.cs");
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
-            Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
-            Assert.DoesNotContain("FormatSample", fileContent, StringComparison.Ordinal);
+            fileContent.Should().Contain("Sample");
+            fileContent.Should().NotContain("FormatSample");
 
-            Assert.Contains("HelloWorld\n", fileContent, StringComparison.Ordinal);
-            Assert.Contains("FormatHelloWorld(object arg0)", fileContent, StringComparison.Ordinal);
+            fileContent.Should().Contain("HelloWorld\n");
+            fileContent.Should().Contain("FormatHelloWorld(object arg0)");
         }
 
         [Fact]
@@ -91,20 +92,18 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                     RootNamespace = "Test",
                 });
 
-            Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath),
-                tree =>
+            result.GeneratedTrees.OrderBy(t => t.FilePath).Should().SatisfyRespectively(tree =>
                 {
                     var fileContent = tree.GetRoot().ToFullString();
-                    Assert.Equal("test.NewResource.resx.cs", Path.GetFileName(tree.FilePath));
-                    Assert.Contains("BBB", fileContent, StringComparison.Ordinal);
-                },
-                tree =>
+                    Path.GetFileName(tree.FilePath).Should().Be("test.NewResource.resx.cs");
+                    fileContent.Should().Contain("BBB");
+                }, tree =>
                 {
                     var fileContent = tree.GetRoot().ToFullString();
-                    Assert.Equal("test.resx.cs", Path.GetFileName(tree.FilePath));
-                    Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
-                    Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
-                    Assert.Contains("AAA", fileContent, StringComparison.Ordinal);
+                    Path.GetFileName(tree.FilePath).Should().Be("test.resx.cs");
+                    fileContent.Should().Contain("Sample");
+                    fileContent.Should().Contain("HelloWorld");
+                    fileContent.Should().Contain("AAA");
                 });
         }
 
@@ -117,9 +116,9 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 RootNamespace = "proj",
             });
 
-            Assert.Empty(result.Diagnostics);
+            result.Diagnostics.Should().BeEmpty();
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
-            Assert.Contains("namespace proj" + Environment.NewLine, fileContent, StringComparison.Ordinal);
+            fileContent.Should().Contain("namespace proj" + Environment.NewLine);
         }
 
         [Fact]
@@ -132,7 +131,7 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
             });
 
             var fileContent = result.GeneratedTrees[0].GetRoot().ToFullString();
-            Assert.Contains("namespace proj.A" + Environment.NewLine, fileContent, StringComparison.Ordinal);
+            fileContent.Should().Contain("namespace proj.A" + Environment.NewLine);
         }
 
         [Fact]
@@ -144,7 +143,7 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 Namespace = "test",
             });
 
-            Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
+            result.Diagnostics.Should().SatisfyRespectively(diag => diag.Id.Should().Be("MFRG0001"));
         }
 
         private sealed class OptionProvider : AnalyzerConfigOptionsProvider

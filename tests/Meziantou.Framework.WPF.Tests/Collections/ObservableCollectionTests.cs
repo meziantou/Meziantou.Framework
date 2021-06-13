@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using FluentAssertions;
 using Meziantou.Framework.WPF.Collections;
 using Xunit;
 
@@ -39,7 +40,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add(1);
 
             // Assert
-            Assert.Equal(new[] { 1 }, collection.ToList());
+            collection.ToList().Should().Equal(new[] { 1 });
             eventAssert.AssertPropertyChanged("Count", "Item[]");
             eventAssert.AssertCollectionChangedAddItem(1);
         }
@@ -57,7 +58,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Remove(1);
 
             // Assert
-            Assert.Equal(new[] { 2 }, collection.ToList());
+            collection.ToList().Should().Equal(new[] { 2 });
             eventAssert.AssertPropertyChanged("Count", "Item[]");
             eventAssert.AssertCollectionChangedRemoveItem(1);
         }
@@ -76,7 +77,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.RemoveAt(0);
 
             // Assert
-            Assert.Equal(new[] { 2, 3 }, collection.ToList());
+            collection.ToList().Should().Equal(new[] { 2, 3 });
             eventAssert.AssertPropertyChanged("Count", "Item[]");
             eventAssert.AssertCollectionChangedRemoveItem(1);
         }
@@ -92,7 +93,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Insert(index: 0, item: 1);
 
             // Assert
-            Assert.Equal(new[] { 1 }, collection.ToList());
+            collection.ToList().Should().Equal(new[] { 1 });
             eventAssert.AssertPropertyChanged("Count", "Item[]");
             eventAssert.AssertCollectionChangedAddItem(1);
         }
@@ -111,7 +112,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Clear();
 
             // Assert
-            Assert.Equal(Array.Empty<int>(), collection.ToList());
+            collection.ToList().Should().BeEmpty();
             eventAssert.AssertPropertyChanged("Count", "Item[]");
             eventAssert.AssertCollectionChangedReset();
         }
@@ -128,7 +129,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection[0] = 2;
 
             // Assert
-            Assert.Equal(new[] { 2 }, collection.ToList());
+            collection.ToList().Should().Equal(new[] { 2 });
             eventAssert.AssertPropertyChanged("Item[]");
             eventAssert.AssertCollectionChangedReplace(oldValue: 1, newValue: 2);
         }
@@ -140,7 +141,7 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add(null);
             collection.Add("");
 
-            Assert.Throws<ArgumentException>(() => collection.Add(10));
+            new Action(() => collection.Add(10)).Should().ThrowExactly<ArgumentException>();
         }
 
         private sealed class EventAssert : IDisposable
@@ -189,67 +190,54 @@ namespace Meziantou.Framework.Windows.Tests
 
             public void AssertPropertyChanged(params string[] propertyNames)
             {
-                Assert.Equal(propertyNames, _propertyChangedArgs.Select(e => e.PropertyName).ToList());
+                _propertyChangedArgs.Select(e => e.PropertyName).ToList().Should().Equal(propertyNames);
             }
 
             public void AssertCollectionChangedAddItem(object obj)
             {
-                Assert.Single(_collectionChangedArgs);
+                _collectionChangedArgs.Should().ContainSingle();
                 var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
 
-                if (!Equals(args.NewItems[0], obj))
-                {
-                    Assert.True(false, "The item was not added");
-                }
+                args.NewItems[0].Should().Be(obj);
 
-                Assert.Equal(0, args.NewStartingIndex);
-                Assert.Equal(-1, args.OldStartingIndex);
-                Assert.Null(args.OldItems);
+                args.NewStartingIndex.Should().Be(0);
+                args.OldStartingIndex.Should().Be(-1);
+                args.OldItems.Should().BeNull();
             }
 
             public void AssertCollectionChangedRemoveItem(object obj)
             {
-                Assert.Single(_collectionChangedArgs);
+                _collectionChangedArgs.Should().ContainSingle();
                 var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Remove);
 
-                if (!Equals(args.OldItems[0], obj))
-                {
-                    Assert.True(false, "The item was not removed");
-                }
+                args.OldItems[0].Should().Be(obj);
 
-                Assert.Equal(-1, args.NewStartingIndex);
-                Assert.Equal(0, args.OldStartingIndex);
-                Assert.Null(args.NewItems);
+                args.NewStartingIndex.Should().Be(-1);
+                args.OldStartingIndex.Should().Be(0);
+                args.NewItems.Should().BeNull();
             }
 
             public void AssertCollectionChangedReset()
             {
-                Assert.Single(_collectionChangedArgs);
+                _collectionChangedArgs.Should().ContainSingle();
                 var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Reset);
 
-                Assert.Equal(-1, args.NewStartingIndex);
-                Assert.Equal(-1, args.OldStartingIndex);
-                Assert.Null(args.NewItems);
-                Assert.Null(args.OldItems);
+                args.NewStartingIndex.Should().Be(-1);
+                args.OldStartingIndex.Should().Be(-1);
+                args.NewItems.Should().BeNull();
+                args.OldItems.Should().BeNull();
             }
 
             public void AssertCollectionChangedReplace(object oldValue, object newValue)
             {
-                Assert.Single(_collectionChangedArgs);
+                _collectionChangedArgs.Should().ContainSingle();
                 var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Replace);
 
-                if (!Equals(args.NewItems[0], newValue))
-                {
-                    Assert.True(false, "The item was not added");
-                }
+                args.NewItems[0].Should().Be(newValue);
+                args.OldItems[0].Should().Be(oldValue);
 
-                if (!Equals(args.OldItems[0], oldValue))
-                {
-                    Assert.True(false, "The item was not added");
-                }
-
-                Assert.Equal(0, args.NewStartingIndex);
-                Assert.Equal(0, args.OldStartingIndex);
+                args.NewStartingIndex.Should().Be(0);
+                args.OldStartingIndex.Should().Be(0);
             }
         }
     }

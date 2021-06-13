@@ -2,6 +2,7 @@
 using System.Threading;
 using TestUtilities;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Tests
 {
@@ -30,14 +31,14 @@ namespace Meziantou.Framework.Win32.Tests
             CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Equal(_credentialName1, cred.ApplicationName);
-            Assert.Equal("John", cred.UserName);
-            Assert.Equal("Doe", cred.Password);
-            Assert.Equal("Test", cred.Comment);
+            cred.ApplicationName.Should().Be(_credentialName1);
+            cred.UserName.Should().Be("John");
+            cred.Password.Should().Be("Doe");
+            cred.Comment.Should().Be("Test");
 
             CredentialManager.DeleteCredential(_credentialName1);
             cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Null(cred);
+            cred.Should().BeNull();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -48,7 +49,7 @@ namespace Meziantou.Framework.Win32.Tests
             try
             {
                 var creds = CredentialManager.EnumerateCredentials(_prefix + "*");
-                Assert.Equal(2, creds.Count);
+                creds.Count.Should().Be(2);
             }
             finally
             {
@@ -64,14 +65,14 @@ namespace Meziantou.Framework.Win32.Tests
             CredentialManager.WriteCredential(_credentialName1, "John", "Doe", comment, CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Equal(_credentialName1, cred.ApplicationName);
-            Assert.Equal("John", cred.UserName);
-            Assert.Equal("Doe", cred.Password);
-            Assert.Equal(comment, cred.Comment);
+            cred.ApplicationName.Should().Be(_credentialName1);
+            cred.UserName.Should().Be("John");
+            cred.Password.Should().Be("Doe");
+            cred.Comment.Should().Be(comment);
 
             CredentialManager.DeleteCredential(_credentialName1);
             cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Null(cred);
+            cred.Should().BeNull();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -81,11 +82,11 @@ namespace Meziantou.Framework.Win32.Tests
             CredentialManager.WriteCredential(_credentialName1, "John", secret, CredentialPersistence.Session);
 
             var cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Equal(secret, cred.Password);
+            cred.Password.Should().Be(secret);
 
             CredentialManager.DeleteCredential(_credentialName1);
             cred = CredentialManager.ReadCredential(_credentialName1);
-            Assert.Null(cred);
+            cred.Should().BeNull();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -104,7 +105,7 @@ namespace Meziantou.Framework.Win32.Tests
                         _ = credential.UserName;
                     }
 
-                    Assert.NotEmpty(credentials);
+                    credentials.Should().NotBeEmpty();
                 }
                 finally
                 {

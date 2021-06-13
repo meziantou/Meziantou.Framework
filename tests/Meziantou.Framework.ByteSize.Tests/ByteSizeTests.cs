@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Globalization;
+using FluentAssertions;
+using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -24,10 +26,8 @@ namespace Meziantou.Framework.Tests
             var byteSize = new ByteSize(length);
             var formattedValue = byteSize.ToString(format, CultureInfo.InvariantCulture);
 
-            Assert.Equal(expectedValue, formattedValue);
-            Assert.Equal(
-                ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture),
-                ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture));
+            formattedValue.Should().Be(expectedValue);
+            ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture).Should().Be(ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture));
         }
 
         [Theory]
@@ -41,7 +41,7 @@ namespace Meziantou.Framework.Tests
             var byteSize = new ByteSize(length);
             var formattedValue = byteSize.ToString(unit, CultureInfo.InvariantCulture);
 
-            Assert.Equal(expectedValue, formattedValue);
+            formattedValue.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -57,9 +57,12 @@ namespace Meziantou.Framework.Tests
             var actual = ByteSize.Parse(str, CultureInfo.InvariantCulture);
             var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
 
-            Assert.Equal(expectedValue, actual.Value);
-            Assert.Equal(expectedValue, actualTry.Value);
-            Assert.True(parsed);
+            using (new AssertionScope())
+            {
+                actual.Value.Should().Be(expectedValue);
+                actualTry.Value.Should().Be(expectedValue);
+                parsed.Should().BeTrue();
+            }
         }
 
         [Theory]
@@ -67,10 +70,11 @@ namespace Meziantou.Framework.Tests
         [InlineData("1AB")]
         public void Parse_Invalid(string str)
         {
-            Assert.Throws<FormatException>(() => ByteSize.Parse(str, CultureInfo.InvariantCulture));
-            var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
+            Func<object> parse = () => ByteSize.Parse(str, CultureInfo.InvariantCulture);
+            parse.Should().ThrowExactly<FormatException>();
 
-            Assert.False(parsed);
+            var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
+            parsed.Should().BeFalse();
         }
     }
 }

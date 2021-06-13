@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Templating.Tests
 {
@@ -18,7 +19,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Sample", result);
+            result.Should().Be("Sample");
         }
 
         [Fact]
@@ -32,7 +33,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Sample", result);
+            result.Should().Be("Sample");
         }
 
         [Fact]
@@ -46,7 +47,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Sample", result);
+            result.Should().Be("Sample");
         }
 
         [Fact]
@@ -61,7 +62,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run("Meziantou");
 
             // Assert
-            Assert.Equal("Hello Meziantou!", result);
+            result.Should().Be("Hello Meziantou!");
         }
 
         [Fact]
@@ -80,7 +81,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(arguments);
 
             // Assert
-            Assert.Equal("Hello Meziantou!", result);
+            result.Should().Be("Hello Meziantou!");
         }
 
         [Fact]
@@ -94,7 +95,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Hello 12345!", result);
+            result.Should().Be("Hello 12345!");
         }
 
         [Fact]
@@ -109,7 +110,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run("John");
 
             // Assert
-            Assert.Equal("Hello John!", result);
+            result.Should().Be("Hello John!");
         }
 
         [Fact]
@@ -134,7 +135,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Hello debug!", result);
+            result.Should().Be("Hello debug!");
         }
 
         [Fact]
@@ -159,7 +160,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run();
 
             // Assert
-            Assert.Equal("Hello release!", result);
+            result.Should().Be("Hello release!");
         }
     }
 }

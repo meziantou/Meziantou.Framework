@@ -2,6 +2,7 @@
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -17,7 +18,7 @@ namespace Meziantou.Framework.Tests
                 return "_";
             });
 
-            Assert.Equal("a___b", actual);
+            actual.Should().Be("a___b");
         }
     }
 }

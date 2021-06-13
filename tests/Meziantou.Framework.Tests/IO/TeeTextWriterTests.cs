@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Meziantou.Framework.IO;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests.IO
 {
@@ -15,8 +16,8 @@ namespace Meziantou.Framework.Tests.IO
             tee.Write("abc");
             tee.Flush();
 
-            Assert.Equal("abc", sw1.ToString());
-            Assert.Equal("abc", sw2.ToString());
+            sw1.ToString().Should().Be("abc");
+            sw2.ToString().Should().Be("abc");
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -11,9 +12,9 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void IsEmpty()
         {
-            Assert.True(default(FullPath).IsEmpty);
-            Assert.True(FullPath.Empty.IsEmpty);
-            Assert.False(FullPath.FromPath("test").IsEmpty);
+            default(FullPath).IsEmpty.Should().BeTrue();
+            FullPath.Empty.IsEmpty.Should().BeTrue();
+            FullPath.FromPath("test").IsEmpty.Should().BeFalse();
         }
 
         [Fact]
@@ -21,7 +22,7 @@ namespace Meziantou.Framework.Tests
         {
             var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
             var expected = FullPath.Combine("test", "a", "b");
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Theory]
@@ -35,7 +36,7 @@ namespace Meziantou.Framework.Tests
             var rootPath = FullPath.FromPath("test");
             var path1 = FullPath.Combine("test", childPath);
 
-            Assert.Equal(expected, path1.MakePathRelativeTo(rootPath));
+            path1.MakePathRelativeTo(rootPath).Should().Be(expected);
         }
 
         [Theory]
@@ -47,7 +48,7 @@ namespace Meziantou.Framework.Tests
             var rootPath = FullPath.FromPath(root);
             var childPath = FullPath.Combine(root, path);
 
-            Assert.True(childPath.IsChildOf(rootPath));
+            childPath.IsChildOf(rootPath).Should().BeTrue();
         }
 
         [Theory]
@@ -63,7 +64,7 @@ namespace Meziantou.Framework.Tests
             var rootPath = FullPath.FromPath(root);
             var childPath = FullPath.FromPath(path);
 
-            Assert.False(childPath.IsChildOf(rootPath));
+            childPath.IsChildOf(rootPath).Should().BeFalse();
         }
 
         [Theory]
@@ -75,7 +76,7 @@ namespace Meziantou.Framework.Tests
             var rootPath = FullPath.FromPath(root);
             var childPath = FullPath.FromPath(path);
 
-            Assert.NotEqual(childPath, rootPath);
+            rootPath.Should().NotBe(childPath);
         }
 
         [Theory]
@@ -89,53 +90,53 @@ namespace Meziantou.Framework.Tests
             var rootPath = FullPath.FromPath(root);
             var childPath = FullPath.FromPath(path);
 
-            Assert.Equal(childPath, rootPath);
+            rootPath.Should().Be(childPath);
         }
 
         [Fact]
         public void JsonSerialize_RoundTripEmpty()
         {
             var value = FullPath.Empty;
-            Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
+            JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)).Should().Be(value);
         }
 
         [Fact]
         public void JsonSerialize_RoundTripNonEmpty()
         {
             var value = FullPath.FromPath(@"c:\test");
-            Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
+            JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)).Should().Be(value);
         }
 
         [Fact]
         public void JsonSerialize_Empty()
         {
-            Assert.Equal("\"\"", JsonSerializer.Serialize(FullPath.Empty));
+            JsonSerializer.Serialize(FullPath.Empty).Should().Be("\"\"");
         }
 
         [Fact]
         public void JsonSerialize_NonEmpty()
         {
             var path = System.Environment.CurrentDirectory;
-            Assert.Equal(JsonSerializer.Serialize(path), JsonSerializer.Serialize(FullPath.FromPath(path)));
-            Assert.Equal(path, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value);
+            JsonSerializer.Serialize(FullPath.FromPath(path)).Should().Be(JsonSerializer.Serialize(path));
+            JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value.Should().Be(path);
         }
 
         [Fact]
         public void JsonDeserialize_Null()
         {
-            Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@"null"));
+            JsonSerializer.Deserialize<FullPath>(@"null").Should().Be(FullPath.Empty);
         }
 
         [Fact]
         public void JsonDeserialize_Empty()
         {
-            Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@""""""));
+            JsonSerializer.Deserialize<FullPath>(@"""""").Should().Be(FullPath.Empty);
         }
 
         [Fact]
         public void JsonDeserialize_NonEmpty()
         {
-            Assert.Equal(FullPath.FromPath(@"c:\test"), JsonSerializer.Deserialize<FullPath>(@"""c:\\test"""));
+            JsonSerializer.Deserialize<FullPath>(@"""c:\\test""").Should().Be(FullPath.FromPath(@"c:\test"));
         }
 
         [Fact]
@@ -143,17 +144,17 @@ namespace Meziantou.Framework.Tests
         {
             await using var temp = TemporaryDirectory.Create();
             var path = temp.CreateEmptyFile("a.txt");
-            Assert.False(path.IsSymbolicLink());
-            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+            path.IsSymbolicLink().Should().BeFalse();
+            path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
 
             // Create symlink
             var symlink = temp.GetFullPath("b.txt");
             CreateSymlink(symlink, path, SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
 
-            Assert.True(File.Exists(symlink), "File does not exist");
-            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
-            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
-            Assert.Equal(path, target);
+            File.Exists(symlink).Should().BeTrue("File does not exist");
+            symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
+            symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
+            target.Should().Be(path);
         }
 
         [Fact]
@@ -161,17 +162,17 @@ namespace Meziantou.Framework.Tests
         {
             await using var temp = TemporaryDirectory.Create();
             var path = temp.CreateEmptyFile("a.txt");
-            Assert.False(path.IsSymbolicLink());
-            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+            path.IsSymbolicLink().Should().BeFalse();
+            path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
 
             // Create symlink
             var symlink = temp.GetFullPath("b.txt");
             CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
 
-            Assert.True(File.Exists(symlink), "File does not exist");
-            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
-            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
-            Assert.Equal(path, target);
+            File.Exists(symlink).Should().BeTrue("File does not exist");
+            symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
+            symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
+            target.Should().Be(path);
         }
 
         [Fact]
@@ -179,17 +180,17 @@ namespace Meziantou.Framework.Tests
         {
             await using var temp = TemporaryDirectory.Create();
             var path = temp.CreateDirectory("a");
-            Assert.False(path.IsSymbolicLink());
-            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+            path.IsSymbolicLink().Should().BeFalse();
+            path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
 
             // Create symlink
             var symlink = temp.GetFullPath("b");
             CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
 
-            Assert.True(Directory.Exists(symlink), "Directory does not exist");
-            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
-            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
-            Assert.Equal(path, target);
+            Directory.Exists(symlink).Should().BeTrue("Directory should exist");
+            symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
+            symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
+            target.Should().Be(path);
         }
 
         [Fact]
@@ -197,17 +198,17 @@ namespace Meziantou.Framework.Tests
         {
             await using var temp = TemporaryDirectory.Create();
             var path = temp.CreateDirectory("a");
-            Assert.False(path.IsSymbolicLink());
-            Assert.False(path.TryGetSymbolicLinkTarget(out _));
+            path.IsSymbolicLink().Should().BeFalse();
+            path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
 
             // Create symlink
             var symlink = temp.GetFullPath("b");
             CreateSymlink(symlink, "a", SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
 
-            Assert.True(Directory.Exists(symlink), "Directory does not exist");
-            Assert.True(symlink.IsSymbolicLink(), "IsSymbolicLink should be true");
-            Assert.True(symlink.TryGetSymbolicLinkTarget(out var target), "TryGetSymbolicLinkTarget should be true");
-            Assert.Equal(path, target);
+            Directory.Exists(symlink).Should().BeTrue("Directory does not exist");
+            symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
+            symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
+            target.Should().Be(path);
         }
 
         private static bool IsWindows()
@@ -224,7 +225,7 @@ namespace Meziantou.Framework.Tests
 #if NETCOREAPP3_1 || NET5_0 || NET6_0
             else
             {
-                Assert.Equal(0, Mono.Unix.Native.Syscall.symlink(target, source));
+                Mono.Unix.Native.Syscall.symlink(target, source).Should().Be(0);
             }
 #endif
         }

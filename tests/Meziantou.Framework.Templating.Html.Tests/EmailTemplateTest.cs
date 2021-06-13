@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests
 {
@@ -15,8 +16,8 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.Equal("Hello Meziantou!", result);
-            Assert.Null(metadata.Title);
+            result.Should().Be("Hello Meziantou!");
+            metadata.Title.Should().BeNull();
         }
 
         [Fact]
@@ -30,8 +31,8 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.Equal("Hello Meziantou!", result);
-            Assert.Equal("Meziantou", metadata.Title);
+            result.Should().Be("Hello Meziantou!");
+            metadata.Title.Should().Be("Meziantou");
         }
 
         [Fact]
@@ -45,7 +46,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.Equal("Hello &lt;Meziantou&gt;!", result);
+            result.Should().Be("Hello &lt;Meziantou&gt;!");
         }
 
         [Fact]
@@ -59,7 +60,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.Equal("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
+            result.Should().Be("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!");
         }
 
         [Fact]
@@ -73,7 +74,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.Equal("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
+            result.Should().Be("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!");
         }
 
         [Fact]
@@ -87,7 +88,7 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out _);
 
             // Assert
-            Assert.Equal("0 1 2 ", result);
+            result.Should().Be("0 1 2 ");
         }
 
         [Fact]
@@ -101,10 +102,10 @@ namespace Meziantou.Framework.Templating.Tests
             var result = template.Run(out var metadata);
 
             // Assert
-            Assert.Equal("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
-            Assert.Equal(2, metadata.ContentIdentifiers.Count);
-            Assert.Equal("test1.png", metadata.ContentIdentifiers[0]);
-            Assert.Equal("test2.png", metadata.ContentIdentifiers[1]);
+            result.Should().Be("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />");
+            metadata.ContentIdentifiers.Should().SatisfyRespectively(
+                item => item.Should().Be("test1.png"),
+                item => item.Should().Be("test2.png"));
         }
     }
 }

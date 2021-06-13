@@ -1,4 +1,5 @@
 ﻿using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.CommandLineTests
 {
@@ -18,9 +19,9 @@ namespace Meziantou.Framework.CommandLineTests
             var valueC = parser.HasArgument("c");
 
             // Assert
-            Assert.True(valueA);
-            Assert.True(valueB);
-            Assert.False(valueC);
+            valueA.Should().BeTrue();
+            valueB.Should().BeTrue();
+            valueC.Should().BeFalse();
         }
 
         [Fact]
@@ -37,9 +38,9 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.Equal("value1", valueA);
-            Assert.Equal("value2", valueB);
-            Assert.False(helpRequested);
+            valueA.Should().Be("value1");
+            valueB.Should().Be("value2");
+            helpRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -56,9 +57,9 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.Equal("value1", valueA);
-            Assert.Equal("value2", valueB);
-            Assert.False(helpRequested);
+            valueA.Should().Be("value1");
+            valueB.Should().Be("value2");
+            helpRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -75,9 +76,9 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.Equal("value1 ", valueA);
-            Assert.Equal("value2", valueB);
-            Assert.False(helpRequested);
+            valueA.Should().Be("value1 ");
+            valueB.Should().Be("value2");
+            helpRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -93,8 +94,8 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.Equal("   ", valueA);
-            Assert.False(helpRequested);
+            valueA.Should().Be("   ");
+            helpRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -109,7 +110,7 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.True(helpRequested);
+            helpRequested.Should().BeTrue();
         }
 
         [Fact]
@@ -124,7 +125,7 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.True(helpRequested);
+            helpRequested.Should().BeTrue();
         }
 
         [Fact]
@@ -139,7 +140,7 @@ namespace Meziantou.Framework.CommandLineTests
             var helpRequested = parser.HelpRequested;
 
             // Assert
-            Assert.False(helpRequested);
+            helpRequested.Should().BeFalse();
         }
     }
 }

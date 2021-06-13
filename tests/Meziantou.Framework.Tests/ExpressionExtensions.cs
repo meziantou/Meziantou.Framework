@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -13,9 +14,9 @@ namespace Meziantou.Framework.Tests
             Expression<Func<int, bool>> func2 = n => n < 10;
 
             var func = func1.AndAlso(func2).Compile();
-            Assert.True(func(1));
-            Assert.False(func(100));
-            Assert.False(func(0));
+            func(1).Should().BeTrue();
+            func(100).Should().BeFalse();
+            func(0).Should().BeFalse();
         }
 
         [Fact]
@@ -25,9 +26,9 @@ namespace Meziantou.Framework.Tests
             Expression<Func<int, bool>> func2 = n => n > 10;
 
             var func = func1.OrElse(func2).Compile();
-            Assert.False(func(1));
-            Assert.True(func(100));
-            Assert.True(func(-1));
+            func(1).Should().BeFalse();
+            func(100).Should().BeTrue();
+            func(-1).Should().BeTrue();
         }
     }
 }

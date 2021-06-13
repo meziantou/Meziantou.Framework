@@ -1,6 +1,7 @@
 ﻿using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Globbing.Tests
 {
@@ -15,7 +16,7 @@ namespace Meziantou.Framework.Globbing.Tests
         private static Segment[] GetSubSegments(string pattern)
         {
             var glob = Glob.Parse(pattern, GlobOptions.None);
-            Assert.Collection(glob._segments, item => Assert.IsType<RaggedSegment>(item));
+            glob._segments.Should().AllBeOfType<RaggedSegment>();
 
             return ((RaggedSegment)glob._segments[0])._segments;
         }
@@ -24,121 +25,121 @@ namespace Meziantou.Framework.Globbing.Tests
         public void OptimizeSegmentEndsWith()
         {
             var segments = GetSegments("*.txt");
-            Assert.Collection(segments,
-                item => Assert.IsType<EndsWithSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<EndsWithSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentEndsWithWithPrefix()
         {
             var segments = GetSubSegments("p*.txt");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<EndsWithSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<EndsWithSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentStartsWith()
         {
             var segments = GetSegments("file*");
-            Assert.Collection(segments,
-                item => Assert.IsType<StartsWithSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<StartsWithSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentContains()
         {
             var segments = GetSegments("*file*");
-            Assert.Collection(segments,
-                item => Assert.IsType<ContainsSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<ContainsSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentConsecutiveStarts()
         {
             var segments = GetSegments("*file**");
-            Assert.Collection(segments,
-                item => Assert.IsType<ContainsSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<ContainsSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentStartsWithAndContains()
         {
             var segments = GetSubSegments("file*test*");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<ContainsSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<ContainsSegment>());
         }
 
         [Fact]
         public void OptimizeSegmentLiteral()
         {
             var segments = GetSegments("test");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>());
         }
 
         [Fact]
         public void OptimizeCombineTwoConsecutiveRecursiveMatchAll()
         {
             var segments = GetSegments("src/**/**/a/b");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<RecursiveMatchAllSegment>(item),
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<LiteralSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<RecursiveMatchAllSegment>(),
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<LiteralSegment>());
         }
 
         [Fact]
         public void OptimizeMatchLast()
         {
             var segments = GetSegments("a/**/b");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<LastSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<LastSegment>());
         }
 
         [Fact]
         public void OptimizeMatchNonEmpty()
         {
             var segments = GetSegments("a/**/*");
-            Assert.Collection(segments,
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<MatchNonEmptyTextSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<MatchNonEmptyTextSegment>());
         }
 
         [Fact]
         public void OptimizeStarConsumeUntil()
         {
             var segments = GetSubSegments("*[abc][b-c]");
-            Assert.Collection(segments,
-                item => Assert.IsType<ConsumeSegmentUntilSegment>(item),
-                item => Assert.IsType<MatchAllSubSegment>(item),
-                item => Assert.IsType<CharacterSetSegment>(item),
-                item => Assert.IsType<CharacterRangeSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<ConsumeSegmentUntilSegment>(),
+                item => item.Should().BeOfType<MatchAllSubSegment>(),
+                item => item.Should().BeOfType<CharacterSetSegment>(),
+                item => item.Should().BeOfType<CharacterRangeSegment>());
         }
 
         [Fact]
         public void OptimizeSingleCharSet()
         {
             var segments = GetSubSegments("*[a-b]def[a][b][c]abc[a][a-b]");
-            Assert.Collection(segments,
-                item => Assert.IsType<ConsumeSegmentUntilSegment>(item),
-                item => Assert.IsType<MatchAllSubSegment>(item),
-                item => Assert.IsType<CharacterRangeSegment>(item),
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<CharacterRangeSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<ConsumeSegmentUntilSegment>(),
+                item => item.Should().BeOfType<MatchAllSubSegment>(),
+                item => item.Should().BeOfType<CharacterRangeSegment>(),
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<CharacterRangeSegment>());
         }
 
         [Fact]
         public void OptimizeSingleCharSet2()
         {
             var segments = GetSubSegments("*[!a]def[a][b][c]abc[a][a-b]");
-            Assert.Collection(segments,
-                item => Assert.IsType<MatchAllSubSegment>(item),
-                item => Assert.IsType<CharacterSetInverseSegment>(item),
-                item => Assert.IsType<LiteralSegment>(item),
-                item => Assert.IsType<CharacterRangeSegment>(item));
+            segments.Should().SatisfyRespectively(
+                item => item.Should().BeOfType<MatchAllSubSegment>(),
+                item => item.Should().BeOfType<CharacterSetInverseSegment>(),
+                item => item.Should().BeOfType<LiteralSegment>(),
+                item => item.Should().BeOfType<CharacterRangeSegment>());
         }
     }
 }

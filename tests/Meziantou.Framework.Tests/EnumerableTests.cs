@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.Tests
             list.Replace(2, 5);
 
             // Assert
-            Assert.Equal(new List<int> { 1, 5, 3 }, list);
+            list.Should().Equal(new List<int> { 1, 5, 3 });
         }
 
         [Fact]
@@ -29,7 +30,7 @@ namespace Meziantou.Framework.Tests
             var list = new List<int>() { 1, 2, 3 };
 
             // Act
-            Assert.Throws<ArgumentOutOfRangeException>(() => list.Replace(10, 5));
+            new Action(() => list.Replace(10, 5)).Should().ThrowExactly<ArgumentOutOfRangeException>();
         }
 
         [Fact]
@@ -42,7 +43,7 @@ namespace Meziantou.Framework.Tests
             list.AddOrReplace(10, 5);
 
             // Assert
-            Assert.Equal(new[] { 1, 2, 3, 5 }, list);
+            list.Should().Equal(new[] { 1, 2, 3, 5 });
         }
 
         [Fact]
@@ -55,7 +56,7 @@ namespace Meziantou.Framework.Tests
             list.AddOrReplace(null, "");
 
             // Assert
-            Assert.Equal(new[] { "" }, list);
+            list.Should().Equal(new[] { "" });
         }
 
         [Fact]
@@ -68,7 +69,7 @@ namespace Meziantou.Framework.Tests
             list.AddOrReplace(2, 5);
 
             // Assert
-            Assert.Equal(new[] { 1, 5, 3 }, list);
+            list.Should().Equal(new[] { 1, 5, 3 });
         }
 
         [Fact]
@@ -81,7 +82,7 @@ namespace Meziantou.Framework.Tests
                 bag.Add(i);
             }).ConfigureAwait(false);
 
-            Assert.Equal(100, bag.Count);
+            bag.Should().HaveCount(100);
         }
 
         [Fact]
@@ -94,7 +95,7 @@ namespace Meziantou.Framework.Tests
                 bag.Add(i);
             }).ConfigureAwait(false);
 
-            Assert.Equal(100, bag.Count);
+            bag.Should().HaveCount(100);
         }
 
         [Fact]
@@ -107,7 +108,7 @@ namespace Meziantou.Framework.Tests
             var max = list.Max(Comparer<int>.Default);
 
             // Assert
-            Assert.Equal(10, max);
+            max.Should().Be(10);
         }
 
         [Fact]
@@ -120,7 +121,7 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i * 2);
 
             // Assert
-            Assert.Equal(10, max);
+            max.Should().Be(10);
         }
 
         [Fact]
@@ -133,7 +134,7 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i * 2, Comparer<int>.Default);
 
             // Assert
-            Assert.Equal(10, max);
+            max.Should().Be(10);
         }
 
         [Fact]
@@ -147,7 +148,7 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i, Comparer<string?>.Default);
 
             // Assert
-            Assert.Equal("b", max);
+            max.Should().Be("b");
 #nullable disable
         }
 
@@ -162,7 +163,7 @@ namespace Meziantou.Framework.Tests
             var max = list.MaxBy(i => i, Comparer<string>.Default);
 
             // Assert
-            Assert.Equal("b", max);
+            max.Should().Be("b");
 #nullable disable
         }
 
@@ -179,7 +180,7 @@ namespace Meziantou.Framework.Tests
             var min = list.Min(Comparer<int>.Default);
 
             // Assert
-            Assert.Equal(1, min);
+            min.Should().Be(1);
         }
 
         [Fact]
@@ -192,7 +193,7 @@ namespace Meziantou.Framework.Tests
             var min = list.MinBy(i => i * 2);
 
             // Assert
-            Assert.Equal(1, min);
+            min.Should().Be(1);
         }
 
         [Fact]
@@ -205,7 +206,7 @@ namespace Meziantou.Framework.Tests
             var min = list.MinBy(i => i * 2, Comparer<int>.Default);
 
             // Assert
-            Assert.Equal(1, min);
+            min.Should().Be(1);
         }
 
         [Fact]
@@ -218,7 +219,7 @@ namespace Meziantou.Framework.Tests
             var sum = list.Sum();
 
             // Assert
-            Assert.Equal(TimeSpan.FromSeconds(23), sum);
+            sum.Should().Be(TimeSpan.FromSeconds(23));
         }
 
         [Fact]
@@ -231,21 +232,21 @@ namespace Meziantou.Framework.Tests
             var sum = list.Average();
 
             // Assert
-            Assert.Equal(TimeSpan.FromSeconds(9), sum);
+            sum.Should().Be(TimeSpan.FromSeconds(9));
         }
 
         [Fact]
         public void EmptyIfNull_Null()
         {
             IEnumerable<string> items = null;
-            Assert.Equal(Array.Empty<string>(), items.EmptyIfNull());
+            items.EmptyIfNull().Should().Equal(Array.Empty<string>());
         }
 
         [Fact]
         public void EmptyIfNull_NotNull()
         {
             var items = new string[] { "" };
-            Assert.Same(items, items.EmptyIfNull());
+            items.EmptyIfNull().Should().BeSameAs(items);
         }
 
 #nullable enable
@@ -261,7 +262,7 @@ namespace Meziantou.Framework.Tests
             List<string> actual = list.WhereNotNull().ToList();
 
             // Assert
-            Assert.Equal(new[] { "", "a" }, actual);
+            actual.Should().Equal(new[] { "", "a" });
         }
 #nullable disable
 
@@ -274,7 +275,7 @@ namespace Meziantou.Framework.Tests
                 items.Add(item);
             }
 
-            Assert.Equal(new[] { 1, 2 }, items);
+            items.Should().Equal(new[] { 1, 2 });
 
             static IEnumerator<int> CustomEnumerator()
             {
@@ -292,7 +293,7 @@ namespace Meziantou.Framework.Tests
                 items.Add(item);
             }
 
-            Assert.Equal(new[] { 1, 2 }, items);
+            items.Should().Equal(new[] { 1, 2 });
 
             static async IAsyncEnumerator<int> CustomEnumerator()
             {
@@ -307,7 +308,7 @@ namespace Meziantou.Framework.Tests
         {
             var array = new[] { "a", null, null };
 
-            Assert.False(array.IsDistinct());
+            array.IsDistinct().Should().BeFalse();
         }
 
         [Fact]
@@ -315,7 +316,7 @@ namespace Meziantou.Framework.Tests
         {
             var array = new[] { "a", "b", "a" };
 
-            Assert.False(array.IsDistinct());
+            array.IsDistinct().Should().BeFalse();
         }
 
         [Fact]
@@ -323,7 +324,7 @@ namespace Meziantou.Framework.Tests
         {
             var array = new[] { "a", "b", "c" };
 
-            Assert.True(array.IsDistinct());
+            array.IsDistinct().Should().BeTrue();
         }
     }
 }

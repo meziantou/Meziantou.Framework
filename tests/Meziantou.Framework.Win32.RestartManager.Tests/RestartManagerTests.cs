@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using TestUtilities;
-using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Tests
 {
@@ -27,7 +27,7 @@ namespace Meziantou.Framework.Win32.Tests
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
                     var processes = RestartManager.GetProcessesLockingFile(path);
-                    Assert.Equal(_currentProcessId, processes.Single().Id);
+                    processes.Single().Id.Should().Be(_currentProcessId);
                 }
             }
             finally
@@ -44,8 +44,7 @@ namespace Meziantou.Framework.Win32.Tests
             {
                 using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
                 {
-                    var actual = RestartManager.IsFileLocked(path);
-                    Assert.True(actual);
+                    RestartManager.IsFileLocked(path).Should().BeTrue();
                 }
             }
             finally
@@ -60,8 +59,7 @@ namespace Meziantou.Framework.Win32.Tests
             var path = Path.GetTempFileName();
             try
             {
-                var actual = RestartManager.IsFileLocked(path);
-                Assert.False(actual);
+                RestartManager.IsFileLocked(path).Should().BeFalse();
             }
             finally
             {

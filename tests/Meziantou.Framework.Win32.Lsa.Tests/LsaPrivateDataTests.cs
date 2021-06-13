@@ -1,5 +1,6 @@
 ﻿using TestUtilities;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Win32.Lsa.Tests
 {
@@ -14,12 +15,12 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
 
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            Assert.Equal("test", value);
+            value.Should().Be("test");
 
             // Remove
             LsaPrivateData.RemoveValue("LsaPrivateDataTests");
             value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            Assert.Equal("", value);
+            value.Should().BeEmpty();
         }
 
         [RunIfWindowsAdministratorFact]
@@ -27,7 +28,7 @@ namespace Meziantou.Framework.Win32.Lsa.Tests
         {
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
-            Assert.Null(value);
+            value.Should().BeNull();
         }
     }
 }

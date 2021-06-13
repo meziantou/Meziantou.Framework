@@ -1,5 +1,6 @@
 ﻿using System;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -9,46 +10,46 @@ namespace Meziantou.Framework.Tests
         public void ToHexa_UpperCase()
         {
             var options = HexaOptions.UpperCase;
-            Assert.Equal("00", HexaConverter.ToHexaString(new byte[] { 0x00 }, options));
-            Assert.Equal("01", HexaConverter.ToHexaString(new byte[] { 0x01 }, options));
-            Assert.Equal("02", HexaConverter.ToHexaString(new byte[] { 0x02 }, options));
-            Assert.Equal("03", HexaConverter.ToHexaString(new byte[] { 0x03 }, options));
-            Assert.Equal("04", HexaConverter.ToHexaString(new byte[] { 0x04 }, options));
-            Assert.Equal("05", HexaConverter.ToHexaString(new byte[] { 0x05 }, options));
-            Assert.Equal("06", HexaConverter.ToHexaString(new byte[] { 0x06 }, options));
-            Assert.Equal("07", HexaConverter.ToHexaString(new byte[] { 0x07 }, options));
-            Assert.Equal("08", HexaConverter.ToHexaString(new byte[] { 0x08 }, options));
-            Assert.Equal("09", HexaConverter.ToHexaString(new byte[] { 0x09 }, options));
-            Assert.Equal("0A", HexaConverter.ToHexaString(new byte[] { 0x0A }, options));
-            Assert.Equal("0B", HexaConverter.ToHexaString(new byte[] { 0x0B }, options));
-            Assert.Equal("0C", HexaConverter.ToHexaString(new byte[] { 0x0C }, options));
-            Assert.Equal("0D", HexaConverter.ToHexaString(new byte[] { 0x0D }, options));
-            Assert.Equal("0E", HexaConverter.ToHexaString(new byte[] { 0x0E }, options));
-            Assert.Equal("0F", HexaConverter.ToHexaString(new byte[] { 0x0F }, options));
-            Assert.Equal("102F", HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options));
+            HexaConverter.ToHexaString(new byte[] { 0x00 }, options).Should().Be("00");
+            HexaConverter.ToHexaString(new byte[] { 0x01 }, options).Should().Be("01");
+            HexaConverter.ToHexaString(new byte[] { 0x02 }, options).Should().Be("02");
+            HexaConverter.ToHexaString(new byte[] { 0x03 }, options).Should().Be("03");
+            HexaConverter.ToHexaString(new byte[] { 0x04 }, options).Should().Be("04");
+            HexaConverter.ToHexaString(new byte[] { 0x05 }, options).Should().Be("05");
+            HexaConverter.ToHexaString(new byte[] { 0x06 }, options).Should().Be("06");
+            HexaConverter.ToHexaString(new byte[] { 0x07 }, options).Should().Be("07");
+            HexaConverter.ToHexaString(new byte[] { 0x08 }, options).Should().Be("08");
+            HexaConverter.ToHexaString(new byte[] { 0x09 }, options).Should().Be("09");
+            HexaConverter.ToHexaString(new byte[] { 0x0A }, options).Should().Be("0A");
+            HexaConverter.ToHexaString(new byte[] { 0x0B }, options).Should().Be("0B");
+            HexaConverter.ToHexaString(new byte[] { 0x0C }, options).Should().Be("0C");
+            HexaConverter.ToHexaString(new byte[] { 0x0D }, options).Should().Be("0D");
+            HexaConverter.ToHexaString(new byte[] { 0x0E }, options).Should().Be("0E");
+            HexaConverter.ToHexaString(new byte[] { 0x0F }, options).Should().Be("0F");
+            HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options).Should().Be("102F");
         }
 
         [Fact]
         public void ToHexa_LowerCase()
         {
             var options = HexaOptions.LowerCase;
-            Assert.Equal("00", HexaConverter.ToHexaString(new byte[] { 0x00 }, options));
-            Assert.Equal("01", HexaConverter.ToHexaString(new byte[] { 0x01 }, options));
-            Assert.Equal("02", HexaConverter.ToHexaString(new byte[] { 0x02 }, options));
-            Assert.Equal("03", HexaConverter.ToHexaString(new byte[] { 0x03 }, options));
-            Assert.Equal("04", HexaConverter.ToHexaString(new byte[] { 0x04 }, options));
-            Assert.Equal("05", HexaConverter.ToHexaString(new byte[] { 0x05 }, options));
-            Assert.Equal("06", HexaConverter.ToHexaString(new byte[] { 0x06 }, options));
-            Assert.Equal("07", HexaConverter.ToHexaString(new byte[] { 0x07 }, options));
-            Assert.Equal("08", HexaConverter.ToHexaString(new byte[] { 0x08 }, options));
-            Assert.Equal("09", HexaConverter.ToHexaString(new byte[] { 0x09 }, options));
-            Assert.Equal("0a", HexaConverter.ToHexaString(new byte[] { 0x0A }, options));
-            Assert.Equal("0b", HexaConverter.ToHexaString(new byte[] { 0x0B }, options));
-            Assert.Equal("0c", HexaConverter.ToHexaString(new byte[] { 0x0C }, options));
-            Assert.Equal("0d", HexaConverter.ToHexaString(new byte[] { 0x0D }, options));
-            Assert.Equal("0e", HexaConverter.ToHexaString(new byte[] { 0x0E }, options));
-            Assert.Equal("0f", HexaConverter.ToHexaString(new byte[] { 0x0F }, options));
-            Assert.Equal("102f", HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options));
+            HexaConverter.ToHexaString(new byte[] { 0x00 }, options).Should().Be("00");
+            HexaConverter.ToHexaString(new byte[] { 0x01 }, options).Should().Be("01");
+            HexaConverter.ToHexaString(new byte[] { 0x02 }, options).Should().Be("02");
+            HexaConverter.ToHexaString(new byte[] { 0x03 }, options).Should().Be("03");
+            HexaConverter.ToHexaString(new byte[] { 0x04 }, options).Should().Be("04");
+            HexaConverter.ToHexaString(new byte[] { 0x05 }, options).Should().Be("05");
+            HexaConverter.ToHexaString(new byte[] { 0x06 }, options).Should().Be("06");
+            HexaConverter.ToHexaString(new byte[] { 0x07 }, options).Should().Be("07");
+            HexaConverter.ToHexaString(new byte[] { 0x08 }, options).Should().Be("08");
+            HexaConverter.ToHexaString(new byte[] { 0x09 }, options).Should().Be("09");
+            HexaConverter.ToHexaString(new byte[] { 0x0A }, options).Should().Be("0a");
+            HexaConverter.ToHexaString(new byte[] { 0x0B }, options).Should().Be("0b");
+            HexaConverter.ToHexaString(new byte[] { 0x0C }, options).Should().Be("0c");
+            HexaConverter.ToHexaString(new byte[] { 0x0D }, options).Should().Be("0d");
+            HexaConverter.ToHexaString(new byte[] { 0x0E }, options).Should().Be("0e");
+            HexaConverter.ToHexaString(new byte[] { 0x0F }, options).Should().Be("0f");
+            HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options).Should().Be("102f");
         }
 
         [Fact]
@@ -80,96 +81,96 @@ namespace Meziantou.Framework.Tests
 
             static void AssertTryFromHexa(string str, byte[] expected)
             {
-                Assert.True(HexaConverter.TryParseHexaString(str, out var buffer));
-                Assert.Equal(expected, buffer);
+                HexaConverter.TryParseHexaString(str, out var buffer).Should().BeTrue();
+                buffer.Should().Equal(expected);
             }
         }
 
         [Fact]
         public void ParseHexa_WithPrefix()
         {
-            Assert.Equal(new byte[] { 0x00 }, HexaConverter.ParseHexaString("0x00"));
-            Assert.Equal(new byte[] { 0x01 }, HexaConverter.ParseHexaString("0x01"));
-            Assert.Equal(new byte[] { 0x02 }, HexaConverter.ParseHexaString("0x02"));
-            Assert.Equal(new byte[] { 0x03 }, HexaConverter.ParseHexaString("0x03"));
-            Assert.Equal(new byte[] { 0x04 }, HexaConverter.ParseHexaString("0x04"));
-            Assert.Equal(new byte[] { 0x05 }, HexaConverter.ParseHexaString("0x05"));
-            Assert.Equal(new byte[] { 0x06 }, HexaConverter.ParseHexaString("0x06"));
-            Assert.Equal(new byte[] { 0x07 }, HexaConverter.ParseHexaString("0x07"));
-            Assert.Equal(new byte[] { 0x08 }, HexaConverter.ParseHexaString("0x08"));
-            Assert.Equal(new byte[] { 0x09 }, HexaConverter.ParseHexaString("0x09"));
-            Assert.Equal(new byte[] { 0x0A }, HexaConverter.ParseHexaString("0x0a"));
-            Assert.Equal(new byte[] { 0x0B }, HexaConverter.ParseHexaString("0x0b"));
-            Assert.Equal(new byte[] { 0x0C }, HexaConverter.ParseHexaString("0x0c"));
-            Assert.Equal(new byte[] { 0x0D }, HexaConverter.ParseHexaString("0x0d"));
-            Assert.Equal(new byte[] { 0x0E }, HexaConverter.ParseHexaString("0x0e"));
-            Assert.Equal(new byte[] { 0x0F }, HexaConverter.ParseHexaString("0x0f"));
-            Assert.Equal(new byte[] { 0x0A }, HexaConverter.ParseHexaString("0x0A"));
-            Assert.Equal(new byte[] { 0x0B }, HexaConverter.ParseHexaString("0x0B"));
-            Assert.Equal(new byte[] { 0x0C }, HexaConverter.ParseHexaString("0x0C"));
-            Assert.Equal(new byte[] { 0x0D }, HexaConverter.ParseHexaString("0x0D"));
-            Assert.Equal(new byte[] { 0x0E }, HexaConverter.ParseHexaString("0x0E"));
-            Assert.Equal(new byte[] { 0x0F }, HexaConverter.ParseHexaString("0x0F"));
+            HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });
+            HexaConverter.ParseHexaString("0x01").Should().Equal(new byte[] { 0x01 });
+            HexaConverter.ParseHexaString("0x02").Should().Equal(new byte[] { 0x02 });
+            HexaConverter.ParseHexaString("0x03").Should().Equal(new byte[] { 0x03 });
+            HexaConverter.ParseHexaString("0x04").Should().Equal(new byte[] { 0x04 });
+            HexaConverter.ParseHexaString("0x05").Should().Equal(new byte[] { 0x05 });
+            HexaConverter.ParseHexaString("0x06").Should().Equal(new byte[] { 0x06 });
+            HexaConverter.ParseHexaString("0x07").Should().Equal(new byte[] { 0x07 });
+            HexaConverter.ParseHexaString("0x08").Should().Equal(new byte[] { 0x08 });
+            HexaConverter.ParseHexaString("0x09").Should().Equal(new byte[] { 0x09 });
+            HexaConverter.ParseHexaString("0x0a").Should().Equal(new byte[] { 0x0A });
+            HexaConverter.ParseHexaString("0x0b").Should().Equal(new byte[] { 0x0B });
+            HexaConverter.ParseHexaString("0x0c").Should().Equal(new byte[] { 0x0C });
+            HexaConverter.ParseHexaString("0x0d").Should().Equal(new byte[] { 0x0D });
+            HexaConverter.ParseHexaString("0x0e").Should().Equal(new byte[] { 0x0E });
+            HexaConverter.ParseHexaString("0x0f").Should().Equal(new byte[] { 0x0F });
+            HexaConverter.ParseHexaString("0x0A").Should().Equal(new byte[] { 0x0A });
+            HexaConverter.ParseHexaString("0x0B").Should().Equal(new byte[] { 0x0B });
+            HexaConverter.ParseHexaString("0x0C").Should().Equal(new byte[] { 0x0C });
+            HexaConverter.ParseHexaString("0x0D").Should().Equal(new byte[] { 0x0D });
+            HexaConverter.ParseHexaString("0x0E").Should().Equal(new byte[] { 0x0E });
+            HexaConverter.ParseHexaString("0x0F").Should().Equal(new byte[] { 0x0F });
 
-            Assert.Equal(new byte[] { 0x4F, 0xAF, 0x65 }, HexaConverter.ParseHexaString("0x4Faf65"));
+            HexaConverter.ParseHexaString("0x4Faf65").Should().Equal(new byte[] { 0x4F, 0xAF, 0x65 });
         }
 
         [Fact]
         public void ParseHexa_InvalidCharacters()
         {
-            Assert.Throws<ArgumentException>(() => HexaConverter.ParseHexaString("0H"));
+            new Func<object>(() => HexaConverter.ParseHexaString("0H")).Should().ThrowExactly<ArgumentException>();
         }
 
         [Fact]
         public void ParseHexa_InvalidLength()
         {
-            Assert.Throws<ArgumentException>(() => HexaConverter.ParseHexaString("000"));
+            new Func<object>(() => HexaConverter.ParseHexaString("000")).Should().ThrowExactly<ArgumentException>();
         }
 
         [Fact]
         public void ToHexa_Span_UpperCase()
         {
             var options = HexaOptions.UpperCase;
-            Assert.Equal("00", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options));
-            Assert.Equal("01", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options));
-            Assert.Equal("02", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options));
-            Assert.Equal("03", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options));
-            Assert.Equal("04", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options));
-            Assert.Equal("05", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options));
-            Assert.Equal("06", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options));
-            Assert.Equal("07", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options));
-            Assert.Equal("08", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options));
-            Assert.Equal("09", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options));
-            Assert.Equal("0A", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options));
-            Assert.Equal("0B", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options));
-            Assert.Equal("0C", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options));
-            Assert.Equal("0D", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options));
-            Assert.Equal("0E", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options));
-            Assert.Equal("0F", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options));
-            Assert.Equal("102F", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options));
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options).Should().Be("00");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options).Should().Be("01");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options).Should().Be("02");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options).Should().Be("03");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options).Should().Be("04");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options).Should().Be("05");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options).Should().Be("06");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options).Should().Be("07");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options).Should().Be("08");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options).Should().Be("09");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options).Should().Be("0A");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options).Should().Be("0B");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options).Should().Be("0C");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options).Should().Be("0D");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options).Should().Be("0E");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options).Should().Be("0F");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options).Should().Be("102F");
         }
 
         [Fact]
         public void ToHexa_Span_LowerCase()
         {
             var options = HexaOptions.LowerCase;
-            Assert.Equal("00", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options));
-            Assert.Equal("01", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options));
-            Assert.Equal("02", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options));
-            Assert.Equal("03", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options));
-            Assert.Equal("04", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options));
-            Assert.Equal("05", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options));
-            Assert.Equal("06", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options));
-            Assert.Equal("07", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options));
-            Assert.Equal("08", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options));
-            Assert.Equal("09", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options));
-            Assert.Equal("0a", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options));
-            Assert.Equal("0b", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options));
-            Assert.Equal("0c", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options));
-            Assert.Equal("0d", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options));
-            Assert.Equal("0e", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options));
-            Assert.Equal("0f", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options));
-            Assert.Equal("102f", HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options));
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options).Should().Be("00");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options).Should().Be("01");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options).Should().Be("02");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options).Should().Be("03");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options).Should().Be("04");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options).Should().Be("05");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options).Should().Be("06");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options).Should().Be("07");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options).Should().Be("08");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options).Should().Be("09");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options).Should().Be("0a");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options).Should().Be("0b");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options).Should().Be("0c");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options).Should().Be("0d");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options).Should().Be("0e");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options).Should().Be("0f");
+            HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options).Should().Be("102f");
         }
 
         [Fact]
@@ -202,65 +203,65 @@ namespace Meziantou.Framework.Tests
             static void AssertTryFromHexa(string str, byte[] expected)
             {
                 Span<byte> buffer = new byte[expected.Length];
-                Assert.True(HexaConverter.TryParseHexaString(str, buffer, out var writtenBytes));
-                Assert.Equal(expected, buffer.ToArray());
-                Assert.Equal(buffer.Length, writtenBytes);
+                HexaConverter.TryParseHexaString(str, buffer, out var writtenBytes).Should().BeTrue();
+                buffer.ToArray().Should().Equal(expected);
+                writtenBytes.Should().Be(buffer.Length);
             }
         }
 
         [Fact]
         public void TryParseHexa_Span_WithPrefix()
         {
-            Assert.Equal(new byte[] { 0x00 }, HexaConverter.ParseHexaString("0x00"));
-            Assert.Equal(new byte[] { 0x01 }, HexaConverter.ParseHexaString("0x01"));
-            Assert.Equal(new byte[] { 0x02 }, HexaConverter.ParseHexaString("0x02"));
-            Assert.Equal(new byte[] { 0x03 }, HexaConverter.ParseHexaString("0x03"));
-            Assert.Equal(new byte[] { 0x04 }, HexaConverter.ParseHexaString("0x04"));
-            Assert.Equal(new byte[] { 0x05 }, HexaConverter.ParseHexaString("0x05"));
-            Assert.Equal(new byte[] { 0x06 }, HexaConverter.ParseHexaString("0x06"));
-            Assert.Equal(new byte[] { 0x07 }, HexaConverter.ParseHexaString("0x07"));
-            Assert.Equal(new byte[] { 0x08 }, HexaConverter.ParseHexaString("0x08"));
-            Assert.Equal(new byte[] { 0x09 }, HexaConverter.ParseHexaString("0x09"));
-            Assert.Equal(new byte[] { 0x0A }, HexaConverter.ParseHexaString("0x0a"));
-            Assert.Equal(new byte[] { 0x0B }, HexaConverter.ParseHexaString("0x0b"));
-            Assert.Equal(new byte[] { 0x0C }, HexaConverter.ParseHexaString("0x0c"));
-            Assert.Equal(new byte[] { 0x0D }, HexaConverter.ParseHexaString("0x0d"));
-            Assert.Equal(new byte[] { 0x0E }, HexaConverter.ParseHexaString("0x0e"));
-            Assert.Equal(new byte[] { 0x0F }, HexaConverter.ParseHexaString("0x0f"));
-            Assert.Equal(new byte[] { 0x0A }, HexaConverter.ParseHexaString("0x0A"));
-            Assert.Equal(new byte[] { 0x0B }, HexaConverter.ParseHexaString("0x0B"));
-            Assert.Equal(new byte[] { 0x0C }, HexaConverter.ParseHexaString("0x0C"));
-            Assert.Equal(new byte[] { 0x0D }, HexaConverter.ParseHexaString("0x0D"));
-            Assert.Equal(new byte[] { 0x0E }, HexaConverter.ParseHexaString("0x0E"));
-            Assert.Equal(new byte[] { 0x0F }, HexaConverter.ParseHexaString("0x0F"));
+            HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });
+            HexaConverter.ParseHexaString("0x01").Should().Equal(new byte[] { 0x01 });
+            HexaConverter.ParseHexaString("0x02").Should().Equal(new byte[] { 0x02 });
+            HexaConverter.ParseHexaString("0x03").Should().Equal(new byte[] { 0x03 });
+            HexaConverter.ParseHexaString("0x04").Should().Equal(new byte[] { 0x04 });
+            HexaConverter.ParseHexaString("0x05").Should().Equal(new byte[] { 0x05 });
+            HexaConverter.ParseHexaString("0x06").Should().Equal(new byte[] { 0x06 });
+            HexaConverter.ParseHexaString("0x07").Should().Equal(new byte[] { 0x07 });
+            HexaConverter.ParseHexaString("0x08").Should().Equal(new byte[] { 0x08 });
+            HexaConverter.ParseHexaString("0x09").Should().Equal(new byte[] { 0x09 });
+            HexaConverter.ParseHexaString("0x0a").Should().Equal(new byte[] { 0x0A });
+            HexaConverter.ParseHexaString("0x0b").Should().Equal(new byte[] { 0x0B });
+            HexaConverter.ParseHexaString("0x0c").Should().Equal(new byte[] { 0x0C });
+            HexaConverter.ParseHexaString("0x0d").Should().Equal(new byte[] { 0x0D });
+            HexaConverter.ParseHexaString("0x0e").Should().Equal(new byte[] { 0x0E });
+            HexaConverter.ParseHexaString("0x0f").Should().Equal(new byte[] { 0x0F });
+            HexaConverter.ParseHexaString("0x0A").Should().Equal(new byte[] { 0x0A });
+            HexaConverter.ParseHexaString("0x0B").Should().Equal(new byte[] { 0x0B });
+            HexaConverter.ParseHexaString("0x0C").Should().Equal(new byte[] { 0x0C });
+            HexaConverter.ParseHexaString("0x0D").Should().Equal(new byte[] { 0x0D });
+            HexaConverter.ParseHexaString("0x0E").Should().Equal(new byte[] { 0x0E });
+            HexaConverter.ParseHexaString("0x0F").Should().Equal(new byte[] { 0x0F });
 
-            Assert.Equal(new byte[] { 0x4F, 0xAF, 0x65 }, HexaConverter.ParseHexaString("0x4Faf65"));
+            HexaConverter.ParseHexaString("0x4Faf65").Should().Equal(new byte[] { 0x4F, 0xAF, 0x65 });
         }
 
         [Fact]
         public void TryParseHexa_Span_InvalidCharacters()
         {
             Span<byte> bytes = new byte[10];
-            Assert.False(HexaConverter.TryParseHexaString("0H", bytes, out var writtenBytes));
-            Assert.Equal(0, writtenBytes);
+            HexaConverter.TryParseHexaString("0H", bytes, out var writtenBytes).Should().BeFalse();
+            writtenBytes.Should().Be(0);
         }
 
         [Fact]
         public void TryHexa_Span_BufferTooSmall()
         {
             Span<byte> bytes = new byte[10];
-            Assert.False(HexaConverter.TryParseHexaString("000", bytes, out var writtenBytes));
-            Assert.Equal(0, writtenBytes);
+            HexaConverter.TryParseHexaString("000", bytes, out var writtenBytes).Should().BeFalse();
+            writtenBytes.Should().Be(0);
         }
 
         [Fact]
         public void TryHexa_Span_InvalidLength()
         {
-            Assert.Throws<ArgumentException>(() =>
+            new Action(() =>
             {
                 Span<byte> bytes = new byte[10];
                 HexaConverter.ParseHexaString("000");
-            });
+            }).Should().ThrowExactly<ArgumentException>();
         }
     }
 }

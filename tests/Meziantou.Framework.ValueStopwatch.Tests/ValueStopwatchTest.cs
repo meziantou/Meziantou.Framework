@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using FluentAssertions;
+using FluentAssertions.Extensions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -9,20 +11,20 @@ namespace Meziantou.Framework.Tests
         [Fact]
         public void IsActiveIsFalseForDefaultValueStopwatch()
         {
-            Assert.False(default(ValueStopwatch).IsActive);
+            default(ValueStopwatch).IsActive.Should().BeFalse();
         }
 
         [Fact]
         public void IsActiveIsTrueWhenValueStopwatchStartedWithStartNew()
         {
-            Assert.True(ValueStopwatch.StartNew().IsActive);
+            ValueStopwatch.StartNew().IsActive.Should().BeTrue();
         }
 
         [Fact]
         public void GetElapsedTimeThrowsIfValueStopwatchIsDefaultValue()
         {
             var stopwatch = default(ValueStopwatch);
-            Assert.Throws<InvalidOperationException>(() => stopwatch.GetElapsedTime());
+            new Func<object>(() => stopwatch.GetElapsedTime()).Should().ThrowExactly<InvalidOperationException>();
         }
 
         [Fact]
@@ -31,8 +33,7 @@ namespace Meziantou.Framework.Tests
             var stopwatch = ValueStopwatch.StartNew();
             await Task.Delay(200);
             var elapsed = stopwatch.GetElapsedTime();
-            Assert.True(elapsed.TotalMilliseconds > 0);
-            Assert.True(elapsed.TotalMilliseconds < 5000);
+            elapsed.Should().BeCloseTo(200.Milliseconds(), precision: 3000);
         }
     }
 }

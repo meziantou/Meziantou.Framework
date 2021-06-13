@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TestUtilities;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -26,10 +27,10 @@ namespace Meziantou.Framework.Tests
             }
 
             var result = await CreateProcess().ConfigureAwait(false);
-            Assert.Equal(0, result.ExitCode);
-            Assert.Single(result.Output);
-            Assert.Equal("test", result.Output[0].Text);
-            Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
+            result.ExitCode.Should().Be(0);
+            result.Output.Should().ContainSingle();
+            result.Output[0].Text.Should().Be("test");
+            result.Output[0].Type.Should().Be(ProcessOutputType.StandardOutput);
         }
 
         [Fact]
@@ -54,10 +55,10 @@ namespace Meziantou.Framework.Tests
             }
 
             var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
-            Assert.Equal(0, result.ExitCode);
-            Assert.Single(result.Output);
-            Assert.Equal("test", result.Output[0].Text);
-            Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
+            result.ExitCode.Should().Be(0);
+            result.Output.Should().ContainSingle();
+            result.Output[0].Text.Should().Be("test");
+            result.Output[0].Type.Should().Be(ProcessOutputType.StandardOutput);
         }
 
         [Fact]
@@ -82,8 +83,8 @@ namespace Meziantou.Framework.Tests
             }
 
             var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
-            Assert.Equal(0, result.ExitCode);
-            Assert.Empty(result.Output);
+            result.ExitCode.Should().Be(0);
+            result.Output.Should().BeEmpty();
         }
 
         [Fact]
@@ -91,7 +92,7 @@ namespace Meziantou.Framework.Tests
         {
             var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
 
-            await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTaskAsync(CancellationToken.None)).ConfigureAwait(false);
+            await new Func<Task>(() => psi.RunAsTaskAsync(CancellationToken.None)).Should().ThrowExactlyAsync<Win32Exception>().ConfigureAwait(false);
         }
 
         [Fact]
@@ -119,12 +120,12 @@ namespace Meziantou.Framework.Tests
 
                 await Task.Delay(100);
 
-                Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10), "Cannot find the process");
+                (stopwatch.Elapsed > TimeSpan.FromSeconds(10)).Should().BeFalse("Cannot find the process");
             }
 
             cts.Cancel();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task).ConfigureAwait(false);
+            await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -133,8 +134,8 @@ namespace Meziantou.Framework.Tests
             var processes = ProcessExtensions.GetProcesses();
 
             var currentProcess = Process.GetCurrentProcess();
-            Assert.True(processes.Any(p => p.ProcessId == currentProcess.Id), "Current process is not in the list of processes");
-            AssertExtensions.AllItemsAreUnique(processes.ToList());
+            processes.Should().Contain(p => p.ProcessId == currentProcess.Id, "Current process is not in the list of processes");
+            processes.Should().OnlyHaveUniqueItems();
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -151,8 +152,8 @@ namespace Meziantou.Framework.Tests
                     continue;
                 }
 
-                Assert.True(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-                Assert.True(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")), $"PING and CONHOST are not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
+                (processes.Count == 1 || processes.Count == 2).Should().BeTrue($"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+                processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")).Should().BeTrue($"PING and CONHOST are not in the child processes: {string.Join(",", processes.Select(p => p.ProcessName))}");
             }
             finally
             {
@@ -168,8 +169,8 @@ namespace Meziantou.Framework.Tests
             var current = Process.GetCurrentProcess();
             var parent = current.GetParentProcessId();
 
-            Assert.NotNull(parent);
-            Assert.NotEqual(current.Id, parent);
+            parent.Should().NotBeNull();
+            parent.Should().NotBe(current.Id);
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -179,11 +180,11 @@ namespace Meziantou.Framework.Tests
             var parent = current.GetParentProcess();
             var grandParent = parent.GetParentProcess();
 
-            Assert.NotNull(grandParent);
+            grandParent.Should().NotBeNull();
 
             var descendants = grandParent.GetDescendantProcesses();
-            Assert.True(descendants.Any(p => p.Id == current.Id), "Descendants must contains current process");
-            Assert.True(descendants.Any(p => p.Id == parent.Id), "Descendants must contains parent process");
+            descendants.Should().Contain(p => p.Id == current.Id, "Descendants must contains current process");
+            descendants.Should().Contain(p => p.Id == parent.Id, "Descendants must contains parent process");
         }
 
         [RunIfFact(FactOperatingSystem.Windows)]
@@ -200,13 +201,13 @@ namespace Meziantou.Framework.Tests
                     continue;
                 }
 
-                Assert.True(processes.Count == 1 || processes.Count == 2, $"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
+                (processes.Count == 1 || processes.Count == 2).Should().BeTrue($"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
 
                 var childProcess = processes.First();
 
                 process.Kill(entireProcessTree: false);
 
-                Assert.False(childProcess.HasExited);
+                childProcess.HasExited.Should().BeFalse();
                 childProcess.Kill();
                 childProcess.WaitForExit();
             }
@@ -250,22 +251,22 @@ namespace Meziantou.Framework.Tests
                     if (DateTime.UtcNow - start > TimeSpan.FromSeconds(15))
                     {
                         var allProcesses = Process.GetProcesses();
-                        Assert.True(false, "Cannot find the ping process. Running processes: " + string.Join(", ", allProcesses.Select(p => p.ProcessName)));
+                        false.Should().BeTrue("Cannot find the ping process. Running processes: " + string.Join(", ", allProcesses.Select(p => p.ProcessName)));
                     }
 
                     Thread.Sleep(100);
                     continue;
                 }
 
-                Assert.NotNull(pingProcess);
+                pingProcess.Should().NotBeNull();
 
                 ProcessExtensions.Kill(shellProcess, entireProcessTree: true);
 
                 shellProcess.WaitForExit(1000);
-                Assert.True(shellProcess.HasExited, $"Shell process ({shellProcess.Id.ToStringInvariant()}) has not exited");
+                shellProcess.HasExited.Should().BeTrue($"Shell process ({shellProcess.Id.ToStringInvariant()}) has not exited");
 
                 pingProcess.WaitForExit(1000);
-                Assert.True(pingProcess.HasExited, $"Ping process ({pingProcess.Id.ToStringInvariant()}) has not exited");
+                pingProcess.HasExited.Should().BeTrue($"Ping process ({pingProcess.Id.ToStringInvariant()}) has not exited");
             }
             finally
             {

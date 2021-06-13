@@ -1,4 +1,5 @@
 ﻿using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -14,7 +15,7 @@ namespace Meziantou.Framework.Tests
         {
             var range = Range.Create(from, to);
             var result = range.IsInRangeInclusive(value);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -29,7 +30,7 @@ namespace Meziantou.Framework.Tests
             var range1 = Range.Create(from1, to1);
             var range2 = Range.Create(from2, to2);
             var result = range1.IsInRangeInclusive(range2);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -42,7 +43,7 @@ namespace Meziantou.Framework.Tests
         {
             var range = Range.Create(from, to);
             var result = range.IsInRangeExclusive(value);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -57,7 +58,7 @@ namespace Meziantou.Framework.Tests
             var range1 = Range.Create(from1, to1);
             var range2 = Range.Create(from2, to2);
             var result = range1.IsInRangeExclusive(range2);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -70,7 +71,7 @@ namespace Meziantou.Framework.Tests
         {
             var range = Range.Create(from, to);
             var result = range.IsInRangeLowerInclusive(value);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -85,7 +86,7 @@ namespace Meziantou.Framework.Tests
             var range1 = Range.Create(from1, to1);
             var range2 = Range.Create(from2, to2);
             var result = range1.IsInRangeLowerInclusive(range2);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -98,7 +99,7 @@ namespace Meziantou.Framework.Tests
         {
             var range = Range.Create(from, to);
             var result = range.IsInRangeUpperInclusive(value);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
 
         [Theory]
@@ -113,7 +114,7 @@ namespace Meziantou.Framework.Tests
             var range1 = Range.Create(from1, to1);
             var range2 = Range.Create(from2, to2);
             var result = range1.IsInRangeUpperInclusive(range2);
-            Assert.Equal(expectedValue, result);
+            result.Should().Be(expectedValue);
         }
     }
 }

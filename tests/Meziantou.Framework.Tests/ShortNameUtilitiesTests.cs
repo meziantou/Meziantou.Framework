@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Xunit;
+using FluentAssertions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Tests
 {
@@ -17,7 +19,7 @@ namespace Meziantou.Framework.Tests
             var shortName = ShortName.Create(names, 3, name);
 
             // Assert
-            Assert.Equal("bbb", shortName);
+            shortName.Should().Be("bbb");
         }
 
         [Fact]
@@ -31,10 +33,11 @@ namespace Meziantou.Framework.Tests
             var shortName = ShortName.Create(names, 3, name);
 
             // Assert
-            Assert.Equal("aa0", shortName);
+            shortName.Should().Be("aa0");
         }
 
         [Fact]
+        [SuppressMessage("FluentAssertionTips", "CollectionShouldHaveElementAt:Simplify Assertion", Justification = "False positive")]
         public void BuildShortNames_01()
         {
             // Arrange
@@ -44,11 +47,11 @@ namespace Meziantou.Framework.Tests
             var shortNames = ShortName.Create(names, 3, StringComparer.Ordinal);
 
             // Assert
-            Assert.Equal("aa0", shortNames["aaaa"]);
-            Assert.Equal("aa1", shortNames["aaab"]);
-            Assert.Equal("aaa", shortNames["aaa"]);
-            Assert.Equal("aab", shortNames["aab"]);
-            Assert.Equal("oth", shortNames["other"]);
+            shortNames["aaaa"].Should().Be("aa0");
+            shortNames["aaab"].Should().Be("aa1");
+            shortNames["aaa"].Should().Be("aaa");
+            shortNames["aab"].Should().Be("aab");
+            shortNames["other"].Should().Be("oth");
         }
     }
 }

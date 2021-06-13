@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Collections;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests.Collections
 {
@@ -12,22 +13,22 @@ namespace Meziantou.Framework.Tests.Collections
         public void TestConcurrentHashSet()
         {
             ConcurrentHashSet<int> set = new();
-            Assert.True(set.Add(1));
-            Assert.True(set.Add(2));
-            Assert.True(set.Add(3));
-            Assert.False(set.Add(3));
+            set.Add(1).Should().BeTrue();
+            set.Add(2).Should().BeTrue();
+            set.Add(3).Should().BeTrue();
+            set.Add(3).Should().BeFalse();
 
-            Assert.True(set.Contains(1));
-            Assert.False(set.Contains(4));
+            set.Should().Contain(1);
+            set.Should().NotContain(4);
 
-            Assert.Equal(3, set.Count);
-            Assert.Equal(new[] { 1, 2, 3 }, set.Sort());
+            set.Should().HaveCount(3);
+            set.Should().BeEquivalentTo(new[] { 1, 2, 3 });
 
             set.Clear();
-            Assert.Equal(0, set.Count);
+            set.Should().BeEmpty();
 
             set.AddRange(4, 5, 6);
-            Assert.Equal(new[] { 4, 5, 6 }, set.Sort());
+            set.Should().BeEquivalentTo(new[] { 4, 5, 6 });
         }
     }
 }

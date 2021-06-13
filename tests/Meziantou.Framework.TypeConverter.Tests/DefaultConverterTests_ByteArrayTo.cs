@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -12,8 +13,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.True(converted);
-            Assert.Equal("AQIDBA==", value);
+            converted.Should().BeTrue();
+            value.Should().Be("AQIDBA==");
         }
 
         [Fact]
@@ -26,8 +27,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.True(converted);
-            Assert.Equal("0x01020304", value);
+            converted.Should().BeTrue();
+            value.Should().Be("0x01020304");
         }
 
         [Fact]
@@ -40,8 +41,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
 
-            Assert.True(converted);
-            Assert.Equal("01020304", value);
+            converted.Should().BeTrue();
+            value.Should().Be("01020304");
         }
     }
 }

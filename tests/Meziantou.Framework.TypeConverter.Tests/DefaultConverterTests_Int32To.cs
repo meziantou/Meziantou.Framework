@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -15,12 +16,12 @@ namespace Meziantou.Framework.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Assert.True(converted);
-                Assert.Equal("en-US", value.Name);
+                converted.Should().BeTrue();
+                value.Name.Should().Be("en-US");
             }
             else
             {
-                Assert.False(converted);
+                converted.Should().BeFalse();
             }
         }
 
@@ -31,8 +32,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out long value);
 
-            Assert.True(converted);
-            Assert.Equal(15L, value);
+            converted.Should().BeTrue();
+            value.Should().Be(15L);
         }
 
         [Fact]
@@ -42,8 +43,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out short value);
 
-            Assert.True(converted);
-            Assert.Equal((short)15, value);
+            converted.Should().BeTrue();
+            value.Should().Be(15);
         }
 
         [Fact]
@@ -53,8 +54,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(15, cultureInfo, out ushort value);
 
-            Assert.True(converted);
-            Assert.Equal((ushort)15, value);
+            converted.Should().BeTrue();
+            value.Should().Be(15);
         }
 
         [Fact]
@@ -64,8 +65,8 @@ namespace Meziantou.Framework.Tests
             var cultureInfo = CultureInfo.InvariantCulture;
             var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
 
-            Assert.True(converted);
-            Assert.Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 }, value);
+            converted.Should().BeTrue();
+            value.Should().Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 });
         }
     }
 }

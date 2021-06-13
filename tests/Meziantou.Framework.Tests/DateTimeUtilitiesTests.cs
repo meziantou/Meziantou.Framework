@@ -2,6 +2,7 @@
 
 using System;
 using Xunit;
+using FluentAssertions;
 
 namespace Meziantou.Framework.Tests
 {
@@ -18,7 +19,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2015, 05, 17);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -32,7 +33,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2015, 05, 11);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -47,7 +48,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2005, 01, 03);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -62,7 +63,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2005, 12, 26);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -77,7 +78,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2006, 1, 2);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -92,7 +93,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2006, 12, 25);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -107,7 +108,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2007, 12, 31);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -122,7 +123,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2008, 12, 22);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -137,7 +138,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2008, 12, 29);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -152,7 +153,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2009, 12, 28);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
 
         [Fact]
@@ -166,7 +167,7 @@ namespace Meziantou.Framework.Tests
 
             // Assert
             var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);
-            Assert.Equal(expected, actual);
+            actual.Should().Be(expected);
         }
     }
 }

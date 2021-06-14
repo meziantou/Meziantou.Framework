@@ -8,5 +8,6 @@
         RemoveAt,
         Replace,
         Clear,
+        Reset,
     }
 }

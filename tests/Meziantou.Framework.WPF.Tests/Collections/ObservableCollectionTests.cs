@@ -135,6 +135,23 @@ namespace Meziantou.Framework.Windows.Tests
         }
 
         [Fact]
+        public void Sort()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int> { 1, 0, 2 };
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
+
+            // Act
+            collection.Sort();
+
+            // Assert
+            collection.ToList().Should().Equal(new[] { 0, 1, 2 });
+            collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2 });
+            eventAssert.AssertPropertyChanged("Item[]");
+            eventAssert.AssertCollectionChangedReset();
+        }
+
+        [Fact]
         public void AddWrongItemType()
         {
             var collection = (IList)new ConcurrentObservableCollection<string>();

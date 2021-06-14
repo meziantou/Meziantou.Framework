@@ -175,6 +175,11 @@ namespace Meziantou.Framework.WPF.Collections
             EnqueueEvent(PendingEvent.Replace(index, value));
         }
 
+        internal void EnqueueReset(System.Collections.Immutable.ImmutableList<T> _items)
+        {
+            EnqueueEvent(PendingEvent.Reset(_items));
+        }
+
         internal void EnqueueAdd(T item)
         {
             EnqueueEvent(PendingEvent.Add(item));
@@ -252,6 +257,10 @@ namespace Meziantou.Framework.WPF.Collections
 
                     case PendingEventType.Replace:
                         ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                        break;
+
+                    case PendingEventType.Reset:
+                        Reset(pendingEvent.Items);
                         break;
                 }
             }

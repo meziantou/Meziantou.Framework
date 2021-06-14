@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
@@ -34,7 +35,7 @@ namespace Meziantou.Framework.WPF.Collections
             Items[index] = item;
 
             OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
         }
 
         protected void InsertItem(int index, T item)
@@ -43,7 +44,7 @@ namespace Meziantou.Framework.WPF.Collections
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         protected void AddItem(T item)
@@ -53,7 +54,7 @@ namespace Meziantou.Framework.WPF.Collections
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
         protected void RemoveItemAt(int index)
@@ -63,7 +64,7 @@ namespace Meziantou.Framework.WPF.Collections
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
         }
 
         protected bool RemoveItem(T item)
@@ -76,7 +77,7 @@ namespace Meziantou.Framework.WPF.Collections
 
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
-            CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
             return true;
         }
 
@@ -88,8 +89,18 @@ namespace Meziantou.Framework.WPF.Collections
             CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
         }
 
+        protected void Reset(ImmutableList<T>? items)
+        {
+            Items.Clear();
+            Items.AddRange(items);
+            OnIndexerPropertyChanged();
+            OnCollectionChanged(EventArgsCache.ResetCollectionChanged);
+        }
+
         private void OnCountPropertyChanged() => OnPropertyChanged(EventArgsCache.CountPropertyChanged);
         private void OnIndexerPropertyChanged() => OnPropertyChanged(EventArgsCache.IndexerPropertyChanged);
-        private void OnPropertyChanged(PropertyChangedEventArgs args) => PropertyChanged?.Invoke(this, args);
+
+        protected virtual void OnPropertyChanged(PropertyChangedEventArgs args) => PropertyChanged?.Invoke(this, args);
+        protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs args) => CollectionChanged?.Invoke(this, args);
     }
 }

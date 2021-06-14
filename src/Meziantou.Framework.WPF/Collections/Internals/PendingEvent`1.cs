@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.WPF.Collections
 {
@@ -10,6 +11,7 @@ namespace Meziantou.Framework.WPF.Collections
             Type = type;
             Item = default!;
             Index = -1;
+            Items = default;
         }
 
         public PendingEvent(PendingEventType type, int index)
@@ -17,6 +19,7 @@ namespace Meziantou.Framework.WPF.Collections
             Type = type;
             Item = default!;
             Index = index;
+            Items = default;
         }
 
         public PendingEvent(PendingEventType type, T item)
@@ -24,6 +27,7 @@ namespace Meziantou.Framework.WPF.Collections
             Type = type;
             Item = item;
             Index = -1;
+            Items = default;
         }
 
         public PendingEvent(PendingEventType type, T item, int index)
@@ -31,10 +35,20 @@ namespace Meziantou.Framework.WPF.Collections
             Type = type;
             Item = item;
             Index = index;
+            Items = default;
+        }
+
+        public PendingEvent(PendingEventType type, ImmutableList<T> items)
+        {
+            Type = type;
+            Items = items;
+            Item = default!;
+            Index = default;
         }
 
         public PendingEventType Type { get; }
         public T Item { get; }
         public int Index { get; }
+        public ImmutableList<T>? Items { get; }
     }
 }

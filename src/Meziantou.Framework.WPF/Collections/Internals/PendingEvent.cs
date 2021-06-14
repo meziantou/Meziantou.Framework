@@ -1,4 +1,6 @@
-﻿namespace Meziantou.Framework.WPF.Collections
+﻿using System.Collections.Immutable;
+
+namespace Meziantou.Framework.WPF.Collections
 {
     internal static class PendingEvent
     {
@@ -13,5 +15,7 @@
         public static PendingEvent<T> Replace<T>(int index, T item) => new(PendingEventType.Replace, item, index);
 
         public static PendingEvent<T> Clear<T>() => new(PendingEventType.Clear);
+
+        public static PendingEvent<T> Reset<T>(ImmutableList<T> items) => new(PendingEventType.Reset, items);
     }
 }

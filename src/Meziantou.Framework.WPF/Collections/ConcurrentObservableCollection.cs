@@ -169,6 +169,20 @@ namespace Meziantou.Framework.WPF.Collections
             _items.CopyTo(array, arrayIndex);
         }
 
+        public void Sort()
+        {
+            Sort(comparer: null);
+        }
+
+        public void Sort(IComparer<T>? comparer)
+        {
+            lock (_lock)
+            {
+                _items = _items.Sort(comparer);
+                _observableCollection?.EnqueueReset(_items);
+            }
+        }
+
         int IList.Add(object? value)
         {
             AssertType(value, nameof(value));

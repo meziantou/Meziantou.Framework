@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Meziantou.Framework.WPF.Collections;
 using Xunit;
 
@@ -152,6 +154,48 @@ namespace Meziantou.Framework.Windows.Tests
         }
 
         [Fact]
+        public void StableSort()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int> { 1, 0, 2 };
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
+
+            // Act
+            collection.StableSort();
+
+            // Assert
+            collection.ToList().Should().Equal(new[] { 0, 1, 2 });
+            collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2 });
+            eventAssert.AssertPropertyChanged("Item[]");
+            eventAssert.AssertCollectionChangedReset();
+        }
+
+        [Fact]
+        public void StableSort_PreserveOrder()
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<Sample>();
+            for (var i = 0; i < 1000; i++)
+            {
+                collection.Add(new Sample(i * 2, "Value" + (i * 2).ToString("D5", CultureInfo.InvariantCulture)));
+                collection.Add(new Sample((i * 2) + 1, "Value" + (i * 2).ToString("D5", CultureInfo.InvariantCulture)));
+            }
+
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
+
+            // Act
+            collection.StableSort(new SampleComparer()); // Compare by value
+
+            // Assert
+            using (new AssertionScope())
+            {
+                collection.Should().BeInAscendingOrder(item => item.Index);
+                eventAssert.AssertPropertyChanged("Item[]");
+                eventAssert.AssertCollectionChangedReset();
+            }
+        }
+
+        [Fact]
         public void AddWrongItemType()
         {
             var collection = (IList)new ConcurrentObservableCollection<string>();
@@ -159,6 +203,16 @@ namespace Meziantou.Framework.Windows.Tests
             collection.Add("");
 
             new Action(() => collection.Add(10)).Should().ThrowExactly<ArgumentException>();
+        }
+
+        private sealed record Sample(int Index, string Value);
+
+        private sealed class SampleComparer : IComparer<Sample>
+        {
+            public int Compare(Sample x, Sample y)
+            {
+                return StringComparer.Ordinal.Compare(x.Value, y.Value);
+            }
         }
 
         private sealed class EventAssert : IDisposable

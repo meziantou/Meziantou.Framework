@@ -4,6 +4,7 @@
     <TargetFrameworks>net6.0-windows;net5.0-windows;netcoreapp3.1</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net461</TargetFrameworks>
     <UseWpf>true</UseWpf>
+    <CompatibilityRecord>true</CompatibilityRecord>
   </PropertyGroup>
 
   <ItemGroup Condition=" $(TargetFramework) == 'net461' ">

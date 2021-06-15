@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -179,6 +180,20 @@ namespace Meziantou.Framework.WPF.Collections
             lock (_lock)
             {
                 _items = _items.Sort(comparer);
+                _observableCollection?.EnqueueReset(_items);
+            }
+        }
+
+        public void StableSort()
+        {
+            StableSort(comparer: null);
+        }
+
+        public void StableSort(IComparer<T>? comparer)
+        {
+            lock (_lock)
+            {
+                _items = ImmutableList.CreateRange(_items.OrderBy(item => item, comparer));
                 _observableCollection?.EnqueueReset(_items);
             }
         }

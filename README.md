@@ -18,6 +18,7 @@
 | Meziantou.Framework.CommandLine | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.CommandLine.svg)](https://www.nuget.org/packages/Meziantou.Framework.CommandLine/) |
 | Meziantou.Framework.Csv | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Csv.svg)](https://www.nuget.org/packages/Meziantou.Framework.Csv/) |
 | Meziantou.Framework.DependencyScanning | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.DependencyScanning.svg)](https://www.nuget.org/packages/Meziantou.Framework.DependencyScanning/) |
+| Meziantou.Framework.FastEnumToStringGenerator | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.FastEnumToStringGenerator.svg)](https://www.nuget.org/packages/Meziantou.Framework.FastEnumToStringGenerator/) |
 | Meziantou.Framework.FullPath | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.FullPath.svg)](https://www.nuget.org/packages/Meziantou.Framework.FullPath/) |
 | Meziantou.Framework.Globbing | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Globbing.svg)](https://www.nuget.org/packages/Meziantou.Framework.Globbing/) |
 | Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |

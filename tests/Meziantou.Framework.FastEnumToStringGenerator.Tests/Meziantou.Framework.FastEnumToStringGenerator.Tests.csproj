@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0</TargetFrameworks>
+    <CompatibilityRange>true</CompatibilityRange>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumToStringGenerator\Meziantou.Framework.FastEnumToStringGenerator.csproj" />
+  </ItemGroup>
+
+</Project>

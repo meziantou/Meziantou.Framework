@@ -13,7 +13,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator
         [SuppressMessage("Usage", "MA0101:String contains an implicit end of line character", Justification = "Not important")]
         private const string AttributeText = @"
 [System.Diagnostics.Conditional(""FastEnumToString_Attributes"")]
-[System.AttributeUsage(System.AttributeTargets.Assembly)]
+[System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
 internal sealed class FastEnumToStringAttribute : System.Attribute
 {
     public FastEnumToStringAttribute(System.Type enumType)

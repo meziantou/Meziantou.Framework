@@ -57,13 +57,13 @@ namespace Meziantou.AspNetCore.Components
 
                         if (match.Link != null)
                         {
-                            sb.Append("<a " + attributeName + " class='log-message-match-link' target='_blank' href='");
+                            sb.Append("<a ").Append(attributeName).Append(" class='log-message-match-link' target='_blank' href='");
                             sb.Append(HtmlEncoder.Default.Encode(match.Link));
                             sb.Append('\'');
                         }
                         else
                         {
-                            sb.Append("<span " + attributeName + " class='log-message-match'");
+                            sb.Append("<span ").Append(attributeName).Append(" class='log-message-match'");
                         }
 
                         if (match.Title != null)

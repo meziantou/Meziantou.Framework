@@ -53,7 +53,7 @@
             {
                 var newItems = await ItemsProvider(new InfiniteScrollingItemsProviderRequest(_items.Count, _loadItemsCts.Token));
                 _items.AddRange(newItems);
-                _instance.InvokeVoidAsync("onNewItems");
+                await _instance.InvokeVoidAsync("onNewItems");
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == _loadItemsCts.Token)
             {

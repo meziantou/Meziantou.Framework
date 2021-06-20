@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ValidateProjectTargets>false</ValidateProjectTargets>
     <TargetFrameworks>net5.0</TargetFrameworks>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
   </PropertyGroup>
 
   <ItemGroup>

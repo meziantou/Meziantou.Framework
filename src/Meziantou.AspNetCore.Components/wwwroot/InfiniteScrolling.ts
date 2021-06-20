@@ -1,4 +1,4 @@
-﻿export function initialize(lastIndicator, instance) {
+﻿export function initialize(lastIndicator : HTMLElement, instance : DotNet.DotNetObject) {
   const options = {
     root: findClosestScrollContainer(lastIndicator),
     rootMargin: '0px',
@@ -24,7 +24,7 @@
   };
 }
 
-function findClosestScrollContainer(element) {
+function findClosestScrollContainer(element : HTMLElement | null) : HTMLElement | null {
   while (element) {
     const style = getComputedStyle(element);
     if (style.overflowY !== 'visible') {
@@ -37,6 +37,6 @@ function findClosestScrollContainer(element) {
   return null;
 }
 
-function infiniteScollingDispose(observer) {
+function infiniteScollingDispose(observer : IntersectionObserver) {
   observer.disconnect();
 }

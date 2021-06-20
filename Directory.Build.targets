@@ -1,5 +1,6 @@
 <Project>
-
+  <Import Project="$(MSBuildThisFileDirectory)/eng/npm.targets" />
+  
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs" />

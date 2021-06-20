@@ -1,0 +1,39 @@
+<Project>
+  <PropertyGroup>
+    <IncludeDefaultNpmPackageFiles Condition="$(IncludeNpmPackageFiles) == ''">true</IncludeDefaultNpmPackageFiles>
+    <RestoreNpmPackagesWithLockFile Condition="$(RestoreNpmPackagesWithLockFile) == '' and $(RestorePackagesWithLockFile) == 'true'">true</RestoreNpmPackagesWithLockFile>
+    <RestoreNpmPackagesWithLockFile Condition="$(RestoreNpmPackagesWithLockFile) == '' and $(_ContinuousIntegrationBuild) == 'true'">true</RestoreNpmPackagesWithLockFile>
+  </PropertyGroup>
+  
+  <ItemGroup Condition="'$(IncludeDefaultNpmPackageFiles)' == 'true'">
+    <NpmPackageFile Include="$(MSBuildProjectDirectory)/package.json" Condition="Exists('$(MSBuildProjectDirectory)/package.json')" />
+  </ItemGroup>
+  
+  <!-- Compute additional metadata for the NpmPackageFile items -->
+  <Target Name="ComputeNpmPackageMetadata">
+    <ItemGroup>
+      <NpmPackageFile>
+        <StampFile>$([System.IO.Path]::Combine(`%(RootDir)%(Directory)`, 'node_modules', '.install-stamp'))</StampFile>
+        <WorkingDirectory>%(RootDir)%(Directory)</WorkingDirectory>
+        
+        <RestoreCommand Condition="$(RestoreNpmPackagesWithLockFile) != 'true'">npm install --no-fund --no-audit</RestoreCommand>
+        <RestoreCommand Condition="$(RestoreNpmPackagesWithLockFile) == 'true'">npm ci</RestoreCommand>
+      </NpmPackageFile>
+    </ItemGroup>
+  </Target>
+
+  <!-- Run npm install for each NpmPackageFile -->
+  <Target Name="NpmRestore" DependsOnTargets="ComputeNpmPackageMetadata;NpmRestoreForce" Inputs="@(NpmPackageFile)" Outputs="%(NpmPackageFile.StampFile)" BeforeTargets="CompileTypeScript;Restore">
+    <Message Importance="high" Text="Installing npm packages for @(NpmPackageFile)" />
+    <Exec Command="@(NpmPackageFile->'%(RestoreCommand)')" WorkingDirectory="%(WorkingDirectory)" />
+    <Touch Files="@(NpmPackageFile->'%(StampFile)')" AlwaysCreate="true" />
+  </Target>
+
+  <!-- Reinstall npm packages when using dotnet build force -->
+  <Target Name="NpmRestoreForce" Condition="$(RestoreForce) == 'true'" DependsOnTargets="CleanNpmInstallStampFile" BeforeTargets="CompileTypeScript;Restore">
+  </Target>
+
+  <Target Name="CleanNpmInstallStampFile" BeforeTargets="Clean">
+    <Delete Files="@(NpmPackageFile->'%(StampFile)')" />
+  </Target>
+</Project>

@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@types/blazor__javascript-interop": "^3.1.2"
+  }
+}

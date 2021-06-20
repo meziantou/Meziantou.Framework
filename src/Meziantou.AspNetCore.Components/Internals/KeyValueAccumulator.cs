@@ -60,13 +60,13 @@ namespace Meziantou.AspNetCore.Components.Internals
             ValueCount++;
         }
 
-        public bool HasValues => ValueCount > 0;
+        public readonly bool HasValues => ValueCount > 0;
 
-        public int KeyCount => _accumulator?.Count ?? 0;
+        public readonly int KeyCount => _accumulator?.Count ?? 0;
 
         public int ValueCount { get; private set; }
 
-        public Dictionary<string, StringValues> GetResults()
+        public readonly Dictionary<string, StringValues> GetResults()
         {
             if (_expandingAccumulator != null)
             {

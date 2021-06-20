@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28822.285
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31410.414
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{70A3E965-3866-4D23-9626-8D70E0E8729C}"
 	ProjectSection(SolutionItems) = preProject
@@ -99,6 +99,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		global.json = global.json
+		eng\npm.targets = eng\npm.targets
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -202,13 +203,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Loggin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.StronglyTypedId.GeneratorTests", "tests\Meziantou.Framework.StronglyTypedId.GeneratorTests\Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj", "{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ChromiumTracing", "src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj", "{1529BF3D-59DB-4610-96DB-134BFB3B6E23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ChromiumTracing", "src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj", "{1529BF3D-59DB-4610-96DB-134BFB3B6E23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.AspNetCore.Components.Tests", "tests\Meziantou.AspNetCore.Components.Tests\Meziantou.AspNetCore.Components.Tests.csproj", "{6AF8FF10-0331-40A8-B08A-62F83B7B4265}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.AspNetCore.Components.Tests", "tests\Meziantou.AspNetCore.Components.Tests\Meziantou.AspNetCore.Components.Tests.csproj", "{6AF8FF10-0331-40A8-B08A-62F83B7B4265}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.AspNetCore.Components.LogViewer", "src\Meziantou.AspNetCore.Components.LogViewer\Meziantou.AspNetCore.Components.LogViewer.csproj", "{94EE4682-3D23-4C17-B672-A11F104E0FCF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.AspNetCore.Components.LogViewer.Tests", "tests\Meziantou.AspNetCore.Components.LogViewer.Tests\Meziantou.AspNetCore.Components.LogViewer.Tests.csproj", "{7E7714C3-8328-439B-B58A-DD884CA79F98}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.AspNetCore.Components.LogViewer.Tests", "tests\Meziantou.AspNetCore.Components.LogViewer.Tests\Meziantou.AspNetCore.Components.LogViewer.Tests.csproj", "{7E7714C3-8328-439B-B58A-DD884CA79F98}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.FastEnumToStringGenerator", "src\Meziantou.Framework.FastEnumToStringGenerator\Meziantou.Framework.FastEnumToStringGenerator.csproj", "{BC0D4E1B-FCAA-450E-84C2-06442A15C350}"
 EndProject

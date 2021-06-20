@@ -289,3 +289,5 @@ __pycache__/
 dotCover.Output.xml
 **/BenchmarkDotNet.Artifacts/
 *.binlog
+
+src/Meziantou.AspNetCore.Components/wwwroot/**/*.js

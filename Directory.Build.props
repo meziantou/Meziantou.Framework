@@ -53,7 +53,7 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="" Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
-    <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Visible="false" Condition="$(_PackageReadmeFilePath) != ''" />
+    <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
   <!-- SourceLink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->

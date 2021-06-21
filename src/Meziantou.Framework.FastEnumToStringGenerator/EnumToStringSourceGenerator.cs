@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,6 +14,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator
     {
         [SuppressMessage("Usage", "MA0101:String contains an implicit end of line character", Justification = "Not important")]
         private const string AttributeText = @"
+#nullable enable
 [System.Diagnostics.Conditional(""FastEnumToString_Attributes"")]
 [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
 internal sealed class FastEnumToStringAttribute : System.Attribute
@@ -19,6 +22,9 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
     public FastEnumToStringAttribute(System.Type enumType)
     {
     }
+
+    public bool IsPublic { get; set; } = true;
+    public string? ExtensionMethodNamespace { get; set; }
 }
 ";
 
@@ -55,7 +61,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                 if (enumType.TypeKind != TypeKind.Enum)
                     continue;
 
-                enums.Add(new EnumToProcess(enumType, GetMembers()));
+                enums.Add(new EnumToProcess(enumType, GetMembers(), IsPublic(), GetNamespace()));
 
                 List<EnumMemberToProcess> GetMembers()
                 {
@@ -72,6 +78,31 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                     }
 
                     return result;
+                }
+
+                bool IsPublic()
+                {
+                    var result = IsVisibleOutsideOfAssembly(enumType);
+                    foreach (var arg in attr.NamedArguments)
+                    {
+                        if (arg.Key == "IsPublic")
+                        {
+                            return result && (bool)arg.Value.Value!;
+                        }
+                    }
+
+                    return result;
+                }
+
+                string? GetNamespace()
+                {
+                    foreach (var arg in attr.NamedArguments)
+                    {
+                        if (arg.Key == "ExtensionMethodNamespace")
+                            return (string?)arg.Value.Value;
+                    }
+
+                    return null;
                 }
             }
 
@@ -94,31 +125,90 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         private static string GenerateCode(List<EnumToProcess> enums)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("internal static partial class FastEnumToStringExtensions");
-            sb.AppendLine("{");
 
-            foreach (var enumeration in enums)
+            foreach (var enumerationGroup in enums.GroupBy(en => en.FullNamespace, StringComparer.Ordinal))
             {
-                var typeName = enumeration.EnumSymbol.ToString();
-                sb.Append("    internal static string ToStringFast(this ").Append(typeName).AppendLine(" value)");
-                sb.AppendLine("    {");
-                sb.AppendLine("        return value switch");
-                sb.AppendLine("        {");
-                foreach (var member in enumeration.Members)
+                var typeVisibility = enumerationGroup.Any(enumeration => enumeration.IsPublic) ? "public" : "internal";
+                foreach (var enumeration in enumerationGroup)
                 {
-                    sb.Append("            ").Append(typeName).Append('.').Append(member.Name).Append(" => nameof(").Append(typeName).Append('.').Append(member.Name).AppendLine("),");
-                }
+                    var methodVisibility = enumeration.IsPublic ? "public" : "internal";
 
-                sb.AppendLine("        _ => value.ToString(),");
-                sb.AppendLine("        };");
-                sb.AppendLine("    }");
+                    if (!string.IsNullOrEmpty(enumeration.FullNamespace))
+                    {
+                        sb.Append("namespace ").Append(enumeration.FullNamespace).AppendLine();
+                        sb.AppendLine("{");
+                    }
+
+                    sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
+                    sb.AppendLine("{");
+
+                    sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this ").Append(enumeration.FullCsharpName).AppendLine(" value)");
+                    sb.AppendLine("    {");
+                    sb.AppendLine("        return value switch");
+                    sb.AppendLine("        {");
+                    foreach (var member in enumeration.Members)
+                    {
+                        sb.Append("            ").Append(enumeration.FullCsharpName).Append('.').Append(member.Name).Append(" => nameof(").Append(enumeration.FullCsharpName).Append('.').Append(member.Name).AppendLine("),");
+                    }
+
+                    sb.AppendLine("        _ => value.ToString(),");
+                    sb.AppendLine("        };");
+                    sb.AppendLine("    }");
+                    sb.AppendLine("}");
+
+                    if (!string.IsNullOrEmpty(enumeration.FullNamespace))
+                    {
+                        sb.AppendLine("}");
+                    }
+                }
             }
 
-            sb.AppendLine("}");
             return sb.ToString();
         }
+        private static bool IsVisibleOutsideOfAssembly([NotNullWhen(true)] ISymbol? symbol)
+        {
+            if (symbol == null)
+                return false;
 
-        private record EnumToProcess(ITypeSymbol EnumSymbol, List<EnumMemberToProcess> Members);
+            if (symbol.DeclaredAccessibility != Accessibility.Public &&
+                symbol.DeclaredAccessibility != Accessibility.Protected &&
+                symbol.DeclaredAccessibility != Accessibility.ProtectedOrInternal)
+            {
+                return false;
+            }
+
+            if (symbol.ContainingType == null)
+                return true;
+
+            return IsVisibleOutsideOfAssembly(symbol.ContainingType);
+        }
+
+        private record EnumToProcess(ITypeSymbol EnumSymbol, List<EnumMemberToProcess> Members, bool IsPublic, string? Namespace)
+        {
+            public string FullCsharpName => EnumSymbol.ToString()!;
+            public string? FullNamespace => Namespace ?? GetNamespace(EnumSymbol);
+
+            private static string? GetNamespace(ITypeSymbol symbol)
+            {
+                string? result = null;
+                var ns = symbol.ContainingNamespace;
+                while (ns != null && !ns.IsGlobalNamespace)
+                {
+                    if (result != null)
+                    {
+                        result = ns.Name + "." + result;
+                    }
+                    else
+                    {
+                        result = ns.Name;
+                    }
+
+                    ns = ns.ContainingNamespace;
+                }
+
+                return result;
+            }
+        }
 
         private record EnumMemberToProcess(string Name, object Value);
     }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -82,6 +83,70 @@ namespace A
             method.Invoke(null, new object[] { 1 }).Should().Be("Value2");
             method.Invoke(null, new object[] { 999 }).Should().Be("999");
 
+        }
+
+        [Fact]
+        public async Task GeneratePublicType()
+        {
+            var sourceCode = @"
+using SampleNs1;
+
+[assembly: FastEnumToStringAttribute(typeof(A.B.D), IsPublic = true, ExtensionMethodNamespace = ""SampleNs1"")]
+[assembly: FastEnumToStringAttribute(typeof(A.B.E), IsPublic = false, ExtensionMethodNamespace = ""SampleNs1"")]
+[assembly: FastEnumToStringAttribute(typeof(A.B.F), ExtensionMethodNamespace = ""SampleNs3"")]
+[assembly: FastEnumToStringAttribute(typeof(A.B.G), ExtensionMethodNamespace = ""SampleNs4"")]
+
+namespace A
+{
+    namespace B
+    {
+        public class C
+        {
+            public static string Sample(D value) => value.ToStringFast();
+        }
+
+        public enum D { Value1 }
+        public enum E { Value1 }
+        internal enum F { Value1 }
+        public enum G { Value1 }
+    }
+}";
+            var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
+
+            generatorResult.Diagnostics.Should().BeEmpty();
+            generatorResult.GeneratedTrees.Length.Should().Be(2);
+
+            var asm = Assembly.Load(assembly);
+            var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
+            var methods1 = ns1Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .Where(m => m.Name == "ToStringFast")
+                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+
+            using (new AssertionScope())
+            {
+                ns1Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
+                methods1.Should().SatisfyRespectively(
+                    m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public),
+                    m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+
+                var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
+                var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                    .Where(m => m.Name == "ToStringFast")
+                    .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+
+                ns3Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal);
+                methods3.Should().SatisfyRespectively(
+                    m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+
+                var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
+                var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                    .Where(m => m.Name == "ToStringFast")
+                    .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+
+                ns4Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
+                methods4.Should().SatisfyRespectively(
+                    m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public));
+            }
         }
     }
 }

@@ -3,7 +3,7 @@
 The source generator generates a `ToStringFast` method for some enumerations
 
 ````csharp
-[assembly: FastEnumToStringAttribute(typeof(Sample.Color))]
+[assembly: FastEnumToStringAttribute(typeof(Sample.Color), IsPublic = true, ExtensionMethodNamespace = "Sample.Extensions")]
 
 namespace Sample
 {
@@ -39,7 +39,6 @@ You can now replace the `ToString` method with the new `ToStringFast` method:
 ````c#
 Color value = Color.Green;
 Console.WriteLine(value.ToStringFast());
-
 ````
 
 # Additional resources

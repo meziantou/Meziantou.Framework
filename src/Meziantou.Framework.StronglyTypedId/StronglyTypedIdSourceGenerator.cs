@@ -70,14 +70,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new Receiver());
+            context.RegisterForPostInitialization(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
         }
 
         public void Execute(GeneratorExecutionContext context)
         {
-            context.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8));
-
-            var options = (CSharpParseOptions)((CSharpCompilation)context.Compilation).SyntaxTrees[0].Options;
-            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options, cancellationToken: context.CancellationToken));
+            var compilation = context.Compilation;
 
             foreach (var stronglyTypedType in GetTypes(context, compilation))
             {

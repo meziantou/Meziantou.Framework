@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.FastEnumToStringGenerator
@@ -30,18 +29,15 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 
         public void Initialize(GeneratorInitializationContext context)
         {
+            context.RegisterForPostInitialization(ctx => ctx.AddSource("FastEnumToStringAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
         }
 
         public void Execute(GeneratorExecutionContext context)
         {
-            context.AddSource("FastEnumToStringAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8));
-
-            var options = (CSharpParseOptions)((CSharpCompilation)context.Compilation).SyntaxTrees[0].Options;
-            var compilation = context.Compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(SourceText.From(AttributeText, Encoding.UTF8), options, cancellationToken: context.CancellationToken));
-
+            var compilation = context.Compilation;
             var attributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
-            var flagsAttributeSymbol = compilation.GetTypeByMetadataName("System.FlagsAttribute");
-            if (attributeSymbol == null || flagsAttributeSymbol == null)
+            //var flagsAttributeSymbol = compilation.GetTypeByMetadataName("System.FlagsAttribute");
+            if (attributeSymbol == null)
                 return;
 
             var enums = new List<EnumToProcess>();

@@ -2,8 +2,6 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <_ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true' or '$(GITHUB_ACTIONS)' == 'true' or '$(GITLAB_CI)' == 'true'">True</_ContinuousIntegrationBuild>
-
     <LangVersion>9.0</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
@@ -23,7 +21,7 @@
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
   <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFramework)'">
-    <NoWarn>$(NoWarn);8600;8601;8602;8603;8604</NoWarn>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
   <!-- Analyzers -->
@@ -45,9 +43,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageIcon>icon.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-
-    <!-- https://github.com/NuGet/Home/issues/10791 -->
-    <!--<PackageReadmeFile Condition="$(_PackageReadmeFilePath) != ''">readme.md</PackageReadmeFile>-->
+    <PackageReadmeFile Condition="$(_PackageReadmeFilePath) != ''">readme.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -56,21 +52,13 @@
     <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
-  <!-- SourceLink: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
-  <Choose>
-    <When Condition="$(UseSourceLink) != 'false'">
-      <PropertyGroup>
-        <IncludeSymbols>true</IncludeSymbols>
-        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <PublishRepositoryUrl>true</PublishRepositoryUrl>
-        <EmbedUntrackedSources>true</EmbedUntrackedSources>
-        <ContinuousIntegrationBuild Condition="'$(ContinuousIntegrationBuild)' == ''">$(_ContinuousIntegrationBuild)</ContinuousIntegrationBuild>
-      </PropertyGroup>
+  <!-- SourceLink and Reproducible Builds: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
+  <ItemGroup>
+    <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
 
-      <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-        <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
-      </ItemGroup>
-    </When>
-  </Choose>
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="0.1.64">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>

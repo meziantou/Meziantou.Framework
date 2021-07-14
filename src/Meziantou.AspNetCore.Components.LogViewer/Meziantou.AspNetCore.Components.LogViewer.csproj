@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net5.0</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <ValidateProjectTargets>false</ValidateProjectTargets>
   </PropertyGroup>
 

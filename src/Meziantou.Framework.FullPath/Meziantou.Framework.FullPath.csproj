@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;net5.0;netcoreapp3.1;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 

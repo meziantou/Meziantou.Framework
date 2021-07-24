@@ -1,0 +1,26 @@
+﻿@using System.Diagnostics.CodeAnalysis
+@inherits InputBase<string>
+
+<select @attributes="AdditionalAttributes"
+        type="number"
+        class="@CssClass"
+        value="@CurrentValueAsString"
+        @onchange="e => CurrentValueAsString = (string?)e.Value">
+    <option>Choice 1</option>
+    <option>Choice 2</option>
+    <option>Choice 3</option>
+</select>
+
+@code {
+    protected override string FormatValueAsString(string? value)
+    {
+        return value ?? string.Empty;
+    }
+
+    protected override bool TryParseValueFromString(string? value, [MaybeNullWhen(false)] out string? result, [NotNullWhen(false)] out string? validationErrorMessage)
+    {
+        validationErrorMessage = null;
+        result = value ?? string.Empty;
+        return true;
+    }
+}

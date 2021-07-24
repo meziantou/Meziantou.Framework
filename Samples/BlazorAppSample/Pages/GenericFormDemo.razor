@@ -46,6 +46,9 @@
         public float SingleValue { get; set; }
         public double DoubleValue { get; set; }
         public decimal DecimalValue { get; set; }
+        
+        [System.ComponentModel.Editor(typeof(GenericFormDemoCustomEditor), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
+        public string Choice { get; set; }
 
         // This is not visible in the form
         public string ReadOnly { get; }

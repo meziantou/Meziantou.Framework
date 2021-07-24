@@ -219,7 +219,7 @@ namespace Meziantou.Framework.WPF.Collections
                 if (!_isDispatcherPending)
                 {
                     _isDispatcherPending = true;
-                    _dispatcher.BeginInvoke((Action)ProcessPendingEvents);
+                    _dispatcher.BeginInvoke(ProcessPendingEvents);
                 }
 
                 return;

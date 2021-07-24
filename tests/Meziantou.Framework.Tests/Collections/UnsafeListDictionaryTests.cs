@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using FluentAssertions;
 using Meziantou.Framework.Collections;
@@ -10,7 +9,6 @@ namespace Meziantou.Framework.Tests.Collections
     public class UnsafeListDictionaryTests
     {
         [Fact]
-        [SuppressMessage("Assertions", "xUnit2013:Do not use equality check to check for collection size.", Justification = "Explicitly test these methods")]
         public void TestDictionnary()
         {
             UnsafeListDictionary<int, string> dict = new();

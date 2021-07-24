@@ -25,7 +25,7 @@ namespace Meziantou.Framework
                     var sn = number.ToString(CultureInfo.InvariantCulture);
                     if (sn.Length < maxLength)
                     {
-                        shortName = name.Substring(0, (name.Length < (maxLength - sn.Length)) ? name.Length : (maxLength - sn.Length)) + sn;
+                        shortName = string.Concat(name.AsSpan(0, (name.Length < (maxLength - sn.Length)) ? name.Length : (maxLength - sn.Length)), sn);
                     }
                     number++;
                 }

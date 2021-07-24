@@ -53,13 +53,13 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
-        bool ICollection<T>.IsReadOnly => ((ICollection<T>)_items).IsReadOnly;
+        bool ICollection<T>.IsReadOnly => false;
 
         public int Count => _items.Count;
 
-        bool IList.IsReadOnly => ((IList)_items).IsReadOnly;
+        bool IList.IsReadOnly => false;
 
-        bool IList.IsFixedSize => ((IList)_items).IsFixedSize;
+        bool IList.IsFixedSize => false;
 
         int ICollection.Count => Count;
 

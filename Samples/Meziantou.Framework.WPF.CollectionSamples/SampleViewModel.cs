@@ -18,7 +18,7 @@ namespace Meziantou.Framework.WPF.CollectionSamples
 
         private void AddItemsImpl()
         {
-            Task.Run(() => Parallel.For(Items.Count, Items.Count + 1000, i => Items.Add(i.ToString(CultureInfo.InvariantCulture))));
+            _ = Task.Run(() => Parallel.For(Items.Count, Items.Count + 1000, i => Items.Add(i.ToString(CultureInfo.InvariantCulture))));
         }
     }
 }

@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Windows.Tests
 {
-    public sealed class ObservableCollectionTests
+    public sealed partial class ObservableCollectionTests
     {
         public static IEnumerable<object[]> GetCollections
         {

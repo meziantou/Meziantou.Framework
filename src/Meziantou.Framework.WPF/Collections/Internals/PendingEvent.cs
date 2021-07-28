@@ -6,7 +6,11 @@ namespace Meziantou.Framework.WPF.Collections
     {
         public static PendingEvent<T> Add<T>(T item) => new(PendingEventType.Add, item);
 
+        public static PendingEvent<T> AddRange<T>(ImmutableList<T> items) => new(PendingEventType.AddRange, items);
+
         public static PendingEvent<T> Insert<T>(int index, T item) => new(PendingEventType.Insert, item, index);
+
+        public static PendingEvent<T> InsertRange<T>(int index, ImmutableList<T> items) => new(PendingEventType.InsertRange, items, index);
 
         public static PendingEvent<T> Remove<T>(T item) => new(PendingEventType.Remove, item);
 

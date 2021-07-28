@@ -29,6 +29,16 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
+#if NET6_0
+        public void EnsureCapacity(int capacity)
+        {
+            Items.EnsureCapacity(capacity);
+        }
+#elif NET5_0 || NETCOREAPP3_1 || NET461
+#else
+#error Platform not supported
+#endif
+
         protected void ReplaceItem(int index, T item)
         {
             var oldItem = Items[index];
@@ -47,6 +57,15 @@ namespace Meziantou.Framework.WPF.Collections
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
         }
 
+        protected void InsertItems(int index, ImmutableList<T> items)
+        {
+            Items.InsertRange(index, items);
+
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index));
+        }
+
         protected void AddItem(T item)
         {
             var index = Items.Count;
@@ -55,6 +74,16 @@ namespace Meziantou.Framework.WPF.Collections
             OnCountPropertyChanged();
             OnIndexerPropertyChanged();
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+        }
+
+        protected void AddItems(ImmutableList<T> items)
+        {
+            var index = Items.Count;
+            Items.AddRange(items);
+
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index));
         }
 
         protected void RemoveItemAt(int index)
@@ -89,7 +118,7 @@ namespace Meziantou.Framework.WPF.Collections
             CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
         }
 
-        protected void Reset(ImmutableList<T>? items)
+        protected void Reset(ImmutableList<T> items)
         {
             Items.Clear();
             Items.AddRange(items);

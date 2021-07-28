@@ -185,6 +185,11 @@ namespace Meziantou.Framework.WPF.Collections
             EnqueueEvent(PendingEvent.Add(item));
         }
 
+        internal void EnqueueAddRange(System.Collections.Immutable.ImmutableList<T> items)
+        {
+            EnqueueEvent(PendingEvent.AddRange(items));
+        }
+
         internal bool EnqueueRemove(T item)
         {
             EnqueueEvent(PendingEvent.Remove(item));
@@ -204,6 +209,11 @@ namespace Meziantou.Framework.WPF.Collections
         internal void EnqueueInsert(int index, T item)
         {
             EnqueueEvent(PendingEvent.Insert(index, item));
+        }
+
+        internal void EnqueueInsertRange(int index, System.Collections.Immutable.ImmutableList<T> items)
+        {
+            EnqueueEvent(PendingEvent.InsertRange(index, items));
         }
 
         private void EnqueueEvent(PendingEvent<T> @event)
@@ -239,6 +249,10 @@ namespace Meziantou.Framework.WPF.Collections
                         AddItem(pendingEvent.Item);
                         break;
 
+                    case PendingEventType.AddRange:
+                        AddItems(pendingEvent.Items);
+                        break;
+
                     case PendingEventType.Remove:
                         RemoveItem(pendingEvent.Item);
                         break;
@@ -249,6 +263,10 @@ namespace Meziantou.Framework.WPF.Collections
 
                     case PendingEventType.Insert:
                         InsertItem(pendingEvent.Index, pendingEvent.Item);
+                        break;
+
+                    case PendingEventType.InsertRange:
+                        InsertItems(pendingEvent.Index, pendingEvent.Items);
                         break;
 
                     case PendingEventType.RemoveAt:

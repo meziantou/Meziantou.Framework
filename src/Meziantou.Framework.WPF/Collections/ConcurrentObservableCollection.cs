@@ -34,6 +34,12 @@ namespace Meziantou.Framework.WPF.Collections
             return Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
         }
 
+        /// <summary>
+        /// When set to <see langword="true"/> AddRange and InsertRange methods raise NotifyCollectionChanged with all items instead of one event per item.
+        /// </summary>
+        /// <remarks>Most WPF controls doesn't support batch modifications</remarks>
+        public bool SupportRangeNotifications { get; set; }
+
         public IReadOnlyObservableCollection<T> AsObservable
         {
             get
@@ -99,6 +105,58 @@ namespace Meziantou.Framework.WPF.Collections
             {
                 _items = _items.Add(item);
                 _observableCollection?.EnqueueAdd(item);
+            }
+        }
+
+        public void AddRange(params T[] items)
+        {
+            AddRange((IEnumerable<T>)items);
+        }
+
+        public void AddRange(IEnumerable<T> items)
+        {
+            lock (_lock)
+            {
+                var count = _items.Count;
+                _items = _items.AddRange(items);
+                if (SupportRangeNotifications)
+                {
+                    _observableCollection?.EnqueueAddRange(_items.GetRange(count, _items.Count - count));
+                }
+                else
+                {
+                    if (_observableCollection != null)
+                    {
+                        for (var i = count; i < _items.Count; i++)
+                        {
+                            _observableCollection.EnqueueAdd(_items[i]);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void InsertRange(int index, IEnumerable<T> items)
+        {
+            lock (_lock)
+            {
+                var count = _items.Count;
+                _items = _items.InsertRange(index, items);
+                var addedItemsCount = _items.Count - count;
+                if (SupportRangeNotifications)
+                {
+                    _observableCollection?.EnqueueInsertRange(index, _items.GetRange(index, addedItemsCount));
+                }
+                else
+                {
+                    if (_observableCollection != null)
+                    {
+                        for (var i = index; i < index + addedItemsCount; i++)
+                        {
+                            _observableCollection.EnqueueInsert(i, _items[i]);
+                        }
+                    }
+                }
             }
         }
 

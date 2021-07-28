@@ -136,6 +136,82 @@ namespace Meziantou.Framework.Windows.Tests
             eventAssert.AssertCollectionChangedReplace(oldValue: 1, newValue: 2);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AddRange(bool supportRangeNotifications)
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>()
+            {
+                SupportRangeNotifications = supportRangeNotifications,
+            };
+
+            collection.AddRange(0, 1, 2);
+
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
+
+            // Act
+            collection.AddRange(3, 4, 5);
+
+            // Assert
+            collection.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+            collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+
+            if (supportRangeNotifications)
+            {
+                eventAssert.AssertCollectionChangedAddItems(new object[] { 3, 4, 5 }, startIndex: 3);
+            }
+            else
+            {
+                eventAssert.CollectionChangedArgs.Select(e => e.Action).Should().AllBeEquivalentTo(NotifyCollectionChangedAction.Add);
+                eventAssert.CollectionChangedArgs.Should().BeEquivalentTo(new[]
+                {
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 5, NewItems = new[] { 5 }  },
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void InsertRange(bool supportRangeNotifications)
+        {
+            // Arrange
+            var collection = new ConcurrentObservableCollection<int>()
+            {
+                SupportRangeNotifications = supportRangeNotifications,
+            };
+
+            collection.AddRange(0, 1, 5);
+
+            using var eventAssert = new EventAssert(GetObservableCollection(collection));
+
+            // Act
+            collection.InsertRange(2, new[] { 2, 3, 4 });
+
+            // Assert
+            collection.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+            collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+
+            if (supportRangeNotifications)
+            {
+                eventAssert.AssertCollectionChangedAddItems(new object[] { 2, 3, 4 }, startIndex: 2);
+            }
+            else
+            {
+                eventAssert.CollectionChangedArgs.Select(e => e.Action).Should().AllBeEquivalentTo(NotifyCollectionChangedAction.Add);
+                eventAssert.CollectionChangedArgs.Should().BeEquivalentTo(new[]
+                {
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 2, NewItems = new[] { 2 }  },
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
+                    new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
+                });
+            }
+        }
+
         [Fact]
         public void Sort()
         {
@@ -217,14 +293,14 @@ namespace Meziantou.Framework.Windows.Tests
 
         private sealed class EventAssert : IDisposable
         {
-            private readonly object _obj;
+            private readonly object _observedInstance;
 
-            private readonly List<NotifyCollectionChangedEventArgs> _collectionChangedArgs = new();
-            private readonly List<PropertyChangedEventArgs> _propertyChangedArgs = new();
+            public List<NotifyCollectionChangedEventArgs> CollectionChangedArgs { get; } = new();
+            public List<PropertyChangedEventArgs> PropertyChangedArgs { get; } = new();
 
             public EventAssert(object obj)
             {
-                _obj = obj;
+                _observedInstance = obj;
                 if (obj is INotifyPropertyChanged notifyPropertyChanged)
                 {
                     notifyPropertyChanged.PropertyChanged += NotifyPropertyChanged_PropertyChanged;
@@ -238,12 +314,12 @@ namespace Meziantou.Framework.Windows.Tests
 
             public void Dispose()
             {
-                if (_obj is INotifyPropertyChanged notifyPropertyChanged)
+                if (_observedInstance is INotifyPropertyChanged notifyPropertyChanged)
                 {
                     notifyPropertyChanged.PropertyChanged -= NotifyPropertyChanged_PropertyChanged;
                 }
 
-                if (_obj is INotifyCollectionChanged notifyCollectionChanged)
+                if (_observedInstance is INotifyCollectionChanged notifyCollectionChanged)
                 {
                     notifyCollectionChanged.CollectionChanged -= NotifyCollectionChanged_CollectionChanged;
                 }
@@ -251,23 +327,23 @@ namespace Meziantou.Framework.Windows.Tests
 
             private void NotifyCollectionChanged_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
             {
-                _collectionChangedArgs.Add(e);
+                CollectionChangedArgs.Add(e);
             }
 
             private void NotifyPropertyChanged_PropertyChanged(object sender, PropertyChangedEventArgs e)
             {
-                _propertyChangedArgs.Add(e);
+                PropertyChangedArgs.Add(e);
             }
 
             public void AssertPropertyChanged(params string[] propertyNames)
             {
-                _propertyChangedArgs.Select(e => e.PropertyName).ToList().Should().Equal(propertyNames);
+                PropertyChangedArgs.Select(e => e.PropertyName).ToList().Should().Equal(propertyNames);
             }
 
             public void AssertCollectionChangedAddItem(object obj)
             {
-                _collectionChangedArgs.Should().ContainSingle();
-                var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
+                CollectionChangedArgs.Should().ContainSingle();
+                var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
 
                 args.NewItems[0].Should().Be(obj);
 
@@ -276,10 +352,22 @@ namespace Meziantou.Framework.Windows.Tests
                 args.OldItems.Should().BeNull();
             }
 
+            public void AssertCollectionChangedAddItems(object[] obj, int startIndex)
+            {
+                CollectionChangedArgs.Should().ContainSingle();
+                var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
+
+                args.NewItems.OfType<object>().Should().Equal(obj);
+
+                args.NewStartingIndex.Should().Be(startIndex);
+                args.OldStartingIndex.Should().Be(-1);
+                args.OldItems.Should().BeNull();
+            }
+
             public void AssertCollectionChangedRemoveItem(object obj)
             {
-                _collectionChangedArgs.Should().ContainSingle();
-                var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Remove);
+                CollectionChangedArgs.Should().ContainSingle();
+                var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Remove);
 
                 args.OldItems[0].Should().Be(obj);
 
@@ -290,8 +378,8 @@ namespace Meziantou.Framework.Windows.Tests
 
             public void AssertCollectionChangedReset()
             {
-                _collectionChangedArgs.Should().ContainSingle();
-                var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Reset);
+                CollectionChangedArgs.Should().ContainSingle();
+                var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Reset);
 
                 args.NewStartingIndex.Should().Be(-1);
                 args.OldStartingIndex.Should().Be(-1);
@@ -301,8 +389,8 @@ namespace Meziantou.Framework.Windows.Tests
 
             public void AssertCollectionChangedReplace(object oldValue, object newValue)
             {
-                _collectionChangedArgs.Should().ContainSingle();
-                var args = _collectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Replace);
+                CollectionChangedArgs.Should().ContainSingle();
+                var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Replace);
 
                 args.NewItems[0].Should().Be(newValue);
                 args.OldItems[0].Should().Be(oldValue);

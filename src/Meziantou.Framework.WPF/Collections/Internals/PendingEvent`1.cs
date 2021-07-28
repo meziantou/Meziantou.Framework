@@ -46,6 +46,14 @@ namespace Meziantou.Framework.WPF.Collections
             Index = default;
         }
 
+        public PendingEvent(PendingEventType type, ImmutableList<T> items, int index)
+        {
+            Type = type;
+            Items = items;
+            Item = default!;
+            Index = index;
+        }
+
         public PendingEventType Type { get; }
         public T Item { get; }
         public int Index { get; }

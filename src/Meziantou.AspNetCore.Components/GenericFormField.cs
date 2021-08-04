@@ -74,6 +74,7 @@ namespace Meziantou.AspNetCore.Components
                 return Property.Name;
             }
         }
+
         public int DisplayOrder
         {
             get

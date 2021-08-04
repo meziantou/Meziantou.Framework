@@ -2,7 +2,7 @@
 
 @if (fields != null)
 {
-    foreach (var field in fields)
+    foreach (var field in fields.OrderBy(p => p.DisplayOrder))
     {
         if(FieldTemplate != null)
         {

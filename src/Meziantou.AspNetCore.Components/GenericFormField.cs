@@ -74,6 +74,21 @@ namespace Meziantou.AspNetCore.Components
                 return Property.Name;
             }
         }
+        public int DisplayOrder
+        {
+            get
+            {
+                var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
+                if (displayAttribute != null)
+                {
+                    var displayOrder = displayAttribute.GetOrder();
+                    if (displayOrder != null)
+                        return (int)displayOrder;
+                }
+                //Undefined DisplayOrder are shown at the end 
+                return int.MaxValue;
+            }
+        }
 
         public string? Description
         {

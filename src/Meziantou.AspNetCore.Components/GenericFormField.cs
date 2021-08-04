@@ -86,8 +86,12 @@ namespace Meziantou.AspNetCore.Components
                     if (displayOrder != null)
                         return (int)displayOrder;
                 }
-                //Undefined DisplayOrder are shown at the end 
-                return int.MaxValue;
+
+                // https://docs.microsoft.com/en-us/dotnet/api/system.componentmodel.dataannotations.displayattribute.getorder?view=net-5.0#remarks
+                // If an order is not specified, presentation layers should consider setting the value 
+                // of the Order property to 10000. This value lets explicitly-ordered fields be displayed 
+                // before and after the fields that do not have a specified order.
+                return 10_000;
             }
         }
 

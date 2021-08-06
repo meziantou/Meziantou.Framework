@@ -253,6 +253,29 @@ namespace Meziantou.AspNetCore.Components
             if (property.PropertyType == typeof(decimal))
                 return (typeof(InputNumber<decimal>), null);
 
+
+
+            if (property.PropertyType == typeof(short?))
+                return (typeof(InputNumber<short?>), null);
+
+            if (property.PropertyType == typeof(int?))
+                return (typeof(InputNumber<int?>), null);
+
+            if (property.PropertyType == typeof(long?))
+                return (typeof(InputNumber<long?>), null);
+
+            if (property.PropertyType == typeof(float?))
+                return (typeof(InputNumber<float?>), null);
+
+            if (property.PropertyType == typeof(double?))
+                return (typeof(InputNumber<double?>), null);
+
+            if (property.PropertyType == typeof(decimal?))
+                return (typeof(InputNumber<decimal?>), null);
+
+
+
+
             if (property.PropertyType == typeof(DateTime))
             {
                 var dataType = property.GetCustomAttribute<DataTypeAttribute>();

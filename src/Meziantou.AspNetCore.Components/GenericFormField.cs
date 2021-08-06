@@ -254,7 +254,7 @@ namespace Meziantou.AspNetCore.Components
                 return (typeof(InputNumber<decimal>), null);
 
 
-
+             
             if (property.PropertyType == typeof(short?))
                 return (typeof(InputNumber<short?>), null);
 

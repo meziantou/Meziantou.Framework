@@ -253,8 +253,6 @@ namespace Meziantou.AspNetCore.Components
             if (property.PropertyType == typeof(decimal))
                 return (typeof(InputNumber<decimal>), null);
 
-
-             
             if (property.PropertyType == typeof(short?))
                 return (typeof(InputNumber<short?>), null);
 
@@ -272,9 +270,6 @@ namespace Meziantou.AspNetCore.Components
 
             if (property.PropertyType == typeof(decimal?))
                 return (typeof(InputNumber<decimal?>), null);
-
-
-
 
             if (property.PropertyType == typeof(DateTime))
             {

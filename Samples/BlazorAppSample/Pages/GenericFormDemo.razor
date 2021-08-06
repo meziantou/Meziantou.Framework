@@ -19,7 +19,7 @@
 <button type="button" @onclick="() => StateHasChanged()">Refresh</button>
 
 <div>
-@MyModel
+    @MyModel
 </div>
 
 @code {
@@ -27,9 +27,14 @@
 
     public record Model
     {
+        
+        [System.ComponentModel.DataAnnotations.Display(Name = "CustomerList generated from IEnumerable", Order=3)]
+        public Customer Customer { get; set; } = new() { Name = "Github", CustomerID = 1 };
+
         [System.ComponentModel.DataAnnotations.MinLength(3)]
-        [System.ComponentModel.DataAnnotations.Display(Name = "String Value with custom name")]
+        [System.ComponentModel.DataAnnotations.Display(Name = "String Value with custom name",Order=1)]
         public string StringValue { get; set; } = "meziantou";
+        [System.ComponentModel.DataAnnotations.Display(Order=2)]
         [System.ComponentModel.DisplayName("Custom name")]
         public string StringValueWithCustomName { get; set; } = "Gérald Barré";
 
@@ -46,7 +51,7 @@
         public float SingleValue { get; set; }
         public double DoubleValue { get; set; }
         public decimal DecimalValue { get; set; }
-        
+
         [System.ComponentModel.Editor(typeof(GenericFormDemoCustomEditor), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
         public string Choice { get; set; }
 
@@ -77,4 +82,33 @@
 
         public Uri Uri { get; set; }
     }
+
+    public class Customer : System.Collections.Generic.IEnumerable<Customer>
+    {
+        [System.ComponentModel.DataAnnotations.Key]
+        public int CustomerID { get; set; } = 1; //The Property with [Key]-Attribute is used as value in <select>
+
+        public string Name { get; set; } = "Github"; // The Property Name is used as <SELECT> Displayname
+
+        public override string ToString()
+        {
+            return $"Name:{Name} ID:{CustomerID}";
+        }
+
+        public System.Collections.Generic.IEnumerator<Customer> GetEnumerator()
+        {
+            System.Collections.Generic.List<Customer> l = new();
+            l.Add(new() { CustomerID = 1, Name = "Github" });
+            l.Add(new() { CustomerID = 2, Name = "Azure" });
+            l.Add(new() { CustomerID = 3, Name = "SourceForge" });
+            l.Add(new() { CustomerID = 4, Name = "BitBucket" });
+            return l.GetEnumerator();
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+
 }

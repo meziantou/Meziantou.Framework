@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -189,6 +190,8 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
+
+
         [SuppressMessage("Style", "MA0003:Add argument name to improve readability", Justification = "Not needed")]
         private static (Type ComponentType, IEnumerable<KeyValuePair<string, object>>? AdditonalAttributes) GetEditorType(PropertyInfo property)
         {
@@ -253,6 +256,24 @@ namespace Meziantou.AspNetCore.Components
             if (property.PropertyType == typeof(decimal))
                 return (typeof(InputNumber<decimal>), null);
 
+            if (property.PropertyType == typeof(short?))
+                return (typeof(InputNumber<short?>), null);
+
+            if (property.PropertyType == typeof(int?))
+                return (typeof(InputNumber<int?>), null);
+
+            if (property.PropertyType == typeof(long?))
+                return (typeof(InputNumber<long?>), null);
+
+            if (property.PropertyType == typeof(float?))
+                return (typeof(InputNumber<float?>), null);
+
+            if (property.PropertyType == typeof(double?))
+                return (typeof(InputNumber<double?>), null);
+
+            if (property.PropertyType == typeof(decimal?))
+                return (typeof(InputNumber<decimal?>), null);
+
             if (property.PropertyType == typeof(DateTime))
             {
                 var dataType = property.GetCustomAttribute<DataTypeAttribute>();
@@ -278,6 +299,12 @@ namespace Meziantou.AspNetCore.Components
             {
                 if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))
                     return (typeof(InputEnumSelect<>).MakeGenericType(property.PropertyType), null);
+            }
+
+            if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType))
+            {
+                if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))
+                    return (typeof(InputEnumerableSelect<>).MakeGenericType(property.PropertyType), null);
             }
 
             return (typeof(InputText), null);

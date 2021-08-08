@@ -294,13 +294,11 @@ namespace Meziantou.AspNetCore.Components
 
             if (property.PropertyType == typeof(Uri))
                 return (typeof(InputUrl<Uri>), null);
-
             if (property.PropertyType.IsEnum)
             {
                 if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))
                     return (typeof(InputEnumSelect<>).MakeGenericType(property.PropertyType), null);
             }
-            
             return (typeof(InputText), null);
         }
 

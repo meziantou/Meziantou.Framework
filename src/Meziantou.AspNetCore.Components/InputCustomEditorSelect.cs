@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Diagnostics.CodeAnalysis;
@@ -12,11 +13,10 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components
 {
-    public sealed class InputEnumerableSelect<TClass> : InputBase<TClass>
+    public sealed class InputCustomEditorSelect<TClass> : InputBase<TClass>
     {
         protected override void BuildRenderTree(RenderTreeBuilder builder)
         {
-
             string selectedValue = GetKeyValue(CurrentValue);
             builder.OpenElement(0, "select");
             builder.AddMultipleAttributes(1, AdditionalAttributes);
@@ -35,13 +35,17 @@ namespace Meziantou.AspNetCore.Components
             builder.CloseElement(); // close the select element
         }
 
-        private System.Collections.Generic.IEnumerable<TClass> currentList;
-        private System.Collections.Generic.IEnumerable<TClass> CurrentList
+        private IEnumerable<TClass> currentList;
+        private IEnumerable<TClass> CurrentList
         {
             get
             {
                 if (currentList == null)
-                    currentList = ((System.Collections.Generic.IEnumerable<TClass>)Activator.CreateInstance(typeof(TClass))).ToList();
+                {
+                    var method = typeof(TClass).GetMethod("GetEditorList");
+                    if (method != null)
+                        currentList = (List<TClass>)method.Invoke(null, null);
+                }
                 return currentList;
             }
         }
@@ -87,7 +91,7 @@ namespace Meziantou.AspNetCore.Components
                     return val.ToString();
                 }
             }
-            return $"KeyAttribute [Key] was not found in {value.ToString()}";
+            return $"KeyAttribute [Key] was not found in {value}";
         }
     }
 }

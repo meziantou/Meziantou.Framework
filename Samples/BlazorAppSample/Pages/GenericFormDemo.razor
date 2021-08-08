@@ -28,8 +28,9 @@
     public record Model
     {
         
-        [System.ComponentModel.DataAnnotations.Display(Name = "CustomerList generated from IEnumerable", Order=3)]
-        public Customer Customer { get; set; } = new() { Name = "Github", CustomerID = 1 };
+        [System.ComponentModel.Editor(typeof(InputCustomEditorSelect<Customer>), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
+        [System.ComponentModel.DataAnnotations.Display(Name = "CustomerList generated static method GetEditorList", Order=3)]
+        public Customer Customer { get; set; } = new() { Name = "Github", CustomerID = 3 };
 
         [System.ComponentModel.DataAnnotations.MinLength(3)]
         [System.ComponentModel.DataAnnotations.Display(Name = "String Value with custom name",Order=1)]
@@ -83,7 +84,7 @@
         public Uri Uri { get; set; }
     }
 
-    public class Customer : System.Collections.Generic.IEnumerable<Customer>
+    public class Customer 
     {
         [System.ComponentModel.DataAnnotations.Key]
         public int CustomerID { get; set; } = 1; //The Property with [Key]-Attribute is used as value in <select>
@@ -95,20 +96,14 @@
             return $"Name:{Name} ID:{CustomerID}";
         }
 
-        public System.Collections.Generic.IEnumerator<Customer> GetEnumerator()
+        public static List<Customer> GetEditorList()
         {
             System.Collections.Generic.List<Customer> l = new();
-            l.Add(new() { CustomerID = 1, Name = "Github" });
-            l.Add(new() { CustomerID = 2, Name = "Azure" });
-            l.Add(new() { CustomerID = 3, Name = "SourceForge" });
+            l.Add(new() { CustomerID = 1, Name = "Azure" });
+            l.Add(new() { CustomerID = 2, Name = "SourceForge" });
+            l.Add(new() { CustomerID = 3, Name = "Github" });
             l.Add(new() { CustomerID = 4, Name = "BitBucket" });
-            return l.GetEnumerator();
-        }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
+            return l;
         }
     }
-
-
 }

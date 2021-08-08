@@ -301,12 +301,7 @@ namespace Meziantou.AspNetCore.Components
                     return (typeof(InputEnumSelect<>).MakeGenericType(property.PropertyType), null);
             }
 
-            if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType))
-            {
-                if (!property.PropertyType.IsDefined(typeof(FlagsAttribute), inherit: true))
-                    return (typeof(InputEnumerableSelect<>).MakeGenericType(property.PropertyType), null);
-            }
-
+          
             return (typeof(InputText), null);
         }
 

@@ -81,6 +81,8 @@ namespace Meziantou.AspNetCore.Components
 
         private static string GetKeyValue(TClass value)
         {
+            if (value == null)
+                return "";
             PropertyInfo[] properties = value.GetType().GetProperties();
             foreach (PropertyInfo property in properties)
             {

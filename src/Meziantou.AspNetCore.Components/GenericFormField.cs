@@ -245,40 +245,42 @@ namespace Meziantou.AspNetCore.Components
                 return (typeof(InputText), null);
             }
 
-            if (property.PropertyType == typeof(short))
-                return (typeof(InputNumber<short>), null);
+            var underlyingType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
-            if (property.PropertyType == typeof(int))
-                return (typeof(InputNumber<int>), null);
+            if (underlyingType == typeof(short))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
 
-            if (property.PropertyType == typeof(long))
-                return (typeof(InputNumber<long>), null);
+            if (underlyingType == typeof(int))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
 
-            if (property.PropertyType == typeof(float))
-                return (typeof(InputNumber<float>), null);
+            if (underlyingType == typeof(long))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
 
-            if (property.PropertyType == typeof(double))
-                return (typeof(InputNumber<double>), null);
+            if (underlyingType == typeof(float))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
 
-            if (property.PropertyType == typeof(decimal))
-                return (typeof(InputNumber<decimal>), null);
+            if (underlyingType == typeof(double))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
 
-            if (property.PropertyType == typeof(DateTime))
+            if (underlyingType == typeof(decimal))
+                return (typeof(InputNumber<>).MakeGenericType(property.PropertyType), null);
+
+            if (underlyingType == typeof(DateTime))
             {
                 var dataType = property.GetCustomAttribute<DataTypeAttribute>();
                 if (dataType != null && dataType.DataType == DataType.Date)
-                    return (typeof(InputDate<DateTime>), null);
+                    return (typeof(InputDate<>).MakeGenericType(property.PropertyType), null);
 
-                return (typeof(InputDateTime<DateTime>), null);
+                return (typeof(InputDateTime<>).MakeGenericType(property.PropertyType), null);
             }
 
-            if (property.PropertyType == typeof(DateTimeOffset))
+            if (underlyingType == typeof(DateTimeOffset))
             {
                 var dataType = property.GetCustomAttribute<DataTypeAttribute>();
                 if (dataType != null && dataType.DataType == DataType.Date)
-                    return (typeof(InputDate<DateTimeOffset>), null);
+                    return (typeof(InputDate<>).MakeGenericType(property.PropertyType), null);
 
-                return (typeof(InputDateTime<DateTimeOffset>), null);
+                return (typeof(InputDateTime<>).MakeGenericType(property.PropertyType), null);
             }
 
             if (property.PropertyType == typeof(Uri))

@@ -34,6 +34,9 @@
         public string StringValueWithCustomName { get; set; } = "Gérald Barré";
 
         [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
+        public DateTime? DateValueNullable { get; set; }
+
+        [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
         public DateTime DateValue { get; set; } = DateTime.Now;
         public DateTime DateTimeValue { get; set; } = DateTime.Now;
         [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
@@ -46,6 +49,7 @@
         public float SingleValue { get; set; }
         public double DoubleValue { get; set; }
         public decimal DecimalValue { get; set; }
+		public decimal? DecimalValueNullable { get; set; }
         
         [System.ComponentModel.Editor(typeof(GenericFormDemoCustomEditor), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
         public string Choice { get; set; }

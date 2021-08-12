@@ -1,23 +1,22 @@
 ﻿using System;
 
-namespace Meziantou.Framework.Globbing.Internals
+namespace Meziantou.Framework.Globbing.Internals;
+
+internal sealed class MatchAllSubSegment : Segment
 {
-    internal sealed class MatchAllSubSegment : Segment
+    private MatchAllSubSegment()
     {
-        private MatchAllSubSegment()
-        {
-        }
+    }
 
-        public static MatchAllSubSegment Instance { get; } = new MatchAllSubSegment();
+    public static MatchAllSubSegment Instance { get; } = new MatchAllSubSegment();
 
-        public override bool IsMatch(ref PathReader pathReader)
-        {
-            throw new NotSupportedException();
-        }
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        throw new NotSupportedException();
+    }
 
-        public override string ToString()
-        {
-            return "*";
-        }
+    public override string ToString()
+    {
+        return "*";
     }
 }

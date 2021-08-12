@@ -1,29 +1,28 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class VariableDeclarationStatement : Statement
 {
-    public class VariableDeclarationStatement : Statement
+    private Expression? _initExpression;
+
+    public VariableDeclarationStatement()
     {
-        private Expression? _initExpression;
+    }
 
-        public VariableDeclarationStatement()
-        {
-        }
+    public VariableDeclarationStatement(string? name, TypeReference? type, Expression? initExpression = null)
+    {
+        Type = type;
+        Name = name;
+        InitExpression = initExpression;
+    }
 
-        public VariableDeclarationStatement(string? name, TypeReference? type, Expression? initExpression = null)
-        {
-            Type = type;
-            Name = name;
-            InitExpression = initExpression;
-        }
+    public string? Name { get; set; }
 
-        public string? Name { get; set; }
+    public TypeReference? Type { get; set; }
 
-        public TypeReference? Type { get; set; }
-
-        public Expression? InitExpression
-        {
-            get => _initExpression;
-            set => SetParent(ref _initExpression, value);
-        }
+    public Expression? InitExpression
+    {
+        get => _initExpression;
+        set => SetParent(ref _initExpression, value);
     }
 }
 

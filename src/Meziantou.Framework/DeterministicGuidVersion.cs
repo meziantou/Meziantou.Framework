@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework
+﻿namespace Meziantou.Framework;
+
+public enum DeterministicGuidVersion
 {
-    public enum DeterministicGuidVersion
-    {
-        Version3 = 3,
-        Version5 = 5,
-    }
+    Version3 = 3,
+    Version5 = 5,
 }

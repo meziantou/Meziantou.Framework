@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public enum NullableAnnotation
 {
-    public enum NullableAnnotation
-    {
-        NotSet,
-        NotNull,
-        Nullable,
-    }
+    NotSet,
+    NotNull,
+    Nullable,
 }

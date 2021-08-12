@@ -1,12 +1,11 @@
-﻿namespace Meziantou.AspNetCore.Components
+﻿namespace Meziantou.AspNetCore.Components;
+
+public enum LogLevel
 {
-    public enum LogLevel
-    {
-        Trace,
-        Debug,
-        Information,
-        Warning,
-        Error,
-        Critical,
-    }
+    Trace,
+    Debug,
+    Information,
+    Warning,
+    Error,
+    Critical,
 }

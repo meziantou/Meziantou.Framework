@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public interface ITypeDeclarationContainer
 {
-    public interface ITypeDeclarationContainer
-    {
-        CodeObjectCollection<TypeDeclaration> Types { get; }
-    }
+    CodeObjectCollection<TypeDeclaration> Types { get; }
 }

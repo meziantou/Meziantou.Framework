@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public interface ICustomAttributeContainer
 {
-    public interface ICustomAttributeContainer
-    {
-        CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
-    }
+    CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
 }

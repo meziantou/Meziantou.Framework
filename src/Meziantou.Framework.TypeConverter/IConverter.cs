@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public interface IConverter
 {
-    public interface IConverter
-    {
-        bool TryChangeType(object? input, Type conversionType, IFormatProvider? provider, out object? value);
-    }
+    bool TryChangeType(object? input, Type conversionType, IFormatProvider? provider, out object? value);
 }

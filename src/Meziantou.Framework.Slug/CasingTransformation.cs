@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework
+﻿namespace Meziantou.Framework;
+
+public enum CasingTransformation
 {
-    public enum CasingTransformation
-    {
-        PreserveCase,
-        ToLowerCase,
-        ToUpperCase,
-    }
+    PreserveCase,
+    ToLowerCase,
+    ToUpperCase,
 }

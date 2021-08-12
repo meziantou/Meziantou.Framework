@@ -1,17 +1,16 @@
 ﻿#nullable disable
-namespace Meziantou.Framework.Html
+namespace Meziantou.Framework.Html;
+
+public enum HtmlNodeType
 {
-    public enum HtmlNodeType
-    {
-        Attribute,
-        Comment,
-        Document,
-        Element,
-        EndElement,
-        Text,
-        None,
-        ProcessingInstruction,
-        DocumentType,
-        XPathResult,
-    }
+    Attribute,
+    Comment,
+    Document,
+    Element,
+    EndElement,
+    Text,
+    None,
+    ProcessingInstruction,
+    DocumentType,
+    XPathResult,
 }

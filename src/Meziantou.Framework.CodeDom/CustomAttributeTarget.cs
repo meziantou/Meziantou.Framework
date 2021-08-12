@@ -1,15 +1,14 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public enum CustomAttributeTarget
 {
-    public enum CustomAttributeTarget
-    {
-        Assembly,
-        Module,
-        Field,
-        Event,
-        Method,
-        Param,
-        Property,
-        Return,
-        Type,
-    }
+    Assembly,
+    Module,
+    Field,
+    Event,
+    Method,
+    Param,
+    Property,
+    Return,
+    Type,
 }

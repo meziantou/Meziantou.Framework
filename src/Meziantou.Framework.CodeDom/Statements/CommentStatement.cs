@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class CommentStatement : Statement
 {
-    public class CommentStatement : Statement
+    public CommentStatement()
     {
-        public CommentStatement()
-        {
-        }
-
-        public CommentStatement(string? content)
-        {
-            Content = content;
-        }
-
-        public string? Content { get; set; }
     }
+
+    public CommentStatement(string? content)
+    {
+        Content = content;
+    }
+
+    public string? Content { get; set; }
 }

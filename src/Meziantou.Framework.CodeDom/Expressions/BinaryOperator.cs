@@ -1,25 +1,24 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public enum BinaryOperator
 {
-    public enum BinaryOperator
-    {
-        None,
-        Equals,
-        NotEquals,
-        LessThan,
-        LessThanOrEqual,
-        GreaterThan,
-        GreaterThanOrEqual,
-        Or,
-        BitwiseOr,
-        And,
-        BitwiseAnd,
-        Add,
-        Substract,
-        Multiply,
-        Divide,
-        Modulo,
-        ShiftLeft,
-        ShiftRight,
-        Xor,
-    }
+    None,
+    Equals,
+    NotEquals,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    Or,
+    BitwiseOr,
+    And,
+    BitwiseAnd,
+    Add,
+    Substract,
+    Multiply,
+    Divide,
+    Modulo,
+    ShiftLeft,
+    ShiftRight,
+    Xor,
 }

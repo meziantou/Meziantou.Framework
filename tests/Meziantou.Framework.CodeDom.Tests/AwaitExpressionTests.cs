@@ -1,28 +1,27 @@
 ﻿using FluentAssertions;
 using Xunit;
 
-namespace Meziantou.Framework.CodeDom.Tests
+namespace Meziantou.Framework.CodeDom.Tests;
+
+public class AwaitExpressionTests
 {
-    public class AwaitExpressionTests
+    [Fact]
+    public void CodeAwaitExpression_ConfigureAwait()
     {
-        [Fact]
-        public void CodeAwaitExpression_ConfigureAwait()
-        {
-            var expression = new AwaitExpression(new SnippetExpression("test"));
-            var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
+        var expression = new AwaitExpression(new SnippetExpression("test"));
+        var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            configuredExpression.Should().Be(expression);
-            configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value.Should().Be(true);
-        }
+        configuredExpression.Should().Be(expression);
+        configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value.Should().Be(true);
+    }
 
-        [Fact]
-        public void CodeAwaitExpression_ConfigureAwait_NullExpression()
-        {
-            var expression = new AwaitExpression();
-            var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
+    [Fact]
+    public void CodeAwaitExpression_ConfigureAwait_NullExpression()
+    {
+        var expression = new AwaitExpression();
+        var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-            configuredExpression.Should().Be(expression);
-            configuredExpression.Expression.Should().BeNull();
-        }
+        configuredExpression.Should().Be(expression);
+        configuredExpression.Expression.Should().BeNull();
     }
 }

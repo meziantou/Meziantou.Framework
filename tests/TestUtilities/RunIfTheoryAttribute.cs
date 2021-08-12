@@ -2,30 +2,29 @@
 using System.Runtime.InteropServices;
 using Xunit;
 
-namespace TestUtilities
+namespace TestUtilities;
+
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class RunIfTheoryAttribute : TheoryAttribute
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class RunIfTheoryAttribute : TheoryAttribute
+    public RunIfTheoryAttribute(FactOperatingSystem operatingSystems)
     {
-        public RunIfTheoryAttribute(FactOperatingSystem operatingSystems)
+        OperatingSystems = operatingSystems;
+
+        if (operatingSystems != FactOperatingSystem.All)
         {
-            OperatingSystems = operatingSystems;
+            if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return;
 
-            if (operatingSystems != FactOperatingSystem.All)
-            {
-                if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return;
+            if (operatingSystems.HasFlag(FactOperatingSystem.Linux) && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return;
 
-                if (operatingSystems.HasFlag(FactOperatingSystem.Linux) && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return;
+            if (operatingSystems.HasFlag(FactOperatingSystem.OSX) && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return;
 
-                if (operatingSystems.HasFlag(FactOperatingSystem.OSX) && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    return;
-
-                Skip = "Run only on " + operatingSystems;
-            }
+            Skip = "Run only on " + operatingSystems;
         }
-
-        public FactOperatingSystem OperatingSystems { get; }
     }
+
+    public FactOperatingSystem OperatingSystems { get; }
 }

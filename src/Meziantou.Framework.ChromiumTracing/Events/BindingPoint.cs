@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.ChromiumTracing
+﻿namespace Meziantou.Framework.ChromiumTracing;
+
+public enum BindingPoint
 {
-    public enum BindingPoint
-    {
-        NextSlice,
-        EnclosingSlice,
-    }
+    NextSlice,
+    EnclosingSlice,
 }

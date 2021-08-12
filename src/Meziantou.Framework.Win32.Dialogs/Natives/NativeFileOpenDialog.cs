@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[ComImport]
+[Guid(IIDGuid.IFileOpenDialog)]
+[CoClass(typeof(FileOpenDialogRCW))]
+internal interface NativeFileOpenDialog : IFileOpenDialog
 {
-    [ComImport]
-    [Guid(IIDGuid.IFileOpenDialog)]
-    [CoClass(typeof(FileOpenDialogRCW))]
-    internal interface NativeFileOpenDialog : IFileOpenDialog
-    {
-    }
 }

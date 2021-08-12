@@ -1,13 +1,12 @@
 ﻿#nullable disable
-namespace Meziantou.Framework.Html
+namespace Meziantou.Framework.Html;
+
+public enum HtmlErrorType
 {
-    public enum HtmlErrorType
-    {
-        TagNotClosed,
-        TagNotOpened,
-        EncodingError,
-        EncodingMismatch,
-        NamespaceNotDeclared,
-        DuplicateAttribute,
-    }
+    TagNotClosed,
+    TagNotOpened,
+    EncodingError,
+    EncodingMismatch,
+    NamespaceNotDeclared,
+    DuplicateAttribute,
 }

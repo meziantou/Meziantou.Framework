@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class SnippetExpression : Expression
 {
-    public class SnippetExpression : Expression
+    public SnippetExpression()
     {
-        public SnippetExpression()
-        {
-        }
-
-        public SnippetExpression(string? expression)
-        {
-            Expression = expression;
-        }
-
-        public string? Expression { get; set; }
     }
+
+    public SnippetExpression(string? expression)
+    {
+        Expression = expression;
+    }
+
+    public string? Expression { get; set; }
 }

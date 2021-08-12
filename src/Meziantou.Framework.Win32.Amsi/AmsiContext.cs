@@ -2,60 +2,59 @@
 using System.ComponentModel;
 using System.Runtime.Versioning;
 
-namespace Meziantou.Framework.Win32
+namespace Meziantou.Framework.Win32;
+
+[SupportedOSPlatform("windows")]
+public sealed class AmsiContext : IDisposable
 {
-    [SupportedOSPlatform("windows")]
-    public sealed class AmsiContext : IDisposable
+    internal readonly AmsiContextSafeHandle _handle;
+
+    private static readonly AmsiSessionSafeHandle s_defaultSession = new();
+
+    private AmsiContext(AmsiContextSafeHandle context)
     {
-        internal readonly AmsiContextSafeHandle _handle;
+        _handle = context;
+    }
 
-        private static readonly AmsiSessionSafeHandle s_defaultSession = new();
+    public static AmsiContext Create(string applicationName)
+    {
+        int result = Amsi.AmsiInitialize(applicationName, out var context);
+        if (result != 0)
+            throw new Win32Exception(result);
 
-        private AmsiContext(AmsiContextSafeHandle context)
-        {
-            _handle = context;
-        }
+        return new AmsiContext(context);
+    }
 
-        public static AmsiContext Create(string applicationName)
-        {
-            int result = Amsi.AmsiInitialize(applicationName, out var context);
-            if (result != 0)
-                throw new Win32Exception(result);
+    public AmsiSession CreateSession()
+    {
+        var result = Amsi.AmsiOpenSession(_handle, out var session);
+        session.Context = _handle;
+        if (result != 0)
+            throw new Win32Exception(result);
 
-            return new AmsiContext(context);
-        }
+        return new AmsiSession(this, session);
+    }
 
-        public AmsiSession CreateSession()
-        {
-            var result = Amsi.AmsiOpenSession(_handle, out var session);
-            session.Context = _handle;
-            if (result != 0)
-                throw new Win32Exception(result);
+    public bool IsMalware(string payload, string contentName)
+    {
+        var returnValue = Amsi.AmsiScanString(_handle, payload, contentName, s_defaultSession, out var result);
+        if (returnValue != 0)
+            throw new Win32Exception(returnValue);
 
-            return new AmsiSession(this, session);
-        }
+        return Amsi.AmsiResultIsMalware(result);
+    }
 
-        public bool IsMalware(string payload, string contentName)
-        {
-            var returnValue = Amsi.AmsiScanString(_handle, payload, contentName, s_defaultSession, out var result);
-            if (returnValue != 0)
-                throw new Win32Exception(returnValue);
+    public bool IsMalware(byte[] payload, string contentName)
+    {
+        var returnValue = Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, s_defaultSession, out var result);
+        if (returnValue != 0)
+            throw new Win32Exception(returnValue);
 
-            return Amsi.AmsiResultIsMalware(result);
-        }
+        return Amsi.AmsiResultIsMalware(result);
+    }
 
-        public bool IsMalware(byte[] payload, string contentName)
-        {
-            var returnValue = Amsi.AmsiScanBuffer(_handle, payload, (uint)payload.Length, contentName, s_defaultSession, out var result);
-            if (returnValue != 0)
-                throw new Win32Exception(returnValue);
-
-            return Amsi.AmsiResultIsMalware(result);
-        }
-
-        public void Dispose()
-        {
-            _handle.Dispose();
-        }
+    public void Dispose()
+    {
+        _handle.Dispose();
     }
 }

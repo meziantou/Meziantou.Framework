@@ -1,18 +1,17 @@
 ﻿using System.Xml.Linq;
 
-namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class XmlComment : CodeObject
 {
-    public class XmlComment : CodeObject
+    public XmlComment()
     {
-        public XmlComment()
-        {
-        }
-
-        public XmlComment(XElement? element)
-        {
-            Element = element;
-        }
-
-        public XElement? Element { get; set; }
     }
+
+    public XmlComment(XElement? element)
+    {
+        Element = element;
+    }
+
+    public XElement? Element { get; set; }
 }

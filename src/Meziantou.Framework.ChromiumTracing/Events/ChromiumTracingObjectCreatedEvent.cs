@@ -1,10 +1,9 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public sealed class ChromiumTracingObjectCreatedEvent : ChromiumTracingObjectEvent
 {
-    public sealed class ChromiumTracingObjectCreatedEvent : ChromiumTracingObjectEvent
-    {
-        [JsonPropertyName("ph")]
-        public override string Type => "N";
-    }
+    [JsonPropertyName("ph")]
+    public override string Type => "N";
 }

@@ -1,34 +1,33 @@
-﻿namespace Meziantou.Framework.Globbing.Internals
+﻿namespace Meziantou.Framework.Globbing.Internals;
+
+internal sealed class CharacterRangeInverseSegment : Segment
 {
-    internal sealed class CharacterRangeInverseSegment : Segment
+    private readonly CharacterRange _range;
+
+    public CharacterRangeInverseSegment(CharacterRange range)
     {
-        private readonly CharacterRange _range;
+        _range = range;
+    }
 
-        public CharacterRangeInverseSegment(CharacterRange range)
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        var result = !_range.IsInRange(pathReader.CurrentText[0]);
+        if (result)
         {
-            _range = range;
+            pathReader.ConsumeInSegment(1);
         }
 
-        public override bool IsMatch(ref PathReader pathReader)
-        {
-            var result = !_range.IsInRange(pathReader.CurrentText[0]);
-            if (result)
-            {
-                pathReader.ConsumeInSegment(1);
-            }
+        return result;
+    }
 
-            return result;
-        }
-
-        public override string ToString()
-        {
-            using var sb = new ValueStringBuilder();
-            sb.Append("[!");
-            sb.Append(_range.Min);
-            sb.Append('-');
-            sb.Append(_range.Max);
-            sb.Append(']');
-            return sb.ToString();
-        }
+    public override string ToString()
+    {
+        using var sb = new ValueStringBuilder();
+        sb.Append("[!");
+        sb.Append(_range.Min);
+        sb.Append('-');
+        sb.Append(_range.Max);
+        sb.Append(']');
+        return sb.ToString();
     }
 }

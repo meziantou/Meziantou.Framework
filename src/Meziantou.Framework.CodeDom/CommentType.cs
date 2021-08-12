@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public enum CommentType
 {
-    public enum CommentType
-    {
-        LineComment,
-        InlineComment,
-    }
+    LineComment,
+    InlineComment,
 }

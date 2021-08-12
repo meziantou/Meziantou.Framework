@@ -1,14 +1,13 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.ChromiumTracing
-{
-    public sealed class ChromiumTracingInstantEvent : ChromiumTracingEvent
-    {
-        [JsonPropertyName("ph")]
-        public override string Type => "i";
+namespace Meziantou.Framework.ChromiumTracing;
 
-        [JsonPropertyName("s")]
-        [JsonConverter(typeof(ChromiumTracingInstantEventScopeJsonConverter))]
-        public ChromiumTracingInstantEventScope? Scope { get; set; }
-    }
+public sealed class ChromiumTracingInstantEvent : ChromiumTracingEvent
+{
+    [JsonPropertyName("ph")]
+    public override string Type => "i";
+
+    [JsonPropertyName("s")]
+    [JsonConverter(typeof(ChromiumTracingInstantEventScopeJsonConverter))]
+    public ChromiumTracingInstantEventScope? Scope { get; set; }
 }

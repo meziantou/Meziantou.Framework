@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class YieldBreakStatement : Statement
 {
-    public class YieldBreakStatement : Statement
+    public YieldBreakStatement()
     {
-        public YieldBreakStatement()
-        {
-        }
     }
 }

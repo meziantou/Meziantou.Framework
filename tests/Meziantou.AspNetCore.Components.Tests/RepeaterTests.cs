@@ -2,75 +2,74 @@
 using Bunit;
 using Xunit;
 
-namespace Meziantou.AspNetCore.Components.Tests
+namespace Meziantou.AspNetCore.Components.Tests;
+
+public sealed class RepeaterTests
 {
-    public sealed class RepeaterTests
+    [Fact]
+    public void NullDataShowLoadingIndicator()
     {
-        [Fact]
-        public void NullDataShowLoadingIndicator()
-        {
-            using var ctx = new TestContext();
-            var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
-                .Add(p => p.Items, value: null)
-                .Add(p => p.LoadingTemplate, "<p>Loading...</p>")
-                .Add(p => p.EmptyTemplate, "<p>empty</p>"));
+        using var ctx = new TestContext();
+        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+            .Add(p => p.Items, value: null)
+            .Add(p => p.LoadingTemplate, "<p>Loading...</p>")
+            .Add(p => p.EmptyTemplate, "<p>empty</p>"));
 
-            cut.MarkupMatches("<p>Loading...</p>");
-        }
+        cut.MarkupMatches("<p>Loading...</p>");
+    }
 
-        [Fact]
-        public void EmptyTemplate()
-        {
-            using var ctx = new TestContext();
-            var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
-                .Add(p => p.Items, value: new List<string>())
-                .Add(p => p.LoadingTemplate, "<p>loading...</p>")
-                .Add(p => p.EmptyTemplate, "<p>empty</p>"));
+    [Fact]
+    public void EmptyTemplate()
+    {
+        using var ctx = new TestContext();
+        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+            .Add(p => p.Items, value: new List<string>())
+            .Add(p => p.LoadingTemplate, "<p>loading...</p>")
+            .Add(p => p.EmptyTemplate, "<p>empty</p>"));
 
-            cut.MarkupMatches("<p>empty</p>");
-        }
+        cut.MarkupMatches("<p>empty</p>");
+    }
 
-        [Fact]
-        public void ItemTemplate()
-        {
-            using var ctx = new TestContext();
-            var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
-                .Add(p => p.Items, value: new List<string>() { "a", "b" })
-                .Add(p => p.EmptyTemplate, "<p>empty</p>")
-                .Add(p => p.ItemTemplate, item => $"{item}"));
+    [Fact]
+    public void ItemTemplate()
+    {
+        using var ctx = new TestContext();
+        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+            .Add(p => p.Items, value: new List<string>() { "a", "b" })
+            .Add(p => p.EmptyTemplate, "<p>empty</p>")
+            .Add(p => p.ItemTemplate, item => $"{item}"));
 
-            cut.MarkupMatches("ab");
-        }
+        cut.MarkupMatches("ab");
+    }
 
-        [Fact]
-        public void ItemTemplateAndSeparatorTemplate()
-        {
-            using var ctx = new TestContext();
-            var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
-                .Add(p => p.Items, value: new List<string>() { "a", "b" })
-                .Add(p => p.EmptyTemplate, "<p>empty</p>")
-                .Add(p => p.ItemTemplate, item => $"{item}")
-                .Add(p => p.ItemSeparatorTemplate, ","));
+    [Fact]
+    public void ItemTemplateAndSeparatorTemplate()
+    {
+        using var ctx = new TestContext();
+        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+            .Add(p => p.Items, value: new List<string>() { "a", "b" })
+            .Add(p => p.EmptyTemplate, "<p>empty</p>")
+            .Add(p => p.ItemTemplate, item => $"{item}")
+            .Add(p => p.ItemSeparatorTemplate, ","));
 
-            cut.MarkupMatches("a,b");
-        }
+        cut.MarkupMatches("a,b");
+    }
 
-        [Fact]
-        public void ContainerTemplate()
-        {
-            using var ctx = new TestContext();
-            var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
-                .Add(p => p.Items, value: new List<string>() { "a", "b" })
-                .Add(p => p.EmptyTemplate, "<p>empty</p>")
-                .Add(p => p.ItemTemplate, item => $"{item}")
-                .Add(p => p.RepeaterContainerTemplate, itemsTemplate => builder =>
-                {
-                    builder.OpenElement(0, "div");
-                    builder.AddContent(1, itemsTemplate);
-                    builder.CloseElement();
-                }));
+    [Fact]
+    public void ContainerTemplate()
+    {
+        using var ctx = new TestContext();
+        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+            .Add(p => p.Items, value: new List<string>() { "a", "b" })
+            .Add(p => p.EmptyTemplate, "<p>empty</p>")
+            .Add(p => p.ItemTemplate, item => $"{item}")
+            .Add(p => p.RepeaterContainerTemplate, itemsTemplate => builder =>
+            {
+                builder.OpenElement(0, "div");
+                builder.AddContent(1, itemsTemplate);
+                builder.CloseElement();
+            }));
 
-            cut.MarkupMatches("<div>ab</div>");
-        }
+        cut.MarkupMatches("<div>ab</div>");
     }
 }

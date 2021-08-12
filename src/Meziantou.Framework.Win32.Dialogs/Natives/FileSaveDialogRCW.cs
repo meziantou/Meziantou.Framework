@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[ComImport]
+[ClassInterface(ClassInterfaceType.None)]
+[Guid(CLSIDGuid.FileSaveDialog)]
+internal sealed class FileSaveDialogRCW
 {
-    [ComImport]
-    [ClassInterface(ClassInterfaceType.None)]
-    [Guid(CLSIDGuid.FileSaveDialog)]
-    internal sealed class FileSaveDialogRCW
-    {
-    }
 }

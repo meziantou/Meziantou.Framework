@@ -1,17 +1,16 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class UsingDirective : Directive
 {
-    public class UsingDirective : Directive
+    public UsingDirective()
+        : this(ns: null)
     {
-        public UsingDirective()
-            : this(ns: null)
-        {
-        }
-
-        public UsingDirective(string? ns)
-        {
-            Namespace = ns;
-        }
-
-        public string? Namespace { get; set; }
     }
+
+    public UsingDirective(string? ns)
+    {
+        Namespace = ns;
+    }
+
+    public string? Namespace { get; set; }
 }

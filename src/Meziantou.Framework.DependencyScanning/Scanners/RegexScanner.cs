@@ -4,44 +4,43 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Meziantou.Framework.DependencyScanning.Scanners
+namespace Meziantou.Framework.DependencyScanning.Scanners;
+
+public sealed class RegexScanner : DependencyScanner
 {
-    public sealed class RegexScanner : DependencyScanner
+    private const string NameGroupName = "name";
+    private const string VersionGroupName = "version";
+
+    public string? RegexPattern { get; set; }
+
+    public DependencyType DependencyType { get; set; }
+
+    public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        private const string NameGroupName = "name";
-        private const string VersionGroupName = "version";
+        if (RegexPattern == null)
+            return;
 
-        public string? RegexPattern { get; set; }
+        using var sr = new StreamReader(context.Content);
+        var text = await sr.ReadToEndAsync().ConfigureAwait(false);
 
-        public DependencyType DependencyType { get; set; }
-
-        public override async ValueTask ScanAsync(ScanFileContext context)
+        foreach (Match match in Regex.Matches(text, RegexPattern, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
         {
-            if (RegexPattern == null)
-                return;
+            Debug.Assert(match.Success);
 
-            using var sr = new StreamReader(context.Content);
-            var text = await sr.ReadToEndAsync().ConfigureAwait(false);
-
-            foreach (Match match in Regex.Matches(text, RegexPattern, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+            var name = match.Groups[NameGroupName].Value;
+            var versionGroup = match.Groups[VersionGroupName];
+            var version = versionGroup.Value;
+            if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(version))
             {
-                Debug.Assert(match.Success);
-
-                var name = match.Groups[NameGroupName].Value;
-                var versionGroup = match.Groups[VersionGroupName];
-                var version = versionGroup.Value;
-                if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(version))
-                {
-                    var location = TextLocation.FromIndex(context.FullPath, text, versionGroup.Index, versionGroup.Length);
-                    await context.ReportDependency(new Dependency(name, version, DependencyType, location)).ConfigureAwait(false);
-                }
+                var location = TextLocation.FromIndex(context.FullPath, text, versionGroup.Index, versionGroup.Length);
+                await context.ReportDependency(new Dependency(name, version, DependencyType, location)).ConfigureAwait(false);
             }
         }
+    }
 
-        protected override bool ShouldScanFileCore(CandidateFileContext context)
-        {
-            // The behavior should be handled by the base class with the FilePatterns property
-            return false;
-        }
+    protected override bool ShouldScanFileCore(CandidateFileContext context)
+    {
+        // The behavior should be handled by the base class with the FilePatterns property
+        return false;
     }
 }

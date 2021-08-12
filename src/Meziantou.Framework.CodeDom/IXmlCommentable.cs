@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public interface IXmlCommentable
 {
-    public interface IXmlCommentable
-    {
-        XmlCommentCollection XmlComments { get; }
-    }
+    XmlCommentCollection XmlComments { get; }
 }

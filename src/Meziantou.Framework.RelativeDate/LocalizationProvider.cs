@@ -2,25 +2,25 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public sealed class LocalizationProvider : ILocalizationProvider
 {
-    public sealed class LocalizationProvider : ILocalizationProvider
+    private static ILocalizationProvider s_current = new LocalizationProvider();
+
+    public static ILocalizationProvider Current
     {
-        private static ILocalizationProvider s_current = new LocalizationProvider();
+        get => s_current;
+        set => s_current = value ?? throw new ArgumentNullException(nameof(value));
+    }
 
-        public static ILocalizationProvider Current
+    private readonly Dictionary<CultureInfo, IReadOnlyDictionary<string, string>> _cultures;
+
+    public LocalizationProvider()
+    {
+        _cultures = new Dictionary<CultureInfo, IReadOnlyDictionary<string, string>>
         {
-            get => s_current;
-            set => s_current = value ?? throw new ArgumentNullException(nameof(value));
-        }
-
-        private readonly Dictionary<CultureInfo, IReadOnlyDictionary<string, string>> _cultures;
-
-        public LocalizationProvider()
-        {
-            _cultures = new Dictionary<CultureInfo, IReadOnlyDictionary<string, string>>
-            {
-                [CultureInfo.InvariantCulture] = new Dictionary<string, string>(StringComparer.Ordinal)
+            [CultureInfo.InvariantCulture] = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "Now", "now" },
                     { "OneSecondAgo", "one second ago" },
@@ -50,7 +50,7 @@ namespace Meziantou.Framework
                     { "InManyYears", "in {0} years" },
                 },
 
-                [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>(StringComparer.Ordinal)
+            [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "Now", "maintenant" },
                     { "OneSecondAgo", "il y a une seconde" },
@@ -79,38 +79,37 @@ namespace Meziantou.Framework
                     { "InOneYear", "dans un an" },
                     { "InManyYears", "dans {0} ans" },
                 },
-            };
-        }
+        };
+    }
 
-        public string GetString(string name, CultureInfo? culture)
+    public string GetString(string name, CultureInfo? culture)
+    {
+        culture ??= CultureInfo.InvariantCulture;
+
+        if (!_cultures.TryGetValue(culture, out var values))
         {
-            culture ??= CultureInfo.InvariantCulture;
+            if (culture == null || culture.IsNeutralCulture || culture == culture.Parent)
+                return GetString(name, CultureInfo.InvariantCulture);
 
-            if (!_cultures.TryGetValue(culture, out var values))
-            {
-                if (culture == null || culture.IsNeutralCulture || culture == culture.Parent)
-                    return GetString(name, CultureInfo.InvariantCulture);
-
-                return GetString(name, culture.Parent);
-            }
-
-            if (values.TryGetValue(name, out var value))
-                return value;
-
-            throw new ArgumentException($"'{name}' is not supported", nameof(name));
+            return GetString(name, culture.Parent);
         }
 
-        public void Set(CultureInfo culture, IReadOnlyDictionary<string, string> values)
-        {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
+        if (values.TryGetValue(name, out var value))
+            return value;
 
-            _cultures[culture] = values ?? throw new ArgumentNullException(nameof(values));
-        }
+        throw new ArgumentException($"'{name}' is not supported", nameof(name));
+    }
 
-        public void Remove(CultureInfo culture)
-        {
-            _cultures.Remove(culture);
-        }
+    public void Set(CultureInfo culture, IReadOnlyDictionary<string, string> values)
+    {
+        if (culture == null)
+            throw new ArgumentNullException(nameof(culture));
+
+        _cultures[culture] = values ?? throw new ArgumentNullException(nameof(values));
+    }
+
+    public void Remove(CultureInfo culture)
+    {
+        _cultures.Remove(culture);
     }
 }

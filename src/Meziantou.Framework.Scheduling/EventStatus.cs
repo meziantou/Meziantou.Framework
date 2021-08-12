@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.Scheduling
+﻿namespace Meziantou.Framework.Scheduling;
+
+public enum EventStatus
 {
-    public enum EventStatus
-    {
-        Tentative,
-        Confirmed,
-        Cancelled,
-    }
+    Tentative,
+    Confirmed,
+    Cancelled,
 }

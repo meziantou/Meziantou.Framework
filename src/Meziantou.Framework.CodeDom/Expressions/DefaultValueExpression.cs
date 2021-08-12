@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public class DefaultValueExpression : Expression
 {
-    public class DefaultValueExpression : Expression
+    public DefaultValueExpression()
     {
-        public DefaultValueExpression()
-        {
-        }
-
-        public DefaultValueExpression(TypeReference? type)
-        {
-            Type = type;
-        }
-
-        public TypeReference? Type { get; set; }
     }
+
+    public DefaultValueExpression(TypeReference? type)
+    {
+        Type = type;
+    }
+
+    public TypeReference? Type { get; set; }
 }

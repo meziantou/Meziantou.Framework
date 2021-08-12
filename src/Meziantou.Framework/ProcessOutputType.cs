@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework
+﻿namespace Meziantou.Framework;
+
+public enum ProcessOutputType
 {
-    public enum ProcessOutputType
-    {
-        StandardOutput,
-        StandardError,
-    }
+    StandardOutput,
+    StandardError,
 }

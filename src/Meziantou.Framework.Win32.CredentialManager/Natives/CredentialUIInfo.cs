@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+internal struct CredentialUIInfo
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct CredentialUIInfo
-    {
-        public int CbSize;
-        public IntPtr HwndParent;
-        public string? PszMessageText;
-        public string? PszCaptionText;
-        public IntPtr HbmBanner;
-    }
+    public int CbSize;
+    public IntPtr HwndParent;
+    public string? PszMessageText;
+    public string? PszCaptionText;
+    public IntPtr HbmBanner;
 }

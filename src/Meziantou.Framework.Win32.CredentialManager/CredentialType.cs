@@ -1,14 +1,13 @@
-﻿namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32;
+
+public enum CredentialType
 {
-    public enum CredentialType
-    {
-        Generic = 1,
-        DomainPassword,
-        DomainCertificate,
-        DomainVisiblePassword,
-        GenericCertificate,
-        DomainExtended,
-        Maximum,
-        MaximumEx = Maximum + 1000,
-    }
+    Generic = 1,
+    DomainPassword,
+    DomainCertificate,
+    DomainVisiblePassword,
+    GenericCertificate,
+    DomainExtended,
+    Maximum,
+    MaximumEx = Maximum + 1000,
 }

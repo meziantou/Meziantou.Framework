@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[ComImport()]
+[Guid(IIDGuid.IModalWindow)]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IModalWindow
 {
-    [ComImport()]
-    [Guid(IIDGuid.IModalWindow)]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IModalWindow
-    {
-        [PreserveSig]
-        int Show([In] IntPtr parent);
-    }
+    [PreserveSig]
+    int Show([In] IntPtr parent);
 }

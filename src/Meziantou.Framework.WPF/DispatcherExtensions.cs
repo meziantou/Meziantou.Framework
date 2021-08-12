@@ -2,40 +2,39 @@
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 
-namespace Meziantou.Framework.WPF
+namespace Meziantou.Framework.WPF;
+
+public static class DispatcherExtensions
 {
-    public static class DispatcherExtensions
+    // https://medium.com/@kevingosse/switching-back-to-the-ui-thread-in-wpf-uwp-in-modern-c-5dc1cc8efa5e
+    public static SwitchToUiAwaitable SwitchToDispatcherThread(this Dispatcher dispatcher)
     {
-        // https://medium.com/@kevingosse/switching-back-to-the-ui-thread-in-wpf-uwp-in-modern-c-5dc1cc8efa5e
-        public static SwitchToUiAwaitable SwitchToDispatcherThread(this Dispatcher dispatcher)
+        return new SwitchToUiAwaitable(dispatcher);
+    }
+
+    public readonly struct SwitchToUiAwaitable : INotifyCompletion
+    {
+        private readonly Dispatcher _dispatcher;
+
+        public SwitchToUiAwaitable(Dispatcher dispatcher)
         {
-            return new SwitchToUiAwaitable(dispatcher);
+            _dispatcher = dispatcher;
         }
 
-        public readonly struct SwitchToUiAwaitable : INotifyCompletion
+        public SwitchToUiAwaitable GetAwaiter()
         {
-            private readonly Dispatcher _dispatcher;
+            return this;
+        }
 
-            public SwitchToUiAwaitable(Dispatcher dispatcher)
-            {
-                _dispatcher = dispatcher;
-            }
+        public void GetResult()
+        {
+        }
 
-            public SwitchToUiAwaitable GetAwaiter()
-            {
-                return this;
-            }
+        public bool IsCompleted => _dispatcher.CheckAccess();
 
-            public void GetResult()
-            {
-            }
-
-            public bool IsCompleted => _dispatcher.CheckAccess();
-
-            public void OnCompleted(Action continuation)
-            {
-                _dispatcher.BeginInvoke(continuation);
-            }
+        public void OnCompleted(Action continuation)
+        {
+            _dispatcher.BeginInvoke(continuation);
         }
     }
 }

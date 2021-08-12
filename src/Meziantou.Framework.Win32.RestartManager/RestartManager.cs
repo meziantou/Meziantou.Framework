@@ -5,158 +5,157 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 
-namespace Meziantou.Framework.Win32
+namespace Meziantou.Framework.Win32;
+
+[SupportedOSPlatform("windows")]
+public sealed class RestartManager : IDisposable
 {
-    [SupportedOSPlatform("windows")]
-    public sealed class RestartManager : IDisposable
+    private int SessionHandle { get; }
+    public string SessionKey { get; }
+
+    private RestartManager(int sessionHandle, string sessionKey)
     {
-        private int SessionHandle { get; }
-        public string SessionKey { get; }
+        SessionHandle = sessionHandle;
+        SessionKey = sessionKey;
+    }
 
-        private RestartManager(int sessionHandle, string sessionKey)
+    public static RestartManager CreateSession()
+    {
+        var sessionKey = Guid.NewGuid().ToString();
+        var result = NativeMethods.RmStartSession(out var handle, 0, strSessionKey: sessionKey);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+
+        return new RestartManager(handle, sessionKey);
+    }
+
+    public static RestartManager JoinSession(string sessionKey)
+    {
+        var result = NativeMethods.RmJoinSession(out var handle, sessionKey);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
+
+        return new RestartManager(handle, sessionKey);
+    }
+
+    public void RegisterFile(string path)
+    {
+        if (path == null)
+            throw new ArgumentNullException(nameof(path));
+
+        string[] resources = { path };
+        var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
+    }
+
+    public void RegisterFiles(string[] paths)
+    {
+        if (paths == null)
+            throw new ArgumentNullException(nameof(paths));
+
+        var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
+    }
+
+    public bool IsResourcesLocked()
+    {
+        uint arraySize = 1;
+        while (true)
         {
-            SessionHandle = sessionHandle;
-            SessionKey = sessionKey;
-        }
-
-        public static RestartManager CreateSession()
-        {
-            var sessionKey = Guid.NewGuid().ToString();
-            var result = NativeMethods.RmStartSession(out var handle, 0, strSessionKey: sessionKey);
-            if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
-
-            return new RestartManager(handle, sessionKey);
-        }
-
-        public static RestartManager JoinSession(string sessionKey)
-        {
-            var result = NativeMethods.RmJoinSession(out var handle, sessionKey);
-            if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmStartSession failed ({result})");
-
-            return new RestartManager(handle, sessionKey);
-        }
-
-        public void RegisterFile(string path)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            string[] resources = { path };
-            var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
-            if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
-        }
-
-        public void RegisterFiles(string[] paths)
-        {
-            if (paths == null)
-                throw new ArgumentNullException(nameof(paths));
-
-            var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
-            if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
-        }
-
-        public bool IsResourcesLocked()
-        {
-            uint arraySize = 1;
-            while (true)
+            var array = new RM_PROCESS_INFO[arraySize];
+            var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            if (result == RmResult.ERROR_SUCCESS || result == RmResult.ERROR_MORE_DATA)
             {
-                var array = new RM_PROCESS_INFO[arraySize];
-                var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
-                if (result == RmResult.ERROR_SUCCESS || result == RmResult.ERROR_MORE_DATA)
+                return arrayCount > 0;
+            }
+
+            throw new Win32Exception((int)result, $"RmGetList failed ({result})");
+        }
+    }
+
+    public IReadOnlyList<Process> GetProcessesLockingResources()
+    {
+        uint arraySize = 10;
+        while (true)
+        {
+            var array = new RM_PROCESS_INFO[arraySize];
+            var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
+            if (result == RmResult.ERROR_SUCCESS)
+            {
+                var processes = new List<Process>((int)arrayCount);
+                for (var i = 0; i < arrayCount; i++)
                 {
-                    return arrayCount > 0;
+                    try
+                    {
+                        var process = Process.GetProcessById(array[i].Process.ProcessId);
+                        if (process != null)
+                            processes.Add(process);
+                    }
+                    catch
+                    {
+                    }
                 }
 
+                return processes;
+            }
+            else if (result == RmResult.ERROR_MORE_DATA)
+            {
+                arraySize = arrayCount;
+            }
+            else
+            {
                 throw new Win32Exception((int)result, $"RmGetList failed ({result})");
             }
         }
+    }
 
-        public IReadOnlyList<Process> GetProcessesLockingResources()
+    public void Shutdown(RmShutdownType action)
+    {
+        Shutdown(action, statusCallback: null);
+    }
+
+    public void Shutdown(RmShutdownType action, RmWriteStatusCallback? statusCallback)
+    {
+        var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+    }
+
+    public void Restart()
+    {
+        Restart(statusCallback: null);
+    }
+
+    public void Restart(RmWriteStatusCallback? statusCallback)
+    {
+        var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
+        if (result != RmResult.ERROR_SUCCESS)
+            throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+    }
+
+    public void Dispose()
+    {
+        if (SessionHandle != 0)
         {
-            uint arraySize = 10;
-            while (true)
-            {
-                var array = new RM_PROCESS_INFO[arraySize];
-                var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
-                if (result == RmResult.ERROR_SUCCESS)
-                {
-                    var processes = new List<Process>((int)arrayCount);
-                    for (var i = 0; i < arrayCount; i++)
-                    {
-                        try
-                        {
-                            var process = Process.GetProcessById(array[i].Process.ProcessId);
-                            if (process != null)
-                                processes.Add(process);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    return processes;
-                }
-                else if (result == RmResult.ERROR_MORE_DATA)
-                {
-                    arraySize = arrayCount;
-                }
-                else
-                {
-                    throw new Win32Exception((int)result, $"RmGetList failed ({result})");
-                }
-            }
-        }
-
-        public void Shutdown(RmShutdownType action)
-        {
-            Shutdown(action, statusCallback: null);
-        }
-
-        public void Shutdown(RmShutdownType action, RmWriteStatusCallback? statusCallback)
-        {
-            var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
+            var result = NativeMethods.RmEndSession(SessionHandle);
             if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+                throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
         }
+    }
 
-        public void Restart()
-        {
-            Restart(statusCallback: null);
-        }
+    public static bool IsFileLocked(string path)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFile(path);
+        return restartManager.IsResourcesLocked();
+    }
 
-        public void Restart(RmWriteStatusCallback? statusCallback)
-        {
-            var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
-            if (result != RmResult.ERROR_SUCCESS)
-                throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
-        }
-
-        public void Dispose()
-        {
-            if (SessionHandle != 0)
-            {
-                var result = NativeMethods.RmEndSession(SessionHandle);
-                if (result != RmResult.ERROR_SUCCESS)
-                    throw new Win32Exception((int)result, $"RmEndSession failed ({result})");
-            }
-        }
-
-        public static bool IsFileLocked(string path)
-        {
-            using var restartManager = CreateSession();
-            restartManager.RegisterFile(path);
-            return restartManager.IsResourcesLocked();
-        }
-
-        public static IReadOnlyList<Process> GetProcessesLockingFile(string path)
-        {
-            using var restartManager = CreateSession();
-            restartManager.RegisterFile(path);
-            return restartManager.GetProcessesLockingResources();
-        }
+    public static IReadOnlyList<Process> GetProcessesLockingFile(string path)
+    {
+        using var restartManager = CreateSession();
+        restartManager.RegisterFile(path);
+        return restartManager.GetProcessesLockingResources();
     }
 }

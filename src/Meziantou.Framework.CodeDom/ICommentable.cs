@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public interface ICommentable
 {
-    public interface ICommentable
-    {
-        CommentCollection CommentsAfter { get; }
-        CommentCollection CommentsBefore { get; }
-    }
+    CommentCollection CommentsAfter { get; }
+    CommentCollection CommentsBefore { get; }
 }

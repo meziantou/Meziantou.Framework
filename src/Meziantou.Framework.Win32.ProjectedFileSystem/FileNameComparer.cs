@@ -1,29 +1,28 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.Versioning;
 
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+namespace Meziantou.Framework.Win32.ProjectedFileSystem;
+
+[SupportedOSPlatform("windows")]
+public sealed class FileNameComparer : IComparer<string?>
 {
-    [SupportedOSPlatform("windows")]
-    public sealed class FileNameComparer : IComparer<string?>
+    private FileNameComparer()
     {
-        private FileNameComparer()
-        {
-        }
+    }
 
-        public static IComparer<string> Instance { get; } = new FileNameComparer();
+    public static IComparer<string> Instance { get; } = new FileNameComparer();
 
-        public int Compare(string? x, string? y)
-        {
-            if (x == null && y == null)
-                return 0;
+    public int Compare(string? x, string? y)
+    {
+        if (x == null && y == null)
+            return 0;
 
-            if (x == null)
-                return -1;
+        if (x == null)
+            return -1;
 
-            if (y == null)
-                return 1;
+        if (y == null)
+            return 1;
 
-            return NativeMethods.PrjFileNameCompare(x, y);
-        }
+        return NativeMethods.PrjFileNameCompare(x, y);
     }
 }

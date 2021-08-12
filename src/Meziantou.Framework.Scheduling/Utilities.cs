@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Globalization;
 
-namespace Meziantou.Framework.Scheduling
-{
-    internal static class Utilities
-    {
-        public const string DateTimeFormat = "yyyyMMddTHHmmsszzz";
-        public const string UtcDateTimeFormat = "yyyyMMddTHHmmssZ";
+namespace Meziantou.Framework.Scheduling;
 
-        public static DateTime ParseDateTime(string str)
-        {
-            string[] formats = {
+internal static class Utilities
+{
+    public const string DateTimeFormat = "yyyyMMddTHHmmsszzz";
+    public const string UtcDateTimeFormat = "yyyyMMddTHHmmssZ";
+
+    public static DateTime ParseDateTime(string str)
+    {
+        string[] formats = {
                 // Basic formats
                 "yyyyMMddTHHmmsszzz",
                 "yyyyMMddTHHmmsszz",
@@ -37,44 +37,43 @@ namespace Meziantou.Framework.Scheduling
                 "yyyyMMdd",
                 };
 
-            var dateTime = DateTime.ParseExact(str, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
-            return dateTime;
-        }
+        var dateTime = DateTime.ParseExact(str, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+        return dateTime;
+    }
 
-        public static string DayOfWeekToString(DayOfWeek dayOfWeek)
+    public static string DayOfWeekToString(DayOfWeek dayOfWeek)
+    {
+        return dayOfWeek switch
         {
-            return dayOfWeek switch
-            {
-                DayOfWeek.Sunday => "SU",
-                DayOfWeek.Monday => "MO",
-                DayOfWeek.Tuesday => "TU",
-                DayOfWeek.Wednesday => "WE",
-                DayOfWeek.Thursday => "TH",
-                DayOfWeek.Friday => "FR",
-                DayOfWeek.Saturday => "SA",
-                _ => throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null),
-            };
-        }
+            DayOfWeek.Sunday => "SU",
+            DayOfWeek.Monday => "MO",
+            DayOfWeek.Tuesday => "TU",
+            DayOfWeek.Wednesday => "WE",
+            DayOfWeek.Thursday => "TH",
+            DayOfWeek.Friday => "FR",
+            DayOfWeek.Saturday => "SA",
+            _ => throw new ArgumentOutOfRangeException(nameof(dayOfWeek), dayOfWeek, message: null),
+        };
+    }
 
-        public static string DateTimeToString(DateTime dt)
+    public static string DateTimeToString(DateTime dt)
+    {
+        if (dt.Kind == DateTimeKind.Utc)
         {
-            if (dt.Kind == DateTimeKind.Utc)
-            {
-                return dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
-            }
-
-            return dt.ToString(DateTimeFormat, CultureInfo.InvariantCulture);
+            return dt.ToString(UtcDateTimeFormat, CultureInfo.InvariantCulture);
         }
 
-        public static string StatusToString(EventStatus status)
+        return dt.ToString(DateTimeFormat, CultureInfo.InvariantCulture);
+    }
+
+    public static string StatusToString(EventStatus status)
+    {
+        return status switch
         {
-            return status switch
-            {
-                EventStatus.Tentative => "TENTATIVE",
-                EventStatus.Confirmed => "CONFIRMED",
-                EventStatus.Cancelled => "CANCELLED",
-                _ => throw new ArgumentOutOfRangeException(nameof(status), status, message: null),
-            };
-        }
+            EventStatus.Tentative => "TENTATIVE",
+            EventStatus.Confirmed => "CONFIRMED",
+            EventStatus.Cancelled => "CANCELLED",
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, message: null),
+        };
     }
 }

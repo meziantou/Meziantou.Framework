@@ -1,18 +1,17 @@
 ﻿using System.Linq;
 
-namespace Meziantou.Framework.CodeDom
-{
-    internal static class ParametrableTypeExtensions
-    {
-        public static bool HasConstraints(this TypeParameter parameter)
-        {
-            return parameter.Constraints.Any();
-        }
+namespace Meziantou.Framework.CodeDom;
 
-        public static bool HasConstraints(this IParametrableType parametrable)
-        {
-            return parametrable.Parameters.Any(HasConstraints);
-        }
+internal static class ParametrableTypeExtensions
+{
+    public static bool HasConstraints(this TypeParameter parameter)
+    {
+        return parameter.Constraints.Any();
+    }
+
+    public static bool HasConstraints(this IParametrableType parametrable)
+    {
+        return parametrable.Parameters.Any(HasConstraints);
     }
 }
 

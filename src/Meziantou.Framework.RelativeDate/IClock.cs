@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+internal interface IClock
 {
-    internal interface IClock
-    {
-        DateTime Now { get; }
-        DateTime UtcNow { get; }
-    }
+    DateTime Now { get; }
+    DateTime UtcNow { get; }
 }

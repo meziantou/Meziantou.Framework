@@ -1,14 +1,13 @@
 ﻿using System;
 
-namespace Meziantou.Framework.Win32
-{
-    public sealed class TokenEntry
-    {
-        public TokenEntry(SecurityIdentifier sid)
-        {
-            Sid = sid ?? throw new ArgumentNullException(nameof(sid));
-        }
+namespace Meziantou.Framework.Win32;
 
-        public SecurityIdentifier Sid { get; }
+public sealed class TokenEntry
+{
+    public TokenEntry(SecurityIdentifier sid)
+    {
+        Sid = sid ?? throw new ArgumentNullException(nameof(sid));
     }
+
+    public SecurityIdentifier Sid { get; }
 }

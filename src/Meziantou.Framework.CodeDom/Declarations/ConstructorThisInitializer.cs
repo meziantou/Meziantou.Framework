@@ -1,19 +1,18 @@
 ﻿using System.Collections.Generic;
 
-namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class ConstructorThisInitializer : ConstructorInitializer
 {
-    public class ConstructorThisInitializer : ConstructorInitializer
+    public ConstructorThisInitializer()
     {
-        public ConstructorThisInitializer()
-        {
-        }
+    }
 
-        public ConstructorThisInitializer(params Expression[] codeExpressions) : base(codeExpressions)
-        {
-        }
+    public ConstructorThisInitializer(params Expression[] codeExpressions) : base(codeExpressions)
+    {
+    }
 
-        public ConstructorThisInitializer(IEnumerable<Expression>? codeExpressions) : base(codeExpressions)
-        {
-        }
+    public ConstructorThisInitializer(IEnumerable<Expression>? codeExpressions) : base(codeExpressions)
+    {
     }
 }

@@ -1,18 +1,17 @@
 ﻿#nullable disable
 using System.Collections.Generic;
 
-namespace Meziantou.Framework.Html
+namespace Meziantou.Framework.Html;
+
+public static class HtmlNodeExtensions
 {
-    public static class HtmlNodeExtensions
+    public static IEnumerable<HtmlNode> Descendants(this HtmlNode node)
     {
-        public static IEnumerable<HtmlNode> Descendants(this HtmlNode node)
+        foreach (var child in node.ChildNodes)
         {
-            foreach (var child in node.ChildNodes)
-            {
-                yield return child;
-                foreach (var n in child.Descendants())
-                    yield return n;
-            }
+            yield return child;
+            foreach (var n in child.Descendants())
+                yield return n;
         }
     }
 }

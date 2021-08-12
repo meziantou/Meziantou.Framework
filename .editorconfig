@@ -76,7 +76,6 @@ dotnet_style_prefer_conditional_expression_over_assignment = true
 dotnet_style_prefer_conditional_expression_over_return = true
 dotnet_style_prefer_simplified_boolean_expressions = true
 dotnet_style_prefer_simplified_interpolation = true
-
 # CSharp code style settings:
 [*.cs]
 # Prefer "var" everywhere (Implicit and explicit types)
@@ -116,6 +115,7 @@ csharp_style_unused_value_expression_statement_preference = discard_variable
 
 # 'using' directive preferences
 csharp_using_directive_placement = outside_namespace
+csharp_style_namespace_declarations = file_scoped
 
 # Null-checking preference
 csharp_style_conditional_delegate_call = true : warning
@@ -125,14 +125,8 @@ csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimenta
 csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false
 csharp_style_allow_embedded_statements_on_same_line_experimental = true
 
-## Formatting conventions
-# Dotnet formatting settings:
-[*.{cs,vb}]
-# Organize usings
 dotnet_sort_system_directives_first = true
 
-# CSharp formatting settings:
-[*.cs]
 # Newline options
 csharp_new_line_before_catch = true
 csharp_new_line_before_else = true
@@ -185,9 +179,6 @@ dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity
 dotnet_style_parentheses_in_other_binary_operators = always_for_clarity
 dotnet_style_parentheses_in_other_operators = never_if_unnecessary
 dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity
-
-## Naming conventions
-[*.{cs,vb}]
 
 # Non-private static fields are PascalCase
 dotnet_naming_rule.non_private_static_fields_should_be_pascal_case.severity = suggestion

@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom;
+
+public interface IUsingDirectiveContainer
 {
-    public interface IUsingDirectiveContainer
-    {
-        CodeObjectCollection<UsingDirective> Usings { get; }
-    }
+    CodeObjectCollection<UsingDirective> Usings { get; }
 }

@@ -1,10 +1,9 @@
 ﻿using System.Collections.Generic;
 
-namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+internal interface IInheritanceParameters
 {
-    internal interface IInheritanceParameters
-    {
-        TypeReference? BaseType { get; set; }
-        IList<TypeReference> Implements { get; }
-    }
+    TypeReference? BaseType { get; set; }
+    IList<TypeReference> Implements { get; }
 }

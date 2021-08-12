@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework
+﻿namespace Meziantou.Framework;
+
+public enum HexaOptions
 {
-    public enum HexaOptions
-    {
-        LowerCase,
-        UpperCase,
-    }
+    LowerCase,
+    UpperCase,
 }

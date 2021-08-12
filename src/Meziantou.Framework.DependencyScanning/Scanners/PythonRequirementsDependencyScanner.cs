@@ -3,38 +3,37 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Meziantou.Framework.DependencyScanning.Internals;
 
-namespace Meziantou.Framework.DependencyScanning.Scanners
+namespace Meziantou.Framework.DependencyScanning.Scanners;
+
+public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 {
-    public sealed class PythonRequirementsDependencyScanner : DependencyScanner
+    private static readonly Regex s_pypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
+
+    protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        private static readonly Regex s_pypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
+        return context.FileName.Equals("requirements.txt", StringComparison.Ordinal);
+    }
 
-        protected override bool ShouldScanFileCore(CandidateFileContext context)
+    public override async ValueTask ScanAsync(ScanFileContext context)
+    {
+        using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
+        var lineNo = 0;
+        string? line;
+        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
         {
-            return context.FileName.Equals("requirements.txt", StringComparison.Ordinal);
-        }
+            lineNo++;
 
-        public override async ValueTask ScanAsync(ScanFileContext context)
-        {
-            using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-            var lineNo = 0;
-            string? line;
-            while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
-            {
-                lineNo++;
+            var match = s_pypiReferenceRegex.Match(line);
+            if (!match.Success)
+                continue;
 
-                var match = s_pypiReferenceRegex.Match(line);
-                if (!match.Success)
-                    continue;
+            // Name==1.2.2
+            var packageName = match.Groups["PACKAGENAME"].Value;
+            var versionGroup = match.Groups["VERSION"];
+            var version = versionGroup.Value;
 
-                // Name==1.2.2
-                var packageName = match.Groups["PACKAGENAME"].Value;
-                var versionGroup = match.Groups["VERSION"];
-                var version = versionGroup.Value;
-
-                var column = versionGroup.Index + 1;
-                await context.ReportDependency(new Dependency(packageName, version, DependencyType.PyPi, new TextLocation(context.FullPath, lineNo, column, versionGroup.Length))).ConfigureAwait(false);
-            }
+            var column = versionGroup.Index + 1;
+            await context.ReportDependency(new Dependency(packageName, version, DependencyType.PyPi, new TextLocation(context.FullPath, lineNo, column, versionGroup.Length))).ConfigureAwait(false);
         }
     }
 }

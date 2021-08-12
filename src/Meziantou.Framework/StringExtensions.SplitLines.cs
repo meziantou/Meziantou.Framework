@@ -2,83 +2,81 @@
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework
-{
+namespace Meziantou.Framework;
 #if PUBLIC_STRING_EXTENSIONS
-    public
+public
 #else
     internal
 #endif
     static partial class StringExtensions
+{
+    [Pure]
+    public static LineSplitEnumerator SplitLines(this string str) => new(str.AsSpan());
+
+    [StructLayout(LayoutKind.Auto)]
+    public ref struct LineSplitEnumerator
     {
-        [Pure]
-        public static LineSplitEnumerator SplitLines(this string str) => new(str.AsSpan());
+        private ReadOnlySpan<char> _str;
 
-        [StructLayout(LayoutKind.Auto)]
-        public ref struct LineSplitEnumerator
+        public LineSplitEnumerator(ReadOnlySpan<char> str)
         {
-            private ReadOnlySpan<char> _str;
+            _str = str;
+            Current = default;
+        }
 
-            public LineSplitEnumerator(ReadOnlySpan<char> str)
+        public readonly LineSplitEnumerator GetEnumerator() => this;
+
+        public bool MoveNext()
+        {
+            if (_str.Length == 0)
+                return false;
+
+            var span = _str;
+            var index = span.IndexOfAny('\r', '\n');
+            if (index == -1)
             {
-                _str = str;
-                Current = default;
-            }
-
-            public readonly LineSplitEnumerator GetEnumerator() => this;
-
-            public bool MoveNext()
-            {
-                if (_str.Length == 0)
-                    return false;
-
-                var span = _str;
-                var index = span.IndexOfAny('\r', '\n');
-                if (index == -1)
-                {
-                    _str = ReadOnlySpan<char>.Empty;
-                    Current = new LineSplitEntry(span, ReadOnlySpan<char>.Empty);
-                    return true;
-                }
-
-                if (index < span.Length - 1 && span[index] == '\r')
-                {
-                    var next = span[index + 1];
-                    if (next == '\n')
-                    {
-                        Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 2));
-                        _str = span[(index + 2)..];
-                        return true;
-                    }
-                }
-
-                Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 1));
-                _str = span[(index + 1)..];
+                _str = ReadOnlySpan<char>.Empty;
+                Current = new LineSplitEntry(span, ReadOnlySpan<char>.Empty);
                 return true;
             }
 
-            public LineSplitEntry Current { get; private set; }
+            if (index < span.Length - 1 && span[index] == '\r')
+            {
+                var next = span[index + 1];
+                if (next == '\n')
+                {
+                    Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 2));
+                    _str = span[(index + 2)..];
+                    return true;
+                }
+            }
+
+            Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 1));
+            _str = span[(index + 1)..];
+            return true;
         }
 
-        [StructLayout(LayoutKind.Auto)]
-        public readonly ref struct LineSplitEntry
+        public LineSplitEntry Current { get; private set; }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public readonly ref struct LineSplitEntry
+    {
+        public LineSplitEntry(ReadOnlySpan<char> line, ReadOnlySpan<char> separator)
         {
-            public LineSplitEntry(ReadOnlySpan<char> line, ReadOnlySpan<char> separator)
-            {
-                Line = line;
-                Separator = separator;
-            }
-
-            public ReadOnlySpan<char> Line { get; }
-            public ReadOnlySpan<char> Separator { get; }
-
-            public void Deconstruct(out ReadOnlySpan<char> line, out ReadOnlySpan<char> separator)
-            {
-                line = Line;
-                separator = Separator;
-            }
-
-            public static implicit operator ReadOnlySpan<char>(LineSplitEntry entry) => entry.Line;
+            Line = line;
+            Separator = separator;
         }
+
+        public ReadOnlySpan<char> Line { get; }
+        public ReadOnlySpan<char> Separator { get; }
+
+        public void Deconstruct(out ReadOnlySpan<char> line, out ReadOnlySpan<char> separator)
+        {
+            line = Line;
+            separator = Separator;
+        }
+
+        public static implicit operator ReadOnlySpan<char>(LineSplitEntry entry) => entry.Line;
     }
 }

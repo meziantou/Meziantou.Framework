@@ -192,6 +192,7 @@ namespace Meziantou.AspNetCore.Components
         [SuppressMessage("Style", "MA0003:Add argument name to improve readability", Justification = "Not needed")]
         private static (Type ComponentType, IEnumerable<KeyValuePair<string, object>>? AdditonalAttributes) GetEditorType(PropertyInfo property)
         {
+            // Check EditorAttribute declared on the property
             var editorAttributes = property.GetCustomAttributes<EditorAttribute>();
             foreach (var editorAttribute in editorAttributes)
             {
@@ -199,6 +200,15 @@ namespace Meziantou.AspNetCore.Components
                     return (Type.GetType(editorAttribute.EditorTypeName, throwOnError: true)!, null);
             }
 
+            // Check EditorAttribute declared on the property type
+            editorAttributes = property.PropertyType.GetCustomAttributes<EditorAttribute>();
+            foreach (var editorAttribute in editorAttributes)
+            {
+                if (editorAttribute.EditorBaseTypeName == typeof(InputBase<>).AssemblyQualifiedName)
+                    return (Type.GetType(editorAttribute.EditorTypeName, throwOnError: true)!, null);
+            }
+
+            // Infer the editor based on the property type and other annotations
             if (property.PropertyType == typeof(bool))
                 return (typeof(InputCheckbox), null);
 

@@ -142,8 +142,8 @@ internal static class Program
                     if (string.IsNullOrWhiteSpace(node.Value))
                         continue;
 
-                        // Only consider relative path
-                        if (node.Value.Contains("://", StringComparison.Ordinal) && node.Value.StartsWith("//", StringComparison.Ordinal))
+                    // Only consider relative path
+                    if (node.Value.Contains("://", StringComparison.Ordinal) && node.Value.StartsWith("//", StringComparison.Ordinal))
                         continue;
 
                     string? uriPath = null;
@@ -190,10 +190,10 @@ internal static class Program
 
                     var bytes = await File.ReadAllBytesAsync(assetPath).ConfigureAwait(false);
 #pragma warning disable CA1308 // Normalize strings to uppercase
-                        var hash = Convert.ToHexString(SHA512.HashData(bytes))[0..6].ToLowerInvariant();
+                    var hash = Convert.ToHexString(SHA512.HashData(bytes))[0..6].ToLowerInvariant();
 #pragma warning restore CA1308
 
-                        if (uriQuery is null)
+                    if (uriQuery is null)
                     {
                         uriQuery = "?v=" + hash;
                     }

@@ -150,8 +150,8 @@ public static partial class ProcessExtensions
                         {
                             try
                             {
-                                    // Try to at least kill the root process
-                                    process.Kill();
+                                // Try to at least kill the root process
+                                process.Kill();
                             }
                             catch (InvalidOperationException)
                             {

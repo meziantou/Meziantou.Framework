@@ -178,8 +178,8 @@ public sealed class GenericFormField<TModel>
 
             return _fieldValidationTemplate ??= builder =>
             {
-                    // () => Owner.Property
-                    var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
+                // () => Owner.Property
+                var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
                 var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(PropertyType), access);
 
                 builder.OpenComponent(0, typeof(ValidationMessage<>).MakeGenericType(PropertyType));

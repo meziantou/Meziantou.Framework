@@ -109,7 +109,7 @@ public sealed partial class StronglyTypedIdTests
     [Fact]
     public void TestNullableClass()
     {
-        IdClassInt32 value = IdClassInt32.FromInt32(42);
+        var value = IdClassInt32.FromInt32(42);
         (value == null).Should().BeFalse();
     }
 

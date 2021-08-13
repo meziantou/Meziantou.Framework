@@ -20,7 +20,7 @@ public partial class StronglyTypedIdSourceGenerator
         {
             var method = converter.AddMember(new MethodDeclaration("CanConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = typeof(bool);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
             var typeArg = method.AddArgument("sourceType", typeof(Type));
 
             method.Statements = new ReturnStatement(
@@ -34,8 +34,8 @@ public partial class StronglyTypedIdSourceGenerator
         {
             var method = converter.AddMember(new MethodDeclaration("ConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
-            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
+            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
+            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
             var valueArg = method.AddArgument("value", typeof(object));
             method.Statements = new StatementCollection
                 {
@@ -62,7 +62,7 @@ public partial class StronglyTypedIdSourceGenerator
         {
             var method = converter.AddMember(new MethodDeclaration("CanConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = typeof(bool);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
             var typeArg = method.AddArgument("destinationType", typeof(Type));
             method.Statements = new ReturnStatement(
                 Expression.Or(
@@ -75,8 +75,8 @@ public partial class StronglyTypedIdSourceGenerator
         {
             var method = converter.AddMember(new MethodDeclaration("ConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = typeof(object);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
-            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
+            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
+            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
             var valueArg = method.AddArgument("value", typeof(object));
             var destinationTypeArg = method.AddArgument("destinationType", typeof(Type));
             method.Statements = new StatementCollection()

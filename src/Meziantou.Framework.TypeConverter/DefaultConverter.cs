@@ -1078,7 +1078,7 @@ public class DefaultConverter : IConverter
                 var tc = TypeDescriptor.GetConverter(inputType);
                 if (tc != null && tc.CanConvertTo(typeof(string)))
                 {
-                    value = (string)tc.ConvertTo(input, typeof(string));
+                    value = (string?)tc.ConvertTo(input, typeof(string));
                     return true;
                 }
 
@@ -1296,7 +1296,7 @@ public class DefaultConverter : IConverter
         {
             if (ctConverter != null && !(input is string) && ctConverter.CanConvertFrom(typeof(string)))
             {
-                value = ctConverter.ConvertFrom(context: null, provider as CultureInfo, Convert.ToString(input, provider));
+                value = ctConverter.ConvertFrom(context: null, provider as CultureInfo, Convert.ToString(input, provider)!);
                 return true;
             }
         }

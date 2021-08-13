@@ -38,24 +38,24 @@ public partial class StronglyTypedIdSourceGenerator
             _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
             var valueArg = method.AddArgument("value", typeof(object));
             method.Statements = new StatementCollection
+            {
+                new ConditionStatement
                 {
-                    new ConditionStatement
+                    Condition = Expression.EqualsNull(valueArg),
+                    TrueStatements = new ReturnStatement(new DefaultValueExpression(GetTypeReference(idType))),
+                    FalseStatements = new ConditionStatement
                     {
-                        Condition = Expression.EqualsNull(valueArg),
-                        TrueStatements = new ReturnStatement(new DefaultValueExpression(GetTypeReference(idType))),
+                        Condition = new IsInstanceOfTypeExpression(valueArg, GetTypeReference(idType)),
+                        TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "From" + GetShortName(GetTypeReference(idType))).InvokeMethod(new CastExpression(valueArg, GetTypeReference(idType)))),
                         FalseStatements = new ConditionStatement
                         {
-                            Condition = new IsInstanceOfTypeExpression(valueArg, GetTypeReference(idType)),
-                            TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "From" + GetShortName(GetTypeReference(idType))).InvokeMethod(new CastExpression(valueArg, GetTypeReference(idType)))),
-                            FalseStatements = new ConditionStatement
-                            {
-                                Condition = new IsInstanceOfTypeExpression(valueArg, typeof(string)),
-                                TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "Parse").InvokeMethod(new CastExpression(valueArg, typeof(string)))),
-                                FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to " + typeDeclaration.Name))),
-                            },
+                            Condition = new IsInstanceOfTypeExpression(valueArg, typeof(string)),
+                            TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "Parse").InvokeMethod(new CastExpression(valueArg, typeof(string)))),
+                            FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to " + typeDeclaration.Name))),
                         },
                     },
-                };
+                },
+            };
         }
 
         // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
@@ -63,7 +63,7 @@ public partial class StronglyTypedIdSourceGenerator
             var method = converter.AddMember(new MethodDeclaration("CanConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = typeof(bool);
             _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
-            var typeArg = method.AddArgument("destinationType", typeof(Type));
+            var typeArg = method.AddArgument("destinationType", new TypeReference(typeof(Type)).MakeNullable());
             method.Statements = new ReturnStatement(
                 Expression.Or(
                     new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
@@ -77,27 +77,34 @@ public partial class StronglyTypedIdSourceGenerator
             method.ReturnType = typeof(object);
             _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
             _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
-            var valueArg = method.AddArgument("value", typeof(object));
+            var valueArg = method.AddArgument("value", new TypeReference(typeof(object)).MakeNullable());
             var destinationTypeArg = method.AddArgument("destinationType", typeof(Type));
-            method.Statements = new StatementCollection()
+            method.Statements = new StatementCollection
+            {
+                new ConditionStatement
                 {
-                    new ConditionStatement
+                    Condition = Expression.NotEqualsNull(valueArg),
+                    TrueStatements = new StatementCollection
                     {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
-                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("ValueAsString")),
+                        new ConditionStatement
+                        {
+                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
+                            TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("ValueAsString")),
+                        },
+                        new ConditionStatement
+                        {
+                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeDeclaration)),
+                            TrueStatements = new ReturnStatement(valueArg),
+                        },
+                        new ConditionStatement
+                        {
+                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
+                            TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("Value")),
+                        },
                     },
-                    new ConditionStatement
-                    {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeDeclaration)),
-                        TrueStatements = new ReturnStatement(valueArg),
-                    },
-                    new ConditionStatement
-                    {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
-                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("Value")),
-                    },
-                    new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to '", destinationTypeArg, "'"))),
-                };
+                },
+                new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to '", destinationTypeArg, "'"))),
+            };
         }
     }
 }

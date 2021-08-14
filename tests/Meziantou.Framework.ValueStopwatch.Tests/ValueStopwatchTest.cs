@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Tests
             var stopwatch = ValueStopwatch.StartNew();
             await Task.Delay(200);
             var elapsed = stopwatch.GetElapsedTime();
-            elapsed.Should().BeCloseTo(200.Milliseconds(), precision: 3000);
+            elapsed.Should().BeCloseTo(200.Milliseconds(), precision: TimeSpan.FromSeconds(3));
         }
     }
 }

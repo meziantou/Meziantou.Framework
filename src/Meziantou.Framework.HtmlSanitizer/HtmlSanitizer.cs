@@ -105,9 +105,12 @@ namespace Meziantou.Framework.Sanitizers
                 for (var i = htmlElement.Attributes.Length - 1; i >= 0; i--)
                 {
                     var attribute = htmlElement.Attributes[i];
+                    if (attribute is null)
+                        continue;
+
                     if (!IsValidAttribute(attribute.Name))
                     {
-                        htmlElement.RemoveAttribute(attribute.NamespaceUri, attribute.Name);
+                        htmlElement.RemoveAttribute(attribute.NamespaceUri!, attribute.Name);
                     }
                     else if (UriAttributes.Contains(attribute.Name))
                     {

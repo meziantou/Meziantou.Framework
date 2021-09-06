@@ -9,6 +9,7 @@
 | Meziantou.AspNetCore.Components.LogViewer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.LogViewer.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.LogViewer/) |
 | Meziantou.AspNetCore.Components.WebAssembly | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Components.WebAssembly.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Components.WebAssembly/) |
 | Meziantou.AspNetCore.Mvc | [![NuGet](https://img.shields.io/nuget/v/Meziantou.AspNetCore.Mvc.svg)](https://www.nuget.org/packages/Meziantou.AspNetCore.Mvc/) |
+| Meziantou.Extensions.Logging.InMemory | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Extensions.Logging.InMemory.svg)](https://www.nuget.org/packages/Meziantou.Extensions.Logging.InMemory/) |
 | Meziantou.Extensions.Logging.Xunit | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Extensions.Logging.Xunit.svg)](https://www.nuget.org/packages/Meziantou.Extensions.Logging.Xunit/) |
 | Meziantou.Framework | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.svg)](https://www.nuget.org/packages/Meziantou.Framework/) |
 | Meziantou.Framework.ByteSize | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ByteSize.svg)](https://www.nuget.org/packages/Meziantou.Framework.ByteSize/) |

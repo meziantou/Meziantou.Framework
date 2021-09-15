@@ -374,6 +374,7 @@ dotnet_diagnostic.CA2246.severity = warning
 dotnet_diagnostic.CA2247.severity = warning
 dotnet_diagnostic.CA2248.severity = warning
 dotnet_diagnostic.CA2249.severity = warning
+dotnet_diagnostic.CA2252.severity = none    # Buggy in .NET 6 RC1
 dotnet_diagnostic.CA2300.severity = warning
 dotnet_diagnostic.CA2301.severity = warning
 dotnet_diagnostic.CA2302.severity = warning

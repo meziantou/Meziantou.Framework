@@ -20,7 +20,7 @@ namespace Meziantou.Framework.StronglyTypedId
             {
                 var method = converter.AddMember(new MethodDeclaration("CanConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
                 method.ReturnType = typeof(bool);
-                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
                 var typeArg = method.AddArgument("sourceType", typeof(Type));
 
                 method.Statements = new ReturnStatement(
@@ -34,8 +34,8 @@ namespace Meziantou.Framework.StronglyTypedId
             {
                 var method = converter.AddMember(new MethodDeclaration("ConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
                 method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
-                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
-                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
+                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
                 var valueArg = method.AddArgument("value", typeof(object));
                 method.Statements = new StatementCollection
                 {
@@ -62,8 +62,8 @@ namespace Meziantou.Framework.StronglyTypedId
             {
                 var method = converter.AddMember(new MethodDeclaration("CanConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
                 method.ReturnType = typeof(bool);
-                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
-                var typeArg = method.AddArgument("destinationType", typeof(Type));
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
+                var typeArg = method.AddArgument("destinationType", new TypeReference(typeof(Type)).MakeNullable());
                 method.Statements = new ReturnStatement(
                     Expression.Or(
                         new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
@@ -75,26 +75,33 @@ namespace Meziantou.Framework.StronglyTypedId
             {
                 var method = converter.AddMember(new MethodDeclaration("ConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
                 method.ReturnType = typeof(object);
-                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext"));
-                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)));
-                var valueArg = method.AddArgument("value", typeof(object));
+                _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
+                _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
+                var valueArg = method.AddArgument("value", new TypeReference(typeof(object)).MakeNullable());
                 var destinationTypeArg = method.AddArgument("destinationType", typeof(Type));
                 method.Statements = new StatementCollection()
                 {
                     new ConditionStatement
                     {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
-                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("ValueAsString")),
-                    },
-                    new ConditionStatement
-                    {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeDeclaration)),
-                        TrueStatements = new ReturnStatement(valueArg),
-                    },
-                    new ConditionStatement
-                    {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
-                        TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("Value")),
+                        Condition = Expression.NotEqualsNull(valueArg),
+                        TrueStatements = new StatementCollection
+                        {
+                            new ConditionStatement
+                            {
+                                Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
+                                TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("ValueAsString")),
+                            },
+                            new ConditionStatement
+                            {
+                                Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeDeclaration)),
+                                TrueStatements = new ReturnStatement(valueArg),
+                            },
+                            new ConditionStatement
+                            {
+                                Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
+                                TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("Value")),
+                            },
+                        },
                     },
                     new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to '", destinationTypeArg, "'"))),
                 };

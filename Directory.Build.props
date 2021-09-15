@@ -53,6 +53,10 @@
   </ItemGroup>
 
   <!-- SourceLink and Reproducible Builds: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
+  <PropertyGroup>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+  
   <ItemGroup>
     <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
 

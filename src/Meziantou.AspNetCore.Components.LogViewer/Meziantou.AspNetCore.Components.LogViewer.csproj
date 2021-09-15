@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
     <Version>1.0.1</Version>
-    <ValidateProjectTargets>false</ValidateProjectTargets>
   </PropertyGroup>
 
   <ItemGroup>

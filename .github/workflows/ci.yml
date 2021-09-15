@@ -32,7 +32,7 @@ jobs:
     - name: Run dotnet format
       run: |
         dotnet tool restore
-        dotnet format --check --verbosity:diagnostic Meziantou.Framework.sln
+        dotnet format --verify-no-changes --verbosity:diagnostic Meziantou.Framework.sln
 
   validate_readme:
     runs-on: windows-2019

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.ObjectPool;
@@ -20,6 +21,8 @@ namespace Meziantou.Framework.CodeOwners
 
             private readonly List<CodeOwnersEntry> _entries;
             private readonly StringLexer _lexer;
+
+            private static readonly char[] _startingCharToIgnore = new char[] { '#', '[', '^' };
 
             private static ObjectPool<StringBuilder> CreateStringBuilderPool()
             {
@@ -48,9 +51,9 @@ namespace Meziantou.Framework.CodeOwners
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     return;
 
-                // Comment
+                // Comment or section
                 var c = _lexer.Peek();
-                if (c == '#')
+                if (Array.Exists(_startingCharToIgnore, charToIgnore => charToIgnore == c))
                 {
                     _lexer.ConsumeUntil('\n');
                     return;

@@ -108,5 +108,28 @@ namespace Meziantou.Framework.CodeOwners.Tests
             var parse2 = CodeOwnersParser.Parse(Content).ToArray();
             parse1.Should().Equal(parse2);
         }
+
+        [Fact]
+        public void ParseCodeOwnersWithSections()
+        {
+            const string Content = "\n" +
+                                   "[Section]\n" +
+                                   "* @user1 @user2\n" +
+                                   "\n" +
+                                   "^[Optional Section]\n" +
+                                   "*.js @user2 @user3\n";
+
+            var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+            var expected = new CodeOwnersEntry[]
+            {
+                CodeOwnersEntry.FromUsername("*", "user1"),
+                CodeOwnersEntry.FromUsername("*", "user2"),
+                CodeOwnersEntry.FromUsername("*.js", "user2"),
+                CodeOwnersEntry.FromUsername("*.js", "user3")
+            };
+
+            actual.Should().Equal(expected);
+        }
     }
 }

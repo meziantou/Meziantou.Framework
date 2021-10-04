@@ -19,7 +19,7 @@ defaults:
 
 jobs:
   lint_csharp:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
 
@@ -35,14 +35,14 @@ jobs:
         dotnet format --check --verbosity:diagnostic Meziantou.Framework.sln
 
   validate_readme:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
     - name: Validate Readme
       run: .\eng\update-readme.ps1
 
   create_nuget:
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core (global.json)
@@ -82,19 +82,8 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        include:
-        - runs-on: windows-2019
-          configuration: Debug
-        - runs-on: windows-2019
-          configuration: Release
-        - runs-on: 'ubuntu-20.04'
-          configuration: Debug
-        - runs-on: 'ubuntu-20.04'
-          configuration: Release
-        - runs-on: 'macos-10.15'
-          configuration: Debug
-        - runs-on: 'macos-10.15'
-          configuration: Release
+        configuration: [Debug, Release]
+        runs-on: [windows-2019, windows-2022, ubuntu-20.04, macos-10.15,  macos-11]
       fail-fast: false
     steps:
     - uses: actions/checkout@v2

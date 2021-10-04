@@ -118,6 +118,38 @@ namespace Meziantou.Framework.Win32.Tests
             }
         }
 
+        [RunIfTheory(FactOperatingSystem.Windows)]
+        [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/263")]
+        [InlineData(null)]
+        [InlineData("*")]
+        public void CredentialManager_EnumerateCredential_FilterNull(string filter)
+        {
+            _mutex.WaitOne();
+            try
+            {
+                CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
+                try
+                {
+                    var credentials = CredentialManager.EnumerateCredentials(filter);
+                    foreach (var credential in credentials)
+                    {
+                        credential.UserName.Should().NotBeEmpty();
+                        credential.Password.Should().NotBeEmpty();
+                    }
+
+                    credentials.Should().NotBeEmpty().And.ContainSingle(cred => cred.ApplicationName == _credentialName1);
+                }
+                finally
+                {
+                    CredentialManager.DeleteCredential(_credentialName1);
+                }
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+        }
+
         public void Dispose()
         {
             _mutex?.Dispose();

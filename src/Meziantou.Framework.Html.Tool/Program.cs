@@ -57,7 +57,7 @@ namespace Meziantou.Framework.Html.Tool
             {
                 if (!Glob.TryParse(globPattern, GlobOptions.None, out var glob))
                 {
-                    Console.Error.WriteLine($"Glob pattern '{globPattern}' is invalid");
+                    await Console.Error.WriteLineAsync($"Glob pattern '{globPattern}' is invalid");
                     return -1;
                 }
 
@@ -115,7 +115,7 @@ namespace Meziantou.Framework.Html.Tool
                 {
                     if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                     {
-                        Console.Error.WriteLine($"Glob pattern '{filePattern}' is invalid");
+                        await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
                         return -1;
                     }
 

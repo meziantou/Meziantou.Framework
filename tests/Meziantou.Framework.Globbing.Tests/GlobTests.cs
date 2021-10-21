@@ -354,6 +354,64 @@ namespace Meziantou.Framework.Globbing.Tests
             });
         }
 
+        [Theory]
+        [InlineData("readme.md", "readme.md")]
+        [InlineData("readme.md", "a/readme.md")]
+        [InlineData("readme.md", "a/b/readme.md")]
+        [InlineData("a/", "a/b/readme.md")]
+        [InlineData("a/", "b/a/a")]
+        [InlineData("a/b.txt", "a/b.txt")]
+        [InlineData("a/**/b.txt", "a/b.txt")]
+        [InlineData("a/**/b.txt", "a/c/b.txt")]
+        [InlineData("a/**/b.txt", "a/c/d/b.txt")]
+        [InlineData("a/**/*.txt", "a/c/d/b.txt")]
+        [InlineData("a/**/?.txt", "a/c/d/b.txt")]
+        public void MatchGit(string pattern, string path)
+        {
+            var glob = Glob.Parse(pattern, GlobOptions.Git);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
+
+            glob.IsMatch(path).Should().BeTrue();
+            glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
+
+            globi.IsMatch(path).Should().BeTrue();
+            globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
+
+            glob.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
+            globi.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
+
+#if NET472
+#elif NETCOREAPP3_1
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+#else
+            if (OperatingSystem.IsWindows())
+#endif
+            {
+                glob.IsMatch(path.Replace('/', '\\')).Should().BeTrue();
+                glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)).Should().BeTrue();
+            }
+        }
+
+        [Theory]
+        [InlineData("**/.*", "foobar.")]
+        [InlineData("a/", "sample")]
+        [InlineData("a/", "b/a")]
+        [InlineData("/a/", "b/a/a")]
+        [InlineData("a.txt/", "a.txt")]
+        [InlineData("a/b.txt", "c/a/b.txt")]
+        [InlineData("a/*", "a/b/c.txt")]
+        public void DoesNotMatchGit(string pattern, string path)
+        {
+            var glob = Glob.Parse(pattern, GlobOptions.Git);
+            var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
+
+            glob.IsMatch(path).Should().BeFalse();
+            glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
+
+            globi.IsMatch(path).Should().BeFalse();
+            globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
+        }
+
         private static void TestEvaluate(TemporaryDirectory directory, Glob glob, string[] expectedResult)
         {
             var items = glob.EnumerateFiles(directory.FullPath)

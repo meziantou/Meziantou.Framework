@@ -22,6 +22,8 @@ namespace Meziantou.Framework.CodeOwners
 
         public CodeOwnersSection? Section { get; }
 
+        public bool IsOptional => Section?.IsOptional ?? false;
+
         internal static CodeOwnersEntry FromUsername(string pattern, string username, CodeOwnersSection? section)
         {
             return new CodeOwnersEntry(pattern, CodeOwnersEntryType.Username, username, section);

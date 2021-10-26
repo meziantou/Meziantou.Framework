@@ -70,7 +70,18 @@ namespace Meziantou.Framework
             }
         }
 
-        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source) where T : class
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> items)
+            where T : struct
+        {
+            foreach (var item in items)
+            {
+                if (item.HasValue)
+                    yield return item.GetValueOrDefault();
+            }
+        }
+
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
+            where T : class
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));

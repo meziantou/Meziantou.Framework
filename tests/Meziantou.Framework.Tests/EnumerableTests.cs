@@ -266,6 +266,23 @@ namespace Meziantou.Framework.Tests
         }
 #nullable disable
 
+#nullable enable
+        [Fact]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
+        public void WhereNotNull_Struct()
+        {
+            // Arrange
+            var list = new List<int?>() { 0, null, 2 };
+
+            // Act
+            // Do not use var, so we can validate the nullable annotations
+            List<int> actual = list.WhereNotNull().ToList();
+
+            // Assert
+            actual.Should().Equal(new[] { 0, 2 });
+        }
+#nullable disable
+
         [Fact]
         public void ForeachEnumerator()
         {

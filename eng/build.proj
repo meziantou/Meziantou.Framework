@@ -1,6 +1,13 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup>
+
+  <Import Project="build-test-parallel.props" />
+
+  <ItemGroup Condition="$(TEST_BUCKET) == ''">
     <ProjectReference Include="../**/*.*proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TEST_BUCKET) != ''">
+    <ProjectReference Include="../tests/ArgumentsPrinter/ArgumentsPrinter.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOsPlatform('WINDOWS')) == false">

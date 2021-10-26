@@ -1,0 +1,42 @@
+﻿<Project>
+  <ItemGroup>
+    <ProjectReference Include="..\tests\Meziantou.AspNetCore.Components.LogViewer.Tests\Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.AspNetCore.Components.Tests\Meziantou.AspNetCore.Components.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Extensions.Logging.InMemory.Tests\Meziantou.Extensions.Logging.InMemory.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.ByteSize.Tests\Meziantou.Framework.ByteSize.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.CodeDom.Tests\Meziantou.Framework.CodeDom.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.CodeOwners.Tests\Meziantou.Framework.CodeOwners.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.CommandLineTests\Meziantou.Framework.CommandLineTests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Csv.Tests\Meziantou.Framework.Csv.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.DependencyScanning.Tests\Meziantou.Framework.DependencyScanning.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.FastEnumToStringGenerator.Tests\Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.FullPath.Tests\Meziantou.Framework.FullPath.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Globbing.Tests\Meziantou.Framework.Globbing.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Html.Tests\Meziantou.Framework.Html.Tests.csproj" Condition="$(TEST_BUCKET) == '1'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.HtmlSanitizer.Tests\Meziantou.Framework.HtmlSanitizer.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.RelativeDate.Tests\Meziantou.Framework.RelativeDate.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.ResxSourceGenerator.Tests\Meziantou.Framework.ResxSourceGenerator.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Scheduling.Tests\Meziantou.Framework.Scheduling.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.SingleInstance.Tests\Meziantou.Framework.SingleInstance.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Slug.Tests\Meziantou.Framework.Slug.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.StronglyTypedId.GeneratorTests\Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.StronglyTypedId.Tests\Meziantou.Framework.StronglyTypedId.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Templating.Html.Tests\Meziantou.Framework.Templating.Html.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Templating.Tests\Meziantou.Framework.Templating.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.TemporaryDirectory.Tests\Meziantou.Framework.TemporaryDirectory.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Tests\Meziantou.Framework.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.TypeConverter.Tests\Meziantou.Framework.TypeConverter.Tests.csproj" Condition="$(TEST_BUCKET) == '2'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.ValueStopwatch.Tests\Meziantou.Framework.ValueStopwatch.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Versioning.Tests\Meziantou.Framework.Versioning.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.AccessToken.Tests\Meziantou.Framework.Win32.AccessToken.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.AmsiTests\Meziantou.Framework.Win32.AmsiTests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.ChangeJournal.Tests\Meziantou.Framework.Win32.ChangeJournal.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.CredentialManager.Tests\Meziantou.Framework.Win32.CredentialManager.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.Jobs.Tests\Meziantou.Framework.Win32.Jobs.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.Lsa.Tests\Meziantou.Framework.Win32.Lsa.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.PerceivedType.Tests\Meziantou.Framework.Win32.PerceivedType.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.ProjectedFileSystem.Tests\Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.Win32.RestartManager.Tests\Meziantou.Framework.Win32.RestartManager.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+    <ProjectReference Include="..\tests\Meziantou.Framework.WPF.Tests\Meziantou.Framework.WPF.Tests.csproj" Condition="$(TEST_BUCKET) == '3'" />
+  </ItemGroup>
+</Project>

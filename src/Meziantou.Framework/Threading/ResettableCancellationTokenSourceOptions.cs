@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework.Threading
 {
     [Flags]
     public enum ResettableCancellationTokenSourceOptions

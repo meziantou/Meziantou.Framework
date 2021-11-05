@@ -7,6 +7,11 @@
         <InputEnumSelect @bind-Value="@model.Season" />
         <span>Selected value: @model.Season</span>
     </div>
+
+    <div>
+        <InputEnumSelect @bind-Value="@model.NullableSeason" />
+        <span>Selected value: @model.NullableSeason</span>
+    </div>
 </EditForm>
 
 @code {
@@ -15,6 +20,7 @@
     public class Model
     {
         public Season Season { get; set; }
+        public Season? NullableSeason { get; set; }
     }
 
     public enum Season

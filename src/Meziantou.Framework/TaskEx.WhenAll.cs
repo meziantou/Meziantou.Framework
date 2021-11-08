@@ -1,4 +1,5 @@
 ﻿#pragma warning disable MA0042 // Do not use blocking call
+#pragma warning disable CA1849 // Do not use blocking call
 
 using System;
 using System.Runtime.CompilerServices;

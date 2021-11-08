@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>net5.0</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
     <Version>1.0.1</Version>
-    <ValidateProjectTargets>false</ValidateProjectTargets>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.12" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="6.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>

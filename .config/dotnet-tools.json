@@ -9,13 +9,13 @@
       ]
     },
     "dotnet-validate": {
-      "version": "0.0.1-preview.130",
+      "version": "0.0.1-preview.169",
       "commands": [
         "dotnet-validate"
       ]
     },
     "dotnet-format": {
-      "version": "5.0.211103",
+      "version": "5.1.225507",
       "commands": [
         "dotnet-format"
       ]

@@ -112,7 +112,7 @@ jobs:
 
   deploy:
     runs-on: 'ubuntu-20.04'
-    needs: [ validate_readme, create_nuget, build_and_test ]
+    needs: [ lint_csharp, validate_readme, create_nuget, build_and_test ]
     steps:
     - uses: actions/download-artifact@v2
       with:

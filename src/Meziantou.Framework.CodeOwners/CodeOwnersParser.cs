@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.ObjectPool;
@@ -15,14 +14,13 @@ namespace Meziantou.Framework.CodeOwners
         }
 
         [StructLayout(LayoutKind.Auto)]
-        private readonly struct CodeOwnersParserContext
+        private struct CodeOwnersParserContext
         {
             private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = CreateStringBuilderPool();
 
             private readonly List<CodeOwnersEntry> _entries;
             private readonly StringLexer _lexer;
-
-            private static readonly char[] _startingCharToIgnore = new char[] { '#', '[', '^' };
+            private CodeOwnersSection? _currentSection;
 
             private static ObjectPool<StringBuilder> CreateStringBuilderPool()
             {
@@ -34,6 +32,7 @@ namespace Meziantou.Framework.CodeOwners
             {
                 _entries = new List<CodeOwnersEntry>();
                 _lexer = new StringLexer(content);
+                _currentSection = null;
             }
 
             public IEnumerable<CodeOwnersEntry> Parse()
@@ -51,11 +50,19 @@ namespace Meziantou.Framework.CodeOwners
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     return;
 
-                // Comment or section
                 var c = _lexer.Peek();
-                if (Array.Exists(_startingCharToIgnore, charToIgnore => charToIgnore == c))
+
+                // Comment
+                if (c == '#')
                 {
                     _lexer.ConsumeUntil('\n');
+                    return;
+                }
+
+                // Section
+                if (TryParseSection(out var section))
+                {
+                    _currentSection = section;
                     return;
                 }
 
@@ -68,7 +75,41 @@ namespace Meziantou.Framework.CodeOwners
                 ParseMembers(pattern);
             }
 
-            private string? ParsePattern()
+            private readonly bool TryParseSection(out CodeOwnersSection section)
+            {
+                if (!_lexer.EndOfFile)
+                {
+                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                    {
+                        section = default;
+                        return false;
+                    }
+
+                    var isOptional = false;
+                    var c = _lexer.Peek();
+                    if (c == '^')
+                    {
+                        isOptional = true;
+                        _lexer.Consume();
+                    }
+
+                    c = _lexer.Peek();
+                    if (c == '[')
+                    {
+                        _lexer.Consume();
+                        var sb = s_stringBuilderPool.Get();
+                        _lexer.ConsumeUntil(']', sb);
+                        _lexer.ConsumeUntil('\n');
+                        section = new CodeOwnersSection(s_stringBuilderPool.ToStringAndReturn(sb), isOptional);
+                        return true;
+                    }
+                }
+
+                section = default;
+                return false;
+            }
+
+            private readonly string? ParsePattern()
             {
                 var sb = s_stringBuilderPool.Get();
                 while (!_lexer.EndOfFile)
@@ -101,7 +142,7 @@ namespace Meziantou.Framework.CodeOwners
                 return s_stringBuilderPool.ToStringAndReturn(sb);
             }
 
-            private void ParseMembers(string pattern)
+            private readonly void ParseMembers(string pattern)
             {
                 while (!_lexer.EndOfFile)
                 {
@@ -138,15 +179,15 @@ namespace Meziantou.Framework.CodeOwners
                 }
             }
 
-            private void AddEntry(bool isMember, string name, string pattern)
+            private readonly void AddEntry(bool isMember, string name, string pattern)
             {
                 if (isMember)
                 {
-                    _entries.Add(CodeOwnersEntry.FromUsername(pattern, name));
+                    _entries.Add(CodeOwnersEntry.FromUsername(pattern, name, _currentSection));
                 }
                 else
                 {
-                    _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name));
+                    _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name, _currentSection));
                 }
             }
         }
@@ -221,6 +262,22 @@ namespace Meziantou.Framework.CodeOwners
                         return;
                     }
 
+                    _currentIndex++;
+                }
+            }
+
+            public void ConsumeUntil(char character, StringBuilder sb)
+            {
+                while (_currentIndex + 1 < _content.Length)
+                {
+                    var next = _content[_currentIndex + 1];
+                    if (next == character)
+                    {
+                        _currentIndex++;
+                        return;
+                    }
+
+                    sb.Append(next);
                     _currentIndex++;
                 }
             }

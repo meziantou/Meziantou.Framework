@@ -32,6 +32,15 @@ namespace Meziantou.Framework.Globbing
             char? rangeStart = null;
             var rangeInverse = false;
 
+            if (options.HasFlag(GlobOptions.Git))
+            {
+                // Check if there is a separator at start or middle of the string
+                if (pattern[0..^1].IndexOf('/') < 0)
+                {
+                    segments.Add(RecursiveMatchAllSegment.Instance);
+                }
+            }
+
             var escape = false;
             var parserContext = GlobParserContext.Segment;
 
@@ -258,6 +267,16 @@ namespace Meziantou.Framework.Globbing
                 }
 
                 FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
+
+                if (options.HasFlag(GlobOptions.Git))
+                {
+                    if (pattern[^1] == '/')
+                    {
+                        segments.Add(RecursiveMatchAllSegment.Instance);
+                        segments.Add(MatchAllSegment.Instance);
+                    }
+                }
+
 
                 errorMessage = null;
                 result = CreateGlob(segments, exclude, ignoreCase);

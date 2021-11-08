@@ -20,8 +20,22 @@ namespace Meziantou.Framework.CodeOwners.Tests
 
             var expected = new CodeOwnersEntry[]
             {
-                CodeOwnersEntry.FromUsername("*", "user1"),
-                CodeOwnersEntry.FromUsername("*", "user2"),
+                CodeOwnersEntry.FromUsername("*", "user1", section: null),
+                CodeOwnersEntry.FromUsername("*", "user2", section: null),
+            };
+
+            actual.Should().Equal(expected);
+        }
+
+        [Fact]
+        public void ParseSingleLineCodeOwnersWithSection()
+        {
+            var actual = CodeOwnersParser.Parse("[Test]\n* @user1 @user2").ToArray();
+
+            var expected = new CodeOwnersEntry[]
+            {
+                CodeOwnersEntry.FromUsername("*", "user1", section: new CodeOwnersSection("Test", isOptional: false)),
+                CodeOwnersEntry.FromUsername("*", "user2", section: new CodeOwnersSection("Test", isOptional: false)),
             };
 
             actual.Should().Equal(expected);
@@ -73,14 +87,14 @@ namespace Meziantou.Framework.CodeOwners.Tests
 
             var expected = new CodeOwnersEntry[]
             {
-                CodeOwnersEntry.FromUsername("*", "global-owner1"),
-                CodeOwnersEntry.FromUsername("*", "global-owner2"),
-                CodeOwnersEntry.FromUsername("*.js", "js-owner"),
-                CodeOwnersEntry.FromEmailAddress("*.go", "docs@example.com"),
-                CodeOwnersEntry.FromUsername("/build/logs/", "doctocat"),
-                CodeOwnersEntry.FromEmailAddress("docs/*", "docs@example.com"),
-                CodeOwnersEntry.FromUsername("apps/", "octocat"),
-                CodeOwnersEntry.FromUsername("/docs/", "doctocat"),
+                CodeOwnersEntry.FromUsername("*", "global-owner1", section: null),
+                CodeOwnersEntry.FromUsername("*", "global-owner2", section: null),
+                CodeOwnersEntry.FromUsername("*.js", "js-owner", section: null),
+                CodeOwnersEntry.FromEmailAddress("*.go", "docs@example.com", section: null),
+                CodeOwnersEntry.FromUsername("/build/logs/", "doctocat", section: null),
+                CodeOwnersEntry.FromEmailAddress("docs/*", "docs@example.com", section: null),
+                CodeOwnersEntry.FromUsername("apps/", "octocat", section: null),
+                CodeOwnersEntry.FromUsername("/docs/", "doctocat", section: null),
             };
 
             actual.Should().Equal(expected);
@@ -93,8 +107,8 @@ namespace Meziantou.Framework.CodeOwners.Tests
 
             var expected = new CodeOwnersEntry[]
             {
-                CodeOwnersEntry.FromUsername("*", "user1"),
-                CodeOwnersEntry.FromUsername("*", "user2"),
+                CodeOwnersEntry.FromUsername("*", "user1", section: null),
+                CodeOwnersEntry.FromUsername("*", "user2", section: null),
             };
 
             actual.Should().Equal(expected);
@@ -113,6 +127,7 @@ namespace Meziantou.Framework.CodeOwners.Tests
         public void ParseCodeOwnersWithSections()
         {
             const string Content = "\n" +
+                                   "doc/ @user4 \n" +
                                    "[Section]\n" +
                                    "* @user1 @user2\n" +
                                    "\n" +
@@ -123,10 +138,11 @@ namespace Meziantou.Framework.CodeOwners.Tests
 
             var expected = new CodeOwnersEntry[]
             {
-                CodeOwnersEntry.FromUsername("*", "user1"),
-                CodeOwnersEntry.FromUsername("*", "user2"),
-                CodeOwnersEntry.FromUsername("*.js", "user2"),
-                CodeOwnersEntry.FromUsername("*.js", "user3")
+                CodeOwnersEntry.FromUsername("doc/", "user4", section: null),
+                CodeOwnersEntry.FromUsername("*", "user1", section: new CodeOwnersSection("Section", isOptional: false)),
+                CodeOwnersEntry.FromUsername("*", "user2", section: new CodeOwnersSection("Section", isOptional: false)),
+                CodeOwnersEntry.FromUsername("*.js", "user2", section: new CodeOwnersSection("Optional Section", isOptional: true)),
+                CodeOwnersEntry.FromUsername("*.js", "user3", section: new CodeOwnersSection("Optional Section", isOptional: true)),
             };
 
             actual.Should().Equal(expected);

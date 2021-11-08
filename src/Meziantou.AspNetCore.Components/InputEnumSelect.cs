@@ -22,7 +22,7 @@ namespace Meziantou.AspNetCore.Components
 
             // Add an option element per enum value
             var enumType = InputEnumSelect<TEnum>.GetEnumType();
-            foreach (TEnum value in Enum.GetValues(enumType))
+            foreach (var value in Enum.GetValues(enumType))
             {
                 builder.OpenElement(5, "option");
                 builder.AddAttribute(6, "value", value.ToString());
@@ -64,7 +64,7 @@ namespace Meziantou.AspNetCore.Components
         // Get the display text for an enum value:
         // - Use the DisplayAttribute if set on the enum member, so this support localization
         // - Fallback on Humanizer to decamelize the enum member name
-        private static string? GetDisplayName(TEnum value)
+        private static string? GetDisplayName(object? value)
         {
             if (value == null)
                 return null;

@@ -6,7 +6,7 @@ namespace Meziantou.Framework.StronglyTypedId
 {
     public partial class StronglyTypedIdSourceGenerator
     {
-        private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
+        private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
         {
             if (!IsTypeDefined(compilation, "Newtonsoft.Json.JsonConverter"))
                 return;

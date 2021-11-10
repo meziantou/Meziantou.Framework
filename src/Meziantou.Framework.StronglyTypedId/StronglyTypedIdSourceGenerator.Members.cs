@@ -9,7 +9,7 @@ namespace Meziantou.Framework.StronglyTypedId
 {
     public partial class StronglyTypedIdSourceGenerator
     {
-        private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedType stronglyTypedStruct)
+        private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo stronglyTypedStruct)
         {
             var idType = stronglyTypedStruct.AttributeInfo.IdType;
             var typeReference = GetTypeReference(idType);

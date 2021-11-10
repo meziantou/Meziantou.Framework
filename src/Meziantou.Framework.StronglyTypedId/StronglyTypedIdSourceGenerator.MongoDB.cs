@@ -5,7 +5,7 @@ namespace Meziantou.Framework.StronglyTypedId
 {
     public partial class StronglyTypedIdSourceGenerator
     {
-        private static void GenerateMongoDBBsonSerializationConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedType stronglyTypedType)
+        private static void GenerateMongoDBBsonSerializationConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
         {
             if (!IsTypeDefined(compilation, "MongoDB.Bson.Serialization.Serializers.SerializerBase`1"))
                 return;

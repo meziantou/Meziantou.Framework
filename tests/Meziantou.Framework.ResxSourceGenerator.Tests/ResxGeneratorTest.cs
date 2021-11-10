@@ -25,8 +25,9 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var generator = new ResxGenerator();
+            var wrapperType = (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
             GeneratorDriver driver = CSharpGeneratorDriver.Create(
-                generators: new ISourceGenerator[] { generator },
+                generators: new ISourceGenerator[] { wrapperType },
                 additionalTexts: files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray(),
                 optionsProvider: optionProvider);
 

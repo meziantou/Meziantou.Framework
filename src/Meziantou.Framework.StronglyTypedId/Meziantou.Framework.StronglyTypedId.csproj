@@ -3,7 +3,7 @@
     <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
     <CompatibilityRange>true</CompatibilityRange>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.16</Version>
+    <Version>1.0.17</Version>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

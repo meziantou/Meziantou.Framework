@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.FastEnumToStringGenerator
 {
     [Generator]
-    public sealed partial class EnumToStringSourceGenerator : ISourceGenerator
+    public sealed partial class EnumToStringSourceGenerator : IIncrementalGenerator
     {
         [SuppressMessage("Usage", "MA0101:String contains an implicit end of line character", Justification = "Not important")]
         private const string AttributeText = @"
@@ -27,98 +30,110 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 }
 ";
 
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.RegisterForPostInitialization(ctx => ctx.AddSource("FastEnumToStringAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
-        }
+            context.RegisterPostInitializationOutput(ctx => ctx.AddSource("FastEnumToStringAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
+            var enums = context.SyntaxProvider.CreateSyntaxProvider(
+                predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
+                transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
+            .Where(static m => m is not null);
 
-        public void Execute(GeneratorExecutionContext context)
-        {
-            var compilation = context.Compilation;
-            var attributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
-            //var flagsAttributeSymbol = compilation.GetTypeByMetadataName("System.FlagsAttribute");
-            if (attributeSymbol == null)
-                return;
+            var enumToProcess = enums.Collect();
 
-            var enums = new List<EnumToProcess>();
-            foreach (var attr in compilation.Assembly.GetAttributes())
+            context.RegisterSourceOutput(enumToProcess,
+                (spc, source) => GenerateCode(spc, source!));
+
+            static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
             {
-                if (!attributeSymbol.Equals(attr.AttributeClass, SymbolEqualityComparer.Default))
-                    continue;
+                if (!syntax.IsKind(SyntaxKind.Attribute))
+                    return false;
 
-                if (attr.ConstructorArguments.Length != 1)
-                    continue;
-
-                var arg = attr.ConstructorArguments[0];
-                if (arg.Value == null)
-                    continue;
-
-                var enumType = (ITypeSymbol)arg.Value;
-                if (enumType.TypeKind != TypeKind.Enum)
-                    continue;
-
-                enums.Add(new EnumToProcess(enumType, GetMembers(), IsPublic(), GetNamespace()));
-
-                List<EnumMemberToProcess> GetMembers()
-                {
-                    var result = new List<EnumMemberToProcess>();
-                    foreach (var member in enumType.GetMembers())
-                    {
-                        if (member is not IFieldSymbol field)
-                            continue;
-
-                        if (field.ConstantValue is null)
-                            continue;
-
-                        result.Add(new(member.Name, field.ConstantValue));
-                    }
-
-                    return result;
-                }
-
-                bool IsPublic()
-                {
-                    var result = IsVisibleOutsideOfAssembly(enumType);
-                    foreach (var arg in attr.NamedArguments)
-                    {
-                        if (arg.Key == "IsPublic")
-                        {
-                            return result && (bool)arg.Value.Value!;
-                        }
-                    }
-
-                    return result;
-                }
-
-                string? GetNamespace()
-                {
-                    foreach (var arg in attr.NamedArguments)
-                    {
-                        if (arg.Key == "ExtensionMethodNamespace")
-                            return (string?)arg.Value.Value;
-                    }
-
-                    return null;
-                }
+                return true;
             }
 
-            var code = GenerateCode(enums);
-            context.AddSource("FastEnumToStringExtensions.g.cs", SourceText.From(code, Encoding.UTF8));
+            static EnumToProcess? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, System.Threading.CancellationToken cancellationToken)
+            {
+                var compilation = ctx.SemanticModel.Compilation;
+                var fastEnumToStringAttributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
+                if (fastEnumToStringAttributeSymbol == null)
+                    return null;
 
+                var attributeSyntax = (AttributeSyntax)ctx.Node;
+                foreach (var attr in compilation.Assembly.GetAttributes())
+                {
+                    if (attr.ApplicationSyntaxReference?.GetSyntax(cancellationToken) != attributeSyntax)
+                        continue;
 
-            //static bool IsFlags(ITypeSymbol typeSymbol, ISymbol flagsAttributeSymbol)
-            //{
-            //    foreach (var arg in typeSymbol.GetAttributes())
-            //    {
-            //        if (flagsAttributeSymbol.Equals(arg.AttributeClass, SymbolEqualityComparer.Default))
-            //            return true;
-            //    }
+                    if (!fastEnumToStringAttributeSymbol.Equals(attr.AttributeClass, SymbolEqualityComparer.Default))
+                        continue;
 
-            //    return false;
-            //}
+                    if (attr.ConstructorArguments.Length != 1)
+                        continue;
+
+                    var arg = attr.ConstructorArguments[0];
+                    if (arg.Value == null)
+                        continue;
+
+                    var enumType = (ITypeSymbol)arg.Value;
+                    if (enumType.TypeKind != TypeKind.Enum)
+                        continue;
+
+                    return new EnumToProcess(enumType, GetMembers(), IsPublic(), GetNamespace());
+
+                    List<EnumMemberToProcess> GetMembers()
+                    {
+                        var result = new List<EnumMemberToProcess>();
+                        foreach (var member in enumType.GetMembers())
+                        {
+                            if (member is not IFieldSymbol field)
+                                continue;
+
+                            if (field.ConstantValue is null)
+                                continue;
+
+                            result.Add(new(member.Name, field.ConstantValue));
+                        }
+
+                        return result;
+                    }
+
+                    bool IsPublic()
+                    {
+                        var result = IsVisibleOutsideOfAssembly(enumType);
+                        foreach (var arg in attr.NamedArguments)
+                        {
+                            if (arg.Key == "IsPublic")
+                            {
+                                return result && (bool)arg.Value.Value!;
+                            }
+                        }
+
+                        return result;
+                    }
+
+                    string? GetNamespace()
+                    {
+                        foreach (var arg in attr.NamedArguments)
+                        {
+                            if (arg.Key == "ExtensionMethodNamespace")
+                                return (string?)arg.Value.Value;
+                        }
+
+                        return null;
+                    }
+                }
+
+                return null;
+            }
         }
 
-        private static string GenerateCode(List<EnumToProcess> enums)
+        private static void GenerateCode(SourceProductionContext context, ImmutableArray<EnumToProcess> enumToProcess)
+        {
+            var code = GenerateCode(enumToProcess);
+            context.AddSource("FastEnumToStringExtensions.g.cs", SourceText.From(code, Encoding.UTF8));
+        }
+
+        private static string GenerateCode(ImmutableArray<EnumToProcess> enums)
         {
             var sb = new StringBuilder();
 
@@ -161,6 +176,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 
             return sb.ToString();
         }
+
         private static bool IsVisibleOutsideOfAssembly([NotNullWhen(true)] ISymbol? symbol)
         {
             if (symbol == null)

@@ -1,19 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.StronglyTypedId
 {
     [Generator]
-    public sealed partial class StronglyTypedIdSourceGenerator : ISourceGenerator
+    public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerator
     {
         // Possible improvements
         //
@@ -62,90 +64,112 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         private static readonly DiagnosticDescriptor s_unsuportedType = new(
             id: "MFSTID0001",
             title: "Not support type",
-            messageFormat: "The type '{0}' is not supported.",
+            messageFormat: "The type '{0}' is not supported",
             category: "StronglyTypedId",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new Receiver());
-            context.RegisterForPostInitialization(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
+            context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
+
+            var types = context.SyntaxProvider.CreateSyntaxProvider(
+              predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
+              transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
+                  .Where(static m => m is not null);
+
+            var typesToProcess = context.CompilationProvider
+                .Combine(context.AnalyzerConfigOptionsProvider)
+                .Combine(types.Collect());
+
+            context.RegisterSourceOutput(typesToProcess,
+                (spc, source) => Execute(spc, source.Left.Left, source.Left.Right, source.Right!));
+
+            static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
+            {
+                return (syntax.IsKind(SyntaxKind.StructDeclaration) || syntax.IsKind(SyntaxKind.ClassDeclaration) || syntax.IsKind(SyntaxKind.RecordDeclaration)) &&
+                       ((TypeDeclarationSyntax)syntax).AttributeLists.Count > 0;
+            }
+
+            static TypeDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
+            {
+                var semanticModel = ctx.SemanticModel;
+                var compilation = semanticModel.Compilation;
+                var typeDeclaration = (TypeDeclarationSyntax)ctx.Node;
+
+                var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
+                if (attributeSymbol == null)
+                    return null;
+
+                var symbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken);
+                if (symbol == null)
+                    return null;
+
+                foreach (var attribute in symbol.GetAttributes())
+                {
+                    if (attributeSymbol.Equals(attribute.AttributeClass, SymbolEqualityComparer.Default))
+                        return typeDeclaration;
+                }
+
+                return null;
+            }
         }
 
-        public void Execute(GeneratorExecutionContext context)
+        private static void Execute(SourceProductionContext context, Compilation compilation, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, ImmutableArray<TypeDeclarationSyntax> typeDeclarations)
         {
-            var compilation = context.Compilation;
+            var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
+            Debug.Assert(attributeSymbol != null);
 
-            foreach (var stronglyTypedType in GetTypes(context, compilation))
+            foreach (var typeDeclaration in typeDeclarations)
             {
+                var semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
+                var typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, context.CancellationToken)!;
+                var attributeInfo = GetAttributeInfo(context, semanticModel, attributeSymbol, typeSymbol);
+                if (attributeInfo == null)
+                    continue;
+
+                var stronglyTypedId = new StronglyTypedIdInfo(typeSymbol.ContainingSymbol, typeSymbol, typeSymbol.Name, attributeInfo, typeDeclaration);
+
                 var codeUnit = new CompilationUnit
                 {
                     NullableContext = CodeDom.NullableContext.Enable,
                 };
 
-                var structDeclaration = CreateType(codeUnit, stronglyTypedType);
-                GenerateTypeMembers(compilation, structDeclaration, stronglyTypedType);
+                var structDeclaration = CreateType(codeUnit, stronglyTypedId);
+                GenerateTypeMembers(compilation, structDeclaration, stronglyTypedId);
 
-                if (stronglyTypedType.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_ComponentModel_TypeConverter))
+                if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_ComponentModel_TypeConverter))
                 {
-                    GenerateTypeConverter(structDeclaration, compilation, stronglyTypedType.AttributeInfo.IdType);
+                    GenerateTypeConverter(structDeclaration, compilation, stronglyTypedId.AttributeInfo.IdType);
                 }
 
-                if (stronglyTypedType.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_Text_Json))
+                if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_Text_Json))
                 {
-                    GenerateSystemTextJsonConverter(structDeclaration, compilation, stronglyTypedType);
+                    GenerateSystemTextJsonConverter(structDeclaration, compilation, stronglyTypedId);
                 }
 
-                if (stronglyTypedType.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json))
+                if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json))
                 {
-                    GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypedType);
+                    GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypedId);
                 }
 
-                if (stronglyTypedType.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
+                if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
                 {
-                    GenerateMongoDBBsonSerializationConverter(structDeclaration, compilation, stronglyTypedType);
+                    GenerateMongoDBBsonSerializationConverter(structDeclaration, compilation, stronglyTypedId);
                 }
 
-                if (stronglyTypedType.AttributeInfo.AddCodeGeneratedAttribute)
+                if (stronglyTypedId.AttributeInfo.AddCodeGeneratedAttribute)
                 {
                     var visitor = new AddCodeGeneratedAttributeVisitor();
                     visitor.Visit(codeUnit);
                 }
 
                 var result = codeUnit.ToCsharpString();
-                context.AddSource(stronglyTypedType.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
+                context.AddSource(stronglyTypedId.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
             }
         }
 
-        private static List<StronglyTypedType> GetTypes(GeneratorExecutionContext context, Compilation compilation)
-        {
-            var result = new List<StronglyTypedType>();
-
-            var receiver = (Receiver?)context.SyntaxReceiver;
-            Debug.Assert(receiver != null);
-
-            var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
-            if (attributeSymbol == null)
-                return result;
-
-            foreach (var typeDeclaration in receiver.Types)
-            {
-                var semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
-                var symbol = semanticModel.GetDeclaredSymbol(typeDeclaration, context.CancellationToken);
-                Debug.Assert(symbol != null);
-
-                var attributeInfo = GetAttributeInfo(context, semanticModel, attributeSymbol, symbol);
-                if (attributeInfo == null)
-                    continue;
-
-                result.Add(new(symbol.ContainingSymbol, symbol, symbol.Name, attributeInfo, typeDeclaration));
-            }
-
-            return result;
-        }
-
-        private static AttributeInfo? GetAttributeInfo(GeneratorExecutionContext context, SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
+        private static AttributeInfo? GetAttributeInfo(SourceProductionContext context, SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
         {
             foreach (var attribute in declaredTypeSymbol.GetAttributes())
             {
@@ -277,7 +301,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             return typeReference.ClrFullTypeName[(index + 1)..];
         }
 
-        private static ClassOrStructDeclaration CreateType(CompilationUnit unit, StronglyTypedType source)
+        private static ClassOrStructDeclaration CreateType(CompilationUnit unit, StronglyTypedIdInfo source)
         {
             TypeDeclaration result = source switch
             {
@@ -344,7 +368,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             return str;
         }
 
-        private static Modifiers GetPrivateOrProtectedModifier(StronglyTypedType type)
+        private static Modifiers GetPrivateOrProtectedModifier(StronglyTypedIdInfo type)
         {
             if (type.IsReferenceType && !type.IsSealed)
                 return Modifiers.Protected;
@@ -352,7 +376,19 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             return Modifiers.Private;
         }
 
-        private record StronglyTypedType(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
+        private static bool IsTypeDefined(Compilation compilation, string typeMetadataName)
+        {
+            return compilation.References
+                .Select(compilation.GetAssemblyOrModuleSymbol)
+                .OfType<IAssemblySymbol>()
+                .Select(assemblySymbol => assemblySymbol.GetTypeByMetadataName(typeMetadataName))
+                .WhereNotNull()
+                .Any();
+        }
+
+        private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
+
+        private record StronglyTypedIdInfo(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
         {
             public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
             public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
@@ -440,39 +476,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             {
                 return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
                     .Any(m => m.IsStatic);
-            }
-        }
-
-        private static bool IsTypeDefined(Compilation compilation, string typeMetadataName)
-        {
-            return compilation.References
-                .Select(compilation.GetAssemblyOrModuleSymbol)
-                .OfType<IAssemblySymbol>()
-                .Select(assemblySymbol => assemblySymbol.GetTypeByMetadataName(typeMetadataName))
-                .WhereNotNull()
-                .Any();
-        }
-
-        private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
-
-        private sealed class Receiver : ISyntaxReceiver
-        {
-            public List<TypeDeclarationSyntax> Types { get; } = new();
-
-            public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
-            {
-                if (syntaxNode.IsKind(SyntaxKind.StructDeclaration))
-                {
-                    Types.Add((TypeDeclarationSyntax)syntaxNode);
-                }
-                else if (syntaxNode.IsKind(SyntaxKind.ClassDeclaration))
-                {
-                    Types.Add((TypeDeclarationSyntax)syntaxNode);
-                }
-                else if (syntaxNode.IsKind(SyntaxKind.RecordDeclaration))
-                {
-                    Types.Add((TypeDeclarationSyntax)syntaxNode);
-                }
             }
         }
 

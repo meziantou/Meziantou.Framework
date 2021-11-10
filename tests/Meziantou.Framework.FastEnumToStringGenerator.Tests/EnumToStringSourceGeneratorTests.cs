@@ -29,8 +29,10 @@ namespace Meziantou.Framework.FastEnumToStringGenerator.Tests
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
             var generator = new EnumToStringSourceGenerator();
+            var wrapperType = (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
+
             GeneratorDriver driver = CSharpGeneratorDriver.Create(
-                generators: new ISourceGenerator[] { generator });
+                generators: new ISourceGenerator[] { wrapperType });
 
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
             diagnostics.Should().BeEmpty();

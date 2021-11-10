@@ -10,17 +10,18 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.ResxSourceGenerator
 {
     [Generator]
-    public sealed class ResxGenerator : ISourceGenerator
+    public sealed class ResxGenerator : IIncrementalGenerator
     {
         private static readonly DiagnosticDescriptor s_invalidResx = new(
             id: "MFRG0001",
             title: "Couldn't parse Resx file",
-            messageFormat: "Couldn't parse Resx file '{0}'.",
+            messageFormat: "Couldn't parse Resx file '{0}'",
             category: "ResxGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -28,7 +29,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
         private static readonly DiagnosticDescriptor s_invalidPropertiesForNamespace = new(
             id: "MFRG0002",
             title: "Couldn't compute namespace",
-            messageFormat: "Couldn't compute namespace for file '{0}'.",
+            messageFormat: "Couldn't compute namespace for file '{0}'",
             category: "ResxGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -36,7 +37,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
         private static readonly DiagnosticDescriptor s_invalidPropertiesForResourceName = new(
             id: "MFRG0003",
             title: "Couldn't compute resource name",
-            messageFormat: "Couldn't compute resource name for file '{0}'.",
+            messageFormat: "Couldn't compute resource name for file '{0}'",
             category: "ResxGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
@@ -44,31 +45,34 @@ namespace Meziantou.Framework.ResxSourceGenerator
         private static readonly DiagnosticDescriptor s_inconsistentProperties = new(
             id: "MFRG0004",
             title: "Inconsistent properties",
-            messageFormat: "Property '{0}' values for '{1}' are inconsistent.",
+            messageFormat: "Property '{0}' values for '{1}' are inconsistent",
             category: "ResxGenerator",
             DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        public void Initialize(GeneratorInitializationContext context)
+        public void Initialize(IncrementalGeneratorInitializationContext context)
         {
+
+            context.RegisterSourceOutput(
+                source: context.AnalyzerConfigOptionsProvider.Combine(context.CompilationProvider.Combine(context.AdditionalTextsProvider.Where(text => text.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase)).Collect())),
+                action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left, source.Right.Right));
         }
 
-        public void Execute(GeneratorExecutionContext context)
+        private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, Compilation compilation, System.Collections.Immutable.ImmutableArray<AdditionalText> files)
         {
             // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
-            var resxGroups = context.AdditionalFiles
-                .Where(file => file.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase))
+            var resxGroups = files
                 .GroupBy(file => GetResourceName(file.Path), StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             foreach (var resxGroug in resxGroups)
             {
-                var rootNamespaceConfiguration = GetMetadataValue(context, "RootNamespace", resxGroug);
-                var projectDirConfiguration = GetMetadataValue(context, "ProjectDir", resxGroug);
-                var namespaceConfiguration = GetMetadataValue(context, "Namespace", "DefaultResourcesNamespace", resxGroug);
-                var resourceNameConfiguration = GetMetadataValue(context, "ResourceName", globalName: null, resxGroug);
-                var classNameConfiguration = GetMetadataValue(context, "ClassName", globalName: null, resxGroug);
-                var assemblyName = context.Compilation.AssemblyName;
+                var rootNamespaceConfiguration = GetMetadataValue(context, options, "RootNamespace", resxGroug);
+                var projectDirConfiguration = GetMetadataValue(context, options, "ProjectDir", resxGroug);
+                var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroug);
+                var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroug);
+                var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroug);
+                var assemblyName = compilation.AssemblyName;
 
                 var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
                 var projectDir = projectDirConfiguration ?? assemblyName ?? "";
@@ -398,7 +402,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
             return null;
         }
 
-        private static List<ResxEntry>? LoadResourceFiles(GeneratorExecutionContext context, IGrouping<string, AdditionalText> resxGroug)
+        private static List<ResxEntry>? LoadResourceFiles(SourceProductionContext context, IGrouping<string, AdditionalText> resxGroug)
         {
             var entries = new List<ResxEntry>();
             foreach (var entry in resxGroug.OrderBy(file => file.Path, StringComparer.Ordinal))
@@ -441,17 +445,17 @@ namespace Meziantou.Framework.ResxSourceGenerator
             return entries;
         }
 
-        private static string? GetMetadataValue(GeneratorExecutionContext context, string name, IEnumerable<AdditionalText> additionalFiles)
+        private static string? GetMetadataValue(SourceProductionContext context, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, string name, IEnumerable<AdditionalText> additionalFiles)
         {
-            return GetMetadataValue(context, name, name, additionalFiles);
+            return GetMetadataValue(context, analyzerConfigOptionsProvider, name, name, additionalFiles);
         }
 
-        private static string? GetMetadataValue(GeneratorExecutionContext context, string name, string? globalName, IEnumerable<AdditionalText> additionalFiles)
+        private static string? GetMetadataValue(SourceProductionContext context, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, string name, string? globalName, IEnumerable<AdditionalText> additionalFiles)
         {
             string? result = null;
             foreach (var file in additionalFiles)
             {
-                if (context.AnalyzerConfigOptions.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
+                if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
                 {
                     if (result != null && value != result)
                     {
@@ -466,7 +470,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
             if (!string.IsNullOrEmpty(result))
                 return result;
 
-            if (globalName != null && context.AnalyzerConfigOptions.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue) && !string.IsNullOrEmpty(globalValue))
+            if (globalName != null && analyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue) && !string.IsNullOrEmpty(globalValue))
                 return globalValue;
 
             return null;

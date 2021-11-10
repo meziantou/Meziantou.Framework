@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0;netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Description>Generate a faster ToString method for enumerations</Description>
 
     <developmentDependency>true</developmentDependency>
@@ -16,6 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="3.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.0.1" PrivateAssets="all" />
   </ItemGroup>
 </Project>

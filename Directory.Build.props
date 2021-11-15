@@ -56,7 +56,7 @@
   <ItemGroup>
     <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
 
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="0.1.66">
+    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

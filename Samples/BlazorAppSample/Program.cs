@@ -17,7 +17,6 @@ namespace BlazorAppSample
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddClipboard();
-            builder.Services.AddQueryStringParameters();
             builder.Services.AddTimeZoneServices();
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 

@@ -419,7 +419,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -451,7 +451,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -483,7 +483,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -515,7 +515,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -547,7 +547,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -579,7 +579,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -606,7 +606,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -633,7 +633,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -665,7 +665,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -697,7 +697,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -740,7 +740,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -783,7 +783,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -826,7 +826,7 @@ namespace Meziantou.Framework
                 return false;
             }
 
-            if (!(input is string))
+            if (input is not string)
             {
                 if (input is IConvertible ic)
                 {
@@ -1294,7 +1294,7 @@ namespace Meziantou.Framework
             var defaultValue = conversionType.IsValueType ? Activator.CreateInstance(conversionType) : null;
             try
             {
-                if (ctConverter != null && !(input is string) && ctConverter.CanConvertFrom(typeof(string)))
+                if (ctConverter != null && input is not string && ctConverter.CanConvertFrom(typeof(string)))
                 {
                     value = ctConverter.ConvertFrom(context: null, provider as CultureInfo, Convert.ToString(input, provider)!);
                     return true;

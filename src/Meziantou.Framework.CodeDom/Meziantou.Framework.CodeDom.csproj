@@ -4,6 +4,7 @@
     <TargetFrameworks>net6.0;net5.0;netstandard2.0</TargetFrameworks>
     <Description>C# code generator</Description>
     <Version>4.0.5</Version>
+    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
 </Project>

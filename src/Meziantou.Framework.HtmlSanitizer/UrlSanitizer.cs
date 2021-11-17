@@ -56,7 +56,7 @@ namespace Meziantou.Framework.Sanitizers
                 if (separator < 0)
                     return value;
 
-                return value.Substring(0, separator);
+                return value[..separator];
             }
         }
     }

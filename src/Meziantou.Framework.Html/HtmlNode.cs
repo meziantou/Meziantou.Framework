@@ -54,7 +54,7 @@ namespace Meziantou.Framework.Html
 
         protected HtmlNode(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
         {
-            if (ownerDocument == null && !(this is HtmlDocument))
+            if (ownerDocument == null && this is not HtmlDocument)
                 throw new ArgumentNullException(nameof(ownerDocument));
 
             _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
@@ -242,7 +242,7 @@ namespace Meziantou.Framework.Html
                 return;
             }
 
-            prefix = Utilities.Nullify(name.Substring(0, pos), trim: true);
+            prefix = Utilities.Nullify(name[..pos], trim: true);
             localName = Utilities.Nullify(name[(pos + 1)..], trim: true);
             if (prefix == null || localName == null)
             {

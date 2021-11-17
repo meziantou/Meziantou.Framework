@@ -23,7 +23,7 @@ namespace Meziantou.Framework.DependencyScanning
                 var indexOfAny = newVersion.IndexOfAny(new[] { '+', '-' });
                 if (indexOfAny > 0)
                 {
-                    newVersion = newVersion.Substring(0, indexOfAny);
+                    newVersion = newVersion[..indexOfAny];
                 }
             }
 

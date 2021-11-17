@@ -84,7 +84,7 @@ namespace Meziantou.Framework
         private static PropertyDescriptorCollection GetPropertiesFromCache(object container)
         {
             // We don't cache if the object implements ICustomTypeDescriptor.
-            if (!(container is ICustomTypeDescriptor))
+            if (container is not ICustomTypeDescriptor)
             {
                 var containerType = container.GetType();
                 if (!s_propertyCache.TryGetValue(containerType, out var properties))
@@ -158,7 +158,9 @@ namespace Meziantou.Framework
             var index = expression.Substring(indexExprStart + 1, indexExprEnd - indexExprStart - 1).Trim();
 
             if (indexExprStart != 0)
-                propName = expression.Substring(0, indexExprStart);
+            {
+                propName = expression[..indexExprStart];
+            }
 
             if (index.Length != 0)
             {

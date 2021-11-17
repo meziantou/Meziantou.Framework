@@ -53,7 +53,7 @@ namespace Meziantou.Framework
                     var value = string.Empty;
                     if (indexOfSeparator >= 0)
                     {
-                        name = arg.Substring(0, indexOfSeparator).Trim();
+                        name = arg[..indexOfSeparator].Trim();
                         value = arg[(indexOfSeparator + 1)..];
                     }
 

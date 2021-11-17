@@ -9,7 +9,6 @@ using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.StronglyTypedId
@@ -79,11 +78,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                   .Where(static m => m is not null);
 
             var typesToProcess = context.CompilationProvider
-                .Combine(context.AnalyzerConfigOptionsProvider)
                 .Combine(types.Collect());
 
             context.RegisterSourceOutput(typesToProcess,
-                (spc, source) => Execute(spc, source.Left.Left, source.Left.Right, source.Right!));
+                (spc, source) => Execute(spc, source.Left, source.Right!));
 
             static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
             {
@@ -115,7 +113,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        private static void Execute(SourceProductionContext context, Compilation compilation, AnalyzerConfigOptionsProvider analyzerConfigOptionsProvider, ImmutableArray<TypeDeclarationSyntax> typeDeclarations)
+        private static void Execute(SourceProductionContext context, Compilation compilation, ImmutableArray<TypeDeclarationSyntax> typeDeclarations)
         {
             var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
             Debug.Assert(attributeSymbol != null);

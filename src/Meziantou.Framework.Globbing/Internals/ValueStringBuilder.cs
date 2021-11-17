@@ -52,7 +52,7 @@ namespace Meziantou.Framework.Globbing
 
         public override string ToString()
         {
-            var s = RawChars.Slice(0, _pos).ToString();
+            var s = RawChars[.._pos].ToString();
             Dispose();
             return s;
         }
@@ -71,10 +71,10 @@ namespace Meziantou.Framework.Globbing
                 EnsureCapacity(Length + 1);
                 RawChars[Length] = '\0';
             }
-            return RawChars.Slice(0, _pos);
+            return RawChars[.._pos];
         }
 
-        public readonly ReadOnlySpan<char> AsSpan() => RawChars.Slice(0, _pos);
+        public readonly ReadOnlySpan<char> AsSpan() => RawChars[.._pos];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(char c)
@@ -174,7 +174,7 @@ namespace Meziantou.Framework.Globbing
             // Make sure to let Rent throw an exception if the caller has a bug and the desired capacity is negative
             var poolArray = ArrayPool<char>.Shared.Rent((int)Math.Max((uint)(_pos + additionalCapacityBeyondPos), (uint)RawChars.Length * 2));
 
-            RawChars.Slice(0, _pos).CopyTo(poolArray);
+            RawChars[.._pos].CopyTo(poolArray);
 
             var toReturn = _arrayToReturnToPool;
             RawChars = _arrayToReturnToPool = poolArray;

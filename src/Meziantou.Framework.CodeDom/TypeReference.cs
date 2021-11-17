@@ -40,7 +40,7 @@ namespace Meziantou.Framework.CodeDom
             var arityOrArrayIndex = name.IndexOfAny(s_arityOrArrayCharacters);
             if (arityOrArrayIndex > 0)
             {
-                name = name.Substring(0, arityOrArrayIndex);
+                name = name[..arityOrArrayIndex];
             }
 
             var declaringType = type.DeclaringType;

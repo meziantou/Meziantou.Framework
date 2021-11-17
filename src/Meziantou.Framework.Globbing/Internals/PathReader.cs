@@ -33,7 +33,7 @@ namespace Meziantou.Framework.Globbing.Internals
         }
 
         public ReadOnlySpan<char> CurrentText { get; private set; }
-        public ReadOnlySpan<char> CurrentSegment => CurrentText.Slice(0, CurrentSegmentLength);
+        public ReadOnlySpan<char> CurrentSegment => CurrentText[..CurrentSegmentLength];
 
         public readonly ReadOnlySpan<char> EndText => _filename.IsEmpty ? CurrentText : _filename;
 

@@ -68,7 +68,7 @@ namespace Meziantou.Framework.Win32
                 return null;
 
             var lusSecretData = Marshal.PtrToStructure<LSA_UNICODE_STRING>(privateData);
-            var value = Marshal.PtrToStringAuto(lusSecretData.Buffer)?.Substring(0, lusSecretData.Length / UnicodeEncoding.CharSize);
+            var value = Marshal.PtrToStringAuto(lusSecretData.Buffer)?[..(lusSecretData.Length / UnicodeEncoding.CharSize)];
 
             FreeMemory(privateData);
 

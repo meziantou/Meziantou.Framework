@@ -148,7 +148,7 @@ namespace Meziantou.Framework.Scheduling
             if (index < 0)
                 throw new FormatException($"'{str}' is invalid.");
 
-            var name = str.Substring(0, index);
+            var name = str[..index];
             if (string.IsNullOrEmpty(name))
                 throw new FormatException($"'{str}' is invalid.");
 
@@ -266,7 +266,7 @@ namespace Meziantou.Framework.Scheduling
                 }
                 else
                 {
-                    return new ByDay(ParseDayOfWeek(str[i..]), int.Parse(str.Substring(0, i), CultureInfo.InvariantCulture));
+                    return new ByDay(ParseDayOfWeek(str[i..]), int.Parse(str[..i], CultureInfo.InvariantCulture));
                 }
             }
 

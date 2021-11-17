@@ -30,9 +30,11 @@ namespace Meziantou.Framework.Tests.Http
         [Fact]
         public void HttpResponse_Links()
         {
-            var header = new CustomHttpHeaders();
-            header.Add("link", "<a>;rel=b, <c>; rel=d");
-            header.Add("link", "<e>;rel=f");
+            var header = new CustomHttpHeaders
+            {
+                { "link", "<a>;rel=b, <c>; rel=d" },
+                { "link", "<e>;rel=f" },
+            };
 
             header.ParseLinkHeaders().Should().HaveCount(3);
         }

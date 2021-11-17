@@ -46,13 +46,13 @@ namespace Meziantou.Framework
                     var next = span[index + 1];
                     if (next == '\n')
                     {
-                        Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 2));
+                        Current = new LineSplitEntry(span[..index], span.Slice(index, 2));
                         _str = span[(index + 2)..];
                         return true;
                     }
                 }
 
-                Current = new LineSplitEntry(span.Slice(0, index), span.Slice(index, 1));
+                Current = new LineSplitEntry(span[..index], span.Slice(index, 1));
                 _str = span[(index + 1)..];
                 return true;
             }

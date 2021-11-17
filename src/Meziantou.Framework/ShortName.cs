@@ -14,7 +14,7 @@ namespace Meziantou.Framework
             if (shortNames == null)
                 throw new ArgumentNullException(nameof(shortNames));
 
-            var shortName = name.Substring(0, (name.Length < maxLength) ? name.Length : maxLength);
+            var shortName = name[..((name.Length < maxLength) ? name.Length : maxLength)];
             var number = 0;
             var pos = maxLength;
             string? oldName = null;
@@ -31,7 +31,7 @@ namespace Meziantou.Framework
                 }
                 else
                 {
-                    shortName = name.Substring(0, maxLength - 1) + name[pos];
+                    shortName = name[..(maxLength - 1)] + name[pos];
                     pos++;
                 }
 

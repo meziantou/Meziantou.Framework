@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using FluentAssertions;
 using Xunit;
 
@@ -37,7 +36,6 @@ namespace Meziantou.Framework.Tests
         }
 
         [Fact]
-        [SuppressMessage("FluentAssertionTips", "CollectionShouldHaveElementAt:Simplify Assertion", Justification = "False positive")]
         public void BuildShortNames_01()
         {
             // Arrange

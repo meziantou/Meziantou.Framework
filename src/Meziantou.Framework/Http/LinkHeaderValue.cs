@@ -45,7 +45,7 @@ namespace Meziantou.Framework.Http
                 if (index == -1)
                     break;
 
-                var targetLink = value.Slice(0, index).ToString();
+                var targetLink = value[..index].ToString();
                 value = value[(index + 1)..];
 
                 // Parse parameters
@@ -64,7 +64,7 @@ namespace Meziantou.Framework.Http
                     index = value.IndexOfAny(ParameterSeparators);
 
                     string parameterName;
-                    string parameterValue = "";
+                    var parameterValue = "";
                     if (index == -1)
                     {
                         parameterName = value.ToString();

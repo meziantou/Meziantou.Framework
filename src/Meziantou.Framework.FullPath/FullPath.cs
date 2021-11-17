@@ -201,7 +201,7 @@ namespace Meziantou.Framework
             if (path.StartsWith("\\", StringComparison.Ordinal))
                 throw new ArgumentException("UNC paths are not supported", nameof(path));
 
-            return path.Substring(0, path.Length - 1);
+            return path[0..^1];
 #else
 #error Platform not supported
 #endif

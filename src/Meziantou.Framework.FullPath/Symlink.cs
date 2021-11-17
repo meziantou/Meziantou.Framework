@@ -150,7 +150,7 @@ namespace Meziantou.Framework
                             throw new Win32Exception(result);
                         }
 
-                        validBuffer = buffer.AsSpan().Slice(0, (int)bytesRead);
+                        validBuffer = buffer.AsSpan()[..(int)bytesRead];
 
                         if (!MemoryMarshal.TryRead<Interop.Kernel32.REPARSE_DATA_BUFFER_SYMLINK>(validBuffer, out var header))
                         {
@@ -188,7 +188,7 @@ namespace Meziantou.Framework
                                     if (rootPath != null)
                                     {
 #if NETSTANDARD2_0 || NET472
-                                        target = path.Substring(0, 4) + Path.GetFullPath(Path.Combine(rootPath, target));
+                                        target = path[..4] + Path.GetFullPath(Path.Combine(rootPath, target));
 #elif NETCOREAPP3_1 || NET5_0 || NET6_0
                                         target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(Path.Combine(rootPath, target)));
 #else
@@ -198,7 +198,7 @@ namespace Meziantou.Framework
                                     else
                                     {
 #if NETSTANDARD2_0 || NET472
-                                        target = path.Substring(0, 4) + Path.GetFullPath(target);
+                                        target = path[..4] + Path.GetFullPath(target);
 #elif NETCOREAPP3_1 || NET5_0 || NET6_0
                                         target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(target));
 #else

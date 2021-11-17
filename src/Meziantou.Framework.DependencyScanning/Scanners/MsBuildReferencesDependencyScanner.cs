@@ -70,7 +70,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners
                 var index = value.IndexOf('/', StringComparison.Ordinal);
                 if (index > 0)
                 {
-                    var packageName = value.Substring(0, index);
+                    var packageName = value[..index];
                     var version = value[(index + 1)..];
 
                     await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, s_sdkName.LocalName, column: index + 1, value.Length - index - 1))).ConfigureAwait(false);

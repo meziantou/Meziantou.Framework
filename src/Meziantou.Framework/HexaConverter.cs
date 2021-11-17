@@ -70,7 +70,7 @@ namespace Meziantou.Framework
                 return b;
             }
 
-            int GetInt(char c)
+            static int GetInt(char c)
             {
                 const int Digit = '0';
                 const int LowerCase = 'a' - 10;

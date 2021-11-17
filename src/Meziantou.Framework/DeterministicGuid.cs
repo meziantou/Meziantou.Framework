@@ -100,7 +100,7 @@ namespace Meziantou.Framework
                     throw new InvalidOperationException("Cannot compute SHA1 hash");
             }
 
-            var newGuid = hash.Slice(0, 16);
+            var newGuid = hash[..16];
             newGuid[6] = (byte)((newGuid[6] & 0x0F) | ((int)version << 4));
             newGuid[8] = (byte)((newGuid[8] & 0x3F) | 0x80);
 
@@ -110,21 +110,10 @@ namespace Meziantou.Framework
 
         private static void ReorderBytes(Span<byte> guid)
         {
-            var temp = guid[7];
-            guid[7] = guid[6];
-            guid[6] = temp;
-
-            temp = guid[5];
-            guid[5] = guid[4];
-            guid[4] = temp;
-
-            temp = guid[3];
-            guid[3] = guid[0];
-            guid[0] = temp;
-
-            temp = guid[1];
-            guid[1] = guid[2];
-            guid[2] = temp;
+            (guid[6], guid[7]) = (guid[7], guid[6]);
+            (guid[4], guid[5]) = (guid[5], guid[4]);
+            (guid[0], guid[3]) = (guid[3], guid[0]);
+            (guid[2], guid[1]) = (guid[1], guid[2]);
         }
     }
 }

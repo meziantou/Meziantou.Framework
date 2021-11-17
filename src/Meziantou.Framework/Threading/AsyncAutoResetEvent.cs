@@ -75,7 +75,7 @@ namespace Meziantou.Framework.Threading
                 }
             }
 
-            if (toRelease is object)
+            if (toRelease is not null)
             {
                 toRelease.Registration.Dispose();
                 toRelease.TrySetResult();

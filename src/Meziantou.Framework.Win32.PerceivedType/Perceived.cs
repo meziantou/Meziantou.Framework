@@ -158,7 +158,7 @@ namespace Meziantou.Framework.Win32
                                     var pos = ct.IndexOf('/', StringComparison.Ordinal);
                                     if (pos > 0)
                                     {
-                                        type = Extensions.GetEnumValue(ct.Substring(0, pos), PerceivedType.Custom);
+                                        type = Extensions.GetEnumValue(ct[..pos], PerceivedType.Custom);
                                         source = PerceivedTypeSource.Mime;
                                     }
                                 }

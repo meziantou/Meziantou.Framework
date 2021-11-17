@@ -57,7 +57,7 @@ namespace Meziantou.Framework
             var unitString = format;
             if (index >= 0)
             {
-                unitString = format.Substring(0, index);
+                unitString = format[..index];
             }
 
             if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
@@ -253,7 +253,7 @@ namespace Meziantou.Framework
             // Find unit
             if (TryParseUnit(text, out var unit, out var unitLength))
             {
-                text = text.Substring(0, text.Length - unitLength);
+                text = text[..^unitLength];
             }
             else
             {

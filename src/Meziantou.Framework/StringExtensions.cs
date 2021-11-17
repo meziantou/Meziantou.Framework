@@ -139,7 +139,7 @@ namespace Meziantou.Framework
         {
             if (str.EndsWith(suffix, stringComparison))
             {
-                return str.Substring(0, str.Length - suffix.Length);
+                return str[..^suffix.Length];
             }
 
             return str;

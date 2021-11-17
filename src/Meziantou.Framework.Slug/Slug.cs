@@ -46,12 +46,12 @@ namespace Meziantou.Framework
             text = sb.ToString();
             if (options.MaximumLength > 0 && text.Length > options.MaximumLength)
             {
-                text = text.Substring(0, options.MaximumLength);
+                text = text[..options.MaximumLength];
             }
 
             if (!options.CanEndWithSeparator && options.Separator != null && text.EndsWith(options.Separator, StringComparison.Ordinal))
             {
-                text = text.Substring(0, text.Length - options.Separator.Length);
+                text = text[..^options.Separator.Length];
             }
 
             return text.Normalize(NormalizationForm.FormC);

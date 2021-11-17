@@ -52,7 +52,7 @@ namespace Meziantou.Framework.Html.Tests
                 return defaultValue;
             }
 
-            if (argument is IEnumerable enumerable && (!(argument is string)))
+            if (argument is IEnumerable enumerable && (argument is not string))
             {
                 foreach (var arg in enumerable)
                 {

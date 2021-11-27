@@ -86,5 +86,29 @@ namespace Meziantou.Framework
                 return null;
             }
         }
+
+        public static Stream? GetRequiredManifestResourceStream(this Assembly assembly, string name)
+        {
+            var stream = assembly.GetManifestResourceStream(name);
+            if (stream is null)
+            {
+                var names = assembly.GetManifestResourceNames();
+                throw new ArgumentException($"Resource '{name}' not found. Available resources: {string.Join(", ", names)}", nameof(name));
+            }
+
+            return stream;
+        }
+
+        public static Stream? GetRequiredManifestResourceStream(this Assembly assembly, Type type, string name)
+        {
+            var stream = assembly.GetManifestResourceStream(type, name);
+            if (stream is null)
+            {
+                var names = assembly.GetManifestResourceNames();
+                throw new ArgumentException($"Resource '{name}' not found. Available resources: {string.Join(", ", names)}", nameof(name));
+            }
+
+            return stream;
+        }
     }
 }

@@ -207,6 +207,48 @@ namespace Meziantou.Framework.Collections
             return index;
         }
 
+        public int FirstIndexOf(T item)
+        {
+            var index = BinarySearch(item);
+            if (index < 0)
+                return -1;
+
+            while (index > 0)
+            {
+                if (_comparer.Compare(_items[index - 1], item) == 0)
+                {
+                    index--;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return index;
+        }
+
+        public int LastIndexOf(T item)
+        {
+            var index = BinarySearch(item);
+            if (index < 0)
+                return -1;
+
+            while (index < _size - 1)
+            {
+                if (_comparer.Compare(_items[index + 1], item) == 0)
+                {
+                    index++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return index;
+        }
+
         public int BinarySearch(T item)
         {
             return Array.BinarySearch(_items, index: 0, length: _size, item, _comparer);

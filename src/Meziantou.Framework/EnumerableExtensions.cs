@@ -105,7 +105,7 @@ namespace Meziantou.Framework
             return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
 #elif NET5_0 || NETSTANDARD2_0
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
@@ -117,7 +117,7 @@ namespace Meziantou.Framework
         }
 
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
 #elif NET5_0 || NETSTANDARD2_0
         public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
@@ -281,7 +281,7 @@ namespace Meziantou.Framework
         }
 
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T MaxBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue> selector)
 #elif NET5_0 || NETSTANDARD2_0
         public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector)
@@ -324,7 +324,7 @@ namespace Meziantou.Framework
             }
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T MaxBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
 #elif NET5_0 || NETSTANDARD2_0
         public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
@@ -369,7 +369,7 @@ namespace Meziantou.Framework
             }
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T Max<T>(IEnumerable<T> enumerable, IComparer<T> comparer)
 #elif NET5_0 || NETSTANDARD2_0
         public static T Max<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)
@@ -409,7 +409,7 @@ namespace Meziantou.Framework
         }
 
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T MinBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
 #elif NET5_0 || NETSTANDARD2_0
         public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
@@ -452,7 +452,7 @@ namespace Meziantou.Framework
         }
 
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T MinBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
 #elif NET5_0 || NETSTANDARD2_0
         public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
@@ -496,7 +496,7 @@ namespace Meziantou.Framework
                 enumerator.Dispose();
             }
         }
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static T Min<T>(IEnumerable<T> enumerable, IComparer<T> comparer)
 #elif NET5_0 || NETSTANDARD2_0
         public static T Min<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)

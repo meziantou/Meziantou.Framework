@@ -6,7 +6,7 @@ namespace Meziantou.Framework
 {
     public static class NumberExtensions
     {
-#if NET5_0 || NET6_0
+#if NET5_0_OR_GREATER
         [Pure]
         public static decimal MakeSameSignAs(this decimal number, decimal sign)
         {
@@ -205,7 +205,7 @@ namespace Meziantou.Framework
             return number.ToString(CultureInfo.InvariantCulture);
         }
 
-#if NET5_0 || NET6_0
+#if NET5_0_OR_GREATER
         [Pure]
         public static string ToStringInvariant(this Half number)
         {

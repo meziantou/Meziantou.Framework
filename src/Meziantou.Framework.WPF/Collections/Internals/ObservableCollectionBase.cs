@@ -29,7 +29,7 @@ namespace Meziantou.Framework.WPF.Collections
             }
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public void EnsureCapacity(int capacity)
         {
             Items.EnsureCapacity(capacity);

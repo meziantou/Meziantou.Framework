@@ -27,7 +27,7 @@ namespace Meziantou.Framework
             return ParallelForEachAsync(source, degreeOfParallelism, action, CancellationToken.None);
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
         {
             if (source == null)

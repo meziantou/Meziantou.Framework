@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net5.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Sanitizers</RootNamespace>
     <Version>2.0.2</Version>
   </PropertyGroup>

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net5.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFramework);net461</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

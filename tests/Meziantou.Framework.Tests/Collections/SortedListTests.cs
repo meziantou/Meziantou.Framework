@@ -12,6 +12,9 @@ namespace Meziantou.Framework.Tests.Collections
             var list = new SortedList<int> { 1, 3, 2, 1 };
             list.Should().Equal(new[] { 1, 1, 2, 3 });
 
+            list.Contains(1).Should().BeTrue();
+            list.Contains(42).Should().BeFalse();
+
             list.IndexOf(1).Should().Be(1);
             list.IndexOf(2).Should().Be(2);
             list.IndexOf(42).Should().Be(-1);
@@ -45,6 +48,31 @@ namespace Meziantou.Framework.Tests.Collections
             list.IndexOf(3).Should().Be(4);
             list.FirstIndexOf(3).Should().Be(4);
             list.LastIndexOf(3).Should().Be(4);
+
+            list.IndexOf(42).Should().Be(-1);
+            list.FirstIndexOf(42).Should().Be(-1);
+            list.LastIndexOf(42).Should().Be(-1);
+        }
+
+        [Fact]
+        public void Clear()
+        {
+            var list = new SortedList<int> { 1, 3, 2, 1 };
+            list.Should().Equal(new[] { 1, 1, 2, 3 });
+
+            list.Clear();
+            list.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void Capacity()
+        {
+            var list = new SortedList<int> { 1, 3, 2, 1 };
+            list.Should().Equal(new[] { 1, 1, 2, 3 });
+            list.Capacity.Should().Be(4);
+            list.Add(5);
+
+            list.Capacity.Should().Be(8);
         }
 
         [Fact]

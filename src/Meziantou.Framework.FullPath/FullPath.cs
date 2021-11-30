@@ -17,7 +17,7 @@ namespace Meziantou.Framework
             // The checks are already performed in the static methods
             // No need to check if the path is null or absolute here
             Debug.Assert(path != null);
-#if NETCOREAPP3_1 || NET5_0 || NET6_0
+#if NETCOREAPP3_1_OR_GREATER
             Debug.Assert(Path.IsPathFullyQualified(path));
 #elif NETSTANDARD2_0 || NET472
 #else
@@ -128,7 +128,7 @@ namespace Meziantou.Framework
 
 #if NETSTANDARD2_0 || NET472
             return relPath.Append(path2.AsSpan(si + 1).ToString()).ToString();
-#elif NETCOREAPP3_1 || NET5_0 || NET6_0
+#elif NETCOREAPP3_1_OR_GREATER
             return relPath.Append(path2.AsSpan(si + 1)).ToString();
 #else
 #error Platform not supported
@@ -192,7 +192,7 @@ namespace Meziantou.Framework
 
         private static string TrimEndingDirectorySeparator(string path)
         {
-#if NETCOREAPP3_1 || NET5_0 || NET6_0
+#if NETCOREAPP3_1_OR_GREATER
             return Path.TrimEndingDirectorySeparator(path);
 #elif NETSTANDARD2_0 || NET472
             if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal) && !path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal))

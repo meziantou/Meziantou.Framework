@@ -18,7 +18,7 @@ namespace Meziantou.Framework
             if (process == null)
                 throw new ArgumentNullException(nameof(process));
 
-#if NETCOREAPP3_1 || NET5_0 || NET6_0
+#if NETCOREAPP3_1_OR_GREATER
             process.Kill(entireProcessTree);
 #elif NETSTANDARD2_0 || NET461
             if (!entireProcessTree)

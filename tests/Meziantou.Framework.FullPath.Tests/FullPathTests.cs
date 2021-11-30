@@ -222,7 +222,7 @@ namespace Meziantou.Framework.Tests
             {
                 CreateSymbolicLink(source, target, options);
             }
-#if NETCOREAPP3_1 || NET5_0 || NET6_0
+#if NETCOREAPP3_1_OR_GREATER
             else
             {
                 Mono.Unix.Native.Syscall.symlink(target, source).Should().Be(0);

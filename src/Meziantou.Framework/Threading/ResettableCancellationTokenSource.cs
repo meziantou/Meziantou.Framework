@@ -37,7 +37,7 @@ namespace Meziantou.Framework.Threading
             }
 
             // TODO-NET6 Use TryReset https://github.com/dotnet/runtime/issues/48492
-#if NET6_0 || NET5_0
+#if NET5_0_OR_GREATER
             _cts.Dispose();
             _cts = new CancellationTokenSource();
 #else

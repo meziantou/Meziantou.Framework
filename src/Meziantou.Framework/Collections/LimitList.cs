@@ -8,21 +8,23 @@ namespace Meziantou.Framework.Collections
     {
         private readonly LinkedList<T> _list = new();
 
-        public int MaximumCount { get; }
+        public int Capacity { get; }
+
         public int Count => _list.Count;
-        public bool IsReadOnly => false;
+
+        bool ICollection<T>.IsReadOnly => false;
 
         public LimitList(int maximumCount)
         {
             if (maximumCount <= 0)
                 throw new ArgumentException("Maximum count must be greater than 0.", nameof(maximumCount));
 
-            MaximumCount = maximumCount;
+            Capacity = maximumCount;
         }
 
         public void AddFirst(T value)
         {
-            if (_list.Count == MaximumCount)
+            if (_list.Count == Capacity)
             {
                 _list.RemoveLast();
             }
@@ -32,7 +34,7 @@ namespace Meziantou.Framework.Collections
 
         public void AddLast(T value)
         {
-            if (_list.Count == MaximumCount)
+            if (_list.Count == Capacity)
             {
                 _list.RemoveFirst();
             }
@@ -69,7 +71,7 @@ namespace Meziantou.Framework.Collections
             }
             set
             {
-                if (index < 0 || index >= MaximumCount || index > Count)
+                if (index < 0 || index >= Capacity || index > Count)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 if (index == Count)

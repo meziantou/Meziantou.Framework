@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Meziantou.Extensions.Logging.InMemory.Tests
 {
-    public sealed class InMemoryLoggerTests
+    public sealed partial class InMemoryLoggerTests
     {
         private static readonly Action<ILogger, int, Exception> s_message = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
@@ -63,6 +64,18 @@ namespace Meziantou.Extensions.Logging.InMemory.Tests
             log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
 
             log.ToString().Should().Be("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}");
+        }
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]
+        private static partial void Log(ILogger logger, int value);
+
+        [Fact]
+        public void LogManyMessages()
+        {
+            var logger = new InMemoryLogger("my_category");
+            Parallel.For(0, 100_000, i => Log(logger, 1));
+
+            logger.Logs.Should().HaveCount(100_000);
         }
     }
 }

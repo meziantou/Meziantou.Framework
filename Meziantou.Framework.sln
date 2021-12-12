@@ -95,6 +95,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		eng\build.proj = eng\build.proj
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
@@ -213,11 +214,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.AspNetCore.Compon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.FastEnumToStringGenerator", "src\Meziantou.Framework.FastEnumToStringGenerator\Meziantou.Framework.FastEnumToStringGenerator.csproj", "{BC0D4E1B-FCAA-450E-84C2-06442A15C350}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.FastEnumToStringGenerator.Tests", "tests\Meziantou.Framework.FastEnumToStringGenerator.Tests\Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj", "{4E28D6E8-4299-47F2-9A16-61F4714E5896}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.FastEnumToStringGenerator.Tests", "tests\Meziantou.Framework.FastEnumToStringGenerator.Tests\Meziantou.Framework.FastEnumToStringGenerator.Tests.csproj", "{4E28D6E8-4299-47F2-9A16-61F4714E5896}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Logging.InMemory", "src\Meziantou.Extensions.Logging.InMemory\Meziantou.Extensions.Logging.InMemory.csproj", "{766FF03B-F1C3-466D-AE47-1F6884774E59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Extensions.Logging.InMemory.Tests", "tests\Meziantou.Extensions.Logging.InMemory.Tests\Meziantou.Extensions.Logging.InMemory.Tests.csproj", "{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Logging.InMemory.Tests", "tests\Meziantou.Extensions.Logging.InMemory.Tests\Meziantou.Extensions.Logging.InMemory.Tests.csproj", "{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

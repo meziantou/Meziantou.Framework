@@ -8,7 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
-    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
   </ItemGroup>
 
 </Project>

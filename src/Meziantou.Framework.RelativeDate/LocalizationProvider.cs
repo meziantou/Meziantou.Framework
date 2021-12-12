@@ -18,7 +18,7 @@ namespace Meziantou.Framework
 
         public LocalizationProvider()
         {
-            _cultures = new Dictionary<CultureInfo, IReadOnlyDictionary<string, string>>
+            var cultures = new Dictionary<CultureInfo, IReadOnlyDictionary<string, string>>
             {
                 [CultureInfo.InvariantCulture] = new Dictionary<string, string>(StringComparer.Ordinal)
                 {
@@ -49,8 +49,12 @@ namespace Meziantou.Framework
                     { "InOneYear", "in one year" },
                     { "InManyYears", "in {0} years" },
                 },
+            };
 
-                [CultureInfo.GetCultureInfo("fr")] = new Dictionary<string, string>(StringComparer.Ordinal)
+            var fr = GetCulture("fr");
+            if (fr != null)
+            {
+                cultures.Add(fr, new Dictionary<string, string>(StringComparer.Ordinal)
                 {
                     { "Now", "maintenant" },
                     { "OneSecondAgo", "il y a une seconde" },
@@ -78,8 +82,22 @@ namespace Meziantou.Framework
                     { "InManyMonths", "dans {0} mois" },
                     { "InOneYear", "dans un an" },
                     { "InManyYears", "dans {0} ans" },
-                },
-            };
+                });
+            }
+
+            _cultures = cultures;
+
+            static CultureInfo? GetCulture(string name)
+            {
+                try
+                {
+                    return CultureInfo.GetCultureInfo(name);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
         }
 
         public string GetString(string name, CultureInfo? culture)

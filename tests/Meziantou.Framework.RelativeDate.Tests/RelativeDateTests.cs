@@ -28,11 +28,15 @@ namespace Meziantou.Framework.Tests
             var resultEn = relativeDate.ToString(format: null, CultureInfo.InvariantCulture);
             resultEn.Should().Be(expectedValueEn);
 
+            expectedValueFr.Should().NotBeEmpty();
+
+#if !InvariantGlobalization
             var resultEs = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("es-ES"));
             resultEs.Should().Be(expectedValueEn);
 
             var resultFr = relativeDate.ToString(format: null, CultureInfo.GetCultureInfo("fr"));
             resultFr.Should().Be(expectedValueFr);
+#endif
         }
 
         public static IEnumerable<object[]> RelativeDate_ToString_Data

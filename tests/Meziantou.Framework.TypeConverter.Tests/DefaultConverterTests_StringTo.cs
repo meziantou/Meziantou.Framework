@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using FluentAssertions;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
@@ -126,7 +127,7 @@ namespace Meziantou.Framework.Tests
             value.Name.Should().Be("es");
         }
 
-        [Fact]
+        [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
         public void TryConvert_StringToCultureInfo_LcidAsString()
         {
             var converter = new DefaultConverter();
@@ -144,7 +145,7 @@ namespace Meziantou.Framework.Tests
             }
         }
 
-        [Fact]
+        [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
         public void TryConvert_StringToCultureInfo_InvalidCulture()
         {
             var converter = new DefaultConverter();

@@ -14,7 +14,7 @@ namespace Meziantou.Framework.Tests
         [InlineData("9", "9")]
         [InlineData("test", "test")]
         [InlineData("TeSt", "TeSt")]
-        [InlineData("testé", "teste")]
+        [InlineData("teste\u0301", "teste")]
         [InlineData("TeSt test", "TeSt-test")]
         [InlineData("TeSt test ", "TeSt-test")]
         [InlineData("TeSt:test ", "TeSt-test")]

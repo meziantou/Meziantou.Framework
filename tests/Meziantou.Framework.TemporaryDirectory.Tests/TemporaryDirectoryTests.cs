@@ -14,15 +14,15 @@ namespace Meziantou.Framework.Tests
             const int Iterations = 400;
             var dirs = new TemporaryDirectory[Iterations];
 
-            Parallel.For(0, Iterations, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
-            {
-                dirs[i] = TemporaryDirectory.Create();
-                dirs[i].CreateEmptyFile("test.txt");
-            });
-
             try
             {
-                dirs.DistinctBy(dir => dir.FullPath).Should().HaveCount(Iterations);
+                Parallel.For(0, Iterations, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
+                {
+                    dirs[i] = TemporaryDirectory.Create();
+                    dirs[i].CreateEmptyFile("test.txt");
+                });
+
+                dirs.Select(dir => dir.FullPath).Distinct().Should().HaveCount(Iterations);
 
                 foreach (var dir in dirs)
                 {

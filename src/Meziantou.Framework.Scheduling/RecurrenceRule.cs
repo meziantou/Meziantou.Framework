@@ -11,9 +11,6 @@ namespace Meziantou.Framework.Scheduling
         public static readonly DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
         public const string DefaultFirstDayOfWeekString = "MO";
 
-        protected static readonly CultureInfo EnglishCultureInfo = CultureInfo.GetCultureInfo("en-US");
-        protected static readonly CultureInfo FrenchCultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-
         /// <summary>
         /// End date (inclusive)
         /// </summary>

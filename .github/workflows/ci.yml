@@ -83,7 +83,8 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        runs-on: [windows-2019, windows-2022, ubuntu-18.04, ubuntu-20.04, macos-10.15,  macos-11]
+        runs-on: [windows-2019, windows-2022, ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11]
+        additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
     steps:
     - uses: actions/checkout@v2
@@ -97,9 +98,9 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.x'
-    - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl
+    - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
       name: Build
-    - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min
+    - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
       name: Run tests
     - uses: actions/upload-artifact@v2
       if: always()

@@ -11,6 +11,7 @@ namespace Meziantou.Framework.Tests
         [Theory]
         [InlineData("abc", "abc")]
         [InlineData("abcé", "abce")]
+        [InlineData("abce\u0301", "abce")]
         public void RemoveDiacritics_Test(string str, string expected)
         {
             var actual = str.RemoveDiacritics();

@@ -417,7 +417,7 @@ namespace Meziantou.Framework.Globbing.Tests
             var items = glob.EnumerateFiles(directory.FullPath)
                 .AsEnumerable()
                 .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
-                .Sort()
+                .OrderBy(x => x)
                 .ToList();
 
             items.Should().Equal(expectedResult);
@@ -428,7 +428,7 @@ namespace Meziantou.Framework.Globbing.Tests
             var items = glob.EnumerateFiles(directory.FullPath)
                 .AsEnumerable()
                 .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
-                .Sort()
+                .OrderBy(x => x)
                 .ToList();
 
             items.Should().Equal(expectedResult);

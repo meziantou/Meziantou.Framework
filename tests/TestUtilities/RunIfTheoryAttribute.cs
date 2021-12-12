@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace TestUtilities
@@ -7,25 +6,17 @@ namespace TestUtilities
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class RunIfTheoryAttribute : TheoryAttribute
     {
-        public RunIfTheoryAttribute(FactOperatingSystem operatingSystems)
+        public RunIfTheoryAttribute(FactOperatingSystem operatingSystems, bool enableOnGitHubActions = true, FactInvariantGlobalizationMode globalizationMode = FactInvariantGlobalizationMode.Any)
         {
             OperatingSystems = operatingSystems;
+            EnableOnGitHubActions = enableOnGitHubActions;
+            GlobalizationMode = globalizationMode;
 
-            if (operatingSystems != FactOperatingSystem.All)
-            {
-                if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    return;
-
-                if (operatingSystems.HasFlag(FactOperatingSystem.Linux) && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                    return;
-
-                if (operatingSystems.HasFlag(FactOperatingSystem.OSX) && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                    return;
-
-                Skip = "Run only on " + operatingSystems;
-            }
+            Skip = RunIfFactAttribute.GetSkipReason(operatingSystems, enableOnGitHubActions, globalizationMode);
         }
 
         public FactOperatingSystem OperatingSystems { get; }
+        public bool EnableOnGitHubActions { get; }
+        public FactInvariantGlobalizationMode GlobalizationMode { get; }
     }
 }

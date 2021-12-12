@@ -1,18 +1,30 @@
 ﻿using System.Globalization;
 using FluentAssertions;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
     public class CultureInfoUtilitiesTests
     {
-        [Theory]
-        [InlineData("fr-FR", "fr-CA", true)]
-        [InlineData("fr-FR", "en-CA", false)]
-        public void NeutralEquals(string left, string right, bool expectedResult)
+        [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+        public void NeutralEquals_fr()
         {
-            var actual = CultureInfo.GetCultureInfo(left).NeutralEquals(CultureInfo.GetCultureInfo(right));
-            actual.Should().Be(expectedResult);
+            CultureInfo.GetCultureInfo("fr-FR").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")).Should().BeTrue();
+        }
+
+        [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+        public void NeutralEquals_fr2()
+        {
+            CultureInfo.GetCultureInfo("fr").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")).Should().BeTrue();
+        }
+
+        [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+        public void NeutralEquals_en()
+        {
+            var fr = CultureInfo.GetCultureInfo("fr-FR");
+            var en = CultureInfo.GetCultureInfo("en-CA");
+            fr.NeutralEquals(en).Should().BeFalse();
         }
 
         [Fact]
@@ -20,7 +32,14 @@ namespace Meziantou.Framework.Tests
         {
             CultureInfoUtilities.UseCulture(CultureInfo.GetCultureInfo("fr-FR"), () =>
             {
-                12.ToString("F2", CultureInfo.CurrentCulture).Should().Be("12,00");
+                if (RunIfFactAttribute.IsGlobalizationInvariant())
+                {
+                    12.ToString("F2", CultureInfo.CurrentCulture).Should().Be("12.00");
+                }
+                else
+                {
+                    12.ToString("F2", CultureInfo.CurrentCulture).Should().Be("12,00");
+                }
             });
         }
     }

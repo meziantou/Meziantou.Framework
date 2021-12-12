@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Scheduling
 {
     public abstract class RecurrenceRuleHumanizer
     {
-        protected static readonly CultureInfo EnglishCultureInfo = new("en");
-        protected static readonly CultureInfo FrenchCultureInfo = new("fr");
+        protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
+        protected static readonly CultureInfo FrenchCultureInfo = GetCulture("fr");
 
         public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
 
@@ -16,9 +16,23 @@ namespace Meziantou.Framework.Scheduling
         {
             SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
             {
-                { EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish() },
-                { FrenchCultureInfo, new RecurrenceRuleHumanizerFrench() },
+                { CultureInfo.InvariantCulture, new RecurrenceRuleHumanizerEnglish() },
             };
+
+            SupportedHumanizers.TryAdd(EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish());
+            SupportedHumanizers.TryAdd(FrenchCultureInfo, new RecurrenceRuleHumanizerFrench());
+        }
+
+        private static CultureInfo GetCulture(string name)
+        {
+            try
+            {
+                return CultureInfo.GetCultureInfo(name);
+            }
+            catch
+            {
+                return CultureInfo.InvariantCulture;
+            }
         }
 
         public static string? GetText(RecurrenceRule rrule)

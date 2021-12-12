@@ -1,4 +1,8 @@
 <Project Sdk="Microsoft.Build.Traversal">
+  <PropertyGroup>
+    <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
+  </PropertyGroup>
+  
   <ItemGroup>
     <ProjectReference Include="../**/*.*proj" />
   </ItemGroup>

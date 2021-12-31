@@ -22,7 +22,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="FluentAssertions.Analyzers" Version="0.13.0" />
   </ItemGroup>
 
 </Project>

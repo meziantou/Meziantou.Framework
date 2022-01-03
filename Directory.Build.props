@@ -28,7 +28,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.681">
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.687">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>

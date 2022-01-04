@@ -46,9 +46,11 @@ namespace Meziantou.AspNetCore.Components
 
             // Compute the new URL
             var newUri = navigationManager.GetUriWithQueryParameters(parameters);
-            navigationManager.NavigateTo(newUri, new NavigationOptions() { ReplaceHistoryEntry = replaceHistory });
+            if (newUri != navigationManager.Uri)
+            {
+                navigationManager.NavigateTo(newUri, new NavigationOptions() { ReplaceHistoryEntry = replaceHistory });
+            }
         }
-
 
         private static PropertyInfo[] GetProperties(Type type)
         {

@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Xunit;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests
 {

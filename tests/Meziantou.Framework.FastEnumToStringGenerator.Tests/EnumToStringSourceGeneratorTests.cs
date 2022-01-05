@@ -8,6 +8,7 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.FastEnumToStringGenerator.Tests

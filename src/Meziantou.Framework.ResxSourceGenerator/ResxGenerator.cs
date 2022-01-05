@@ -52,7 +52,6 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-
             context.RegisterSourceOutput(
                 source: context.AnalyzerConfigOptionsProvider.Combine(context.CompilationProvider.Combine(context.AdditionalTextsProvider.Where(text => text.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase)).Collect())),
                 action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left, source.Right.Right));
@@ -60,6 +59,8 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
         private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, Compilation compilation, System.Collections.Immutable.ImmutableArray<AdditionalText> files)
         {
+            var hasNotNullIfNotNullAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute") != null;
+
             // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
             var resxGroups = files
                 .GroupBy(file => GetResourceName(file.Path), StringComparer.OrdinalIgnoreCase)
@@ -116,18 +117,18 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
                 if (resourceName != null && entries != null)
                 {
-                    content += GenerateCode(ns, className, resourceName, entries);
+                    content += GenerateCode(ns, className, resourceName, entries, hasNotNullIfNotNullAttribute);
                 }
 
-                context.AddSource($"{Path.GetFileName(resxGroug.Key)}.resx.cs", SourceText.From(content, Encoding.UTF8));
+                context.AddSource($"{Path.GetFileName(resxGroug.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
             }
         }
 
-        private static string GenerateCode(string? ns, string className, string resourceName, List<ResxEntry> entries)
+        private static string GenerateCode(string? ns, string className, string resourceName, List<ResxEntry> entries, bool enableNullableAttributes)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("using System;");
             sb.AppendLine();
+            sb.AppendLine("#nullable enable");
 
             if (ns != null)
             {
@@ -137,21 +138,21 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
             sb.AppendLine("    internal partial class " + className);
             sb.AppendLine("    {");
-            sb.AppendLine("        private static System.Resources.ResourceManager resourceMan;");
+            sb.AppendLine("        private static global::System.Resources.ResourceManager? resourceMan;");
             sb.AppendLine();
             sb.AppendLine("        public " + className + "() { }");
             sb.AppendLine(@"
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
-        [System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Resources.ResourceManager ResourceManager
+        [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
+        public static global::System.Resources.ResourceManager ResourceManager
         {
             get
             {
                 if (resourceMan is null) 
                 {
-                    resourceMan = new System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
+                    resourceMan = new global::System.Resources.ResourceManager(""" + resourceName + @""", typeof(" + className + @").Assembly);
                 }
 
                 return resourceMan;
@@ -163,11 +164,13 @@ namespace Meziantou.Framework.ResxSourceGenerator
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Globalization.CultureInfo Culture { get; set; }
+        public static global::System.Globalization.CultureInfo? Culture { get; set; }
 
-        public static object GetObject(System.Globalization.CultureInfo culture, string name, object defaultValue)
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static object? GetObject(global::System.Globalization.CultureInfo? culture, string name, object? defaultValue)
         {
-            object obj = ResourceManager.GetObject(name, culture);
+            culture ??= Culture;
+            object? obj = ResourceManager.GetObject(name, culture);
             if (obj == null)
             {
                 return defaultValue;
@@ -176,35 +179,48 @@ namespace Meziantou.Framework.ResxSourceGenerator
             return obj;
         }
         
-        public static object GetObject(string name, object defaultValue)
+        public static object? GetObject(global::System.Globalization.CultureInfo? culture, string name)
         {
-            return GetObject(null, name, defaultValue);
-        }
-        
-        public static System.IO.Stream GetStream(string name)
-        {
-            return ResourceManager.GetStream(name);
+            return GetObject(culture: culture, name: name, defaultValue: null);
         }
 
-        public static System.IO.Stream GetStream(System.Globalization.CultureInfo culture, string name)
+        public static object? GetObject(string name)
         {
+            return GetObject(culture: null, name: name, defaultValue: null);
+        }
+
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static object? GetObject(string name, object? defaultValue)
+        {
+            return GetObject(culture: null, name: name, defaultValue: defaultValue);
+        }
+
+        public static global::System.IO.Stream? GetStream(string name)
+        {
+            return GetStream(culture: null, name: name);
+        }
+
+        public static global::System.IO.Stream? GetStream(global::System.Globalization.CultureInfo? culture, string name)
+        {
+            culture ??= Culture;
             return ResourceManager.GetStream(name, culture);
         }
 
-        public static string GetString(System.Globalization.CultureInfo culture, string name)
+        public static string? GetString(global::System.Globalization.CultureInfo? culture, string name)
         {
-            return GetString(culture, name, null);
+            return GetString(culture: culture, name: name, args: null);
         }
 
-        public static string GetString(System.Globalization.CultureInfo culture, string name, params object[] args)
+        public static string? GetString(global::System.Globalization.CultureInfo? culture, string name, params object?[]? args)
         {
-            string str = ResourceManager.GetString(name, culture);
+            culture ??= Culture;
+            string? str = ResourceManager.GetString(name, culture);
             if (str == null)
             {
-                return name;
+                return null;
             }
 
-            if (args != null && args.Length > 0)
+            if (args != null)
             {
                 return string.Format(culture, str, args);
             }
@@ -214,29 +230,33 @@ namespace Meziantou.Framework.ResxSourceGenerator
             }
         }
         
-        public static string GetString(string name, params object[] args)
+        public static string? GetString(string name, params object?[]? args)
         {
-            return GetString(null, name, args);
-        }
-        
-        public static string GetString(string name, string defaultValue)
-        {
-            return GetStringWithDefault(null, name, defaultValue, null);
-        }
-        
-        public static string GetString(string name)
-        {
-            return GetStringWithDefault(null, name, name, null);
-        }
-        
-        public static string GetStringWithDefault(System.Globalization.CultureInfo culture, string name, string defaultValue)
-        {
-            return GetStringWithDefault(culture, name, defaultValue, null);
+            return GetString(culture: null, name: name, args: args);
         }
 
-        public static string GetStringWithDefault(System.Globalization.CultureInfo culture, string name, string defaultValue, params object[] args)
+        " + AppendNotNullIfNotNull("defaultValue") + @"        
+        public static string? GetString(string name, string? defaultValue)
         {
-            string str = ResourceManager.GetString(name, culture);
+            return GetStringWithDefault(culture: null, name: name, defaultValue: defaultValue, args: null);
+        }
+
+        public static string? GetString(string name)
+        {
+            return GetStringWithDefault(culture: null, name: name, defaultValue: null, args: null);
+        }
+        
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static string? GetStringWithDefault(global::System.Globalization.CultureInfo? culture, string name, string? defaultValue)
+        {
+            return GetStringWithDefault(culture: culture, name: name, defaultValue: defaultValue, args: null);
+        }
+
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static string? GetStringWithDefault(global::System.Globalization.CultureInfo? culture, string name, string? defaultValue, params object?[]? args)
+        {
+            culture ??= Culture;
+            string? str = ResourceManager.GetString(name, culture);
             if (str == null)
             {
                 if (defaultValue == null || args == null)
@@ -249,7 +269,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 }
             }
 
-            if (args != null && args.Length > 0)
+            if (args != null)
             {
                 return string.Format(culture, str, args);
             }
@@ -258,15 +278,17 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 return str;
             }
         }
-        
-        public static string GetStringWithDefault(string name, string defaultValue, params object[] args)
+
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static string? GetStringWithDefault(string name, string? defaultValue, params object?[]? args)
         {
-            return GetStringWithDefault(null, name, defaultValue, args);
+            return GetStringWithDefault(culture: null, name: name, defaultValue: defaultValue, args: args);
         }
-        
-        public static string GetStringWithDefault(string name, string defaultValue)
+
+        " + AppendNotNullIfNotNull("defaultValue") + @"
+        public static string? GetStringWithDefault(string name, string? defaultValue)
         {
-            return GetStringWithDefault(null, name, defaultValue, null);
+            return GetStringWithDefault(culture: null, name: name, defaultValue: defaultValue, args: null);
         }
 ");
 
@@ -292,7 +314,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
                     sb.AppendLine(@"
         /// " + comment + @"
-        public static string " + ToCSharpNameIdentifier(entry.Name) + @"
+        public static string? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
             get
             {
@@ -312,12 +334,12 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
                         if (args >= 0)
                         {
-                            var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object arg" + arg.ToString(CultureInfo.InvariantCulture)));
+                            var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object? arg" + arg.ToString(CultureInfo.InvariantCulture)));
                             var callParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "arg" + arg.ToString(CultureInfo.InvariantCulture)));
 
                             sb.AppendLine(@"
         /// " + comment + @"
-        public static string Format" + ToCSharpNameIdentifier(entry.Name) + "(System.Globalization.CultureInfo provider, " + inParams + @")
+        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
             return GetString(provider, """ + entry.Name + "\", " + callParams + @");
         }
@@ -325,7 +347,7 @@ namespace Meziantou.Framework.ResxSourceGenerator
 
                             sb.AppendLine(@"
         /// " + comment + @"
-        public static string Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
+        public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
             return GetString(""" + entry.Name + "\", " + callParams + @");
         }
@@ -336,11 +358,11 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 else
                 {
                     sb.AppendLine(@"
-        public static " + entry.FullTypeName + " " + ToCSharpNameIdentifier(entry.Name) + @"
+        public static global::" + entry.FullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
             get
             {
-                return (" + entry.FullTypeName + @")ResourceManager.GetObject(""" + entry.Name + @""");
+                return (global::" + entry.FullTypeName + @"?)GetObject(""" + entry.Name + @""");
             }
         }
 ");
@@ -366,6 +388,11 @@ namespace Meziantou.Framework.ResxSourceGenerator
                 sb.AppendLine("}");
             }
             return sb.ToString();
+
+            static string AppendNotNullIfNotNull(string paramName)
+            {
+                return "[return: global::System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute(\"" + paramName + "\")]\n";
+            }
         }
 
         private static string? ComputeResourceName(string rootNamespace, string projectDir, string resourcePath)

@@ -28,6 +28,15 @@ public class ResxGeneratorTests
         Assert.Equal("valeur", Resource1.Sample);
     }
 
+#nullable enable
+    [Fact]
+    public void GetStringWithDefaultValue()
+    {
+        // Ensure the value is not nullable
+        Assert.Equal(3, Resource1.GetString("UnknownValue", defaultValue: "abc").Length);
+    }
+#nullable disable
+
     [Fact]
     public void TextFile()
     {

@@ -220,6 +220,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Logging.InMemory.Tests", "tests\Meziantou.Extensions.Logging.InMemory.Tests\Meziantou.Extensions.Logging.InMemory.Tests.csproj", "{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ResxSourceGenerator.GeneratorTests", "tests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj", "{403492FF-524F-4420-A4F3-822B9613EA94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -602,6 +604,10 @@ Global
 		{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{403492FF-524F-4420-A4F3-822B9613EA94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{403492FF-524F-4420-A4F3-822B9613EA94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{403492FF-524F-4420-A4F3-822B9613EA94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{403492FF-524F-4420-A4F3-822B9613EA94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -701,6 +707,7 @@ Global
 		{4E28D6E8-4299-47F2-9A16-61F4714E5896} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{766FF03B-F1C3-466D-AE47-1F6884774E59} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{403492FF-524F-4420-A4F3-822B9613EA94} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

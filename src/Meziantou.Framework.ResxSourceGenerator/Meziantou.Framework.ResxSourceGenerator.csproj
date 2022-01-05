@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
     <CompatibilityRange>true</CompatibilityRange>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable MA0042
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -9,9 +10,9 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 
-namespace Meziantou.Framework.FastEnumToStringGenerator.Tests
+namespace TestUtilities
 {
-    internal static class NuGetHelpers
+    public static class NuGetHelpers
     {
         private static readonly ConcurrentDictionary<string, Lazy<Task<string[]>>> s_cache = new(StringComparer.Ordinal);
 
@@ -31,7 +32,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator.Tests
                 {
                     Directory.CreateDirectory(tempFolder);
                     using var httpClient = new HttpClient();
-                    await using var stream = await httpClient.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}")).ConfigureAwait(false);
+                    using var stream = await httpClient.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}")).ConfigureAwait(false);
                     using var zip = new ZipArchive(stream, ZipArchiveMode.Read);
 
                     foreach (var entry in zip.Entries.Where(file => file.FullName.StartsWith(path, StringComparison.Ordinal)))
@@ -51,7 +52,7 @@ namespace Meziantou.Framework.FastEnumToStringGenerator.Tests
 
                     try
                     {
-                        await using var stream = File.OpenRead(dll);
+                        using var stream = File.OpenRead(dll);
                         using var peFile = new PEReader(stream);
                         var metadataReader = peFile.GetMetadataReader();
                         result.Add(dll);

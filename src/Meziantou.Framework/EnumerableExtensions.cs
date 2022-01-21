@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {
@@ -576,6 +577,13 @@ namespace Meziantou.Framework
         public static ICollection<T> ToCollection<T>(this IEnumerable<T> sequence)
         {
             return sequence is ICollection<T> collection ? collection : sequence.ToList();
+        }
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "MA0016:Prefer return collection abstraction instead of implementation", Justification = "Similar to Enumerable.ToList()")]
+        public static async Task<List<T>> ToListAsync<T>(this Task<IEnumerable<T>> task)
+        {
+            var result = await task.ConfigureAwait(false);
+            return result.ToList();
         }
     }
 }

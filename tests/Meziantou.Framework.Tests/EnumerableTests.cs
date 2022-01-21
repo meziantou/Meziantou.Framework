@@ -343,5 +343,18 @@ namespace Meziantou.Framework.Tests
 
             array.IsDistinct().Should().BeTrue();
         }
+
+        [Fact]
+        public async Task ToListAsync()
+        {
+            var data = await GetDataAsync().ToListAsync();
+            data.Should().Equal(new[] { "a", "b", "c" });
+
+            async Task<IEnumerable<string>> GetDataAsync()
+            {
+                await Task.Yield();
+                return new[] { "a", "b", "c" };
+            }
+        }
     }
 }

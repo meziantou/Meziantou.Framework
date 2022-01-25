@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests
 {
+    [Collection("ProcessExtensions")]
     public class ProcessExtensionsTests
     {
         [Fact]

@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Xunit.ParallelTestFramework" Version="1.0.0"
+                      Condition="'$(XunitParallelizableFact)' != 'false' and @(PackageReference) != '' and @(PackageReference->AnyHaveMetadataValue('Identity', 'xunit'))" />
+  </ItemGroup>
+</Project>

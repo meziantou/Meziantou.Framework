@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E4DDFF3F
 	ProjectSection(SolutionItems) = preProject
 		tests\.editorconfig = tests\.editorconfig
 		tests\Directory.Build.props = tests\Directory.Build.props
+		tests\Directory.Build.targets = tests\Directory.Build.targets
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework", "src\Meziantou.Framework\Meziantou.Framework.csproj", "{301FBA31-89C4-49E8-8E9A-9D4AF2D515C4}"
@@ -202,7 +203,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Strongl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Logging.Xunit", "src\Meziantou.Extensions.Logging.Xunit\Meziantou.Extensions.Logging.Xunit.csproj", "{62244782-4927-4EA5-BEE7-F63B8601644A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.StronglyTypedId.GeneratorTests", "tests\Meziantou.Framework.StronglyTypedId.GeneratorTests\Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj", "{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.StronglyTypedId.GeneratorTests", "tests\Meziantou.Framework.StronglyTypedId.GeneratorTests\Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj", "{E7ECD1D5-A0EA-43AC-9741-B1EC6C9C769B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ChromiumTracing", "src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj", "{1529BF3D-59DB-4610-96DB-134BFB3B6E23}"
 EndProject
@@ -220,7 +221,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Extensions.Logging.InMemory.Tests", "tests\Meziantou.Extensions.Logging.InMemory.Tests\Meziantou.Extensions.Logging.InMemory.Tests.csproj", "{E3A540F4-F6FC-45A2-992C-F4C6FFCF220A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ResxSourceGenerator.GeneratorTests", "tests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj", "{403492FF-524F-4420-A4F3-822B9613EA94}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ResxSourceGenerator.GeneratorTests", "tests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests\Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj", "{403492FF-524F-4420-A4F3-822B9613EA94}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -30,7 +30,7 @@ namespace Meziantou.Framework.Tests
         }
 
         [Theory]
-        [InlineData("ramer", "cases", 3u)]
+        [InlineData("ramer", "cases", 3)]
         public void Hamming_StringTests(string word1, string word2, int expected)
         {
             StringSearchUtilities.Hamming(word1, word2).Should().Be(expected);

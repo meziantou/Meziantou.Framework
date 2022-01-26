@@ -61,6 +61,7 @@ namespace Meziantou.Framework
             return str.Contains(value, StringComparison.OrdinalIgnoreCase);
         }
 
+#if NET6_0_OR_GREATER
         private static readonly Lazy<Dictionary<char, char>> s_diacriticDictionary = new(CreateDiacriticDictionary);
 
         private static Dictionary<char, char> CreateDiacriticDictionary()
@@ -868,6 +869,7 @@ namespace Meziantou.Framework
                 { '\u30FE' /* 'ヾ' ModifierLetter */, '\u30FD' /* 'ヽ' ModifierLetter */ },
             };
         }
+#endif
 
         [Pure]
         [return: NotNullIfNotNull(parameterName: "str")]
@@ -888,6 +890,7 @@ namespace Meziantou.Framework
                 }
             }
 
+#if NET6_0_OR_GREATER
             if (GlobalizationMode.Invariant)
             {
                 // InvariantMode doesn't support string normalization, so many characters are not replaced
@@ -902,6 +905,7 @@ namespace Meziantou.Framework
                     }
                 }
             }
+#endif
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }

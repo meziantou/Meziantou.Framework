@@ -111,6 +111,7 @@ namespace Meziantou.Framework
             return sb;
         }
 
+#if NET6_0_OR_GREATER
         public static StringBuilder AppendInvariant(this StringBuilder sb, Half value)
         {
             return sb.Append(value.ToString(CultureInfo.InvariantCulture));
@@ -123,6 +124,7 @@ namespace Meziantou.Framework
 
             return sb;
         }
+#endif
 
         public static StringBuilder AppendInvariant(this StringBuilder sb, float value)
         {

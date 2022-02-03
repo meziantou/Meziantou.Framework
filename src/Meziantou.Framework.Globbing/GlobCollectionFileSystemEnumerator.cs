@@ -29,14 +29,6 @@ namespace Meziantou.Framework.Globbing
         {
             return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _globs.IsMatch(ref entry);
         }
-
-        private static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)
-        {
-            if (entry.Directory.Length == entry.RootDirectory.Length)
-                return ReadOnlySpan<char>.Empty;
-
-            return entry.Directory[(entry.RootDirectory.Length + 1)..];
-        }
     }
 
     public sealed class GlobCollectionFileSystemEnumerator : GlobCollectionFileSystemEnumerator<string>

@@ -6,7 +6,7 @@ namespace Meziantou.Framework
 {
     public static class RandomExtensions
     {
-        public static T NextFromArray<T>(this Random random, T[] array)
+        public static T NextFromList<T>(this Random random, T[] array)
         {
             if (random == null)
                 throw new ArgumentNullException(nameof(random));
@@ -32,6 +32,30 @@ namespace Meziantou.Framework
 
             var index = random.NextInt32(0, list.Count);
             return list[index];
+        }
+
+        public static T NextFromList<T>(this Random random, ReadOnlySpan<T> list)
+        {
+            if (random == null)
+                throw new ArgumentNullException(nameof(random));
+
+            if (list.Length == 0)
+                throw new ArgumentException("List is empty.", nameof(list));
+
+            var index = random.NextInt32(0, list.Length);
+            return list[index];
+        }
+
+        public static T NextFromList<T>(this Random random, ReadOnlyMemory<T> list)
+        {
+            if (random == null)
+                throw new ArgumentNullException(nameof(random));
+
+            if (list.Length == 0)
+                throw new ArgumentException("List is empty.", nameof(list));
+
+            var index = random.NextInt32(0, list.Length);
+            return list.Span[index];
         }
 
         public static T NextFromList<T>(this Random random, IReadOnlyList<T> list)
@@ -70,16 +94,6 @@ namespace Meziantou.Framework
                 throw new ArgumentNullException(nameof(random));
 
             return (sbyte)random.Next(min, max);
-        }
-
-        public static byte[] NextBytes(this Random random, byte[] bytes)
-        {
-            if (random == null)
-                throw new ArgumentNullException(nameof(random));
-
-            random.NextBytes(bytes);
-
-            return bytes;
         }
 
         public static DateTime NextDateTime(this Random random, DateTime min, DateTime max)

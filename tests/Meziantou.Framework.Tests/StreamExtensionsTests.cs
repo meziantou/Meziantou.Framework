@@ -84,7 +84,7 @@ namespace Meziantou.Framework.Tests
             }
 
             public override bool CanRead => _stream.CanRead;
-            public override bool CanSeek => _stream.CanSeek;
+            public override bool CanSeek => _canSeek && _stream.CanSeek;
             public override bool CanWrite => throw new NotSupportedException();
             public override long Length => _stream.Length;
             public override long Position { get => _stream.Position; set => throw new NotSupportedException(); }

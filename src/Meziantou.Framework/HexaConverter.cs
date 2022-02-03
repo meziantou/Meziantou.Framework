@@ -91,7 +91,18 @@ namespace Meziantou.Framework
 
         public static bool TryParseHexaString(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
         {
-            if (str == null || str.Length % 2 != 0)
+            if (str == null)
+            {
+                result = default;
+                return false;
+            }
+
+            return TryParseHexaString(str.AsSpan(), out result);
+        }
+
+        public static bool TryParseHexaString(ReadOnlySpan<char> str, [NotNullWhen(returnValue: true)] out byte[]? result)
+        {
+            if (str.Length % 2 != 0)
             {
                 result = default;
                 return false;

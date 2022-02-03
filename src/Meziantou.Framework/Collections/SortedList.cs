@@ -160,6 +160,8 @@ namespace Meziantou.Framework.Collections
         }
 
         public void CopyTo(T[] array) => CopyTo(array, 0);
+        public void CopyTo(Span<T> array) => _items.CopyTo(array);
+        public void CopyTo(Memory<T> array) => _items.CopyTo(array);
 
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
@@ -185,6 +187,16 @@ namespace Meziantou.Framework.Collections
 
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, index, array, arrayIndex, count);
+        }
+
+        public void CopyTo(int index, Span<T> array, int count)
+        {
+            _items.AsSpan(index, count).CopyTo(array);
+        }
+
+        public void CopyTo(int index, Memory<T> array, int count)
+        {
+            _items.AsMemory(index, count).CopyTo(array);
         }
 
         public void CopyTo(T[] array, int arrayIndex)

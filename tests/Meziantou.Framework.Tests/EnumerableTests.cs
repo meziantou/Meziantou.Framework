@@ -350,7 +350,7 @@ namespace Meziantou.Framework.Tests
             var data = await GetDataAsync().ToListAsync();
             data.Should().Equal(new[] { "a", "b", "c" });
 
-            async Task<IEnumerable<string>> GetDataAsync()
+            static async Task<IEnumerable<string>> GetDataAsync()
             {
                 await Task.Yield();
                 return new[] { "a", "b", "c" };

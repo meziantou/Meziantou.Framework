@@ -14,9 +14,22 @@
             Value = value;
         }
 
+        public MethodInvokeArgumentExpression(string? name, Expression? value, Direction direction)
+        {
+            Name = name;
+            Value = value;
+            Direction = direction;
+        }
+
         public MethodInvokeArgumentExpression(Expression? value)
         {
             Value = value;
+        }
+
+        public MethodInvokeArgumentExpression(Expression? value, Direction direction)
+        {
+            Value = value;
+            Direction = direction;
         }
 
         public string? Name { get; set; }

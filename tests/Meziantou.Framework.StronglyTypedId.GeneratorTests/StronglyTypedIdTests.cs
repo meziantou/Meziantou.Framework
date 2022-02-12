@@ -126,6 +126,39 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests
             typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().BeNull();
         }
 
+        [Fact]
+        public void String_Parse()
+        {
+            IdString.Parse("test").Value.Should().Be("test");
+        }
+
+        [Fact]
+        public void String_Parse_ReadOnlySpan()
+        {
+            IdString.Parse("test".AsSpan()).Value.Should().Be("test");
+        }
+
+        [Fact]
+        public void String_TryParse_ReadOnlySpan()
+        {
+            IdString.TryParse("test".AsSpan(), out var value).Should().BeTrue();
+            value.Value.Should().Be("test");
+        }
+
+        [Fact]
+        public void String_TryParse_Null()
+        {
+            IdString.TryParse(null, out _).Should().BeFalse();
+        }
+
+        [Fact]
+        public void String_Parse_Null()
+        {
+            var action = () => IdString.Parse(null);
+            action.Should().Throw<FormatException>();
+        }
+
+#nullable enable
         [StronglyTypedId(typeof(bool))]
         private partial struct IdBoolean { }
 

@@ -262,5 +262,34 @@ public partial struct Test {}
                 alc.Unload();
             }
         }
+
+        [Fact]
+        public async Task GenerateStruct_Parse_ReadOnlySpan_String()
+        {
+            var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(string))]
+public partial struct Test {}
+";
+            var result = await GenerateFiles(sourceCode);
+
+            result.GeneratorResult.Diagnostics.Should().BeEmpty();
+            result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+
+            var alc = new AssemblyLoadContext("test", isCollectible: true);
+            try
+            {
+                alc.LoadFromStream(new MemoryStream(result.Assembly));
+                foreach (var a in alc.Assemblies)
+                {
+                    var type = a.GetType("Test");
+                    var parse = type.GetMember("Parse").Length;
+                    parse.Should().Be(2);
+                }
+            }
+            finally
+            {
+                alc.Unload();
+            }
+        }
     }
 }

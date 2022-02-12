@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Globalization;
-using System.Linq;
 using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 
@@ -9,27 +9,27 @@ namespace Meziantou.Framework.StronglyTypedId
 {
     public partial class StronglyTypedIdSourceGenerator
     {
-        private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo stronglyTypedStruct)
+        private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context)
         {
-            var idType = stronglyTypedStruct.AttributeInfo.IdType;
+            var idType = context.AttributeInfo.IdType;
             var typeReference = GetTypeReference(idType);
             var shortName = GetShortName(typeReference);
 
             // Field
-            if (!stronglyTypedStruct.IsFieldDefined())
+            if (!context.IsFieldDefined())
             {
                 _ = structDeclaration.AddMember(new FieldDeclaration(FieldName, typeReference) { Modifiers = Modifiers.Private | Modifiers.ReadOnly });
             }
 
             // Value
-            if (!stronglyTypedStruct.IsValueDefined())
+            if (!context.IsValueDefined())
             {
                 var valuePropertyDeclaration = structDeclaration.AddMember(new PropertyDeclaration(PropertyName, typeReference) { Modifiers = Modifiers.Public });
                 valuePropertyDeclaration.Getter = new PropertyAccessorDeclaration(new ReturnStatement(new MemberReferenceExpression(new ThisExpression(), FieldName)));
             }
 
             // ValueAsString
-            if (!stronglyTypedStruct.IsValueAsStringDefined())
+            if (!context.IsValueAsStringDefined())
             {
                 var valueAsStringProperty = structDeclaration.AddMember(new PropertyDeclaration(PropertyAsStringName, typeof(string)) { Modifiers = Modifiers.Public });
                 valueAsStringProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(ValueToStringExpression()));
@@ -57,9 +57,9 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // ctor
-            if (!stronglyTypedStruct.IsCtorDefined())
+            if (!context.IsCtorDefined())
             {
-                var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = GetPrivateOrProtectedModifier(stronglyTypedStruct) });
+                var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = GetPrivateOrProtectedModifier(context) });
                 var constructorArg = constructor.Arguments.Add(typeReference, "value");
                 constructor.Statements = new StatementCollection { new AssignStatement(new MemberReferenceExpression(new ThisExpression(), FieldName), constructorArg) };
             }
@@ -71,7 +71,7 @@ namespace Meziantou.Framework.StronglyTypedId
             fromMethod.Statements = new StatementCollection { new ReturnStatement(new NewObjectExpression(structDeclaration, fromMethodArg)) };
 
             // ToString
-            if (!stronglyTypedStruct.IsToStringDefined())
+            if (!context.IsToStringDefined())
             {
                 var toStringMethod = structDeclaration.AddMember(new MethodDeclaration("ToString") { Modifiers = Modifiers.Public | Modifiers.Override });
                 toStringMethod.ReturnType = typeof(string);
@@ -99,7 +99,7 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // GetHashCode
-            if (!stronglyTypedStruct.IsGetHashcodeDefined())
+            if (!context.IsGetHashcodeDefined())
             {
                 var getHashCodeMethod = structDeclaration.AddMember(new MethodDeclaration("GetHashCode") { Modifiers = Modifiers.Public | Modifiers.Override });
                 getHashCodeMethod.ReturnType = typeof(int);
@@ -120,7 +120,7 @@ namespace Meziantou.Framework.StronglyTypedId
 
             // IEquatable<T>
             structDeclaration.Implements.Add(new TypeReference(typeof(IEquatable<>)).MakeGeneric(structDeclaration));
-            if (!stronglyTypedStruct.IsIEquatableEqualsDefined())
+            if (!context.IsIEquatableEqualsDefined())
             {
                 var equalsTypedMethod = structDeclaration.AddMember(new MethodDeclaration("Equals") { Modifiers = Modifiers.Public });
                 equalsTypedMethod.ReturnType = typeof(bool);
@@ -131,7 +131,7 @@ namespace Meziantou.Framework.StronglyTypedId
                     new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, CreateValuePropertyRef(), new MemberReferenceExpression(equalsTypedMethodArg, "Value"))),
                 };
 
-                if (stronglyTypedStruct.IsReferenceType)
+                if (context.IsReferenceType)
                 {
                     equalsTypedMethodArg.Type = equalsTypedMethodArg.Type?.MakeNullable();
                     equalsTypedMethod.Statements.Insert(0, new ConditionStatement
@@ -143,7 +143,7 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // Equals
-            if (!stronglyTypedStruct.IsEqualsDefined())
+            if (!context.IsEqualsDefined())
             {
                 var equalsMethod = structDeclaration.AddMember(new MethodDeclaration("Equals") { Modifiers = Modifiers.Public | Modifiers.Override });
                 equalsMethod.ReturnType = typeof(bool);
@@ -160,13 +160,13 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // Operator ==
-            if (!stronglyTypedStruct.IsOpEqualsDefined())
+            if (!context.IsOpEqualsDefined())
             {
                 var equalsOperatorMethod = structDeclaration.AddMember(new OperatorDeclaration("==") { Modifiers = Modifiers.Public | Modifiers.Static });
                 equalsOperatorMethod.ReturnType = typeof(bool);
                 var equalsOperatorMethodArg1 = equalsOperatorMethod.Arguments.Add(structDeclaration, "a");
                 var equalsOperatorMethodArg2 = equalsOperatorMethod.Arguments.Add(structDeclaration, "b");
-                if (stronglyTypedStruct.IsReferenceType)
+                if (context.IsReferenceType)
                 {
                     equalsOperatorMethodArg1.Type = equalsOperatorMethodArg1.Type?.MakeNullable();
                     equalsOperatorMethodArg2.Type = equalsOperatorMethodArg2.Type?.MakeNullable();
@@ -181,13 +181,13 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // Operator !=
-            if (!stronglyTypedStruct.IsOpNotEqualsDefined())
+            if (!context.IsOpNotEqualsDefined())
             {
                 var notEqualsOperatorMethod = structDeclaration.AddMember(new OperatorDeclaration("!=") { Modifiers = Modifiers.Public | Modifiers.Static });
                 notEqualsOperatorMethod.ReturnType = typeof(bool);
                 var notEqualsOperatorMethodArg1 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "a");
                 var notEqualsOperatorMethodArg2 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "b");
-                if (stronglyTypedStruct.IsReferenceType)
+                if (context.IsReferenceType)
                 {
                     notEqualsOperatorMethodArg1.Type = notEqualsOperatorMethodArg1.Type?.MakeNullable();
                     notEqualsOperatorMethodArg2.Type = notEqualsOperatorMethodArg2.Type?.MakeNullable();
@@ -200,31 +200,24 @@ namespace Meziantou.Framework.StronglyTypedId
             }
 
             // Parse / TryParse
-            // Check if we can add Span<char> overloads
-            var valueTypes = new List<TypeReference>() { new TypeReference(typeof(string)) };
-            var readOnlySpan = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
-            var charSymbol = compilation.GetTypeByMetadataName("System.Char");
             var idTypeReference = GetTypeReference(idType);
-            if (readOnlySpan != null && charSymbol != null && idTypeReference.TypeName != null)
+            if (context.SupportReadOnlySpan())
             {
-                if (compilation.GetTypeByMetadataName(idTypeReference.TypeName)?.GetMembers("TryParse").OfType<IMethodSymbol>()
-                        .Any(m => m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, readOnlySpan.Construct(charSymbol))) == true)
+                // TryParse(ReadOnlySpan<char>)
+                if (!context.IsTryParseDefined_ReadOnlySpan())
                 {
-                    valueTypes.Add(new TypeReference(typeof(ReadOnlySpan<char>)));
+                    GenerateTryParseMethod(structDeclaration, context, idType, isReadOnlySpan: true);
                 }
-            }
 
-            foreach (var valueType in valueTypes)
-            {
-                // Parse
-                if (!stronglyTypedStruct.IsParseDefined())
+                // Parse(ReadOnlySpan<char>)
+                if (!context.IsParseDefined_Span())
                 {
                     var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
                     parseMethod.ReturnType = structDeclaration;
-                    var valueArg = parseMethod.AddArgument("value", valueType);
+                    var valueArg = parseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
                     parseMethod.Statements = new StatementCollection();
                     var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
-                    if (stronglyTypedStruct.IsReferenceType)
+                    if (context.IsReferenceType)
                     {
                         result.Type = result.Type?.MakeNullable();
                     }
@@ -236,97 +229,159 @@ namespace Meziantou.Framework.StronglyTypedId
                         FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(FormatException), Expression.Add("Value '", valueArg.Member("ToString").InvokeMethod(), "' is not valid"))),
                     });
                 }
+            }
 
-                // TryParse
-                if (!stronglyTypedStruct.IsTryParseDefined())
+            // Parse
+            if (!context.IsParseDefined_String())
+            {
+                var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
+                parseMethod.ReturnType = structDeclaration;
+                var valueArg = parseMethod.AddArgument("value", typeof(string));
+                parseMethod.Statements = new StatementCollection();
+                var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
+                if (context.IsReferenceType)
                 {
-                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Public | Modifiers.Static });
-                    parseMethod.ReturnType = typeof(bool);
-                    var valueArg = parseMethod.AddArgument("value", valueType);
-                    var resultArg = parseMethod.AddArgument("result", structDeclaration, Direction.Out);
-                    if (stronglyTypedStruct.IsReferenceType)
-                    {
-                        resultArg.Type = resultArg.Type?.MakeNullable();
-                    }
+                    result.Type = result.Type?.MakeNullable();
+                }
 
-                    if (compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
-                    {
-                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(System.Diagnostics.CodeAnalysis.NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(LiteralExpression.True()) } });
-                    }
+                parseMethod.Statements.Add(new ConditionStatement
+                {
+                    Condition = new MemberReferenceExpression(structDeclaration, "TryParse").InvokeMethod(valueArg, new MethodInvokeArgumentExpression(result) { Direction = Direction.Out }),
+                    TrueStatements = new ReturnStatement(result),
+                    FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(FormatException), Expression.Add("Value '", valueArg, "' is not valid"))),
+                });
+            }
 
-                    if (idType == IdType.System_String)
+            // TryParse
+            if (!context.IsTryParseDefined_String())
+            {
+                GenerateTryParseMethod(structDeclaration, context, idType, isReadOnlySpan: false);
+            }
+
+            static void GenerateTryParseMethod(ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context, IdType idType, bool isReadOnlySpan)
+            {
+                var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Public | Modifiers.Static });
+                tryParseMethod.ReturnType = typeof(bool);
+                var valueArg = tryParseMethod.AddArgument("value", isReadOnlySpan ? typeof(ReadOnlySpan<char>) : new TypeReference(typeof(string)).MakeNullable());
+                var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
+                if (context.IsReferenceType)
+                {
+                    resultArg.Type = resultArg.Type?.MakeNullable();
+                }
+
+                if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                {
+                    resultArg.CustomAttributes.Add(new CustomAttribute(typeof(System.Diagnostics.CodeAnalysis.NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
+                }
+
+                if (!isReadOnlySpan && context.SupportReadOnlySpan())
+                {
+                    // delegate to ReadOnlySpan<char> overload
+                    tryParseMethod.Statements = new ConditionStatement()
                     {
-                        parseMethod.Statements = new StatementCollection()
+                        Condition = new BinaryExpression(BinaryOperator.Equals, valueArg, Expression.Null()),
+                        TrueStatements = new StatementCollection
                         {
-                            new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, valueArg)),
-                            new ReturnStatement(Expression.True()),
-                        };
-                    }
-                    else
+                            new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
+                            new ReturnStatement(Expression.False()),
+                        },
+                        FalseStatements = new StatementCollection
+                        {
+                            new ReturnStatement(
+                                new MethodInvokeExpression(
+                                    new MemberReferenceExpression(structDeclaration, "TryParse"),
+                                    new MethodInvokeExpression(new MemberReferenceExpression(typeof(MemoryExtensions), "AsSpan"), valueArg),
+                                    new MethodInvokeArgumentExpression(resultArg, Direction.Out))),
+                        },
+                    };
+
+                    return;
+                }
+
+                if (idType == IdType.System_String)
+                {
+                    tryParseMethod.Statements = new StatementCollection()
                     {
-                        parseMethod.Statements = new StatementCollection();
-                        var result = parseMethod.Statements.Add(new VariableDeclarationStatement("id", GetTypeReference(idType)));
-                        parseMethod.Statements.Add(new ConditionStatement
+                        new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, isReadOnlySpan ? new NewObjectExpression(typeof(string), valueArg) : valueArg)),
+                        new ReturnStatement(Expression.True()),
+                    };
+
+                    if (!isReadOnlySpan)
+                    {
+                        tryParseMethod.Statements.Insert(0, new ConditionStatement()
                         {
-                            Condition = CreateTryParseExpression(),
+                            Condition = new BinaryExpression(BinaryOperator.Equals, valueArg, Expression.Null()),
                             TrueStatements = new StatementCollection
-                            {
-                                new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, result)),
-                                new ReturnStatement(Expression.True()),
-                            },
-                            FalseStatements = new StatementCollection
                             {
                                 new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
                                 new ReturnStatement(Expression.False()),
                             },
                         });
-
-                        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Less readable")]
-                        Expression CreateTryParseExpression()
+                    }
+                }
+                else
+                {
+                    tryParseMethod.Statements = new StatementCollection();
+                    var result = tryParseMethod.Statements.Add(new VariableDeclarationStatement("id", GetTypeReference(idType)));
+                    tryParseMethod.Statements.Add(new ConditionStatement
+                    {
+                        Condition = CreateTryParseExpression(),
+                        TrueStatements = new StatementCollection
                         {
-                            switch (idType)
-                            {
-                                case IdType.System_Boolean:
-                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                        valueArg,
-                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, result)),
+                            new ReturnStatement(Expression.True()),
+                        },
+                        FalseStatements = new StatementCollection
+                        {
+                            new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
+                            new ReturnStatement(Expression.False()),
+                        },
+                    });
 
-                                case IdType.System_DateTime:
-                                case IdType.System_DateTimeOffset:
-                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                        valueArg,
-                                        new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
-                                        new MemberReferenceExpression(typeof(DateTimeStyles), nameof(DateTimeStyles.AdjustToUniversal)),
-                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                    [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Less readable")]
+                    Expression CreateTryParseExpression()
+                    {
+                        switch (idType)
+                        {
+                            case IdType.System_Boolean:
+                                return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                    valueArg,
+                                    new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
 
-                                case IdType.System_Guid:
-                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                        valueArg,
-                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            case IdType.System_DateTime:
+                            case IdType.System_DateTimeOffset:
+                                return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                    valueArg,
+                                    new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
+                                    new MemberReferenceExpression(typeof(DateTimeStyles), nameof(DateTimeStyles.AdjustToUniversal)),
+                                    new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
 
-                                case IdType.System_Decimal:
-                                case IdType.System_Double:
-                                case IdType.System_Single:
-                                case IdType.System_Byte:
-                                case IdType.System_SByte:
-                                case IdType.System_Int16:
-                                case IdType.System_Int32:
-                                case IdType.System_Int64:
-                                case IdType.System_UInt16:
-                                case IdType.System_UInt32:
-                                case IdType.System_UInt64:
-                                    return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                        valueArg,
-                                        new MemberReferenceExpression(typeof(NumberStyles), nameof(NumberStyles.Any)),
-                                        new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
-                                        new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            case IdType.System_Guid:
+                                return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                    valueArg,
+                                    new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
 
-                                default:
-                                    throw new InvalidOperationException("Type not supported");
-                            }
+                            case IdType.System_Decimal:
+                            case IdType.System_Double:
+                            case IdType.System_Single:
+                            case IdType.System_Byte:
+                            case IdType.System_SByte:
+                            case IdType.System_Int16:
+                            case IdType.System_Int32:
+                            case IdType.System_Int64:
+                            case IdType.System_UInt16:
+                            case IdType.System_UInt32:
+                            case IdType.System_UInt64:
+                                return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
+                                    valueArg,
+                                    new MemberReferenceExpression(typeof(NumberStyles), nameof(NumberStyles.Any)),
+                                    new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
+                                    new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+
+                            default:
+                                throw new InvalidOperationException("Type not supported");
                         }
                     }
-
                 }
             }
         }

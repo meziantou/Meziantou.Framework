@@ -126,7 +126,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 if (attributeInfo == null)
                     continue;
 
-                var stronglyTypedId = new StronglyTypedIdInfo(typeSymbol.ContainingSymbol, typeSymbol, typeSymbol.Name, attributeInfo, typeDeclaration);
+                var stronglyTypedId = new StronglyTypedIdInfo(compilation, typeSymbol.ContainingSymbol, typeSymbol, typeSymbol.Name, attributeInfo, typeDeclaration);
 
                 var codeUnit = new CompilationUnit
                 {
@@ -386,7 +386,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
 
-        private record StronglyTypedIdInfo(ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
+        private record StronglyTypedIdInfo(Compilation Compilation, ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
         {
             public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
             public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
@@ -464,16 +464,48 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
             }
 
-            public bool IsTryParseDefined()
+            public bool IsTryParseDefined_String()
             {
                 return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic);
+                    .Any(m => m.IsStatic && m.Parameters.Length > 0 && m.Parameters[0].Type.SpecialType == SpecialType.System_String);
             }
 
-            public bool IsParseDefined()
+            public bool IsTryParseDefined_ReadOnlySpan()
+            {
+                var type = GetReadOnlySpanChar();
+                if (type == null)
+                    return false;
+
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic && m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, type));
+            }
+
+            public bool IsParseDefined_String()
             {
                 return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
-                    .Any(m => m.IsStatic);
+                    .Any(m => m.IsStatic && m.Parameters.Length > 0 && m.Parameters[0].Type.SpecialType == SpecialType.System_String);
+            }
+
+            public bool IsParseDefined_Span()
+            {
+                var type = GetReadOnlySpanChar();
+                if (type == null)
+                    return false;
+
+                return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
+                    .Any(m => m.IsStatic && m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, type));
+            }
+
+            public bool SupportReadOnlySpan() => GetReadOnlySpanChar() != null;
+
+            private ITypeSymbol? GetReadOnlySpanChar()
+            {
+                var readOnlySpan = Compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
+                var charSymbol = Compilation.GetTypeByMetadataName("System.Char");
+                if (readOnlySpan != null && charSymbol != null)
+                    return readOnlySpan.Construct(charSymbol);
+
+                return null;
             }
         }
 

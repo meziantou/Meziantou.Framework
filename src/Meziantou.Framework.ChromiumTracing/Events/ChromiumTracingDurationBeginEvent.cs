@@ -1,10 +1,9 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public sealed class ChromiumTracingDurationBeginEvent : ChromiumTracingDurationEvent
 {
-    public sealed class ChromiumTracingDurationBeginEvent : ChromiumTracingDurationEvent
-    {
-        [JsonPropertyName("ph")]
-        public override string Type => "B";
-    }
+    [JsonPropertyName("ph")]
+    public override string Type => "B";
 }

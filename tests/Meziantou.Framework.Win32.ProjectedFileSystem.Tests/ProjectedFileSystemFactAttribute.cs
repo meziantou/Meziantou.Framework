@@ -1,44 +1,43 @@
-﻿using Xunit;
+using Xunit;
 
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+namespace Meziantou.Framework.Win32.ProjectedFileSystem;
+
+[AttributeUsage(AttributeTargets.All)]
+public sealed class ProjectedFileSystemFactAttribute : FactAttribute
 {
-    [AttributeUsage(AttributeTargets.All)]
-    public sealed class ProjectedFileSystemFactAttribute : FactAttribute
+    public ProjectedFileSystemFactAttribute()
     {
-        public ProjectedFileSystemFactAttribute()
+        var guid = Guid.NewGuid();
+        var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+        try
         {
-            var guid = Guid.NewGuid();
-            var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));
+            Directory.CreateDirectory(fullPath);
+
             try
             {
-                Directory.CreateDirectory(fullPath);
-
+                using var vfs = new SampleVirtualFileSystem(fullPath);
+                var options = new ProjectedFileSystemStartOptions();
                 try
                 {
-                    using var vfs = new SampleVirtualFileSystem(fullPath);
-                    var options = new ProjectedFileSystemStartOptions();
-                    try
-                    {
-                        vfs.Start(options);
-                    }
-                    catch (NotSupportedException ex)
-                    {
-                        Skip = ex.Message;
-                    }
+                    vfs.Start(options);
                 }
-                catch
+                catch (NotSupportedException ex)
                 {
+                    Skip = ex.Message;
                 }
             }
-            finally
+            catch
             {
-                try
-                {
-                    Directory.Delete(fullPath, recursive: true);
-                }
-                catch
-                {
-                }
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(fullPath, recursive: true);
+            }
+            catch
+            {
             }
         }
     }

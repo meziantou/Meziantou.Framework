@@ -1,233 +1,232 @@
-﻿#nullable disable
+#nullable disable
 using System.Collections;
 using System.Collections.Specialized;
 
-namespace Meziantou.Framework.Html
+namespace Meziantou.Framework.Html;
+
+public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
 {
-    public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
+    private readonly List<HtmlNode> _list = new();
+    private readonly HtmlNode _parent;
+
+    public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+    internal HtmlNodeList(HtmlNode parent)
     {
-        private readonly List<HtmlNode> _list = new();
-        private readonly HtmlNode _parent;
+        _parent = parent;
+    }
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
+    private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    {
+        _parent.ClearCaches();
+        CollectionChanged?.Invoke(this, e);
+    }
 
-        internal HtmlNodeList(HtmlNode parent)
+    public HtmlNode this[string name]
+    {
+        get
         {
-            _parent = parent;
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            return _list.Find(n => n.Name.EqualsIgnoreCase(name));
         }
+    }
 
-        private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    public HtmlNode this[string localName, string namespaceURI]
+    {
+        get
         {
-            _parent.ClearCaches();
-            CollectionChanged?.Invoke(this, e);
+            if (localName == null)
+                throw new ArgumentNullException(nameof(localName));
+
+            if (namespaceURI == null)
+                throw new ArgumentNullException(nameof(namespaceURI));
+
+            return _list.Find(a =>
+                localName.EqualsIgnoreCase(a.LocalName) &&
+                a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
         }
+    }
 
-        public HtmlNode this[string name]
+    public HtmlNode this[int index]
+    {
+        get => _list[index];
+        set
         {
-            get
-            {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
-
-                return _list.Find(n => n.Name.EqualsIgnoreCase(name));
-            }
-        }
-
-        public HtmlNode this[string localName, string namespaceURI]
-        {
-            get
-            {
-                if (localName == null)
-                    throw new ArgumentNullException(nameof(localName));
-
-                if (namespaceURI == null)
-                    throw new ArgumentNullException(nameof(namespaceURI));
-
-                return _list.Find(a =>
-                    localName.EqualsIgnoreCase(a.LocalName) &&
-                    a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
-            }
-        }
-
-        public HtmlNode this[int index]
-        {
-            get => _list[index];
-            set
-            {
-                if (value == _list[index])
-                    return;
-
-                var oldItem = _list[index];
-                _list[index] = value;
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
-            }
-        }
-
-        public void Replace(HtmlNode newChild!!, HtmlNode oldChild!!)
-        {
-            if (newChild.ParentNode != null)
-                throw new ArgumentException(message: null, nameof(newChild));
-
-            var index = _list.IndexOf(oldChild);
-            if (index >= 0)
-            {
-                if (oldChild.ParentNode != _parent)
-                    throw new ArgumentException(message: null, nameof(oldChild));
-
-                HtmlDocument.RemoveIntrinsicElement(oldChild.OwnerDocument, oldChild as HtmlElement);
-                oldChild.ParentNode = null;
-                _list.RemoveAt(index);
-            }
-            else
-            {
-                throw new ArgumentException(message: null, nameof(oldChild));
-            }
-
-            _list.Insert(index, newChild);
-            newChild.ParentNode = _parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, newChild, oldChild));
-        }
-
-        internal void RemoveAllNoCheck()
-        {
-            _list.Clear();
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
-
-        public void RemoveAll()
-        {
-            foreach (var node in _list)
-            {
-                HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
-                if (node.ParentNode != _parent)
-                    throw new InvalidOperationException();
-
-                node.ParentNode = null;
-            }
-            RemoveAllNoCheck();
-        }
-
-        public void Insert(int index, HtmlNode item!!)
-        {
-            if (item.ParentNode != null)
-                throw new ArgumentException(message: null, nameof(item));
-
-            HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
-            _list.Insert(index, item);
-            item.ParentNode = _parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
-        }
-
-        public void AddRange(IEnumerable<HtmlNode> nodes)
-        {
-            if (nodes == null)
+            if (value == _list[index])
                 return;
 
-            foreach (var node in nodes)
-            {
-                Add(node);
-            }
+            var oldItem = _list[index];
+            _list[index] = value;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
+        }
+    }
+
+    public void Replace(HtmlNode newChild!!, HtmlNode oldChild!!)
+    {
+        if (newChild.ParentNode != null)
+            throw new ArgumentException(message: null, nameof(newChild));
+
+        var index = _list.IndexOf(oldChild);
+        if (index >= 0)
+        {
+            if (oldChild.ParentNode != _parent)
+                throw new ArgumentException(message: null, nameof(oldChild));
+
+            HtmlDocument.RemoveIntrinsicElement(oldChild.OwnerDocument, oldChild as HtmlElement);
+            oldChild.ParentNode = null;
+            _list.RemoveAt(index);
+        }
+        else
+        {
+            throw new ArgumentException(message: null, nameof(oldChild));
         }
 
-        internal void AddNoCheck(HtmlNode node)
+        _list.Insert(index, newChild);
+        newChild.ParentNode = _parent;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, newChild, oldChild));
+    }
+
+    internal void RemoveAllNoCheck()
+    {
+        _list.Clear();
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+    }
+
+    public void RemoveAll()
+    {
+        foreach (var node in _list)
         {
-            _list.Add(node);
-            node.ParentNode = _parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node));
-        }
-
-        public void Add(HtmlNode item!!)
-        {
-            if (item.ParentNode != null)
-                throw new ArgumentException(message: null, nameof(item));
-
-            AddNoCheck(item);
-        }
-
-        public bool RemoveAt(int index)
-        {
-            if (index < 0 || index >= _list.Count)
-                return false;
-
-            var node = _list[index];
-            if (node.ParentNode != _parent)
-                throw new ArgumentException(message: null, nameof(index));
-
             HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
+            if (node.ParentNode != _parent)
+                throw new InvalidOperationException();
+
             node.ParentNode = null;
-            _list.RemoveAt(index);
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, node, index));
-            return true;
         }
+        RemoveAllNoCheck();
+    }
 
-        public bool Remove(HtmlNode item!!)
+    public void Insert(int index, HtmlNode item!!)
+    {
+        if (item.ParentNode != null)
+            throw new ArgumentException(message: null, nameof(item));
+
+        HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
+        _list.Insert(index, item);
+        item.ParentNode = _parent;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+    }
+
+    public void AddRange(IEnumerable<HtmlNode> nodes)
+    {
+        if (nodes == null)
+            return;
+
+        foreach (var node in nodes)
         {
-            var index = _list.IndexOf(item);
-            if (index < 0)
-                return false;
-
-            var existing = _list[index];
-            if (existing.ParentNode != _parent)
-                throw new ArgumentException(message: null, nameof(item));
-
-            _list.RemoveAt(index);
-            HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
-            item.ParentNode = null;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
-            return true;
+            Add(node);
         }
+    }
 
-        public int Count => _list.Count;
+    internal void AddNoCheck(HtmlNode node)
+    {
+        _list.Add(node);
+        node.ParentNode = _parent;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node));
+    }
 
-        public int IndexOf(HtmlNode item) => _list.IndexOf(item);
+    public void Add(HtmlNode item!!)
+    {
+        if (item.ParentNode != null)
+            throw new ArgumentException(message: null, nameof(item));
 
-        public bool Contains(HtmlNode item) => IndexOf(item) >= 0;
+        AddNoCheck(item);
+    }
 
-        public void CopyTo(HtmlNode[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
+    public bool RemoveAt(int index)
+    {
+        if (index < 0 || index >= _list.Count)
+            return false;
 
-        public IEnumerator<HtmlNode> GetEnumerator() => _list.GetEnumerator();
+        var node = _list[index];
+        if (node.ParentNode != _parent)
+            throw new ArgumentException(message: null, nameof(index));
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        HtmlDocument.RemoveIntrinsicElement(node.OwnerDocument, node as HtmlElement);
+        node.ParentNode = null;
+        _list.RemoveAt(index);
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, node, index));
+        return true;
+    }
 
-        bool ICollection<HtmlNode>.IsReadOnly => false;
+    public bool Remove(HtmlNode item!!)
+    {
+        var index = _list.IndexOf(item);
+        if (index < 0)
+            return false;
 
-        void ICollection<HtmlNode>.Clear() => RemoveAll();
+        var existing = _list[index];
+        if (existing.ParentNode != _parent)
+            throw new ArgumentException(message: null, nameof(item));
 
-        int IList.Add(object value)
-        {
-            var count = Count;
-            Add((HtmlNode)value);
-            return count;
-        }
+        _list.RemoveAt(index);
+        HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
+        item.ParentNode = null;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
+        return true;
+    }
 
-        void IList.Clear() => RemoveAll();
+    public int Count => _list.Count;
 
-        bool IList.Contains(object value) => Contains((HtmlNode)value);
+    public int IndexOf(HtmlNode item) => _list.IndexOf(item);
 
-        int IList.IndexOf(object value) => IndexOf((HtmlNode)value);
+    public bool Contains(HtmlNode item) => IndexOf(item) >= 0;
 
-        void IList.Insert(int index, object value) => Insert(index, (HtmlNode)value);
+    public void CopyTo(HtmlNode[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
 
-        bool IList.IsFixedSize => false;
+    public IEnumerator<HtmlNode> GetEnumerator() => _list.GetEnumerator();
 
-        bool IList.IsReadOnly => false;
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        void IList.Remove(object value) => Remove((HtmlNode)value);
+    bool ICollection<HtmlNode>.IsReadOnly => false;
 
-        void IList.RemoveAt(int index) => RemoveAt(index);
+    void ICollection<HtmlNode>.Clear() => RemoveAll();
 
-        void IList<HtmlNode>.RemoveAt(int index) => RemoveAt(index);
+    int IList.Add(object value)
+    {
+        var count = Count;
+        Add((HtmlNode)value);
+        return count;
+    }
 
-        void ICollection.CopyTo(Array array, int index) => ((ICollection)_list).CopyTo(array, index);
+    void IList.Clear() => RemoveAll();
 
-        bool ICollection.IsSynchronized => ((ICollection)_list).IsSynchronized;
+    bool IList.Contains(object value) => Contains((HtmlNode)value);
 
-        object ICollection.SyncRoot => ((ICollection)_list).SyncRoot;
+    int IList.IndexOf(object value) => IndexOf((HtmlNode)value);
 
-        object IList.this[int index]
-        {
-            get => this[index];
-            set => this[index] = (HtmlNode)value;
-        }
+    void IList.Insert(int index, object value) => Insert(index, (HtmlNode)value);
+
+    bool IList.IsFixedSize => false;
+
+    bool IList.IsReadOnly => false;
+
+    void IList.Remove(object value) => Remove((HtmlNode)value);
+
+    void IList.RemoveAt(int index) => RemoveAt(index);
+
+    void IList<HtmlNode>.RemoveAt(int index) => RemoveAt(index);
+
+    void ICollection.CopyTo(Array array, int index) => ((ICollection)_list).CopyTo(array, index);
+
+    bool ICollection.IsSynchronized => ((ICollection)_list).IsSynchronized;
+
+    object ICollection.SyncRoot => ((ICollection)_list).SyncRoot;
+
+    object IList.this[int index]
+    {
+        get => this[index];
+        set => this[index] = (HtmlNode)value;
     }
 }

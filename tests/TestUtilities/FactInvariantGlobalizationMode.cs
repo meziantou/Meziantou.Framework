@@ -1,9 +1,8 @@
-﻿namespace TestUtilities
+namespace TestUtilities;
+
+public enum FactInvariantGlobalizationMode
 {
-    public enum FactInvariantGlobalizationMode
-    {
-        Any,
-        Enabled,
-        Disabled,
-    }
+    Any,
+    Enabled,
+    Disabled,
 }

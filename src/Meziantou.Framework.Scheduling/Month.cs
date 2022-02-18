@@ -1,18 +1,17 @@
-﻿namespace Meziantou.Framework.Scheduling
+namespace Meziantou.Framework.Scheduling;
+
+public enum Month
 {
-    public enum Month
-    {
-        January = 1,
-        February,
-        March,
-        April,
-        May,
-        June,
-        July,
-        August,
-        September,
-        October,
-        November,
-        December,
-    }
+    January = 1,
+    February,
+    March,
+    April,
+    May,
+    June,
+    July,
+    August,
+    September,
+    October,
+    November,
+    December,
 }

@@ -1,10 +1,9 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public enum Direction
 {
-    public enum Direction
-    {
-        In,
-        Out,
-        InOut,
-        ReadOnlyRef,
-    }
+    In,
+    Out,
+    InOut,
+    ReadOnlyRef,
 }

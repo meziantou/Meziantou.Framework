@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.Globbing
+namespace Meziantou.Framework.Globbing;
+
+public enum GlobMode
 {
-    public enum GlobMode
-    {
-        Include,
-        Exclude,
-    }
+    Include,
+    Exclude,
 }

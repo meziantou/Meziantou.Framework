@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public enum NullableContext
 {
-    public enum NullableContext
-    {
-        Default,
-        Enable,
-        Disable,
-    }
+    Default,
+    Enable,
+    Disable,
 }

@@ -1,19 +1,18 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 
-namespace BlazorAppSample
+namespace BlazorAppSample;
+
+public class WeatherForecastClient
 {
-    public class WeatherForecastClient
+    private readonly HttpClient _httpClient;
+
+    public WeatherForecastClient(HttpClient httpClient)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClient;
+    }
 
-        public WeatherForecastClient(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
-
-        public async Task<IReadOnlyList<WeatherForecast>> GetAsync(CancellationToken cancellationToken = default)
-        {
-            return await _httpClient.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json", cancellationToken).ConfigureAwait(false);
-        }
+    public async Task<IReadOnlyList<WeatherForecast>> GetAsync(CancellationToken cancellationToken = default)
+    {
+        return await _httpClient.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json", cancellationToken).ConfigureAwait(false);
     }
 }

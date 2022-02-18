@@ -1,10 +1,9 @@
-﻿namespace Meziantou.Framework.Threading
+namespace Meziantou.Framework.Threading;
+
+[Flags]
+public enum ResettableCancellationTokenSourceOptions
 {
-    [Flags]
-    public enum ResettableCancellationTokenSourceOptions
-    {
-        None = 0x0,
-        CancelOnReset = 0x1,
-        CancelOnDispose = 0x2,
-    }
+    None = 0x0,
+    CancelOnReset = 0x1,
+    CancelOnDispose = 0x2,
 }

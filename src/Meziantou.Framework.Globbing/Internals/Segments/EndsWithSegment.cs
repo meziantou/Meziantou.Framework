@@ -1,32 +1,31 @@
-﻿namespace Meziantou.Framework.Globbing.Internals
+namespace Meziantou.Framework.Globbing.Internals;
+
+internal sealed class EndsWithSegment : Segment
 {
-    internal sealed class EndsWithSegment : Segment
+    private readonly StringComparison _stringComparison;
+
+    public EndsWithSegment(string value, bool ignoreCase)
     {
-        private readonly StringComparison _stringComparison;
+        Value = value;
+        _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+    }
 
-        public EndsWithSegment(string value, bool ignoreCase)
+    public string Value { get; }
+
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        var currentSegment = pathReader.CurrentSegment;
+        if (currentSegment.EndsWith(Value.AsSpan(), _stringComparison))
         {
-            Value = value;
-            _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            pathReader.ConsumeInSegment(currentSegment.Length);
+            return true;
         }
 
-        public string Value { get; }
+        return false;
+    }
 
-        public override bool IsMatch(ref PathReader pathReader)
-        {
-            var currentSegment = pathReader.CurrentSegment;
-            if (currentSegment.EndsWith(Value.AsSpan(), _stringComparison))
-            {
-                pathReader.ConsumeInSegment(currentSegment.Length);
-                return true;
-            }
-
-            return false;
-        }
-
-        public override string ToString()
-        {
-            return '*' + Value;
-        }
+    public override string ToString()
+    {
+        return '*' + Value;
     }
 }

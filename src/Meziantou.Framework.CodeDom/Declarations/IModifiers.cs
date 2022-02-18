@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+internal interface IModifiers
 {
-    internal interface IModifiers
-    {
-        Modifiers Modifiers { get; }
-    }
+    Modifiers Modifiers { get; }
 }

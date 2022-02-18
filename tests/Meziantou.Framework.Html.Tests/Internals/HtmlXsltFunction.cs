@@ -1,202 +1,201 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Globalization;
 using System.Text;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 
-namespace Meziantou.Framework.Html.Tests
+namespace Meziantou.Framework.Html.Tests;
+
+internal abstract class HtmlXsltFunction : IXsltContextFunction
 {
-    internal abstract class HtmlXsltFunction : IXsltContextFunction
+    protected HtmlXsltFunction(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
     {
-        protected HtmlXsltFunction(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
+        Context = context;
+        Prefix = prefix;
+        Name = name;
+        ArgTypes = argTypes;
+    }
+
+    public HtmlXsltContext Context { get; }
+    public string Prefix { get; }
+    public string Name { get; }
+    public XPathResultType[] ArgTypes { get; }
+
+    public static object CreateXsltArgument(HtmlXsltContext context) => new XsltArgument(context);
+
+    public abstract object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext);
+
+    public virtual int Maxargs => Minargs;
+
+    public virtual int Minargs => 1;
+
+    public virtual XPathResultType ReturnType => XPathResultType.String;
+
+    public static T ConvertTo<T>(object argument, T defaultValue)
+    {
+        if (argument == null)
+            return defaultValue;
+
+        if (argument is T convertedValue)
+            return convertedValue;
+
+        if (argument is XPathNodeIterator it)
         {
-            Context = context;
-            Prefix = prefix;
-            Name = name;
-            ArgTypes = argTypes;
-        }
-
-        public HtmlXsltContext Context { get; }
-        public string Prefix { get; }
-        public string Name { get; }
-        public XPathResultType[] ArgTypes { get; }
-
-        public static object CreateXsltArgument(HtmlXsltContext context) => new XsltArgument(context);
-
-        public abstract object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext);
-
-        public virtual int Maxargs => Minargs;
-
-        public virtual int Minargs => 1;
-
-        public virtual XPathResultType ReturnType => XPathResultType.String;
-
-        public static T ConvertTo<T>(object argument, T defaultValue)
-        {
-            if (argument == null)
+            if (!it.MoveNext())
                 return defaultValue;
 
-            if (argument is T convertedValue)
-                return convertedValue;
-
-            if (argument is XPathNodeIterator it)
-            {
-                if (!it.MoveNext())
-                    return defaultValue;
-
-                if (it.Current is HtmlNodeNavigator n && n.CurrentNode is T result)
-                    return result;
-
-                return defaultValue;
-            }
-
-            if (argument is IEnumerable enumerable && (argument is not string))
-            {
-                foreach (var arg in enumerable)
-                {
-                    if (arg is T result)
-                        return result;
-
-                    break;
-                }
-            }
+            if (it.Current is HtmlNodeNavigator n && n.CurrentNode is T result)
+                return result;
 
             return defaultValue;
         }
 
-        public static string ConvertToString(object argument, bool outer, string separator)
+        if (argument is IEnumerable enumerable && (argument is not string))
         {
-            if (argument == null)
+            foreach (var arg in enumerable)
+            {
+                if (arg is T result)
+                    return result;
+
+                break;
+            }
+        }
+
+        return defaultValue;
+    }
+
+    public static string ConvertToString(object argument, bool outer, string separator)
+    {
+        if (argument == null)
+            return null;
+
+        if (argument is string s)
+            return s;
+
+        if (argument is XPathNodeIterator it)
+        {
+            if (!it.MoveNext())
                 return null;
 
-            if (argument is string s)
-                return s;
-
-            if (argument is XPathNodeIterator it)
+            var sb = new StringBuilder();
+            do
             {
-                if (!it.MoveNext())
-                    return null;
-
-                var sb = new StringBuilder();
-                do
+                if (it.Current is HtmlNodeNavigator n && n.CurrentNode != null)
                 {
-                    if (it.Current is HtmlNodeNavigator n && n.CurrentNode != null)
-                    {
-                        if (sb.Length > 0 && separator != null)
-                        {
-                            sb.Append(separator);
-                        }
-
-                        if (n.CurrentNode is HtmlElement element)
-                        {
-                            var clone = (HtmlElement)element.Clone();
-                            sb.Append(outer ? clone.OuterHtml : clone.InnerHtml);
-                        }
-                        else
-                        {
-                            sb.Append(n.CurrentNode.Value);
-                        }
-                    }
-                }
-                while (it.MoveNext());
-                return sb.ToString();
-            }
-
-            if (argument is IEnumerable enumerable)
-            {
-                StringBuilder sb = null;
-                foreach (var arg in enumerable)
-                {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder();
-                    }
-
                     if (sb.Length > 0 && separator != null)
                     {
                         sb.Append(separator);
                     }
 
-                    var s2 = ConvertToString(arg, outer, separator);
-                    if (s2 != null)
+                    if (n.CurrentNode is HtmlElement element)
                     {
-                        sb.Append(s2);
+                        var clone = (HtmlElement)element.Clone();
+                        sb.Append(outer ? clone.OuterHtml : clone.InnerHtml);
+                    }
+                    else
+                    {
+                        sb.Append(n.CurrentNode.Value);
                     }
                 }
-
-                return sb?.ToString();
             }
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}", argument);
+            while (it.MoveNext());
+            return sb.ToString();
         }
 
-        internal static bool IsNull(object arg)
+        if (argument is IEnumerable enumerable)
         {
-            if (arg == null || Convert.IsDBNull(arg))
+            StringBuilder sb = null;
+            foreach (var arg in enumerable)
+            {
+                if (sb == null)
+                {
+                    sb = new StringBuilder();
+                }
+
+                if (sb.Length > 0 && separator != null)
+                {
+                    sb.Append(separator);
+                }
+
+                var s2 = ConvertToString(arg, outer, separator);
+                if (s2 != null)
+                {
+                    sb.Append(s2);
+                }
+            }
+
+            return sb?.ToString();
+        }
+
+        return string.Format(CultureInfo.InvariantCulture, "{0}", argument);
+    }
+
+    internal static bool IsNull(object arg)
+    {
+        if (arg == null || Convert.IsDBNull(arg))
+            return true;
+
+        if (arg is string)
+            return false;
+
+        if (arg is XPathNodeIterator it)
+        {
+            it = it.Clone();
+            if (!it.MoveNext())
                 return true;
 
-            if (arg is string)
+            object current = it.Current;
+            return IsNull(current);
+        }
+
+        if (arg is IEnumerable e)
+        {
+            foreach (var _ in e)
                 return false;
 
-            if (arg is XPathNodeIterator it)
-            {
-                it = it.Clone();
-                if (!it.MoveNext())
-                    return true;
+            return true;
+        }
+        return false;
+    }
 
-                object current = it.Current;
-                return IsNull(current);
-            }
-
-            if (arg is IEnumerable e)
-            {
-                foreach (var _ in e)
-                    return false;
-
-                return true;
-            }
-            return false;
+    private sealed class XsltArgument
+    {
+        public XsltArgument(HtmlXsltContext context)
+        {
+            Context = context;
         }
 
-        private sealed class XsltArgument
+        public HtmlXsltContext Context { get; }
+
+        public string Lowercase(object obj)
         {
-            public XsltArgument(HtmlXsltContext context)
-            {
-                Context = context;
-            }
-
-            public HtmlXsltContext Context { get; }
-
-            public string Lowercase(object obj)
-            {
-                return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, new[] { obj }, docContext: null);
-            }
-
-            // add methods as needed
+            return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, new[] { obj }, docContext: null);
         }
 
-        public static IXsltContextFunction GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
-        {
-            _ = prefix;
-            _ = argTypes;
-            if (string.Equals(name, "lowercase", StringComparison.Ordinal))
-                return new Lowercase(context, name);
+        // add methods as needed
+    }
 
-            return null;
+    public static IXsltContextFunction GetBuiltIn(HtmlXsltContext context, string prefix, string name, XPathResultType[] argTypes)
+    {
+        _ = prefix;
+        _ = argTypes;
+        if (string.Equals(name, "lowercase", StringComparison.Ordinal))
+            return new Lowercase(context, name);
+
+        return null;
+    }
+
+    public sealed class Lowercase : HtmlXsltFunction
+    {
+        public Lowercase(HtmlXsltContext context, string name)
+            : base(context, prefix: null, name, argTypes: null)
+        {
         }
 
-        public sealed class Lowercase : HtmlXsltFunction
+        [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
+        public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
         {
-            public Lowercase(HtmlXsltContext context, string name)
-                : base(context, prefix: null, name, argTypes: null)
-            {
-            }
-
-            [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "By design")]
-            public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
-            {
-                return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();
-            }
+            return ConvertToString(args, outer: false, separator: null)?.ToLowerInvariant();
         }
     }
 }

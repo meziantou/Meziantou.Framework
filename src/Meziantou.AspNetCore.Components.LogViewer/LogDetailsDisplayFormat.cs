@@ -1,8 +1,7 @@
-﻿namespace Meziantou.AspNetCore.Components
+namespace Meziantou.AspNetCore.Components;
+
+public enum LogDetailsDisplayFormat
 {
-    public enum LogDetailsDisplayFormat
-    {
-        Table,
-        Json,
-    }
+    Table,
+    Json,
 }

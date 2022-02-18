@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.CodeOwners
+namespace Meziantou.Framework.CodeOwners;
+
+public enum CodeOwnersEntryType
 {
-    public enum CodeOwnersEntryType
-    {
-        Username,
-        EmailAddress,
-    }
+    Username,
+    EmailAddress,
 }

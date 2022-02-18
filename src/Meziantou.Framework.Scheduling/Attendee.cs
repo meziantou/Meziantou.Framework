@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.Scheduling
-{
-    public sealed class Attendee
-    {
-        //RFC2445 - 4.8.4.1 Attendee
+namespace Meziantou.Framework.Scheduling;
 
-        public CalendarUserAddress? Address { get; set; }
-    }
+public sealed class Attendee
+{
+    //RFC2445 - 4.8.4.1 Attendee
+
+    public CalendarUserAddress? Address { get; set; }
 }

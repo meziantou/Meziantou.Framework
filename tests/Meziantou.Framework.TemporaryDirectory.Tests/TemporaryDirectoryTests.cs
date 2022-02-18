@@ -1,71 +1,70 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Xunit;
 
-namespace Meziantou.Framework.Tests
+namespace Meziantou.Framework.Tests;
+
+public class TemporaryDirectoryTests
 {
-    public class TemporaryDirectoryTests
+    [Fact]
+    public void CreateInParallel()
     {
-        [Fact]
-        public void CreateInParallel()
+        const int Iterations = 400;
+        var dirs = new TemporaryDirectory[Iterations];
+
+        try
         {
-            const int Iterations = 400;
-            var dirs = new TemporaryDirectory[Iterations];
-
-            try
+            Parallel.For(0, Iterations, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
             {
-                Parallel.For(0, Iterations, new ParallelOptions { MaxDegreeOfParallelism = 50 }, i =>
-                {
-                    dirs[i] = TemporaryDirectory.Create();
-                    dirs[i].CreateEmptyFile("test.txt");
-                });
+                dirs[i] = TemporaryDirectory.Create();
+                dirs[i].CreateEmptyFile("test.txt");
+            });
 
-                dirs.Select(dir => dir.FullPath).Distinct().Should().HaveCount(Iterations);
+            dirs.Select(dir => dir.FullPath).Distinct().Should().HaveCount(Iterations);
 
-                foreach (var dir in dirs)
-                {
-                    dirs.Should().OnlyContain(dir => Directory.Exists(dir.FullPath));
-                }
-            }
-            finally
+            foreach (var dir in dirs)
             {
-                foreach (var item in dirs)
-                {
-                    item?.Dispose();
-                }
+                dirs.Should().OnlyContain(dir => Directory.Exists(dir.FullPath));
             }
         }
-
-        [Fact]
-        public void DisposedDeletedDirectory()
+        finally
         {
-            FullPath path;
-            using (var dir = TemporaryDirectory.Create())
+            foreach (var item in dirs)
             {
-                path = dir.FullPath;
-                File.WriteAllText(dir.GetFullPath("a.txt"), "content");
+                item?.Dispose();
             }
+        }
+    }
 
-            Directory.Exists(path).Should().BeFalse();
+    [Fact]
+    public void DisposedDeletedDirectory()
+    {
+        FullPath path;
+        using (var dir = TemporaryDirectory.Create())
+        {
+            path = dir.FullPath;
+            File.WriteAllText(dir.GetFullPath("a.txt"), "content");
         }
 
-        [Fact]
-        public async Task DisposeAsyncDeletedDirectory()
+        Directory.Exists(path).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DisposeAsyncDeletedDirectory()
+    {
+        FullPath path;
+        await using (var dir = TemporaryDirectory.Create())
         {
-            FullPath path;
-            await using (var dir = TemporaryDirectory.Create())
-            {
-                path = dir.FullPath;
+            path = dir.FullPath;
 
 #if NET461 || NET472
-                File.WriteAllText(dir.GetFullPath("a.txt"), "content");
+            File.WriteAllText(dir.GetFullPath("a.txt"), "content");
 #elif NETCOREAPP3_1_OR_GREATER
-                await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
+            await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
 #else
 #error Platform not supported
 #endif
-            }
-
-            Directory.Exists(path).Should().BeFalse();
         }
+
+        Directory.Exists(path).Should().BeFalse();
     }
 }

@@ -1,503 +1,502 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Meziantou.Framework.Globbing.Internals;
 using Meziantou.Framework.Globbing.Internals.Segments;
 
-namespace Meziantou.Framework.Globbing
+namespace Meziantou.Framework.Globbing;
+
+internal static class GlobParser
 {
-    internal static class GlobParser
+    private static readonly char[] s_separator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+
+    public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
-        private static readonly char[] s_separator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
-
-        public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+        result = null;
+        if (pattern.IsEmpty)
         {
-            result = null;
-            if (pattern.IsEmpty)
+            errorMessage = "The pattern is empty";
+            return false;
+        }
+
+        var ignoreCase = options.HasFlag(GlobOptions.IgnoreCase);
+
+        var exclude = false;
+        var segments = new List<Segment>();
+        List<Segment>? subSegments = null;
+        List<string>? setSubsegment = null;
+        List<CharacterRange>? rangeSubsegment = null;
+        char? rangeStart = null;
+        var rangeInverse = false;
+
+        if (options.HasFlag(GlobOptions.Git))
+        {
+            // Check if there is a separator at start or middle of the string
+            if (pattern[0..^1].IndexOf('/') < 0)
             {
-                errorMessage = "The pattern is empty";
-                return false;
+                segments.Add(RecursiveMatchAllSegment.Instance);
             }
+        }
 
-            var ignoreCase = options.HasFlag(GlobOptions.IgnoreCase);
+        var escape = false;
+        var parserContext = GlobParserContext.Segment;
 
-            var exclude = false;
-            var segments = new List<Segment>();
-            List<Segment>? subSegments = null;
-            List<string>? setSubsegment = null;
-            List<CharacterRange>? rangeSubsegment = null;
-            char? rangeStart = null;
-            var rangeInverse = false;
-
-            if (options.HasFlag(GlobOptions.Git))
+        Span<char> sbSpan = stackalloc char[128];
+        var currentLiteral = new ValueStringBuilder(sbSpan);
+        try
+        {
+            for (var i = 0; i < pattern.Length; i++)
             {
-                // Check if there is a separator at start or middle of the string
-                if (pattern[0..^1].IndexOf('/') < 0)
+                var c = pattern[i];
+                if (escape)
                 {
-                    segments.Add(RecursiveMatchAllSegment.Instance);
+                    currentLiteral.Append(c);
+                    escape = false;
+                    continue;
                 }
-            }
 
-            var escape = false;
-            var parserContext = GlobParserContext.Segment;
-
-            Span<char> sbSpan = stackalloc char[128];
-            var currentLiteral = new ValueStringBuilder(sbSpan);
-            try
-            {
-                for (var i = 0; i < pattern.Length; i++)
+                if (c == '!' && i == 0)
                 {
-                    var c = pattern[i];
-                    if (escape)
+                    exclude = true;
+                    continue;
+                }
+
+                if (parserContext == GlobParserContext.Segment)
+                {
+                    if (c == '/')
                     {
-                        currentLiteral.Append(c);
-                        escape = false;
+                        FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
                         continue;
                     }
-
-                    if (c == '!' && i == 0)
+                    else if (c == '.')
                     {
-                        exclude = true;
-                        continue;
-                    }
-
-                    if (parserContext == GlobParserContext.Segment)
-                    {
-                        if (c == '/')
+                        if (subSegments == null && currentLiteral.Length == 0)
                         {
-                            FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
-                            continue;
-                        }
-                        else if (c == '.')
-                        {
-                            if (subSegments == null && currentLiteral.Length == 0)
+                            if (EndOfSegmentEqual(pattern[i..], ".."))
                             {
-                                if (EndOfSegmentEqual(pattern[i..], ".."))
+                                if (segments.Count == 0)
                                 {
-                                    if (segments.Count == 0)
-                                    {
-                                        errorMessage = "the pattern cannot start with '..'";
-                                        return false;
-                                    }
-
-                                    if (segments[^1] is RecursiveMatchAllSegment)
-                                    {
-                                        errorMessage = "the pattern cannot contain '..' after a '**'";
-                                        return false;
-                                    }
-
-                                    segments.RemoveAt(segments.Count - 1);
-                                    i += 2;
-                                    continue;
+                                    errorMessage = "the pattern cannot start with '..'";
+                                    return false;
                                 }
 
-                                if (EndOfSegmentEqual(pattern[i..], "."))
+                                if (segments[^1] is RecursiveMatchAllSegment)
                                 {
-                                    i += 1;
-                                    continue;
-                                }
-                            }
-                        }
-                        else if (c == '?')
-                        {
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAnyCharacterSegment.Instance);
-                            continue;
-                        }
-                        else if (c == '*')
-                        {
-                            if (subSegments == null && currentLiteral.Length == 0)
-                            {
-                                if (EndOfSegmentEqual(pattern[i..], "**"))
-                                {
-                                    // Merge two consecutive '**' (**/**)
-                                    if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
-                                    {
-                                        segments.Add(RecursiveMatchAllSegment.Instance);
-                                    }
-
-                                    i += 2;
-                                    continue;
+                                    errorMessage = "the pattern cannot contain '..' after a '**'";
+                                    return false;
                                 }
 
-                                if (EndOfSegmentEqual(pattern[i..], "*"))
-                                {
-                                    segments.Add(MatchAllSegment.Instance);
-                                    i += 1;
-                                    continue;
-                                }
-                            }
-
-                            // Merge 2 consecutive '*'
-                            if (currentLiteral.Length == 0 && subSegments != null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
+                                segments.RemoveAt(segments.Count - 1);
+                                i += 2;
                                 continue;
-
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAllSubSegment.Instance);
-                            continue;
-                        }
-                        else if (c == '{') // Start LiteralSet
-                        {
-                            Debug.Assert(setSubsegment == null);
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
-                            parserContext = GlobParserContext.LiteralSet;
-                            setSubsegment = new List<string>();
-                            continue;
-                        }
-                        else if (c == '[') // Range
-                        {
-                            Debug.Assert(rangeSubsegment == null);
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
-                            parserContext = GlobParserContext.Range;
-                            rangeSubsegment = new List<CharacterRange>();
-                            rangeInverse = i + 1 < pattern.Length && pattern[i + 1] == '!';
-                            if (rangeInverse)
-                            {
-                                i++;
                             }
-                            continue;
+
+                            if (EndOfSegmentEqual(pattern[i..], "."))
+                            {
+                                i += 1;
+                                continue;
+                            }
                         }
                     }
-                    else if (parserContext == GlobParserContext.LiteralSet)
+                    else if (c == '?')
                     {
-                        Debug.Assert(setSubsegment != null);
-                        if (c == ',') // end of current value
+                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAnyCharacterSegment.Instance);
+                        continue;
+                    }
+                    else if (c == '*')
+                    {
+                        if (subSegments == null && currentLiteral.Length == 0)
                         {
-                            setSubsegment.Add(currentLiteral.AsSpan().ToString());
-                            currentLiteral.Clear();
-                            continue;
-                        }
-                        else if (c == '}') // end of literal set
-                        {
-                            setSubsegment.Add(currentLiteral.AsSpan().ToString());
-                            currentLiteral.Clear();
-
-                            if (setSubsegment.Any(s => s.IndexOfAny(s_separator) >= 0))
+                            if (EndOfSegmentEqual(pattern[i..], "**"))
                             {
-                                errorMessage = "set contains a path separator";
+                                // Merge two consecutive '**' (**/**)
+                                if (segments.Count == 0 || segments[^1] is not RecursiveMatchAllSegment)
+                                {
+                                    segments.Add(RecursiveMatchAllSegment.Instance);
+                                }
+
+                                i += 2;
+                                continue;
+                            }
+
+                            if (EndOfSegmentEqual(pattern[i..], "*"))
+                            {
+                                segments.Add(MatchAllSegment.Instance);
+                                i += 1;
+                                continue;
+                            }
+                        }
+
+                        // Merge 2 consecutive '*'
+                        if (currentLiteral.Length == 0 && subSegments != null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
+                            continue;
+
+                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAllSubSegment.Instance);
+                        continue;
+                    }
+                    else if (c == '{') // Start LiteralSet
+                    {
+                        Debug.Assert(setSubsegment == null);
+                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
+                        parserContext = GlobParserContext.LiteralSet;
+                        setSubsegment = new List<string>();
+                        continue;
+                    }
+                    else if (c == '[') // Range
+                    {
+                        Debug.Assert(rangeSubsegment == null);
+                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
+                        parserContext = GlobParserContext.Range;
+                        rangeSubsegment = new List<CharacterRange>();
+                        rangeInverse = i + 1 < pattern.Length && pattern[i + 1] == '!';
+                        if (rangeInverse)
+                        {
+                            i++;
+                        }
+                        continue;
+                    }
+                }
+                else if (parserContext == GlobParserContext.LiteralSet)
+                {
+                    Debug.Assert(setSubsegment != null);
+                    if (c == ',') // end of current value
+                    {
+                        setSubsegment.Add(currentLiteral.AsSpan().ToString());
+                        currentLiteral.Clear();
+                        continue;
+                    }
+                    else if (c == '}') // end of literal set
+                    {
+                        setSubsegment.Add(currentLiteral.AsSpan().ToString());
+                        currentLiteral.Clear();
+
+                        if (setSubsegment.Any(s => s.IndexOfAny(s_separator) >= 0))
+                        {
+                            errorMessage = "set contains a path separator";
+                            return false;
+                        }
+
+                        AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSegment(setSubsegment.ToArray(), ignoreCase));
+                        setSubsegment = null;
+                        parserContext = GlobParserContext.Segment;
+                        continue;
+                    }
+                }
+                else if (parserContext == GlobParserContext.Range)
+                {
+                    Debug.Assert(rangeSubsegment != null);
+                    if (c == ']') // end of literal set, except if empty []] or [!]]
+                    {
+                        // [a-] => '-' is considered as a character
+                        if (rangeStart.HasValue)
+                        {
+                            rangeSubsegment.Add(new CharacterRange(rangeStart.GetValueOrDefault()));
+                            rangeSubsegment.Add(new CharacterRange('-'));
+                            rangeStart = null;
+                        }
+
+                        if (rangeSubsegment.Count > 0)
+                        {
+                            if (rangeSubsegment.Any(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
+                            {
+                                errorMessage = "range contains a path separator";
                                 return false;
                             }
 
-                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, new LiteralSetSegment(setSubsegment.ToArray(), ignoreCase));
-                            setSubsegment = null;
+                            AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, ignoreCase));
+                            rangeSubsegment = null;
                             parserContext = GlobParserContext.Segment;
                             continue;
                         }
                     }
-                    else if (parserContext == GlobParserContext.Range)
+
+                    if (rangeStart.HasValue)
                     {
-                        Debug.Assert(rangeSubsegment != null);
-                        if (c == ']') // end of literal set, except if empty []] or [!]]
+                        var rangeStartValue = rangeStart.GetValueOrDefault();
+                        if (rangeStartValue > c)
                         {
-                            // [a-] => '-' is considered as a character
-                            if (rangeStart.HasValue)
-                            {
-                                rangeSubsegment.Add(new CharacterRange(rangeStart.GetValueOrDefault()));
-                                rangeSubsegment.Add(new CharacterRange('-'));
-                                rangeStart = null;
-                            }
-
-                            if (rangeSubsegment.Count > 0)
-                            {
-                                if (rangeSubsegment.Any(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
-                                {
-                                    errorMessage = "range contains a path separator";
-                                    return false;
-                                }
-
-                                AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, CreateRangeSubsegment(rangeSubsegment, rangeInverse, ignoreCase));
-                                rangeSubsegment = null;
-                                parserContext = GlobParserContext.Segment;
-                                continue;
-                            }
+                            errorMessage = $"Invalid range '{rangeStartValue}' > '{c}'";
+                            return false;
                         }
 
-                        if (rangeStart.HasValue)
+                        rangeSubsegment.Add(new CharacterRange(rangeStartValue, c));
+                        rangeStart = null;
+                    }
+                    else
+                    {
+                        if (i + 1 < pattern.Length && pattern[i + 1] == '-')
                         {
-                            var rangeStartValue = rangeStart.GetValueOrDefault();
-                            if (rangeStartValue > c)
-                            {
-                                errorMessage = $"Invalid range '{rangeStartValue}' > '{c}'";
-                                return false;
-                            }
-
-                            rangeSubsegment.Add(new CharacterRange(rangeStartValue, c));
-                            rangeStart = null;
+                            rangeStart = c;
+                            i++;
                         }
                         else
                         {
-                            if (i + 1 < pattern.Length && pattern[i + 1] == '-')
-                            {
-                                rangeStart = c;
-                                i++;
-                            }
-                            else
-                            {
-                                rangeSubsegment.Add(new CharacterRange(c));
-                            }
+                            rangeSubsegment.Add(new CharacterRange(c));
                         }
-
-                        continue;
                     }
 
-                    switch (c)
-                    {
-                        case '\\': // Escape next character
-                            escape = true;
-                            break;
-
-                        default:
-                            currentLiteral.Append(c);
-                            break;
-                    }
+                    continue;
                 }
 
-                if (parserContext != GlobParserContext.Segment)
+                switch (c)
                 {
-                    errorMessage = $"The '{parserContext}' is not complete";
-                    return false;
+                    case '\\': // Escape next character
+                        escape = true;
+                        break;
+
+                    default:
+                        currentLiteral.Append(c);
+                        break;
                 }
-
-                // If the last character is a '\'
-                if (escape)
-                {
-                    errorMessage = "Expecting a character after '\\'";
-                    return false;
-                }
-
-                FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
-
-                if (options.HasFlag(GlobOptions.Git))
-                {
-                    if (pattern[^1] == '/')
-                    {
-                        segments.Add(RecursiveMatchAllSegment.Instance);
-                        segments.Add(MatchAllSegment.Instance);
-                    }
-                }
-
-
-                errorMessage = null;
-                result = CreateGlob(segments, exclude, ignoreCase);
-                return true;
-            }
-            finally
-            {
-                currentLiteral.Dispose();
             }
 
-            static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
+            if (parserContext != GlobParserContext.Segment)
             {
-                if (subSegments == null)
-                {
-                    subSegments = new List<Segment>();
-                }
+                errorMessage = $"The '{parserContext}' is not complete";
+                return false;
+            }
 
+            // If the last character is a '\'
+            if (escape)
+            {
+                errorMessage = "Expecting a character after '\\'";
+                return false;
+            }
+
+            FinishSegment(segments, ref subSegments, ref currentLiteral, ignoreCase);
+
+            if (options.HasFlag(GlobOptions.Git))
+            {
+                if (pattern[^1] == '/')
+                {
+                    segments.Add(RecursiveMatchAllSegment.Instance);
+                    segments.Add(MatchAllSegment.Instance);
+                }
+            }
+
+
+            errorMessage = null;
+            result = CreateGlob(segments, exclude, ignoreCase);
+            return true;
+        }
+        finally
+        {
+            currentLiteral.Dispose();
+        }
+
+        static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
+        {
+            if (subSegments == null)
+            {
+                subSegments = new List<Segment>();
+            }
+
+            if (currentLiteral.Length > 0)
+            {
+                subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                currentLiteral.Clear();
+            }
+
+            if (subSegment != null)
+            {
+                subSegments.Add(subSegment);
+            }
+        }
+
+        static void FinishSegment(List<Segment> segments, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
+        {
+            if (subSegments != null)
+            {
                 if (currentLiteral.Length > 0)
                 {
                     subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
                     currentLiteral.Clear();
                 }
 
-                if (subSegment != null)
+                segments.Add(CreateSegment(subSegments, ignoreCase));
+                subSegments = null;
+            }
+            else if (currentLiteral.Length > 0)
+            {
+                segments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                currentLiteral.Clear();
+            }
+        }
+    }
+
+    private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase)
+    {
+        // Optimize segments
+        if (segments.Count >= 2)
+        {
+            if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
+            {
+                var lastSegment = MatchNonEmptyTextSegment.Instance;
+                segments.RemoveRange(segments.Count - 2, 2);
+                segments.Add(lastSegment);
+            }
+            else if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
+            {
+                var lastSegment = new MatchAllEndsWithSegment(endsWith.Value, ignoreCase);
+                segments.RemoveRange(segments.Count - 2, 2);
+                segments.Add(lastSegment);
+            }
+            else if (segments[^2] is RecursiveMatchAllSegment) // **/segment
+            {
+                var lastSegment = new LastSegment(segments[^1]);
+                segments.RemoveRange(segments.Count - 2, 2);
+                segments.Add(lastSegment);
+            }
+        }
+
+        return new Glob(segments.ToArray(), exclude ? GlobMode.Exclude : GlobMode.Include);
+    }
+
+    private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected)
+    {
+        // Could be "{rest}/" or "{rest}"$
+        if (rest.Length == expected.Length)
+            return rest.SequenceEqual(expected.AsSpan());
+
+        if (rest.Length > expected.Length)
+            return rest.StartsWith(expected.AsSpan(), StringComparison.Ordinal) && rest[expected.Length] == '/';
+
+        return false;
+    }
+
+    private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
+    {
+        var singleCharRanges = ranges.Where(r => r.IsSingleCharacterRange).Select(r => r.Min).ToArray();
+        var rangeCharRanges = ranges.Where(r => !r.IsSingleCharacterRange).ToArray();
+
+        if (singleCharRanges.Length > 0)
+        {
+            if (rangeCharRanges.Length == 0)
+                return CreateCharacterSet(singleCharRanges, inverse, ignoreCase);
+        }
+        else if (rangeCharRanges.Length == 1)
+        {
+            return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
+        }
+
+        // Inverse flags is set on the combination
+        var segments = rangeCharRanges.Select(r => CreateCharacterRange(r, ignoreCase, inverse: false));
+
+        if (singleCharRanges.Length > 0)
+        {
+            segments = segments.Prepend(CreateCharacterSet(singleCharRanges, inverse: false, ignoreCase));
+        }
+
+        return new OrSegment(segments.ToArray(), inverse);
+    }
+
+    private static Segment CreateCharacterSet(char[] set, bool inverse, bool ignoreCase)
+    {
+        return inverse ? new CharacterSetInverseSegment(new string(set), ignoreCase) : new CharacterSetSegment(new string(set), ignoreCase);
+    }
+
+    private static Segment CreateCharacterRange(CharacterRange range, bool ignoreCase, bool inverse)
+    {
+        return (ignoreCase, inverse) switch
+        {
+            (ignoreCase: false, inverse: false) => new CharacterRangeSegment(range),
+            (ignoreCase: false, inverse: true) => new CharacterRangeInverseSegment(range),
+            (ignoreCase: true, inverse: false) => new CharacterRangeIgnoreCaseSegment(range),
+            (ignoreCase: true, inverse: true) => new CharacterRangeIgnoreCaseInverseSegment(range),
+        };
+    }
+
+    private static Segment CreateSegment(List<Segment> parts, bool ignoreCase)
+    {
+        Debug.Assert(parts.Count > 0);
+
+        // Concat Literal and single character sets (abc[d])
+        for (var i = parts.Count - 2; i >= 0; i--)
+        {
+            var s1 = GetString(parts[i]);
+            var s2 = GetString(parts[i + 1]);
+
+            if (s1 is null || s2 is null)
+                continue;
+
+            // Merge
+            var literal = new LiteralSegment(s1 + s2, ignoreCase);
+            parts[i] = literal;
+            parts.RemoveAt(i + 1);
+
+            static string? GetString(Segment segment)
+            {
+                return segment switch
                 {
-                    subSegments.Add(subSegment);
-                }
+                    LiteralSegment literal => literal.Value,
+                    CharacterSetSegment set when set.Set.Length == 1 => set.Set,
+                    _ => null,
+                };
+            }
+        }
+
+        // Try to optimize common cases
+        if (parts.Count == 2)
+        {
+            // Starts with: test.*
+            if (parts[1] is MatchAllSubSegment && parts[0] is LiteralSegment startsWithLiteral)
+                return new StartsWithSegment(startsWithLiteral.Value, ignoreCase);
+        }
+
+        if (parts.Count > 2)
+        {
+            if (parts.Count > 2 && parts[^1] is MatchAllSubSegment && parts[^3] is MatchAllSubSegment && parts[^2] is LiteralSegment containsLiteral) // Contains: *test*
+            {
+                parts.RemoveRange(parts.Count - 3, 3);
+                parts.Add(new ContainsSegment(containsLiteral.Value, ignoreCase));
+            }
+        }
+
+        if (parts.Count >= 2)
+        {
+            if (parts[^2] is MatchAllSubSegment && parts[^1] is LiteralSegment endsWithLiteral) // Ends with: *.txt
+            {
+                parts.RemoveRange(parts.Count - 2, 2);
+                parts.Add(new EndsWithSegment(endsWithLiteral.Value, ignoreCase));
             }
 
-            static void FinishSegment(List<Segment> segments, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
+            // *(pattern) => Check if the first character is known and easily validatable
+            // /, \, Literal[0], CharacterSet [abc], CharacterRange [a-z] if interval is small (<=5), LiteralSet {abc,def}
+            for (var i = 0; i < parts.Count - 1; i++)
             {
-                if (subSegments != null)
+                if (parts[i] is MatchAllSubSegment)
                 {
-                    if (currentLiteral.Length > 0)
+                    var next = parts[i + 1];
+                    var nextCharacters = next switch
                     {
-                        subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
-                        currentLiteral.Clear();
-                    }
-
-                    segments.Add(CreateSegment(subSegments, ignoreCase));
-                    subSegments = null;
-                }
-                else if (currentLiteral.Length > 0)
-                {
-                    segments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
-                    currentLiteral.Clear();
-                }
-            }
-        }
-
-        private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase)
-        {
-            // Optimize segments
-            if (segments.Count >= 2)
-            {
-                if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is MatchAllSegment) // **/*
-                {
-                    var lastSegment = MatchNonEmptyTextSegment.Instance;
-                    segments.RemoveRange(segments.Count - 2, 2);
-                    segments.Add(lastSegment);
-                }
-                else if (segments[^2] is RecursiveMatchAllSegment && segments[^1] is EndsWithSegment endsWith) // **/*.txt
-                {
-                    var lastSegment = new MatchAllEndsWithSegment(endsWith.Value, ignoreCase);
-                    segments.RemoveRange(segments.Count - 2, 2);
-                    segments.Add(lastSegment);
-                }
-                else if (segments[^2] is RecursiveMatchAllSegment) // **/segment
-                {
-                    var lastSegment = new LastSegment(segments[^1]);
-                    segments.RemoveRange(segments.Count - 2, 2);
-                    segments.Add(lastSegment);
-                }
-            }
-
-            return new Glob(segments.ToArray(), exclude ? GlobMode.Exclude : GlobMode.Include);
-        }
-
-        private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected)
-        {
-            // Could be "{rest}/" or "{rest}"$
-            if (rest.Length == expected.Length)
-                return rest.SequenceEqual(expected.AsSpan());
-
-            if (rest.Length > expected.Length)
-                return rest.StartsWith(expected.AsSpan(), StringComparison.Ordinal) && rest[expected.Length] == '/';
-
-            return false;
-        }
-
-        private static Segment CreateRangeSubsegment(List<CharacterRange> ranges, bool inverse, bool ignoreCase)
-        {
-            var singleCharRanges = ranges.Where(r => r.IsSingleCharacterRange).Select(r => r.Min).ToArray();
-            var rangeCharRanges = ranges.Where(r => !r.IsSingleCharacterRange).ToArray();
-
-            if (singleCharRanges.Length > 0)
-            {
-                if (rangeCharRanges.Length == 0)
-                    return CreateCharacterSet(singleCharRanges, inverse, ignoreCase);
-            }
-            else if (rangeCharRanges.Length == 1)
-            {
-                return CreateCharacterRange(rangeCharRanges[0], ignoreCase, inverse);
-            }
-
-            // Inverse flags is set on the combination
-            var segments = rangeCharRanges.Select(r => CreateCharacterRange(r, ignoreCase, inverse: false));
-
-            if (singleCharRanges.Length > 0)
-            {
-                segments = segments.Prepend(CreateCharacterSet(singleCharRanges, inverse: false, ignoreCase));
-            }
-
-            return new OrSegment(segments.ToArray(), inverse);
-        }
-
-        private static Segment CreateCharacterSet(char[] set, bool inverse, bool ignoreCase)
-        {
-            return inverse ? new CharacterSetInverseSegment(new string(set), ignoreCase) : new CharacterSetSegment(new string(set), ignoreCase);
-        }
-
-        private static Segment CreateCharacterRange(CharacterRange range, bool ignoreCase, bool inverse)
-        {
-            return (ignoreCase, inverse) switch
-            {
-                (ignoreCase: false, inverse: false) => new CharacterRangeSegment(range),
-                (ignoreCase: false, inverse: true) => new CharacterRangeInverseSegment(range),
-                (ignoreCase: true, inverse: false) => new CharacterRangeIgnoreCaseSegment(range),
-                (ignoreCase: true, inverse: true) => new CharacterRangeIgnoreCaseInverseSegment(range),
-            };
-        }
-
-        private static Segment CreateSegment(List<Segment> parts, bool ignoreCase)
-        {
-            Debug.Assert(parts.Count > 0);
-
-            // Concat Literal and single character sets (abc[d])
-            for (var i = parts.Count - 2; i >= 0; i--)
-            {
-                var s1 = GetString(parts[i]);
-                var s2 = GetString(parts[i + 1]);
-
-                if (s1 is null || s2 is null)
-                    continue;
-
-                // Merge
-                var literal = new LiteralSegment(s1 + s2, ignoreCase);
-                parts[i] = literal;
-                parts.RemoveAt(i + 1);
-
-                static string? GetString(Segment segment)
-                {
-                    return segment switch
-                    {
-                        LiteralSegment literal => literal.Value,
-                        CharacterSetSegment set when set.Set.Length == 1 => set.Set,
+                        LiteralSegment literal => new List<char> { literal.Value[0] },
+                        CharacterSetSegment characterSet => characterSet.Set.ToList(),
+                        CharacterRangeSegment characterRange when characterRange.Range.Length < 3 => characterRange.Range.EnumerateCharacters().ToList(),
+                        LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),
                         _ => null,
                     };
-                }
-            }
 
-            // Try to optimize common cases
-            if (parts.Count == 2)
-            {
-                // Starts with: test.*
-                if (parts[1] is MatchAllSubSegment && parts[0] is LiteralSegment startsWithLiteral)
-                    return new StartsWithSegment(startsWithLiteral.Value, ignoreCase);
-            }
-
-            if (parts.Count > 2)
-            {
-                if (parts.Count > 2 && parts[^1] is MatchAllSubSegment && parts[^3] is MatchAllSubSegment && parts[^2] is LiteralSegment containsLiteral) // Contains: *test*
-                {
-                    parts.RemoveRange(parts.Count - 3, 3);
-                    parts.Add(new ContainsSegment(containsLiteral.Value, ignoreCase));
-                }
-            }
-
-            if (parts.Count >= 2)
-            {
-                if (parts[^2] is MatchAllSubSegment && parts[^1] is LiteralSegment endsWithLiteral) // Ends with: *.txt
-                {
-                    parts.RemoveRange(parts.Count - 2, 2);
-                    parts.Add(new EndsWithSegment(endsWithLiteral.Value, ignoreCase));
-                }
-
-                // *(pattern) => Check if the first character is known and easily validatable
-                // /, \, Literal[0], CharacterSet [abc], CharacterRange [a-z] if interval is small (<=5), LiteralSet {abc,def}
-                for (var i = 0; i < parts.Count - 1; i++)
-                {
-                    if (parts[i] is MatchAllSubSegment)
+                    if (nextCharacters != null)
                     {
-                        var next = parts[i + 1];
-                        var nextCharacters = next switch
+                        nextCharacters.Add(Path.DirectorySeparatorChar);
+                        if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
                         {
-                            LiteralSegment literal => new List<char> { literal.Value[0] },
-                            CharacterSetSegment characterSet => characterSet.Set.ToList(),
-                            CharacterRangeSegment characterRange when characterRange.Range.Length < 3 => characterRange.Range.EnumerateCharacters().ToList(),
-                            LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),
-                            _ => null,
-                        };
-
-                        if (nextCharacters != null)
-                        {
-                            nextCharacters.Add(Path.DirectorySeparatorChar);
-                            if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
-                            {
-                                nextCharacters.Add(Path.AltDirectorySeparatorChar);
-                            }
-
-                            parts.Insert(i, new ConsumeSegmentUntilSegment(nextCharacters.ToArray()));
-                            i++;
+                            nextCharacters.Add(Path.AltDirectorySeparatorChar);
                         }
+
+                        parts.Insert(i, new ConsumeSegmentUntilSegment(nextCharacters.ToArray()));
+                        i++;
                     }
                 }
             }
-
-            if (parts[^1] is MatchAllSubSegment)
-            {
-                parts[^1] = MatchAllEndOfSegment.Instance;
-            }
-
-            if (parts.Count == 1)
-                return parts[0];
-
-            return new RaggedSegment(parts.ToArray());
         }
+
+        if (parts[^1] is MatchAllSubSegment)
+        {
+            parts[^1] = MatchAllEndOfSegment.Instance;
+        }
+
+        if (parts.Count == 1)
+            return parts[0];
+
+        return new RaggedSegment(parts.ToArray());
     }
 }

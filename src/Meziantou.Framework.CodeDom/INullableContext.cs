@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public interface INullableContext
 {
-    public interface INullableContext
-    {
-        NullableContext NullableContext { get; }
-    }
+    NullableContext NullableContext { get; }
 }

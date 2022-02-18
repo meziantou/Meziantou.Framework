@@ -1,28 +1,27 @@
-﻿using System.Windows.Markup;
+using System.Windows.Markup;
 
-namespace Meziantou.Framework.WPF
+namespace Meziantou.Framework.WPF;
+
+[MarkupExtensionReturnType(typeof(IEnumerable<LocalizedEnumValue>))]
+public sealed class LocalizedEnumValuesExtension : MarkupExtension
 {
-    [MarkupExtensionReturnType(typeof(IEnumerable<LocalizedEnumValue>))]
-    public sealed class LocalizedEnumValuesExtension : MarkupExtension
+    public LocalizedEnumValuesExtension()
     {
-        public LocalizedEnumValuesExtension()
-        {
-        }
+    }
 
-        public LocalizedEnumValuesExtension(Type enumType)
-        {
-            EnumType = enumType;
-        }
+    public LocalizedEnumValuesExtension(Type enumType)
+    {
+        EnumType = enumType;
+    }
 
-        [ConstructorArgument("enumType")]
-        public Type? EnumType { get; set; }
+    [ConstructorArgument("enumType")]
+    public Type? EnumType { get; set; }
 
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            if (EnumType == null)
-                throw new InvalidOperationException("The enum type is not set");
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        if (EnumType == null)
+            throw new InvalidOperationException("The enum type is not set");
 
-            return EnumLocalizationUtilities.GetEnumLocalization(EnumType);
-        }
+        return EnumLocalizationUtilities.GetEnumLocalization(EnumType);
     }
 }

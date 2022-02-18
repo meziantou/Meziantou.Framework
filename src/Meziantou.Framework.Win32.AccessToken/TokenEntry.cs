@@ -1,12 +1,11 @@
-﻿namespace Meziantou.Framework.Win32
-{
-    public sealed class TokenEntry
-    {
-        public TokenEntry(SecurityIdentifier sid!!)
-        {
-            Sid = sid;
-        }
+namespace Meziantou.Framework.Win32;
 
-        public SecurityIdentifier Sid { get; }
+public sealed class TokenEntry
+{
+    public TokenEntry(SecurityIdentifier sid!!)
+    {
+        Sid = sid;
     }
+
+    public SecurityIdentifier Sid { get; }
 }

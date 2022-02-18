@@ -1,15 +1,14 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public enum UnaryOperator
 {
-    public enum UnaryOperator
-    {
-        None,
-        Not,
-        Complement,
-        Plus,
-        Minus,
-        PreIncrement,
-        PreDecrement,
-        PostIncrement,
-        PostDecrement,
-    }
+    None,
+    Not,
+    Complement,
+    Plus,
+    Minus,
+    PreIncrement,
+    PreDecrement,
+    PostIncrement,
+    PostDecrement,
 }

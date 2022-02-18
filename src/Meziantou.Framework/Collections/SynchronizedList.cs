@@ -1,139 +1,138 @@
-﻿using System.Collections;
+using System.Collections;
 
-namespace Meziantou.Framework.Collections
+namespace Meziantou.Framework.Collections;
+
+public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
 {
-    public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
+    private readonly List<T> _list = new();
+
+    public int Count
     {
-        private readonly List<T> _list = new();
-
-        public int Count
-        {
-            get
-            {
-                lock (_list)
-                {
-                    return _list.Count;
-                }
-            }
-        }
-
-        bool ICollection<T>.IsReadOnly
-        {
-            get
-            {
-                lock (_list)
-                {
-                    return ((ICollection<T>)_list).IsReadOnly;
-                }
-            }
-        }
-
-        public T this[int index]
-        {
-            get
-            {
-                lock (_list)
-                {
-                    return _list[index];
-                }
-            }
-            set
-            {
-                lock (_list)
-                {
-                    _list[index] = value;
-                }
-            }
-        }
-
-        private List<T> Clone()
-        {
-            return _list.ToList();
-        }
-
-        public IEnumerator<T> GetEnumerator()
+        get
         {
             lock (_list)
             {
-                return Clone().GetEnumerator();
+                return _list.Count;
             }
         }
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public void Add(T item)
+    bool ICollection<T>.IsReadOnly
+    {
+        get
         {
             lock (_list)
             {
-                _list.Add(item);
+                return ((ICollection<T>)_list).IsReadOnly;
             }
         }
+    }
 
-        public void Clear()
+    public T this[int index]
+    {
+        get
         {
             lock (_list)
             {
-                _list.Clear();
+                return _list[index];
             }
         }
-
-        public bool Contains(T item)
+        set
         {
             lock (_list)
             {
-                return _list.Contains(item);
+                _list[index] = value;
             }
         }
+    }
 
-        public void CopyTo(T[] array, int arrayIndex)
+    private List<T> Clone()
+    {
+        return _list.ToList();
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                _list.CopyTo(array, arrayIndex);
-            }
+            return Clone().GetEnumerator();
         }
+    }
 
-        public bool Remove(T item)
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    public void Add(T item)
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                return _list.Remove(item);
-            }
+            _list.Add(item);
         }
+    }
 
-        public int IndexOf(T item)
+    public void Clear()
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                return _list.IndexOf(item);
-            }
+            _list.Clear();
         }
+    }
 
-        public void Insert(int index, T item)
+    public bool Contains(T item)
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                _list.Insert(index, item);
-            }
+            return _list.Contains(item);
         }
+    }
 
-        public void RemoveAt(int index)
+    public void CopyTo(T[] array, int arrayIndex)
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                _list.RemoveAt(index);
-            }
+            _list.CopyTo(array, arrayIndex);
         }
+    }
 
-        public void CopyTo(Array array, int index)
+    public bool Remove(T item)
+    {
+        lock (_list)
         {
-            lock (_list)
-            {
-                ((ICollection)_list).CopyTo(array, index);
-            }
+            return _list.Remove(item);
+        }
+    }
+
+    public int IndexOf(T item)
+    {
+        lock (_list)
+        {
+            return _list.IndexOf(item);
+        }
+    }
+
+    public void Insert(int index, T item)
+    {
+        lock (_list)
+        {
+            _list.Insert(index, item);
+        }
+    }
+
+    public void RemoveAt(int index)
+    {
+        lock (_list)
+        {
+            _list.RemoveAt(index);
+        }
+    }
+
+    public void CopyTo(Array array, int index)
+    {
+        lock (_list)
+        {
+            ((ICollection)_list).CopyTo(array, index);
         }
     }
 }

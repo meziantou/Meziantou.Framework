@@ -1,6 +1,5 @@
-﻿namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public abstract class ChromiumTracingContextEvent : ChromiumTracingEvent
 {
-    public abstract class ChromiumTracingContextEvent : ChromiumTracingEvent
-    {
-    }
 }

@@ -1,15 +1,14 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public sealed class ChromiumTracingFlowEndEvent : ChromiumTracingFlowEvent
 {
-    public sealed class ChromiumTracingFlowEndEvent : ChromiumTracingFlowEvent
-    {
-        [JsonPropertyName("ph")]
-        public override string Type => "f";
+    [JsonPropertyName("ph")]
+    public override string Type => "f";
 
-        [JsonPropertyName("bp")]
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        [JsonConverter(typeof(BindingPointJsonConverter))]
-        public BindingPoint BindingPoint { get; set; }
-    }
+    [JsonPropertyName("bp")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [JsonConverter(typeof(BindingPointJsonConverter))]
+    public BindingPoint BindingPoint { get; set; }
 }

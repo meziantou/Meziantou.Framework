@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1304
+#pragma warning disable CA1304
 #pragma warning disable MA0011
 using System.Globalization;
 using TestUtilities;

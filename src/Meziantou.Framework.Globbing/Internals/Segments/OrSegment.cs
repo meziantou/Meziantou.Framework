@@ -1,62 +1,61 @@
-﻿namespace Meziantou.Framework.Globbing.Internals
-{
-    internal sealed class OrSegment : Segment
-    {
-        private readonly Segment[] _subSegments;
-        private readonly bool _inverse;
+namespace Meziantou.Framework.Globbing.Internals;
 
-        public OrSegment(Segment[] subSegments, bool inverse)
+internal sealed class OrSegment : Segment
+{
+    private readonly Segment[] _subSegments;
+    private readonly bool _inverse;
+
+    public OrSegment(Segment[] subSegments, bool inverse)
+    {
+        _subSegments = subSegments;
+        _inverse = inverse;
+    }
+
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        var copy = pathReader;
+        var result = MatchCore(ref copy);
+        if (_inverse)
         {
-            _subSegments = subSegments;
-            _inverse = inverse;
+            result = !result;
+            if (result)
+                return true;
         }
 
-        public override bool IsMatch(ref PathReader pathReader)
+        pathReader = copy;
+        return result;
+    }
+
+    private bool MatchCore(ref PathReader pathReader)
+    {
+        foreach (var subsegment in _subSegments)
         {
             var copy = pathReader;
-            var result = MatchCore(ref copy);
-            if (_inverse)
+            if (subsegment.IsMatch(ref copy))
             {
-                result = !result;
-                if (result)
-                    return true;
+                pathReader = copy;
+                return true;
             }
-
-            pathReader = copy;
-            return result;
         }
 
-        private bool MatchCore(ref PathReader pathReader)
+        return false;
+    }
+
+    public override string ToString()
+    {
+        using var sb = new ValueStringBuilder();
+        sb.Append('(');
+        if (_inverse)
         {
-            foreach (var subsegment in _subSegments)
-            {
-                var copy = pathReader;
-                if (subsegment.IsMatch(ref copy))
-                {
-                    pathReader = copy;
-                    return true;
-                }
-            }
-
-            return false;
+            sb.Append('!');
         }
 
-        public override string ToString()
+        foreach (var segment in _subSegments)
         {
-            using var sb = new ValueStringBuilder();
-            sb.Append('(');
-            if (_inverse)
-            {
-                sb.Append('!');
-            }
-
-            foreach (var segment in _subSegments)
-            {
-                sb.Append(segment.ToString());
-            }
-
-            sb.Append(')');
-            return sb.ToString();
+            sb.Append(segment.ToString());
         }
+
+        sb.Append(')');
+        return sb.ToString();
     }
 }

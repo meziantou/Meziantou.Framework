@@ -1,7 +1,6 @@
-﻿namespace Meziantou.AspNetCore.Components
+namespace Meziantou.AspNetCore.Components;
+
+public interface ILogHighlighter
 {
-    public interface ILogHighlighter
-    {
-        IEnumerable<LogHighlighterResult> Process(string text);
-    }
+    IEnumerable<LogHighlighterResult> Process(string text);
 }

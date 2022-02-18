@@ -1,296 +1,295 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.ObjectPool;
 
-namespace Meziantou.Framework.CodeOwners
+namespace Meziantou.Framework.CodeOwners;
+
+public static class CodeOwnersParser
 {
-    public static class CodeOwnersParser
+    public static IEnumerable<CodeOwnersEntry> Parse(string content)
     {
-        public static IEnumerable<CodeOwnersEntry> Parse(string content)
+        var context = new CodeOwnersParserContext(content);
+        return context.Parse();
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    private struct CodeOwnersParserContext
+    {
+        private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = CreateStringBuilderPool();
+
+        private readonly List<CodeOwnersEntry> _entries;
+        private readonly StringLexer _lexer;
+        private CodeOwnersSection? _currentSection;
+
+        private static ObjectPool<StringBuilder> CreateStringBuilderPool()
         {
-            var context = new CodeOwnersParserContext(content);
-            return context.Parse();
+            var objectPoolProvider = new DefaultObjectPoolProvider();
+            return objectPoolProvider.CreateStringBuilderPool();
         }
 
-        [StructLayout(LayoutKind.Auto)]
-        private struct CodeOwnersParserContext
+        public CodeOwnersParserContext(string content)
         {
-            private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = CreateStringBuilderPool();
+            _entries = new List<CodeOwnersEntry>();
+            _lexer = new StringLexer(content);
+            _currentSection = null;
+        }
 
-            private readonly List<CodeOwnersEntry> _entries;
-            private readonly StringLexer _lexer;
-            private CodeOwnersSection? _currentSection;
-
-            private static ObjectPool<StringBuilder> CreateStringBuilderPool()
+        public IEnumerable<CodeOwnersEntry> Parse()
+        {
+            while (!_lexer.EndOfFile)
             {
-                var objectPoolProvider = new DefaultObjectPoolProvider();
-                return objectPoolProvider.CreateStringBuilderPool();
+                ParseLine();
             }
 
-            public CodeOwnersParserContext(string content)
+            return _entries;
+        }
+
+        private void ParseLine()
+        {
+            if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                return;
+
+            var c = _lexer.Peek();
+
+            // Comment
+            if (c == '#')
             {
-                _entries = new List<CodeOwnersEntry>();
-                _lexer = new StringLexer(content);
-                _currentSection = null;
+                _lexer.ConsumeUntil('\n');
+                return;
             }
 
-            public IEnumerable<CodeOwnersEntry> Parse()
+            // Section
+            if (TryParseSection(out var section))
             {
-                while (!_lexer.EndOfFile)
+                _currentSection = section;
+                return;
+            }
+
+            // Parse pattern
+            var pattern = ParsePattern();
+            if (pattern == null)
+                return;
+
+            // Parse members (username or email)
+            ParseMembers(pattern);
+        }
+
+        private readonly bool TryParseSection(out CodeOwnersSection section)
+        {
+            if (!_lexer.EndOfFile)
+            {
+                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                 {
-                    ParseLine();
+                    section = default;
+                    return false;
                 }
 
-                return _entries;
+                var isOptional = false;
+                var c = _lexer.Peek();
+                if (c == '^')
+                {
+                    isOptional = true;
+                    _lexer.Consume();
+                }
+
+                c = _lexer.Peek();
+                if (c == '[')
+                {
+                    _lexer.Consume();
+                    var sb = s_stringBuilderPool.Get();
+                    _lexer.ConsumeUntil(']', sb);
+                    _lexer.ConsumeUntil('\n');
+                    section = new CodeOwnersSection(s_stringBuilderPool.ToStringAndReturn(sb), isOptional);
+                    return true;
+                }
             }
 
-            private void ParseLine()
+            section = default;
+            return false;
+        }
+
+        private readonly string? ParsePattern()
+        {
+            var sb = s_stringBuilderPool.Get();
+            while (!_lexer.EndOfFile)
             {
+                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                    return null;
+
+                var c = _lexer.Consume();
+                switch (c)
+                {
+                    // The next character is escaped
+                    case '\\':
+                        c = _lexer.Consume();
+                        if (c == null) // end of file
+                            return null;
+
+                        sb.Append(c);
+                        break;
+
+                    case ' ':
+                    case '\t':
+                        return s_stringBuilderPool.ToStringAndReturn(sb);
+
+                    default:
+                        sb.Append(c);
+                        break;
+                }
+            }
+
+            return s_stringBuilderPool.ToStringAndReturn(sb);
+        }
+
+        private readonly void ParseMembers(string pattern)
+        {
+            while (!_lexer.EndOfFile)
+            {
+                _lexer.ConsumeSpaces();
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     return;
 
-                var c = _lexer.Peek();
-
-                // Comment
-                if (c == '#')
-                {
-                    _lexer.ConsumeUntil('\n');
-                    return;
-                }
-
-                // Section
-                if (TryParseSection(out var section))
-                {
-                    _currentSection = section;
-                    return;
-                }
-
-                // Parse pattern
-                var pattern = ParsePattern();
-                if (pattern == null)
-                    return;
-
-                // Parse members (username or email)
-                ParseMembers(pattern);
-            }
-
-            private readonly bool TryParseSection(out CodeOwnersSection section)
-            {
-                if (!_lexer.EndOfFile)
-                {
-                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                    {
-                        section = default;
-                        return false;
-                    }
-
-                    var isOptional = false;
-                    var c = _lexer.Peek();
-                    if (c == '^')
-                    {
-                        isOptional = true;
-                        _lexer.Consume();
-                    }
-
-                    c = _lexer.Peek();
-                    if (c == '[')
-                    {
-                        _lexer.Consume();
-                        var sb = s_stringBuilderPool.Get();
-                        _lexer.ConsumeUntil(']', sb);
-                        _lexer.ConsumeUntil('\n');
-                        section = new CodeOwnersSection(s_stringBuilderPool.ToStringAndReturn(sb), isOptional);
-                        return true;
-                    }
-                }
-
-                section = default;
-                return false;
-            }
-
-            private readonly string? ParsePattern()
-            {
                 var sb = s_stringBuilderPool.Get();
-                while (!_lexer.EndOfFile)
+
+                var c = _lexer.Consume();
+                var isMember = c == '@';
+                if (!isMember)
                 {
-                    if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                        return null;
-
-                    var c = _lexer.Consume();
-                    switch (c)
-                    {
-                        // The next character is escaped
-                        case '\\':
-                            c = _lexer.Consume();
-                            if (c == null) // end of file
-                                return null;
-
-                            sb.Append(c);
-                            break;
-
-                        case ' ':
-                        case '\t':
-                            return s_stringBuilderPool.ToStringAndReturn(sb);
-
-                        default:
-                            sb.Append(c);
-                            break;
-                    }
+                    sb.Append(c);
                 }
 
-                return s_stringBuilderPool.ToStringAndReturn(sb);
-            }
-
-            private readonly void ParseMembers(string pattern)
-            {
                 while (!_lexer.EndOfFile)
                 {
-                    _lexer.ConsumeSpaces();
                     if (_lexer.TryConsumeEndOfLineOrEndOfFile())
+                    {
+                        AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
                         return;
-
-                    var sb = s_stringBuilderPool.Get();
-
-                    var c = _lexer.Consume();
-                    var isMember = c == '@';
-                    if (!isMember)
-                    {
-                        sb.Append(c);
                     }
 
-                    while (!_lexer.EndOfFile)
+                    c = _lexer.Consume();
+                    if (c == ' ' || c == '\t')
                     {
-                        if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                        {
-                            AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
-                            return;
-                        }
-
-                        c = _lexer.Consume();
-                        if (c == ' ' || c == '\t')
-                        {
-                            AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
-                            break;
-                        }
-
-                        sb.Append(c);
+                        AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
+                        break;
                     }
-                }
-            }
 
-            private readonly void AddEntry(bool isMember, string name, string pattern)
-            {
-                if (isMember)
-                {
-                    _entries.Add(CodeOwnersEntry.FromUsername(pattern, name, _currentSection));
-                }
-                else
-                {
-                    _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name, _currentSection));
+                    sb.Append(c);
                 }
             }
         }
 
-        private sealed class StringLexer
+        private readonly void AddEntry(bool isMember, string name, string pattern)
         {
-            private int _currentIndex = -1;
-            private readonly string _content;
-
-            public StringLexer(string content)
+            if (isMember)
             {
-                _content = content;
+                _entries.Add(CodeOwnersEntry.FromUsername(pattern, name, _currentSection));
+            }
+            else
+            {
+                _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name, _currentSection));
+            }
+        }
+    }
+
+    private sealed class StringLexer
+    {
+        private int _currentIndex = -1;
+        private readonly string _content;
+
+        public StringLexer(string content)
+        {
+            _content = content;
+        }
+
+        public bool EndOfFile => _currentIndex >= _content.Length;
+
+        public bool TryConsumeEndOfLineOrEndOfFile()
+        {
+            var c = Peek();
+            if (c == null)
+            {
+                Consume();
+                return true;
             }
 
-            public bool EndOfFile => _currentIndex >= _content.Length;
-
-            public bool TryConsumeEndOfLineOrEndOfFile()
+            if (c == '\r')
             {
-                var c = Peek();
-                if (c == null)
-                {
+                Consume();
+                if (Peek() == '\n')
                     Consume();
-                    return true;
-                }
 
-                if (c == '\r')
-                {
-                    Consume();
-                    if (Peek() == '\n')
-                        Consume();
-
-                    return true;
-                }
-
-                if (c == '\n')
-                {
-                    Consume();
-                    return true;
-                }
-
-                return false;
+                return true;
             }
 
-            public char? Consume()
+            if (c == '\n')
             {
-                if (_currentIndex + 1 >= _content.Length)
+                Consume();
+                return true;
+            }
+
+            return false;
+        }
+
+        public char? Consume()
+        {
+            if (_currentIndex + 1 >= _content.Length)
+            {
+                _currentIndex++; // Ensure EOF is set correctly
+                return null;
+            }
+
+            _currentIndex++;
+            return _content[_currentIndex];
+        }
+
+        public char? Peek()
+        {
+            if (_currentIndex + 1 >= _content.Length)
+                return null;
+
+            return _content[_currentIndex + 1];
+        }
+
+        public void ConsumeUntil(char character)
+        {
+            while (_currentIndex + 1 < _content.Length)
+            {
+                var next = _content[_currentIndex + 1];
+                if (next == character)
                 {
-                    _currentIndex++; // Ensure EOF is set correctly
-                    return null;
+                    _currentIndex++;
+                    return;
                 }
 
                 _currentIndex++;
-                return _content[_currentIndex];
             }
+        }
 
-            public char? Peek()
+        public void ConsumeUntil(char character, StringBuilder sb)
+        {
+            while (_currentIndex + 1 < _content.Length)
             {
-                if (_currentIndex + 1 >= _content.Length)
-                    return null;
-
-                return _content[_currentIndex + 1];
-            }
-
-            public void ConsumeUntil(char character)
-            {
-                while (_currentIndex + 1 < _content.Length)
+                var next = _content[_currentIndex + 1];
+                if (next == character)
                 {
-                    var next = _content[_currentIndex + 1];
-                    if (next == character)
-                    {
-                        _currentIndex++;
-                        return;
-                    }
-
                     _currentIndex++;
+                    return;
                 }
+
+                sb.Append(next);
+                _currentIndex++;
             }
+        }
 
-            public void ConsumeUntil(char character, StringBuilder sb)
+        public void ConsumeSpaces()
+        {
+            while (_currentIndex + 1 < _content.Length)
             {
-                while (_currentIndex + 1 < _content.Length)
-                {
-                    var next = _content[_currentIndex + 1];
-                    if (next == character)
-                    {
-                        _currentIndex++;
-                        return;
-                    }
+                var next = _content[_currentIndex + 1];
+                if (next != ' ' && next != '\t')
+                    return;
 
-                    sb.Append(next);
-                    _currentIndex++;
-                }
-            }
-
-            public void ConsumeSpaces()
-            {
-                while (_currentIndex + 1 < _content.Length)
-                {
-                    var next = _content[_currentIndex + 1];
-                    if (next != ' ' && next != '\t')
-                        return;
-
-                    _currentIndex++;
-                }
+                _currentIndex++;
             }
         }
     }

@@ -1,138 +1,137 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 
-namespace Meziantou.Framework.Scheduling
+namespace Meziantou.Framework.Scheduling;
+
+public abstract class RecurrenceRuleHumanizer
 {
-    public abstract class RecurrenceRuleHumanizer
+    protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
+    protected static readonly CultureInfo FrenchCultureInfo = GetCulture("fr");
+
+    public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
+
+    static RecurrenceRuleHumanizer()
     {
-        protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
-        protected static readonly CultureInfo FrenchCultureInfo = GetCulture("fr");
-
-        public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
-
-        static RecurrenceRuleHumanizer()
+        SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
         {
-            SupportedHumanizers = new Dictionary<CultureInfo, RecurrenceRuleHumanizer>
-            {
-                { CultureInfo.InvariantCulture, new RecurrenceRuleHumanizerEnglish() },
-            };
+            { CultureInfo.InvariantCulture, new RecurrenceRuleHumanizerEnglish() },
+        };
 
-            SupportedHumanizers.TryAdd(EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish());
-            SupportedHumanizers.TryAdd(FrenchCultureInfo, new RecurrenceRuleHumanizerFrench());
+        SupportedHumanizers.TryAdd(EnglishCultureInfo, new RecurrenceRuleHumanizerEnglish());
+        SupportedHumanizers.TryAdd(FrenchCultureInfo, new RecurrenceRuleHumanizerFrench());
+    }
+
+    private static CultureInfo GetCulture(string name)
+    {
+        try
+        {
+            return CultureInfo.GetCultureInfo(name);
+        }
+        catch
+        {
+            return CultureInfo.InvariantCulture;
+        }
+    }
+
+    public static string? GetText(RecurrenceRule rrule)
+    {
+        return GetText(rrule, cultureInfo: null);
+    }
+
+    public static string? GetText(RecurrenceRule rrule!!, CultureInfo? cultureInfo)
+    {
+        if (cultureInfo == null)
+        {
+            cultureInfo = CultureInfo.CurrentUICulture;
         }
 
-        private static CultureInfo GetCulture(string name)
+        if (!SupportedHumanizers.TryGetValue(cultureInfo, out var humanizer))
         {
-            try
+            if (!cultureInfo.IsNeutralCulture)
             {
-                return CultureInfo.GetCultureInfo(name);
-            }
-            catch
-            {
-                return CultureInfo.InvariantCulture;
+                return GetText(rrule, cultureInfo.Parent);
             }
         }
 
-        public static string? GetText(RecurrenceRule rrule)
+        if (humanizer != null)
         {
-            return GetText(rrule, cultureInfo: null);
+            if (rrule is DailyRecurrenceRule dailyRecurrenceRule)
+                return humanizer.GetText(dailyRecurrenceRule, cultureInfo);
+
+            if (rrule is WeeklyRecurrenceRule weeklyRecurrenceRule)
+                return humanizer.GetText(weeklyRecurrenceRule, cultureInfo);
+
+            if (rrule is MonthlyRecurrenceRule monthlyRecurrenceRule)
+                return humanizer.GetText(monthlyRecurrenceRule, cultureInfo);
+
+            if (rrule is YearlyRecurrenceRule yearlyRecurrenceRule)
+                return humanizer.GetText(yearlyRecurrenceRule, cultureInfo);
         }
 
-        public static string? GetText(RecurrenceRule rrule!!, CultureInfo? cultureInfo)
-        {
-            if (cultureInfo == null)
-            {
-                cultureInfo = CultureInfo.CurrentUICulture;
-            }
+        return null;
+    }
 
-            if (!SupportedHumanizers.TryGetValue(cultureInfo, out var humanizer))
+    protected abstract string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo);
+    protected abstract string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo);
+    protected abstract string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo);
+    protected abstract string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    protected static void ListToHumanText<T>(StringBuilder sb, CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
+    {
+        if (list == null)
+            return;
+
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (i > 0)
             {
-                if (!cultureInfo.IsNeutralCulture)
+                if (i < list.Count - 1)
                 {
-                    return GetText(rrule, cultureInfo.Parent);
+                    sb.Append(separator);
+                }
+                else
+                {
+                    sb.Append(lastSeparator);
                 }
             }
 
-            if (humanizer != null)
-            {
-                if (rrule is DailyRecurrenceRule dailyRecurrenceRule)
-                    return humanizer.GetText(dailyRecurrenceRule, cultureInfo);
-
-                if (rrule is WeeklyRecurrenceRule weeklyRecurrenceRule)
-                    return humanizer.GetText(weeklyRecurrenceRule, cultureInfo);
-
-                if (rrule is MonthlyRecurrenceRule monthlyRecurrenceRule)
-                    return humanizer.GetText(monthlyRecurrenceRule, cultureInfo);
-
-                if (rrule is YearlyRecurrenceRule yearlyRecurrenceRule)
-                    return humanizer.GetText(yearlyRecurrenceRule, cultureInfo);
-            }
-
-            return null;
+            sb.AppendFormat(cultureInfo, "{0}", list[i]);
         }
+    }
 
-        protected abstract string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo);
-        protected abstract string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo);
-        protected abstract string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo);
-        protected abstract string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo);
+    protected static string ListToHumanText<T>(CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
+    {
+        var sb = new StringBuilder();
+        ListToHumanText(sb, cultureInfo, list, separator, lastSeparator);
+        return sb.ToString();
+    }
 
-        protected static void ListToHumanText<T>(StringBuilder sb, CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
-        {
-            if (list == null)
-                return;
+    protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
+    {
+        return daysOfWeek.Count == 5 &&
+               daysOfWeek.Contains(DayOfWeek.Monday) &&
+               daysOfWeek.Contains(DayOfWeek.Tuesday) &&
+               daysOfWeek.Contains(DayOfWeek.Wednesday) &&
+               daysOfWeek.Contains(DayOfWeek.Thursday) &&
+               daysOfWeek.Contains(DayOfWeek.Friday);
+    }
 
-            for (var i = 0; i < list.Count; i++)
-            {
-                if (i > 0)
-                {
-                    if (i < list.Count - 1)
-                    {
-                        sb.Append(separator);
-                    }
-                    else
-                    {
-                        sb.Append(lastSeparator);
-                    }
-                }
+    protected static bool IsWeekendDay(ICollection<DayOfWeek> daysOfWeek)
+    {
+        return daysOfWeek.Count == 2 &&
+               daysOfWeek.Contains(DayOfWeek.Sunday) &&
+               daysOfWeek.Contains(DayOfWeek.Saturday);
+    }
 
-                sb.AppendFormat(cultureInfo, "{0}", list[i]);
-            }
-        }
-
-        protected static string ListToHumanText<T>(CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
-        {
-            var sb = new StringBuilder();
-            ListToHumanText(sb, cultureInfo, list, separator, lastSeparator);
-            return sb.ToString();
-        }
-
-        protected static bool IsWeekday(ICollection<DayOfWeek> daysOfWeek)
-        {
-            return daysOfWeek.Count == 5 &&
-                   daysOfWeek.Contains(DayOfWeek.Monday) &&
-                   daysOfWeek.Contains(DayOfWeek.Tuesday) &&
-                   daysOfWeek.Contains(DayOfWeek.Wednesday) &&
-                   daysOfWeek.Contains(DayOfWeek.Thursday) &&
-                   daysOfWeek.Contains(DayOfWeek.Friday);
-        }
-
-        protected static bool IsWeekendDay(ICollection<DayOfWeek> daysOfWeek)
-        {
-            return daysOfWeek.Count == 2 &&
-                   daysOfWeek.Contains(DayOfWeek.Sunday) &&
-                   daysOfWeek.Contains(DayOfWeek.Saturday);
-        }
-
-        protected static bool IsFullWeek(ICollection<DayOfWeek> daysOfWeek)
-        {
-            return daysOfWeek.Count == 7 &&
-                   daysOfWeek.Contains(DayOfWeek.Monday) &&
-                   daysOfWeek.Contains(DayOfWeek.Tuesday) &&
-                   daysOfWeek.Contains(DayOfWeek.Wednesday) &&
-                   daysOfWeek.Contains(DayOfWeek.Thursday) &&
-                   daysOfWeek.Contains(DayOfWeek.Friday) &&
-                   daysOfWeek.Contains(DayOfWeek.Saturday) &&
-                   daysOfWeek.Contains(DayOfWeek.Sunday);
-        }
+    protected static bool IsFullWeek(ICollection<DayOfWeek> daysOfWeek)
+    {
+        return daysOfWeek.Count == 7 &&
+               daysOfWeek.Contains(DayOfWeek.Monday) &&
+               daysOfWeek.Contains(DayOfWeek.Tuesday) &&
+               daysOfWeek.Contains(DayOfWeek.Wednesday) &&
+               daysOfWeek.Contains(DayOfWeek.Thursday) &&
+               daysOfWeek.Contains(DayOfWeek.Friday) &&
+               daysOfWeek.Contains(DayOfWeek.Saturday) &&
+               daysOfWeek.Contains(DayOfWeek.Sunday);
     }
 }

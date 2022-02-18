@@ -1,354 +1,353 @@
-﻿#nullable disable
+#nullable disable
 using System.Collections;
 using System.Collections.Specialized;
 
-namespace Meziantou.Framework.Html
+namespace Meziantou.Framework.Html;
+
+public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>, IList, IReadOnlyList<HtmlAttribute>
 {
-    public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>, IList, IReadOnlyList<HtmlAttribute>
+    private readonly List<HtmlAttribute> _attributes = new();
+
+    public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+    internal HtmlAttributeList(HtmlNode parent)
     {
-        private readonly List<HtmlAttribute> _attributes = new();
+        Parent = parent;
+    }
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
+    public HtmlNode Parent { get; }
 
-        internal HtmlAttributeList(HtmlNode parent)
+    private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    {
+        Parent.ClearCaches();
+        CollectionChanged?.Invoke(this, e);
+    }
+
+    public HtmlAttribute Add(string prefix, string localName, string namespaceURI)
+    {
+        return Add(prefix, localName, namespaceURI, value: null);
+    }
+
+    public HtmlAttribute Add(string prefix!!, string localName!!, string namespaceURI, string value)
+    {
+        if (Parent == null || Parent.OwnerDocument == null)
+            throw new InvalidOperationException();
+
+        if (string.IsNullOrWhiteSpace(prefix) && !string.IsNullOrWhiteSpace(namespaceURI))
         {
-            Parent = parent;
+            prefix = Parent.OwnerDocument.GetPrefixOfNamespace(namespaceURI);
         }
 
-        public HtmlNode Parent { get; }
+        var att = Parent.OwnerDocument.CreateAttribute(prefix, localName, namespaceURI);
+        att.Value = value;
+        Add(att);
+        return att;
+    }
 
-        private void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+    public HtmlAttribute Add(string name!!, string value)
+    {
+        if (Parent == null || Parent.OwnerDocument == null)
+            throw new InvalidOperationException();
+
+        var att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
+        att.Value = value;
+        Add(att);
+        return att;
+    }
+
+    public void Add(HtmlAttribute item)
+    {
+        Add(item, replace: true);
+    }
+
+    public void Add(HtmlAttribute attribute!!, bool replace)
+    {
+        if (attribute.ParentNode != null)
+            throw new ArgumentException(message: null, nameof(attribute));
+
+        var att = this[attribute.LocalName, attribute.NamespaceURI];
+        if (att != null)
         {
-            Parent.ClearCaches();
-            CollectionChanged?.Invoke(this, e);
+            if (!replace)
+                throw new ArgumentException("The same attribute (" + att.NamespaceURI + ":" + att.LocalName + ") has has already been added.", nameof(attribute));
+
+            Remove(att);
         }
 
-        public HtmlAttribute Add(string prefix, string localName, string namespaceURI)
+        AddNoCheck(attribute);
+    }
+
+    internal void AddNoCheck(HtmlAttribute attribute!!)
+    {
+        _attributes.Add(attribute);
+        attribute.ParentNode = Parent;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute));
+    }
+
+    public string GetNamespacePrefixIfDefined(string namespaceURI!!)
+    {
+        foreach (var att in _attributes)
         {
-            return Add(prefix, localName, namespaceURI, value: null);
+            if ((string.Equals(att.Name, HtmlNode.XmlnsPrefix, StringComparison.Ordinal) ||
+                string.Equals(att.Prefix, HtmlNode.XmlnsPrefix, StringComparison.Ordinal)) &&
+                string.Equals(att.Value, namespaceURI, StringComparison.Ordinal))
+            {
+                return att.LocalName;
+            }
         }
 
-        public HtmlAttribute Add(string prefix!!, string localName!!, string namespaceURI, string value)
+        return null;
+    }
+
+    public void RemoveAll()
+    {
+        foreach (var att in _attributes)
         {
-            if (Parent == null || Parent.OwnerDocument == null)
+            if (att.ParentNode != Parent)
                 throw new InvalidOperationException();
 
-            if (string.IsNullOrWhiteSpace(prefix) && !string.IsNullOrWhiteSpace(namespaceURI))
-            {
-                prefix = Parent.OwnerDocument.GetPrefixOfNamespace(namespaceURI);
-            }
-
-            var att = Parent.OwnerDocument.CreateAttribute(prefix, localName, namespaceURI);
-            att.Value = value;
-            Add(att);
-            return att;
+            att.ParentNode = null;
         }
+        _attributes.Clear();
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+    }
 
-        public HtmlAttribute Add(string name!!, string value)
+    public void Insert(int index, HtmlAttribute item!!)
+    {
+        if (item.ParentNode != null)
+            throw new ArgumentException(message: null, nameof(item));
+
+        _attributes.Insert(index, item);
+        item.ParentNode = Parent;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+    }
+
+    public bool Contains(HtmlAttribute item)
+    {
+        return IndexOf(item) >= 0;
+    }
+
+    public void CopyTo(HtmlAttribute[] array, int arrayIndex)
+    {
+        _attributes.CopyTo(array, arrayIndex);
+    }
+
+    public int IndexOf(HtmlAttribute item!!)
+    {
+        return _attributes.IndexOf(item);
+    }
+
+    public int IndexOf(string name)
+    {
+        if (name == null)
+            return -1;
+
+        return _attributes.FindIndex(a => name.EqualsIgnoreCase(a.Name));
+    }
+
+    public int IndexOf(string localName, string namespaceURI)
+    {
+        if (localName == null || namespaceURI == null)
+            return -1;
+
+        return _attributes.FindIndex(a =>
+            localName.EqualsIgnoreCase(a.LocalName) &&
+            a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
+    }
+
+    public bool RemoveAt(int index)
+    {
+        if (index < 0 || index >= _attributes.Count)
+            return false;
+
+        var att = _attributes[index];
+        if (att.ParentNode != Parent)
+            throw new ArgumentException(message: null, nameof(index));
+
+        _attributes.RemoveAt(index);
+        att.ParentNode = null;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, att, index));
+        return true;
+    }
+
+    public void RemoveRange(IEnumerable<HtmlAttribute> attributes)
+    {
+        if (attributes == null)
+            return;
+
+        foreach (var att in attributes)
         {
-            if (Parent == null || Parent.OwnerDocument == null)
-                throw new InvalidOperationException();
-
-            var att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
-            att.Value = value;
-            Add(att);
-            return att;
+            Remove(att);
         }
+    }
 
-        public void Add(HtmlAttribute item)
-        {
-            Add(item, replace: true);
-        }
+    public bool RemoveByPrefix(string prefix!!, string localName!!)
+    {
+        var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
+        if (att == null)
+            return false;
 
-        public void Add(HtmlAttribute attribute!!, bool replace)
-        {
-            if (attribute.ParentNode != null)
-                throw new ArgumentException(message: null, nameof(attribute));
+        return Remove(att);
+    }
 
-            var att = this[attribute.LocalName, attribute.NamespaceURI];
-            if (att != null)
-            {
-                if (!replace)
-                    throw new ArgumentException("The same attribute (" + att.NamespaceURI + ":" + att.LocalName + ") has has already been added.", nameof(attribute));
+    public bool Remove(string localName!!, string namespaceURI!!)
+    {
+        var att = this[localName, namespaceURI];
+        if (att == null)
+            return false;
 
-                Remove(att);
-            }
+        return Remove(att);
+    }
 
-            AddNoCheck(attribute);
-        }
+    public bool Remove(string name!!)
+    {
+        var att = this[name];
+        if (att == null)
+            return false;
 
-        internal void AddNoCheck(HtmlAttribute attribute!!)
-        {
-            _attributes.Add(attribute);
-            attribute.ParentNode = Parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute));
-        }
+        return Remove(att);
+    }
 
-        public string GetNamespacePrefixIfDefined(string namespaceURI!!)
-        {
-            foreach (var att in _attributes)
-            {
-                if ((string.Equals(att.Name, HtmlNode.XmlnsPrefix, StringComparison.Ordinal) ||
-                    string.Equals(att.Prefix, HtmlNode.XmlnsPrefix, StringComparison.Ordinal)) &&
-                    string.Equals(att.Value, namespaceURI, StringComparison.Ordinal))
-                {
-                    return att.LocalName;
-                }
-            }
+    public bool Remove(HtmlAttribute item!!)
+    {
+        if (item.ParentNode != Parent)
+            throw new ArgumentException(message: null, nameof(item));
 
-            return null;
-        }
+        if (!_attributes.Remove(item))
+            throw new ArgumentException(message: null, nameof(item));
 
-        public void RemoveAll()
-        {
-            foreach (var att in _attributes)
-            {
-                if (att.ParentNode != Parent)
-                    throw new InvalidOperationException();
+        item.ParentNode = null;
+        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
+        return true;
+    }
 
-                att.ParentNode = null;
-            }
-            _attributes.Clear();
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-        }
-
-        public void Insert(int index, HtmlAttribute item!!)
-        {
-            if (item.ParentNode != null)
-                throw new ArgumentException(message: null, nameof(item));
-
-            _attributes.Insert(index, item);
-            item.ParentNode = Parent;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
-        }
-
-        public bool Contains(HtmlAttribute item)
-        {
-            return IndexOf(item) >= 0;
-        }
-
-        public void CopyTo(HtmlAttribute[] array, int arrayIndex)
-        {
-            _attributes.CopyTo(array, arrayIndex);
-        }
-
-        public int IndexOf(HtmlAttribute item!!)
-        {
-            return _attributes.IndexOf(item);
-        }
-
-        public int IndexOf(string name)
+    public HtmlAttribute this[string name]
+    {
+        get
         {
             if (name == null)
-                return -1;
+                throw new ArgumentNullException(nameof(name));
 
-            return _attributes.FindIndex(a => name.EqualsIgnoreCase(a.Name));
+            return _attributes.Find(a => name.EqualsIgnoreCase(a.Name));
         }
-
-        public int IndexOf(string localName, string namespaceURI)
+        set
         {
-            if (localName == null || namespaceURI == null)
-                return -1;
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
-            return _attributes.FindIndex(a =>
+            if (value.ParentNode != null)
+                throw new ArgumentException(message: null, nameof(value));
+
+            var index = IndexOf(name);
+            if (index < 0)
+            {
+                AddNoCheck(value);
+            }
+            else
+            {
+                this[index] = value;
+            }
+        }
+    }
+
+    public HtmlAttribute this[string localName, string namespaceURI]
+    {
+        get
+        {
+            if (localName == null)
+                throw new ArgumentNullException(nameof(localName));
+
+            if (namespaceURI == null)
+                throw new ArgumentNullException(nameof(namespaceURI));
+
+            return _attributes.Find(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
                 a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
         }
-
-        public bool RemoveAt(int index)
+        set
         {
-            if (index < 0 || index >= _attributes.Count)
-                return false;
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
 
-            var att = _attributes[index];
-            if (att.ParentNode != Parent)
-                throw new ArgumentException(message: null, nameof(index));
+            if (value.ParentNode != null)
+                throw new ArgumentException(message: null, nameof(value));
 
-            _attributes.RemoveAt(index);
-            att.ParentNode = null;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, att, index));
-            return true;
+            var index = IndexOf(localName, namespaceURI);
+            if (index < 0)
+            {
+                AddNoCheck(value);
+            }
+            else
+            {
+                this[index] = value;
+            }
         }
+    }
 
-        public void RemoveRange(IEnumerable<HtmlAttribute> attributes)
+    public HtmlAttribute this[int index]
+    {
+        get => _attributes[index];
+        set
         {
-            if (attributes == null)
+            if (value == _attributes[index])
                 return;
 
-            foreach (var att in attributes)
-            {
-                Remove(att);
-            }
+            var oldItem = _attributes[index];
+            _attributes[index] = value;
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
         }
-
-        public bool RemoveByPrefix(string prefix!!, string localName!!)
-        {
-            var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
-            if (att == null)
-                return false;
-
-            return Remove(att);
-        }
-
-        public bool Remove(string localName!!, string namespaceURI!!)
-        {
-            var att = this[localName, namespaceURI];
-            if (att == null)
-                return false;
-
-            return Remove(att);
-        }
-
-        public bool Remove(string name!!)
-        {
-            var att = this[name];
-            if (att == null)
-                return false;
-
-            return Remove(att);
-        }
-
-        public bool Remove(HtmlAttribute item!!)
-        {
-            if (item.ParentNode != Parent)
-                throw new ArgumentException(message: null, nameof(item));
-
-            if (!_attributes.Remove(item))
-                throw new ArgumentException(message: null, nameof(item));
-
-            item.ParentNode = null;
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
-            return true;
-        }
-
-        public HtmlAttribute this[string name]
-        {
-            get
-            {
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
-
-                return _attributes.Find(a => name.EqualsIgnoreCase(a.Name));
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                if (value.ParentNode != null)
-                    throw new ArgumentException(message: null, nameof(value));
-
-                var index = IndexOf(name);
-                if (index < 0)
-                {
-                    AddNoCheck(value);
-                }
-                else
-                {
-                    this[index] = value;
-                }
-            }
-        }
-
-        public HtmlAttribute this[string localName, string namespaceURI]
-        {
-            get
-            {
-                if (localName == null)
-                    throw new ArgumentNullException(nameof(localName));
-
-                if (namespaceURI == null)
-                    throw new ArgumentNullException(nameof(namespaceURI));
-
-                return _attributes.Find(a =>
-                    localName.EqualsIgnoreCase(a.LocalName) &&
-                    a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                if (value.ParentNode != null)
-                    throw new ArgumentException(message: null, nameof(value));
-
-                var index = IndexOf(localName, namespaceURI);
-                if (index < 0)
-                {
-                    AddNoCheck(value);
-                }
-                else
-                {
-                    this[index] = value;
-                }
-            }
-        }
-
-        public HtmlAttribute this[int index]
-        {
-            get => _attributes[index];
-            set
-            {
-                if (value == _attributes[index])
-                    return;
-
-                var oldItem = _attributes[index];
-                _attributes[index] = value;
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, value, oldItem));
-            }
-        }
-
-        public int Count => _attributes.Count;
-
-        public IEnumerator<HtmlAttribute> GetEnumerator() => _attributes.GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        bool ICollection<HtmlAttribute>.IsReadOnly => false;
-
-        void ICollection<HtmlAttribute>.Clear() => RemoveAll();
-
-        int IList.Add(object value)
-        {
-            var count = Count;
-            Add((HtmlAttribute)value);
-            return count;
-        }
-
-        void IList.Clear() => RemoveAll();
-
-        bool IList.Contains(object value) => Contains((HtmlAttribute)value);
-
-        int IList.IndexOf(object value) => IndexOf((HtmlAttribute)value);
-
-        void IList.Insert(int index, object value) => Insert(index, (HtmlAttribute)value);
-
-        bool IList.IsFixedSize => false;
-
-        bool IList.IsReadOnly => false;
-
-        void IList.Remove(object value) => Remove((HtmlAttribute)value);
-
-        void IList.RemoveAt(int index) => RemoveAt(index);
-
-        void IList<HtmlAttribute>.RemoveAt(int index) => RemoveAt(index);
-
-        object IList.this[int index]
-        {
-            get => this[index];
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
-
-                this[index] = (HtmlAttribute)value;
-            }
-        }
-
-        void ICollection.CopyTo(Array array, int index) => ((ICollection)_attributes).CopyTo(array, index);
-
-        bool ICollection.IsSynchronized => ((ICollection)_attributes).IsSynchronized;
-
-        object ICollection.SyncRoot => ((ICollection)_attributes).SyncRoot;
     }
+
+    public int Count => _attributes.Count;
+
+    public IEnumerator<HtmlAttribute> GetEnumerator() => _attributes.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    bool ICollection<HtmlAttribute>.IsReadOnly => false;
+
+    void ICollection<HtmlAttribute>.Clear() => RemoveAll();
+
+    int IList.Add(object value)
+    {
+        var count = Count;
+        Add((HtmlAttribute)value);
+        return count;
+    }
+
+    void IList.Clear() => RemoveAll();
+
+    bool IList.Contains(object value) => Contains((HtmlAttribute)value);
+
+    int IList.IndexOf(object value) => IndexOf((HtmlAttribute)value);
+
+    void IList.Insert(int index, object value) => Insert(index, (HtmlAttribute)value);
+
+    bool IList.IsFixedSize => false;
+
+    bool IList.IsReadOnly => false;
+
+    void IList.Remove(object value) => Remove((HtmlAttribute)value);
+
+    void IList.RemoveAt(int index) => RemoveAt(index);
+
+    void IList<HtmlAttribute>.RemoveAt(int index) => RemoveAt(index);
+
+    object IList.this[int index]
+    {
+        get => this[index];
+        set
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            this[index] = (HtmlAttribute)value;
+        }
+    }
+
+    void ICollection.CopyTo(Array array, int index) => ((ICollection)_attributes).CopyTo(array, index);
+
+    bool ICollection.IsSynchronized => ((ICollection)_attributes).IsSynchronized;
+
+    object ICollection.SyncRoot => ((ICollection)_attributes).SyncRoot;
 }

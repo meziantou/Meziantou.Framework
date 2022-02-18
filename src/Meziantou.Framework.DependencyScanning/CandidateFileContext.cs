@@ -1,17 +1,16 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning;
+
+[StructLayout(LayoutKind.Auto)]
+public readonly ref struct CandidateFileContext
 {
-    [StructLayout(LayoutKind.Auto)]
-    public readonly ref struct CandidateFileContext
+    public CandidateFileContext(ReadOnlySpan<char> directory, ReadOnlySpan<char> fileName)
     {
-        public CandidateFileContext(ReadOnlySpan<char> directory, ReadOnlySpan<char> fileName)
-        {
-            Directory = directory;
-            FileName = fileName;
-        }
-
-        public ReadOnlySpan<char> Directory { get; }
-        public ReadOnlySpan<char> FileName { get; }
+        Directory = directory;
+        FileName = fileName;
     }
+
+    public ReadOnlySpan<char> Directory { get; }
+    public ReadOnlySpan<char> FileName { get; }
 }

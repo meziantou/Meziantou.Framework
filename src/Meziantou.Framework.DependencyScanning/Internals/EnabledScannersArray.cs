@@ -1,31 +1,30 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.DependencyScanning.Internals
+namespace Meziantou.Framework.DependencyScanning.Internals;
+
+[StructLayout(LayoutKind.Sequential)]
+internal struct EnabledScannersArray : IEnabledScannersArray
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct EnabledScannersArray : IEnabledScannersArray
+    private SortedList<int, int>? _values;
+
+    [MemberNotNullWhen(returnValue: false, nameof(_values))]
+    public readonly bool IsEmpty => _values is null;
+
+    public void Set(int index)
     {
-        private SortedList<int, int>? _values;
-
-        [MemberNotNullWhen(returnValue: false, nameof(_values))]
-        public readonly bool IsEmpty => _values is null;
-
-        public void Set(int index)
+        if (_values is null)
         {
-            if (_values is null)
-            {
-                _values = new SortedList<int, int>();
-            }
-
-            _values.Add(index, index);
+            _values = new SortedList<int, int>();
         }
 
-        public readonly bool Get(int index)
-        {
-            if (_values is null)
-                return false;
+        _values.Add(index, index);
+    }
 
-            return _values.ContainsKey(index);
-        }
+    public readonly bool Get(int index)
+    {
+        if (_values is null)
+            return false;
+
+        return _values.ContainsKey(index);
     }
 }

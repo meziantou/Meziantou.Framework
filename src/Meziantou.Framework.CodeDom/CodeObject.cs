@@ -1,63 +1,62 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public abstract class CodeObject
 {
-    public abstract class CodeObject
+    public IDictionary<string, object?> Data { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+    public void SetData(string key, object? value)
     {
-        public IDictionary<string, object?> Data { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
+        Data[key] = value;
+    }
 
-        public void SetData(string key, object? value)
+    public CodeObject? Parent { get; internal set; }
+
+    protected void SetParent<T>(ref T? field, T? value)
+        where T : CodeObject
+    {
+        SetParent(this, ref field, value);
+    }
+
+    protected static void SetParent<T>(CodeObject parent!!, ref T? field, T? value) where T : CodeObject
+    {
+        if (field != null)
         {
-            Data[key] = value;
+            field.Parent = null; // Detach previous value
         }
 
-        public CodeObject? Parent { get; internal set; }
-
-        protected void SetParent<T>(ref T? field, T? value)
-            where T : CodeObject
+        if (value != null)
         {
-            SetParent(this, ref field, value);
-        }
-
-        protected static void SetParent<T>(CodeObject parent!!, ref T? field, T? value) where T : CodeObject
-        {
-            if (field != null)
-            {
-                field.Parent = null; // Detach previous value
-            }
-
-            if (value != null)
-            {
-                if (value.Parent != null && value.Parent != parent)
-                    throw new ArgumentException("Object already has a parent.", nameof(value));
-
-                value.Parent = parent;
-            }
-
-            field = value;
-        }
-
-        protected T SetParent<T>(T? value) where T : CodeObject
-        {
-            return SetParent(this, value);
-        }
-
-        protected static T SetParent<T>(CodeObject parent!!, T? value) where T : CodeObject
-        {
-            if (value?.Parent != parent)
+            if (value.Parent != null && value.Parent != parent)
                 throw new ArgumentException("Object already has a parent.", nameof(value));
 
             value.Parent = parent;
-            return value;
         }
 
-        public override string ToString()
-        {
-            return ToCsharpString();
-        }
+        field = value;
+    }
 
-        public string ToCsharpString()
-        {
-            var generator = new CSharpCodeGenerator();
-            return generator.Write(this);
-        }
+    protected T SetParent<T>(T? value) where T : CodeObject
+    {
+        return SetParent(this, value);
+    }
+
+    protected static T SetParent<T>(CodeObject parent!!, T? value) where T : CodeObject
+    {
+        if (value?.Parent != parent)
+            throw new ArgumentException("Object already has a parent.", nameof(value));
+
+        value.Parent = parent;
+        return value;
+    }
+
+    public override string ToString()
+    {
+        return ToCsharpString();
+    }
+
+    public string ToCsharpString()
+    {
+        var generator = new CSharpCodeGenerator();
+        return generator.Write(this);
     }
 }

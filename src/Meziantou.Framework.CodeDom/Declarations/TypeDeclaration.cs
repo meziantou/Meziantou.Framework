@@ -1,42 +1,41 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable, INullableContext
 {
-    public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable, INullableContext
+    public string? Name { get; set; }
+    public Modifiers Modifiers { get; set; }
+    public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
+    public CommentCollection CommentsBefore { get; }
+    public CommentCollection CommentsAfter { get; }
+    public XmlCommentCollection XmlComments { get; }
+    public NullableContext NullableContext { get; set; }
+
+    protected TypeDeclaration()
     {
-        public string? Name { get; set; }
-        public Modifiers Modifiers { get; set; }
-        public CodeObjectCollection<CustomAttribute> CustomAttributes { get; }
-        public CommentCollection CommentsBefore { get; }
-        public CommentCollection CommentsAfter { get; }
-        public XmlCommentCollection XmlComments { get; }
-        public NullableContext NullableContext { get; set; }
+        CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
+        CommentsBefore = new CommentCollection(this);
+        CommentsAfter = new CommentCollection(this);
+        XmlComments = new XmlCommentCollection(this);
+    }
 
-        protected TypeDeclaration()
+    public string? Namespace
+    {
+        get
         {
-            CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
-            CommentsBefore = new CommentCollection(this);
-            CommentsAfter = new CommentCollection(this);
-            XmlComments = new XmlCommentCollection(this);
-        }
-
-        public string? Namespace
-        {
-            get
+            string? result = null;
+            var ns = this.SelfOrAnscestorOfType<NamespaceDeclaration>();
+            while (ns != null)
             {
-                string? result = null;
-                var ns = this.SelfOrAnscestorOfType<NamespaceDeclaration>();
-                while (ns != null)
+                if (result != null)
                 {
-                    if (result != null)
-                    {
-                        result = '.' + result;
-                    }
-
-                    result = ns.Name + result;
-                    ns = ns.AnscestorOfType<NamespaceDeclaration>();
+                    result = '.' + result;
                 }
 
-                return result;
+                result = ns.Name + result;
+                ns = ns.AnscestorOfType<NamespaceDeclaration>();
             }
+
+            return result;
         }
     }
 }

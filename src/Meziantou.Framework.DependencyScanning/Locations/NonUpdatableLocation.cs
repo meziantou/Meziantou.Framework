@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.DependencyScanning.Locations
-{
-    internal sealed class NonUpdatableLocation : Location
-    {
-        public NonUpdatableLocation(string filePath)
-            : base(filePath)
-        {
-        }
-        public override bool IsUpdatable => false;
+namespace Meziantou.Framework.DependencyScanning.Locations;
 
-        protected internal override Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
-        {
-            throw new InvalidOperationException("This dependency cannot be updated");
-        }
+internal sealed class NonUpdatableLocation : Location
+{
+    public NonUpdatableLocation(string filePath)
+        : base(filePath)
+    {
+    }
+    public override bool IsUpdatable => false;
+
+    protected internal override Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    {
+        throw new InvalidOperationException("This dependency cannot be updated");
     }
 }

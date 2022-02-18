@@ -1,11 +1,10 @@
-﻿using System.Windows;
+using System.Windows;
 
-namespace Meziantou.Framework.WPF.EnumComboBox
+namespace Meziantou.Framework.WPF.EnumComboBox;
+
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
+public partial class App : Application
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
-    public partial class App : Application
-    {
-    }
 }

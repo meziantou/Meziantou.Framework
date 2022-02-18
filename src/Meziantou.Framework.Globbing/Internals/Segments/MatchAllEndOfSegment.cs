@@ -1,21 +1,20 @@
-﻿namespace Meziantou.Framework.Globbing.Internals
+namespace Meziantou.Framework.Globbing.Internals;
+
+internal sealed class MatchAllEndOfSegment : Segment
 {
-    internal sealed class MatchAllEndOfSegment : Segment
+    private MatchAllEndOfSegment()
     {
-        private MatchAllEndOfSegment()
+    }
+
+    public static MatchAllEndOfSegment Instance { get; } = new MatchAllEndOfSegment();
+
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        if (pathReader.CurrentSegmentLength > 0)
         {
+            pathReader.ConsumeInSegment(pathReader.CurrentSegmentLength);
         }
 
-        public static MatchAllEndOfSegment Instance { get; } = new MatchAllEndOfSegment();
-
-        public override bool IsMatch(ref PathReader pathReader)
-        {
-            if (pathReader.CurrentSegmentLength > 0)
-            {
-                pathReader.ConsumeInSegment(pathReader.CurrentSegmentLength);
-            }
-
-            return true;
-        }
+        return true;
     }
 }

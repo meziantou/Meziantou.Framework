@@ -1,13 +1,12 @@
-﻿using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Running;
 
-namespace GlobbingBenchmarks
+namespace GlobbingBenchmarks;
+
+internal static class Program
 {
-    internal static class Program
+    private static void Main()
     {
-        private static void Main()
-        {
-            BenchmarkRunner.Run<GlobIsMatchBenchmark>();
-            BenchmarkRunner.Run<EnumerateFilesBenchmark>();
-        }
+        BenchmarkRunner.Run<GlobIsMatchBenchmark>();
+        BenchmarkRunner.Run<EnumerateFilesBenchmark>();
     }
 }

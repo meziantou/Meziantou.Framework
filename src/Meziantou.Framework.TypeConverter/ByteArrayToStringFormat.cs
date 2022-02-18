@@ -1,10 +1,9 @@
-﻿namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public enum ByteArrayToStringFormat
 {
-    public enum ByteArrayToStringFormat
-    {
-        None,
-        Base16,
-        Base16Prefixed,
-        Base64,
-    }
+    None,
+    Base16,
+    Base16Prefixed,
+    Base64,
 }

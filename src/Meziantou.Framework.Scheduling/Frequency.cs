@@ -1,14 +1,13 @@
-﻿namespace Meziantou.Framework.Scheduling
+namespace Meziantou.Framework.Scheduling;
+
+public enum Frequency
 {
-    public enum Frequency
-    {
-        None,
-        Secondly,
-        Minutely,
-        Hourly,
-        Daily,
-        Weekly,
-        Monthly,
-        Yearly,
-    }
+    None,
+    Secondly,
+    Minutely,
+    Hourly,
+    Daily,
+    Weekly,
+    Monthly,
+    Yearly,
 }

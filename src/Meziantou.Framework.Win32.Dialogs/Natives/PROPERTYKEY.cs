@@ -1,11 +1,10 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+internal struct PROPERTYKEY
 {
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    internal struct PROPERTYKEY
-    {
-        public Guid Fmtid;
-        public uint Pid;
-    }
+    public Guid Fmtid;
+    public uint Pid;
 }

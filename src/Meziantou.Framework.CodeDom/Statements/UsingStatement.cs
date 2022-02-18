@@ -1,15 +1,14 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class UsingStatement : Statement
 {
-    public class UsingStatement : Statement
+    private Statement? _statement;
+
+    public Statement? Statement
     {
-        private Statement? _statement;
-
-        public Statement? Statement
-        {
-            get => _statement;
-            set => SetParent(ref _statement, value);
-        }
-
-        public StatementCollection? Body { get; set; }
+        get => _statement;
+        set => SetParent(ref _statement, value);
     }
+
+    public StatementCollection? Body { get; set; }
 }

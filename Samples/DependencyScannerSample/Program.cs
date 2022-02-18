@@ -1,15 +1,14 @@
-﻿using Meziantou.Framework.DependencyScanning;
+using Meziantou.Framework.DependencyScanning;
 
-namespace DependencyScannerSample
+namespace DependencyScannerSample;
+
+internal static class Program
 {
-    internal static class Program
+    private static async Task Main(string[] args)
     {
-        private static async Task Main(string[] args)
+        await foreach (var item in DependencyScanner.ScanDirectoryAsync(args[0], options: null, CancellationToken.None).ConfigureAwait(false))
         {
-            await foreach (var item in DependencyScanner.ScanDirectoryAsync(args[0], options: null, CancellationToken.None).ConfigureAwait(false))
-            {
-                Console.WriteLine(item.ToString());
-            }
+            Console.WriteLine(item.ToString());
         }
     }
 }

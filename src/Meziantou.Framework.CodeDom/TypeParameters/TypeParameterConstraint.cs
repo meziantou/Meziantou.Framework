@@ -1,6 +1,5 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public abstract class TypeParameterConstraint : CodeObject
 {
-    public abstract class TypeParameterConstraint : CodeObject
-    {
-    }
 }

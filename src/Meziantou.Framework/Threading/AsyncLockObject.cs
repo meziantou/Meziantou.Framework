@@ -1,20 +1,19 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Threading
+namespace Meziantou.Framework.Threading;
+
+[StructLayout(LayoutKind.Auto)]
+public readonly struct AsyncLockObject : IDisposable
 {
-    [StructLayout(LayoutKind.Auto)]
-    public readonly struct AsyncLockObject : IDisposable
+    private readonly AsyncLock? _parent;
+
+    internal AsyncLockObject(AsyncLock? parent)
     {
-        private readonly AsyncLock? _parent;
+        _parent = parent;
+    }
 
-        internal AsyncLockObject(AsyncLock? parent)
-        {
-            _parent = parent;
-        }
-
-        public void Dispose()
-        {
-            _parent?.Release();
-        }
+    public void Dispose()
+    {
+        _parent?.Release();
     }
 }

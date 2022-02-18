@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public enum ChromiumTracingInstantEventScope
 {
-    public enum ChromiumTracingInstantEventScope
-    {
-        Global,
-        Process,
-        Thread,
-    }
+    Global,
+    Process,
+    Thread,
 }

@@ -1,182 +1,181 @@
-﻿using System.IO.Enumeration;
+using System.IO.Enumeration;
 using FluentAssertions;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Meziantou.Framework.DependencyScanning.Tests
+namespace Meziantou.Framework.DependencyScanning.Tests;
+
+public sealed class DependencyScannerTests
 {
-    public sealed class DependencyScannerTests
+    private readonly ITestOutputHelper _testOutputHelper;
+
+    public DependencyScannerTests(ITestOutputHelper testOutputHelper)
     {
-        private readonly ITestOutputHelper _testOutputHelper;
+        _testOutputHelper = testOutputHelper;
+    }
 
-        public DependencyScannerTests(ITestOutputHelper testOutputHelper)
+    [Fact]
+    public async Task LargeDirectory()
+    {
+        var stopwatch = ValueStopwatch.StartNew();
+        await using var directory = TemporaryDirectory.Create();
+        const int FileCount = 10_000;
+        for (var i = 0; i < FileCount; i++)
         {
-            _testOutputHelper = testOutputHelper;
+            await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
         }
 
-        [Fact]
-        public async Task LargeDirectory()
+        _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
+        stopwatch = ValueStopwatch.StartNew();
+
+        var items = new List<Dependency>(FileCount);
+        await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScanner() } }))
         {
-            var stopwatch = ValueStopwatch.StartNew();
-            await using var directory = TemporaryDirectory.Create();
-            const int FileCount = 10_000;
-            for (var i = 0; i < FileCount; i++)
+            items.Add(item);
+        }
+
+        _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
+        items.Should().HaveCount(FileCount);
+    }
+
+    [Fact]
+    public async Task LargeDirectory_NoScannerMatch()
+    {
+        var stopwatch = ValueStopwatch.StartNew();
+        await using var directory = TemporaryDirectory.Create();
+        const int FileCount = 10_000;
+        for (var i = 0; i < FileCount; i++)
+        {
+            await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
+        }
+
+        _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
+        stopwatch = ValueStopwatch.StartNew();
+
+        var items = new List<Dependency>(FileCount);
+        await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScannerNeverMatch() } }))
+        {
+            items.Add(item);
+        }
+
+        _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
+        items.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ReportScanException(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
+
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+            .Should().ThrowExactlyAsync<InvalidOperationException>();
+
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+            .Should().ThrowExactlyAsync<InvalidOperationException>();
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task ReportScanException_IAsyncEnumerable(int degreeOfParallelism)
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
+
+        await new Func<Task>(async () =>
+        {
+            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
             {
-                await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
             }
+        }).Should().ThrowExactlyAsync<InvalidOperationException>();
 
-            _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
-            stopwatch = ValueStopwatch.StartNew();
-
-            var items = new List<Dependency>(FileCount);
-            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScanner() } }))
+        await new Func<Task>(async () =>
+        {
+            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
             {
-                items.Add(item);
             }
+        }).Should().ThrowExactlyAsync<InvalidOperationException>();
+    }
 
-            _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-            items.Should().HaveCount(FileCount);
-        }
+    [Fact]
+    public void DefaultScannersIncludeAllScanners()
+    {
+        var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName).ToArray();
 
-        [Fact]
-        public async Task LargeDirectory_NoScannerMatch()
+        var allScanners = typeof(ScannerOptions).Assembly.GetExportedTypes()
+            .Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(DependencyScanner)) && type != typeof(RegexScanner))
+            .OrderBy(t => t.FullName)
+            .ToArray();
+
+        scanners.Should().NotBeEmpty();
+        scanners.Should().BeEquivalentTo(allScanners);
+    }
+
+    [Fact]
+    public async Task UsingGlobs()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var file1 = directory.CreateEmptyFile($"packages.json");
+        var file2 = directory.CreateEmptyFile($"node_modules/packages.json");
+
+        var globs = new GlobCollection(Glob.Parse("**/*", GlobOptions.None), Glob.Parse("!**/node_modules/**/*", GlobOptions.None));
+        var options = new ScannerOptions()
         {
-            var stopwatch = ValueStopwatch.StartNew();
-            await using var directory = TemporaryDirectory.Create();
-            const int FileCount = 10_000;
-            for (var i = 0; i < FileCount; i++)
+            RecurseSubdirectories = true,
+            ShouldScanFilePredicate = (ref FileSystemEntry entry) => globs.IsMatch(ref entry),
+            ShouldRecursePredicate = (ref FileSystemEntry entry) => globs.IsPartialMatch(ref entry),
+            Scanners = new DependencyScanner[]
             {
-                await File.WriteAllTextAsync(directory.GetFullPath($"text{i.ToStringInvariant()}.txt"), "");
-            }
+                new DummyScanner(),
+            },
+        };
+        var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options).ToListAsync();
 
-            _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
-            stopwatch = ValueStopwatch.StartNew();
+        result.Should().SatisfyRespectively(dep => dep.Location.FilePath.Should().Be(file1));
+    }
 
-            var items = new List<Dependency>(FileCount);
-            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScannerNeverMatch() } }))
-            {
-                items.Add(item);
-            }
-
-            _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-            items.Should().BeEmpty();
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        public async Task ReportScanException(int degreeOfParallelism)
+    private sealed class DummyScanner : DependencyScanner
+    {
+        public override ValueTask ScanAsync(ScanFileContext context)
         {
-            await using var directory = TemporaryDirectory.Create();
-            await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
-
-            await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, _ => ValueTask.CompletedTask))
-                .Should().ThrowExactlyAsync<InvalidOperationException>();
-
-            await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, _ => ValueTask.CompletedTask))
-                .Should().ThrowExactlyAsync<InvalidOperationException>();
+            return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
         }
 
-        [Theory]
-        [InlineData(1)]
-        [InlineData(2)]
-        public async Task ReportScanException_IAsyncEnumerable(int degreeOfParallelism)
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
+    private sealed class DummyScannerNeverMatch : DependencyScanner
+    {
+        public override ValueTask ScanAsync(ScanFileContext context)
         {
-            await using var directory = TemporaryDirectory.Create();
-            await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
-
-            await new Func<Task>(async () =>
-            {
-                await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
-                {
-                }
-            }).Should().ThrowExactlyAsync<InvalidOperationException>();
-
-            await new Func<Task>(async () =>
-            {
-                await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
-                {
-                }
-            }).Should().ThrowExactlyAsync<InvalidOperationException>();
+            return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
         }
 
-        [Fact]
-        public void DefaultScannersIncludeAllScanners()
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
+    }
+
+    private sealed class ScanThrowScanner : DependencyScanner
+    {
+        public override ValueTask ScanAsync(ScanFileContext context)
         {
-            var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName).ToArray();
-
-            var allScanners = typeof(ScannerOptions).Assembly.GetExportedTypes()
-                .Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(DependencyScanner)) && type != typeof(RegexScanner))
-                .OrderBy(t => t.FullName)
-                .ToArray();
-
-            scanners.Should().NotBeEmpty();
-            scanners.Should().BeEquivalentTo(allScanners);
+            throw new InvalidOperationException();
         }
 
-        [Fact]
-        public async Task UsingGlobs()
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
+    private sealed class ShouldScanThrowScanner : DependencyScanner
+    {
+        public override ValueTask ScanAsync(ScanFileContext context)
         {
-            await using var directory = TemporaryDirectory.Create();
-            var file1 = directory.CreateEmptyFile($"packages.json");
-            var file2 = directory.CreateEmptyFile($"node_modules/packages.json");
-
-            var globs = new GlobCollection(Glob.Parse("**/*", GlobOptions.None), Glob.Parse("!**/node_modules/**/*", GlobOptions.None));
-            var options = new ScannerOptions()
-            {
-                RecurseSubdirectories = true,
-                ShouldScanFilePredicate = (ref FileSystemEntry entry) => globs.IsMatch(ref entry),
-                ShouldRecursePredicate = (ref FileSystemEntry entry) => globs.IsPartialMatch(ref entry),
-                Scanners = new DependencyScanner[]
-                {
-                    new DummyScanner(),
-                },
-            };
-            var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options).ToListAsync();
-
-            result.Should().SatisfyRespectively(dep => dep.Location.FilePath.Should().Be(file1));
+            return ValueTask.CompletedTask;
         }
 
-        private sealed class DummyScanner : DependencyScanner
-        {
-            public override ValueTask ScanAsync(ScanFileContext context)
-            {
-                return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
-            }
-
-            protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
-        }
-
-        private sealed class DummyScannerNeverMatch : DependencyScanner
-        {
-            public override ValueTask ScanAsync(ScanFileContext context)
-            {
-                return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
-            }
-
-            protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
-        }
-
-        private sealed class ScanThrowScanner : DependencyScanner
-        {
-            public override ValueTask ScanAsync(ScanFileContext context)
-            {
-                throw new InvalidOperationException();
-            }
-
-            protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
-        }
-
-        private sealed class ShouldScanThrowScanner : DependencyScanner
-        {
-            public override ValueTask ScanAsync(ScanFileContext context)
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            protected override bool ShouldScanFileCore(CandidateFileContext file) => throw new InvalidOperationException();
-        }
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => throw new InvalidOperationException();
     }
 }

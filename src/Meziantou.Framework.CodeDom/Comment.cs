@@ -1,18 +1,17 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class Comment : CodeObject
 {
-    public class Comment : CodeObject
+    public Comment()
     {
-        public Comment()
-        {
-        }
-
-        public Comment(string? text, CommentType type)
-        {
-            Text = text;
-            Type = type;
-        }
-
-        public string? Text { get; set; }
-        public CommentType Type { get; set; }
     }
+
+    public Comment(string? text, CommentType type)
+    {
+        Text = text;
+        Type = type;
+    }
+
+    public string? Text { get; set; }
+    public CommentType Type { get; set; }
 }

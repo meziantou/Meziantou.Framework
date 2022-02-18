@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class LiteralExpression : Expression
 {
-    public class LiteralExpression : Expression
+    public LiteralExpression()
     {
-        public LiteralExpression()
-        {
-        }
-
-        public LiteralExpression(object? value)
-        {
-            Value = value;
-        }
-
-        public object? Value { get; set; }
     }
+
+    public LiteralExpression(object? value)
+    {
+        Value = value;
+    }
+
+    public object? Value { get; set; }
 }

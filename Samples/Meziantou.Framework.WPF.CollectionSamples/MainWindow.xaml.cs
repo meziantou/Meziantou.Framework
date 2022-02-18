@@ -1,12 +1,11 @@
-﻿using System.Windows;
+using System.Windows;
 
-namespace Meziantou.Framework.WPF.CollectionSamples
+namespace Meziantou.Framework.WPF.CollectionSamples;
+
+public partial class MainWindow : Window
 {
-    public partial class MainWindow : Window
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

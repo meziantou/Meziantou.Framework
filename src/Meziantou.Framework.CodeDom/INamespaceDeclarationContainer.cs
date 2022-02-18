@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public interface INamespaceDeclarationContainer
 {
-    public interface INamespaceDeclarationContainer
-    {
-        CodeObjectCollection<NamespaceDeclaration> Namespaces { get; }
-    }
+    CodeObjectCollection<NamespaceDeclaration> Namespaces { get; }
 }

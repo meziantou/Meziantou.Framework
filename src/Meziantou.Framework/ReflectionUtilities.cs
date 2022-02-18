@@ -1,57 +1,56 @@
-﻿using System.Reflection;
+using System.Reflection;
 
-namespace Meziantou.Framework
-{
+namespace Meziantou.Framework;
+
 #if ReflectionUtilities_Internal
-    internal
+internal
 #else
-    public
+public
 #endif
-    static class ReflectionUtilities
+static class ReflectionUtilities
+{
+    public static bool IsNullableOfT(this Type type!!)
     {
-        public static bool IsNullableOfT(this Type type!!)
-        {
-            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
-        }
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+    }
 
-        public static bool IsFlagsEnum<T>()
-        {
-            return IsFlagsEnum(typeof(T));
-        }
+    public static bool IsFlagsEnum<T>()
+    {
+        return IsFlagsEnum(typeof(T));
+    }
 
-        public static bool IsFlagsEnum(this Type type!!)
+    public static bool IsFlagsEnum(this Type type!!)
+    {
+        if (!type.IsEnum)
+            return false;
+
+        return type.IsDefined(typeof(FlagsAttribute), inherit: true);
+    }
+
+    public static MethodInfo? GetImplicitConversion(object? value, Type targetType)
+    {
+        if (value == null)
+            return null;
+
+        var valueType = value.GetType();
+        return Array.Find(valueType.GetMethods(BindingFlags.Public | BindingFlags.Static), IsImplicitOperator);
+
+        bool IsImplicitOperator(MethodInfo mi)
         {
-            if (!type.IsEnum)
+            if (!string.Equals(mi.Name, "op_Implicit", StringComparison.Ordinal))
                 return false;
 
-            return type.IsDefined(typeof(FlagsAttribute), inherit: true);
-        }
+            if (!targetType.IsAssignableFrom(mi.ReturnType))
+                return false;
 
-        public static MethodInfo? GetImplicitConversion(object? value, Type targetType)
-        {
-            if (value == null)
-                return null;
+            var p = mi.GetParameters();
+            if (p.Length != 1)
+                return false;
 
-            var valueType = value.GetType();
-            return Array.Find(valueType.GetMethods(BindingFlags.Public | BindingFlags.Static), IsImplicitOperator);
+            if (!p[0].ParameterType.IsAssignableFrom(valueType))
+                return false;
 
-            bool IsImplicitOperator(MethodInfo mi)
-            {
-                if (!string.Equals(mi.Name, "op_Implicit", StringComparison.Ordinal))
-                    return false;
-
-                if (!targetType.IsAssignableFrom(mi.ReturnType))
-                    return false;
-
-                var p = mi.GetParameters();
-                if (p.Length != 1)
-                    return false;
-
-                if (!p[0].ParameterType.IsAssignableFrom(valueType))
-                    return false;
-
-                return true;
-            }
+            return true;
         }
     }
 }

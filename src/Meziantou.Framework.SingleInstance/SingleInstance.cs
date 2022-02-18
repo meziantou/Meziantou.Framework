@@ -1,204 +1,203 @@
-﻿using System.IO.Pipes;
+using System.IO.Pipes;
 
 #if NET461
 using System.Security.AccessControl;
 using System.Security.Principal;
 #endif
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public sealed class SingleInstance : IDisposable
 {
-    public sealed class SingleInstance : IDisposable
+    private const byte NotifyInstanceMessageType = 1;
+
+    private readonly Guid _applicationId;
+    private NamedPipeServerStream? _server;
+    private Mutex? _mutex;
+
+    public event EventHandler<SingleInstanceEventArgs>? NewInstance;
+
+    public SingleInstance(Guid applicationId)
     {
-        private const byte NotifyInstanceMessageType = 1;
+        _applicationId = applicationId;
+    }
 
-        private readonly Guid _applicationId;
-        private NamedPipeServerStream? _server;
-        private Mutex? _mutex;
+    private string PipeName => "Local\\Pipe" + _applicationId.ToString();
 
-        public event EventHandler<SingleInstanceEventArgs>? NewInstance;
+    public bool StartServer { get; set; } = true;
 
-        public SingleInstance(Guid applicationId)
+    public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
+
+    public bool StartApplication()
+    {
+        if (TryAcquireMutex())
         {
-            _applicationId = applicationId;
+            StartNamedPipeServer();
+            return true;
         }
 
-        private string PipeName => "Local\\Pipe" + _applicationId.ToString();
+        return false;
+    }
 
-        public bool StartServer { get; set; } = true;
-
-        public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
-
-        public bool StartApplication()
-        {
-            if (TryAcquireMutex())
-            {
-                StartNamedPipeServer();
-                return true;
-            }
-
-            return false;
-        }
-
-        private void StartNamedPipeServer()
-        {
-            if (!StartServer)
-                return;
+    private void StartNamedPipeServer()
+    {
+        if (!StartServer)
+            return;
 
 #if NETCOREAPP2_1_OR_GREATER
-            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-                throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
+        if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
+
+        _server = new NamedPipeServerStream(
+                PipeName,
+                PipeDirection.In,
+                NamedPipeServerStream.MaxAllowedServerInstances,
+                PipeTransmissionMode.Message,
+                PipeOptions.CurrentUserOnly);
+#elif NET461
+        using (var currentIdentity = WindowsIdentity.GetCurrent())
+        {
+            var identifier = currentIdentity.Owner;
+
+            // Grant full control to the owner so multiple servers can be opened.
+            // Full control is the default per MSDN docs for CreateNamedPipe.
+            var rule = new PipeAccessRule(identifier, PipeAccessRights.FullControl, AccessControlType.Allow);
+            var pipeSecurity = new PipeSecurity();
+
+            pipeSecurity.AddAccessRule(rule);
+            pipeSecurity.SetOwner(identifier);
 
             _server = new NamedPipeServerStream(
-                    PipeName,
-                    PipeDirection.In,
-                    NamedPipeServerStream.MaxAllowedServerInstances,
-                    PipeTransmissionMode.Message,
-                    PipeOptions.CurrentUserOnly);
-#elif NET461
-            using (var currentIdentity = WindowsIdentity.GetCurrent())
-            {
-                var identifier = currentIdentity.Owner;
-
-                // Grant full control to the owner so multiple servers can be opened.
-                // Full control is the default per MSDN docs for CreateNamedPipe.
-                var rule = new PipeAccessRule(identifier, PipeAccessRights.FullControl, AccessControlType.Allow);
-                var pipeSecurity = new PipeSecurity();
-
-                pipeSecurity.AddAccessRule(rule);
-                pipeSecurity.SetOwner(identifier);
-
-                _server = new NamedPipeServerStream(
-                           PipeName,
-                           PipeDirection.In,
-                           NamedPipeServerStream.MaxAllowedServerInstances,
-                           PipeTransmissionMode.Message,
-                           PipeOptions.Asynchronous,
-                           0,
-                           0,
-                           pipeSecurity);
-            }
+                       PipeName,
+                       PipeDirection.In,
+                       NamedPipeServerStream.MaxAllowedServerInstances,
+                       PipeTransmissionMode.Message,
+                       PipeOptions.Asynchronous,
+                       0,
+                       0,
+                       pipeSecurity);
+        }
 #else
 #error Platform not supported
 #endif
+        try
+        {
+            _server.BeginWaitForConnection(Listen, state: null);
+        }
+        catch (ObjectDisposedException)
+        {
+            // The server was disposed before getting a connection
+        }
+    }
+
+    private void Listen(IAsyncResult ar)
+    {
+        var server = _server;
+        if (server == null)
+            return;
+
+        try
+        {
             try
             {
-                _server.BeginWaitForConnection(Listen, state: null);
+                server.EndWaitForConnection(ar);
             }
             catch (ObjectDisposedException)
             {
-                // The server was disposed before getting a connection
-            }
-        }
-
-        private void Listen(IAsyncResult ar)
-        {
-            var server = _server;
-            if (server == null)
                 return;
+            }
 
-            try
+            StartNamedPipeServer();
+
+            using var binaryReader = new BinaryReader(server);
+            if (binaryReader.ReadByte() == NotifyInstanceMessageType)
             {
-                try
+                var processId = binaryReader.ReadInt32();
+                var argCount = binaryReader.ReadInt32();
+                if (argCount >= 0)
                 {
-                    server.EndWaitForConnection(ar);
-                }
-                catch (ObjectDisposedException)
-                {
-                    return;
-                }
-
-                StartNamedPipeServer();
-
-                using var binaryReader = new BinaryReader(server);
-                if (binaryReader.ReadByte() == NotifyInstanceMessageType)
-                {
-                    var processId = binaryReader.ReadInt32();
-                    var argCount = binaryReader.ReadInt32();
-                    if (argCount >= 0)
+                    var args = new string[argCount];
+                    for (var i = 0; i < argCount; i++)
                     {
-                        var args = new string[argCount];
-                        for (var i = 0; i < argCount; i++)
-                        {
-                            args[i] = binaryReader.ReadString();
-                        }
-
-                        NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
-                    }
-                }
-            }
-            finally
-            {
-                server.Dispose();
-            }
-        }
-
-        private bool TryAcquireMutex()
-        {
-            if (_mutex == null)
-            {
-                var mutexName = "Local\\Mutex" + _applicationId.ToString();
-                _mutex = new Mutex(initiallyOwned: false, name: mutexName);
-            }
-
-            try
-            {
-                return _mutex.WaitOne(TimeSpan.Zero);
-            }
-            catch (AbandonedMutexException)
-            {
-                return true;
-            }
-        }
-
-        public bool NotifyFirstInstance(string[] args!!)
-        {
-            using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
-            try
-            {
-                client.Connect((int)ClientConnectionTimeout.TotalMilliseconds);
-
-                // type, process id, arg length, arg1, arg2, ...
-                using (var ms = new MemoryStream())
-                {
-                    using (var binaryWriter = new BinaryWriter(ms))
-                    {
-                        binaryWriter.Write(NotifyInstanceMessageType);
-                        binaryWriter.Write(GetCurrentProcessId());
-                        binaryWriter.Write(args.Length);
-                        foreach (var arg in args)
-                        {
-                            binaryWriter.Write(arg);
-                        }
+                        args[i] = binaryReader.ReadString();
                     }
 
-                    var buffer = ms.ToArray();
-                    client.Write(buffer, 0, buffer.Length);
-                    client.Flush();
+                    NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
                 }
-
-                return true;
-            }
-            catch (TimeoutException)
-            {
-                return false;
             }
         }
-
-        private static int GetCurrentProcessId()
+        finally
         {
+            server.Dispose();
+        }
+    }
+
+    private bool TryAcquireMutex()
+    {
+        if (_mutex == null)
+        {
+            var mutexName = "Local\\Mutex" + _applicationId.ToString();
+            _mutex = new Mutex(initiallyOwned: false, name: mutexName);
+        }
+
+        try
+        {
+            return _mutex.WaitOne(TimeSpan.Zero);
+        }
+        catch (AbandonedMutexException)
+        {
+            return true;
+        }
+    }
+
+    public bool NotifyFirstInstance(string[] args!!)
+    {
+        using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+        try
+        {
+            client.Connect((int)ClientConnectionTimeout.TotalMilliseconds);
+
+            // type, process id, arg length, arg1, arg2, ...
+            using (var ms = new MemoryStream())
+            {
+                using (var binaryWriter = new BinaryWriter(ms))
+                {
+                    binaryWriter.Write(NotifyInstanceMessageType);
+                    binaryWriter.Write(GetCurrentProcessId());
+                    binaryWriter.Write(args.Length);
+                    foreach (var arg in args)
+                    {
+                        binaryWriter.Write(arg);
+                    }
+                }
+
+                var buffer = ms.ToArray();
+                client.Write(buffer, 0, buffer.Length);
+                client.Flush();
+            }
+
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static int GetCurrentProcessId()
+    {
 #if NET5_0_OR_GREATER
-            return Environment.ProcessId;
+        return Environment.ProcessId;
 #elif NET461 || NETCOREAPP3_1
-            return System.Diagnostics.Process.GetCurrentProcess().Id;
+        return System.Diagnostics.Process.GetCurrentProcess().Id;
 #else
 #error Platform not supported
 #endif
-        }
+    }
 
-        public void Dispose()
-        {
-            _mutex?.Dispose();
-            _server?.Dispose();
-        }
+    public void Dispose()
+    {
+        _mutex?.Dispose();
+        _server?.Dispose();
     }
 }

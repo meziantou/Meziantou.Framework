@@ -1,14 +1,13 @@
-﻿namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning;
+
+public enum DependencyType
 {
-    public enum DependencyType
-    {
-        Unknown,
-        NuGet,
-        Npm,
-        PyPi,
-        DockerImage,
-        GitSubmodule,
-        DotNetSdk,
-        GitHubActions,
-    }
+    Unknown,
+    NuGet,
+    Npm,
+    PyPi,
+    DockerImage,
+    GitSubmodule,
+    DotNetSdk,
+    GitHubActions,
 }

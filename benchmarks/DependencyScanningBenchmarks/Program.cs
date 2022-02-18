@@ -1,12 +1,11 @@
-﻿using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Running;
 
-namespace DependencyScanningBenchmarks
+namespace DependencyScanningBenchmarks;
+
+internal static class Program
 {
-    internal static class Program
+    private static void Main()
     {
-        private static void Main()
-        {
-            BenchmarkRunner.Run<DependencyScannerBenchmark>();
-        }
+        BenchmarkRunner.Run<DependencyScannerBenchmark>();
     }
 }

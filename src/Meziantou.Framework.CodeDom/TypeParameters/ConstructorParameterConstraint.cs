@@ -1,6 +1,5 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class ConstructorParameterConstraint : TypeParameterConstraint
 {
-    public class ConstructorParameterConstraint : TypeParameterConstraint
-    {
-    }
 }

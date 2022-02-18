@@ -1,11 +1,10 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+[ComImport]
+[Guid(IIDGuid.IFileSaveDialog)]
+[CoClass(typeof(FileSaveDialogRCW))]
+internal interface NativeFileSaveDialog : IFileSaveDialog
 {
-    [ComImport]
-    [Guid(IIDGuid.IFileSaveDialog)]
-    [CoClass(typeof(FileSaveDialogRCW))]
-    internal interface NativeFileSaveDialog : IFileSaveDialog
-    {
-    }
 }

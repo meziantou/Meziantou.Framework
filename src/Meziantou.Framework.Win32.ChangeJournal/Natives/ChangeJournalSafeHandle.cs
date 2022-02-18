@@ -1,17 +1,16 @@
-﻿using Microsoft.Win32.SafeHandles;
+using Microsoft.Win32.SafeHandles;
 
-namespace Meziantou.Framework.Win32.Natives
+namespace Meziantou.Framework.Win32.Natives;
+
+internal sealed class ChangeJournalSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
 {
-    internal sealed class ChangeJournalSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public ChangeJournalSafeHandle()
+        : base(ownsHandle: true)
     {
-        public ChangeJournalSafeHandle()
-            : base(ownsHandle: true)
-        {
-        }
+    }
 
-        protected override bool ReleaseHandle()
-        {
-            return Win32Methods.CloseHandle(handle);
-        }
+    protected override bool ReleaseHandle()
+    {
+        return Win32Methods.CloseHandle(handle);
     }
 }

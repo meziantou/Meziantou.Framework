@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.Globbing
+namespace Meziantou.Framework.Globbing;
+
+internal enum GlobParserContext
 {
-    internal enum GlobParserContext
-    {
-        Segment,
-        LiteralSet,
-        Range,
-    }
+    Segment,
+    LiteralSet,
+    Range,
 }

@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework
-{
-    internal sealed class SystemClock : IClock
-    {
-        public DateTime Now => DateTime.Now;
+namespace Meziantou.Framework;
 
-        public DateTime UtcNow => DateTime.UtcNow;
-    }
+internal sealed class SystemClock : IClock
+{
+    public DateTime Now => DateTime.Now;
+
+    public DateTime UtcNow => DateTime.UtcNow;
 }

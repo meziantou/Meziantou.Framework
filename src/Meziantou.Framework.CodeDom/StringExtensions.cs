@@ -1,12 +1,11 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+internal static class StringExtensions
 {
-    internal static class StringExtensions
-    {
 #if NETSTANDARD2_0
-        public static bool Contains(this string str, string subString, System.StringComparison stringComparison)
-        {
-            return str.IndexOf(subString, stringComparison) >= 0;
-        }
-#endif
+    public static bool Contains(this string str, string subString, System.StringComparison stringComparison)
+    {
+        return str.IndexOf(subString, stringComparison) >= 0;
     }
+#endif
 }

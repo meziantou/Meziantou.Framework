@@ -1,51 +1,50 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+[StructLayout(LayoutKind.Auto)]
+[Obsolete("Use System.HashCode")]
+public struct HashCodeCombiner
 {
-    [StructLayout(LayoutKind.Auto)]
-    [Obsolete("Use System.HashCode")]
-    public struct HashCodeCombiner
+    private int _hash;
+
+    public readonly int HashCode => _hash.GetHashCode();
+
+    public static implicit operator int(HashCodeCombiner hashCodeCombiner) => hashCodeCombiner.HashCode;
+
+    private void Add(int i)
     {
-        private int _hash;
+        _hash = (_hash * 397) ^ i;
+    }
 
-        public readonly int HashCode => _hash.GetHashCode();
+    public void Add(object? o)
+    {
+        var hashCode = o != null ? o.GetHashCode() : 0;
+        Add(hashCode);
+    }
 
-        public static implicit operator int(HashCodeCombiner hashCodeCombiner) => hashCodeCombiner.HashCode;
+    public void Add<TValue>(TValue value, IEqualityComparer<TValue> comparer)
+    {
+        var hashCode = value != null ? comparer.GetHashCode(value) : 0;
+        Add(hashCode);
+    }
 
-        private void Add(int i)
+    public void Add(IEnumerable? e)
+    {
+        if (e == null)
         {
-            _hash = (_hash * 397) ^ i;
+            Add(0);
         }
-
-        public void Add(object? o)
+        else
         {
-            var hashCode = o != null ? o.GetHashCode() : 0;
-            Add(hashCode);
-        }
-
-        public void Add<TValue>(TValue value, IEqualityComparer<TValue> comparer)
-        {
-            var hashCode = value != null ? comparer.GetHashCode(value) : 0;
-            Add(hashCode);
-        }
-
-        public void Add(IEnumerable? e)
-        {
-            if (e == null)
+            var count = 0;
+            foreach (var o in e)
             {
-                Add(0);
+                Add(o);
+                count++;
             }
-            else
-            {
-                var count = 0;
-                foreach (var o in e)
-                {
-                    Add(o);
-                    count++;
-                }
-                Add(count);
-            }
+            Add(count);
         }
     }
 }

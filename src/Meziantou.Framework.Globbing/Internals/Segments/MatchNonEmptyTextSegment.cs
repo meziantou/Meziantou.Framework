@@ -1,29 +1,28 @@
-﻿namespace Meziantou.Framework.Globbing.Internals
+namespace Meziantou.Framework.Globbing.Internals;
+
+internal sealed class MatchNonEmptyTextSegment : Segment
 {
-    internal sealed class MatchNonEmptyTextSegment : Segment
+    private MatchNonEmptyTextSegment()
     {
-        private MatchNonEmptyTextSegment()
+    }
+
+    public static MatchNonEmptyTextSegment Instance { get; } = new MatchNonEmptyTextSegment();
+
+    public override bool IsMatch(ref PathReader pathReader)
+    {
+        if (!pathReader.IsEndOfPath)
         {
+            pathReader.ConsumeToEnd();
+            return true;
         }
 
-        public static MatchNonEmptyTextSegment Instance { get; } = new MatchNonEmptyTextSegment();
+        return false;
+    }
 
-        public override bool IsMatch(ref PathReader pathReader)
-        {
-            if (!pathReader.IsEndOfPath)
-            {
-                pathReader.ConsumeToEnd();
-                return true;
-            }
+    public override bool IsRecursiveMatchAll => true;
 
-            return false;
-        }
-
-        public override bool IsRecursiveMatchAll => true;
-
-        public override string ToString()
-        {
-            return "**/*";
-        }
+    public override string ToString()
+    {
+        return "**/*";
     }
 }

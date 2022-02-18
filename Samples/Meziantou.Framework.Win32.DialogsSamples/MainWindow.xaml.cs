@@ -1,25 +1,24 @@
-﻿using System.Windows;
+using System.Windows;
 
-namespace Meziantou.Framework.Win32.DialogsSamples
+namespace Meziantou.Framework.Win32.DialogsSamples;
+
+/// <summary>
+/// Interaction logic for MainWindow.xaml
+/// </summary>
+public partial class MainWindow : Window
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
 
-        private void ButtonOpenFolder_Click(object sender, RoutedEventArgs e)
+    private void ButtonOpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
         {
-            var dialog = new OpenFolderDialog
-            {
-                Title = "Sample Open Folder dialog",
-                OkButtonLabel = "Test OK",
-            };
-            dialog.ShowDialog();
-        }
+            Title = "Sample Open Folder dialog",
+            OkButtonLabel = "Test OK",
+        };
+        dialog.ShowDialog();
     }
 }

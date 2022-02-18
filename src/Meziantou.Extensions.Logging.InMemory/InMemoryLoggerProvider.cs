@@ -1,16 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 
-namespace Meziantou.Extensions.Logging.InMemory
+namespace Meziantou.Extensions.Logging.InMemory;
+
+public sealed class InMemoryLoggerProvider : ILoggerProvider
 {
-    public sealed class InMemoryLoggerProvider : ILoggerProvider
+    public ILogger CreateLogger(string categoryName)
     {
-        public ILogger CreateLogger(string categoryName)
-        {
-            return new InMemoryLogger(categoryName);
-        }
+        return new InMemoryLogger(categoryName);
+    }
 
-        public void Dispose()
-        {
-        }
+    public void Dispose()
+    {
     }
 }

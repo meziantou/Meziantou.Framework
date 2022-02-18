@@ -1,10 +1,9 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace Meziantou.Framework.ChromiumTracing
+namespace Meziantou.Framework.ChromiumTracing;
+
+public abstract class ChromiumTracingObjectEvent : ChromiumTracingEvent
 {
-    public abstract class ChromiumTracingObjectEvent : ChromiumTracingEvent
-    {
-        [JsonPropertyName("id")]
-        public string? Id { get; set; }
-    }
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
 }

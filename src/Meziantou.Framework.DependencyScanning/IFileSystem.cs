@@ -1,9 +1,8 @@
-﻿namespace Meziantou.Framework.DependencyScanning
+namespace Meziantou.Framework.DependencyScanning;
+
+public interface IFileSystem
 {
-    public interface IFileSystem
-    {
-        Stream OpenRead(string path);
-        Stream OpenReadWrite(string path);
-        IEnumerable<string> GetFiles(string path, string pattern);
-    }
+    Stream OpenRead(string path);
+    Stream OpenReadWrite(string path);
+    IEnumerable<string> GetFiles(string path, string pattern);
 }

@@ -1,7 +1,6 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public interface IMemberContainer
 {
-    public interface IMemberContainer
-    {
-        CodeObjectCollection<MemberDeclaration> Members { get; }
-    }
+    CodeObjectCollection<MemberDeclaration> Members { get; }
 }

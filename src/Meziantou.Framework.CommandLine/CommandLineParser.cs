@@ -1,91 +1,90 @@
-﻿namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public sealed class CommandLineParser
 {
-    public sealed class CommandLineParser
+    private static readonly string[] s_helpArguments = { "-?", "/?", "-help", "/help", "--help" };
+
+    private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
+
+    public static CommandLineParser Current { get; } = ParseCurrent();
+
+    private static CommandLineParser ParseCurrent()
     {
-        private static readonly string[] s_helpArguments = { "-?", "/?", "-help", "/help", "--help" };
+        var parser = new CommandLineParser();
+        parser.Parse(Environment.GetCommandLineArgs());
+        return parser;
+    }
 
-        private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
-
-        public static CommandLineParser Current { get; } = ParseCurrent();
-
-        private static CommandLineParser ParseCurrent()
+    public void Parse(string[] args)
+    {
+        for (var i = 0; i < args.Length; i++)
         {
-            var parser = new CommandLineParser();
-            parser.Parse(Environment.GetCommandLineArgs());
-            return parser;
-        }
+            var arg = args[i];
+            if (string.IsNullOrEmpty(arg))
+                continue;
 
-        public void Parse(string[] args)
-        {
-            for (var i = 0; i < args.Length; i++)
+            if (arg.All(c => c == ' '))
             {
-                var arg = args[i];
-                if (string.IsNullOrEmpty(arg))
-                    continue;
-
-                if (arg.All(c => c == ' '))
-                {
-                    _positionArguments[i] = arg;
-                    continue;
-                }
-
-                arg = arg.TrimStart();
-                if (string.IsNullOrEmpty(arg))
-                    continue;
-
-                if (IsHelpArgument(arg))
-                {
-                    HelpRequested = true;
-                    continue;
-                }
-
-                if (arg[0] == '-' || arg[0] == '/')
-                {
-                    arg = arg[1..];
-                    var indexOfSeparator = arg.IndexOfAny(new[] { ':', '=' });
-
-                    var name = arg;
-                    var value = string.Empty;
-                    if (indexOfSeparator >= 0)
-                    {
-                        name = arg[..indexOfSeparator].Trim();
-                        value = arg[(indexOfSeparator + 1)..];
-                    }
-
-                    _namedArguments[name] = value;
-                }
-
                 _positionArguments[i] = arg;
+                continue;
             }
+
+            arg = arg.TrimStart();
+            if (string.IsNullOrEmpty(arg))
+                continue;
+
+            if (IsHelpArgument(arg))
+            {
+                HelpRequested = true;
+                continue;
+            }
+
+            if (arg[0] == '-' || arg[0] == '/')
+            {
+                arg = arg[1..];
+                var indexOfSeparator = arg.IndexOfAny(new[] { ':', '=' });
+
+                var name = arg;
+                var value = string.Empty;
+                if (indexOfSeparator >= 0)
+                {
+                    name = arg[..indexOfSeparator].Trim();
+                    value = arg[(indexOfSeparator + 1)..];
+                }
+
+                _namedArguments[name] = value;
+            }
+
+            _positionArguments[i] = arg;
         }
+    }
 
-        public bool HelpRequested { get; private set; }
+    public bool HelpRequested { get; private set; }
 
-        public bool HasArgument(string name)
-        {
-            return _namedArguments.ContainsKey(name);
-        }
+    public bool HasArgument(string name)
+    {
+        return _namedArguments.ContainsKey(name);
+    }
 
-        public string? GetArgument(string name)
-        {
-            if (_namedArguments.TryGetValue(name, out var value))
-                return value;
+    public string? GetArgument(string name)
+    {
+        if (_namedArguments.TryGetValue(name, out var value))
+            return value;
 
-            return null;
-        }
+        return null;
+    }
 
-        public string? GetArgument(int position)
-        {
-            if (_positionArguments.TryGetValue(position, out var value))
-                return value;
+    public string? GetArgument(int position)
+    {
+        if (_positionArguments.TryGetValue(position, out var value))
+            return value;
 
-            return null;
-        }
+        return null;
+    }
 
-        private static bool IsHelpArgument(string arg)
-        {
-            return s_helpArguments.Contains(arg, StringComparer.OrdinalIgnoreCase);
-        }
+    private static bool IsHelpArgument(string arg)
+    {
+        return s_helpArguments.Contains(arg, StringComparer.OrdinalIgnoreCase);
     }
 }

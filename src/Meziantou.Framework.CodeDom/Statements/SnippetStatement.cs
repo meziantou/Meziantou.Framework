@@ -1,16 +1,15 @@
-﻿namespace Meziantou.Framework.CodeDom
+namespace Meziantou.Framework.CodeDom;
+
+public class SnippetStatement : Statement
 {
-    public class SnippetStatement : Statement
+    public SnippetStatement()
     {
-        public SnippetStatement()
-        {
-        }
-
-        public SnippetStatement(string? statement)
-        {
-            Statement = statement;
-        }
-
-        public string? Statement { get; set; }
     }
+
+    public SnippetStatement(string? statement)
+    {
+        Statement = statement;
+    }
+
+    public string? Statement { get; set; }
 }

@@ -1,8 +1,7 @@
-﻿namespace Meziantou.Framework.Templating
+namespace Meziantou.Framework.Templating;
+
+public class HtmlEmailMetadata
 {
-    public class HtmlEmailMetadata
-    {
-        public string? Title { get; set; }
-        public IList<string>? ContentIdentifiers { get; set; }
-    }
+    public string? Title { get; set; }
+    public IList<string>? ContentIdentifiers { get; set; }
 }

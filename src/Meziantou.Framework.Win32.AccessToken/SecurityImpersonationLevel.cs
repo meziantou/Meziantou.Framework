@@ -1,10 +1,9 @@
-﻿namespace Meziantou.Framework.Win32
+namespace Meziantou.Framework.Win32;
+
+public enum SecurityImpersonationLevel
 {
-    public enum SecurityImpersonationLevel
-    {
-        SecurityAnonymous,
-        SecurityIdentification,
-        SecurityImpersonation,
-        SecurityDelegation,
-    }
+    SecurityAnonymous,
+    SecurityIdentification,
+    SecurityImpersonation,
+    SecurityDelegation,
 }

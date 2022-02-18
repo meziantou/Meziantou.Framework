@@ -1,6 +1,5 @@
-﻿namespace Meziantou.Framework
+namespace Meziantou.Framework;
+
+public interface ICachedEnumerable<T> : IEnumerable<T>, IDisposable
 {
-    public interface ICachedEnumerable<T> : IEnumerable<T>, IDisposable
-    {
-    }
 }

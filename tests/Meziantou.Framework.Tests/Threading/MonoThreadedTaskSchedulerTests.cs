@@ -1,59 +1,58 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Meziantou.Framework.Threading;
 using Xunit;
 
-namespace Meziantou.Framework.Tests.Threading
+namespace Meziantou.Framework.Tests.Threading;
+
+public sealed class MonoThreadedTaskSchedulerTests : IDisposable
 {
-    public sealed class MonoThreadedTaskSchedulerTests : IDisposable
+    private const string ThreadName = "Test";
+
+    private readonly MonoThreadedTaskScheduler _taskScheduler;
+    private int _count;
+
+    public MonoThreadedTaskSchedulerTests()
     {
-        private const string ThreadName = "Test";
+        _taskScheduler = new MonoThreadedTaskScheduler(ThreadName);
+    }
 
-        private readonly MonoThreadedTaskScheduler _taskScheduler;
-        private int _count;
+    public void Dispose()
+    {
+        _taskScheduler.Dispose();
+    }
 
-        public MonoThreadedTaskSchedulerTests()
+    [Fact]
+    public async Task SequentialEnqueue()
+    {
+        const int Count = 1000;
+        for (var i = 0; i < Count; i++)
         {
-            _taskScheduler = new MonoThreadedTaskScheduler(ThreadName);
+            await EnqueueTask();
         }
 
-        public void Dispose()
+        _count.Should().Be(Count);
+    }
+
+    [Fact]
+    public async Task ParallelEnqueue()
+    {
+        const int Count = 1000;
+        var tasks = new Task[Count];
+        for (var i = 0; i < Count; i++)
         {
-            _taskScheduler.Dispose();
+            tasks[i] = EnqueueTask();
         }
 
-        [Fact]
-        public async Task SequentialEnqueue()
+        await Task.WhenAll(tasks);
+        _count.Should().Be(Count);
+    }
+
+    private Task EnqueueTask()
+    {
+        return Task.Factory.StartNew(() =>
         {
-            const int Count = 1000;
-            for (var i = 0; i < Count; i++)
-            {
-                await EnqueueTask();
-            }
-
-            _count.Should().Be(Count);
-        }
-
-        [Fact]
-        public async Task ParallelEnqueue()
-        {
-            const int Count = 1000;
-            var tasks = new Task[Count];
-            for (var i = 0; i < Count; i++)
-            {
-                tasks[i] = EnqueueTask();
-            }
-
-            await Task.WhenAll(tasks);
-            _count.Should().Be(Count);
-        }
-
-        private Task EnqueueTask()
-        {
-            return Task.Factory.StartNew(() =>
-            {
-                Thread.CurrentThread.Name.Should().Be(ThreadName);
-                _count++;
-            }, CancellationToken.None, TaskCreationOptions.None, _taskScheduler);
-        }
+            Thread.CurrentThread.Name.Should().Be(ThreadName);
+            _count++;
+        }, CancellationToken.None, TaskCreationOptions.None, _taskScheduler);
     }
 }

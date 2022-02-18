@@ -1,12 +1,11 @@
-﻿namespace Meziantou.Framework.DependencyScanning.Internals
-{
-    internal sealed class EmptyAsyncEnumerable<T> : IAsyncEnumerable<T>
-    {
-        public static EmptyAsyncEnumerable<T> Instance { get; } = new EmptyAsyncEnumerable<T>();
+namespace Meziantou.Framework.DependencyScanning.Internals;
 
-        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
-        {
-            return EmptyAsyncEnumerator<T>.Instance;
-        }
+internal sealed class EmptyAsyncEnumerable<T> : IAsyncEnumerable<T>
+{
+    public static EmptyAsyncEnumerable<T> Instance { get; } = new EmptyAsyncEnumerable<T>();
+
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return EmptyAsyncEnumerator<T>.Instance;
     }
 }

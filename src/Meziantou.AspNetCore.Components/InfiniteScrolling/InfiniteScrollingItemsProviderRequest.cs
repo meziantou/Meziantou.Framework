@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Meziantou.AspNetCore.Components
+﻿namespace Meziantou.AspNetCore.Components
 {
     public sealed class InfiniteScrollingItemsProviderRequest
     {

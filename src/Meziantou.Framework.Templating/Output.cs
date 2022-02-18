@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-
-namespace Meziantou.Framework.Templating
+﻿namespace Meziantou.Framework.Templating
 {
     public class Output
     {

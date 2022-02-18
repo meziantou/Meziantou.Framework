@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.Framework.StronglyTypedId
+﻿namespace Meziantou.Framework.StronglyTypedId
 {
     internal static class Extensions
     {

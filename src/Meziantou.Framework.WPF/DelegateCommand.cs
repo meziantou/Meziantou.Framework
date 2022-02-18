@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework.WPF
+﻿namespace Meziantou.Framework.WPF
 {
     public static class DelegateCommand
     {

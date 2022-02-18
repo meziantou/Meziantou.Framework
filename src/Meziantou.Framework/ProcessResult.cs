@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public sealed class ProcessResult
     {

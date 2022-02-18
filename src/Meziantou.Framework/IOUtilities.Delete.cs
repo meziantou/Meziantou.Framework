@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
 #if PUBLIC_IO_UTILITIES
     public

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32
 {
     [Flags]
     [SuppressMessage("Usage", "CA2217:Do not mark enums with FlagsAttribute", Justification = "Values from Windows definition")]

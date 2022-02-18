@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Globbing.Internals
+﻿namespace Meziantou.Framework.Globbing.Internals
 {
     internal sealed class RecursiveMatchAllSegment : Segment
     {

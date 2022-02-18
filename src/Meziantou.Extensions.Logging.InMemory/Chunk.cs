@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Extensions.Logging.InMemory
+﻿namespace Meziantou.Extensions.Logging.InMemory
 {
     internal sealed class Chunk<T>
     {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     /// Describes the current status of an application that is acted upon by the Restart Manager.

@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using YamlDotNet.Core;
+﻿using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners

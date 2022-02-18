@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Collections;
+﻿using System.Collections;
 
 #if NET472
 using Microsoft.IO;
 using Microsoft.IO.Enumeration;
 #else
-using System.IO;
 using System.IO.Enumeration;
 #endif
 

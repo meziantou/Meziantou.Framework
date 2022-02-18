@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using Meziantou.Framework.DependencyScanning.Scanners;
 
 namespace Meziantou.Framework.DependencyScanning

@@ -1,9 +1,5 @@
 ﻿#pragma warning disable MA0101 // String contains an implicit end of line character
-using System;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.CodeAnalysis;

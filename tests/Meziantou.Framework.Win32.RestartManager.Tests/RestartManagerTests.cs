@@ -1,6 +1,4 @@
-﻿using System.IO;
-using System.Linq;
-using FluentAssertions;
+﻿using FluentAssertions;
 using TestUtilities;
 
 namespace Meziantou.Framework.Win32.Tests

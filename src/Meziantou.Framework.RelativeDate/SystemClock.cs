@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     internal sealed class SystemClock : IClock
     {

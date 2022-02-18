@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.IO.Enumeration;
 
 namespace Meziantou.Framework.DependencyScanning.Internals

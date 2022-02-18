@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows.Markup;
+﻿using System.Windows.Markup;
 
 namespace Meziantou.Framework.WPF
 {

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public abstract class ClassOrStructDeclaration : TypeDeclaration, IParametrableType, ITypeDeclarationContainer, IMemberContainer
     {

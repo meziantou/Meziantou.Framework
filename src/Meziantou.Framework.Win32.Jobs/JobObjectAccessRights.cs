@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32
 {
     // https://docs.microsoft.com/en-us/windows/win32/procthread/job-object-security-and-access-rights
     [Flags]

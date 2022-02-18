@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32.CredentialManagerConsole
+﻿namespace Meziantou.Framework.Win32.CredentialManagerConsole
 {
     internal static class Program
     {

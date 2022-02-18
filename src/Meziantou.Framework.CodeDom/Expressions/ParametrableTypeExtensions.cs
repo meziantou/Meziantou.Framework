@@ -1,6 +1,4 @@
-﻿using System.Linq;
-
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     internal static class ParametrableTypeExtensions
     {

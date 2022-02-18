@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ArgumentsPrinter
+﻿namespace ArgumentsPrinter
 {
     internal static class Program
     {

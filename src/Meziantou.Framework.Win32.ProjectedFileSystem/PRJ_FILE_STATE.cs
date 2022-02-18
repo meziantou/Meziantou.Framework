@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     [Flags]
     public enum PRJ_FILE_STATE

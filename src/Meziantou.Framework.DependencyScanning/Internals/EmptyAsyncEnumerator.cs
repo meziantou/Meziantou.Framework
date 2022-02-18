@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework.DependencyScanning.Internals
+﻿namespace Meziantou.Framework.DependencyScanning.Internals
 {
     internal sealed class EmptyAsyncEnumerator<T> : IAsyncEnumerator<T>
     {

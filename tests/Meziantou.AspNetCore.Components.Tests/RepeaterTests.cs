@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Bunit;
+﻿using Bunit;
 using Xunit;
 
 namespace Meziantou.AspNetCore.Components.Tests

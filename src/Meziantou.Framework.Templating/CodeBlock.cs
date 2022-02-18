@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Templating
+﻿namespace Meziantou.Framework.Templating
 {
     public class CodeBlock : ParsedBlock
     {

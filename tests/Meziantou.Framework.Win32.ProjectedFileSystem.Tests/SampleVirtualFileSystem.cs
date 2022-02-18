@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
     {

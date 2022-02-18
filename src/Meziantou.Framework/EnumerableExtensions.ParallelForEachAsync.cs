@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-#if NET5_0 || NETSTANDARD2_0
+﻿#if NETSTANDARD2_0
 using System.Collections.Concurrent;
-using System.Linq;
 #endif
 
 namespace Meziantou.Framework

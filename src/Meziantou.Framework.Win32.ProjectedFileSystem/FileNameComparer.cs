@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {

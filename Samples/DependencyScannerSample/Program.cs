@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Meziantou.Framework.DependencyScanning;
+﻿using Meziantou.Framework.DependencyScanning;
 
 namespace DependencyScannerSample
 {

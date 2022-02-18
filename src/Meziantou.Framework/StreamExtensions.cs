@@ -1,9 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public static class StreamExtensions
     {

@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests

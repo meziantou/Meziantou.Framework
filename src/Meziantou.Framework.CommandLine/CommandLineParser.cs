@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public sealed class CommandLineParser
     {

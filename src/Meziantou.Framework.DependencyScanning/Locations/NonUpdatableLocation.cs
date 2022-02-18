@@ -1,9 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework.DependencyScanning.Locations
+﻿namespace Meziantou.Framework.DependencyScanning.Locations
 {
     internal sealed class NonUpdatableLocation : Location
     {

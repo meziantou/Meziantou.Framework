@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Globbing
+﻿namespace Meziantou.Framework.Globbing
 {
     [Flags]
     public enum GlobOptions

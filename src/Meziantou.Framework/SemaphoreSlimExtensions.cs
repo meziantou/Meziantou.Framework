@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public static class SemaphoreSlimExtensions
     {

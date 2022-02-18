@@ -1,7 +1,6 @@
 ﻿// Copied from https://github.com/dotnet/roslyn/blob/246b8274deeb44885337bb0543357fdc0c165203/src/Compilers/Core/Portable/InternalUtilities/ConcurrentSet.cs
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Meziantou.Framework.Collections
 {

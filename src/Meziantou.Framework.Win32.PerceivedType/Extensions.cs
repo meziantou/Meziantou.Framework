@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.Versioning;
+﻿using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace Meziantou.Framework.Win32

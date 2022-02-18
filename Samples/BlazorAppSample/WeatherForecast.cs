@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace BlazorAppSample
+﻿namespace BlazorAppSample
 {
     public class WeatherForecast
     {

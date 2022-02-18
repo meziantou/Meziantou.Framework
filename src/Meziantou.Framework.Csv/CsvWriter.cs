@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
-
-namespace Meziantou.Framework.Csv
+﻿namespace Meziantou.Framework.Csv
 {
     public class CsvWriter
     {

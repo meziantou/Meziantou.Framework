@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     internal sealed class DirectoryEnumerationSession : IDisposable
     {

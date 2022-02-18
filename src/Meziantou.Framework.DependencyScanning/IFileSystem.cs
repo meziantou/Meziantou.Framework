@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
-
-namespace Meziantou.Framework.DependencyScanning
+﻿namespace Meziantou.Framework.DependencyScanning
 {
     public interface IFileSystem
     {

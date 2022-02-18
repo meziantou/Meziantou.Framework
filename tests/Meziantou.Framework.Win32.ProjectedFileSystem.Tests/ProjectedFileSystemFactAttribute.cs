@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using Xunit;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {

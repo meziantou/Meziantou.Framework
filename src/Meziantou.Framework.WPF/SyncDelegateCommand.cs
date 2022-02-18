@@ -1,5 +1,4 @@
-﻿using System;
-using System.Windows.Threading;
+﻿using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF
 {

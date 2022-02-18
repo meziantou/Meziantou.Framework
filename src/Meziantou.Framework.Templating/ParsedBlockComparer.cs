@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.Framework.Templating
+﻿namespace Meziantou.Framework.Templating
 {
     internal static class ParsedBlockComparer
     {

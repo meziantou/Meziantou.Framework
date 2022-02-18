@@ -2,7 +2,6 @@
 using Microsoft.IO;
 using Microsoft.IO.Enumeration;
 #else
-using System.IO;
 using System.IO.Enumeration;
 #endif
 

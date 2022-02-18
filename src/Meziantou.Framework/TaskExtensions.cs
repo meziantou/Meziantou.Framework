@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public static partial class TaskExtensions
     {

@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     public sealed class ProjectedFileSystemStartOptions
     {

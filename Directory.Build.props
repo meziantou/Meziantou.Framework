@@ -18,7 +18,7 @@
     <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ValidateProjectTargets>true</ValidateProjectTargets>
-    <ImplicitUsings>disable</ImplicitUsings>
+    <ImplicitUsings>enable</ImplicitUsings>
     
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
@@ -39,6 +39,13 @@
 
   <ItemGroup Condition="'$(TargetFramework)' != '$(LatestTargetFrameworkPreview)'">
     <EditorConfigFiles Include="$(MSBuildThisFileDirectory)/eng/olderTargets.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+
+    <!-- System.Net.Http doesn't exit in net461 by default -->
+    <Reference Include="System.Net.Http" Condition="$(TargetFramework) == 'net461' OR $(TargetFramework) == 'net472'" />
   </ItemGroup>
 
   <!-- Analyzers -->

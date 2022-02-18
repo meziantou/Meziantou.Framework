@@ -1,8 +1,5 @@
 ﻿#pragma warning disable MA0048
 #pragma warning disable IDE1006 // Naming Styles
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework;

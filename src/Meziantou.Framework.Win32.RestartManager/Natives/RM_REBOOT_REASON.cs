@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32.Natives
+﻿namespace Meziantou.Framework.Win32.Natives
 {
     /// <summary>
     /// Describes the reasons a restart of the system is needed.

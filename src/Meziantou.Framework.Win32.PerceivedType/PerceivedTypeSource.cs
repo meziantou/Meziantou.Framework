@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32
 {
     /// <summary>
     /// Indicates the source of the perceived type information.

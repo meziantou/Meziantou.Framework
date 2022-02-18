@@ -1,5 +1,4 @@
-﻿using System;
-using Meziantou.Framework.CodeDom;
+﻿using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.StronglyTypedId

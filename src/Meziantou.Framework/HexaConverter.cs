@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Meziantou.Framework
+﻿namespace Meziantou.Framework
 {
     public static class HexaConverter
     {

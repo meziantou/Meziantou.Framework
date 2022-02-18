@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-
-namespace Meziantou.Framework.DependencyScanning.Internals
+﻿namespace Meziantou.Framework.DependencyScanning.Internals
 {
     internal sealed class EmptyAsyncEnumerable<T> : IAsyncEnumerable<T>
     {

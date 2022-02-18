@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.IO;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
-namespace Meziantou.Framework.Templating
+﻿namespace Meziantou.Framework.Templating
 {
     public class HtmlEmailTemplate : Template
     {

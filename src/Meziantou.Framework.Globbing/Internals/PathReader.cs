@@ -1,11 +1,9 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Diagnostics;
 
 #if NET472
 using Microsoft.IO;
-#else
-using System.IO;
+using Path = System.IO.Path;
 #endif
 
 namespace Meziantou.Framework.Globbing.Internals

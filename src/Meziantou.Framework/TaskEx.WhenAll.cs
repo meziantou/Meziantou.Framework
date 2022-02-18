@@ -1,8 +1,6 @@
 ﻿#pragma warning disable MA0042 // Do not use blocking call
 
-using System;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
 namespace Meziantou.Framework
 {

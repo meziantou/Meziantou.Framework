@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using Meziantou.Framework.Globbing.Internals;
+﻿using Meziantou.Framework.Globbing.Internals;
 
 #if NET472
 using Microsoft.IO;
 using Microsoft.IO.Enumeration;
+using Path = System.IO.Path;
 #else
-using System.IO;
 using System.IO.Enumeration;
 #endif
 

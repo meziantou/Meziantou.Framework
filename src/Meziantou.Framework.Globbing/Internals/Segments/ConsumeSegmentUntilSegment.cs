@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Globbing.Internals.Segments
+﻿namespace Meziantou.Framework.Globbing.Internals.Segments
 {
     internal sealed class ConsumeSegmentUntilSegment : Segment
     {

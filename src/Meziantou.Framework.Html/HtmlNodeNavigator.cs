@@ -1,8 +1,6 @@
 ﻿#nullable disable
 //#define HTML_XPATH_TRACE
-using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;

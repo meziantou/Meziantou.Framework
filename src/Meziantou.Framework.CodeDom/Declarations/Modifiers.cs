@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     [Flags]
     public enum Modifiers

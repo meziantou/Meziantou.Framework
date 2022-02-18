@@ -1,11 +1,5 @@
 ﻿#pragma warning disable MA0101
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;

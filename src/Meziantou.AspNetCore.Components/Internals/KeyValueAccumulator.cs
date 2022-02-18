@@ -1,6 +1,4 @@
 ﻿// https://github.com/dotnet/aspnetcore/blob/e43027e506f5b004e3c3609f588c3e31f41aebfc/src/Http/WebUtilities/src/QueryHelpers.cs
-using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.AspNetCore.Components.Internals

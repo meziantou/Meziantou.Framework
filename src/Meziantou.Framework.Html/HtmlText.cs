@@ -1,8 +1,6 @@
 ﻿#nullable disable
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Xml;
 
 namespace Meziantou.Framework.Html

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.IO.Enumeration;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.IO.Enumeration;
 using FluentAssertions;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;

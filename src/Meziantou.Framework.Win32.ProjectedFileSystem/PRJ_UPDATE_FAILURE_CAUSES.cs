@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32.ProjectedFileSystem
+﻿namespace Meziantou.Framework.Win32.ProjectedFileSystem
 {
     [Flags]
     public enum PRJ_UPDATE_FAILURE_CAUSES

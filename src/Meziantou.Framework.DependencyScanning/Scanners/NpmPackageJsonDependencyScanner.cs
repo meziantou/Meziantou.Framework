@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Meziantou.Framework.DependencyScanning.Internals;
+﻿using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

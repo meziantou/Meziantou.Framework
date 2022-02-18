@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Scheduling
+﻿namespace Meziantou.Framework.Scheduling
 {
     public sealed class ByDay : IEquatable<ByDay>
     {

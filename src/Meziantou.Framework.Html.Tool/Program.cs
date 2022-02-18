@@ -1,10 +1,7 @@
-﻿using System;
-using System.CommandLine;
+﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
-using System.IO;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using Meziantou.Framework.Globbing;
 
 namespace Meziantou.Framework.Html.Tool

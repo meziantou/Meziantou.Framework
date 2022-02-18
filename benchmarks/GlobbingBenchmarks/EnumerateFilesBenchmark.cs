@@ -1,6 +1,4 @@
 ﻿using System.Globalization;
-using System.IO;
-using System.Linq;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework;
 using Meziantou.Framework.Globbing;

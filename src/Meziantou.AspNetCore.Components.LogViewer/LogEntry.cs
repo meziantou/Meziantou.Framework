@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.AspNetCore.Components
+﻿namespace Meziantou.AspNetCore.Components
 {
     public class LogEntry
     {

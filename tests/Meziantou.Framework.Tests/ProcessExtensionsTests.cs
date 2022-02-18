@@ -1,12 +1,7 @@
 ﻿#pragma warning disable CS0618 // Type or member is obsolete
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using TestUtilities;
 using Xunit;

@@ -1,8 +1,5 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Meziantou.AspNetCore.Components.Internals;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Primitives;

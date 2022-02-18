@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading;
-using FluentAssertions;
+﻿using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests

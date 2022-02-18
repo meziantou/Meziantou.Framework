@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace TestUtilities
+﻿namespace TestUtilities
 {
     [Flags]
     public enum FactOperatingSystem

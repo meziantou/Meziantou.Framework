@@ -1,7 +1,5 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Xunit;
 

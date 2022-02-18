@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace Meziantou.AspNetCore.Components
+﻿namespace Meziantou.AspNetCore.Components
 {
     public interface ILogHighlighter
     {

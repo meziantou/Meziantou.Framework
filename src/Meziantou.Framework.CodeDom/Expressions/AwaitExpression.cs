@@ -1,6 +1,4 @@
-﻿using System.Threading.Tasks;
-
-namespace Meziantou.Framework.CodeDom
+﻿namespace Meziantou.Framework.CodeDom
 {
     public class AwaitExpression : Expression
     {

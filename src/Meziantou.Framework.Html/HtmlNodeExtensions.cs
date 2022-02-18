@@ -1,5 +1,4 @@
 ﻿#nullable disable
-using System.Collections.Generic;
 
 namespace Meziantou.Framework.Html
 {

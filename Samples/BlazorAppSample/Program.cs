@@ -1,11 +1,7 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Meziantou.AspNetCore.Components;
+﻿using Meziantou.AspNetCore.Components;
 using Meziantou.AspNetCore.Components.WebAssembly;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.WebAssembly.Http;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace BlazorAppSample
 {

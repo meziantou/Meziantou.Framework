@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading;
-
-namespace Meziantou.Framework.Threading
+﻿namespace Meziantou.Framework.Threading
 {
     public sealed class ResettableCancellationTokenSource : IDisposable
     {

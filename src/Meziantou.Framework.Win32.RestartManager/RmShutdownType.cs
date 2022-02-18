@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Meziantou.Framework.Win32
+﻿namespace Meziantou.Framework.Win32
 {
     /// <summary>
     /// Configures the shut down of applications.

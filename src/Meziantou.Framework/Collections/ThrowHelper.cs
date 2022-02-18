@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace Meziantou.Framework.Collections
+﻿namespace Meziantou.Framework.Collections
 {
     internal static class ThrowHelper
     {

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>Microsoft.Extension.Logging.ILogger implementation for xunit</Description>
     <PackageTags>xunit, logger</PackageTags>
     <Version>1.0.2</Version>

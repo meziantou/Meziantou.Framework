@@ -2,22 +2,10 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "depsupdater": {
-      "version": "1.0.7",
-      "commands": [
-        "depsupdater"
-      ]
-    },
     "dotnet-validate": {
-      "version": "0.0.1-preview.169",
+      "version": "0.0.1-preview.304",
       "commands": [
         "dotnet-validate"
-      ]
-    },
-    "dotnet-format": {
-      "version": "5.1.225507",
-      "commands": [
-        "dotnet-format"
       ]
     }
   }

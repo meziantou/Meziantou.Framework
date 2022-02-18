@@ -161,7 +161,7 @@ namespace Meziantou.Framework
                     }
 
                     await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-#if NET6_0
+#if NET6_0_OR_GREATER
 #elif NET5_0
                     process.WaitForExit(); // https://github.com/dotnet/runtime/issues/42556
 #else

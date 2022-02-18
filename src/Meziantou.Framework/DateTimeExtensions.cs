@@ -109,7 +109,7 @@ namespace Meziantou.Framework
             return dt.ToString(format, CultureInfo.InvariantCulture);
         }
 
-#if NET6_0
+#if NET6_0_OR_GREATER
         public static string ToStringInvariant(this DateOnly date)
         {
             return date.ToString(CultureInfo.InvariantCulture);

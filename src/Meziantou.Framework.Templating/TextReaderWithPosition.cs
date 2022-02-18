@@ -8,9 +8,9 @@
         public int Line { get; private set; } = 1;
         public int Column { get; private set; } = 1;
 
-        public TextReaderWithPosition(TextReader reader)
+        public TextReaderWithPosition(TextReader reader!!)
         {
-            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _reader = reader;
         }
 
         public override int Peek()

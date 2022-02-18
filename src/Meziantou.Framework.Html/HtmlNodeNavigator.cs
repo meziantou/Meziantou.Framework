@@ -29,11 +29,8 @@ namespace Meziantou.Framework.Html
 #endif
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "Change the behavior of the method")]
-        public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode, HtmlNodeNavigatorOptions options)
+        public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode!!, HtmlNodeNavigatorOptions options)
         {
-            if (currentNode == null)
-                throw new ArgumentNullException(nameof(currentNode));
-
             Document = document;
             CurrentNode = currentNode;
             BaseNode = currentNode;
@@ -44,11 +41,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        private HtmlNodeNavigator(HtmlNodeNavigator other)
+        private HtmlNodeNavigator(HtmlNodeNavigator other!!)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
-
             CurrentNode = other.CurrentNode;
             BaseNode = other.BaseNode;
             Document = other.Document;

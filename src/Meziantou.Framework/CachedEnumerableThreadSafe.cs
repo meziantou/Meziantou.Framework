@@ -10,9 +10,9 @@ namespace Meziantou.Framework
         private IEnumerator<T>? _enumerator;
         private bool _enumerated;
 
-        public CachedEnumerableThreadSafe(IEnumerable<T> enumerable)
+        public CachedEnumerableThreadSafe(IEnumerable<T> enumerable!!)
         {
-            _enumerable = enumerable ?? throw new ArgumentNullException(nameof(enumerable));
+            _enumerable = enumerable;
         }
 
         public IEnumerator<T> GetEnumerator()

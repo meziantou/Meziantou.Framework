@@ -63,14 +63,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Replace(HtmlNode newChild, HtmlNode oldChild)
+        public void Replace(HtmlNode newChild!!, HtmlNode oldChild!!)
         {
-            if (newChild == null)
-                throw new ArgumentNullException(nameof(newChild));
-
-            if (oldChild == null)
-                throw new ArgumentNullException(nameof(oldChild));
-
             if (newChild.ParentNode != null)
                 throw new ArgumentException(message: null, nameof(newChild));
 
@@ -113,11 +107,8 @@ namespace Meziantou.Framework.Html
             RemoveAllNoCheck();
         }
 
-        public void Insert(int index, HtmlNode item)
+        public void Insert(int index, HtmlNode item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             if (item.ParentNode != null)
                 throw new ArgumentException(message: null, nameof(item));
 
@@ -145,11 +136,8 @@ namespace Meziantou.Framework.Html
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node));
         }
 
-        public void Add(HtmlNode item)
+        public void Add(HtmlNode item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             if (item.ParentNode != null)
                 throw new ArgumentException(message: null, nameof(item));
 
@@ -172,11 +160,8 @@ namespace Meziantou.Framework.Html
             return true;
         }
 
-        public bool Remove(HtmlNode item)
+        public bool Remove(HtmlNode item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             var index = _list.IndexOf(item);
             if (index < 0)
                 return false;

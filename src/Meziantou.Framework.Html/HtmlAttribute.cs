@@ -144,11 +144,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteTo(TextWriter writer)
+        public override void WriteTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (NameQuoteChar != '\0')
             {
                 writer.Write(NameQuoteChar);
@@ -246,11 +243,8 @@ namespace Meziantou.Framework.Html
             return sw.ToString();
         }
 
-        public override void WriteContentTo(TextWriter writer)
+        public override void WriteContentTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             var eqc = EscapeQuoteChar;
             var s = GetValue();
             if (s != null)
@@ -270,11 +264,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (string.Equals(Prefix, XmlnsPrefix, StringComparison.Ordinal) || string.Equals(Name, XmlnsPrefix, StringComparison.Ordinal))
                 return;
 
@@ -283,11 +274,8 @@ namespace Meziantou.Framework.Html
             writer.WriteEndAttribute();
         }
 
-        public override void WriteContentTo(XmlWriter writer)
+        public override void WriteContentTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             foreach (var node in ChildNodes)
             {
                 node.WriteTo(writer);

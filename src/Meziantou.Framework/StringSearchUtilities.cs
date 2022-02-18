@@ -33,13 +33,8 @@ namespace Meziantou.Framework
         /// <exception cref="ArgumentException">Lists must have the same length.</exception>
         /// <returns> The hamming distance.</returns>
         [Pure]
-        public static int Hamming(string word1, string word2)
+        public static int Hamming(string word1!!, string word2!!)
         {
-            if (word1 == null)
-                throw new ArgumentNullException(nameof(word1));
-            if (word2 == null)
-                throw new ArgumentNullException(nameof(word2));
-
             if (word1.Length != word2.Length)
                 throw new ArgumentException("Strings must have the same length.", nameof(word2));
 
@@ -64,14 +59,9 @@ namespace Meziantou.Framework
         /// <exception cref="ArgumentException">Lists must have the same length.</exception>
         /// <returns> The hamming distance.</returns>
         [Pure]
-        public static int Hamming<T>(IEnumerable<T> word1, IEnumerable<T> word2)
+        public static int Hamming<T>(IEnumerable<T> word1!!, IEnumerable<T> word2!!)
             where T : notnull
         {
-            if (word1 == null)
-                throw new ArgumentNullException(nameof(word1));
-            if (word2 == null)
-                throw new ArgumentNullException(nameof(word2));
-
             var result = 0;
 
             using var enumerator1 = word1.GetEnumerator();
@@ -100,13 +90,8 @@ namespace Meziantou.Framework
         /// <param name="word2"> The second word.</param>
         /// <returns> The Levenshtein distance.</returns>
         [Pure]
-        public static int Levenshtein(string word1, string word2)
+        public static int Levenshtein(string word1!!, string word2!!)
         {
-            if (word1 is null)
-                throw new ArgumentNullException(nameof(word1));
-            if (word2 is null)
-                throw new ArgumentNullException(nameof(word2));
-
             if (word1.Length == 0)
             {
                 return word2.Length;

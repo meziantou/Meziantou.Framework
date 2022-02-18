@@ -88,11 +88,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteTo(TextWriter writer)
+        public override void WriteTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (IsCData)
             {
                 writer.Write("<![CDATA[");
@@ -109,11 +106,8 @@ namespace Meziantou.Framework.Html
         {
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (IsCData)
             {
                 writer.WriteCData(Value);

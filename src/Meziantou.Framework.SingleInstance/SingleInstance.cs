@@ -150,11 +150,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public bool NotifyFirstInstance(string[] args)
+        public bool NotifyFirstInstance(string[] args!!)
         {
-            if (args is null)
-                throw new ArgumentNullException(nameof(args));
-
             using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
             try
             {

@@ -75,11 +75,8 @@ namespace Meziantou.Framework.Templating
             Write(urlEncode);
         }
 
-        public virtual void WriteContentIdentifier(string cid)
+        public virtual void WriteContentIdentifier(string cid!!)
         {
-            if (cid == null)
-                throw new ArgumentNullException(nameof(cid));
-
             ContentIdentifiers.Add(cid);
             Write("cid:");
             WriteUrlEncode(cid);

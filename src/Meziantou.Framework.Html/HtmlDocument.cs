@@ -85,11 +85,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void LoadHtml(string html)
+        public void LoadHtml(string html!!)
         {
-            if (html == null)
-                throw new ArgumentNullException(nameof(html));
-
             Clear();
             using var reader = new StringReader(html);
             StreamEncoding = Utilities.GetDefaultEncoding(); // This is arguable, but it's better for saves
@@ -97,11 +94,8 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+        public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             Clear();
             FilePath = filePath;
             using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks, bufferSize))
@@ -123,11 +117,8 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public void Load(string filePath, bool detectEncodingFromByteOrderMarks)
+        public void Load(string filePath!!, bool detectEncodingFromByteOrderMarks)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             Clear();
             FilePath = filePath;
             if (detectEncodingFromByteOrderMarks)
@@ -159,11 +150,8 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public void Load(string filePath, Encoding encoding)
+        public void Load(string filePath!!, Encoding encoding)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             Clear();
             FilePath = filePath;
             using (var reader = Utilities.OpenReader(filePath, encoding))
@@ -185,11 +173,8 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             Clear();
             FilePath = filePath;
             using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks))
@@ -211,11 +196,8 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
-        public void Load(string filePath)
+        public void Load(string filePath!!)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             Clear();
             FilePath = filePath;
             using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding()))
@@ -236,11 +218,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(Stream stream, bool detectEncodingFromByteOrderMarks)
+        public void Load(Stream stream!!, bool detectEncodingFromByteOrderMarks)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Clear();
             if (detectEncodingFromByteOrderMarks)
             {
@@ -269,11 +248,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(Stream stream, Encoding encoding)
+        public void Load(Stream stream!!, Encoding encoding)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Clear();
             using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
@@ -293,11 +269,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+        public void Load(Stream stream!!, Encoding encoding, bool detectEncodingFromByteOrderMarks)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Clear();
             using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize: 1024, leaveOpen: true))
             {
@@ -317,11 +290,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+        public void Load(Stream stream!!, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Clear();
             using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: true))
             {
@@ -341,11 +311,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(Stream stream)
+        public void Load(Stream stream!!)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-
             Clear();
             using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
             {
@@ -365,11 +332,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Load(TextReader reader)
+        public void Load(TextReader reader!!)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             Clear();
             InternalLoad(reader, firstPass: false);
         }
@@ -456,16 +420,10 @@ namespace Meziantou.Framework.Html
             return CreateAttribute(prefix, localName, namespaceURI: null);
         }
 
-        public HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
+        public HtmlAttribute CreateAttribute(string prefix!!, string localName!!, string namespaceURI)
         {
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
             if (prefix.Contains(':', StringComparison.Ordinal))
                 throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
-
-            if (localName == null)
-                throw new ArgumentNullException(nameof(localName));
 
             return new HtmlAttribute(prefix, localName, namespaceURI, this);
         }
@@ -482,25 +440,16 @@ namespace Meziantou.Framework.Html
             return htmlText;
         }
 
-        public HtmlElement CreateElement(string name)
+        public HtmlElement CreateElement(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             ParseName(name, out var prefix, out var localName);
             return CreateElement(prefix, localName, namespaceURI: null);
         }
 
-        public HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
+        public HtmlElement CreateElement(string prefix!!, string localName!!, string namespaceURI)
         {
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
             if (prefix.Contains(':', StringComparison.Ordinal))
                 throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
-
-            if (localName == null)
-                throw new ArgumentNullException(nameof(localName));
 
             return new HtmlElement(prefix, localName, namespaceURI, this);
         }
@@ -935,27 +884,18 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Save(TextWriter writer)
+        public void Save(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             WriteTo(writer);
         }
 
-        public void Save(XmlWriter writer)
+        public void Save(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             WriteTo(writer);
         }
 
-        public void Save(string filePath)
+        public void Save(string filePath!!)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
             {
                 var xmlWriterSettings = new XmlWriterSettings
@@ -982,11 +922,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Save(string filePath, Encoding encoding)
+        public void Save(string filePath!!, Encoding encoding)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
             {
                 encoding ??= Encoding.UTF8;
@@ -1009,11 +946,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Save(Stream outStream)
+        public void Save(Stream outStream!!)
         {
-            if (outStream == null)
-                throw new ArgumentNullException(nameof(outStream));
-
             if (StreamEncoding != null)
             {
                 using var writer = new StreamWriter(outStream, StreamEncoding);
@@ -1026,47 +960,32 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public void Save(Stream outStream, Encoding encoding)
+        public void Save(Stream outStream!!, Encoding encoding)
         {
-            if (outStream == null)
-                throw new ArgumentNullException(nameof(outStream));
-
             using var writer = new StreamWriter(outStream, encoding);
             Save(writer);
         }
 
-        public override void WriteTo(TextWriter writer)
+        public override void WriteTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             WriteContentTo(writer);
         }
 
-        public override void WriteContentTo(TextWriter writer)
+        public override void WriteContentTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             foreach (var node in ChildNodes)
             {
                 node.WriteTo(writer);
             }
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             WriteContentTo(writer);
         }
 
-        public void WriteDocType(XmlWriter writer)
+        public void WriteDocType(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (DocumentType == null)
                 return;
 
@@ -1134,11 +1053,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteContentTo(XmlWriter writer)
+        public override void WriteContentTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (!IsValidXmlDocument)
             {
                 var oneElementWritten = false;
@@ -1197,19 +1113,13 @@ namespace Meziantou.Framework.Html
         }
 
         [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
-        public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
+        public HtmlNode ImportNode(HtmlNode node!!, HtmlCloneOptions cloneOptions)
         {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-
             return node.Clone(cloneOptions);
         }
 
-        protected override void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary)
+        protected override void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary!!)
         {
-            if (dictionary == null)
-                throw new ArgumentNullException(nameof(dictionary));
-
             if (scope != XmlNamespaceScope.Local)
             {
                 if (_declaredNamespaces != null)
@@ -1231,19 +1141,13 @@ namespace Meziantou.Framework.Html
             base.AddNamespacesInScope(scope, dictionary);
         }
 
-        public string MakeAbsoluteUrl(string url)
+        public string MakeAbsoluteUrl(string url!!)
         {
-            if (url == null)
-                throw new ArgumentNullException(nameof(url));
-
             return MakeAbsoluteUrl(new Uri(url, UriKind.RelativeOrAbsolute)).ToString();
         }
 
-        public Uri MakeAbsoluteUrl(Uri uri)
+        public Uri MakeAbsoluteUrl(Uri uri!!)
         {
-            if (uri == null)
-                throw new ArgumentNullException(nameof(uri));
-
             if (uri.IsAbsoluteUri)
                 return uri;
 

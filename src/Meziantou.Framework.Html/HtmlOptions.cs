@@ -137,20 +137,14 @@ namespace Meziantou.Framework.Html
             _emptyNamespacesForXPath.Add(HtmlNode.XhtmlNamespaceURI);
         }
 
-        public HtmlElementWriteOptions GetElementWriteOptions(string name)
+        public HtmlElementWriteOptions GetElementWriteOptions(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             _writeOptions.TryGetValue(name, out var options);
             return options;
         }
 
-        public void SetElementWriteOptions(string name, HtmlElementWriteOptions options)
+        public void SetElementWriteOptions(string name!!, HtmlElementWriteOptions options)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             _writeOptions[name] = options;
         }
 
@@ -162,20 +156,14 @@ namespace Meziantou.Framework.Html
             return ParsedScriptTypes.Contains(type);
         }
 
-        public HtmlElementReadOptions GetElementReadOptions(string name)
+        public HtmlElementReadOptions GetElementReadOptions(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             _readOptions.TryGetValue(name, out var options);
             return options;
         }
 
-        public void SetElementReadOptions(string name, HtmlElementReadOptions options)
+        public void SetElementReadOptions(string name!!, HtmlElementReadOptions options)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             _readOptions[name] = options;
         }
 

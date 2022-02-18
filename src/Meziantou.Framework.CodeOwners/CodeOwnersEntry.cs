@@ -5,10 +5,10 @@ namespace Meziantou.Framework.CodeOwners
     [StructLayout(LayoutKind.Auto)]
     public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     {
-        private CodeOwnersEntry(string pattern, CodeOwnersEntryType entryType, string member, CodeOwnersSection? section)
+        private CodeOwnersEntry(string pattern!!, CodeOwnersEntryType entryType, string member!!, CodeOwnersSection? section)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
-            Member = member ?? throw new ArgumentNullException(nameof(member));
+            Pattern = pattern;
+            Member = member;
             Section = section;
             EntryType = entryType;
         }

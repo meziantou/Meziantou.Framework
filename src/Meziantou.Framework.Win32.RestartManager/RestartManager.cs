@@ -36,22 +36,16 @@ namespace Meziantou.Framework.Win32
             return new RestartManager(handle, sessionKey);
         }
 
-        public void RegisterFile(string path)
+        public void RegisterFile(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             string[] resources = { path };
             var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");
         }
 
-        public void RegisterFiles(string[] paths)
+        public void RegisterFiles(string[] paths!!)
         {
-            if (paths == null)
-                throw new ArgumentNullException(nameof(paths));
-
             var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
             if (result != RmResult.ERROR_SUCCESS)
                 throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");

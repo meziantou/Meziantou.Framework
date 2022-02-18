@@ -25,13 +25,10 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem
 
         protected int BufferSize { get; set; } = 4096; // 4kB
 
-        protected ProjectedFileSystemBase(string rootFolder)
+        protected ProjectedFileSystemBase(string rootFolder!!)
         {
             if (!Environment.Is64BitProcess)
                 throw new NotSupportedException("Projected File System is only supported on 64-bit process");
-
-            if (rootFolder == null)
-                throw new ArgumentNullException(nameof(rootFolder));
 
             RootFolder = Path.GetFullPath(rootFolder);
             _virtualizationInstanceId = Guid.NewGuid();

@@ -30,11 +30,8 @@
             };
         }
 
-        public static byte[] ParseHexaString(string str)
+        public static byte[] ParseHexaString(string str!!)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             if (str.Length % 2 != 0)
                 throw new ArgumentException("Invalid string length", nameof(str));
 

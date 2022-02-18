@@ -182,19 +182,13 @@ namespace Meziantou.Framework.Win32
             return default!;
         }
 
-        public void EnablePrivilege(string privilegeName)
+        public void EnablePrivilege(string privilegeName!!)
         {
-            if (privilegeName == null)
-                throw new ArgumentNullException(nameof(privilegeName));
-
             AdjustPrivilege(privilegeName, PrivilegeOperation.Enable);
         }
 
-        public void DisablePrivilege(string privilegeName)
+        public void DisablePrivilege(string privilegeName!!)
         {
-            if (privilegeName == null)
-                throw new ArgumentNullException(nameof(privilegeName));
-
             AdjustPrivilege(privilegeName, PrivilegeOperation.Disable);
         }
 
@@ -205,11 +199,8 @@ namespace Meziantou.Framework.Win32
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }
 
-        public void RemovePrivilege(string privilegeName)
+        public void RemovePrivilege(string privilegeName!!)
         {
-            if (privilegeName == null)
-                throw new ArgumentNullException(nameof(privilegeName));
-
             AdjustPrivilege(privilegeName, PrivilegeOperation.Remove);
         }
 
@@ -273,11 +264,8 @@ namespace Meziantou.Framework.Win32
             return new AccessToken(tokenHandle);
         }
 
-        public static AccessToken OpenProcessToken(Process process, TokenAccessLevels accessLevels)
+        public static AccessToken OpenProcessToken(Process process!!, TokenAccessLevels accessLevels)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             if (!NativeMethods.OpenProcessToken(process.Handle, accessLevels, out var tokenHandle))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 

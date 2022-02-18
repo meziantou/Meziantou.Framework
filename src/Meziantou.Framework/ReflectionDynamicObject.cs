@@ -14,19 +14,16 @@ namespace Meziantou.Framework
         private readonly object? _originalObject;
         private readonly TypeCache _typeCache;
 
-        public ReflectionDynamicObject(object obj)
+        public ReflectionDynamicObject(object obj!!)
         {
-            _originalObject = obj ?? throw new ArgumentNullException(nameof(obj));
+            _originalObject = obj;
 
             var type = obj.GetType();
             _typeCache = s_cache.GetOrAdd(type, t => TypeCache.Create(t));
         }
 
-        public ReflectionDynamicObject(Type type)
+        public ReflectionDynamicObject(Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
         }
 

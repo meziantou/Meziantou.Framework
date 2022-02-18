@@ -9,11 +9,8 @@ namespace Meziantou.Framework
         /// </summary>
         /// <param name="assembly">The assembly. May not be null.</param>
         /// <returns>The version represented as a string. May not be null.</returns>
-        public static string? GetInformationalVersion(this Assembly assembly)
+        public static string? GetInformationalVersion(this Assembly assembly!!)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
-
             var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
             if (attr != null)
             {
@@ -28,11 +25,8 @@ namespace Meziantou.Framework
         /// </summary>
         /// <param name="assembly">The assembly. May not be null.</param>
         /// <returns>A valid date time or null if an error occurred.</returns>
-        public static DateTime? GetLinkerTimestampUtc(this Assembly assembly)
+        public static DateTime? GetLinkerTimestampUtc(this Assembly assembly!!)
         {
-            if (assembly == null)
-                throw new ArgumentNullException(nameof(assembly));
-
             try
             {
                 var location = assembly.Location;
@@ -55,11 +49,8 @@ namespace Meziantou.Framework
         /// <returns>
         /// A valid date time or null if an error occurred.
         /// </returns>
-        public static DateTime? GetLinkerTimestampUtc(string filePath)
+        public static DateTime? GetLinkerTimestampUtc(string filePath!!)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             try
             {
                 if (!File.Exists(filePath))

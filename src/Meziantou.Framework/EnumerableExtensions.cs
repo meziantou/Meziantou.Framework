@@ -14,22 +14,16 @@ namespace Meziantou.Framework
         /// </summary>
         public static IAsyncEnumerator<T> GetAsyncEnumerator<T>(this IAsyncEnumerator<T> enumerator) => enumerator;
 
-        public static void AddRange<T>(this ICollection<T> collection, params T[] items)
+        public static void AddRange<T>(this ICollection<T> collection!!, params T[] items)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             foreach (var item in items)
             {
                 collection.Add(item);
             }
         }
 
-        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T>? items)
+        public static void AddRange<T>(this ICollection<T> collection!!, IEnumerable<T>? items)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
-
             if (items != null)
             {
                 foreach (var item in items)
@@ -39,11 +33,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static void Replace<T>(this IList<T> list, T oldItem, T newItem)
+        public static void Replace<T>(this IList<T> list!!, T oldItem, T newItem)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
             var index = list.IndexOf(oldItem);
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(oldItem));
@@ -51,11 +42,8 @@ namespace Meziantou.Framework
             list[index] = newItem;
         }
 
-        public static void AddOrReplace<T>(this IList<T> list, T? oldItem, T newItem)
+        public static void AddOrReplace<T>(this IList<T> list!!, T? oldItem, T newItem)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
             var index = list.IndexOf(oldItem!);
             if (index < 0)
             {
@@ -77,28 +65,19 @@ namespace Meziantou.Framework
             }
         }
 
-        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
+        public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source!!)
             where T : class
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             return source.Where(item => item != null)!;
         }
 
-        public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
+        public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source!!)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             return source.Where(item => !string.IsNullOrEmpty(item))!;
         }
 
-        public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source)
+        public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source!!)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
         }
 
@@ -115,16 +94,13 @@ namespace Meziantou.Framework
 
 
 #if NET6_0_OR_GREATER
-        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(IEnumerable<TSource> source!!, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
 #elif NET5_0 || NETSTANDARD2_0
-        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source!!, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
 #else
 #error Platform not supported
 #endif
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             var hash = new HashSet<TKey>(comparer);
             return source.Where(p => hash.Add(keySelector(p)));
         }
@@ -134,11 +110,8 @@ namespace Meziantou.Framework
             return IsDistinctBy(source, keySelector, EqualityComparer<TKey>.Default);
         }
 
-        public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
+        public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source!!, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             var hash = new HashSet<TKey>(comparer);
             foreach (var item in source)
             {
@@ -154,11 +127,8 @@ namespace Meziantou.Framework
             return IsDistinct(source, EqualityComparer<TSource>.Default);
         }
 
-        public static bool IsDistinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
+        public static bool IsDistinct<TSource>(this IEnumerable<TSource> source!!, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             var hash = new HashSet<TSource>(comparer);
             foreach (var item in source)
             {
@@ -184,11 +154,8 @@ namespace Meziantou.Framework
             return list.IndexOf(value, comparer: null);
         }
 
-        public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T>? comparer)
+        public static int IndexOf<T>(this IEnumerable<T> list!!, T value, IEqualityComparer<T>? comparer)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-
             comparer ??= EqualityComparer<T>.Default;
             var index = 0;
             foreach (var item in list)
@@ -207,13 +174,8 @@ namespace Meziantou.Framework
             return list.LongIndexOf(value, EqualityComparer<T>.Default);
         }
 
-        public static long LongIndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T> comparer)
+        public static long LongIndexOf<T>(this IEnumerable<T> list!!, T value, IEqualityComparer<T> comparer!!)
         {
-            if (list == null)
-                throw new ArgumentNullException(nameof(list));
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
-
             var index = 0L;
             foreach (var item in list)
             {
@@ -226,19 +188,13 @@ namespace Meziantou.Framework
             return -1L;
         }
 
-        public static bool ContainsIgnoreCase(this IEnumerable<string> str, string value)
+        public static bool ContainsIgnoreCase(this IEnumerable<string> str!!, string value)
         {
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
-
             return str.Contains(value, StringComparer.OrdinalIgnoreCase);
         }
 
-        public static void EnumerateAll<TSource>(this IEnumerable<TSource> source)
+        public static void EnumerateAll<TSource>(this IEnumerable<TSource> source!!)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             using var enumerator = source.GetEnumerator();
             while (enumerator.MoveNext())
             {
@@ -253,22 +209,16 @@ namespace Meziantou.Framework
             return items;
         }
 
-        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> action)
+        public static void ForEach<TSource>(this IEnumerable<TSource> source!!, Action<TSource> action)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             foreach (var item in source)
             {
                 action(item);
             }
         }
 
-        public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource, int> action)
+        public static void ForEach<TSource>(this IEnumerable<TSource> source!!, Action<TSource, int> action)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             var index = 0;
             foreach (var item in source)
             {
@@ -279,20 +229,14 @@ namespace Meziantou.Framework
 
 
 #if NET6_0_OR_GREATER
-        public static T MaxBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue> selector)
+        public static T MaxBy<T, TValue>(IEnumerable<T> enumerable!!, Func<T, TValue> selector!!)
 #elif NET5_0 || NETSTANDARD2_0
-        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector)
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable!!, Func<T, TValue> selector!!)
 #else
 #error Platform not supported
 #endif
             where TValue : IComparable
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (selector == null)
-                throw new ArgumentNullException(nameof(selector));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -322,22 +266,13 @@ namespace Meziantou.Framework
         }
 
 #if NET6_0_OR_GREATER
-        public static T MaxBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
+        public static T MaxBy<T, TValue>(IEnumerable<T> enumerable!!, Func<T, TValue?> selector!!, IComparer<TValue> comparer!!)
 #elif NET5_0 || NETSTANDARD2_0
-        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
+        public static T MaxBy<T, TValue>(this IEnumerable<T> enumerable!!, Func<T, TValue?> selector!!, IComparer<TValue> comparer!!)
 #else
 #error Platform not supported
 #endif
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (selector == null)
-                throw new ArgumentNullException(nameof(selector));
-
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -367,19 +302,13 @@ namespace Meziantou.Framework
         }
 
 #if NET6_0_OR_GREATER
-        public static T Max<T>(IEnumerable<T> enumerable, IComparer<T> comparer)
+        public static T Max<T>(IEnumerable<T> enumerable!!, IComparer<T> comparer!!)
 #elif NET5_0 || NETSTANDARD2_0
-        public static T Max<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)
+        public static T Max<T>(this IEnumerable<T> enumerable!!, IComparer<T> comparer!!)
 #else
 #error Platform not supported
 #endif
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -407,19 +336,13 @@ namespace Meziantou.Framework
 
 
 #if NET6_0_OR_GREATER
-        public static T MinBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
+        public static T MinBy<T, TValue>(IEnumerable<T> enumerable!!, Func<T, TValue> selector!!) where TValue : IComparable
 #elif NET5_0 || NETSTANDARD2_0
-        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue> selector) where TValue : IComparable
+        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable!!, Func<T, TValue> selector!!) where TValue : IComparable
 #else
 #error Platform not supported
 #endif
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (selector == null)
-                throw new ArgumentNullException(nameof(selector));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -450,22 +373,13 @@ namespace Meziantou.Framework
 
 
 #if NET6_0_OR_GREATER
-        public static T MinBy<T, TValue>(IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
+        public static T MinBy<T, TValue>(IEnumerable<T> enumerable!!, Func<T, TValue?> selector!!, IComparer<TValue> comparer!!)
 #elif NET5_0 || NETSTANDARD2_0
-        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable, Func<T, TValue?> selector, IComparer<TValue> comparer)
+        public static T MinBy<T, TValue>(this IEnumerable<T> enumerable!!, Func<T, TValue?> selector!!, IComparer<TValue> comparer!!)
 #else
 #error Platform not supported
 #endif
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (selector == null)
-                throw new ArgumentNullException(nameof(selector));
-
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -494,19 +408,13 @@ namespace Meziantou.Framework
             }
         }
 #if NET6_0_OR_GREATER
-        public static T Min<T>(IEnumerable<T> enumerable, IComparer<T> comparer)
+        public static T Min<T>(IEnumerable<T> enumerable!!, IComparer<T> comparer!!)
 #elif NET5_0 || NETSTANDARD2_0
-        public static T Min<T>(this IEnumerable<T> enumerable, IComparer<T> comparer)
+        public static T Min<T>(this IEnumerable<T> enumerable!!, IComparer<T> comparer!!)
 #else
 #error Platform not supported
 #endif
         {
-            if (enumerable == null)
-                throw new ArgumentNullException(nameof(enumerable));
-
-            if (comparer == null)
-                throw new ArgumentNullException(nameof(comparer));
-
             var enumerator = enumerable.GetEnumerator();
             try
             {
@@ -562,11 +470,8 @@ namespace Meziantou.Framework
                 yield return item;
         }
 
-        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
+        public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source!!)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             return new ReadOnlyCollection<T>(source.ToList());
         }
 

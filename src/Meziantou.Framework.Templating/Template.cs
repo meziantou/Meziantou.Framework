@@ -60,10 +60,8 @@ namespace Meziantou.Framework.Templating
 
         public bool Debug { get; set; }
 
-        public void AddReference(Type type)
+        public void AddReference(Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
             if (type.Assembly.Location == null)
                 throw new ArgumentException("Assembly has no location.", nameof(type));
 
@@ -75,11 +73,8 @@ namespace Meziantou.Framework.Templating
             AddUsing(@namespace, alias: null);
         }
 
-        public void AddUsing(string @namespace, string? alias)
+        public void AddUsing(string @namespace!!, string? alias)
         {
-            if (@namespace == null)
-                throw new ArgumentNullException(nameof(@namespace));
-
             if (!string.IsNullOrEmpty(alias))
             {
                 _usings.Add(alias + " = " + @namespace);
@@ -95,11 +90,8 @@ namespace Meziantou.Framework.Templating
             AddUsing(type, alias: null);
         }
 
-        public void AddUsing(Type type, string? alias)
+        public void AddUsing(Type type!!, string? alias)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             if (!string.IsNullOrEmpty(alias))
             {
                 _usings.Add(alias + " = " + GetFriendlyTypeName(type));
@@ -115,11 +107,8 @@ namespace Meziantou.Framework.Templating
             AddReference(type);
         }
 
-        private static string GetFriendlyTypeName(Type type)
+        private static string GetFriendlyTypeName(Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             var friendlyName = type.Name;
             if (type.IsGenericType)
             {
@@ -159,11 +148,8 @@ namespace Meziantou.Framework.Templating
             AddArgument(name, typeof(T));
         }
 
-        public void AddArgument(string name, Type? type)
+        public void AddArgument(string name!!, Type? type)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             _arguments.Add(new TemplateArgument(name, type));
             if (type != null)
             {
@@ -171,11 +157,8 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public void AddArguments(IReadOnlyDictionary<string, object?> arguments)
+        public void AddArguments(IReadOnlyDictionary<string, object?> arguments!!)
         {
-            if (arguments == null)
-                throw new ArgumentNullException(nameof(arguments));
-
             foreach (var argument in arguments)
             {
                 AddArgument(argument.Key, argument.Value?.GetType());
@@ -190,29 +173,20 @@ namespace Meziantou.Framework.Templating
             }
         }
 
-        public void Load(string text)
+        public void Load(string text!!)
         {
-            if (text == null)
-                throw new ArgumentNullException(nameof(text));
-
             using var reader = new StringReader(text);
             Load(reader);
         }
 
-        public void Load(TextReader reader)
+        public void Load(TextReader reader!!)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             using var r = new TextReaderWithPosition(reader);
             Load(r);
         }
 
-        private void Load(TextReaderWithPosition reader)
+        private void Load(TextReaderWithPosition reader!!)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             if (IsBuilt)
                 throw new InvalidOperationException("Template is already built.");
 
@@ -369,11 +343,8 @@ namespace Meziantou.Framework.Templating
             return new CodeBlock(this, text, index);
         }
 
-        protected virtual SyntaxTree CreateSyntaxTree(string source, CancellationToken cancellationToken)
+        protected virtual SyntaxTree CreateSyntaxTree(string source!!, CancellationToken cancellationToken)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
             var options = CSharpParseOptions.Default
                 .WithLanguageVersion(LanguageVersion.Latest)
                 .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
@@ -416,11 +387,8 @@ namespace Meziantou.Framework.Templating
             return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
         }
 
-        protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree)
+        protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree!!)
         {
-            if (syntaxTree == null)
-                throw new ArgumentNullException(nameof(syntaxTree));
-
             var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N");
             var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
                 .WithDeterministic(deterministic: true)
@@ -518,23 +486,15 @@ namespace Meziantou.Framework.Templating
             return p;
         }
 
-        public string Run(IReadOnlyDictionary<string, object?> parameters)
+        public string Run(IReadOnlyDictionary<string, object?> parameters!!)
         {
-            if (parameters == null)
-                throw new ArgumentNullException(nameof(parameters));
-
             using var writer = new StringWriter();
             Run(writer, parameters);
             return writer.ToString();
         }
 
-        public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
+        public virtual void Run(TextWriter writer!!, IReadOnlyDictionary<string, object?> parameters!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-            if (parameters == null)
-                throw new ArgumentNullException(nameof(parameters));
-
             var p = CreateMethodParameters(writer, parameters);
             InvokeRunMethod(p);
         }

@@ -14,13 +14,8 @@ namespace Meziantou.Framework
         private static readonly char[] s_indexExprEndChars = new char[] { ']', ')' };
         private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> s_propertyCache = new();
 
-        public static object? Eval(object container, string expression)
+        public static object? Eval(object container, string expression!!)
         {
-            if (expression == null)
-            {
-                throw new ArgumentNullException(nameof(expression));
-            }
-
             expression = expression.Trim();
             if (expression.Length == 0)
             {
@@ -97,11 +92,8 @@ namespace Meziantou.Framework
             return TypeDescriptor.GetProperties(container);
         }
 
-        public static object? GetPropertyValue(object container, string propertyName)
+        public static object? GetPropertyValue(object container!!, string propertyName)
         {
-            if (container == null)
-                throw new ArgumentNullException(nameof(container));
-
             if (string.IsNullOrEmpty(propertyName))
                 throw new ArgumentNullException(nameof(propertyName));
 
@@ -136,11 +128,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static object? GetIndexedPropertyValue(object container, string expression)
+        public static object? GetIndexedPropertyValue(object container!!, string expression)
         {
-            if (container == null)
-                throw new ArgumentNullException(nameof(container));
-
             if (string.IsNullOrEmpty(expression))
                 throw new ArgumentNullException(nameof(expression));
 

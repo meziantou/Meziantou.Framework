@@ -28,14 +28,8 @@ namespace Meziantou.Framework.Html
             return Add(prefix, localName, namespaceURI, value: null);
         }
 
-        public HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value)
+        public HtmlAttribute Add(string prefix!!, string localName!!, string namespaceURI, string value)
         {
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
-            if (localName == null)
-                throw new ArgumentNullException(nameof(localName));
-
             if (Parent == null || Parent.OwnerDocument == null)
                 throw new InvalidOperationException();
 
@@ -50,11 +44,8 @@ namespace Meziantou.Framework.Html
             return att;
         }
 
-        public HtmlAttribute Add(string name, string value)
+        public HtmlAttribute Add(string name!!, string value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             if (Parent == null || Parent.OwnerDocument == null)
                 throw new InvalidOperationException();
 
@@ -69,11 +60,8 @@ namespace Meziantou.Framework.Html
             Add(item, replace: true);
         }
 
-        public void Add(HtmlAttribute attribute, bool replace)
+        public void Add(HtmlAttribute attribute!!, bool replace)
         {
-            if (attribute == null)
-                throw new ArgumentNullException(nameof(attribute));
-
             if (attribute.ParentNode != null)
                 throw new ArgumentException(message: null, nameof(attribute));
 
@@ -89,21 +77,15 @@ namespace Meziantou.Framework.Html
             AddNoCheck(attribute);
         }
 
-        internal void AddNoCheck(HtmlAttribute attribute)
+        internal void AddNoCheck(HtmlAttribute attribute!!)
         {
-            if (attribute == null)
-                throw new ArgumentNullException(nameof(attribute));
-
             _attributes.Add(attribute);
             attribute.ParentNode = Parent;
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute));
         }
 
-        public string GetNamespacePrefixIfDefined(string namespaceURI)
+        public string GetNamespacePrefixIfDefined(string namespaceURI!!)
         {
-            if (namespaceURI == null)
-                throw new ArgumentNullException(nameof(namespaceURI));
-
             foreach (var att in _attributes)
             {
                 if ((string.Equals(att.Name, HtmlNode.XmlnsPrefix, StringComparison.Ordinal) ||
@@ -130,11 +112,8 @@ namespace Meziantou.Framework.Html
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
         }
 
-        public void Insert(int index, HtmlAttribute item)
+        public void Insert(int index, HtmlAttribute item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             if (item.ParentNode != null)
                 throw new ArgumentException(message: null, nameof(item));
 
@@ -153,11 +132,8 @@ namespace Meziantou.Framework.Html
             _attributes.CopyTo(array, arrayIndex);
         }
 
-        public int IndexOf(HtmlAttribute item)
+        public int IndexOf(HtmlAttribute item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             return _attributes.IndexOf(item);
         }
 
@@ -205,14 +181,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public bool RemoveByPrefix(string prefix, string localName)
+        public bool RemoveByPrefix(string prefix!!, string localName!!)
         {
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
-            if (localName == null)
-                throw new ArgumentNullException(nameof(localName));
-
             var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
             if (att == null)
                 return false;
@@ -220,14 +190,8 @@ namespace Meziantou.Framework.Html
             return Remove(att);
         }
 
-        public bool Remove(string localName, string namespaceURI)
+        public bool Remove(string localName!!, string namespaceURI!!)
         {
-            if (localName == null)
-                throw new ArgumentNullException(nameof(localName));
-
-            if (namespaceURI == null)
-                throw new ArgumentNullException(nameof(namespaceURI));
-
             var att = this[localName, namespaceURI];
             if (att == null)
                 return false;
@@ -235,11 +199,8 @@ namespace Meziantou.Framework.Html
             return Remove(att);
         }
 
-        public bool Remove(string name)
+        public bool Remove(string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             var att = this[name];
             if (att == null)
                 return false;
@@ -247,11 +208,8 @@ namespace Meziantou.Framework.Html
             return Remove(att);
         }
 
-        public bool Remove(HtmlAttribute item)
+        public bool Remove(HtmlAttribute item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             if (item.ParentNode != Parent)
                 throw new ArgumentException(message: null, nameof(item));
 

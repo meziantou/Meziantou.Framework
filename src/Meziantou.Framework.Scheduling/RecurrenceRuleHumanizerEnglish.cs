@@ -100,13 +100,8 @@ namespace Meziantou.Framework.Scheduling
             };
         }
 
-        protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(DailyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("every");
             if (rrule.Interval == 1)
@@ -128,13 +123,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(WeeklyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("every");
             if (rrule.Interval == 1)
@@ -162,13 +152,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(MonthlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("every");
             if (rrule.Interval == 1)
@@ -215,13 +200,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(YearlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("every");
             if (rrule.Interval == 1)

@@ -2,9 +2,9 @@
 {
     public sealed class TokenGroupEntry
     {
-        public TokenGroupEntry(SecurityIdentifier sid, GroupSidAttributes attributes)
+        public TokenGroupEntry(SecurityIdentifier sid!!, GroupSidAttributes attributes)
         {
-            Sid = sid ?? throw new ArgumentNullException(nameof(sid));
+            Sid = sid;
             Attributes = attributes;
         }
 

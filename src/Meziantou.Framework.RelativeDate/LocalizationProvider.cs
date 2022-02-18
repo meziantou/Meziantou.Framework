@@ -116,12 +116,9 @@ namespace Meziantou.Framework
             throw new ArgumentException($"'{name}' is not supported", nameof(name));
         }
 
-        public void Set(CultureInfo culture, IReadOnlyDictionary<string, string> values)
+        public void Set(CultureInfo culture!!, IReadOnlyDictionary<string, string> values!!)
         {
-            if (culture == null)
-                throw new ArgumentNullException(nameof(culture));
-
-            _cultures[culture] = values ?? throw new ArgumentNullException(nameof(values));
+            _cultures[culture] = values;
         }
 
         public void Remove(CultureInfo culture)

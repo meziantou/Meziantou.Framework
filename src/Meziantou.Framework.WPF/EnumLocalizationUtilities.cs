@@ -71,11 +71,8 @@ namespace Meziantou.Framework.WPF
             return value.ToString();
         }
 
-        public static string GetEnumMemberLocalization(Enum value)
+        public static string GetEnumMemberLocalization(Enum value!!)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-
             var localizedValueCollection = GetEnumLocalization(value.GetType());
             return localizedValueCollection[value].Name;
         }

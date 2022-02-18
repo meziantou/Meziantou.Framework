@@ -12,11 +12,8 @@ namespace Meziantou.Framework
             return TryChangeType(DefaultConverter, input, provider, out value);
         }
 
-        public static bool TryChangeType<T>(this IConverter converter, object? input, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out T value)
+        public static bool TryChangeType<T>(this IConverter converter!!, object? input, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out T value)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-
             var b = converter.TryChangeType(input, typeof(T), provider, out var v);
             if (!b)
             {
@@ -48,10 +45,8 @@ namespace Meziantou.Framework
             return TryChangeType(DefaultConverter, input, out value);
         }
 
-        public static bool TryChangeType<T>(this IConverter converter, object? input, [MaybeNullWhen(returnValue: false)] out T value)
+        public static bool TryChangeType<T>(this IConverter converter!!, object? input, [MaybeNullWhen(returnValue: false)] out T value)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
             return TryChangeType(converter, input, provider: null, out value);
         }
 
@@ -60,10 +55,8 @@ namespace Meziantou.Framework
             return TryChangeType(DefaultConverter, input, conversionType, provider: null, out value);
         }
 
-        public static bool TryChangeType(this IConverter converter, object? input, Type conversionType, out object? value)
+        public static bool TryChangeType(this IConverter converter!!, object? input, Type conversionType, out object? value)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
             return TryChangeType(converter, input, conversionType, provider: null, out value);
         }
 
@@ -72,11 +65,8 @@ namespace Meziantou.Framework
             return TryChangeType(DefaultConverter, input, conversionType, provider, out value);
         }
 
-        public static bool TryChangeType(this IConverter converter, object? input, Type conversionType, IFormatProvider? provider, out object? value)
+        public static bool TryChangeType(this IConverter converter!!, object? input, Type conversionType, IFormatProvider? provider, out object? value)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-
             return converter.TryChangeType(input, conversionType, provider, out value);
         }
 
@@ -85,11 +75,8 @@ namespace Meziantou.Framework
             return ChangeType(DefaultConverter, input, conversionType);
         }
 
-        public static object? ChangeType(this IConverter converter, object? input, Type conversionType)
+        public static object? ChangeType(this IConverter converter!!, object? input, Type conversionType)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-
             return ChangeType(converter, input, conversionType, defaultValue: null, provider: null);
         }
 
@@ -98,10 +85,8 @@ namespace Meziantou.Framework
             return ChangeType(DefaultConverter, input, conversionType, defaultValue, provider: null);
         }
 
-        public static object? ChangeType(this IConverter converter, object? input, Type conversionType, object? defaultValue)
+        public static object? ChangeType(this IConverter converter!!, object? input, Type conversionType, object? defaultValue)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
             return ChangeType(converter, input, conversionType, defaultValue, provider: null);
         }
 
@@ -110,13 +95,8 @@ namespace Meziantou.Framework
             return ChangeType(DefaultConverter, input, conversionType, defaultValue, provider);
         }
 
-        public static object? ChangeType(this IConverter converter, object? input, Type conversionType, object? defaultValue, IFormatProvider? provider)
+        public static object? ChangeType(this IConverter converter!!, object? input, Type conversionType!!, object? defaultValue, IFormatProvider? provider)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-            if (conversionType == null)
-                throw new ArgumentNullException(nameof(conversionType));
-
             if (defaultValue == null && conversionType.IsValueType)
             {
                 defaultValue = Activator.CreateInstance(conversionType);
@@ -133,10 +113,8 @@ namespace Meziantou.Framework
             return ChangeType<T>(DefaultConverter, input);
         }
 
-        public static T? ChangeType<T>(this IConverter converter, object? input)
+        public static T? ChangeType<T>(this IConverter converter!!, object? input)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
             return ChangeType(converter, input, default(T)!);
         }
 
@@ -145,10 +123,8 @@ namespace Meziantou.Framework
             return ChangeType(DefaultConverter, input, defaultValue);
         }
 
-        public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue)
+        public static T? ChangeType<T>(this IConverter converter!!, object? input, T defaultValue)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
             return ChangeType(converter, input, defaultValue, provider: null);
         }
 
@@ -157,11 +133,8 @@ namespace Meziantou.Framework
             return ChangeType(DefaultConverter, input, defaultValue, provider);
         }
 
-        public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue, IFormatProvider? provider)
+        public static T? ChangeType<T>(this IConverter converter!!, object? input, T defaultValue, IFormatProvider? provider)
         {
-            if (converter == null)
-                throw new ArgumentNullException(nameof(converter));
-
             if (TryChangeType(converter, input, provider, out T? value))
                 return value;
 

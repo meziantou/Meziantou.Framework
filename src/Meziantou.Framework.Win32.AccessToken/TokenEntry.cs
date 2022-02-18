@@ -2,9 +2,9 @@
 {
     public sealed class TokenEntry
     {
-        public TokenEntry(SecurityIdentifier sid)
+        public TokenEntry(SecurityIdentifier sid!!)
         {
-            Sid = sid ?? throw new ArgumentNullException(nameof(sid));
+            Sid = sid;
         }
 
         public SecurityIdentifier Sid { get; }

@@ -9,11 +9,8 @@ namespace Meziantou.Framework
 #endif
     static class ReflectionUtilities
     {
-        public static bool IsNullableOfT(this Type type)
+        public static bool IsNullableOfT(this Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
         }
 
@@ -22,11 +19,8 @@ namespace Meziantou.Framework
             return IsFlagsEnum(typeof(T));
         }
 
-        public static bool IsFlagsEnum(this Type type)
+        public static bool IsFlagsEnum(this Type type!!)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
             if (!type.IsEnum)
                 return false;
 

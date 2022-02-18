@@ -6,14 +6,8 @@ namespace Meziantou.Framework.Html
     {
         public ListSortDirection Direction { get; set; }
 
-        public int Compare(HtmlNode x, HtmlNode y)
+        public int Compare(HtmlNode x!!, HtmlNode y!!)
         {
-            if (x == null)
-                throw new ArgumentNullException(nameof(x));
-
-            if (y == null)
-                throw new ArgumentNullException(nameof(y));
-
             if (ReferenceEquals(x, y))
                 return 0;
 

@@ -21,9 +21,9 @@ namespace Meziantou.Framework.WPF.Collections
         {
         }
 
-        public ConcurrentObservableCollection(Dispatcher dispatcher)
+        public ConcurrentObservableCollection(Dispatcher dispatcher!!)
         {
-            _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            _dispatcher = dispatcher;
         }
 
         private static Dispatcher GetCurrentDispatcher()

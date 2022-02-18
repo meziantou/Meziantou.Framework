@@ -279,11 +279,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteContentTo(TextWriter writer)
+        public override void WriteContentTo(TextWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (!NoChild)
             {
                 if (HasChildNodes)
@@ -296,11 +293,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override void WriteTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (IsDocumentType)
             {
                 OwnerDocument?.WriteDocType(writer);
@@ -330,11 +324,8 @@ namespace Meziantou.Framework.Html
             }
         }
 
-        public override void WriteContentTo(XmlWriter writer)
+        public override void WriteContentTo(XmlWriter writer!!)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
-
             if (Name.EqualsIgnoreCase("!doctype"))
                 return;
 

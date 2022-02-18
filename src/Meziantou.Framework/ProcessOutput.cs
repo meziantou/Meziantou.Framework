@@ -2,10 +2,10 @@
 {
     public sealed class ProcessOutput
     {
-        public ProcessOutput(ProcessOutputType type, string text)
+        public ProcessOutput(ProcessOutputType type, string text!!)
         {
             Type = type;
-            Text = text ?? throw new ArgumentNullException(nameof(text));
+            Text = text;
         }
 
         public ProcessOutputType Type { get; }

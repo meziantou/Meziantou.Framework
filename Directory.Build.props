@@ -13,7 +13,7 @@
   </PropertyGroup>
   
   <PropertyGroup>    
-    <LangVersion>10</LangVersion>
+    <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

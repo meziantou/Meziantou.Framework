@@ -15,13 +15,8 @@ namespace Meziantou.Framework
         /// <returns> The soundex.</returns>
         /// <exception cref="ArgumentException">Dictionary does not contain character a character of the string <paramref name="s" /></exception>
         [Pure]
-        public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char>? replace = null)
+        public static string Soundex(string s!!, IReadOnlyDictionary<char, byte> dic!!, IReadOnlyDictionary<string, char>? replace = null)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
-            if (dic == null)
-                throw new ArgumentNullException(nameof(dic));
-
             s = SoundexStringPrep(s, replace);
             if (s.Length == 0)
             {
@@ -87,11 +82,8 @@ namespace Meziantou.Framework
         /// <param name="s"> The string. </param>
         /// <returns> The soundex. </returns>
         [Pure]
-        public static string Soundex2(string s)
+        public static string Soundex2(string s!!)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
-
             var sb = new StringBuilder();
             foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
             {
@@ -282,15 +274,8 @@ namespace Meziantou.Framework
             return Soundex(s, dic);
         }
 
-        private static void ChangePrefix(StringBuilder sb, string prefix, string replace)
+        private static void ChangePrefix(StringBuilder sb!!, string prefix!!, string replace!!)
         {
-            if (sb == null)
-                throw new ArgumentNullException(nameof(sb));
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-            if (replace == null)
-                throw new ArgumentNullException(nameof(replace));
-
             var i = 0;
             while (i < sb.Length && i < prefix.Length)
             {
@@ -307,10 +292,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char>? replace = null)
+        private static string SoundexStringPrep(string s!!, IReadOnlyDictionary<string, char>? replace = null)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
 
             // takes only the first word of the string.
             var sb = new StringBuilder();

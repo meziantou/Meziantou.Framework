@@ -14,11 +14,8 @@
         /// <returns>
         /// 	<c>true</c> if the specified exception is a sharing violation exception; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsSharingViolation(IOException exception)
+        public static bool IsSharingViolation(IOException exception!!)
         {
-            if (exception == null)
-                throw new ArgumentNullException(nameof(exception));
-
             var hr = exception.HResult;
             return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION
         }

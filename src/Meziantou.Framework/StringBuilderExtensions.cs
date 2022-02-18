@@ -6,11 +6,8 @@ namespace Meziantou.Framework
     public static partial class StringBuilderExtensions
     {
         [Pure]
-        public static bool StartsWith(this StringBuilder stringBuilder, char prefix)
+        public static bool StartsWith(this StringBuilder stringBuilder!!, char prefix)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-
             if (stringBuilder.Length == 0)
                 return false;
 
@@ -18,13 +15,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool StartsWith(this StringBuilder stringBuilder, string prefix)
+        public static bool StartsWith(this StringBuilder stringBuilder!!, string prefix!!)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-            if (prefix == null)
-                throw new ArgumentNullException(nameof(prefix));
-
             if (stringBuilder.Length < prefix.Length)
                 return false;
 
@@ -38,11 +30,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool EndsWith(this StringBuilder stringBuilder, char suffix)
+        public static bool EndsWith(this StringBuilder stringBuilder!!, char suffix)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-
             if (stringBuilder.Length == 0)
                 return false;
 
@@ -50,13 +39,8 @@ namespace Meziantou.Framework
         }
 
         [Pure]
-        public static bool EndsWith(this StringBuilder stringBuilder, string suffix)
+        public static bool EndsWith(this StringBuilder stringBuilder!!, string suffix!!)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-            if (suffix == null)
-                throw new ArgumentNullException(nameof(suffix));
-
             if (stringBuilder.Length < suffix.Length)
                 return false;
 
@@ -69,11 +53,8 @@ namespace Meziantou.Framework
             return true;
         }
 
-        public static void TrimStart(this StringBuilder stringBuilder, char trimChar)
+        public static void TrimStart(this StringBuilder stringBuilder!!, char trimChar)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-
             for (var i = 0; i < stringBuilder.Length; i++)
             {
                 if (stringBuilder[i] == trimChar)
@@ -88,11 +69,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static void TrimEnd(this StringBuilder stringBuilder, char trimChar)
+        public static void TrimEnd(this StringBuilder stringBuilder!!, char trimChar)
         {
-            if (stringBuilder == null)
-                throw new ArgumentNullException(nameof(stringBuilder));
-
             for (var i = stringBuilder.Length - 1; i >= 0; i--)
             {
                 if (stringBuilder[i] == trimChar)

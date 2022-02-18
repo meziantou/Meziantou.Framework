@@ -2,9 +2,9 @@
 {
     public sealed class TokenPrivilegeEntry
     {
-        public TokenPrivilegeEntry(string name, PrivilegeAttribute attributes)
+        public TokenPrivilegeEntry(string name!!, PrivilegeAttribute attributes)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Name = name;
             Attributes = attributes;
         }
 

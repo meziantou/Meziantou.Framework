@@ -177,11 +177,8 @@ namespace Meziantou.Framework.Versioning
             return SemanticVersionComparer.Instance.Compare(this, other);
         }
 
-        public static SemanticVersion Parse(string versionString)
+        public static SemanticVersion Parse(string versionString!!)
         {
-            if (versionString == null)
-                throw new ArgumentNullException(nameof(versionString));
-
             if (TryParse(versionString, out var result))
                 return result;
 

@@ -109,11 +109,8 @@ namespace Meziantou.Framework.Html
             return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
         }
 
-        public static string? GetAttributeFromHeader(string? header, string name)
+        public static string? GetAttributeFromHeader(string? header, string name!!)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             int index;
             if (header == null)
                 return null;
@@ -275,11 +272,8 @@ namespace Meziantou.Framework.Html
             return GetServerPath(path, out _, out _, out _);
         }
 
-        public static string? GetServerPath(string path, out string? serverName, out string? shareName, out string? sharePath)
+        public static string? GetServerPath(string path!!, out string? serverName, out string? shareName, out string? sharePath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             serverName = null;
             shareName = null;
             sharePath = null;

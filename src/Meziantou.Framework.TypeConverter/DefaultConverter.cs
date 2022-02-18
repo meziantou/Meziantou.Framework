@@ -885,11 +885,8 @@ namespace Meziantou.Framework
                 bools.StartsWith("FALSE", StringComparison.Ordinal);
         }
 
-        protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)
+        protected virtual bool TryConvert(object? input, Type conversionType!!, IFormatProvider? provider, out object? value)
         {
-            if (conversionType == null)
-                throw new ArgumentNullException(nameof(conversionType));
-
             if (conversionType == typeof(object))
             {
                 value = input;

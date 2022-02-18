@@ -106,11 +106,8 @@ namespace Meziantou.Framework.Threading
 
         protected override IEnumerable<Task> GetScheduledTasks() => _tasks;
 
-        protected override void QueueTask(Task task)
+        protected override void QueueTask(Task task!!)
         {
-            if (task == null)
-                throw new ArgumentNullException(nameof(task));
-
             _tasks.Enqueue(task);
             _dequeue.Set();
         }

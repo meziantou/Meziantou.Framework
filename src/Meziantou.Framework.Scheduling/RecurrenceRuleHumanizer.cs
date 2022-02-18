@@ -38,11 +38,8 @@ namespace Meziantou.Framework.Scheduling
             return GetText(rrule, cultureInfo: null);
         }
 
-        public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
+        public static string? GetText(RecurrenceRule rrule!!, CultureInfo? cultureInfo)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-
             if (cultureInfo == null)
             {
                 cultureInfo = CultureInfo.CurrentUICulture;

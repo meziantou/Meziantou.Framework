@@ -10,7 +10,7 @@ namespace TestUtilities
     {
         private static readonly ConcurrentDictionary<string, Lazy<Task<string[]>>> s_cache = new(StringComparer.Ordinal);
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "MA0106:Avoid closure by using an overload with the 'factoryArgument' parameter", Justification = "Not important in tests")]
+        [SuppressMessage("Performance", "MA0106:Avoid closure by using an overload with the 'factoryArgument' parameter", Justification = "Not important in tests")]
         public static Task<string[]> GetNuGetReferences(string packageName, string version, string path)
         {
             var task = s_cache.GetOrAdd(packageName + '@' + version + ':' + path, key =>

@@ -21,11 +21,8 @@ namespace Meziantou.Framework.Win32
             Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero));
         }
 
-        public static ChangeJournal Open(DriveInfo driveInfo)
+        public static ChangeJournal Open(DriveInfo driveInfo!!)
         {
-            if (driveInfo == null)
-                throw new ArgumentNullException(nameof(driveInfo));
-
             var volume = VolumeHelper.GetValidVolumePath(driveInfo);
             var handle = Win32Methods.CreateFileW(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
             if (handle.IsInvalid)

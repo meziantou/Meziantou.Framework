@@ -6,10 +6,10 @@ namespace Meziantou.Framework.Html
 {
     public sealed class HtmlReaderParseEventArgs : CancelEventArgs
     {
-        public HtmlReaderParseEventArgs(StringBuilder value, StringBuilder rawValue)
+        public HtmlReaderParseEventArgs(StringBuilder value!!, StringBuilder rawValue!!)
         {
-            Value = value ?? throw new ArgumentNullException(nameof(value));
-            RawValue = rawValue ?? throw new ArgumentNullException(nameof(rawValue));
+            Value = value;
+            RawValue = rawValue;
         }
 
         public bool Continue { get; set; }

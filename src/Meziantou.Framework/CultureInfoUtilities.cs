@@ -4,23 +4,15 @@ namespace Meziantou.Framework
 {
     public static class CultureInfoUtilities
     {
-        public static void SetCurrentThreadCulture(CultureInfo cultureInfo)
+        public static void SetCurrentThreadCulture(CultureInfo cultureInfo!!)
         {
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var currentThread = Thread.CurrentThread;
             currentThread.CurrentCulture = cultureInfo;
             currentThread.CurrentUICulture = cultureInfo;
         }
 
-        public static void UseCulture(CultureInfo cultureInfo, Action action)
+        public static void UseCulture(CultureInfo cultureInfo!!, Action action!!)
         {
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             var currentThread = Thread.CurrentThread;
             var currentCulture = currentThread.CurrentCulture;
             var currentUiCulture = currentThread.CurrentUICulture;
@@ -39,11 +31,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static void UseCulture(string cultureName, Action action)
+        public static void UseCulture(string cultureName!!, Action action)
         {
-            if (cultureName == null)
-                throw new ArgumentNullException(nameof(cultureName));
-
             var culture = GetCulture(cultureName);
             if (culture == null)
                 throw new ArgumentException($"Culture '{cultureName}' not found.", nameof(cultureName));
@@ -51,13 +40,8 @@ namespace Meziantou.Framework
             UseCulture(culture, action);
         }
 
-        public static T UseCulture<T>(CultureInfo cultureInfo, Func<T> action)
+        public static T UseCulture<T>(CultureInfo cultureInfo!!, Func<T> action!!)
         {
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
             var currentThread = Thread.CurrentThread;
             var currentCulture = currentThread.CurrentCulture;
             var currentUiCulture = currentThread.CurrentUICulture;
@@ -76,11 +60,8 @@ namespace Meziantou.Framework
             }
         }
 
-        public static T UseCulture<T>(string cultureName, Func<T> action)
+        public static T UseCulture<T>(string cultureName!!, Func<T> action)
         {
-            if (cultureName == null)
-                throw new ArgumentNullException(nameof(cultureName));
-
             var culture = GetCulture(cultureName);
             if (culture == null)
                 throw new ArgumentException($"Culture '{cultureName}' not found.", nameof(cultureName));
@@ -107,11 +88,8 @@ namespace Meziantou.Framework
             return null;
         }
 
-        public static CultureInfo GetNeutralCulture(this CultureInfo cultureInfo)
+        public static CultureInfo GetNeutralCulture(this CultureInfo cultureInfo!!)
         {
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             if (cultureInfo.IsNeutralCulture)
                 return cultureInfo;
 

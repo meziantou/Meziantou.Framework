@@ -20,23 +20,8 @@ namespace Meziantou.AspNetCore.Components.Internals
         /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-        public static string AddQueryString(string uri, string name, string value)
+        public static string AddQueryString(string uri!!, string name!!, string value!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
             return AddQueryString(
                 uri, new[] { new KeyValuePair<string, string?>(name, value) });
         }
@@ -49,18 +34,8 @@ namespace Meziantou.AspNetCore.Components.Internals
         /// <returns>The combined result.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
-        public static string AddQueryString(string uri, IDictionary<string, string?> queryString)
+        public static string AddQueryString(string uri!!, IDictionary<string, string?> queryString!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            if (queryString == null)
-            {
-                throw new ArgumentNullException(nameof(queryString));
-            }
-
             return AddQueryString(uri, (IEnumerable<KeyValuePair<string, string?>>)queryString);
         }
 
@@ -72,18 +47,8 @@ namespace Meziantou.AspNetCore.Components.Internals
         /// <returns>The combined result.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
-        public static string AddQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString)
+        public static string AddQueryString(string uri!!, IEnumerable<KeyValuePair<string, StringValues>> queryString!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            if (queryString == null)
-            {
-                throw new ArgumentNullException(nameof(queryString));
-            }
-
             return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
         }
 
@@ -96,19 +61,9 @@ namespace Meziantou.AspNetCore.Components.Internals
         /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
         public static string AddQueryString(
-            string uri,
-            IEnumerable<KeyValuePair<string, string?>> queryString)
+            string uri!!,
+            IEnumerable<KeyValuePair<string, string?>> queryString!!)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-
-            if (queryString == null)
-            {
-                throw new ArgumentNullException(nameof(queryString));
-            }
-
             var anchorIndex = uri.IndexOf('#', StringComparison.Ordinal);
             var uriToBeAppended = uri;
             var anchorText = "";

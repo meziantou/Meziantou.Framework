@@ -16,14 +16,14 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public TypeReference(TypeDeclaration typeDeclaration)
+        public TypeReference(TypeDeclaration typeDeclaration!!)
         {
-            _typeDeclaration = typeDeclaration ?? throw new ArgumentNullException(nameof(typeDeclaration));
+            _typeDeclaration = typeDeclaration;
         }
 
-        public TypeReference(TypeParameter typeParameter)
+        public TypeReference(TypeParameter typeParameter!!)
         {
-            _typeParameter = typeParameter ?? throw new ArgumentNullException(nameof(typeParameter));
+            _typeParameter = typeParameter;
         }
 
         public TypeReference(string typeName)

@@ -9,11 +9,8 @@ namespace Meziantou.Framework
     public static partial class ProcessExtensions
     {
         [Obsolete("Already implemented in .NET 3.1")]
-        public static void Kill(this Process process, bool entireProcessTree = false)
+        public static void Kill(this Process process!!, bool entireProcessTree = false)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
 #if NETCOREAPP3_1_OR_GREATER
             process.Kill(entireProcessTree);
 #elif NETSTANDARD2_0 || NET461
@@ -49,11 +46,8 @@ namespace Meziantou.Framework
         }
 
         [SupportedOSPlatform("windows")]
-        public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
+        public static IReadOnlyList<Process> GetDescendantProcesses(this Process process!!)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -63,11 +57,8 @@ namespace Meziantou.Framework
         }
 
         [SupportedOSPlatform("windows")]
-        public static IReadOnlyList<Process> GetChildProcesses(this Process process)
+        public static IReadOnlyList<Process> GetChildProcesses(this Process process!!)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -77,11 +68,8 @@ namespace Meziantou.Framework
         }
 
         [SupportedOSPlatform("windows")]
-        public static IEnumerable<int> GetAncestorProcessIds(this Process process)
+        public static IEnumerable<int> GetAncestorProcessIds(this Process process!!)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -117,11 +105,8 @@ namespace Meziantou.Framework
         }
 
         [SupportedOSPlatform("windows")]
-        public static IEnumerable<Process> GetAncestorProcesses(this Process process)
+        public static IEnumerable<Process> GetAncestorProcesses(this Process process!!)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             return GetAncestorProcesses();
 
             IEnumerable<Process> GetAncestorProcesses()
@@ -180,11 +165,8 @@ namespace Meziantou.Framework
 
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
-        public static int? GetParentProcessId(this Process process)
+        public static int? GetParentProcessId(this Process process!!)
         {
-            if (process == null)
-                throw new ArgumentNullException(nameof(process));
-
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 var processId = process.Id;

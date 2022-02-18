@@ -30,9 +30,9 @@ namespace Meziantou.Framework.Csv
             }
         }
 
-        public CsvReader(TextReader textReader)
+        public CsvReader(TextReader textReader!!)
         {
-            BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
+            BaseReader = textReader;
         }
 
         private async Task<char?> ReadCharAsync()

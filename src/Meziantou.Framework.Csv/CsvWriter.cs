@@ -10,9 +10,9 @@
         public char Separator { get; set; } = CsvReader.DefaultSeparatorCharacter;
         public char? Quote { get; set; } = CsvReader.DefaultQuoteCharacter;
 
-        public CsvWriter(TextWriter textReader)
+        public CsvWriter(TextWriter textReader!!)
         {
-            BaseWriter = textReader ?? throw new ArgumentNullException(nameof(textReader));
+            BaseWriter = textReader;
         }
 
         public Task BeginRowAsync()

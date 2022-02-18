@@ -6,11 +6,8 @@ namespace Meziantou.Framework
     public static partial class StringSearchUtilities
     {
         [Pure]
-        public static string Metaphone(string s)
+        public static string Metaphone(string s!!)
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
-
             const string Vowels = "AEIOU";
             const string Frontv = "EIY";
             const string Varson = "CSPTG";

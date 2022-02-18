@@ -6,11 +6,8 @@ namespace Meziantou.Framework.Scheduling
     internal static class Extensions
     {
         [Pure]
-        public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
+        public static string? GetValue(this IDictionary<string, string> dict!!, string key, string? defaultValue)
         {
-            if (dict == null)
-                throw new ArgumentNullException(nameof(dict));
-
             if (dict.TryGetValue(key, out var value))
                 return value;
 
@@ -18,11 +15,8 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)
+        public static int GetValue(this IDictionary<string, string> dict!!, string key, int defaultValue)
         {
-            if (dict == null)
-                throw new ArgumentNullException(nameof(dict));
-
             if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
@@ -30,11 +24,8 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static int? GetValue(this IDictionary<string, string> dict, string key, int? defaultValue)
+        public static int? GetValue(this IDictionary<string, string> dict!!, string key, int? defaultValue)
         {
-            if (dict == null)
-                throw new ArgumentNullException(nameof(dict));
-
             if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
@@ -42,11 +33,8 @@ namespace Meziantou.Framework.Scheduling
         }
 
         [Pure]
-        public static Frequency GetValue(this IDictionary<string, string> dict, string key, Frequency defaultValue)
+        public static Frequency GetValue(this IDictionary<string, string> dict!!, string key, Frequency defaultValue)
         {
-            if (dict == null)
-                throw new ArgumentNullException(nameof(dict));
-
             if (dict.TryGetValue(key, out var value) && value != null && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
                 return enumValue;
 

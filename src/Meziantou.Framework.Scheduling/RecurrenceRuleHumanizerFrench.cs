@@ -7,13 +7,8 @@ namespace Meziantou.Framework.Scheduling
     {
         private static readonly char[] s_precededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
 
-        protected override string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(DailyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("tous les");
             if (rrule.Interval == 1)
@@ -31,13 +26,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(WeeklyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("toutes les");
             if (rrule.Interval == 1)
@@ -61,13 +51,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(MonthlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("tous les");
             if (rrule.Interval == 1)
@@ -103,13 +88,8 @@ namespace Meziantou.Framework.Scheduling
             return sb.ToString();
         }
 
-        protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo)
+        protected override string GetText(YearlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
         {
-            if (rrule == null)
-                throw new ArgumentNullException(nameof(rrule));
-            if (cultureInfo == null)
-                throw new ArgumentNullException(nameof(cultureInfo));
-
             var sb = new StringBuilder();
             sb.Append("tous les");
             if (rrule.Interval == 1)

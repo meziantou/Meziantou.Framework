@@ -21,11 +21,8 @@ namespace Meziantou.Framework
         /// Makes sure a directory exists for a given file path.
         /// </summary>
         /// <param name="filePath">The file path. Note this is not to be confused with the directory path. May not be null.</param>
-        public static void PathCreateDirectory(string filePath)
+        public static void PathCreateDirectory(string filePath!!)
         {
-            if (filePath == null)
-                throw new ArgumentNullException(nameof(filePath));
-
             if (!Path.IsPathRooted(filePath))
             {
                 filePath = Path.GetFullPath(filePath);
@@ -42,11 +39,8 @@ namespace Meziantou.Framework
         /// Unprotects the given file path.
         /// </summary>
         /// <param name="path">The file path. May not be null.</param>
-        public static void PathUnprotect(string path)
+        public static void PathUnprotect(string path!!)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             var fi = new FileInfo(path);
             if (fi.Exists)
             {
@@ -58,13 +52,8 @@ namespace Meziantou.Framework
         }
 
         [Obsolete("Use FullPath struct instead")]
-        public static bool ArePathEqual(string path1, string path2)
+        public static bool ArePathEqual(string path1!!, string path2!!)
         {
-            if (path1 == null)
-                throw new ArgumentNullException(nameof(path1));
-            if (path2 == null)
-                throw new ArgumentNullException(nameof(path2));
-
             var uri1 = new Uri(path1);
             var uri2 = new Uri(path2);
 
@@ -72,13 +61,8 @@ namespace Meziantou.Framework
         }
 
         [Obsolete("Use FullPath struct instead")]
-        public static bool IsChildPathOf(string parent, string child)
+        public static bool IsChildPathOf(string parent!!, string child!!)
         {
-            if (parent == null)
-                throw new ArgumentNullException(nameof(parent));
-            if (child == null)
-                throw new ArgumentNullException(nameof(child));
-
             var parentUri = new Uri(parent);
             var childUri = new Uri(child);
 
@@ -86,13 +70,8 @@ namespace Meziantou.Framework
         }
 
         [Obsolete("Use FullPath struct instead")]
-        public static string MakeRelativePath(string root, string path)
+        public static string MakeRelativePath(string root!!, string path!!)
         {
-            if (root == null)
-                throw new ArgumentNullException(nameof(root));
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             var parentUri = new Uri(root);
             var childUri = new Uri(path);
 
@@ -109,15 +88,8 @@ namespace Meziantou.Framework
         /// <returns>
         /// A valid file name.
         /// </returns>
-        public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_")
+        public static string ToValidFileName(string fileName!!, string reservedNameFormat!! = "_{0}_", string reservedCharFormat!! = "_x{0}_")
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
-            if (reservedNameFormat == null)
-                throw new ArgumentNullException(nameof(reservedNameFormat));
-            if (reservedCharFormat == null)
-                throw new ArgumentNullException(nameof(reservedCharFormat));
-
             if (s_reservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
             {
                 return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);

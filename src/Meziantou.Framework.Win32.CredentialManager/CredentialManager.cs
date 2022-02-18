@@ -47,16 +47,8 @@ namespace Meziantou.Framework.Win32
             WriteCredential(applicationName, userName, secret, comment: null, persistence);
         }
 
-        public static void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
+        public static void WriteCredential(string applicationName!!, string userName!!, string secret!!, string? comment, CredentialPersistence persistence)
         {
-            if (applicationName == null)
-                throw new ArgumentNullException(nameof(applicationName));
-
-            if (userName == null)
-                throw new ArgumentNullException(nameof(userName));
-
-            if (secret == null)
-                throw new ArgumentNullException(nameof(secret));
 
             // CRED_MAX_CREDENTIAL_BLOB_SIZE
             // XP and Vista: 512;
@@ -119,11 +111,8 @@ namespace Meziantou.Framework.Win32
             }
         }
 
-        public static void DeleteCredential(string applicationName)
+        public static void DeleteCredential(string applicationName!!)
         {
-            if (applicationName == null)
-                throw new ArgumentNullException(nameof(applicationName));
-
             var success = Advapi32.CredDelete(applicationName, CredentialType.Generic, 0);
             if (!success)
             {

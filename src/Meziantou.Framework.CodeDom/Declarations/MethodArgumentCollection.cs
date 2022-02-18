@@ -10,9 +10,9 @@ namespace Meziantou.Framework.CodeDom
         {
         }
 
-        public MethodArgumentCollection(CodeObject parent)
+        public MethodArgumentCollection(CodeObject parent!!)
         {
-            Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+            Parent = parent;
         }
 
         public IEnumerator<MethodArgumentDeclaration> GetEnumerator()
@@ -35,11 +35,8 @@ namespace Meziantou.Framework.CodeDom
 
         void ICollection<MethodArgumentDeclaration>.Add(MethodArgumentDeclaration item) => Add(item);
 
-        public MethodArgumentDeclaration Add(MethodArgumentDeclaration item)
+        public MethodArgumentDeclaration Add(MethodArgumentDeclaration item!!)
         {
-            if (item == null)
-                throw new ArgumentNullException(nameof(item));
-
             _list.Add(item);
             item.Parent = Parent;
             return item;

@@ -247,7 +247,7 @@ namespace Meziantou.Framework.Tests
 
 #nullable enable
         [Fact]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
+        [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
         public void WhereNotNull()
         {
             // Arrange
@@ -264,7 +264,7 @@ namespace Meziantou.Framework.Tests
 
 #nullable enable
         [Fact]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
+        [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
         public void WhereNotNull_Struct()
         {
             // Arrange

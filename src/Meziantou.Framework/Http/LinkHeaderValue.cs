@@ -14,9 +14,9 @@ namespace Meziantou.Framework.Http
 
         public IReadOnlyList<KeyValuePair<string, string>> Parameters { get; }
 
-        private LinkHeaderValue(string url, IReadOnlyList<KeyValuePair<string, string>> parameters)
+        private LinkHeaderValue(string url!!, IReadOnlyList<KeyValuePair<string, string>> parameters)
         {
-            Url = url ?? throw new ArgumentNullException(nameof(url));
+            Url = url;
             Parameters = parameters;
         }
 

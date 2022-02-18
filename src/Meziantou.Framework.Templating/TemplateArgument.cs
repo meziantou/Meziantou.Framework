@@ -2,9 +2,9 @@
 {
     public class TemplateArgument
     {
-        public TemplateArgument(string name, Type? type)
+        public TemplateArgument(string name!!, Type? type)
         {
-            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Name = name;
             Type = type;
         }
 

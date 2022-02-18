@@ -21,56 +21,56 @@ jobs:
   validate_readme:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
-    - name: Validate Readme
-      run: .\eng\update-readme.ps1
+      - uses: actions/checkout@v2
+      - name: Validate Readme
+        run: .\eng\update-readme.ps1
 
   create_nuget:
     runs-on: windows-2022
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core (global.json)
-      uses: actions/setup-dotnet@v1
-    - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
-    - uses: actions/upload-artifact@v2
-      if: always()
-      with:
-        name: nuget
-        if-no-files-found: error
-        retention-days: 3
-        path: ${{ env.NuGetDirectory }}/**/*
-    - uses: actions/upload-artifact@v2
-      if: always()
-      with:
-        name: binlog
-        if-no-files-found: error
-        retention-days: 3
-        path: '**/*.binlog'
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v1
+      - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: nuget
+          if-no-files-found: error
+          retention-days: 3
+          path: ${{ env.NuGetDirectory }}/**/*
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: binlog
+          if-no-files-found: error
+          retention-days: 3
+          path: '**/*.binlog'
 
   validate_nuget:
     runs-on: windows-2022
     needs: [ create_nuget ]
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core (global.json)
-      uses: actions/setup-dotnet@v1
-    - name: Setup .NET Core (additional versions)
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: | 
-          6.0.x
-    - uses: actions/download-artifact@v2
-      with:
-        name: nuget
-        path: ${{ env.NuGetDirectory }}
-    - name: Run dotnet validate
-      run: |
-        dotnet tool restore
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v1
+      - name: Setup .NET Core (additional versions)
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: |
+            6.0.x
+      - uses: actions/download-artifact@v2
+        with:
+          name: nuget
+          path: ${{ env.NuGetDirectory }}
+      - name: Run dotnet validate
+        run: |
+          dotnet tool restore
 
-        $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
-        foreach($file in $files) {
-            dotnet validate package local "$file"
-        }
+          $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+          foreach($file in $files) {
+              dotnet validate package local "$file"
+          }
 
   build_and_test:
     runs-on: ${{ matrix.runs-on }}
@@ -79,60 +79,60 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        configuration: [Debug, Release]
-        runs-on: [windows-2019, windows-2022, ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11]
+        configuration: [ Debug, Release ]
+        runs-on: [ windows-2019, windows-2022, ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11 ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core (global.json)
-      uses: actions/setup-dotnet@v1
-    - name: Setup .NET Core (additional versions)
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: | 
-          6.0.x
-          5.0.x
-          3.1.x
-    - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-      name: Build
-    - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
-      name: Run tests
-    - uses: actions/upload-artifact@v2
-      if: always()
-      with:
-        name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
-        if-no-files-found: error
-        retention-days: 3
-        path: ${{ env.TestResultsDirectory }}/**/*
-    - uses: codecov/codecov-action@v2
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v1
+      - name: Setup .NET Core (additional versions)
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: |
+            6.0.x
+            5.0.x
+            3.1.x
+      - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        name: Build
+      - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
+        name: Run tests
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
+          if-no-files-found: error
+          retention-days: 3
+          path: ${{ env.TestResultsDirectory }}/**/*
+      - uses: codecov/codecov-action@v2
 
   deploy:
     runs-on: 'ubuntu-20.04'
     needs: [ validate_readme, validate_nuget, build_and_test ]
     steps:
-    - uses: actions/download-artifact@v2
-      with:
-        name: nuget
-        path: ${{ env.NuGetDirectory }}
-    - name: Setup .NET Core (global.json)
-      uses: actions/setup-dotnet@v1
-    - run: |
-        Write-Host "Current ref: $env:GITHUB_REF"
-        Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
-        $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
-        foreach($file in $files) {
-            Write-Host "Pushing NuGet package: $($file.FullName)"
-            if ($env:GITHUB_REF -eq 'refs/heads/main')
-            {
-              & dotnet nuget push "$($file.FullName)" --api-key "$env:NuGetApiKey" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
-            }
-            else
-            {
-              Write-Host "Not on the default branch => Do not push"
-            }
-        }
-      name: Publish NuGet packages
-      if: always()
-      env:
-        NuGetApiKey: ${{ secrets.NuGetApiKey }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: nuget
+          path: ${{ env.NuGetDirectory }}
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v1
+      - run: |
+          Write-Host "Current ref: $env:GITHUB_REF"
+          Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"
+          $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+          foreach($file in $files) {
+              Write-Host "Pushing NuGet package: $($file.FullName)"
+              if ($env:GITHUB_REF -eq 'refs/heads/main')
+              {
+                & dotnet nuget push "$($file.FullName)" --api-key "$env:NuGetApiKey" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
+              }
+              else
+              {
+                Write-Host "Not on the default branch => Do not push"
+              }
+          }
+        name: Publish NuGet packages
+        if: always()
+        env:
+          NuGetApiKey: ${{ secrets.NuGetApiKey }}

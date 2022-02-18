@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.ResxSourceGenerator\Meziantou.Framework.ResxSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />  
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
     <AdditionalFiles Include="**/*.resx" />
   </ItemGroup>
 

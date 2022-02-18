@@ -11,15 +11,15 @@
     <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework)</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows)</LatestTargetFrameworksWindows>
   </PropertyGroup>
-  
-  <PropertyGroup>    
+
+  <PropertyGroup>
     <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ValidateProjectTargets>true</ValidateProjectTargets>
     <ImplicitUsings>enable</ImplicitUsings>
-    
+
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>

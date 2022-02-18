@@ -17,7 +17,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static int GetValue(this IDictionary<string, string> dict!!, string key, int defaultValue)
         {
-            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
+            if (dict.TryGetValue(key, out var value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return defaultValue;
@@ -26,7 +26,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static int? GetValue(this IDictionary<string, string> dict!!, string key, int? defaultValue)
         {
-            if (dict.TryGetValue(key, out var value) && value != null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
+            if (dict.TryGetValue(key, out var value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
                 return i;
 
             return defaultValue;
@@ -35,7 +35,7 @@ namespace Meziantou.Framework.Scheduling
         [Pure]
         public static Frequency GetValue(this IDictionary<string, string> dict!!, string key, Frequency defaultValue)
         {
-            if (dict.TryGetValue(key, out var value) && value != null && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
+            if (dict.TryGetValue(key, out var value) && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
                 return enumValue;
 
             return defaultValue;

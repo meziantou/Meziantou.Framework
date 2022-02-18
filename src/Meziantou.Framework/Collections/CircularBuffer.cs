@@ -8,7 +8,6 @@ namespace Meziantou.Framework.Collections
     {
         private T[] _items;
         private int _startIndex;
-        private int _size;
         private int _version;
 
         public int Capacity
@@ -19,13 +18,13 @@ namespace Meziantou.Framework.Collections
                 if (value <= 0)
                     throw new ArgumentException("Maximum count must be greater than 0.", nameof(value));
 
-                if (value < _size)
+                if (value < Count)
                     throw new ArgumentOutOfRangeException(nameof(value), "Capacity was less than the current size.");
 
                 if (value != _items.Length)
                 {
                     var newItems = new T[value];
-                    if (_size > 0)
+                    if (Count > 0)
                     {
                         CopyTo(newItems, 0);
                     }
@@ -36,7 +35,7 @@ namespace Meziantou.Framework.Collections
             }
         }
 
-        public int Count => _size;
+        public int Count { get; private set; }
 
         public bool AllowOverwrite { get; set; }
 
@@ -52,7 +51,7 @@ namespace Meziantou.Framework.Collections
 
         public void AddFirst(T value)
         {
-            if (_size == Capacity)
+            if (Count == Capacity)
             {
                 if (!AllowOverwrite)
                     throw new InvalidOperationException("The buffer is full");
@@ -63,7 +62,7 @@ namespace Meziantou.Framework.Collections
             }
             else
             {
-                if (_size == 0)
+                if (Count == 0)
                 {
                     _items[0] = value;
                     _startIndex = 0;
@@ -75,7 +74,7 @@ namespace Meziantou.Framework.Collections
                     _startIndex = index;
                 }
 
-                _size++;
+                Count++;
             }
 
             _version++;
@@ -83,29 +82,29 @@ namespace Meziantou.Framework.Collections
 
         public void AddLast(T value)
         {
-            if (_size == Capacity)
+            if (Count == Capacity)
             {
                 if (!AllowOverwrite)
                     throw new InvalidOperationException("The buffer is full");
 
-                var index = (_startIndex + _size) % Capacity;
+                var index = (_startIndex + Count) % Capacity;
                 _items[index] = value;
                 _startIndex = (_startIndex + 1) % Capacity;
             }
             else
             {
-                if (_size == 0)
+                if (Count == 0)
                 {
                     _items[0] = value;
                     _startIndex = 0;
                 }
                 else
                 {
-                    var index = (_startIndex + _size) % Capacity;
+                    var index = (_startIndex + Count) % Capacity;
                     _items[index] = value;
                 }
 
-                _size++;
+                Count++;
             }
 
             _version++;
@@ -113,11 +112,11 @@ namespace Meziantou.Framework.Collections
 
         public T RemoveFirst()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException("The buffer is empty");
 
             var item = _items[_startIndex];
-            _size--;
+            Count--;
             _startIndex = (_startIndex + 1) % Capacity;
             _version++;
             return item;
@@ -125,11 +124,11 @@ namespace Meziantou.Framework.Collections
 
         public T RemoveLast()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException("The buffer is empty");
 
-            var item = _items[(_startIndex + _size) % Capacity];
-            _size--;
+            var item = _items[(_startIndex + Count) % Capacity];
+            Count--;
             _version++;
             return item;
         }
@@ -147,17 +146,17 @@ namespace Meziantou.Framework.Collections
 
         public void Clear()
         {
-            if (_size > 0)
+            if (Count > 0)
             {
                 // Clear the elements so that the gc can reclaim the references.
-                Array.Clear(_items, _startIndex, Math.Min(_size - _startIndex, Capacity - _startIndex));
-                if (_startIndex + _size > Capacity)
+                Array.Clear(_items, _startIndex, Math.Min(Count - _startIndex, Capacity - _startIndex));
+                if (_startIndex + Count > Capacity)
                 {
-                    Array.Clear(_items, 0, (_startIndex + _size) % Capacity);
+                    Array.Clear(_items, 0, (_startIndex + Count) % Capacity);
                 }
             }
 
-            _size = 0;
+            Count = 0;
             _startIndex = 0;
             _version++;
         }
@@ -169,21 +168,21 @@ namespace Meziantou.Framework.Collections
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            var length = Math.Min(_size, _items.Length - _startIndex);
+            var length = Math.Min(Count, _items.Length - _startIndex);
             Array.Copy(_items, _startIndex, array, arrayIndex, length);
-            if (_startIndex + _size > _items.Length)
+            if (_startIndex + Count > _items.Length)
             {
-                Array.Copy(_items, 0, array, arrayIndex + length, (_startIndex + _size) % _items.Length);
+                Array.Copy(_items, 0, array, arrayIndex + length, (_startIndex + Count) % _items.Length);
             }
         }
 
         public int IndexOf(T item)
         {
-            if (_size == 0)
+            if (Count == 0)
                 return -1;
 
             var comparer = EqualityComparer<T>.Default;
-            for (var i = 0; i < _size; i++)
+            for (var i = 0; i < Count; i++)
             {
                 var index = (_startIndex + i) % _items.Length;
                 if (comparer.Equals(item, _items[index]))
@@ -198,7 +197,7 @@ namespace Meziantou.Framework.Collections
             AddLast(item);
         }
 
-        public Enumerator GetEnumerator() => new Enumerator(this);
+        public Enumerator GetEnumerator() => new(this);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
@@ -229,7 +228,7 @@ namespace Meziantou.Framework.Collections
             public bool MoveNext()
             {
                 var localList = _list;
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
+                if (_version == localList._version && ((uint)_index < (uint)localList.Count))
                 {
                     var actualIndex = (_list._startIndex + _index) % _list.Capacity;
                     _current = localList._items[actualIndex];
@@ -244,7 +243,7 @@ namespace Meziantou.Framework.Collections
                 if (_version != _list._version)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-                _index = _list._size + 1;
+                _index = _list.Count + 1;
                 _current = default;
                 return false;
             }
@@ -255,7 +254,7 @@ namespace Meziantou.Framework.Collections
             {
                 get
                 {
-                    if (_index == 0 || _index == _list._size + 1)
+                    if (_index == 0 || _index == _list.Count + 1)
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                     return Current;

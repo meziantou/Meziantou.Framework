@@ -1,6 +1,4 @@
-﻿using System;
-
-#if NET472
+﻿#if NET472
 using Microsoft.IO;
 using Microsoft.IO.Enumeration;
 #else

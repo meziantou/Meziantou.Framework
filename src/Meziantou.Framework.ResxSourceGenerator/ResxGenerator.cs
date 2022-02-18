@@ -389,8 +389,11 @@ namespace Meziantou.Framework.ResxSourceGenerator
             }
             return sb.ToString();
 
-            static string AppendNotNullIfNotNull(string paramName)
+            string? AppendNotNullIfNotNull(string paramName)
             {
+                if (!enableNullableAttributes)
+                    return null;
+
                 return "[return: global::System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute(\"" + paramName + "\")]\n";
             }
         }

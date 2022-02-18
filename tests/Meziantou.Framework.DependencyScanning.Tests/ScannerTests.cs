@@ -30,7 +30,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         [Fact]
         public async Task NpmPackageJsonDependencies()
         {
-            const string Original = @"{
+            const string Original = /*lang=json,strict*/ @"{
   ""name"": ""sample"",
   ""version"": ""0.1.0"",
   ""dependencies"": {
@@ -42,7 +42,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
   }
 }";
 
-            const string Expected = @"{
+            const string Expected = /*lang=json,strict*/ @"{
   ""name"": ""sample"",
   ""version"": ""0.1.0"",
   ""dependencies"": {
@@ -214,7 +214,7 @@ namespace Meziantou.Framework.DependencyScanning.Tests
         [Fact]
         public async Task ProjectJsonDependencies()
         {
-            const string Original = @"{
+            const string Original = /*lang=json,strict*/ @"{
   ""dependencies"": {
     ""a"": {
       ""version"": ""1.0.1"",
@@ -223,14 +223,14 @@ namespace Meziantou.Framework.DependencyScanning.Tests
     ""b"": {
       ""target"": ""project""
     },
-    ""c"": ""1.0.2"",
+    ""c"": ""1.0.2""
   },
   ""tools"": {
     ""d"": ""1.0.3""
   }
 }";
 
-            const string Expected = @"{
+            const string Expected = /*lang=json,strict*/ @"{
   ""dependencies"": {
     ""a"": {
       ""version"": ""2.0.0"",
@@ -387,7 +387,7 @@ CMD  /code/run-app
         [Fact]
         public async Task GlobalJsonFromDependencies()
         {
-            const string Original = @"{
+            const string Original = /*lang=json,strict*/ @"{
   ""sdk"": {
     ""version"": ""3.1.100"",
     ""rollForward"": ""disable""
@@ -397,7 +397,7 @@ CMD  /code/run-app
     ""My.Other.Sdk"": ""1.0.0-beta""
   }
 }";
-            const string Expected = @"{
+            const string Expected = /*lang=json,strict*/ @"{
   ""sdk"": {
     ""version"": ""3.1.400"",
     ""rollForward"": ""disable""
@@ -576,7 +576,7 @@ services:
         [Fact]
         public async Task DotNetToolsDependencies()
         {
-            const string Original = @"{
+            const string Original = /*lang=json,strict*/ @"{
   ""version"": 1,
   ""isRoot"": true,
   ""tools"": {
@@ -595,7 +595,7 @@ services:
   }
 }";
 
-            const string Expected = @"{
+            const string Expected = /*lang=json,strict*/ @"{
   ""version"": 1,
   ""isRoot"": true,
   ""tools"": {

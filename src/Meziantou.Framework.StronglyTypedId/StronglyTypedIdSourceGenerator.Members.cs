@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Globalization;
 using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;

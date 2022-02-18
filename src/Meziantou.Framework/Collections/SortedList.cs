@@ -10,13 +10,12 @@ namespace Meziantou.Framework.Collections
     {
         private readonly IComparer<T> _comparer;
         private T[] _items;
-        private int _size;
         private int _version;
 
         public SortedList()
         {
             _items = Array.Empty<T>();
-            _size = 0;
+            Count = 0;
             _comparer = Comparer<T>.Default;
         }
 
@@ -32,7 +31,7 @@ namespace Meziantou.Framework.Collections
         public SortedList(IComparer<T>? comparer)
         {
             _items = Array.Empty<T>();
-            _size = 0;
+            Count = 0;
             _comparer = comparer ?? Comparer<T>.Default;
         }
 
@@ -42,7 +41,7 @@ namespace Meziantou.Framework.Collections
                 throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
 
             _items = capacity == 0 ? Array.Empty<T>() : new T[capacity];
-            _size = 0;
+            Count = 0;
             _comparer = comparer ?? Comparer<T>.Default;
         }
 
@@ -52,7 +51,7 @@ namespace Meziantou.Framework.Collections
 
         object ICollection.SyncRoot => this;
 
-        public int Count => _size;
+        public int Count { get; private set; }
 
         public T this[int index] => _items[index];
 
@@ -61,7 +60,7 @@ namespace Meziantou.Framework.Collections
             get => _items.Length;
             set
             {
-                if (value < _size)
+                if (value < Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), "Capacity was less than the current size.");
                 }
@@ -71,9 +70,9 @@ namespace Meziantou.Framework.Collections
                     if (value > 0)
                     {
                         var newItems = new T[value];
-                        if (_size > 0)
+                        if (Count > 0)
                         {
-                            Array.Copy(_items, newItems, _size);
+                            Array.Copy(_items, newItems, Count);
                         }
                         _items = newItems;
                     }
@@ -93,18 +92,18 @@ namespace Meziantou.Framework.Collections
                 index = ~index;
             }
 
-            if (_size == _items.Length)
+            if (Count == _items.Length)
             {
-                EnsureCapacity(_size + 1);
+                EnsureCapacity(Count + 1);
             }
 
-            if (index < _size)
+            if (index < Count)
             {
-                Array.Copy(_items, index, _items, index + 1, _size - index);
+                Array.Copy(_items, index, _items, index + 1, Count - index);
             }
 
             _items[index] = item;
-            _size++;
+            Count++;
             _version++;
         }
 
@@ -122,20 +121,20 @@ namespace Meziantou.Framework.Collections
 
         public void RemoveAt(int index)
         {
-            if ((uint)index >= (uint)_size)
+            if ((uint)index >= (uint)Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
-            _size--;
-            if (index < _size)
+            Count--;
+            if (index < Count)
             {
-                Array.Copy(_items, index + 1, _items, index, _size - index);
+                Array.Copy(_items, index + 1, _items, index, Count - index);
             }
 
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                _items[_size] = default!;
+                _items[Count] = default!;
             }
 
             _version++;
@@ -146,8 +145,8 @@ namespace Meziantou.Framework.Collections
             _version++;
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                var size = _size;
-                _size = 0;
+                var size = Count;
+                Count = 0;
                 if (size > 0)
                 {
                     Array.Clear(_items, 0, size); // Clear the elements so that the gc can reclaim the references.
@@ -155,7 +154,7 @@ namespace Meziantou.Framework.Collections
             }
             else
             {
-                _size = 0;
+                Count = 0;
             }
         }
 
@@ -171,7 +170,7 @@ namespace Meziantou.Framework.Collections
             try
             {
                 // Array.Copy will check for NULL.
-                Array.Copy(_items, 0, array!, arrayIndex, _size);
+                Array.Copy(_items, 0, array!, arrayIndex, Count);
             }
             catch (ArrayTypeMismatchException)
             {
@@ -182,7 +181,7 @@ namespace Meziantou.Framework.Collections
         [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException", Justification = "Multiple parameters are not supported by the exception")]
         public void CopyTo(int index, T[] array, int arrayIndex, int count)
         {
-            if (_size - index < count)
+            if (Count - index < count)
                 throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
 
             // Delegate rest of error checking to Array.Copy.
@@ -202,7 +201,7 @@ namespace Meziantou.Framework.Collections
         public void CopyTo(T[] array, int arrayIndex)
         {
             // Delegate rest of error checking to Array.Copy.
-            Array.Copy(_items, 0, array, arrayIndex, _size);
+            Array.Copy(_items, 0, array, arrayIndex, Count);
         }
 
         public bool Contains(T item)
@@ -246,7 +245,7 @@ namespace Meziantou.Framework.Collections
             if (index < 0)
                 return -1;
 
-            while (index < _size - 1)
+            while (index < Count - 1)
             {
                 if (_comparer.Compare(_items[index + 1], item) == 0)
                 {
@@ -263,7 +262,7 @@ namespace Meziantou.Framework.Collections
 
         public int BinarySearch(T item)
         {
-            return Array.BinarySearch(_items, index: 0, length: _size, item, _comparer);
+            return Array.BinarySearch(_items, index: 0, length: Count, item, _comparer);
         }
 
         private void EnsureCapacity(int min)
@@ -287,7 +286,7 @@ namespace Meziantou.Framework.Collections
 
         public ReadOnlySpan<T> UnsafeAsReadOnlySpan()
         {
-            return _items.AsSpan(0, _size);
+            return _items.AsSpan(0, Count);
         }
 
         public Enumerator GetEnumerator() => new(this);
@@ -316,7 +315,7 @@ namespace Meziantou.Framework.Collections
             public bool MoveNext()
             {
                 var localList = _list;
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
+                if (_version == localList._version && ((uint)_index < (uint)localList.Count))
                 {
                     _current = localList._items[_index];
                     _index++;
@@ -330,7 +329,7 @@ namespace Meziantou.Framework.Collections
                 if (_version != _list._version)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-                _index = _list._size + 1;
+                _index = _list.Count + 1;
                 _current = default;
                 return false;
             }
@@ -341,7 +340,7 @@ namespace Meziantou.Framework.Collections
             {
                 get
                 {
-                    if (_index == 0 || _index == _list._size + 1)
+                    if (_index == 0 || _index == _list.Count + 1)
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                     return Current;

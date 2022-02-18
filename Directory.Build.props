@@ -13,12 +13,13 @@
   </PropertyGroup>
   
   <PropertyGroup>    
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>10</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ValidateProjectTargets>true</ValidateProjectTargets>
-
+    <ImplicitUsings>disable</ImplicitUsings>
+    
     <Features>strict</Features>
     <AnalysisLevel>latest</AnalysisLevel>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -32,9 +33,13 @@
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
-  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFramework)'">
+  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFrameworkPreview)'">
     <NoWarn>$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != '$(LatestTargetFrameworkPreview)'">
+    <EditorConfigFiles Include="$(MSBuildThisFileDirectory)/eng/olderTargets.editorconfig" />
+  </ItemGroup>
 
   <!-- Analyzers -->
   <ItemGroup>

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -189,7 +188,6 @@ namespace Meziantou.AspNetCore.Components
             }
         }
 
-        [SuppressMessage("Style", "MA0003:Add argument name to improve readability", Justification = "Not needed")]
         private static (Type ComponentType, IEnumerable<KeyValuePair<string, object>>? AdditonalAttributes) GetEditorType(PropertyInfo property)
         {
             // Check EditorAttribute declared on the property

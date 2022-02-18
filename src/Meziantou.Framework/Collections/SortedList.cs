@@ -308,7 +308,7 @@ namespace Meziantou.Framework.Collections
                 _current = default;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
@@ -334,9 +334,9 @@ namespace Meziantou.Framework.Collections
                 return false;
             }
 
-            public T Current => _current!;
+            public readonly T Current => _current!;
 
-            object? IEnumerator.Current
+            readonly object? IEnumerator.Current
             {
                 get
                 {

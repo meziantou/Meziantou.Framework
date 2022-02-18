@@ -114,7 +114,7 @@ namespace Meziantou.Extensions.Logging.InMemory
                 _chunk = collection._firstChunk;
             }
 
-            public InMemoryLogEntry Current
+            public readonly InMemoryLogEntry Current
             {
                 get
                 {
@@ -123,7 +123,7 @@ namespace Meziantou.Extensions.Logging.InMemory
                 }
             }
 
-            object IEnumerator.Current => Current;
+            readonly object IEnumerator.Current => Current;
 
             public bool MoveNext()
             {
@@ -141,11 +141,11 @@ namespace Meziantou.Extensions.Logging.InMemory
                 return true;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
             }
 
-            public void Reset() => throw new NotSupportedException();
+            public readonly void Reset() => throw new NotSupportedException();
         }
     }
 }

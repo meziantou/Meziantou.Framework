@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 
 #if NET472
-using Microsoft.IO;
 using Path = System.IO.Path;
 #endif
 

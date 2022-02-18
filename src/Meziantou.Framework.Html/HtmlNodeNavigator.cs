@@ -28,7 +28,6 @@ public sealed class HtmlNodeNavigator : XPathNavigator
     internal static bool EnableTrace { get; set; }
 #endif
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "Change the behavior of the method")]
     public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode!!, HtmlNodeNavigatorOptions options)
     {
         Document = document;

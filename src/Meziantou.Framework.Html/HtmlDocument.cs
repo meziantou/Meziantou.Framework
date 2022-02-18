@@ -93,7 +93,6 @@ public sealed class HtmlDocument : HtmlNode
         InternalLoad(reader, firstPass: false);
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
         Clear();
@@ -116,7 +115,6 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public void Load(string filePath!!, bool detectEncodingFromByteOrderMarks)
     {
         Clear();
@@ -149,7 +147,6 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public void Load(string filePath!!, Encoding encoding)
     {
         Clear();
@@ -172,7 +169,6 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks)
     {
         Clear();
@@ -195,7 +191,6 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public void Load(string filePath!!)
     {
         Clear();

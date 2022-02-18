@@ -1,4 +1,6 @@
+#if !NET461
 #pragma warning disable MA0042
+#endif
 using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Reflection.Metadata;
@@ -10,7 +12,9 @@ public static class NuGetHelpers
 {
     private static readonly ConcurrentDictionary<string, Lazy<Task<string[]>>> s_cache = new(StringComparer.Ordinal);
 
+#if !NET461
     [SuppressMessage("Performance", "MA0106:Avoid closure by using an overload with the 'factoryArgument' parameter", Justification = "Not important in tests")]
+#endif
     public static Task<string[]> GetNuGetReferences(string packageName, string version, string path)
     {
         var task = s_cache.GetOrAdd(packageName + '@' + version + ':' + path, key =>

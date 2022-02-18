@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.html</ToolCommandName>

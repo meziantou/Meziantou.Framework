@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);net5.0;netcoreapp3.1;net472</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);net5.0;netcoreapp3.1;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.8</Version>
   </PropertyGroup>

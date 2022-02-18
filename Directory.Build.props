@@ -2,10 +2,20 @@
 
   <!-- Build options -->
   <PropertyGroup>
+    <LatestTargetFramework>net6.0</LatestTargetFramework>
+    <LatestTargetFrameworkPreview>net7.0</LatestTargetFrameworkPreview>
+
+    <LatestTargetFrameworkWindows>$(LatestTargetFramework)-windows</LatestTargetFrameworkWindows>
+    <LatestTargetFrameworkPreviewWindows>$(LatestTargetFrameworkPreview)-windows</LatestTargetFrameworkPreviewWindows>
+
+    <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework)</LatestTargetFrameworks>
+    <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows)</LatestTargetFrameworksWindows>
+  </PropertyGroup>
+  
+  <PropertyGroup>    
     <LangVersion>10.0</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
-    <LatestTargetFramework>net6.0</LatestTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ValidateProjectTargets>true</ValidateProjectTargets>
 

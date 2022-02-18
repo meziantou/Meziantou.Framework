@@ -1,4 +1,4 @@
-﻿#if NET5_0 || NET6_0
+﻿#if NET5_0_OR_GREATER
 #elif NET461 || NET472 || NETSTANDARD2_0 || NETSTANDARD2_1 || NETCOREAPP3_1
 namespace System.Runtime.CompilerServices
 {

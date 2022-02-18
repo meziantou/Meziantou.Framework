@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
     <Version>1.0.5</Version>
     <Description>Generate a faster ToString method for enumerations</Description>

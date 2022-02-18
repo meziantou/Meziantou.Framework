@@ -276,7 +276,7 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
-#elif NETSTANDARD2_1 || NETCOREAPP3_0 || NETCOREAPP3_1 || NET5_0 || NET6_0
+#elif NETSTANDARD2_1 || NETCOREAPP3_0_OR_GREATER
 #else
 #error Platform not supported
 #endif

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework)-windows;net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows);net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
     <UseWPF>true</UseWPF>
     <Version>1.5.4</Version>
   </PropertyGroup>

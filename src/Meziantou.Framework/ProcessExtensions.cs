@@ -8,12 +8,15 @@ namespace Meziantou.Framework;
 
 public static partial class ProcessExtensions
 {
+#if NETCOREAPP3_1_OR_GREATER
     [Obsolete("Already implemented in .NET 3.1")]
+    public static void Kill(Process process!!, bool entireProcessTree = false)
+    {
+        process.Kill(entireProcessTree);
+    }
+#else
     public static void Kill(this Process process!!, bool entireProcessTree = false)
     {
-#if NETCOREAPP3_1_OR_GREATER
-        process.Kill(entireProcessTree);
-#elif NETSTANDARD2_0 || NET461
         if (!entireProcessTree)
         {
             process.Kill();
@@ -40,10 +43,8 @@ public static partial class ProcessExtensions
                 }
             }
         }
-#else
-#error Platform not supported
-#endif
     }
+#endif
 
     [SupportedOSPlatform("windows")]
     public static IReadOnlyList<Process> GetDescendantProcesses(this Process process!!)

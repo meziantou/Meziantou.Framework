@@ -33,8 +33,13 @@ public sealed class ResettableCancellationTokenSource : IDisposable
             _cts.Cancel();
         }
 
-        // TODO-NET6 Use TryReset https://github.com/dotnet/runtime/issues/48492
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
+        if (!_cts.TryReset())
+        {
+            _cts.Dispose();
+            _cts = new CancellationTokenSource();
+        }
+#elif NET5_0
         _cts.Dispose();
         _cts = new CancellationTokenSource();
 #else

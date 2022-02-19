@@ -176,6 +176,13 @@ public static partial class ProcessExtensions
         return new ProcessResult(exitCode, logs);
     }
 
+#if NET6_0_OR_GREATER
+    [Obsolete("Exist in .NET 5.0")]
+    public static async Task WaitForExitAsync(Process process, CancellationToken cancellationToken = default)
+    {
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+    }
+#else
     [Obsolete("Exist in .NET 5.0")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)
@@ -299,4 +306,5 @@ public static partial class ProcessExtensions
 #error Platform not supported
 #endif
     }
+#endif
 }

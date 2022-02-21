@@ -50,7 +50,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.694">
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.695">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>

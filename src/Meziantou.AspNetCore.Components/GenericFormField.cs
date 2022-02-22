@@ -6,27 +6,28 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace Meziantou.AspNetCore.Components;
-
-public sealed class GenericFormField<TModel>
+public sealed class GenericFormField
 {
     private static readonly MethodInfo s_eventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
 
-    private readonly GenericForm<TModel> _form;
+    private readonly IGenericForm _form;
+    private readonly object _owner;
     private RenderFragment? _editorTemplate;
     private RenderFragment? _fieldValidationTemplate;
 
     public event EventHandler? ValueChanged;
 
-    private GenericFormField(GenericForm<TModel> form, PropertyInfo propertyInfo)
+    private GenericFormField(IGenericForm form, PropertyInfo propertyInfo, object owner)
     {
         _form = form;
         Property = propertyInfo;
+        _owner = owner;
     }
 
-    internal static List<GenericFormField<TModel>> Create(GenericForm<TModel> form)
+    internal static List<GenericFormField> Create(IGenericForm form)
     {
-        var result = new List<GenericFormField<TModel>>();
-        var properties = typeof(TModel).GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+        var result = new List<GenericFormField>();
+        var properties = form.Model!.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
         foreach (var prop in properties)
         {
             // Skip readonly properties
@@ -36,7 +37,7 @@ public sealed class GenericFormField<TModel>
             if (prop.GetCustomAttribute<EditableAttribute>() is { } editor && !editor.AllowEdit)
                 continue;
 
-            var field = new GenericFormField<TModel>(form, prop);
+            var field = new GenericFormField(form, prop, form.Model);
             result.Add(field);
         }
 
@@ -45,7 +46,7 @@ public sealed class GenericFormField<TModel>
 
     public PropertyInfo Property { get; }
     public string EditorId => _form.BaseEditorId + '_' + Property.Name;
-    public TModel Owner => _form.Model!;
+    public object Owner => _owner;
 
     public string DisplayName
     {
@@ -137,8 +138,10 @@ public sealed class GenericFormField<TModel>
             if (_editorTemplate != null)
                 return _editorTemplate;
 
+            var type = Owner.GetType();
+
             // () => Owner.Property
-            var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
+            var access = Expression.Property(Expression.Constant(Owner, type), Property);
             var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(PropertyType), access);
 
             // Create(object receiver, Action<object> callback
@@ -175,7 +178,7 @@ public sealed class GenericFormField<TModel>
             return _fieldValidationTemplate ??= builder =>
             {
                 // () => Owner.Property
-                var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
+                var access = Expression.Property(Expression.Constant(Owner, Owner!.GetType()), Property);
                 var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(PropertyType), access);
 
                 builder.OpenComponent(0, typeof(ValidationMessage<>).MakeGenericType(PropertyType));

@@ -5,19 +5,13 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
+    private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration typeDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
     {
         if (!IsTypeDefined(compilation, "Newtonsoft.Json.JsonConverter"))
             return;
 
-        var typeReference = new TypeReference(structDeclaration);
-        if (stronglyTypedType.IsReferenceType)
-        {
-            typeReference = typeReference.MakeNullable();
-        }
-
-        var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "NewtonsoftJsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
-        structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("Newtonsoft.Json.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
+        var converter = typeDeclaration.AddType(new ClassDeclaration(typeDeclaration.Name + "NewtonsoftJsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
+        typeDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("Newtonsoft.Json.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
         converter.BaseType = new TypeReference("Newtonsoft.Json.JsonConverter");
 
         // bool CanRead => true
@@ -44,7 +38,7 @@ public partial class StronglyTypedIdSourceGenerator
             method.ReturnType = typeof(bool);
             var typeArg = method.AddArgument("type", typeof(Type));
 
-            method.Statements = new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(structDeclaration)));
+            method.Statements = new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeDeclaration)));
         }
 
         // public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
@@ -58,7 +52,7 @@ public partial class StronglyTypedIdSourceGenerator
             {
                 Condition = Expression.EqualsNull(valueArg),
                 TrueStatements = writerArg.Member("WriteNull").InvokeMethod(),
-                FalseStatements = writerArg.Member("WriteValue").InvokeMethod(new CastExpression(valueArg, structDeclaration).Member("Value")),
+                FalseStatements = writerArg.Member("WriteValue").InvokeMethod(new CastExpression(valueArg, typeDeclaration).Member("Value")),
             };
         }
 
@@ -67,13 +61,13 @@ public partial class StronglyTypedIdSourceGenerator
             var method = converter.AddMember(new MethodDeclaration("ReadJson") { Modifiers = Modifiers.Public | Modifiers.Override });
             method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
             var readerArg = method.AddArgument("reader", new TypeReference("Newtonsoft.Json.JsonReader"));
-            _ = method.AddArgument("objectType", typeof(Type));
+            var typeArg = method.AddArgument("objectType", typeof(Type));
             _ = method.AddArgument("existingValue", new TypeReference(typeof(object)).MakeNullable());
             var serializerArg = method.AddArgument("serializer", new TypeReference("Newtonsoft.Json.JsonSerializer"));
 
             method.Statements = new StatementCollection();
 
-            var valueVariable = method.Statements.Add(new VariableDeclarationStatement("value", typeReference, new DefaultValueExpression(structDeclaration)));
+            var valueVariable = method.Statements.Add(new VariableDeclarationStatement("value", new TypeReference(typeof(object)).MakeNullable(), Expression.Null()));
             method.Statements.Add(new ConditionStatement
             {
                 Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
@@ -137,15 +131,32 @@ public partial class StronglyTypedIdSourceGenerator
 
             Statement ReadValue()
             {
-                return
-                    new AssignStatement(
-                        valueVariable,
-                        new NewObjectExpression(
-                            structDeclaration,
-                            serializerArg.Member("Deserialize").InvokeMethod(new[] { GetTypeReference(stronglyTypedType.AttributeInfo.IdType) }, readerArg)))
+                // if (targetType == Nullable<Id> or targetType is class) and token is null => return null;
+                return new ConditionStatement
+                {
+                    Condition =
+                        new BinaryExpression(
+                            BinaryOperator.And,
+                            CompareTokenType(BinaryOperator.Equals, "Null"),
+                            stronglyTypedType.IsReferenceType ? Expression.True() : new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(new TypeReference(typeof(Nullable<>)).MakeGeneric(typeDeclaration)))),
+                    TrueStatements = new StatementCollection
                     {
-                        NullableContext = CodeDom.NullableContext.Disable,
-                    };
+                        new AssignStatement(
+                            valueVariable,
+                            Expression.Null()),
+                    },
+                    FalseStatements = new StatementCollection
+                    {
+                        new AssignStatement(
+                            valueVariable,
+                            new NewObjectExpression(
+                                typeDeclaration,
+                                serializerArg.Member("Deserialize").InvokeMethod(new[] { GetTypeReference(stronglyTypedType.AttributeInfo.IdType) }, readerArg)))
+                        {
+                            NullableContext = CodeDom.NullableContext.Disable,
+                        },
+                    },
+                };
             }
         }
     }

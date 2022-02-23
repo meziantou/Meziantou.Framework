@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Reflection;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using Xunit;
 
@@ -154,6 +155,72 @@ public sealed partial class StronglyTypedIdTests
     {
         var action = () => IdString.Parse(null);
         action.Should().Throw<FormatException>();
+    }
+
+    [Fact]
+    public void MongoDB_NullableStringId_ParseNull()
+    {
+        var value = BsonClone<IdString?>(null);
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void SystemTextJson_NullableStringId_ParseNull()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdString?>("null");
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void NewtonsoftJson_NullableStringId_ParseNull()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdString?>("null");
+        value.Should().BeNull();
+    }
+
+    [Fact]
+    public void NewtonsoftJson_NullableInt32_ParseNull()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("null");
+        value.Should().BeNull();
+    }
+    
+    [Fact]
+    public void NewtonsoftJson_NullableInt32_ParseValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("42");
+        value.Value.Value.Should().Be(42);
+    }
+    
+    [Fact]
+    public void NewtonsoftJson_IdClassString_ParseNull()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdClassString>("null");
+        value.Should().BeNull();
+    }
+    
+    [Fact]
+    public void NewtonsoftJson_IdClassString_ParseString()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdClassString>("\"test\"");
+        value.Should().Be(IdClassString.FromString("test"));
+    }
+
+    private static T BsonClone<T>(T value)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BsonBinaryWriter(stream))
+        {
+            BsonSerializer.Serialize(writer, new Wrapper<T> { Value = value });
+        }
+
+        return BsonSerializer.Deserialize<Wrapper<T>>(stream.ToArray()).Value;
+    }
+
+    // BsonSerializer cannot write non-dictionary-like object, such as collection, at root level. The dummy object bypass this limitation.
+    private sealed class Wrapper<T>
+    {
+        public T Value { get; set; }
     }
 
 #nullable enable

@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
       - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
       - uses: actions/upload-artifact@v2
         if: always()
@@ -53,9 +53,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
       - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: |
             6.0.x
@@ -86,9 +86,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
       - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
         with:
           dotnet-version: |
             6.0.x
@@ -116,7 +116,7 @@ jobs:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v2
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

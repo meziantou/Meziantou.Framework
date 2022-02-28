@@ -48,7 +48,7 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
         
     - name: Setup .NET Core (global.json)
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
 
     - run: dotnet build eng/build.proj --configuration Release
       name: Build

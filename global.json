@@ -4,6 +4,6 @@
     "rollForward": "patch"
   },
   "msbuild-sdks": {
-    "Microsoft.Build.Traversal": "3.1.3"
+    "Microsoft.Build.Traversal": "3.1.6"
   }
 }

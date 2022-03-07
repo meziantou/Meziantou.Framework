@@ -21,14 +21,14 @@ jobs:
   validate_readme:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Validate Readme
         run: .\eng\update-readme.ps1
 
   create_nuget:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
@@ -51,7 +51,7 @@ jobs:
     runs-on: windows-2022
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - name: Setup .NET Core (additional versions)
@@ -84,7 +84,7 @@ jobs:
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - name: Setup .NET Core (additional versions)

@@ -107,6 +107,20 @@ jobs:
           path: ${{ env.TestResultsDirectory }}/**/*
       - uses: codecov/codecov-action@v2
 
+  test_trimming:  
+    runs-on: ubuntu-20.04
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
+        runtime: [ "win-x64", "win-x86", "linux-x64", "osx-x64" ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v2
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
+      
   deploy:
     runs-on: 'ubuntu-20.04'
     needs: [ validate_readme, validate_nuget, build_and_test ]

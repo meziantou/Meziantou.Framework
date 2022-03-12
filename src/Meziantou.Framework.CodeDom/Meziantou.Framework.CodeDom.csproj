@@ -5,6 +5,7 @@
     <Description>C# code generator</Description>
     <Version>4.0.5</Version>
     <CompatibilityRange>true</CompatibilityRange>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

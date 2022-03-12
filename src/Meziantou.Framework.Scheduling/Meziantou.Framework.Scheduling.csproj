@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks);net5.0</TargetFrameworks>
     <Description>RecurrenceRule parser and evaluator</Description>
     <Version>2.0.3</Version>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

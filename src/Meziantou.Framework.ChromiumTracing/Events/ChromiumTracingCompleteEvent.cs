@@ -12,7 +12,7 @@ public sealed class ChromiumTracingCompleteEvent : ChromiumTracingEvent
     public TimeSpan Duration { get; set; }
 
     [JsonPropertyName("tdur")]
-    [JsonConverter(typeof(TimeSpanToTimestampJsonConverter))]
+    [JsonConverter(typeof(NullableTimeSpanToTimestampJsonConverter))]
     public TimeSpan? ThreadDuration { get; set; }
 
     [JsonPropertyName("estack")]

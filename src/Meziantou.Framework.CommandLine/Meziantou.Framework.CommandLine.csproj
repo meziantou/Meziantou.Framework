@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.2</Version>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

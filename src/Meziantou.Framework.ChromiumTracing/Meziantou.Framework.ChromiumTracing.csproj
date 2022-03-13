@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.5</Version>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

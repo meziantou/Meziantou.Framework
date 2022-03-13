@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.3.3</Version>
     <CompatibilityRange>true</CompatibilityRange>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net461'">

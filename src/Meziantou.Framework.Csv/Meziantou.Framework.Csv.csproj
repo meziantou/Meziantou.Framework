@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CSV reader and writer</Description>
     <Version>4.0.2</Version>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 </Project>

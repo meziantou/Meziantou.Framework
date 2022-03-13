@@ -6,6 +6,7 @@
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
     <Version>1.0.11</Version>
     <CompatibilityRange>true</CompatibilityRange>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">

@@ -6,18 +6,12 @@ namespace Meziantou.Framework.ChromiumTracing;
 
 // https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/preview#
 // https://github.com/catapult-project/catapult/blob/6d5a4e52871813b8b2e71b378fc54bca459600c4/tracing/tracing/extras/importer/trace_event_importer.html
-public sealed class ChromiumTracingWriter : IAsyncDisposable
+public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 {
     private static readonly byte[] s_arrayEmpty = new[] { (byte)'[', (byte)']' };
     private static readonly byte[] s_arrayStart = new[] { (byte)'[', (byte)'\n' };
     private static readonly byte[] s_arrayEnd = new[] { (byte)'\n', (byte)']' };
     private static readonly byte[] s_arrayItemSeparator = new[] { (byte)',', (byte)'\n' };
-    private static readonly JsonSerializerOptions s_options = new(JsonSerializerDefaults.General)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        WriteIndented = false,
-        IgnoreReadOnlyProperties = false,
-    };
 
     private readonly bool _streamOwned;
     private readonly Stream _stream;
@@ -38,6 +32,16 @@ public sealed class ChromiumTracingWriter : IAsyncDisposable
     {
         var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
         return new ChromiumTracingWriter(fs, streamOwned: true);
+    }
+
+    public static ChromiumTracingWriter Create(Stream stream)
+    {
+        return Create(stream, streamOwned: true);
+    }
+
+    public static ChromiumTracingWriter Create(Stream stream, bool streamOwned)
+    {
+        return new ChromiumTracingWriter(stream, streamOwned);
     }
 
     public static ChromiumTracingWriter CreateGzip(string path, CompressionLevel compressionLevel = CompressionLevel.Fastest)
@@ -85,6 +89,34 @@ public sealed class ChromiumTracingWriter : IAsyncDisposable
             _hasItems = true;
         }
 
-        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), s_options, cancellationToken).ConfigureAwait(false);
+        await JsonSerializer.SerializeAsync(_stream, tracingEvent, tracingEvent.GetType(), SourceGenerationContext.Default, cancellationToken).ConfigureAwait(false);
+    }
+
+    [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = false, IgnoreReadOnlyProperties = false, GenerationMode = JsonSourceGenerationMode.Default)]
+    [JsonSerializable(typeof(ChromiumTracingAsyncBeginEvent))]
+    [JsonSerializable(typeof(ChromiumTracingAsyncEndEvent))]
+    [JsonSerializable(typeof(ChromiumTracingAsyncInstantEvent))]
+    [JsonSerializable(typeof(ChromiumTracingClockSyncEvent))]
+    [JsonSerializable(typeof(ChromiumTracingCompleteEvent))]
+    [JsonSerializable(typeof(ChromiumTracingContextBeginEvent))]
+    [JsonSerializable(typeof(ChromiumTracingContextEndEvent))]
+    [JsonSerializable(typeof(ChromiumTracingContextEvent))]
+    [JsonSerializable(typeof(ChromiumTracingCounterEvent))]
+    [JsonSerializable(typeof(ChromiumTracingDurationBeginEvent))]
+    [JsonSerializable(typeof(ChromiumTracingDurationEndEvent))]
+    [JsonSerializable(typeof(ChromiumTracingFlowBeginEvent))]
+    [JsonSerializable(typeof(ChromiumTracingFlowEndEvent))]
+    [JsonSerializable(typeof(ChromiumTracingFlowStepEvent))]
+    [JsonSerializable(typeof(ChromiumTracingInstantEvent))]
+    [JsonSerializable(typeof(ChromiumTracingLinkIdEvent))]
+    [JsonSerializable(typeof(ChromiumTracingMarkEvent))]
+    [JsonSerializable(typeof(ChromiumTracingMemoryDumpGlobalEvent))]
+    [JsonSerializable(typeof(ChromiumTracingMemoryDumpProcessEvent))]
+    [JsonSerializable(typeof(ChromiumTracingMetadataEvent))]
+    [JsonSerializable(typeof(ChromiumTracingObjectCreatedEvent))]
+    [JsonSerializable(typeof(ChromiumTracingObjectDestroyedEvent))]
+    [JsonSerializable(typeof(ChromiumTracingObjectSnapshotEvent))]
+    private sealed partial class SourceGenerationContext : JsonSerializerContext
+    {
     }
 }

@@ -19,7 +19,7 @@ public abstract class ChromiumTracingEvent
     public DateTimeOffset Timestamp { get; set; }
 
     [JsonPropertyName("tts")]
-    [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+    [JsonConverter(typeof(NullableDateTimeOffsetToTimestampJsonConverter))]
     public DateTimeOffset? ThreadTimestamp { get; set; }
 
     [JsonPropertyName("pid")]

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>1.0.0-alpha.7</Version>
   </PropertyGroup>

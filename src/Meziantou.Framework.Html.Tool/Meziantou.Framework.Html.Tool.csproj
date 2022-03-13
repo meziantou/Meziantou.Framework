@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.html</ToolCommandName>

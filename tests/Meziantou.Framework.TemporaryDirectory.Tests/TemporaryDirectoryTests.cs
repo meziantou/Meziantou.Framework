@@ -3,6 +3,8 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
+// Do not parallelize tests
+[Collection("TemporaryDirectoryTests")]
 public class TemporaryDirectoryTests
 {
     [Fact]

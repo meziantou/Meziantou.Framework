@@ -28,7 +28,8 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 
     public static TemporaryDirectory Create(FullPath rootDirectory)
     {
-        var (path, innerPath, lockFile) = CreateUniqueDirectory(rootDirectory / DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture));
+        var folderName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N");
+        var (path, innerPath, lockFile) = CreateUniqueDirectory(rootDirectory / folderName);
         return new TemporaryDirectory(path, innerPath, lockFile);
     }
 

@@ -14,6 +14,7 @@ public static class DataBinder
     private static readonly char[] s_indexExprEndChars = new char[] { ']', ')' };
     private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> s_propertyCache = new();
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static object? Eval(object container, string expression!!)
     {
         expression = expression.Trim();
@@ -31,6 +32,7 @@ public static class DataBinder
         return Eval(container, expressionParts);
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     private static object? Eval(object container, string[] expressionParts)
     {
         object? prop;
@@ -54,6 +56,7 @@ public static class DataBinder
         return prop;
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static string Eval(object container, string expression, string format)
     {
         var value = Eval(container, expression);
@@ -75,6 +78,7 @@ public static class DataBinder
         }
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     private static PropertyDescriptorCollection GetPropertiesFromCache(object container)
     {
         // We don't cache if the object implements ICustomTypeDescriptor.
@@ -92,6 +96,7 @@ public static class DataBinder
         return TypeDescriptor.GetProperties(container);
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static object? GetPropertyValue(object container!!, string propertyName)
     {
         if (string.IsNullOrEmpty(propertyName))
@@ -108,6 +113,7 @@ public static class DataBinder
         }
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static string GetPropertyValue(object container, string propertyName, string format)
     {
         var value = GetPropertyValue(container, propertyName);
@@ -128,6 +134,7 @@ public static class DataBinder
         }
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static object? GetIndexedPropertyValue(object container!!, string expression)
     {
         if (string.IsNullOrEmpty(expression))
@@ -216,6 +223,7 @@ public static class DataBinder
         return null;
     }
 
+    [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static string? GetIndexedPropertyValue(object container, string propertyName, string format)
     {
         var value = GetIndexedPropertyValue(container, propertyName);

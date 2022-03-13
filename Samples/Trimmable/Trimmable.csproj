@@ -26,11 +26,13 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Components.WebAssembly" />
     <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
+    <TrimmerRootAssembly Include="Meziantou.Framework" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeDom" />

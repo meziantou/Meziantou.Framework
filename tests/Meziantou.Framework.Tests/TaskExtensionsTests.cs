@@ -36,4 +36,35 @@ public sealed class TaskExtensionsTests
         a.Should().Be(0);
         b.Should().Be("test");
     }
+
+    [Fact]
+    public async Task WhenAll_NonGenericTask()
+    {
+        await (Task.CompletedTask, Task.CompletedTask);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask()
+    {
+        var (a, b) = await (ValueTask.FromResult(0), ValueTask.FromResult("test"));
+
+        a.Should().Be(0);
+        b.Should().Be("test");
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_Exception()
+    {
+        try
+        {
+            await (ValueTask.FromResult(0), ValueTask.FromException<string>(new InvalidOperationException("test")));
+            false.Should().BeTrue("Should not reach this line");
+        }
+        catch (AggregateException ex)
+        {
+            ex.Message.Should().Be("One or more errors occurred. (test)");
+        }
+    }
 }

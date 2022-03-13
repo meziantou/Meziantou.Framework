@@ -27,15 +27,23 @@ static class ReflectionUtilities
         return type.IsDefined(typeof(FlagsAttribute), inherit: true);
     }
 
+    [RequiresUnreferencedCode("Use reflection to find static methods")]
     public static MethodInfo? GetImplicitConversion(object? value, Type targetType)
     {
         if (value == null)
             return null;
 
         var valueType = value.GetType();
-        return Array.Find(valueType.GetMethods(BindingFlags.Public | BindingFlags.Static), IsImplicitOperator);
+        var methods = valueType.GetMethods(BindingFlags.Public | BindingFlags.Static);
+        foreach (var method in methods)
+        {
+            if (IsImplicitOperator(method, valueType, targetType))
+                return method;
+        }
 
-        bool IsImplicitOperator(MethodInfo mi)
+        return null;
+
+        static bool IsImplicitOperator(MethodInfo mi, Type sourceType, Type targetType)
         {
             if (!string.Equals(mi.Name, "op_Implicit", StringComparison.Ordinal))
                 return false;
@@ -47,7 +55,7 @@ static class ReflectionUtilities
             if (p.Length != 1)
                 return false;
 
-            if (!p[0].ParameterType.IsAssignableFrom(valueType))
+            if (!p[0].ParameterType.IsAssignableFrom(sourceType))
                 return false;
 
             return true;

@@ -14,19 +14,22 @@ public sealed class ReflectionDynamicObject : DynamicObject
     private readonly object? _originalObject;
     private readonly TypeCache _typeCache;
 
+    [RequiresUnreferencedCode("Use reflection")]
     public ReflectionDynamicObject(object obj!!)
     {
         _originalObject = obj;
 
         var type = obj.GetType();
-        _typeCache = s_cache.GetOrAdd(type, t => TypeCache.Create(t));
+        _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
     }
 
+    [RequiresUnreferencedCode("Use reflection")]
     public ReflectionDynamicObject(Type type!!)
     {
         _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
     }
 
+    [RequiresUnreferencedCode("Use reflection")]
     public ReflectionDynamicObject CreateInstance(params object[] parameters)
     {
         var exceptions = new List<Exception>();
@@ -293,11 +296,23 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     private sealed class TypeCache
     {
-        private TypeCache(Type type)
+        private const DynamicallyAccessedMemberTypes CacheMembers =
+            DynamicallyAccessedMemberTypes.PublicConstructors |
+            DynamicallyAccessedMemberTypes.NonPublicConstructors |
+            DynamicallyAccessedMemberTypes.PublicMethods |
+            DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicFields |
+            DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicProperties |
+            DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.All;
+
+        private TypeCache([DynamicallyAccessedMembers(CacheMembers)] Type type)
         {
             Type = type;
         }
 
+        [DynamicallyAccessedMembers(CacheMembers)]
         public Type Type { get; }
 
         public List<ConstructorInfo> Constructors { get; } = new List<ConstructorInfo>();
@@ -310,7 +325,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
         public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
         public List<PropertyInfo> StaticIndexers { get; } = new List<PropertyInfo>();
 
-        public static TypeCache Create(Type type)
+        public static TypeCache Create([DynamicallyAccessedMembers(CacheMembers)] Type type)
         {
             var typeCache = new TypeCache(type);
             typeCache.Constructors.AddRange(type.GetConstructors());

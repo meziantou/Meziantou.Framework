@@ -227,6 +227,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Trimmable", "Samples\Trimma
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ChromiumTracing.Tests", "tests\Meziantou.Framework.ChromiumTracing.Tests\Meziantou.Framework.ChromiumTracing.Tests.csproj", "{258F2C34-4EDD-4E46-A687-80F38430A5EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Trimmable.Wpf", "Samples\Trimmable.Wpf\Trimmable.Wpf.csproj", "{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -621,6 +623,10 @@ Global
 		{258F2C34-4EDD-4E46-A687-80F38430A5EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{258F2C34-4EDD-4E46-A687-80F38430A5EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{258F2C34-4EDD-4E46-A687-80F38430A5EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -723,6 +729,7 @@ Global
 		{403492FF-524F-4420-A4F3-822B9613EA94} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{AF7B7501-3174-446E-9A4D-D1CA0E8B6B0C} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 		{258F2C34-4EDD-4E46-A687-80F38430A5EA} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

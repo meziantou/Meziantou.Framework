@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
     <Description>An in-memory implementation of Microsoft.Extension.Logging.ILogger</Description>
     <PackageTags>logger</PackageTags>
     <Version>1.0.1</Version>

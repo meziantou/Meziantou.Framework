@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
     <Version>1.0.1</Version>
+    <IsTrimmable>false</IsTrimmable>
 
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>

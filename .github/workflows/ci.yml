@@ -120,6 +120,19 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
+
+  test_trimming_wpf:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        runtime: [ "win-x64", "win-x86" ]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v2
+      - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
       
   deploy:
     runs-on: 'ubuntu-20.04'

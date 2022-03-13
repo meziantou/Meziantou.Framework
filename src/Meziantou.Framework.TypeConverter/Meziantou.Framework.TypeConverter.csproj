@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <Description>Convert object to an other type</Description>
     <Version>3.0.2</Version>
     <DefineConstants>ReflectionUtilities_Internal;$(DefineConstants)</DefineConstants>

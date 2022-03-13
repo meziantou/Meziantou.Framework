@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net5.0;netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Description>C# wrapper around Windows's RestartManager</Description>
     <Version>1.1.2</Version>

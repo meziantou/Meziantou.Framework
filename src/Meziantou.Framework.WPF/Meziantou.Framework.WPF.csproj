@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows);net5.0-windows;netcoreapp3.1;net461</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
     <Version>1.5.4</Version>
   </PropertyGroup>

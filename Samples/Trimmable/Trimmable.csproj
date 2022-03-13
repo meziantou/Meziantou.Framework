@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Components.WebAssembly\Meziantou.AspNetCore.Components.WebAssembly.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Mvc\Meziantou.AspNetCore.Mvc.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ByteSize\Meziantou.Framework.ByteSize.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ChromiumTracing\Meziantou.Framework.ChromiumTracing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.CodeDom\Meziantou.Framework.CodeDom.csproj" />
@@ -27,6 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <TrimmerRootAssembly Include="Meziantou.AspNetCore.Components.WebAssembly" />
+    <TrimmerRootAssembly Include="Meziantou.AspNetCore.Mvc" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ByteSize" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ChromiumTracing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.CodeDom" />

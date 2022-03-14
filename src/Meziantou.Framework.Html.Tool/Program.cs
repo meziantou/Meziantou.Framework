@@ -1,14 +1,17 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Meziantou.Framework.Globbing;
+
+[assembly: InternalsVisibleTo("Meziantou.Framework.Html.Tool.Tests")]
 
 namespace Meziantou.Framework.Html.Tool;
 
 internal static class Program
 {
-    private static Task<int> Main(string[] args)
+    public static Task<int> Main(string[] args)
     {
         var rootCommand = new RootCommand();
         AddReplaceValueCommand(rootCommand);
@@ -29,6 +32,10 @@ internal static class Program
                 description: "Glob pattern to find files to update") { IsRequired = false },
 
             new Option<string>(
+                "--root-directory",
+                description: "Root directory for glob pattern") { IsRequired = false },
+
+            new Option<string>(
                 "--xpath",
                 "XPath to the elements/attributes to replace") { IsRequired = true },
 
@@ -38,12 +45,12 @@ internal static class Program
         };
 
         replaceValueCommand.Description = "Replace element/attribute values in an html file";
-        replaceValueCommand.Handler = CommandHandler.Create((string? singleFile, string? filePattern, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, xpath, newValue));
+        replaceValueCommand.SetHandler((string? singleFile, string? filePattern, string? rootDirectory, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, rootDirectory, xpath, newValue), replaceValueCommand.Options.ToArray());
 
         rootCommand.AddCommand(replaceValueCommand);
     }
 
-    private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string xpath, string newValue)
+    private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string? rootDirectory, string xpath, string newValue)
     {
         if (!string.IsNullOrEmpty(filePath))
         {
@@ -58,7 +65,7 @@ internal static class Program
                 return -1;
             }
 
-            foreach (var file in glob.EnumerateFiles(Environment.CurrentDirectory))
+            foreach (var file in glob.EnumerateFiles(string.IsNullOrEmpty(rootDirectory) ? Environment.CurrentDirectory : rootDirectory))
             {
                 await UpdateFileAsync(file, xpath, newValue);
             }
@@ -98,10 +105,16 @@ internal static class Program
             new Option<string>(
                 "--file-pattern",
                 description: "Glob pattern to find files to update") { IsRequired = false },
+
+            new Option<string>(
+                "--root-directory",
+                description: "Root directory for glob pattern") { IsRequired = false },
         };
 
         command.Description = "Append version to style / script URLs";
-        command.Handler = CommandHandler.Create(async (string? singleFile, string? filePattern) =>
+
+
+        command.SetHandler(async (string? singleFile, string? filePattern, string? rootDirectory, InvocationContext ctx) =>
         {
             if (!string.IsNullOrEmpty(singleFile))
             {
@@ -113,16 +126,17 @@ internal static class Program
                 if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                 {
                     await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
-                    return -1;
+                    ctx.ExitCode = -1;
+                    return;
                 }
 
-                foreach (var f in glob.EnumerateFiles(Environment.CurrentDirectory))
+                foreach (var f in glob.EnumerateFiles(string.IsNullOrEmpty(rootDirectory) ? Environment.CurrentDirectory : rootDirectory))
                 {
                     await UpdateFileAsync(f).ConfigureAwait(false);
                 }
             }
 
-            return 0;
+            return;
 
             static async Task UpdateFileAsync(string file)
             {
@@ -231,7 +245,7 @@ internal static class Program
 
                 Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
             }
-        });
+        }, command.Options.ToArray());
 
         rootCommand.AddCommand(command);
     }

@@ -46,6 +46,24 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return path;
     }
 
+    public FullPath CreateTextFile(string relativePath, string content)
+    {
+        var path = GetFullPath(relativePath);
+        Directory.CreateDirectory(path.Parent);
+        File.WriteAllText(path, content);
+        return path;
+    }
+
+#if NETCOREAPP2_0_OR_GREATER
+    public async Task<FullPath> CreateTextFileAsync(string relativePath, string content, CancellationToken cancellationToken = default)
+    {
+        var path = GetFullPath(relativePath);
+        Directory.CreateDirectory(path.Parent);
+        await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
+        return path;
+    }
+#endif
+
     public FullPath CreateDirectory(string relativePath)
     {
         var path = GetFullPath(relativePath);

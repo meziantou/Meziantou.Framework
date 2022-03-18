@@ -259,10 +259,75 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 
     public bool TryGetSymbolicLinkTarget([NotNullWhen(true)] out FullPath? result)
     {
-        if (!IsEmpty && Symlink.TryGetSymLinkTarget(_value, out var path))
+        return TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out result);
+    }
+
+    public bool TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode resolutionMode, [NotNullWhen(true)] out FullPath? result)
+    {
+        if (!IsEmpty)
         {
-            result = FromPath(path);
-            return true;
+            switch (resolutionMode)
+            {
+                case SymbolicLinkResolutionMode.Immediate:
+                    if (Symlink.TryGetSymLinkTarget(_value, out var path))
+                    {
+                        result = FromPath(path);
+                        return true;
+                    }
+                    break;
+
+                case SymbolicLinkResolutionMode.FinalTarget:
+                    var value = _value;
+                    while (Symlink.TryGetSymLinkTarget(value, out path))
+                    {
+                        value = path;
+                    }
+
+                    if (value != _value)
+                    {
+                        result = FromPath(value);
+                        return true;
+                    }
+
+                    break;
+
+                case SymbolicLinkResolutionMode.AllSymbolicLinks:
+                    string? resultPath = null;
+                    var current = this;
+                    var hasSymLink = false;
+                    while (!current.IsEmpty)
+                    {
+                        if (Symlink.TryGetSymLinkTarget(current._value, out path))
+                        {
+                            current = FromPath(path);
+                            hasSymLink = true;
+                        }
+                        else
+                        {
+                            var name = current.Name is "" ? current._value : current.Name!;
+                            if (resultPath is null)
+                            {
+                                resultPath = name;
+                            }
+                            else
+                            {
+                                resultPath = Path.Combine(name, resultPath);
+                            }
+
+                            current = current.Parent;
+                        }
+                    }
+
+                    if (hasSymLink)
+                    {
+                        result = FromPath(resultPath!);
+                        return true;
+                    }
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(resolutionMode));
+            }
         }
 
         result = null;

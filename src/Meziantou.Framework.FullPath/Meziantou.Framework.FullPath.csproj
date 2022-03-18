@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks);net5.0;netcoreapp3.1;net472</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 

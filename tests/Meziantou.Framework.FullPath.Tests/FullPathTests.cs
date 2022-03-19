@@ -209,6 +209,37 @@ public sealed class FullPathTests
         target.Should().Be(path);
     }
 
+    [Fact]
+    public async Task ResolveSymlink_Recursive()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var file = temp.CreateEmptyFile("a/b.txt");
+        var symlink = temp.GetFullPath("c");
+        var symlink2 = temp.GetFullPath("d");
+        CreateSymlink(symlink, file, SymbolicLink.AllowUnpriviledgedCreate);
+        CreateSymlink(symlink2, symlink, SymbolicLink.AllowUnpriviledgedCreate);
+
+        symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1).Should().BeTrue();
+        resolved1.Should().Be(symlink);
+
+        symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2).Should().BeTrue();
+        resolved2.Value.Value.Should().EndWith(Path.Combine("a", "b.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+    }
+
+    [Fact]
+    public async Task ResolveSymlink_ResolveAllSymbolicLinks()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var path = temp.CreateDirectory("a/b");
+        var symlink = temp.GetFullPath("c");
+        CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
+        var file = temp.CreateEmptyFile("c/d.txt");
+
+        file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved).Should().BeTrue();
+
+        resolved.Value.Value.Should().EndWith(Path.Combine("a", "b", "d.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+    }
+
     private static bool IsWindows()
     {
         return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);

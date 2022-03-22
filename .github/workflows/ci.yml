@@ -79,8 +79,8 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        configuration: [ Debug, Release ]
         runs-on: [ windows-2019, windows-2022, ubuntu-18.04, ubuntu-20.04, macos-10.15, macos-11 ]
+        configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
     steps:
@@ -106,6 +106,14 @@ jobs:
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
       - uses: codecov/codecov-action@v2
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
+          path: ${{ env.TestResultsDirectory }}/**/*.trx
+          path-replace-backslashes: 'true'
+          reporter: dotnet-trx
 
   test_trimming:  
     runs-on: ubuntu-20.04

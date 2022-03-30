@@ -11,7 +11,7 @@ static class ReflectionUtilities
 {
     public static bool IsNullableOfT(this Type type!!)
     {
-        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+        return Nullable.GetUnderlyingType(type) != null;
     }
 
     public static bool IsFlagsEnum<T>()

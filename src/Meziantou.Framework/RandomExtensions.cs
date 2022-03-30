@@ -22,6 +22,15 @@ public static class RandomExtensions
         return list[index];
     }
 
+    public static T NextFromList<T>(this Random random!!, ICollection<T> list!!)
+    {
+        if (list.Count == 0)
+            throw new ArgumentException("List is empty.", nameof(list));
+
+        var index = random.NextInt32(0, list.Count);
+        return list.ElementAt(index);
+    }
+
     public static T NextFromList<T>(this Random random!!, ReadOnlySpan<T> list)
     {
         if (list.Length == 0)
@@ -47,6 +56,15 @@ public static class RandomExtensions
 
         var index = random.NextInt32(0, list.Count);
         return list[index];
+    }
+
+    public static T NextFromList<T>(this Random random!!, IReadOnlyCollection<T> list!!)
+    {
+        if (list.Count == 0)
+            throw new ArgumentException("List is empty.", nameof(list));
+
+        var index = random.NextInt32(0, list.Count);
+        return list.ElementAt(index);
     }
 
     public static bool NextBoolean(this Random random!!)

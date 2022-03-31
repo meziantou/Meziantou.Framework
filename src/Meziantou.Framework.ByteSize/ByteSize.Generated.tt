@@ -15,12 +15,12 @@ namespace Meziantou.Framework
     partial struct ByteSize
     {
 <# foreach (var unit in new [] { "Byte", "KiloByte", "MegaByte", "GigaByte", "TeraByte", "PetaByte", "ExaByte", "KibiByte", "MebiByte", "GibiByte", "TebiByte", "PebiByte", "ExbiByte", }) { #>
-        public static ByteSize From<#= unit #>(byte value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
-        public static ByteSize From<#= unit #>(short value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
-        public static ByteSize From<#= unit #>(int value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
-        public static ByteSize From<#= unit #>(long value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
-        public static ByteSize From<#= unit #>(float value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit #>));
-        public static ByteSize From<#= unit #>(double value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit #>));
+        public static ByteSize From<#= unit #>s(byte value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
+        public static ByteSize From<#= unit #>s(short value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
+        public static ByteSize From<#= unit #>s(int value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
+        public static ByteSize From<#= unit #>s(long value) => new ByteSize((long)value * (long)ByteSizeUnit.<#= unit #>);
+        public static ByteSize From<#= unit #>s(float value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit #>));
+        public static ByteSize From<#= unit #>s(double value) => new ByteSize((long)(value * (long)ByteSizeUnit.<#= unit #>));
 <# } #>
     }
 }

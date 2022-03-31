@@ -36,10 +36,58 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
 
+    public string ToString(IFormatProvider? formatProvider)
+    {
+        return ToString(format: null, formatProvider);
+    }
+
+    /// <summary>
+    /// Convert value to string
+    /// </summary>
+    /// <param name="format">
+    /// Allowed formats:
+    /// <list type="bullet">
+    ///     <item><c>G</c>: Find the best unit (B, kB, MB, GB, etc.), and use G format for the value</item>
+    ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
+    ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
+    ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item>
+    ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
+    ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
+    ///     </item>
+    /// </list>
+    /// </param>
+    /// <exception cref="ArgumentException">The provided format is not valid</exception>
+    public string ToString(string? format)
+    {
+        return ToString(format, formatProvider: null);
+    }
+
+    /// <summary>
+    /// Convert value to string
+    /// </summary>
+    /// <param name="format">
+    /// Allowed formats:
+    /// <list type="bullet">
+    ///     <item><c>G</c>: Find the best unit (B, kB, MB, GB, etc.), and use G format for the value</item>
+    ///     <item><c>G2</c>: Find the best unit (B, kB, MB, GB, etc.), and use F2 format for the value</item>
+    ///     <item><c>Gi</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use G format for the value</item>
+    ///     <item><c>Gi2</c>: Find the best unit (B, kiB, MiB, GiB, etc.), and use F2 format for the value</item>
+    ///     <item>
+    ///         <c>B</c>, <c>kB</c>, <c>kiB</c>, <c>MB</c>, <c>MiB</c>, <c>GB</c>, <c>GiB</c>, <c>TB</c>, <c>TiB</c>, <c>PB</c>, <c>PiB</c>, <c>EB</c>, <c>EiB</c>:
+    ///         Use the provided unit, and use G format for the value. If a number is provided (e.g. <c>kB3</c>), it use Fn (e.g. F3) format to convert the value to string.
+    ///     </item>
+    /// </list>
+    /// </param>
+    /// <param name="formatProvider"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException">The provided format is not valid</exception>
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
         if (string.IsNullOrEmpty(format))
-            return Value.ToString(formatProvider) + "B";
+        {
+            format = "g";
+        }
 
         var index = -1;
         for (var i = 0; i < format.Length; i++)
@@ -60,11 +108,11 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
         {
-            if (unitString == "fi")
+            if (string.Equals(unitString, "gi", StringComparison.OrdinalIgnoreCase) || string.Equals(unitString, "fi", StringComparison.OrdinalIgnoreCase))
             {
                 unit = FindBestUnitI();
             }
-            else if (unitString == "f")
+            else if (unitString == "g" || unitString == "f" || unitString == "G" || unitString == "F")
             {
                 unit = FindBestUnit();
             }
@@ -169,6 +217,11 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     public static bool operator <(ByteSize value1, ByteSize value2) => value1.CompareTo(value2) < 0;
 
     public static bool operator >(ByteSize value1, ByteSize value2) => value1.CompareTo(value2) > 0;
+
+    public static ByteSize operator +(ByteSize value1, ByteSize value2) => new(value1.Value + value2.Value);
+    public static ByteSize operator -(ByteSize value1, ByteSize value2) => new(value1.Value - value2.Value);
+    public static ByteSize operator *(ByteSize value1, ByteSize value2) => new(value1.Value * value2.Value);
+    public static ByteSize operator /(ByteSize value1, ByteSize value2) => new(value1.Value / value2.Value);
 
     public static implicit operator ByteSize(long value) => new(value);
 

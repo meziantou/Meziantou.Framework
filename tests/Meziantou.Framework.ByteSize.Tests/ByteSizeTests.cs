@@ -17,8 +17,10 @@ public sealed class ByteSizeTests
     [InlineData(1_024L, "kiB", "1kiB")]
     [InlineData(1_024L, "fi", "1kiB")]
     [InlineData(1_000_000L, "MB", "1MB")]
+    [InlineData(1_000_000L, "", "1MB")]
     [InlineData(1_000_000L, "f", "1MB")]
     [InlineData(1_510_000L, "f1", "1.5MB")]
+    [InlineData(1_510_000L, "", "1.51MB")]
     [InlineData(1_510_000L, "f2", "1.51MB")]
     public void ToString_Test(long length, string format, string expectedValue)
     {
@@ -74,5 +76,12 @@ public sealed class ByteSizeTests
 
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
         parsed.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Operator_Add()
+    {
+        var result = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
+        result.Should().Be(3000L);
     }
 }

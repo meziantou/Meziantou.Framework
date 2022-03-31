@@ -1,6 +1,6 @@
 {
   "sdk": {
-    "version": "7.0.100-preview.1.22110.4",
+    "version": "7.0.100-preview.2.22153.17",
     "rollForward": "patch"
   },
   "msbuild-sdks": {

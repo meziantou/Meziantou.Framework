@@ -30,7 +30,11 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
         string text;
         using (var textReader = StreamUtilities.CreateReader(stream, encoding))
         {
+#if NET7_0_OR_GREATER
+            text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+#else
             text = await textReader.ReadToEndAsync().ConfigureAwait(false);
+#endif
         }
 
         var jobject = JObject.Parse(text);

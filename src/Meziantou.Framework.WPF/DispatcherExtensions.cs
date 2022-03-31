@@ -15,7 +15,7 @@ public static class DispatcherExtensions
     {
         private readonly Dispatcher _dispatcher;
 
-        public SwitchToUiAwaitable(Dispatcher dispatcher)
+        internal SwitchToUiAwaitable(Dispatcher dispatcher)
         {
             _dispatcher = dispatcher;
         }

@@ -7,6 +7,11 @@ on:
     branches:
       - '*'
 
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true

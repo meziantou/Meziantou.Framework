@@ -105,7 +105,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: github.actor != 'dependabot[bot]' && (success() || failure()) # the step doesn't work for dependabot

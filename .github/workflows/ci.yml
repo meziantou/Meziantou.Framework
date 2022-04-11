@@ -32,14 +32,14 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: nuget
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.NuGetDirectory }}/**/*
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: binlog
@@ -98,7 +98,7 @@ jobs:
         name: Build
       - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
         name: Run tests
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}

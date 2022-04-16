@@ -13,8 +13,6 @@ end_of_line = lf
 # Xml project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
 indent_size = 4
-dotnet_style_operator_placement_when_wrapping = beginning_of_line
-tab_width = 4
 
 # Xml config files
 [*.{props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct,xml,stylecop}]

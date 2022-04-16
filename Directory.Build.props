@@ -30,6 +30,9 @@
     <IsPackable>False</IsPackable>
 
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
+
+    <!-- TODO: Enable when dotnet/linker#2718 is fixed -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
@@ -50,7 +53,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.698">
+    <PackageReference Include="Meziantou.Analyzer" Version="1.0.700">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
     </PackageReference>

@@ -33,7 +33,7 @@ public static class DispatcherExtensions
 
         public void OnCompleted(Action continuation)
         {
-            _dispatcher.BeginInvoke(continuation);
+            _ = _dispatcher.BeginInvoke(continuation);
         }
     }
 }

@@ -78,7 +78,7 @@ public abstract class DependencyScanner
         }
     }
 
-    private static async Task ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
+    private static Task ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
         where T : struct, IEnabledScannersArray
     {
         var fileSystem = options.FileSystem;
@@ -139,7 +139,7 @@ public abstract class DependencyScanner
             }
         }, cancellationToken), startIndex: 1, options.DegreeOfParallelism);
 
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        return Task.WhenAll(tasks);
     }
 
     private static async IAsyncEnumerable<Dependency> ScanDirectorySingleThreadedAsync(string path, ScannerOptions options, [EnumeratorCancellation] CancellationToken cancellationToken = default)

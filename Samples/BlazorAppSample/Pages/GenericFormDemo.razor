@@ -37,11 +37,11 @@
         public DateTime? DateValueNullable { get; set; }
 
         [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
-        public DateTime DateValue { get; set; } = DateTime.Now;
-        public DateTime DateTimeValue { get; set; } = DateTime.Now;
+        public DateTime DateValue { get; set; } = DateTime.UtcNow;
+        public DateTime DateTimeValue { get; set; } = DateTime.UtcNow;
         [System.ComponentModel.DataAnnotations.DataType(System.ComponentModel.DataAnnotations.DataType.Date)]
-        public DateTimeOffset DateOffsetValue { get; set; } = DateTimeOffset.Now;
-        public DateTimeOffset DateTimeOffsetValue { get; set; } = DateTimeOffset.Now;
+        public DateTimeOffset DateOffsetValue { get; set; } = DateTimeOffset.UtcNow;
+        public DateTimeOffset DateTimeOffsetValue { get; set; } = DateTimeOffset.UtcNow;
         public bool BooleanValue { get; set; }
         public short Int16Value { get; set; }
         public int Int32Value { get; set; }

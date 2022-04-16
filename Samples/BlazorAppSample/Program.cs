@@ -7,7 +7,7 @@ namespace BlazorAppSample;
 
 public static class Program
 {
-    public static async Task Main(string[] args)
+    public static Task Main(string[] args)
     {
         var builder = WebAssemblyHostBuilder.CreateDefault(args);
         builder.RootComponents.Add<App>("#app");
@@ -22,6 +22,6 @@ public static class Program
             .AddHttpMessageHandler(() => new DefaultBrowserOptionsMessageHandler() { DefaultBrowserRequestCache = BrowserRequestCache.NoCache });
 
 
-        await builder.Build().RunAsync().ConfigureAwait(false);
+        return builder.Build().RunAsync();
     }
 }

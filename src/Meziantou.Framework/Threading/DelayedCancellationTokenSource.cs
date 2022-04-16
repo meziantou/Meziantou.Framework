@@ -5,7 +5,8 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
     private readonly CancellationTokenSource _cts;
     private readonly CancellationTokenRegistration _cancelRegistration;
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "")]
+    [SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "")]
+    [SuppressMessage("Usage", "VSTHRD101:Avoid unsupported async delegates", Justification = "By design")]
     public DelayedCancellationTokenSource(CancellationToken cancellationToken, TimeSpan delay)
     {
         _cts = new CancellationTokenSource();

@@ -10,7 +10,7 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
-
+#nullable enable
 using System;
 using System.Threading.Tasks;
 
@@ -19,11 +19,9 @@ namespace Meziantou.Framework
     public static class ThrottleExtensions
     {
 <# for (int i = 0; i < count; i++) { #>
-        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
+        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action!!, TimeSpan interval)
         {
-            if (action == null) throw new ArgumentNullException(nameof(action));
-
-            Task task = null;
+            Task? task = null;
             var l = new object();
 <# if (i > 0) { #>
             ValueTuple<#= GetTemplateString(i) #> args = default;
@@ -46,7 +44,7 @@ namespace Meziantou.Framework
                         action(<#= GetArgsString(i, "args.Item") #>);
                         t.Dispose();
                         task = null;
-                    });
+                    }, TaskScheduler.Default);
                 }
             };
         }

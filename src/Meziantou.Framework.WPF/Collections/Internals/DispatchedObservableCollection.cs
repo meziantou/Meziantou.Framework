@@ -226,7 +226,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
             if (!_isDispatcherPending)
             {
                 _isDispatcherPending = true;
-                _dispatcher.BeginInvoke(ProcessPendingEvents);
+                _ = _dispatcher.BeginInvoke(ProcessPendingEvents);
             }
 
             return;

@@ -9,7 +9,7 @@
 //     the code is regenerated.
 // </auto-generated>
 //------------------------------------------------------------------------------
-
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,10 +19,8 @@ namespace Meziantou.Framework
     public static class DebounceExtensions
     {
 <# for (int i = 0; i < 10; i++) { #>
-        public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
+        public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action!!, TimeSpan interval)
         {
-            if (action == null) throw new ArgumentNullException(nameof(action));
-
             var last = 0;
             return (<#= GetArgsString(i) #>) =>
             {
@@ -35,7 +33,7 @@ namespace Meziantou.Framework
                     }
 
                     task.Dispose();
-                });
+                }, TaskScheduler.Default);
             };
         }
 <# } #>

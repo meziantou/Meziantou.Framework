@@ -637,9 +637,9 @@ services:
         return dependencies;
     }
 
-    private static async Task UpdateDependencies(IEnumerable<Dependency> dependencies, string newVersion)
+    private static Task UpdateDependencies(IEnumerable<Dependency> dependencies, string newVersion)
     {
-        await DependencyScanner.UpdateAllAsync(dependencies, newVersion, CancellationToken.None);
+        return DependencyScanner.UpdateAllAsync(dependencies, newVersion, CancellationToken.None);
     }
 
     private void AddFile(string path, string content) => AddFile(path, content, Encoding.UTF8);

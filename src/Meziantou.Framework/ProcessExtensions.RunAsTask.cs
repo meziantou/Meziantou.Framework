@@ -178,9 +178,9 @@ public static partial class ProcessExtensions
 
 #if NET6_0_OR_GREATER
     [Obsolete("Exist in .NET 5.0")]
-    public static async Task WaitForExitAsync(Process process, CancellationToken cancellationToken = default)
+    public static Task WaitForExitAsync(Process process, CancellationToken cancellationToken = default)
     {
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        return process.WaitForExitAsync(cancellationToken);
     }
 #else
     [Obsolete("Exist in .NET 5.0")]

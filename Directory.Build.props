@@ -61,11 +61,6 @@
     <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
-  <!-- SourceLink and Reproducible Builds: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
-  <ItemGroup>
-    <SourceRoot Include="$(MSBuildThisFileDirectory)" />
-  </ItemGroup>
-
   <!-- Analyzers -->
   <ItemGroup>
     <PackageReference Include="Meziantou.ProjectConfiguration" Version="1.0.12">

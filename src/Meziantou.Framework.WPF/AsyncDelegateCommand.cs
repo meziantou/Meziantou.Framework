@@ -23,6 +23,7 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
         return !_isExecuting && _canExecute.Invoke(parameter);
     }
 
+    [SuppressMessage("Usage", "VSTHRD100:Avoid async void methods", Justification = "Must be void")]
     public async void Execute(object? parameter)
     {
         if (_isExecuting)

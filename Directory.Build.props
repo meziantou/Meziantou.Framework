@@ -15,18 +15,10 @@
   <PropertyGroup>
     <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
-    <Deterministic>true</Deterministic>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ValidateProjectTargets>true</ValidateProjectTargets>
     <ImplicitUsings>enable</ImplicitUsings>
 
-    <Features>strict</Features>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
-    <ReportAnalyzer>true</ReportAnalyzer>
-
-    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
     <IsPackable>False</IsPackable>
 
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
@@ -51,14 +43,6 @@
     <Reference Include="System.Net.Http" Condition="$(TargetFramework) == 'net461' OR $(TargetFramework) == 'net472'" />
   </ItemGroup>
 
-  <!-- Analyzers -->
-  <ItemGroup>
-    <PackageReference Include="Meziantou.Analyzer" Version="1.0.700">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime;build;native;contentfiles;analyzers;buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-
   <!-- Package configuration -->
   <PropertyGroup>
     <_PackageReadmeFilePath Condition="Exists('$(MSBuildProjectDirectory)\readme.md')">$(MSBuildProjectDirectory)\readme.md</_PackageReadmeFilePath>
@@ -66,8 +50,6 @@
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/meziantou/Meziantou.Framework.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
     <PackageIcon>icon.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageReadmeFile Condition="$(_PackageReadmeFilePath) != ''">readme.md</PackageReadmeFile>
@@ -79,13 +61,12 @@
     <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
   </ItemGroup>
 
-  <!-- SourceLink and Reproducible Builds: https://www.meziantou.net/2018/07/09/how-to-debug-nuget-packages-using-sourcelink -->
+  <!-- Analyzers -->
   <ItemGroup>
-    <SourceRoot Include="$(MSBuildThisFileDirectory)/" />
-
-    <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.1.1">
+    <PackageReference Include="Meziantou.ProjectConfiguration" Version="1.0.13">
       <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
 </Project>

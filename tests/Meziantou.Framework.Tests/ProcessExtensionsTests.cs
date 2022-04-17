@@ -84,11 +84,11 @@ public class ProcessExtensionsTests
     }
 
     [Fact]
-    public async Task RunAsTask_ProcessDoesNotExists()
+    public Task RunAsTask_ProcessDoesNotExists()
     {
         var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
 
-        await new Func<Task>(() => psi.RunAsTaskAsync(CancellationToken.None)).Should().ThrowExactlyAsync<Win32Exception>().ConfigureAwait(false);
+        return new Func<Task>(() => psi.RunAsTaskAsync(CancellationToken.None)).Should().ThrowExactlyAsync<Win32Exception>();
     }
 
     [Fact]

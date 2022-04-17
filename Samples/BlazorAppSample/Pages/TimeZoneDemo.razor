@@ -10,6 +10,7 @@
     DateTimeOffset? now;
     DateTimeOffset? localToUtc;
 
+    [SuppressMessage("", "RS0030")]
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)

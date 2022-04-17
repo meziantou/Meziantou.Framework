@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
         UpdateNextOccurences();
     }
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not used banned APIs", Justification = "Use for UI")]
     private void UpdateNextOccurences()
     {
         if (RecurrenceRule.TryParse(TbxRecurrenceRule.Text, out var rule, out var error))

@@ -9,7 +9,7 @@
 
   <ItemGroup Condition=" $(TargetFramework) == 'net461' ">
     <Reference Include="System.Windows" />
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>

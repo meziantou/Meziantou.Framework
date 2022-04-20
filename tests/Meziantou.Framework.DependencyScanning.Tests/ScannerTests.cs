@@ -100,39 +100,55 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task MsBuildReferencesDependencies()
     {
-        const string Original = @"<Project Sdk=""Microsoft.NET.Sdk"">
+        const string Original = """
+            <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Sample</RootNamespace>
-  </PropertyGroup>
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <RootNamespace>Sample</RootNamespace>
+              </PropertyGroup>
 
-    <!-- Comment -->
-  <ItemGroup>
-    <PackageReference Include=""TestPackage"" Version=""4.2.1"" />
-  </ItemGroup>
+              <ItemGroup>                
+                  <PackageVersion Include="PackageA" Version="1.0.0" />
+              </ItemGroup>
 
-</Project>
-";
-        const string Expected = @"<Project Sdk=""Microsoft.NET.Sdk"">
+                <!-- Comment -->
+              <ItemGroup>
+                <PackageReference Include="TestPackage" Version="4.2.1" />
+                <PackageReference Include="PackageA" VersionOverride="1.2.1" />
+              </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Sample</RootNamespace>
-  </PropertyGroup>
+            </Project>
 
-    <!-- Comment -->
-  <ItemGroup>
-    <PackageReference Include=""TestPackage"" Version=""2.0.0"" />
-  </ItemGroup>
+            """;
+        const string Expected = """
+            <Project Sdk="Microsoft.NET.Sdk">
 
-</Project>
-";
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <RootNamespace>Sample</RootNamespace>
+              </PropertyGroup>
+            
+              <ItemGroup>                
+                  <PackageVersion Include="PackageA" Version="2.0.0" />
+              </ItemGroup>
+
+                <!-- Comment -->
+              <ItemGroup>
+                <PackageReference Include="TestPackage" Version="2.0.0" />
+                <PackageReference Include="PackageA" VersionOverride="2.0.0" />
+              </ItemGroup>
+
+            </Project>
+
+            """;
 
         AddFile("test.csproj", Original);
         var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
         AssertContainDependency(result,
-            (DependencyType.NuGet, "TestPackage", "4.2.1", 10, 6));
+            (DependencyType.NuGet, "PackageA", "1.0.0", 9, 8),
+            (DependencyType.NuGet, "PackageA", "1.2.1", 15, 6),
+            (DependencyType.NuGet, "TestPackage", "4.2.1", 14, 6));
 
         await UpdateDependencies(result, "2.0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);

@@ -7,6 +7,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 {
     private static readonly XName s_includeName = XName.Get("Include");
     private static readonly XName s_versionName = XName.Get("Version");
+    private static readonly XName s_versionOverrideName = XName.Get("VersionOverride");
     private static readonly XName s_sdkName = XName.Get("Sdk");
     private static readonly XName s_nameName = XName.Get("Name");
 
@@ -25,6 +26,41 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         var ns = doc.Root.GetDefaultNamespace();
         foreach (var package in doc.Descendants(ns + "PackageReference"))
+        {
+            var packageName = package.Attribute(s_includeName)?.Value;
+            if (string.IsNullOrEmpty(packageName))
+                continue;
+
+            var versionAttribute = package.Attribute(s_versionName)?.Value;
+            if (!string.IsNullOrEmpty(versionAttribute))
+            {
+                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, s_versionName.LocalName))).ConfigureAwait(false);
+            }
+            else
+            {
+                var versionElement = package.Element(ns + "Version");
+                if (!string.IsNullOrEmpty(versionElement?.Value))
+                {
+                    await context.ReportDependency(new Dependency(packageName, versionElement.Value, DependencyType.NuGet, new XmlLocation(context.FullPath, versionElement))).ConfigureAwait(false);
+                }
+            }
+
+            var versionOverrideAttribute = package.Attribute(s_versionOverrideName)?.Value;
+            if (!string.IsNullOrEmpty(versionOverrideAttribute))
+            {
+                await context.ReportDependency(new Dependency(packageName, versionOverrideAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, s_versionOverrideName.LocalName))).ConfigureAwait(false);
+            }
+            else
+            {
+                var versionOverrideElement = package.Element(ns + "VersionOverride");
+                if (!string.IsNullOrEmpty(versionOverrideElement?.Value))
+                {
+                    await context.ReportDependency(new Dependency(packageName, versionOverrideElement.Value, DependencyType.NuGet, new XmlLocation(context.FullPath, versionOverrideElement))).ConfigureAwait(false);
+                }
+            }
+        }
+
+        foreach (var package in doc.Descendants(ns + "PackageVersion"))
         {
             var packageName = package.Attribute(s_includeName)?.Value;
             if (string.IsNullOrEmpty(packageName))

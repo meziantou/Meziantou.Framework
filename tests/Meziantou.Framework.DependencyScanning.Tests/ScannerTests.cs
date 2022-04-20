@@ -24,29 +24,33 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task NpmPackageJsonDependencies()
     {
-        const string Original = /*lang=json,strict*/ @"{
-  ""name"": ""sample"",
-  ""version"": ""0.1.0"",
-  ""dependencies"": {
-    ""a"": ""1.0.0""
-  },
-  ""devDependencies"": {
-    ""b"": ""1.2.3"",
-    ""c"": null
-  }
-}";
+        const string Original = /*lang=json,strict*/ """
+            {
+              "name": "sample",
+              "version": "0.1.0",
+              "dependencies": {
+                "a": "1.0.0"
+              },
+              "devDependencies": {
+                "b": "1.2.3",
+                "c": null
+              }
+            }
+            """;
 
-        const string Expected = /*lang=json,strict*/ @"{
-  ""name"": ""sample"",
-  ""version"": ""0.1.0"",
-  ""dependencies"": {
-    ""a"": ""2.0.0""
-  },
-  ""devDependencies"": {
-    ""b"": ""2.0.0"",
-    ""c"": null
-  }
-}";
+        const string Expected = /*lang=json,strict*/ """
+            {
+              "name": "sample",
+              "version": "0.1.0",
+              "dependencies": {
+                "a": "2.0.0"
+              },
+              "devDependencies": {
+                "b": "2.0.0",
+                "c": null
+              }
+            }
+            """;
 
         AddFile("package.json", Original);
         var result = await GetDependencies(new NpmPackageJsonDependencyScanner());
@@ -61,31 +65,35 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task NuSpecDependencies()
     {
-        const string Original = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
-    <metadata>
-        <id>sample</id>
-        <version>1.0.0</version>
-        <authors>Microsoft</authors>
-        <dependencies>
-            <dependency id=""another-package"" version=""3.0.0"" />
-            <dependency id=""yet-another-package"" version=""1.0.0"" />
-        </dependencies>
-    </metadata>
-</package>";
+        const string Original = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+                <metadata>
+                    <id>sample</id>
+                    <version>1.0.0</version>
+                    <authors>Microsoft</authors>
+                    <dependencies>
+                        <dependency id="another-package" version="3.0.0" />
+                        <dependency id="yet-another-package" version="1.0.0" />
+                    </dependencies>
+                </metadata>
+            </package>
+            """;
 
-        const string Expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<package xmlns=""http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"">
-    <metadata>
-        <id>sample</id>
-        <version>1.0.0</version>
-        <authors>Microsoft</authors>
-        <dependencies>
-            <dependency id=""another-package"" version=""2.0.0"" />
-            <dependency id=""yet-another-package"" version=""2.0.0"" />
-        </dependencies>
-    </metadata>
-</package>";
+        const string Expected = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+                <metadata>
+                    <id>sample</id>
+                    <version>1.0.0</version>
+                    <authors>Microsoft</authors>
+                    <dependencies>
+                        <dependency id="another-package" version="2.0.0" />
+                        <dependency id="yet-another-package" version="2.0.0" />
+                    </dependencies>
+                </metadata>
+            </package>
+            """;
 
         AddFile("test.nuspec", Original);
         var result = await GetDependencies(new NuSpecDependencyScanner());
@@ -182,36 +190,40 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task PackagesReferencesWithNamespaceDependencies()
     {
-        const string Original = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Project Sdk=""Microsoft.NET.Sdk"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
+        const string Original = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Sample</RootNamespace>
-  </PropertyGroup>
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <RootNamespace>Sample</RootNamespace>
+              </PropertyGroup>
 
-    <!-- Comment -->
-  <ItemGroup>
-    <PackageReference Include=""TestPackage"" Version=""4.2.1"" />
-  </ItemGroup>
+                <!-- Comment -->
+              <ItemGroup>
+                <PackageReference Include="TestPackage" Version="4.2.1" />
+              </ItemGroup>
 
-</Project>
-";
-        const string Expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Project Sdk=""Microsoft.NET.Sdk"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
+            </Project>
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>Sample</RootNamespace>
-  </PropertyGroup>
+            """;
+        const string Expected = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-    <!-- Comment -->
-  <ItemGroup>
-    <PackageReference Include=""TestPackage"" Version=""2.0.0"" />
-  </ItemGroup>
+              <PropertyGroup>
+                <TargetFramework>netstandard2.0</TargetFramework>
+                <RootNamespace>Sample</RootNamespace>
+              </PropertyGroup>
 
-</Project>
-";
+                <!-- Comment -->
+              <ItemGroup>
+                <PackageReference Include="TestPackage" Version="2.0.0" />
+              </ItemGroup>
+
+            </Project>
+
+            """;
 
         AddFile("test.csproj", Original);
         var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
@@ -224,37 +236,41 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task ProjectJsonDependencies()
     {
-        const string Original = /*lang=json,strict*/ @"{
-  ""dependencies"": {
-    ""a"": {
-      ""version"": ""1.0.1"",
-      ""type"": ""platform""
-    },
-    ""b"": {
-      ""target"": ""project""
-    },
-    ""c"": ""1.0.2""
-  },
-  ""tools"": {
-    ""d"": ""1.0.3""
-  }
-}";
+        const string Original = /*lang=json,strict*/ """
+            {
+              "dependencies": {
+                "a": {
+                  "version": "1.0.1",
+                  "type": "platform"
+                },
+                "b": {
+                  "target": "project"
+                },
+                "c": "1.0.2"
+              },
+              "tools": {
+                "d": "1.0.3"
+              }
+            }
+            """;
 
-        const string Expected = /*lang=json,strict*/ @"{
-  ""dependencies"": {
-    ""a"": {
-      ""version"": ""2.0.0"",
-      ""type"": ""platform""
-    },
-    ""b"": {
-      ""target"": ""project""
-    },
-    ""c"": ""2.0.0""
-  },
-  ""tools"": {
-    ""d"": ""2.0.0""
-  }
-}";
+        const string Expected = /*lang=json,strict*/ """
+            {
+              "dependencies": {
+                "a": {
+                  "version": "2.0.0",
+                  "type": "platform"
+                },
+                "b": {
+                  "target": "project"
+                },
+                "c": "2.0.0"
+              },
+              "tools": {
+                "d": "2.0.0"
+              }
+            }
+            """;
 
         AddFile("project.json", Original);
         var result = await GetDependencies(new ProjectJsonDependencyScanner());
@@ -287,16 +303,19 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task PackagesConfigDependencies()
     {
-        const string Original = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
-<packages>
-  <package id=""A"" version=""4.2.1"" targetFramework=""net461"" />
-</packages>";
+        const string Original = """
+            <?xml version="1.0" encoding="utf-8" ?>
+            <packages>
+              <package id="A" version="4.2.1" targetFramework="net461" />
+            </packages>
+            """;
 
-        const string Expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<packages>
-  <package id=""A"" version=""2.0.0"" targetFramework=""net461"" />
-</packages>";
-
+        const string Expected = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <packages>
+              <package id="A" version="2.0.0" targetFramework="net461" />
+            </packages>
+            """;
 
         AddFile("packages.config", Original);
         var result = await GetDependencies(new PackagesConfigDependencyScanner());
@@ -309,51 +328,59 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task PackagesConfigWithCsprojDependencies()
     {
-        const string Original = @"<?xml version=""1.0"" encoding=""utf-8"" ?>
-<packages>
-  <package id=""NUnit"" version=""3.11.0"" targetFramework=""net461"" />
-</packages>";
+        const string Original = """
+            <?xml version="1.0" encoding="utf-8" ?>
+            <packages>
+              <package id="NUnit" version="3.11.0" targetFramework="net461" />
+            </packages>
+            """;
 
-        const string OriginalCsproj = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Project ToolsVersion=""15.0"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
-  <Import Project=""..\packages\NUnit.3.11.0\build\NUnit.props"" Condition=""Exists('..\packages\NUnit.3.11.0\build\NUnit.props')"" />
-  <Import Project=""$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"" Condition=""Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"" />
-  <ItemGroup>
-    <Reference Include=""nunit.framework, Version=3.11.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL"">
-      <HintPath>..\packages\NUnit.3.11.0\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />
-  <Target Name=""EnsureNuGetPackageBuildImports"" BeforeTargets=""PrepareForBuild"">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition=""!Exists('..\packages\NUnit.3.11.0\build\NUnit.props')"" Text=""$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.11.0\build\NUnit.props'))"" />
-  </Target>
-</Project>";
+        const string OriginalCsproj = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <Import Project="..\packages\NUnit.3.11.0\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.11.0\build\NUnit.props')" />
+              <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+              <ItemGroup>
+                <Reference Include="nunit.framework, Version=3.11.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+                  <HintPath>..\packages\NUnit.3.11.0\lib\net45\nunit.framework.dll</HintPath>
+                </Reference>
+              </ItemGroup>
+              <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+              <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+                <PropertyGroup>
+                  <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+                </PropertyGroup>
+                <Error Condition="!Exists('..\packages\NUnit.3.11.0\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.11.0\build\NUnit.props'))" />
+              </Target>
+            </Project>
+            """;
 
-        const string Expected = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<packages>
-  <package id=""NUnit"" version=""3.12.0-beta00"" targetFramework=""net461"" />
-</packages>";
+        const string Expected = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <packages>
+              <package id="NUnit" version="3.12.0-beta00" targetFramework="net461" />
+            </packages>
+            """;
 
-        const string ExpectedCsproj = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<Project ToolsVersion=""15.0"" xmlns=""http://schemas.microsoft.com/developer/msbuild/2003"">
-  <Import Project=""..\packages\NUnit.3.12.0-beta00\build\NUnit.props"" Condition=""Exists('..\packages\NUnit.3.12.0-beta00\build\NUnit.props')"" />
-  <Import Project=""$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"" Condition=""Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"" />
-  <ItemGroup>
-    <Reference Include=""nunit.framework, Version=3.12.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL"">
-      <HintPath>..\packages\NUnit.3.12.0-beta00\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />
-  <Target Name=""EnsureNuGetPackageBuildImports"" BeforeTargets=""PrepareForBuild"">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition=""!Exists('..\packages\NUnit.3.12.0-beta00\build\NUnit.props')"" Text=""$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.12.0-beta00\build\NUnit.props'))"" />
-  </Target>
-</Project>";
+        const string ExpectedCsproj = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <Import Project="..\packages\NUnit.3.12.0-beta00\build\NUnit.props" Condition="Exists('..\packages\NUnit.3.12.0-beta00\build\NUnit.props')" />
+              <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+              <ItemGroup>
+                <Reference Include="nunit.framework, Version=3.12.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+                  <HintPath>..\packages\NUnit.3.12.0-beta00\lib\net45\nunit.framework.dll</HintPath>
+                </Reference>
+              </ItemGroup>
+              <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+              <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+                <PropertyGroup>
+                  <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+                </PropertyGroup>
+                <Error Condition="!Exists('..\packages\NUnit.3.12.0-beta00\build\NUnit.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit.3.12.0-beta00\build\NUnit.props'))" />
+              </Target>
+            </Project>
+            """;
 
 
         AddFile("packages.config", Original);
@@ -373,22 +400,22 @@ public sealed class ScannerTests : IDisposable
     [Fact]
     public async Task DockerfileFromDependencies()
     {
-        const string Original = @"
-FROM a.com/b:1.2.2
-FROM a.com/c:1.2.3 AS base
-CMD  /code/run-app
-";
-        const string Expected = @"
-FROM a.com/b:2.0.0
-FROM a.com/c:2.0.0 AS base
-CMD  /code/run-app
-";
+        const string Original = """
+            FROM a.com/b:1.2.2
+            FROM a.com/c:1.2.3 AS base
+            CMD  /code/run-app
+            """;
+        const string Expected = """
+            FROM a.com/b:2.0.0
+            FROM a.com/c:2.0.0 AS base
+            CMD  /code/run-app
+            """;
 
         AddFile("Dockerfile", Original);
         var result = await GetDependencies(new DockerfileDependencyScanner());
         AssertContainDependency(result,
-            (DependencyType.DockerImage, "a.com/b", "1.2.2", 2, 14),
-            (DependencyType.DockerImage, "a.com/c", "1.2.3", 3, 14));
+            (DependencyType.DockerImage, "a.com/b", "1.2.2", 1, 14),
+            (DependencyType.DockerImage, "a.com/c", "1.2.3", 2, 14));
 
         await UpdateDependencies(result, "2.0.0");
         AssertFileContentEqual("Dockerfile", Expected, ignoreNewLines: false);
@@ -397,26 +424,30 @@ CMD  /code/run-app
     [Fact]
     public async Task GlobalJsonFromDependencies()
     {
-        const string Original = /*lang=json,strict*/ @"{
-  ""sdk"": {
-    ""version"": ""3.1.100"",
-    ""rollForward"": ""disable""
-  },
-  ""msbuild-sdks"": {
-    ""My.Custom.Sdk"": ""5.0.0"",
-    ""My.Other.Sdk"": ""1.0.0-beta""
-  }
-}";
-        const string Expected = /*lang=json,strict*/ @"{
-  ""sdk"": {
-    ""version"": ""3.1.400"",
-    ""rollForward"": ""disable""
-  },
-  ""msbuild-sdks"": {
-    ""My.Custom.Sdk"": ""3.1.400"",
-    ""My.Other.Sdk"": ""3.1.400""
-  }
-}";
+        const string Original = /*lang=json,strict*/ """
+            {
+              "sdk": {
+                "version": "3.1.100",
+                "rollForward": "disable"
+              },
+              "msbuild-sdks": {
+                "My.Custom.Sdk": "5.0.0",
+                "My.Other.Sdk": "1.0.0-beta"
+              }
+            }
+            """;
+        const string Expected = /*lang=json,strict*/ """
+            {
+              "sdk": {
+                "version": "3.1.400",
+                "rollForward": "disable"
+              },
+              "msbuild-sdks": {
+                "My.Custom.Sdk": "3.1.400",
+                "My.Other.Sdk": "3.1.400"
+              }
+            }
+            """;
 
         AddFile("global.json", Original);
         var result = await GetDependencies(new DotNetGlobalJsonDependencyScanner());
@@ -498,44 +529,46 @@ CMD  /code/run-app
     public async Task GitHubActions()
     {
         const string Path = ".github/workflows/sample.yml";
-        const string Original = @"name: demo
-on: [push]
-jobs:
-  check-bats-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
-      - uses: docker://test/setup:v3
-      - run: npm install -g bats
-      - run: bats -v
-    container:
-      image: node:10.16-jessie
-    services:
-      nginx:
-        image: nginx:latest
-      redis:
-        image: redis:1.0
-";
-        const string Expected = @"name: demo
-on: [push]
-jobs:
-  check-bats-version:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3.0.0
-      - uses: actions/setup-node@v3.0.0
-      - uses: docker://test/setup:v3.0.0
-      - run: npm install -g bats
-      - run: bats -v
-    container:
-      image: node:v3.0.0
-    services:
-      nginx:
-        image: nginx:v3.0.0
-      redis:
-        image: redis:v3.0.0
-";
+        const string Original = """
+            name: demo
+            on: [push]
+            jobs:
+              check-bats-version:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v2
+                  - uses: actions/setup-node@v1
+                  - uses: docker://test/setup:v3
+                  - run: npm install -g bats
+                  - run: bats -v
+                container:
+                  image: node:10.16-jessie
+                services:
+                  nginx:
+                    image: nginx:latest
+                  redis:
+                    image: redis:1.0
+            """;
+        const string Expected = """
+            name: demo
+            on: [push]
+            jobs:
+              check-bats-version:
+                runs-on: ubuntu-latest
+                steps:
+                  - uses: actions/checkout@v3.0.0
+                  - uses: actions/setup-node@v3.0.0
+                  - uses: docker://test/setup:v3.0.0
+                  - run: npm install -g bats
+                  - run: bats -v
+                container:
+                  image: node:v3.0.0
+                services:
+                  nginx:
+                    image: nginx:v3.0.0
+                  redis:
+                    image: redis:v3.0.0
+            """;
 
         AddFile(Path, Original);
         var scanner = new GitHubActionsScanner();
@@ -556,18 +589,18 @@ jobs:
     [Fact]
     public async Task Regex()
     {
-        const string Original = @"
-container:
-  image: node:10
-services:
-  abc
-";
-        const string Expected = @"
-container:
-  image: node:v3.0.0
-services:
-  abc
-";
+        const string Original = """
+            container:
+              image: node:10
+            services:
+              abc
+            """;
+        const string Expected = """
+            container:
+              image: node:v3.0.0
+            services:
+              abc
+            """;
 
         AddFile("custom/sample.yml", Original);
         var result = await GetDependencies(new RegexScanner()
@@ -577,7 +610,7 @@ services:
             RegexPattern = "image: (?<name>[a-z]+):(?<version>[0-9]+)",
         });
         AssertContainDependency(result,
-            (DependencyType.DockerImage, "node", "10", 3, 15));
+            (DependencyType.DockerImage, "node", "10", 2, 15));
 
         await UpdateDependencies(result, "v3.0.0");
         AssertFileContentEqual("custom/sample.yml", Expected, ignoreNewLines: false);
@@ -586,43 +619,47 @@ services:
     [Fact]
     public async Task DotNetToolsDependencies()
     {
-        const string Original = /*lang=json,strict*/ @"{
-  ""version"": 1,
-  ""isRoot"": true,
-  ""tools"": {
-    ""dotnet-validate"": {
-      ""version"": ""0.0.1-preview.130"",
-      ""commands"": [
-        ""dotnet-validate""
-      ]
-    },
-    ""dotnet-format"": {
-      ""version"": ""5.0.211103"",
-      ""commands"": [
-        ""dotnet-format""
-      ]
-    }
-  }
-}";
+        const string Original = /*lang=json,strict*/ """
+            {
+              "version": 1,
+              "isRoot": true,
+              "tools": {
+                "dotnet-validate": {
+                  "version": "0.0.1-preview.130",
+                  "commands": [
+                    "dotnet-validate"
+                  ]
+                },
+                "dotnet-format": {
+                  "version": "5.0.211103",
+                  "commands": [
+                    "dotnet-format"
+                  ]
+                }
+              }
+            }
+            """;
 
-        const string Expected = /*lang=json,strict*/ @"{
-  ""version"": 1,
-  ""isRoot"": true,
-  ""tools"": {
-    ""dotnet-validate"": {
-      ""version"": ""2.0.0"",
-      ""commands"": [
-        ""dotnet-validate""
-      ]
-    },
-    ""dotnet-format"": {
-      ""version"": ""2.0.0"",
-      ""commands"": [
-        ""dotnet-format""
-      ]
-    }
-  }
-}";
+        const string Expected = /*lang=json,strict*/ """
+            {
+              "version": 1,
+              "isRoot": true,
+              "tools": {
+                "dotnet-validate": {
+                  "version": "2.0.0",
+                  "commands": [
+                    "dotnet-validate"
+                  ]
+                },
+                "dotnet-format": {
+                  "version": "2.0.0",
+                  "commands": [
+                    "dotnet-format"
+                  ]
+                }
+              }
+            }
+            """;
 
         AddFile("dotnet-tools.json", Original);
         var result = await GetDependencies(new DotNetToolManifestDependencyScanner());

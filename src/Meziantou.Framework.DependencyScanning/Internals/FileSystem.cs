@@ -15,11 +15,11 @@ internal sealed class FileSystem : IFileSystem
 
     public Stream OpenRead(string path)
     {
-        return File.Open(path, FileMode.Open, FileAccess.Read);
+        return File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
     }
 
     public Stream OpenReadWrite(string path)
     {
-        return File.Open(path, FileMode.Open, FileAccess.ReadWrite);
+        return File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
     }
 }

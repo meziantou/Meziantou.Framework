@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WPF;
 
 internal static class EnumLocalizationUtilities
 {
-    private static readonly IDictionary<Type, LocalizedEnumValueCollection> s_enums = new Dictionary<Type, LocalizedEnumValueCollection>();
-    private static readonly IDictionary<Expression, object> s_properties = new Dictionary<Expression, object>();
+    private static readonly IDictionary<Type, LocalizedEnumValueCollection> EnumsCache = new Dictionary<Type, LocalizedEnumValueCollection>();
+    private static readonly IDictionary<Expression, object> PropertiesCache = new Dictionary<Expression, object>();
 
     public static LocalizedEnumValueCollection GetEnumLocalization<T>()
         where T : struct
@@ -18,7 +18,7 @@ internal static class EnumLocalizationUtilities
 
     public static LocalizedEnumValueCollection GetEnumLocalization(Type type)
     {
-        if (s_enums.TryGetValue(type, out var value))
+        if (EnumsCache.TryGetValue(type, out var value))
             return value;
 
         IList<LocalizedEnumValue> result = new List<LocalizedEnumValue>();
@@ -43,13 +43,13 @@ internal static class EnumLocalizationUtilities
         }
 
         var localizedValueCollection = new LocalizedEnumValueCollection(result);
-        s_enums.Add(type, localizedValueCollection);
+        EnumsCache.Add(type, localizedValueCollection);
         return localizedValueCollection;
     }
 
     public static string? GetPropertyLocalization<T>(Expression<Func<T>> exp)
     {
-        if (!s_properties.TryGetValue(exp, out var value))
+        if (!PropertiesCache.TryGetValue(exp, out var value))
         {
             var memberExpression = (MemberExpression)exp.Body;
             var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
@@ -62,7 +62,7 @@ internal static class EnumLocalizationUtilities
                 value = displayAttribute.GetName();
             }
 
-            s_properties.Add(exp, value);
+            PropertiesCache.Add(exp, value);
         }
 
         if (value is DisplayAttribute attribute)

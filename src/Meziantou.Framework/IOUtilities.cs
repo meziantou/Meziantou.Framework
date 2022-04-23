@@ -10,8 +10,8 @@ internal
 #endif
 static partial class IOUtilities
 {
-    private static readonly string[] s_reservedFileNames = new[]
-     {
+    private static readonly string[] ReservedFileNames = new[]
+    {
         "con", "prn", "aux", "nul",
         "com0", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
         "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
@@ -90,7 +90,7 @@ static partial class IOUtilities
     /// </returns>
     public static string ToValidFileName(string fileName!!, string reservedNameFormat!! = "_{0}_", string reservedCharFormat!! = "_x{0}_")
     {
-        if (s_reservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
+        if (ReservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
         {
             return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);
         }

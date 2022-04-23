@@ -6,6 +6,7 @@ public sealed class LinkHeaderValue
 {
     private static ReadOnlySpan<char> ParameterSeparators => new char[] { ' ', '\t', '=', ';', ',' };
 
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
     public string Url { get; }
 
     public string Rel => GetParameterValue("rel") ?? "";

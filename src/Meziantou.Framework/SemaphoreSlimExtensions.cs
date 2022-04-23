@@ -46,6 +46,7 @@ public static class SemaphoreSlimExtensions
         }
     }
 
+    [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct SemaphoreDisposer : IDisposable
     {
         private readonly SemaphoreSlim _semaphore;

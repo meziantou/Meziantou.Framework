@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32;
 /// </summary>
 public sealed class Perceived
 {
-    private static readonly Dictionary<string, Perceived> s_perceivedTypes = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
 
     private static object SyncObject { get; } = new object();
 
@@ -82,7 +82,7 @@ public sealed class Perceived
         var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
         lock (SyncObject)
         {
-            s_perceivedTypes[perceived.Extension] = perceived;
+            PerceivedTypes[perceived.Extension] = perceived;
         }
 
         return perceived;
@@ -119,7 +119,7 @@ public sealed class Perceived
             throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
 
         extension = extension.ToUpperInvariant();
-        if (s_perceivedTypes.TryGetValue(extension, out var ptype))
+        if (PerceivedTypes.TryGetValue(extension, out var ptype))
             return ptype;
 
         if (!IsSupportedPlatform())
@@ -129,7 +129,7 @@ public sealed class Perceived
         {
             var type = PerceivedType.Unknown;
             var source = PerceivedTypeSource.Undefined;
-            if (!s_perceivedTypes.TryGetValue(extension, out ptype))
+            if (!PerceivedTypes.TryGetValue(extension, out ptype))
             {
                 using (var key = Registry.ClassesRoot.OpenSubKey(extension, writable: false))
                 {
@@ -171,7 +171,7 @@ public sealed class Perceived
                 }
 
                 ptype = new Perceived(extension, type, source);
-                s_perceivedTypes.Add(extension, ptype);
+                PerceivedTypes.Add(extension, ptype);
             }
 
             return ptype;
@@ -195,6 +195,7 @@ public sealed class Perceived
     }
 
     [DllImport("shlwapi.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int AssocGetPerceivedType(
         [MarshalAs(UnmanagedType.LPWStr)] string pszExt,
         ref PerceivedType ptype,

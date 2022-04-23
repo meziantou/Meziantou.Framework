@@ -7,16 +7,16 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class PackagesConfigDependencyScanner : DependencyScanner
 {
-    private static readonly Version s_versionZero = new(0, 0, 0, 0);
-    private static readonly Version s_versionOne = new(1, 0, 0, 0);
+    private static readonly Version VersionZero = new(0, 0, 0, 0);
+    private static readonly Version VersionOne = new(1, 0, 0, 0);
 
-    private static readonly XName s_packageName = XName.Get("package");
-    private static readonly XName s_idName = XName.Get("id");
-    private static readonly XName s_versionName = XName.Get("version");
-    private static readonly XName s_includeName = XName.Get("Include");
-    private static readonly XName s_projectName = XName.Get("Project");
-    private static readonly XName s_conditionName = XName.Get("Condition");
-    private static readonly XName s_textName = XName.Get("Text");
+    private static readonly XName PackageXName = XName.Get("package");
+    private static readonly XName IdXName = XName.Get("id");
+    private static readonly XName VersionXName = XName.Get("version");
+    private static readonly XName IncludeXName = XName.Get("Include");
+    private static readonly XName ProjectXName = XName.Get("Project");
+    private static readonly XName ConditionXName = XName.Get("Condition");
+    private static readonly XName TextXName = XName.Get("Text");
 
     public bool SearchForReferencesInAssociatedCsprojFiles { get; set; } = true;
 
@@ -32,10 +32,10 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             return;
 
         IReadOnlyList<(string Path, XDocument Document)>? csprojs = null;
-        foreach (var package in doc.Descendants(s_packageName))
+        foreach (var package in doc.Descendants(PackageXName))
         {
-            var packageName = package.Attribute(s_idName)?.Value;
-            var version = package.Attribute(s_versionName)?.Value;
+            var packageName = package.Attribute(IdXName)?.Value;
+            var version = package.Attribute(VersionXName)?.Value;
 
             if (string.IsNullOrEmpty(packageName) || string.IsNullOrEmpty(version))
                 continue;
@@ -99,7 +99,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         {
             if (await FindDependencyInElementValue(context, dependency, csprojPath, hint).ConfigureAwait(false))
             {
-                await FindDependencyInAssemblyName(context, dependency, csprojPath, hint.Parent?.Attribute(s_includeName)).ConfigureAwait(false);
+                await FindDependencyInAssemblyName(context, dependency, csprojPath, hint.Parent?.Attribute(IncludeXName)).ConfigureAwait(false);
             }
         }
     }
@@ -109,8 +109,8 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         var imports = doc.Descendants().Where(element => element.Name.LocalName == "Import");
         foreach (var import in imports)
         {
-            await FindDependencyInAttributeValue(context, dependency, file, import.Attribute(s_projectName)).ConfigureAwait(false);
-            await FindDependencyInAttributeValue(context, dependency, file, import.Attribute(s_conditionName)).ConfigureAwait(false);
+            await FindDependencyInAttributeValue(context, dependency, file, import.Attribute(ProjectXName)).ConfigureAwait(false);
+            await FindDependencyInAttributeValue(context, dependency, file, import.Attribute(ConditionXName)).ConfigureAwait(false);
         }
     }
 
@@ -123,8 +123,8 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
         foreach (var error in errors)
         {
-            await FindDependencyInAttributeValue(context, dependency, file, error.Attribute(s_textName)).ConfigureAwait(false);
-            await FindDependencyInAttributeValue(context, dependency, file, error.Attribute(s_conditionName)).ConfigureAwait(false);
+            await FindDependencyInAttributeValue(context, dependency, file, error.Attribute(TextXName)).ConfigureAwait(false);
+            await FindDependencyInAttributeValue(context, dependency, file, error.Attribute(ConditionXName)).ConfigureAwait(false);
         }
     }
 
@@ -170,7 +170,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         if (match.Success)
         {
             var version = match.Groups["Version"].Value;
-            if (Version.TryParse(version, out var v) && v != s_versionZero && v != s_versionOne)
+            if (Version.TryParse(version, out var v) && v != VersionZero && v != VersionOne)
             {
                 Debug.Assert(attribute.Parent != null);
                 var location = new AssemblyVersionXmlLocation(file, attribute.Parent, attribute.Name.LocalName, column: match.Index, length: match.Value.Length);

@@ -24,5 +24,5 @@ public abstract class Location
         }
     }
 
-    internal protected abstract Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken);
+    protected internal abstract Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken);
 }

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 internal sealed class AddCodeGeneratedAttributeVisitor : Visitor
 {
-    private static readonly string s_version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+    private static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
 
     public override void VisitFieldDeclaration(FieldDeclaration fieldDeclaration)
     {
@@ -62,7 +62,7 @@ internal sealed class AddCodeGeneratedAttributeVisitor : Visitor
             Arguments =
             {
                 new CustomAttributeArgument(new LiteralExpression("Meziantou.Framework.StronglyTypedId")),
-                new CustomAttributeArgument(new LiteralExpression(s_version)),
+                new CustomAttributeArgument(new LiteralExpression(Version)),
             },
         });
     }

@@ -4,7 +4,7 @@ namespace Meziantou.Framework.DependencyScanning;
 
 internal sealed class TextLocation : Location, ILocationLineInfo
 {
-    private static readonly char[] s_newLineCharacters = { '\r', '\n' };
+    private static readonly char[] NewLineCharacters = { '\r', '\n' };
 
     public TextLocation(string filePath, int line, int column, int length)
         : base(filePath)
@@ -30,7 +30,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
 
     protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
     {
-        if (newVersion.IndexOfAny(s_newLineCharacters) >= 0)
+        if (newVersion.IndexOfAny(NewLineCharacters) >= 0)
             throw new ArgumentException("New version contains a \\r or \\n", nameof(newVersion));
 
         // Line and Column are 1-based index.

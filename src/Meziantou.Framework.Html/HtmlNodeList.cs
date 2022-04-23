@@ -33,6 +33,7 @@ public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IL
         }
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlNode this[string localName, string namespaceURI]
     {
         get

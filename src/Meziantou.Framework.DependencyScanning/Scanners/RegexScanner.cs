@@ -18,7 +18,11 @@ public sealed class RegexScanner : DependencyScanner
             return;
 
         using var sr = new StreamReader(context.Content);
+#if NET7_0_OR_GREATER
+        var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
+#else
         var text = await sr.ReadToEndAsync().ConfigureAwait(false);
+#endif
 
         foreach (Match match in Regex.Matches(text, RegexPattern, RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
         {

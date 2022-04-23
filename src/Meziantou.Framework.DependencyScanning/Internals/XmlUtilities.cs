@@ -6,7 +6,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class XmlUtilities
 {
-    private static readonly XmlReaderSettings? s_settings = new() { CloseInput = false, Async = true, };
+    private static readonly XmlReaderSettings? XmlSettings = new() { CloseInput = false, Async = true, };
 
     public static Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ internal static class XmlUtilities
 
     public static async Task<XDocument> LoadDocumentWithoutClosingStreamAsync(Stream stream, LoadOptions loadOptions, CancellationToken cancellationToken)
     {
-        using var xmlReader = XmlReader.Create(stream, s_settings);
+        using var xmlReader = XmlReader.Create(stream, XmlSettings);
         return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
     }
 
@@ -28,7 +28,7 @@ internal static class XmlUtilities
     {
         try
         {
-            using var xmlReader = XmlReader.Create(stream, s_settings);
+            using var xmlReader = XmlReader.Create(stream, XmlSettings);
             return await XDocument.LoadAsync(xmlReader, loadOptions, cancellationToken).ConfigureAwait(false);
         }
         catch

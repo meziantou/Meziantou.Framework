@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 {
-    private static readonly Regex s_pypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
+    private static readonly Regex PypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
@@ -17,11 +17,15 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var lineNo = 0;
         string? line;
+#if NET7_0_OR_GREATER
+        while ((line = await sr.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) != null)
+#else
         while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+#endif
         {
             lineNo++;
 
-            var match = s_pypiReferenceRegex.Match(line);
+            var match = PypiReferenceRegex.Match(line);
             if (!match.Success)
                 continue;
 

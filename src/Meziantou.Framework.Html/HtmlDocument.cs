@@ -334,6 +334,7 @@ public sealed class HtmlDocument : HtmlNode
     }
 
     [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public void AddNamespace(string prefix, string uri)
     {
         if (prefix == null)
@@ -415,6 +416,7 @@ public sealed class HtmlDocument : HtmlNode
         return CreateAttribute(prefix, localName, namespaceURI: null);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute CreateAttribute(string prefix!!, string localName!!, string namespaceURI)
     {
         if (prefix.Contains(':', StringComparison.Ordinal))
@@ -441,6 +443,7 @@ public sealed class HtmlDocument : HtmlNode
         return CreateElement(prefix, localName, namespaceURI: null);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlElement CreateElement(string prefix!!, string localName!!, string namespaceURI)
     {
         if (prefix.Contains(':', StringComparison.Ordinal))
@@ -1136,6 +1139,7 @@ public sealed class HtmlDocument : HtmlNode
         base.AddNamespacesInScope(scope, dictionary);
     }
 
+    [SuppressMessage("Design", "CA1055:URI-like return values should not be strings", Justification = "Breaking change")]
     public string MakeAbsoluteUrl(string url!!)
     {
         return MakeAbsoluteUrl(new Uri(url, UriKind.RelativeOrAbsolute)).ToString();

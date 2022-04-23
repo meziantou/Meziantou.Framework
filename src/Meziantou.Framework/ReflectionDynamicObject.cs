@@ -9,7 +9,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-    private static readonly ConcurrentDictionary<Type, TypeCache> s_cache = new();
+    private static readonly ConcurrentDictionary<Type, TypeCache> Cache = new();
 
     private readonly object? _originalObject;
     private readonly TypeCache _typeCache;
@@ -20,13 +20,13 @@ public sealed class ReflectionDynamicObject : DynamicObject
         _originalObject = obj;
 
         var type = obj.GetType();
-        _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
+        _typeCache = Cache.GetOrAdd(type, TypeCache.Create);
     }
 
     [RequiresUnreferencedCode("Use reflection")]
     public ReflectionDynamicObject(Type type!!)
     {
-        _typeCache = s_cache.GetOrAdd(type, TypeCache.Create);
+        _typeCache = Cache.GetOrAdd(type, TypeCache.Create);
     }
 
     [RequiresUnreferencedCode("Use reflection")]

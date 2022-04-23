@@ -54,7 +54,7 @@ public class HtmlSanitizerTests
 
     private static string FormatDocument(IHtmlDocument document)
     {
-        var sw = new StringWriter();
+        using var sw = new StringWriter();
         document.Body.ToHtml(sw, new PrettyMarkupFormatter());
         return sw.ToString();
     }

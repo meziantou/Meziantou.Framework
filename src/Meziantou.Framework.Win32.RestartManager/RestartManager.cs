@@ -127,6 +127,7 @@ public sealed class RestartManager : IDisposable
             throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
     }
 
+    [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations", Justification = "<Pending>")]
     public void Dispose()
     {
         if (SessionHandle != 0)

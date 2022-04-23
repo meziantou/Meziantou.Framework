@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Versioning;
 // https://github.com/semver/semver/blob/master/semver.svg
 public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
 {
-    private static readonly IReadOnlyList<string> s_emptyArray = Array.Empty<string>();
+    private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
 
     public SemanticVersion(int major, int minor, int patch)
     {
@@ -88,11 +88,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     public int Minor { get; }
     public int Patch { get; }
 
-    public IReadOnlyList<string> PrereleaseLabels { get; } = s_emptyArray;
-    public bool IsPrerelease => PrereleaseLabels != s_emptyArray;
+    public IReadOnlyList<string> PrereleaseLabels { get; } = EmptyArray;
+    public bool IsPrerelease => PrereleaseLabels != EmptyArray;
 
-    public IReadOnlyList<string> Metadata { get; } = s_emptyArray;
-    public bool HasMetadata => Metadata != s_emptyArray;
+    public IReadOnlyList<string> Metadata { get; } = EmptyArray;
+    public bool HasMetadata => Metadata != EmptyArray;
 
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
@@ -273,7 +273,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 break;
         }
 
-        return result.Count == 0 ? s_emptyArray : ReadOnlyList.From(result);
+        return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
     }
 
     private static bool TryReadMetadata(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
@@ -309,7 +309,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 break;
         }
 
-        return result == null ? s_emptyArray : ReadOnlyList.From(result);
+        return result == null ? EmptyArray : ReadOnlyList.From(result);
     }
 
     private static bool IsPrereleaseIdentifier(string label)

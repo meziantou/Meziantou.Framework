@@ -16,57 +16,75 @@ internal static class NativeMethods
     internal const int ERROR_NONE_MAPPED = 0x534;
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    internal extern static bool OpenProcessToken(IntPtr processhandle, TokenAccessLevels desiredAccess, out IntPtr tokenHandle);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static extern bool OpenProcessToken(IntPtr processhandle, TokenAccessLevels desiredAccess, out IntPtr tokenHandle);
 
     [DllImport("advapi32.dll", SetLastError = true)]
-    internal extern static bool OpenThreadToken(IntPtr threadhandle, TokenAccessLevels desiredAccess, bool openAsSelf, out IntPtr tokenHandle);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static extern bool OpenThreadToken(IntPtr threadhandle, TokenAccessLevels desiredAccess, bool openAsSelf, out IntPtr tokenHandle);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool GetTokenInformation(IntPtr tokenHandle, TokenInformationClass tokenInformationClass, IntPtr tokenInformation, uint tokenInformationLength, out uint returnLength);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool GetTokenInformation(IntPtr tokenHandle, TokenInformationClass tokenInformationClass, out TokenElevationType tokenInformation, int tokenInformationLength, out int returnLength);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool GetTokenInformation(IntPtr tokenHandle, TokenInformationClass tokenInformationClass, out TokenType tokenInformation, int tokenInformationLength, out int returnLength);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool IsTokenRestricted(IntPtr tokenHandle);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool DuplicateToken(IntPtr tokenHandle, SecurityImpersonationLevel impersonationLevel, out IntPtr duplicateTokenHandle);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool AdjustTokenPrivileges(IntPtr tokenHandle, bool disableAllPrivileges, ref TOKEN_PRIVILEGES newState, uint bufferLength, IntPtr previousState, ref uint returnLength);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool AdjustTokenPrivileges(IntPtr tokenHandle, bool disableAllPrivileges, IntPtr newState, uint bufferLength, IntPtr previousState, ref uint returnLength);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool CheckTokenMembership(IntPtr tokenHandle, byte[] sidToCheck, ref bool isMember);
 
     [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool LookupPrivilegeValueW([MarshalAs(UnmanagedType.LPWStr)] string? lpSystemName, [MarshalAs(UnmanagedType.LPWStr)] string lpName, out LUID lpLuid);
 
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-    internal extern static int LookupAccountSidW(string? systemName, IntPtr pSid, [Out] char[] szName, ref int nameSize, [Out] char[] szDomain, ref int domainSize, ref int eUse);
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static extern int LookupAccountSidW(string? systemName, IntPtr pSid, [Out] char[] szName, ref int nameSize, [Out] char[] szDomain, ref int domainSize, ref int eUse);
 
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool ConvertSidToStringSidW(IntPtr sid, [MarshalAs(UnmanagedType.LPWStr)] out string pStringSid);
 
     [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool LookupPrivilegeNameW(string? lpSystemName, ref LUID lpLuid, [Out] char[]? lpName, ref int cchName);
 
     [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool ConvertStringSidToSidW([In, MarshalAs(UnmanagedType.LPWStr)] string pStringSid, ref IntPtr sid);
 
     [DllImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool CreateWellKnownSid(int sidType, IntPtr domainSid, IntPtr resultSid, ref uint resultSidLength);
 
     [DllImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool CloseHandle(IntPtr handle);
 
     [DllImport("kernel32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern IntPtr GetCurrentProcess();
 
     internal static string LookupPrivilegeName(LUID luid)

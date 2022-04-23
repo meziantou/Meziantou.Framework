@@ -21,6 +21,7 @@ internal static class NativeMethods
     /// <param name="rgsServiceNames">An array of null-terminated strings of service short names. This parameter can be NULL if nServices is 0.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmRegisterResources(
         int dwSessionHandle,
         uint nFiles,
@@ -46,6 +47,7 @@ internal static class NativeMethods
     /// </param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmStartSession(out int pSessionHandle, int dwSessionFlags, string strSessionKey);
 
     /// <summary>
@@ -59,6 +61,7 @@ internal static class NativeMethods
     /// </param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmJoinSession(out int pSessionHandle, string strSessionKey);
 
     /// <summary>
@@ -70,6 +73,7 @@ internal static class NativeMethods
     /// <param name="dwSessionHandle">A handle to an existing Restart Manager session.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmEndSession(int dwSessionHandle);
 
     /// <summary>
@@ -88,6 +92,7 @@ internal static class NativeMethods
     /// </param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmGetList(
         int dwSessionHandle,
         out uint pnProcInfoNeeded,
@@ -103,6 +108,7 @@ internal static class NativeMethods
     /// <param name="fnStatus">A pointer to an RM_WRITE_STATUS_CALLBACK function that is used to communicate detailed status while this function is executing. If NULL, no status is provided.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmShutdown(int pSessionHandle, RmShutdownType lActionFlags, RmWriteStatusCallback? fnStatus);
 
     /// <summary>
@@ -113,8 +119,10 @@ internal static class NativeMethods
     /// <param name="fnStatus">A pointer to a status message callback function that is used to communicate status while the RmRestart function is running. If NULL, no status is provided.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RmWriteStatusCallback? fnStatus);
 
     [DllImport("kernel32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     public static extern bool GetProcessTimes(IntPtr hProcess, out FILETIME lpCreationTime, out FILETIME lpExitTime, out FILETIME lpKernelTime, out FILETIME lpUserTime);
 }

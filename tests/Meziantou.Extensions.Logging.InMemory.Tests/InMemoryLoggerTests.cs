@@ -6,7 +6,7 @@ namespace Meziantou.Extensions.Logging.InMemory.Tests;
 
 public sealed partial class InMemoryLoggerTests
 {
-    private static readonly Action<ILogger, int, Exception> s_message = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
+    private static readonly Action<ILogger, int, Exception> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
     [Fact]
     public void WithoutScope()
@@ -51,7 +51,7 @@ public sealed partial class InMemoryLoggerTests
         using (logger.BeginScope(new { Name = "test" }))
         using (logger.BeginScope(new { Age = 52, Name = "John" }))
         {
-            s_message(logger, 1, null);
+            SampleMessage(logger, 1, null);
         }
 
         var log = logger.Logs.Informations.Single();

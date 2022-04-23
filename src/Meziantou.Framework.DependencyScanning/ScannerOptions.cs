@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning;
 
 public sealed class ScannerOptions
 {
-    private static readonly ReadOnlyCollection<DependencyScanner> s_defaultScanners = new(new DependencyScanner[]
+    private static readonly ReadOnlyCollection<DependencyScanner> DefaultScanners = new(new DependencyScanner[]
     {
         new DockerfileDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
@@ -22,7 +22,7 @@ public sealed class ScannerOptions
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();
 
-    public IReadOnlyList<DependencyScanner> Scanners { get; set; } = s_defaultScanners;
+    public IReadOnlyList<DependencyScanner> Scanners { get; set; } = DefaultScanners;
     public bool RecurseSubdirectories { get; set; } = true;
     public FileSystemEntryPredicate? ShouldRecursePredicate { get; set; }
     public FileSystemEntryPredicate? ShouldScanFilePredicate { get; set; }

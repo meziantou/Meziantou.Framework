@@ -8,10 +8,10 @@ namespace Meziantou.Framework.ChromiumTracing;
 // https://github.com/catapult-project/catapult/blob/6d5a4e52871813b8b2e71b378fc54bca459600c4/tracing/tracing/extras/importer/trace_event_importer.html
 public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 {
-    private static readonly byte[] s_arrayEmpty = new[] { (byte)'[', (byte)']' };
-    private static readonly byte[] s_arrayStart = new[] { (byte)'[', (byte)'\n' };
-    private static readonly byte[] s_arrayEnd = new[] { (byte)'\n', (byte)']' };
-    private static readonly byte[] s_arrayItemSeparator = new[] { (byte)',', (byte)'\n' };
+    private static readonly byte[] ArrayEmpty = new[] { (byte)'[', (byte)']' };
+    private static readonly byte[] ArrayStart = new[] { (byte)'[', (byte)'\n' };
+    private static readonly byte[] ArrayEnd = new[] { (byte)'\n', (byte)']' };
+    private static readonly byte[] ArrayItemSeparator = new[] { (byte)',', (byte)'\n' };
 
     private readonly bool _streamOwned;
     private readonly Stream _stream;
@@ -61,11 +61,11 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
     {
         if (_hasItems)
         {
-            await _stream.WriteAsync(s_arrayEnd).ConfigureAwait(false);
+            await _stream.WriteAsync(ArrayEnd).ConfigureAwait(false);
         }
         else
         {
-            await _stream.WriteAsync(s_arrayEmpty).ConfigureAwait(false);
+            await _stream.WriteAsync(ArrayEmpty).ConfigureAwait(false);
         }
 
         if (_streamOwned)
@@ -81,11 +81,11 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 
         if (_hasItems)
         {
-            await _stream.WriteAsync(s_arrayItemSeparator, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(ArrayItemSeparator, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            await _stream.WriteAsync(s_arrayStart, cancellationToken).ConfigureAwait(false);
+            await _stream.WriteAsync(ArrayStart, cancellationToken).ConfigureAwait(false);
             _hasItems = true;
         }
 

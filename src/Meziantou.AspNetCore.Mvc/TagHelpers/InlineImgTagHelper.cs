@@ -7,7 +7,7 @@ namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
 public sealed class InlineImgTagHelper : InlineTagHelper
 {
-    private static readonly FileExtensionContentTypeProvider s_contentTypeProvider = new();
+    private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new();
 
     [HtmlAttributeName("src")]
     public string? Src { get; set; }
@@ -27,7 +27,7 @@ public sealed class InlineImgTagHelper : InlineTagHelper
         }
 
         System.Diagnostics.Debug.Assert(Src != null);
-        if (!s_contentTypeProvider.TryGetContentType(Src, out var contentType))
+        if (!ContentTypeProvider.TryGetContentType(Src, out var contentType))
         {
             contentType = "application/octet-stream";
         }

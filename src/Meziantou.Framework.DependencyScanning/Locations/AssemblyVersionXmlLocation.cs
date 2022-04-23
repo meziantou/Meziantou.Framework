@@ -9,7 +9,7 @@ internal sealed class AssemblyVersionXmlLocation : XmlLocation
     {
     }
 
-    internal protected override Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
     {
         if (!Version.TryParse(newVersion, out _))
         {

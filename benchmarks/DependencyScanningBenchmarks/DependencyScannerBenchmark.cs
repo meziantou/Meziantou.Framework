@@ -11,7 +11,7 @@ namespace DependencyScanningBenchmarks;
 public class DependencyScannerBenchmark
 {
     private const int N = 100_000;
-    private static readonly FullPath s_directory = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "dependency_scanner_10_000";
+    private static readonly FullPath Directory10000 = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "dependency_scanner_10_000";
 
     [Params(1, 2, 4, 8, 16, 32)]
     public int DegreeOfParallelism { get; set; }
@@ -19,8 +19,8 @@ public class DependencyScannerBenchmark
     [GlobalSetup]
     public static void Initialize()
     {
-        Directory.CreateDirectory(s_directory);
-        var existingFiles = Directory.GetFiles(s_directory);
+        Directory.CreateDirectory(Directory10000);
+        var existingFiles = Directory.GetFiles(Directory10000);
         if (existingFiles.Length == N)
             return;
 
@@ -45,7 +45,7 @@ public class DependencyScannerBenchmark
                 _ => ".txt",
             };
 
-            using var stream = File.Create(s_directory / ("file" + i.ToString("00000", CultureInfo.InvariantCulture) + extension));
+            using var stream = File.Create(Directory10000 / ("file" + i.ToString("00000", CultureInfo.InvariantCulture) + extension));
         }
     }
 
@@ -116,13 +116,13 @@ public class DependencyScannerBenchmark
     private async Task GetDependenciesChannel(ScannerOptions options)
     {
         options.DegreeOfParallelism = DegreeOfParallelism;
-        await DependencyScanner.ScanDirectoryAsync(s_directory, options, _ => new ValueTask()).ConfigureAwait(false);
+        await DependencyScanner.ScanDirectoryAsync(Directory10000, options, _ => new ValueTask()).ConfigureAwait(false);
     }
 
     private async Task GetDependenciesForEach(ScannerOptions options)
     {
         options.DegreeOfParallelism = DegreeOfParallelism;
-        await foreach (var _ in DependencyScanner.ScanDirectoryAsync(s_directory, options).ConfigureAwait(false))
+        await foreach (var _ in DependencyScanner.ScanDirectoryAsync(Directory10000, options).ConfigureAwait(false))
         {
         }
     }

@@ -59,7 +59,7 @@ static partial class StringExtensions
     }
 
 #if NET6_0_OR_GREATER
-    private static readonly Lazy<Dictionary<char, char>> s_diacriticDictionary = new(CreateDiacriticDictionary);
+    private static readonly Lazy<Dictionary<char, char>> DiacriticDictionary = new(CreateDiacriticDictionary);
 
     private static Dictionary<char, char> CreateDiacriticDictionary()
     {
@@ -893,7 +893,7 @@ static partial class StringExtensions
             // InvariantMode doesn't support string normalization, so many characters are not replaced
             // https://source.dot.net/#System.Private.CoreLib/Normalization.cs,25
             // Let's replace basic characters. The intent is not to support everything but only the most frequent characters
-            var dict = s_diacriticDictionary.Value;
+            var dict = DiacriticDictionary.Value;
             for (var i = 0; i < stringBuilder.Length; i++)
             {
                 if (dict.TryGetValue(stringBuilder[i], out var value))

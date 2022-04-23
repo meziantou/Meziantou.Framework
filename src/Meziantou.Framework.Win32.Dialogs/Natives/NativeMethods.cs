@@ -11,8 +11,10 @@ internal static class NativeMethods
 #pragma warning restore IDE1006 // Naming Styles
 
     [DllImport("user32")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern IntPtr GetActiveWindow();
 
     [DllImport("shell32")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern int SHCreateItemFromParsingName([MarshalAs(UnmanagedType.LPWStr)] string pszPath, IntPtr pbc, [MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IShellItem ppv);
 }

@@ -47,7 +47,7 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
-    internal protected override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
     {
         var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.PreserveWhitespace, cancellationToken).ConfigureAwait(false);
         foreach (var element in doc.XPathSelectElements(XPath))

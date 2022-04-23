@@ -9,7 +9,7 @@ namespace Meziantou.Framework;
 public class DefaultConverter : IConverter
 {
     private const string HexaChars = "0123456789ABCDEF";
-    private static readonly MethodInfo s_enumTryParseMethodInfo = GetEnumTryParseMethodInfo();
+    private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
 
     public ByteArrayToStringFormat ByteArrayToStringFormat { get; set; } = ByteArrayToStringFormat.Base64;
 
@@ -110,7 +110,7 @@ public class DefaultConverter : IConverter
 
     private static bool EnumTryParse(Type type, string? input, out object? value)
     {
-        var mi = s_enumTryParseMethodInfo.MakeGenericMethod(type);
+        var mi = EnumTryParseMethodInfo.MakeGenericMethod(type);
         object?[] args = { input, true, Enum.ToObject(type, 0) };
         var b = (bool)mi.Invoke(null, args)!;
         value = args[2];

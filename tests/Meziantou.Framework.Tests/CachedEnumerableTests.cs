@@ -33,7 +33,7 @@ public sealed class CachedEnumerableTests
     public void MultipleEnumerations_ShouldEnumerateOnce()
     {
         var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));
-        var cachedEnumerable = CachedEnumerable.Create(enumerable);
+        using var cachedEnumerable = CachedEnumerable.Create(enumerable);
 
         cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
         cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
@@ -44,7 +44,7 @@ public sealed class CachedEnumerableTests
     {
         // Arrange
         var count = 0;
-        var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(GetData()));
+        using var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(GetData()));
 
         IEnumerable<int> GetData()
         {
@@ -91,10 +91,10 @@ public sealed class CachedEnumerableTests
         // Arrange
         var maxCount = 1000;
         var threadCount = 16;
-        var resetEvent = new ManualResetEventSlim(initialState: false);
+        using var resetEvent = new ManualResetEventSlim(initialState: false);
 
         var count = 0;
-        var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(GetData()));
+        using var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(GetData()));
 
         IEnumerable<int> GetData()
         {

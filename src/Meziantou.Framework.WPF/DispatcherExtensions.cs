@@ -11,6 +11,7 @@ public static class DispatcherExtensions
         return new SwitchToUiAwaitable(dispatcher);
     }
 
+    [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct SwitchToUiAwaitable : INotifyCompletion
     {
         private readonly Dispatcher _dispatcher;

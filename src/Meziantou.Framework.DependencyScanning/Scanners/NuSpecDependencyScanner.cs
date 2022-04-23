@@ -6,10 +6,10 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 // https://docs.microsoft.com/en-us/nuget/reference/nuspec
 public sealed class NuSpecDependencyScanner : DependencyScanner
 {
-    private static readonly XNamespace s_nuspecXmlns = XNamespace.Get("http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
-    private static readonly XName s_dependencyName = s_nuspecXmlns + "dependency";
-    private static readonly XName s_idName = XName.Get("id");
-    private static readonly XName s_versionName = XName.Get("version");
+    private static readonly XNamespace NuspecXmlns = XNamespace.Get("http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
+    private static readonly XName DependencyXName = NuspecXmlns + "dependency";
+    private static readonly XName IdXName = XName.Get("id");
+    private static readonly XName VersionXName = XName.Get("version");
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
@@ -22,10 +22,10 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
         if (doc == null || doc.Root == null)
             return;
 
-        foreach (var dependency in doc.Descendants(s_dependencyName))
+        foreach (var dependency in doc.Descendants(DependencyXName))
         {
-            var id = dependency.Attribute(s_idName)?.Value;
-            var version = dependency.Attribute(s_versionName)?.Value;
+            var id = dependency.Attribute(IdXName)?.Value;
+            var version = dependency.Attribute(VersionXName)?.Value;
 
             if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(version))
             {

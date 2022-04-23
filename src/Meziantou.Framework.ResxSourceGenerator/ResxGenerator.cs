@@ -14,7 +14,7 @@ namespace Meziantou.Framework.ResxSourceGenerator;
 [Generator]
 public sealed class ResxGenerator : IIncrementalGenerator
 {
-    private static readonly DiagnosticDescriptor s_invalidResx = new(
+    private static readonly DiagnosticDescriptor InvalidResx = new(
         id: "MFRG0001",
         title: "Couldn't parse Resx file",
         messageFormat: "Couldn't parse Resx file '{0}'",
@@ -22,7 +22,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor s_invalidPropertiesForNamespace = new(
+    private static readonly DiagnosticDescriptor InvalidPropertiesForNamespace = new(
         id: "MFRG0002",
         title: "Couldn't compute namespace",
         messageFormat: "Couldn't compute namespace for file '{0}'",
@@ -30,7 +30,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor s_invalidPropertiesForResourceName = new(
+    private static readonly DiagnosticDescriptor InvalidPropertiesForResourceName = new(
         id: "MFRG0003",
         title: "Couldn't compute resource name",
         messageFormat: "Couldn't compute resource name for file '{0}'",
@@ -38,7 +38,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor s_inconsistentProperties = new(
+    private static readonly DiagnosticDescriptor InconsistentProperties = new(
         id: "MFRG0004",
         title: "Inconsistent properties",
         messageFormat: "Property '{0}' values for '{1}' are inconsistent",
@@ -82,12 +82,12 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
             if (ns == null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForNamespace, location: null, resxGroug.First().Path));
+                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroug.First().Path));
             }
 
             if (resourceName == null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(s_invalidPropertiesForResourceName, location: null, resxGroug.First().Path));
+                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroug.First().Path));
             }
 
             var entries = LoadResourceFiles(context, resxGroug);
@@ -463,7 +463,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             }
             catch
             {
-                context.ReportDiagnostic(Diagnostic.Create(s_invalidResx, location: null, entry.Path));
+                context.ReportDiagnostic(Diagnostic.Create(InvalidResx, location: null, entry.Path));
                 return null;
             }
         }
@@ -485,7 +485,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             {
                 if (result != null && value != result)
                 {
-                    context.ReportDiagnostic(Diagnostic.Create(s_inconsistentProperties, location: null, name, file.Path));
+                    context.ReportDiagnostic(Diagnostic.Create(InconsistentProperties, location: null, name, file.Path));
                     return null;
                 }
 

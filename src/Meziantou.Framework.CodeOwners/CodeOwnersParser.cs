@@ -15,7 +15,7 @@ public static class CodeOwnersParser
     [StructLayout(LayoutKind.Auto)]
     private struct CodeOwnersParserContext
     {
-        private static readonly ObjectPool<StringBuilder> s_stringBuilderPool = CreateStringBuilderPool();
+        private static readonly ObjectPool<StringBuilder> StringBuilderPool = CreateStringBuilderPool();
 
         private readonly List<CodeOwnersEntry> _entries;
         private readonly StringLexer _lexer;
@@ -96,10 +96,10 @@ public static class CodeOwnersParser
                 if (c == '[')
                 {
                     _lexer.Consume();
-                    var sb = s_stringBuilderPool.Get();
+                    var sb = StringBuilderPool.Get();
                     _lexer.ConsumeUntil(']', sb);
                     _lexer.ConsumeUntil('\n');
-                    section = new CodeOwnersSection(s_stringBuilderPool.ToStringAndReturn(sb), isOptional);
+                    section = new CodeOwnersSection(StringBuilderPool.ToStringAndReturn(sb), isOptional);
                     return true;
                 }
             }
@@ -110,7 +110,7 @@ public static class CodeOwnersParser
 
         private readonly string? ParsePattern()
         {
-            var sb = s_stringBuilderPool.Get();
+            var sb = StringBuilderPool.Get();
             while (!_lexer.EndOfFile)
             {
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
@@ -130,7 +130,7 @@ public static class CodeOwnersParser
 
                     case ' ':
                     case '\t':
-                        return s_stringBuilderPool.ToStringAndReturn(sb);
+                        return StringBuilderPool.ToStringAndReturn(sb);
 
                     default:
                         sb.Append(c);
@@ -138,7 +138,7 @@ public static class CodeOwnersParser
                 }
             }
 
-            return s_stringBuilderPool.ToStringAndReturn(sb);
+            return StringBuilderPool.ToStringAndReturn(sb);
         }
 
         private readonly void ParseMembers(string pattern)
@@ -149,7 +149,7 @@ public static class CodeOwnersParser
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     return;
 
-                var sb = s_stringBuilderPool.Get();
+                var sb = StringBuilderPool.Get();
 
                 var c = _lexer.Consume();
                 var isMember = c == '@';
@@ -162,14 +162,14 @@ public static class CodeOwnersParser
                 {
                     if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     {
-                        AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
+                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern);
                         return;
                     }
 
                     c = _lexer.Consume();
                     if (c == ' ' || c == '\t')
                     {
-                        AddEntry(isMember, s_stringBuilderPool.ToStringAndReturn(sb), pattern);
+                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern);
                         break;
                     }
 

@@ -9,10 +9,10 @@ namespace Meziantou.Framework;
 // https://referencesource.microsoft.com/#System.Web/UI/DataBinder.cs,bc4362a9cfc4c370,references
 public static class DataBinder
 {
-    private static readonly char[] s_expressionPartSeparator = new char[] { '.' };
-    private static readonly char[] s_indexExprStartChars = new char[] { '[', '(' };
-    private static readonly char[] s_indexExprEndChars = new char[] { ']', ')' };
-    private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> s_propertyCache = new();
+    private static readonly char[] ExpressionPartSeparator = new char[] { '.' };
+    private static readonly char[] IndexExprStartChars = new char[] { '[', '(' };
+    private static readonly char[] IndexExprEndChars = new char[] { ']', ')' };
+    private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> PropertyCache = new();
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static object? Eval(object container, string expression!!)
@@ -28,7 +28,7 @@ public static class DataBinder
             return null;
         }
 
-        var expressionParts = expression.Split(s_expressionPartSeparator);
+        var expressionParts = expression.Split(ExpressionPartSeparator);
         return Eval(container, expressionParts);
     }
 
@@ -41,7 +41,7 @@ public static class DataBinder
         for (prop = container, i = 0; (i < expressionParts.Length) && (prop != null); i++)
         {
             var expr = expressionParts[i];
-            var indexedExpr = expr.IndexOfAny(s_indexExprStartChars) >= 0;
+            var indexedExpr = expr.IndexOfAny(IndexExprStartChars) >= 0;
 
             if (!indexedExpr)
             {
@@ -85,10 +85,10 @@ public static class DataBinder
         if (container is not ICustomTypeDescriptor)
         {
             var containerType = container.GetType();
-            if (!s_propertyCache.TryGetValue(containerType, out var properties))
+            if (!PropertyCache.TryGetValue(containerType, out var properties))
             {
                 properties = TypeDescriptor.GetProperties(containerType);
-                s_propertyCache.TryAdd(containerType, properties);
+                PropertyCache.TryAdd(containerType, properties);
             }
             return properties;
         }
@@ -142,8 +142,8 @@ public static class DataBinder
 
         var intIndex = false;
 
-        var indexExprStart = expression.IndexOfAny(s_indexExprStartChars);
-        var indexExprEnd = expression.IndexOfAny(s_indexExprEndChars, indexExprStart + 1);
+        var indexExprStart = expression.IndexOfAny(IndexExprStartChars);
+        var indexExprEnd = expression.IndexOfAny(IndexExprEndChars, indexExprStart + 1);
 
         if ((indexExprStart < 0) || (indexExprEnd < 0) || (indexExprEnd == indexExprStart + 1))
             throw new ArgumentException($"Databinding: '{expression}' is not a valid indexed expression.", nameof(expression));

@@ -22,7 +22,7 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
     int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
-    internal protected override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
     {
         var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
         stream.Seek(0, SeekOrigin.Begin);

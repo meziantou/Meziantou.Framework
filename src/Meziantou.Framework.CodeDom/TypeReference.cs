@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public class TypeReference
 {
-    private static readonly char[] s_arityOrArrayCharacters = new[] { '`', '[' };
+    private static readonly char[] ArityOrArrayCharacters = new[] { '`', '[' };
 
     private TypeParameter? _typeParameter;
     private TypeDeclaration? _typeDeclaration;
@@ -34,7 +34,7 @@ public class TypeReference
     public TypeReference(Type type)
     {
         var name = type.Name;
-        var arityOrArrayIndex = name.IndexOfAny(s_arityOrArrayCharacters);
+        var arityOrArrayIndex = name.IndexOfAny(ArityOrArrayCharacters);
         if (arityOrArrayIndex > 0)
         {
             name = name[..arityOrArrayIndex];

@@ -5,11 +5,11 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 {
-    private static readonly XName s_includeName = XName.Get("Include");
-    private static readonly XName s_versionName = XName.Get("Version");
-    private static readonly XName s_versionOverrideName = XName.Get("VersionOverride");
-    private static readonly XName s_sdkName = XName.Get("Sdk");
-    private static readonly XName s_nameName = XName.Get("Name");
+    private static readonly XName IncludeXName = XName.Get("Include");
+    private static readonly XName VersionXName = XName.Get("Version");
+    private static readonly XName VersionOverrideXName = XName.Get("VersionOverride");
+    private static readonly XName SdkXName = XName.Get("Sdk");
+    private static readonly XName NameXName = XName.Get("Name");
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
@@ -27,14 +27,14 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
         var ns = doc.Root.GetDefaultNamespace();
         foreach (var package in doc.Descendants(ns + "PackageReference"))
         {
-            var packageName = package.Attribute(s_includeName)?.Value;
+            var packageName = package.Attribute(IncludeXName)?.Value;
             if (string.IsNullOrEmpty(packageName))
                 continue;
 
-            var versionAttribute = package.Attribute(s_versionName)?.Value;
+            var versionAttribute = package.Attribute(VersionXName)?.Value;
             if (!string.IsNullOrEmpty(versionAttribute))
             {
-                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, s_versionName.LocalName))).ConfigureAwait(false);
+                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionXName.LocalName))).ConfigureAwait(false);
             }
             else
             {
@@ -45,10 +45,10 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 }
             }
 
-            var versionOverrideAttribute = package.Attribute(s_versionOverrideName)?.Value;
+            var versionOverrideAttribute = package.Attribute(VersionOverrideXName)?.Value;
             if (!string.IsNullOrEmpty(versionOverrideAttribute))
             {
-                await context.ReportDependency(new Dependency(packageName, versionOverrideAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, s_versionOverrideName.LocalName))).ConfigureAwait(false);
+                await context.ReportDependency(new Dependency(packageName, versionOverrideAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionOverrideXName.LocalName))).ConfigureAwait(false);
             }
             else
             {
@@ -62,14 +62,14 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         foreach (var package in doc.Descendants(ns + "PackageVersion"))
         {
-            var packageName = package.Attribute(s_includeName)?.Value;
+            var packageName = package.Attribute(IncludeXName)?.Value;
             if (string.IsNullOrEmpty(packageName))
                 continue;
 
-            var versionAttribute = package.Attribute(s_versionName)?.Value;
+            var versionAttribute = package.Attribute(VersionXName)?.Value;
             if (!string.IsNullOrEmpty(versionAttribute))
             {
-                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, s_versionName.LocalName))).ConfigureAwait(false);
+                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionXName.LocalName))).ConfigureAwait(false);
             }
             else
             {
@@ -83,20 +83,20 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         foreach (var sdk in doc.Descendants(ns + "Sdk"))
         {
-            var name = sdk.Attribute(s_nameName)?.Value;
+            var name = sdk.Attribute(NameXName)?.Value;
             if (string.IsNullOrEmpty(name))
                 continue;
 
-            var version = sdk.Attribute(s_versionName)?.Value;
+            var version = sdk.Attribute(VersionXName)?.Value;
             if (string.IsNullOrEmpty(version))
                 continue;
 
-            await context.ReportDependency(new Dependency(name, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, s_versionName.LocalName))).ConfigureAwait(false);
+            await context.ReportDependency(new Dependency(name, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, VersionXName.LocalName))).ConfigureAwait(false);
         }
 
         foreach (var sdk in doc.Descendants().Where(element => element.Name == ns + "Import" || element.Name == ns + "Project"))
         {
-            var value = sdk.Attribute(s_sdkName)?.Value;
+            var value = sdk.Attribute(SdkXName)?.Value;
             if (string.IsNullOrEmpty(value))
                 continue;
 
@@ -106,7 +106,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 var packageName = value[..index];
                 var version = value[(index + 1)..];
 
-                await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, s_sdkName.LocalName, column: index + 1, value.Length - index - 1))).ConfigureAwait(false);
+                await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, SdkXName.LocalName, column: index + 1, value.Length - index - 1))).ConfigureAwait(false);
             }
         }
     }

@@ -255,11 +255,13 @@ public abstract class ProjectedFileSystemBase : IDisposable
         info.FileBasicInfo.IsDirectory = entry.IsDirectory;
         info.FileBasicInfo.FileSize = entry.Length;
 
+#pragma warning disable CA2000 // Dispose objects before losing scope (ownHandle: false)
         var hr = NativeMethods.PrjWritePlaceholderInfo(
                     new ProjFSSafeHandle(callbackData.NamespaceVirtualizationContext, ownHandle: false),
                     entry.Name,
                     in info,
                     (uint)Marshal.SizeOf(info));
+#pragma warning restore CA2000
 
         hr.EnsureSuccess();
         return HResult.S_OK;

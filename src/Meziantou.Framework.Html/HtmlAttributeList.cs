@@ -23,11 +23,13 @@ public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttr
         CollectionChanged?.Invoke(this, e);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute Add(string prefix, string localName, string namespaceURI)
     {
         return Add(prefix, localName, namespaceURI, value: null);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute Add(string prefix!!, string localName!!, string namespaceURI, string value)
     {
         if (Parent == null || Parent.OwnerDocument == null)
@@ -84,6 +86,7 @@ public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttr
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, attribute));
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public string GetNamespacePrefixIfDefined(string namespaceURI!!)
     {
         foreach (var att in _attributes)
@@ -145,6 +148,7 @@ public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttr
         return _attributes.FindIndex(a => name.EqualsIgnoreCase(a.Name));
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public int IndexOf(string localName, string namespaceURI)
     {
         if (localName == null || namespaceURI == null)
@@ -190,6 +194,7 @@ public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttr
         return Remove(att);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public bool Remove(string localName!!, string namespaceURI!!)
     {
         var att = this[localName, namespaceURI];
@@ -250,6 +255,7 @@ public sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttr
         }
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute this[string localName, string namespaceURI]
     {
         get

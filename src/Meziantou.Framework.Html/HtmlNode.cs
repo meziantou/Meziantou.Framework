@@ -47,6 +47,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         NamespaceManager.AddNamespace(XhtmlPrefix, XhtmlNamespaceURI);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     protected HtmlNode(string prefix!!, string localName!!, string namespaceURI, HtmlDocument ownerDocument)
     {
         if (ownerDocument == null && this is not HtmlDocument)
@@ -109,6 +110,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         PropertyChanged?.Invoke(this, e);
     }
 
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
     protected string DeclaredNamespaceURI { get; private set; }
 
     public virtual int ParentIndex
@@ -305,6 +307,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         private set => _ownerDocument = value;
     }
 
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
     public virtual string NamespaceURI
     {
         get => GetNamespaceOfPrefix(Prefix);
@@ -566,11 +569,13 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         }
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute SetAttribute(string localName, string namespaceURI, string value)
     {
         return SetAttribute(string.Empty, localName, namespaceURI, value);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute SetAttribute(string prefix!!, string localName!!, string namespaceURI!!, string value)
     {
         var att = Attributes[localName, namespaceURI];
@@ -593,6 +598,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return Attributes.Remove(name);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public bool RemoveAttribute(string localName!!, string namespaceURI!!)
     {
         if (_attributes == null)
@@ -627,6 +633,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
 
     public virtual bool HasChildNodes => _childNodes?.Count > 0;
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public bool HasAttribute(string localName!!, string namespaceURI!!)
     {
         if (_attributes == null)
@@ -696,6 +703,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return Utilities.Nullify(att.Value, trim: true);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public string GetNullifiedAttributeValue(string localName!!, string namespaceURI!!)
     {
         if (_attributes == null)
@@ -708,6 +716,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return Utilities.Nullify(att.Value, trim: true);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public string GetAttributeValue(string localName!!, string namespaceURI!!, string defaultValue)
     {
         if (_attributes == null)
@@ -917,6 +926,7 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return string.Empty;
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public virtual string GetPrefixOfNamespace(string namespaceURI!!)
     {
         if (namespaceURI.EqualsIgnoreCase(NamespaceURI))

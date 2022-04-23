@@ -12,6 +12,7 @@ public static class Utf8Extensions
     }
 
     [StructLayout(LayoutKind.Auto)]
+    [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public ref struct SpanUtf8BytesRuneEnumerator
     {
         private ReadOnlySpan<byte> _remaining;

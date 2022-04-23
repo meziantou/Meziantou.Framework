@@ -6,7 +6,7 @@ namespace Meziantou.Framework.DependencyScanning.Internals;
 internal sealed class ScannerFileEnumerator<T> : FileSystemEnumerator<FileToScan<T>>
     where T : struct, IEnabledScannersArray
 {
-    private static readonly FileSystemEntryPredicate s_truePredicate = (ref FileSystemEntry entry) => true;
+    private static readonly FileSystemEntryPredicate TruePredicate = (ref FileSystemEntry entry) => true;
 
     private T _scanners;
     private readonly ScannerOptions _options;
@@ -29,8 +29,8 @@ internal sealed class ScannerFileEnumerator<T> : FileSystemEnumerator<FileToScan
         : base(directory, GetEnumerationOptions(options))
     {
         _options = options;
-        _shouldScan = options.ShouldScanFilePredicate ?? s_truePredicate;
-        _shouldRecurse = options.ShouldRecursePredicate ?? s_truePredicate;
+        _shouldScan = options.ShouldScanFilePredicate ?? TruePredicate;
+        _shouldRecurse = options.ShouldRecursePredicate ?? TruePredicate;
     }
 
     protected override FileToScan<T> TransformEntry(ref FileSystemEntry entry)

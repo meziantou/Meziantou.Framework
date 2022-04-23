@@ -1,3 +1,4 @@
+#pragma warning disable CA5394 // Random is insecure
 using System.Text;
 
 namespace Meziantou.Framework;

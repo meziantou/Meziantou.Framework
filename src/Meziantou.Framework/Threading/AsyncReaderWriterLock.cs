@@ -105,6 +105,7 @@ public sealed class AsyncReaderWriterLock
     }
 
     [StructLayout(LayoutKind.Auto)]
+    [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct Releaser : IDisposable
     {
         private readonly AsyncReaderWriterLock _toRelease;

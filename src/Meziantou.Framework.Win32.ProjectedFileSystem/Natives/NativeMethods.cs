@@ -7,51 +7,67 @@ internal static class NativeMethods
     // C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um\projectedfslib.h
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjMarkDirectoryAsPlaceholder(string rootPathName, string? targetPathName, IntPtr versionInfo, in Guid virtualizationInstanceID);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjStartVirtualizing(string virtualizationRootPath, in PrjCallbacks callbacks, IntPtr instanceContext, in PRJ_STARTVIRTUALIZING_OPTIONS options, out ProjFSSafeHandle namespaceVirtualizationContext);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjStopVirtualizing(IntPtr namespaceVirtualizationContext);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjFillDirEntryBuffer(string fileName, in PRJ_FILE_BASIC_INFO callbacks, IntPtr dirEntryBufferHandle);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjWritePlaceholderInfo(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern int PrjFileNameCompare(string fileName1, string fileName2);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern bool PrjFileNameMatch(string fileNameToCheck, string pattern);
 
     [DllImport("ProjectedFSLib.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjGetVirtualizationInstanceInfo(ProjFSSafeHandle namespaceVirtualizationContext, out PRJ_VIRTUALIZATION_INSTANCE_INFO virtualizationInstanceInfo);
 
     [DllImport("ProjectedFSLib.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern IntPtr PrjAllocateAlignedBuffer(ProjFSSafeHandle namespaceVirtualizationContext, uint size);
 
     [DllImport("ProjectedFSLib.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern void PrjFreeAlignedBuffer(IntPtr buffer);
 
     [DllImport("ProjectedFSLib.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjWriteFileData(ProjFSSafeHandle namespaceVirtualizationContext, in Guid dataStreamId, IntPtr buffer, ulong byteOffset, uint length);
 
     [DllImport("ProjectedFSLib.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjClearNegativePathCache(ProjFSSafeHandle namespaceVirtualizationContext, out uint totalEntryNumber);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjGetOnDiskFileState(string destinationFileName, out PRJ_FILE_STATE fileState);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjDeleteFile(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjUpdateFileIfNeeded(ProjFSSafeHandle namespaceVirtualizationContext, string destinationFileName, in PRJ_PLACEHOLDER_INFO placeholderInfo, uint placeholderInfoSize, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason);
 
     [DllImport("ProjectedFSLib.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static extern HResult PrjCompleteCommand(ProjFSSafeHandle namespaceVirtualizationContext, int commandId, HResult completionResult, in PRJ_COMPLETE_COMMAND_EXTENDED_PARAMETERS extendedParameters);
 
     [StructLayout(LayoutKind.Explicit)]

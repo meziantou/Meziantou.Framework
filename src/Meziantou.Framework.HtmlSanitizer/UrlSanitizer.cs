@@ -31,26 +31,28 @@ public static class UrlSanitizer
      *
      * This regular expression was taken from the Closure sanitization library.
      */
-    private static readonly Regex s_safeUrlRegex = new("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex SafeUrlRegex = new("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
-    private static readonly Regex s_dataUrlPattern = new("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex DataUrlPattern = new("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
-    private static readonly char[] s_whitespaces = new[] { '\t', '\r', '\n', ' ', '\f' };
+    private static readonly char[] Whitespaces = new[] { '\t', '\r', '\n', ' ', '\f' };
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)
     {
-        return s_safeUrlRegex.IsMatch(url) || s_dataUrlPattern.IsMatch(url);
+        return SafeUrlRegex.IsMatch(url) || DataUrlPattern.IsMatch(url);
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeSrcset(string url)
     {
         return url.Split(',').All(value => IsSafeUrl(GetUrlPart(value)));
 
         static string GetUrlPart(string value)
         {
-            value = value.Trim(s_whitespaces);
-            var separator = value.IndexOfAny(s_whitespaces);
+            value = value.Trim(Whitespaces);
+            var separator = value.IndexOfAny(Whitespaces);
             if (separator < 0)
                 return value;
 

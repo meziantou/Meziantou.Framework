@@ -284,16 +284,20 @@ public static partial class ProcessExtensions
 
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool CloseHandle(IntPtr hObject);
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int Process32First(SnapshotSafeHandle handle, ref ProcessEntry32 entry);
 
     [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int Process32Next(SnapshotSafeHandle handle, ref ProcessEntry32 entry);
 
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682489.aspx
     [DllImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern SnapshotSafeHandle CreateToolhelp32Snapshot(SnapshotFlags dwFlags, uint th32ProcessID);
 
     private const int MAX_PATH = 260;

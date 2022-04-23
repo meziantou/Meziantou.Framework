@@ -56,7 +56,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 }
 ";
 
-    private static readonly DiagnosticDescriptor s_unsuportedType = new(
+    private static readonly DiagnosticDescriptor UnsuportedType = new(
         id: "MFSTID0001",
         title: "Not support type",
         messageFormat: "The type '{0}' is not supported",
@@ -201,7 +201,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             if (idType != null)
                 return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
 
-            context.ReportDiagnostic(Diagnostic.Create(s_unsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), idTypeArgument.Type));
+            context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), idTypeArgument.Type));
         }
 
         return null;

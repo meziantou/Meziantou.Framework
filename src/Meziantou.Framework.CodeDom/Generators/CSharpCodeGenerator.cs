@@ -2,7 +2,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public partial class CSharpCodeGenerator
 {
-    private static readonly IDictionary<string, string> s_predefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly IDictionary<string, string> PredefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         [typeof(bool).FullName!] = "bool",
         [typeof(byte).FullName!] = "byte",
@@ -22,7 +22,7 @@ public partial class CSharpCodeGenerator
         [typeof(void).FullName!] = "void",
     };
 
-    private static readonly string[] s_keywords = new string[]
+    private static readonly string[] Keywords = new string[]
     {
         "bool", "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong", "double", "float", "decimal",
         "string", "char", "void", "object", "typeof", "sizeof", "null", "true", "false", "if", "else", "while", "for", "foreach", "do", "switch",
@@ -1056,7 +1056,7 @@ public partial class CSharpCodeGenerator
         if (name == null)
             return;
 
-        if (s_keywords.Contains(name, StringComparer.Ordinal))
+        if (Keywords.Contains(name, StringComparer.Ordinal))
         {
             writer.Write("@");
         }
@@ -1340,7 +1340,7 @@ public partial class CSharpCodeGenerator
         if (type == null)
             return;
 
-        if (s_predefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
+        if (PredefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
         {
             writer.Write(keyword);
         }

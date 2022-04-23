@@ -11,8 +11,8 @@ namespace GlobbingBenchmarks;
 public class EnumerateFilesBenchmark
 {
     private const int N = 100_000;
-    private static readonly FullPath s_directory = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "glob_flat";
-    private static readonly FullPath s_directoryHierarchy = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "glob_hierarchy";
+    private static readonly FullPath DirectoryFlat = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "glob_flat";
+    private static readonly FullPath DirectoryHierarchy = FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / "glob_hierarchy";
 
     private FullPath GetPath() => FullPath.GetTempPath() / "meziantou.framework" / "benchmarks" / Folder;
 
@@ -30,8 +30,8 @@ public class EnumerateFilesBenchmark
 
         void InitFlat()
         {
-            Directory.CreateDirectory(s_directory);
-            var existingFiles = Directory.GetFiles(s_directory);
+            Directory.CreateDirectory(DirectoryFlat);
+            var existingFiles = Directory.GetFiles(DirectoryFlat);
             if (existingFiles.Length == N)
                 return;
 
@@ -56,17 +56,17 @@ public class EnumerateFilesBenchmark
                     _ => ".txt",
                 };
 
-                using var stream = File.Create(s_directory / ("file" + i.ToString("00000", CultureInfo.InvariantCulture) + extension));
+                using var stream = File.Create(DirectoryFlat / ("file" + i.ToString("00000", CultureInfo.InvariantCulture) + extension));
             }
         }
 
         void InitHierarchy()
         {
-            if (Directory.Exists(s_directoryHierarchy))
+            if (Directory.Exists(DirectoryHierarchy))
                 return;
 
-            Directory.CreateDirectory(s_directoryHierarchy);
-            InitFolder(4, s_directoryHierarchy);
+            Directory.CreateDirectory(DirectoryHierarchy);
+            InitFolder(4, DirectoryHierarchy);
 
             void InitFolder(int level, FullPath root)
             {

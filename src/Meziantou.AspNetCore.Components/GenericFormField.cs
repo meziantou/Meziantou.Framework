@@ -9,7 +9,7 @@ namespace Meziantou.AspNetCore.Components;
 
 public sealed class GenericFormField<TModel>
 {
-    private static readonly MethodInfo s_eventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
+    private static readonly MethodInfo EventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
 
     private readonly GenericForm<TModel> _form;
     private RenderFragment? _editorTemplate;
@@ -142,7 +142,7 @@ public sealed class GenericFormField<TModel>
             var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(PropertyType), access);
 
             // Create(object receiver, Action<object> callback
-            var method = s_eventCallbackFactoryCreate.MakeGenericMethod(PropertyType);
+            var method = EventCallbackFactoryCreate.MakeGenericMethod(PropertyType);
 
             // value => Field.Value = value;
             var changeHandlerParameter = Expression.Parameter(PropertyType);

@@ -140,20 +140,26 @@ public static class LsaPrivateData
     }
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern uint LsaRetrievePrivateData(IntPtr policyHandle, ref LSA_UNICODE_STRING keyName, out IntPtr privateData);
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern uint LsaStorePrivateData(IntPtr policyHandle, ref LSA_UNICODE_STRING keyName, ref LSA_UNICODE_STRING privateData);
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern uint LsaOpenPolicy(ref LSA_UNICODE_STRING systemName, ref LSA_OBJECT_ATTRIBUTES objectAttributes, uint desiredAccess, out IntPtr policyHandle);
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int LsaNtStatusToWinError(uint status);
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern uint LsaClose(IntPtr policyHandle);
 
     [DllImport("advapi32.dll", SetLastError = true, PreserveSig = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern uint LsaFreeMemory(IntPtr buffer);
 }

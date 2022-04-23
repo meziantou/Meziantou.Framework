@@ -5,9 +5,9 @@ namespace Meziantou.Framework;
 // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 public static class CommandLineBuilder
 {
-    private static readonly char[] s_reservedCharacters = { ' ', '\t', '\n', '\v', '"' };
-    private static readonly char[] s_cmdReservedCharacters = { '(', ')', '%', '!', '^', '"', '<', '>', '&', '|' };
-    private static readonly char[] s_allReservedCharacters = s_reservedCharacters.Concat(s_cmdReservedCharacters).ToArray();
+    private static readonly char[] ReservedCharacters = { ' ', '\t', '\n', '\v', '"' };
+    private static readonly char[] CmdReservedCharacters = { '(', ')', '%', '!', '^', '"', '<', '>', '&', '|' };
+    private static readonly char[] AllReservedCharacters = ReservedCharacters.Concat(CmdReservedCharacters).ToArray();
 
     private static void EscapeArgument(string value, StringBuilder sb)
     {
@@ -48,7 +48,7 @@ public static class CommandLineBuilder
             return null;
 
         var sb = new StringBuilder();
-        if (value.Length > 0 && value.IndexOfAny(s_reservedCharacters) < 0)
+        if (value.Length > 0 && value.IndexOfAny(ReservedCharacters) < 0)
             return value;
 
         sb.Append('"');
@@ -70,7 +70,7 @@ public static class CommandLineBuilder
             return null;
 
         var sb = new StringBuilder();
-        if (value.Length > 0 && value.IndexOfAny(s_allReservedCharacters) < 0)
+        if (value.Length > 0 && value.IndexOfAny(AllReservedCharacters) < 0)
             return value;
 
         sb.Append('"');
@@ -80,7 +80,7 @@ public static class CommandLineBuilder
         for (var i = sb.Length - 1; i >= 0; i--)
         {
             var c = sb[i];
-            if (s_cmdReservedCharacters.Contains(c))
+            if (CmdReservedCharacters.Contains(c))
             {
                 sb.Insert(i, '^');
             }

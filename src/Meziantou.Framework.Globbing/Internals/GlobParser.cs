@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Globbing;
 
 internal static class GlobParser
 {
-    private static readonly char[] s_separator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+    private static readonly char[] DirectorySeparator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
@@ -168,7 +168,7 @@ internal static class GlobParser
                         setSubsegment.Add(currentLiteral.AsSpan().ToString());
                         currentLiteral.Clear();
 
-                        if (setSubsegment.Any(s => s.IndexOfAny(s_separator) >= 0))
+                        if (setSubsegment.Any(s => s.IndexOfAny(DirectorySeparator) >= 0))
                         {
                             errorMessage = "set contains a path separator";
                             return false;

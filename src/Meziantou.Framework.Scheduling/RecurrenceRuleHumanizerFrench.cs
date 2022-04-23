@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Scheduling;
 
 public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 {
-    private static readonly char[] s_precededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
+    private static readonly char[] PrecededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
 
     protected override string GetText(DailyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
     {
@@ -169,7 +169,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
         if (string.IsNullOrEmpty(str))
             return false;
 
-        return s_precededByApostropheChars.Contains(str[0]);
+        return PrecededByApostropheChars.Contains(str[0]);
     }
 
     private static string? GetWeekdayHumanText(ICollection<ByDay> daysOfWeek, WeekdayHumanTextOptions options)

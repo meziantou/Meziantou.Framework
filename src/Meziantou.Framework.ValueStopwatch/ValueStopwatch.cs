@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 // https://github.com/dotnet/runtime/blob/26b6e4ea97a627ab800362b2c10f32ebecea041d/src/libraries/Common/src/Extensions/ValueStopwatch/ValueStopwatch.cs
 public readonly struct ValueStopwatch
 {
-    private static readonly double s_timestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
+    private static readonly double TimestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;
 
     private readonly long _startTimestamp;
 
@@ -23,7 +23,7 @@ public readonly struct ValueStopwatch
     public static TimeSpan GetElapsedTime(long startTimestamp, long endTimestamp)
     {
         var timestampDelta = endTimestamp - startTimestamp;
-        var ticks = (long)(s_timestampToTicks * timestampDelta);
+        var ticks = (long)(TimestampToTicks * timestampDelta);
         return new TimeSpan(ticks);
     }
 

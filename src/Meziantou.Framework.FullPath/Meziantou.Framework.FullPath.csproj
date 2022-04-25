@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">
-    <PackageReference Include="System.Text.Json" Version="6.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp3.1'))">

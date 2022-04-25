@@ -63,7 +63,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.ProjectConfiguration" Version="1.0.19">
+    <PackageReference Include="Meziantou.ProjectConfiguration" Version="1.0.20">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

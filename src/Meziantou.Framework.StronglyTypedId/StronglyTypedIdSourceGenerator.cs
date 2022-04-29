@@ -65,13 +65,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         var types = context.SyntaxProvider.CreateSyntaxProvider(
           predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
           transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
-              .Where(static m => m is not null);
+              .Where(static m => m is not null)!;
 
-        var typesToProcess = types.Combine(context.CompilationProvider)!
-            .WithComparer(IgnoreCompilationEqualityComparer.Instance);
+        var typesToProcess = types.Combine(context.CompilationProvider);
 
         context.RegisterSourceOutput(typesToProcess,
-            (spc, source) => Execute(spc, source.Item2, source.Item1));
+            (spc, source) => Execute(spc, source.Right, source.Left!));
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
@@ -524,16 +523,5 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         System_UInt16,
         System_UInt32,
         System_UInt64,
-    }
-
-    // https://github.com/eiriktsarpalis/runtime/commit/49a337f65274659608a6a8cee2ef1ef46f9c4b22
-    private sealed class IgnoreCompilationEqualityComparer : IEqualityComparer<(TypeDeclarationSyntax Class, Compilation Compilation)>
-    {
-        public static IgnoreCompilationEqualityComparer Instance { get; } = new();
-
-        public bool Equals((TypeDeclarationSyntax Class, Compilation Compilation) x, (TypeDeclarationSyntax Class, Compilation Compilation) y)
-            => x.Class.IsEquivalentTo(y.Class);
-
-        public int GetHashCode((TypeDeclarationSyntax Class, Compilation Compilation) obj) => obj.Class.GetHashCode();
     }
 }

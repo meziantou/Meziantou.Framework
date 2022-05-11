@@ -6,6 +6,7 @@ namespace Meziantou.Framework;
 
 public static class RegexExtensions
 {
+    [SuppressMessage("Style", "IDE0220:Add explicit cast", Justification = "Not needed for older API")]
     public static async Task<string> ReplaceAsync(this Regex regex, string input, Func<Match, Task<string>> replacementFn)
     {
         var sb = new StringBuilder();

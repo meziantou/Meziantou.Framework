@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
-    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net461</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks);net462</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <CompatibilityRecord>true</CompatibilityRecord>
   </PropertyGroup>
 
-  <ItemGroup Condition=" $(TargetFramework) == 'net461' ">
+  <ItemGroup Condition=" $(TargetFramework) == 'net462' ">
     <Reference Include="System.Windows" />
     <PackageReference Include="System.Text.Json" Version="6.0.4" />
   </ItemGroup>

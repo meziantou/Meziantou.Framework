@@ -182,7 +182,10 @@ public static partial class EnumerableExtensions
             if (comparer.Equals(item, value))
                 return index;
 
-            index++;
+            checked
+            {
+                index++;
+            }
         }
 
         return -1L;
@@ -223,7 +226,10 @@ public static partial class EnumerableExtensions
         foreach (var item in source)
         {
             action(item, index);
-            index++;
+            checked
+            {
+                index++;
+            }
         }
     }
 
@@ -458,7 +464,11 @@ public static partial class EnumerableExtensions
         foreach (var item in enumerable)
         {
             result += item.Ticks;
-            count++;
+
+            checked
+            {
+                count++;
+            }
         }
 
         return TimeSpan.FromTicks(result / count);

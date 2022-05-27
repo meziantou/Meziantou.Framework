@@ -240,6 +240,46 @@ public sealed class FullPathTests
         resolved.Value.Value.Should().EndWith(Path.Combine("a", "b", "d.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
+    [Fact]
+    public void ChangeExtension()
+    {
+        var actual = FullPath.FromPath("test.a.txt").ChangeExtension(".avi");
+        var expected = FullPath.Combine("test.a.avi");
+        actual.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ChangeExtension_NoExtension()
+    {
+        var actual = FullPath.FromPath("test").ChangeExtension(".avi");
+        var expected = FullPath.Combine("test.avi");
+        actual.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ChangeExtension_Empty()
+    {
+        var actual = FullPath.Empty.ChangeExtension(".avi");
+        var expected = FullPath.Empty;
+        actual.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ChangeExtension_Null()
+    {
+        var actual = FullPath.FromPath("test").ChangeExtension(null);
+        var expected = FullPath.Combine("test");
+        actual.Should().Be(expected);
+    }
+
+    [Fact]
+    public void ChangeExtension_NoDot()
+    {
+        var actual = FullPath.FromPath("test.txt").ChangeExtension("avi");
+        var expected = FullPath.Combine("test.avi");
+        actual.Should().Be(expected);
+    }
+
     private static bool IsWindows()
     {
         return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);

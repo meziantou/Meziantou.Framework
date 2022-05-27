@@ -167,6 +167,14 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         }
     }
 
+    public FullPath ChangeExtension(string? extension)
+    {
+        if (IsEmpty)
+            return Empty;
+
+        return new FullPath(Path.ChangeExtension(Value, extension));
+    }
+
     public static FullPath GetTempPath() => FromPath(Path.GetTempPath());
     public static FullPath GetTempFileName() => FromPath(Path.GetTempFileName());
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));

@@ -13,39 +13,38 @@ internal static class Program
 {
     public static Task<int> Main(string[] args)
     {
+        return MainImpl(args, console: null);
+    }
+
+    internal static Task<int> MainImpl(string[] args, IConsole? console)
+    {
         var rootCommand = new RootCommand();
         AddReplaceValueCommand(rootCommand);
         AddAppendVersionCommand(rootCommand);
-        return rootCommand.InvokeAsync(args);
+        return rootCommand.InvokeAsync(args, console);
     }
 
     private static void AddReplaceValueCommand(RootCommand rootCommand)
     {
+        var singleFileOption = new Option<string>("--single-file", description: "Path of the file to update") { IsRequired = false };
+        var filePatternOption = new Option<string>("--file-pattern", description: "Glob pattern to find files to update") { IsRequired = false };
+        var rootDirectoryOption = new Option<string>("--root-directory", description: "Root directory for glob pattern") { IsRequired = false };
+        var xpathOption = new Option<string>("--xpath", "XPath to the elements/attributes to replace") { IsRequired = true };
+        var newValueOption = new Option<string>("--new-value", "New value for the elements/attributes") { IsRequired = true };
+
         var replaceValueCommand = new Command("replace-value")
         {
-            new Option<string>(
-                "--single-file",
-                description: "Path of the file to update") { IsRequired = false },
-
-            new Option<string>(
-                "--file-pattern",
-                description: "Glob pattern to find files to update") { IsRequired = false },
-
-            new Option<string>(
-                "--root-directory",
-                description: "Root directory for glob pattern") { IsRequired = false },
-
-            new Option<string>(
-                "--xpath",
-                "XPath to the elements/attributes to replace") { IsRequired = true },
-
-            new Option<string>(
-                "--new-value",
-                "New value for the elements/attributes") { IsRequired = true },
+            Description = "Replace element/attribute values in an html file",
         };
+        replaceValueCommand.AddOption(singleFileOption);
+        replaceValueCommand.AddOption(filePatternOption);
+        replaceValueCommand.AddOption(rootDirectoryOption);
+        replaceValueCommand.AddOption(xpathOption);
+        replaceValueCommand.AddOption(newValueOption);
 
-        replaceValueCommand.Description = "Replace element/attribute values in an html file";
-        replaceValueCommand.SetHandler((string? singleFile, string? filePattern, string? rootDirectory, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, rootDirectory, xpath, newValue), replaceValueCommand.Options.ToArray());
+        replaceValueCommand.SetHandler(
+            (string? singleFile, string? filePattern, string? rootDirectory, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, rootDirectory, xpath, newValue),
+            singleFileOption, filePatternOption, rootDirectoryOption, xpathOption, newValueOption);
 
         rootCommand.AddCommand(replaceValueCommand);
     }
@@ -96,26 +95,23 @@ internal static class Program
 
     private static void AddAppendVersionCommand(RootCommand rootCommand)
     {
+        var singleFileOption = new Option<string>("--single-file", description: "Path of the file to update") { IsRequired = false };
+        var filePatternOption = new Option<string>("--file-pattern", description: "Glob pattern to find files to update") { IsRequired = false };
+        var rootDirectoryOption = new Option<string>("--root-directory", description: "Root directory for glob pattern") { IsRequired = false };
+
         var command = new Command("append-version")
         {
-            new Option<string>(
-                "--single-file",
-                description: "Path of the file to update") { IsRequired = false },
-
-            new Option<string>(
-                "--file-pattern",
-                description: "Glob pattern to find files to update") { IsRequired = false },
-
-            new Option<string>(
-                "--root-directory",
-                description: "Root directory for glob pattern") { IsRequired = false },
+            Description = "Append version to style / script URLs",
         };
+        command.AddOption(singleFileOption);
+        command.AddOption(filePatternOption);
+        command.AddOption(rootDirectoryOption);
 
-        command.Description = "Append version to style / script URLs";
-
-
-        command.SetHandler(async (string? singleFile, string? filePattern, string? rootDirectory, InvocationContext ctx) =>
+        command.SetHandler(async (InvocationContext ctx) =>
         {
+            var singleFile = ctx.ParseResult.GetValueForOption(singleFileOption);
+            var filePattern = ctx.ParseResult.GetValueForOption(filePatternOption);
+            var rootDirectory = ctx.ParseResult.GetValueForOption(rootDirectoryOption);
             if (!string.IsNullOrEmpty(singleFile))
             {
                 await UpdateFileAsync(singleFile).ConfigureAwait(false);
@@ -245,7 +241,7 @@ internal static class Program
 
                 Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
             }
-        }, command.Options.ToArray());
+        });
 
         rootCommand.AddCommand(command);
     }

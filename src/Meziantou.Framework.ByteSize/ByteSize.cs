@@ -13,6 +13,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public long Value { get; }
 
+    public static ByteSize Zero => new(0L);
+    public static ByteSize MaxValue => new(long.MaxValue);
+    public static ByteSize MinValue => new(long.MinValue);
+
     public override bool Equals(object? obj) => obj is ByteSize byteSize && Equals(byteSize);
 
     public bool Equals(ByteSize other) => Value == other.Value;
@@ -224,6 +228,11 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     public static ByteSize operator /(ByteSize value1, ByteSize value2) => new(value1.Value / value2.Value);
 
     public static implicit operator ByteSize(long value) => new(value);
+
+    public ByteSize Add(ByteSize other) => this + other;
+    public ByteSize Substract(ByteSize other) => this - other;
+    public ByteSize Multiply(ByteSize other) => this * other;
+    public ByteSize Divide(ByteSize other) => this / other;
 
     private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
     {

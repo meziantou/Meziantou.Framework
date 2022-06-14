@@ -100,8 +100,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         };
     }
 
-    protected override string GetText(DailyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
+    protected override string GetText(DailyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
+        if (rrule is null)
+            throw new ArgumentNullException(nameof(rrule));
+
         var sb = new StringBuilder();
         sb.Append("every");
         if (rrule.Interval == 1)
@@ -123,8 +126,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
-    protected override string GetText(WeeklyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
+    protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
+        if (rrule is null)
+            throw new ArgumentNullException(nameof(rrule));
+
         var sb = new StringBuilder();
         sb.Append("every");
         if (rrule.Interval == 1)
@@ -152,8 +158,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
-    protected override string GetText(MonthlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
+    protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
+        if (rrule is null)
+            throw new ArgumentNullException(nameof(rrule));
+
         var sb = new StringBuilder();
         sb.Append("every");
         if (rrule.Interval == 1)
@@ -200,8 +209,11 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
         return sb.ToString();
     }
 
-    protected override string GetText(YearlyRecurrenceRule rrule!!, CultureInfo cultureInfo!!)
+    protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
+        if (rrule is null)
+            throw new ArgumentNullException(nameof(rrule));
+
         var sb = new StringBuilder();
         sb.Append("every");
         if (rrule.Interval == 1)

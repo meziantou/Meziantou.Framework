@@ -9,8 +9,10 @@ public
 #endif
 static class ReflectionUtilities
 {
-    public static bool IsNullableOfT(this Type type!!)
+    public static bool IsNullableOfT(this Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         return Nullable.GetUnderlyingType(type) != null;
     }
 
@@ -19,8 +21,10 @@ static class ReflectionUtilities
         return IsFlagsEnum(typeof(T));
     }
 
-    public static bool IsFlagsEnum(this Type type!!)
+    public static bool IsFlagsEnum(this Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         if (!type.IsEnum)
             return false;
 

@@ -14,8 +14,11 @@ public static class LsaPrivateData
         SetValue(key, value: null);
     }
 
-    public static void SetValue(string key!!, string? value)
+    public static void SetValue(string key, string? value)
     {
+        if (key is null)
+            throw new ArgumentNullException(nameof(key));
+
         if (key.Length == 0)
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 
@@ -35,8 +38,11 @@ public static class LsaPrivateData
             throw new Win32Exception(winErrorCode, "StorePrivateData failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
     }
 
-    public static string? GetValue(string key!!)
+    public static string? GetValue(string key)
     {
+        if (key is null)
+            throw new ArgumentNullException(nameof(key));
+
         if (key.Length == 0)
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
 

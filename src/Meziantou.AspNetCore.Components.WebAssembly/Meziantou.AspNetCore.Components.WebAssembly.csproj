@@ -5,6 +5,9 @@
     <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
 
+    <!-- https://github.com/dotnet/aspnetcore/issues/42200 -->
+    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
+
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>
   </PropertyGroup>
@@ -14,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.6" />
   </ItemGroup>
 
 </Project>

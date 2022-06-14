@@ -25,9 +25,9 @@ public sealed class HtmlReader
     {
     }
 
-    public HtmlReader(TextReader reader!!, HtmlOptions options)
+    public HtmlReader(TextReader reader, HtmlOptions options)
     {
-        TextReader = reader;
+        TextReader = reader ?? throw new ArgumentNullException(nameof(reader));
 
         ParserState = HtmlParserState.Text;
         Value = new StringBuilder();

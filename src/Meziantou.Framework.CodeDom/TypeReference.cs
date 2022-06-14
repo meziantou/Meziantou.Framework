@@ -16,14 +16,14 @@ public class TypeReference
     {
     }
 
-    public TypeReference(TypeDeclaration typeDeclaration!!)
+    public TypeReference(TypeDeclaration typeDeclaration)
     {
-        _typeDeclaration = typeDeclaration;
+        _typeDeclaration = typeDeclaration ?? throw new ArgumentNullException(nameof(typeDeclaration));
     }
 
-    public TypeReference(TypeParameter typeParameter!!)
+    public TypeReference(TypeParameter typeParameter)
     {
-        _typeParameter = typeParameter;
+        _typeParameter = typeParameter ?? throw new ArgumentNullException(nameof(typeParameter));
     }
 
     public TypeReference(string typeName)

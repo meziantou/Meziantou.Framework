@@ -15,8 +15,10 @@ public static class DataBinder
     private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> PropertyCache = new();
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
-    public static object? Eval(object container, string expression!!)
+    public static object? Eval(object? container, string expression)
     {
+        ArgumentNullException.ThrowIfNull(expression);
+
         expression = expression.Trim();
         if (expression.Length == 0)
         {
@@ -33,7 +35,7 @@ public static class DataBinder
     }
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
-    private static object? Eval(object container, string[] expressionParts)
+    private static object? Eval(object? container, string[] expressionParts)
     {
         object? prop;
         int i;
@@ -97,8 +99,10 @@ public static class DataBinder
     }
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
-    public static object? GetPropertyValue(object container!!, string propertyName)
+    public static object? GetPropertyValue(object container, string propertyName)
     {
+        ArgumentNullException.ThrowIfNull(container);
+
         if (string.IsNullOrEmpty(propertyName))
             throw new ArgumentNullException(nameof(propertyName));
 
@@ -135,8 +139,10 @@ public static class DataBinder
     }
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
-    public static object? GetIndexedPropertyValue(object container!!, string expression)
+    public static object? GetIndexedPropertyValue(object container, string expression)
     {
+        ArgumentNullException.ThrowIfNull(container);
+
         if (string.IsNullOrEmpty(expression))
             throw new ArgumentNullException(nameof(expression));
 

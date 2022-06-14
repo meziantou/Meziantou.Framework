@@ -116,8 +116,14 @@ public sealed class LocalizationProvider : ILocalizationProvider
         throw new ArgumentException($"'{name}' is not supported", nameof(name));
     }
 
-    public void Set(CultureInfo culture!!, IReadOnlyDictionary<string, string> values!!)
+    public void Set(CultureInfo culture, IReadOnlyDictionary<string, string> values)
     {
+        if (culture is null)
+            throw new ArgumentNullException(nameof(culture));
+
+        if (values is null)
+            throw new ArgumentNullException(nameof(values));
+
         _cultures[culture] = values;
     }
 

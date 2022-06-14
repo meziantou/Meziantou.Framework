@@ -47,8 +47,16 @@ public static class CredentialManager
         WriteCredential(applicationName, userName, secret, comment: null, persistence);
     }
 
-    public static void WriteCredential(string applicationName!!, string userName!!, string secret!!, string? comment, CredentialPersistence persistence)
+    public static void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
     {
+        if (applicationName is null)
+            throw new ArgumentNullException(nameof(applicationName));
+
+        if (userName is null)
+            throw new ArgumentNullException(nameof(userName));
+
+        if (secret is null)
+            throw new ArgumentNullException(nameof(secret));
 
         // CRED_MAX_CREDENTIAL_BLOB_SIZE
         // XP and Vista: 512;
@@ -111,9 +119,12 @@ public static class CredentialManager
         }
     }
 
-    public static void DeleteCredential(string applicationName!!)
+    public static void DeleteCredential(string applicationName)
     {
-        var success = Advapi32.CredDelete(applicationName, CredentialType.Generic, 0);
+        if (applicationName is null)
+            throw new ArgumentNullException(nameof(applicationName));
+
+        var success = Advapi32.CredDelete(applicationName, CredentialType.Generic, reservedFlag: 0);
         if (!success)
         {
             var lastError = Marshal.GetLastWin32Error();

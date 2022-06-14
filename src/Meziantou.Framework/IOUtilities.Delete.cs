@@ -14,8 +14,11 @@ static partial class IOUtilities
     /// <returns>
     /// 	<c>true</c> if the specified exception is a sharing violation exception; otherwise, <c>false</c>.
     /// </returns>
-    public static bool IsSharingViolation(IOException exception!!)
+    public static bool IsSharingViolation(IOException exception)
     {
+        if (exception is null)
+            throw new ArgumentNullException(nameof(exception));
+
         var hr = exception.HResult;
         return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION
     }
@@ -119,7 +122,7 @@ static partial class IOUtilities
         }
     }
 
-    public static System.Threading.Tasks.ValueTask DeleteAsync(string path, CancellationToken cancellationToken = default)
+    public static ValueTask DeleteAsync(string path, CancellationToken cancellationToken = default)
     {
         var di = new DirectoryInfo(path);
         if (di.Exists)
@@ -132,7 +135,7 @@ static partial class IOUtilities
         return default;
     }
 
-    public static async System.Threading.Tasks.ValueTask DeleteAsync(FileSystemInfo fileSystemInfo, CancellationToken cancellationToken = default)
+    public static async ValueTask DeleteAsync(FileSystemInfo fileSystemInfo, CancellationToken cancellationToken = default)
     {
         if (!fileSystemInfo.Exists)
             return;
@@ -174,7 +177,7 @@ static partial class IOUtilities
         }
     }
 
-    private static async System.Threading.Tasks.ValueTask RetryOnSharingViolationAsync(Action action, CancellationToken cancellationToken)
+    private static async ValueTask RetryOnSharingViolationAsync(Action action, CancellationToken cancellationToken)
     {
         var attempt = 0;
         while (attempt < 10)
@@ -189,7 +192,7 @@ static partial class IOUtilities
             }
 
             attempt++;
-            await System.Threading.Tasks.Task.Delay(50, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
         }
     }
 }

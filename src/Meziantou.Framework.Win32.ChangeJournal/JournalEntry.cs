@@ -9,9 +9,9 @@ public sealed class JournalEntry
     /// </summary>
     /// <param name="nativeEntry"></param>
     /// <param name="name"></param>
-    internal JournalEntry(USN_RECORD_V2 nativeEntry, string name!!)
+    internal JournalEntry(USN_RECORD_V2 nativeEntry, string name)
     {
-        Name = name;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
         Length = (int)nativeEntry.RecordLength;
         Version = new Version(nativeEntry.MajorVersion, nativeEntry.MinorVersion);
         ReferenceNumber = nativeEntry.FileReferenceNumber;

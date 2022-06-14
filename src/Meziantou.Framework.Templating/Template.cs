@@ -60,8 +60,11 @@ public class Template
 
     public bool Debug { get; set; }
 
-    public void AddReference(Type type!!)
+    public void AddReference(Type type)
     {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
         if (type.Assembly.Location == null)
             throw new ArgumentException("Assembly has no location.", nameof(type));
 
@@ -73,8 +76,11 @@ public class Template
         AddUsing(@namespace, alias: null);
     }
 
-    public void AddUsing(string @namespace!!, string? alias)
+    public void AddUsing(string @namespace, string? alias)
     {
+        if (@namespace is null)
+            throw new ArgumentNullException(nameof(@namespace));
+
         if (!string.IsNullOrEmpty(alias))
         {
             _usings.Add(alias + " = " + @namespace);
@@ -90,8 +96,11 @@ public class Template
         AddUsing(type, alias: null);
     }
 
-    public void AddUsing(Type type!!, string? alias)
+    public void AddUsing(Type type, string? alias)
     {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
         if (!string.IsNullOrEmpty(alias))
         {
             _usings.Add(alias + " = " + GetFriendlyTypeName(type));
@@ -107,8 +116,11 @@ public class Template
         AddReference(type);
     }
 
-    private static string GetFriendlyTypeName(Type type!!)
+    private static string GetFriendlyTypeName(Type type)
     {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
         var friendlyName = type.Name;
         if (type.IsGenericType)
         {
@@ -148,8 +160,11 @@ public class Template
         AddArgument(name, typeof(T));
     }
 
-    public void AddArgument(string name!!, Type? type)
+    public void AddArgument(string name, Type? type)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         _arguments.Add(new TemplateArgument(name, type));
         if (type != null)
         {
@@ -157,8 +172,11 @@ public class Template
         }
     }
 
-    public void AddArguments(IReadOnlyDictionary<string, object?> arguments!!)
+    public void AddArguments(IReadOnlyDictionary<string, object?> arguments)
     {
+        if (arguments is null)
+            throw new ArgumentNullException(nameof(arguments));
+
         foreach (var argument in arguments)
         {
             AddArgument(argument.Key, argument.Value?.GetType());
@@ -173,20 +191,29 @@ public class Template
         }
     }
 
-    public void Load(string text!!)
+    public void Load(string text)
     {
+        if (text is null)
+            throw new ArgumentNullException(nameof(text));
+
         using var reader = new StringReader(text);
         Load(reader);
     }
 
-    public void Load(TextReader reader!!)
+    public void Load(TextReader reader)
     {
+        if (reader is null)
+            throw new ArgumentNullException(nameof(reader));
+
         using var r = new TextReaderWithPosition(reader);
         Load(r);
     }
 
-    private void Load(TextReaderWithPosition reader!!)
+    private void Load(TextReaderWithPosition reader)
     {
+        if (reader is null)
+            throw new ArgumentNullException(nameof(reader));
+
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
 
@@ -343,8 +370,11 @@ public class Template
         return new CodeBlock(this, text, index);
     }
 
-    protected virtual SyntaxTree CreateSyntaxTree(string source!!, CancellationToken cancellationToken)
+    protected virtual SyntaxTree CreateSyntaxTree(string source, CancellationToken cancellationToken)
     {
+        if (source is null)
+            throw new ArgumentNullException(nameof(source));
+
         var options = CSharpParseOptions.Default
             .WithLanguageVersion(LanguageVersion.Latest)
             .WithPreprocessorSymbols(Debug ? "DEBUG" : "RELEASE");
@@ -387,8 +417,11 @@ public class Template
         return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
     }
 
-    protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree!!)
+    protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree)
     {
+        if (syntaxTree is null)
+            throw new ArgumentNullException(nameof(syntaxTree));
+
         var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N");
         var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
             .WithDeterministic(deterministic: true)
@@ -486,15 +519,24 @@ public class Template
         return p;
     }
 
-    public string Run(IReadOnlyDictionary<string, object?> parameters!!)
+    public string Run(IReadOnlyDictionary<string, object?> parameters)
     {
+        if (parameters is null)
+            throw new ArgumentNullException(nameof(parameters));
+
         using var writer = new StringWriter();
         Run(writer, parameters);
         return writer.ToString();
     }
 
-    public virtual void Run(TextWriter writer!!, IReadOnlyDictionary<string, object?> parameters!!)
+    public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        if (parameters is null)
+            throw new ArgumentNullException(nameof(parameters));
+
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);
     }

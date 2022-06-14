@@ -15,8 +15,11 @@ public sealed class LinkHeaderValue
 
     public IReadOnlyList<KeyValuePair<string, string>> Parameters { get; }
 
-    private LinkHeaderValue(string url!!, IReadOnlyList<KeyValuePair<string, string>> parameters)
+    private LinkHeaderValue(string url, IReadOnlyList<KeyValuePair<string, string>> parameters)
     {
+        ArgumentNullException.ThrowIfNull(url);
+        ArgumentNullException.ThrowIfNull(parameters);
+
         Url = url;
         Parameters = parameters;
     }

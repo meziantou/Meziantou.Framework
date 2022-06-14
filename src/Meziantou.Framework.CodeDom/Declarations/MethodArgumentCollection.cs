@@ -10,8 +10,10 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
     {
     }
 
-    public MethodArgumentCollection(CodeObject parent!!)
+    public MethodArgumentCollection(CodeObject parent)
     {
+        if (parent is null)
+            throw new ArgumentNullException(nameof(parent));
         Parent = parent;
     }
 
@@ -35,8 +37,10 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
 
     void ICollection<MethodArgumentDeclaration>.Add(MethodArgumentDeclaration item) => Add(item);
 
-    public MethodArgumentDeclaration Add(MethodArgumentDeclaration item!!)
+    public MethodArgumentDeclaration Add(MethodArgumentDeclaration item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
         _list.Add(item);
         item.Parent = Parent;
         return item;

@@ -18,8 +18,11 @@ public class HtmlEmailTemplate : Template
         return new HtmlEmailOutput(this, writer);
     }
 
-    public virtual string Run(out HtmlEmailMetadata? metadata, IDictionary<string, object?> parameters!!)
+    public virtual string Run(out HtmlEmailMetadata? metadata, IDictionary<string, object?> parameters)
     {
+        if (parameters is null)
+            throw new ArgumentNullException(nameof(parameters));
+
         using var writer = new StringWriter();
         Run(writer, out metadata, parameters);
         return writer.ToString();
@@ -39,22 +42,33 @@ public class HtmlEmailTemplate : Template
         return writer.ToString();
     }
 
-    public virtual void Run(TextWriter writer!!, out HtmlEmailMetadata? metadata, IReadOnlyDictionary<string, object?> parameters!!)
+    public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, IReadOnlyDictionary<string, object?> parameters)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        if (parameters is null)
+            throw new ArgumentNullException(nameof(parameters));
+
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);
         metadata = GetMetadata(p);
     }
 
-    public virtual void Run(TextWriter writer!!, out HtmlEmailMetadata? metadata, params object?[] parameters)
+    public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, params object?[] parameters)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);
         metadata = GetMetadata(p);
     }
 
-    public virtual void Run(TextWriter writer!!, out HtmlEmailMetadata? metadata)
+    public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         var p = CreateMethodParameters(writer, (object[]?)null);
         InvokeRunMethod(p);
         metadata = GetMetadata(p);

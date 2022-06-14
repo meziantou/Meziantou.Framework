@@ -88,8 +88,11 @@ public sealed class HtmlText : HtmlNode
         }
     }
 
-    public override void WriteTo(TextWriter writer!!)
+    public override void WriteTo(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (IsCData)
         {
             writer.Write("<![CDATA[");
@@ -106,8 +109,11 @@ public sealed class HtmlText : HtmlNode
     {
     }
 
-    public override void WriteTo(XmlWriter writer!!)
+    public override void WriteTo(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (IsCData)
         {
             writer.WriteCData(Value);

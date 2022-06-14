@@ -85,16 +85,22 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void LoadHtml(string html!!)
+    public void LoadHtml(string html)
     {
+        if (html is null)
+            throw new ArgumentNullException(nameof(html));
+
         Clear();
         using var reader = new StringReader(html);
         StreamEncoding = Utilities.GetDefaultEncoding(); // This is arguable, but it's better for saves
         InternalLoad(reader, firstPass: false);
     }
 
-    public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+    public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         Clear();
         FilePath = filePath;
         using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks, bufferSize))
@@ -115,8 +121,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(string filePath!!, bool detectEncodingFromByteOrderMarks)
+    public void Load(string filePath, bool detectEncodingFromByteOrderMarks)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         Clear();
         FilePath = filePath;
         if (detectEncodingFromByteOrderMarks)
@@ -147,8 +156,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(string filePath!!, Encoding encoding)
+    public void Load(string filePath, Encoding encoding)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         Clear();
         FilePath = filePath;
         using (var reader = Utilities.OpenReader(filePath, encoding))
@@ -169,8 +181,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(string filePath!!, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+    public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         Clear();
         FilePath = filePath;
         using (var reader = Utilities.OpenReader(filePath, encoding, detectEncodingFromByteOrderMarks))
@@ -191,8 +206,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(string filePath!!)
+    public void Load(string filePath)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         Clear();
         FilePath = filePath;
         using (var reader = Utilities.OpenReader(filePath, Utilities.GetDefaultEncoding()))
@@ -213,8 +231,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(Stream stream!!, bool detectEncodingFromByteOrderMarks)
+    public void Load(Stream stream, bool detectEncodingFromByteOrderMarks)
     {
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
+
         Clear();
         if (detectEncodingFromByteOrderMarks)
         {
@@ -243,8 +264,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(Stream stream!!, Encoding encoding)
+    public void Load(Stream stream, Encoding encoding)
     {
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
+
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
         {
@@ -264,8 +288,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(Stream stream!!, Encoding encoding, bool detectEncodingFromByteOrderMarks)
+    public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
     {
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
+
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize: 1024, leaveOpen: true))
         {
@@ -285,8 +312,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(Stream stream!!, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
+    public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
+
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: true))
         {
@@ -306,8 +336,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(Stream stream!!)
+    public void Load(Stream stream)
     {
+        if (stream is null)
+            throw new ArgumentNullException(nameof(stream));
+
         Clear();
         using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
         {
@@ -327,8 +360,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Load(TextReader reader!!)
+    public void Load(TextReader reader)
     {
+        if (reader is null)
+            throw new ArgumentNullException(nameof(reader));
+
         Clear();
         InternalLoad(reader, firstPass: false);
     }
@@ -417,8 +453,14 @@ public sealed class HtmlDocument : HtmlNode
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlAttribute CreateAttribute(string prefix!!, string localName!!, string namespaceURI)
+    public HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
@@ -437,15 +479,24 @@ public sealed class HtmlDocument : HtmlNode
         return htmlText;
     }
 
-    public HtmlElement CreateElement(string name!!)
+    public HtmlElement CreateElement(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         ParseName(name, out var prefix, out var localName);
         return CreateElement(prefix, localName, namespaceURI: null);
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlElement CreateElement(string prefix!!, string localName!!, string namespaceURI)
+    public HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
 
@@ -882,18 +933,27 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Save(TextWriter writer!!)
+    public void Save(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         WriteTo(writer);
     }
 
-    public void Save(XmlWriter writer!!)
+    public void Save(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         WriteTo(writer);
     }
 
-    public void Save(string filePath!!)
+    public void Save(string filePath)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
         {
             var xmlWriterSettings = new XmlWriterSettings
@@ -920,8 +980,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Save(string filePath!!, Encoding encoding)
+    public void Save(string filePath, Encoding encoding)
     {
+        if (filePath is null)
+            throw new ArgumentNullException(nameof(filePath));
+
         if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
         {
             encoding ??= Encoding.UTF8;
@@ -944,8 +1007,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Save(Stream outStream!!)
+    public void Save(Stream outStream)
     {
+        if (outStream is null)
+            throw new ArgumentNullException(nameof(outStream));
+
         if (StreamEncoding != null)
         {
             using var writer = new StreamWriter(outStream, StreamEncoding);
@@ -958,32 +1024,47 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public void Save(Stream outStream!!, Encoding encoding)
+    public void Save(Stream outStream, Encoding encoding)
     {
+        if (outStream is null)
+            throw new ArgumentNullException(nameof(outStream));
+
         using var writer = new StreamWriter(outStream, encoding);
         Save(writer);
     }
 
-    public override void WriteTo(TextWriter writer!!)
+    public override void WriteTo(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         WriteContentTo(writer);
     }
 
-    public override void WriteContentTo(TextWriter writer!!)
+    public override void WriteContentTo(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         foreach (var node in ChildNodes)
         {
             node.WriteTo(writer);
         }
     }
 
-    public override void WriteTo(XmlWriter writer!!)
+    public override void WriteTo(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         WriteContentTo(writer);
     }
 
-    public void WriteDocType(XmlWriter writer!!)
+    public void WriteDocType(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (DocumentType == null)
             return;
 
@@ -1051,8 +1132,11 @@ public sealed class HtmlDocument : HtmlNode
         }
     }
 
-    public override void WriteContentTo(XmlWriter writer!!)
+    public override void WriteContentTo(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (!IsValidXmlDocument)
         {
             var oneElementWritten = false;
@@ -1111,13 +1195,19 @@ public sealed class HtmlDocument : HtmlNode
     }
 
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
-    public HtmlNode ImportNode(HtmlNode node!!, HtmlCloneOptions cloneOptions)
+    public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
     {
+        if (node is null)
+            throw new ArgumentNullException(nameof(node));
+
         return node.Clone(cloneOptions);
     }
 
-    protected override void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary!!)
+    protected override void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary)
     {
+        if (dictionary is null)
+            throw new ArgumentNullException(nameof(dictionary));
+
         if (scope != XmlNamespaceScope.Local)
         {
             if (_declaredNamespaces != null)
@@ -1136,17 +1226,24 @@ public sealed class HtmlDocument : HtmlNode
                 }
             }
         }
+
         base.AddNamespacesInScope(scope, dictionary);
     }
 
     [SuppressMessage("Design", "CA1055:URI-like return values should not be strings", Justification = "Breaking change")]
-    public string MakeAbsoluteUrl(string url!!)
+    public string MakeAbsoluteUrl(string url)
     {
+        if (url is null)
+            throw new ArgumentNullException(nameof(url));
+
         return MakeAbsoluteUrl(new Uri(url, UriKind.RelativeOrAbsolute)).ToString();
     }
 
-    public Uri MakeAbsoluteUrl(Uri uri!!)
+    public Uri MakeAbsoluteUrl(Uri uri)
     {
+        if (uri is null)
+            throw new ArgumentNullException(nameof(uri));
+
         if (uri.IsAbsoluteUri)
             return uri;
 

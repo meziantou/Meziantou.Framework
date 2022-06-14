@@ -22,13 +22,25 @@ public static partial class EnumerableExtensions
     }
 
 #if NET6_0_OR_GREATER
-    public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source!!, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
+    public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
     {
+        if (source is null)
+            throw new ArgumentNullException(nameof(source));
+
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
         return Parallel.ForEachAsync(source, new ParallelOptions { MaxDegreeOfParallelism = degreeOfParallelism, CancellationToken = cancellationToken }, (item, ct) => new ValueTask(action(item)));
     }
 #elif NET5_0 || NETSTANDARD2_0
-    public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source!!, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
+    public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
     {
+        if (source is null)
+            throw new ArgumentNullException(nameof(source));
+
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
         var exceptions = new ConcurrentBag<Exception>();
         var tasks = from partition in Partitioner.Create(source).GetPartitions(degreeOfParallelism)
                     select Task.Run(async () =>

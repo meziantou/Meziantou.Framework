@@ -177,8 +177,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return SemanticVersionComparer.Instance.Compare(this, other);
     }
 
-    public static SemanticVersion Parse(string versionString!!)
+    public static SemanticVersion Parse(string versionString)
     {
+        if (versionString is null)
+            throw new ArgumentNullException(nameof(versionString));
+
         if (TryParse(versionString, out var result))
             return result;
 

@@ -20,8 +20,11 @@ internal static class QueryHelpers
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
-    public static string AddQueryString(string uri!!, string name!!, string value!!)
+    public static string AddQueryString(string uri, string name, string? value)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(name);
+
         return AddQueryString(
             uri, new[] { new KeyValuePair<string, string?>(name, value) });
     }
@@ -34,8 +37,11 @@ internal static class QueryHelpers
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
-    public static string AddQueryString(string uri!!, IDictionary<string, string?> queryString!!)
+    public static string AddQueryString(string uri, IDictionary<string, string?> queryString)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
+
         return AddQueryString(uri, (IEnumerable<KeyValuePair<string, string?>>)queryString);
     }
 
@@ -47,8 +53,11 @@ internal static class QueryHelpers
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
-    public static string AddQueryString(string uri!!, IEnumerable<KeyValuePair<string, StringValues>> queryString!!)
+    public static string AddQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
+
         return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
     }
 
@@ -60,10 +69,11 @@ internal static class QueryHelpers
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
-    public static string AddQueryString(
-        string uri!!,
-        IEnumerable<KeyValuePair<string, string?>> queryString!!)
+    public static string AddQueryString(string uri, IEnumerable<KeyValuePair<string, string?>> queryString)
     {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
+
         var anchorIndex = uri.IndexOf('#', StringComparison.Ordinal);
         var uriToBeAppended = uri;
         var anchorText = "";
@@ -102,7 +112,7 @@ internal static class QueryHelpers
     /// </summary>
     /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
     /// <returns>A collection of parsed keys and values.</returns>
-    public static Dictionary<string, StringValues> ParseQuery(string queryString)
+    public static Dictionary<string, StringValues> ParseQuery(string? queryString)
     {
         var result = ParseNullableQuery(queryString);
 
@@ -119,7 +129,7 @@ internal static class QueryHelpers
     /// </summary>
     /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
     /// <returns>A collection of parsed keys and values, null if there are no entries.</returns>
-    public static Dictionary<string, StringValues>? ParseNullableQuery(string queryString)
+    public static Dictionary<string, StringValues>? ParseNullableQuery(string? queryString)
     {
         var accumulator = new KeyValueAccumulator();
 

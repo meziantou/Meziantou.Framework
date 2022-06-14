@@ -279,8 +279,11 @@ public sealed class HtmlElement : HtmlNode
         }
     }
 
-    public override void WriteContentTo(TextWriter writer!!)
+    public override void WriteContentTo(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (!NoChild)
         {
             if (HasChildNodes)
@@ -293,8 +296,11 @@ public sealed class HtmlElement : HtmlNode
         }
     }
 
-    public override void WriteTo(XmlWriter writer!!)
+    public override void WriteTo(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (IsDocumentType)
         {
             OwnerDocument?.WriteDocType(writer);
@@ -324,8 +330,11 @@ public sealed class HtmlElement : HtmlNode
         }
     }
 
-    public override void WriteContentTo(XmlWriter writer!!)
+    public override void WriteContentTo(XmlWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         if (Name.EqualsIgnoreCase("!doctype"))
             return;
 

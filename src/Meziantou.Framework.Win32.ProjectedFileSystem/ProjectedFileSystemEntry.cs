@@ -2,10 +2,10 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
 public sealed class ProjectedFileSystemEntry
 {
-    private ProjectedFileSystemEntry(string name!!, bool isDirectory, int length)
+    private ProjectedFileSystemEntry(string name, bool isDirectory, int length)
     {
         IsDirectory = isDirectory;
-        Name = name;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
         Length = length;
     }
 

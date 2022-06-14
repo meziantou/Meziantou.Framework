@@ -19,8 +19,10 @@ namespace Meziantou.Framework
     public static class ThrottleExtensions
     {
 
-        public static Action Throttle(this Action action!!, TimeSpan interval)
+        public static Action Throttle(this Action action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -45,8 +47,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0> Throttle<T0>(this Action<T0> action!!, TimeSpan interval)
+        public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -75,8 +79,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action!!, TimeSpan interval)
+        public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -105,8 +111,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -135,8 +143,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -165,8 +175,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -195,8 +207,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -225,8 +239,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -255,8 +271,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -285,8 +303,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 
@@ -315,8 +335,10 @@ namespace Meziantou.Framework
             };
         }
 
-        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action!!, TimeSpan interval)
+        public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 

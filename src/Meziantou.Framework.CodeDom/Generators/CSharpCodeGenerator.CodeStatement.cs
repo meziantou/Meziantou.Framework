@@ -23,10 +23,13 @@ public partial class CSharpCodeGenerator
         WriteStatement(writer, statement, _defaultWriteStatementOptions);
     }
 
-    protected virtual void WriteStatement(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options!!)
+    protected virtual void WriteStatement(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options)
     {
         if (statement == null)
             return;
+
+        if (options is null)
+            throw new ArgumentNullException(nameof(options));
 
         WriteNullableContextBefore(writer, statement);
         WriteBeforeComments(writer, statement);

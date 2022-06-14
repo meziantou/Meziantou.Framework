@@ -24,8 +24,11 @@ namespace Meziantou.Framework;
 public static partial class TaskEx
 {
 <# for (int i = 2; i <= count; i++) { #>
-    public static async Task<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "Task<T" + i + "> task" + i + "!!") #>)
+    public static async Task<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "Task<T" + i + "> task" + i) #>)
     {
+        <# for (int j = 1; j <= i; j++) { #>
+        ArgumentNullException.ThrowIfNull(task<#= j #>);
+        <# } #>
         await Task.WhenAll(<#= Join(", ", i, i => "task" + i) #>).ConfigureAwait(false);
         return (<#= Join(", ", i, i => "task" + i + ".Result") #>);
     }

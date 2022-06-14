@@ -2,9 +2,9 @@ namespace Meziantou.Framework.Templating;
 
 public class TemplateArgument
 {
-    public TemplateArgument(string name!!, Type? type)
+    public TemplateArgument(string name, Type? type)
     {
-        Name = name;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
         Type = type;
     }
 

@@ -5,7 +5,7 @@ internal sealed class DirectoryEnumerationSession : IDisposable
     private IEnumerator<ProjectedFileSystemEntry>? _enumerator;
     private ProjectedFileSystemEntry? _current;
 
-    public DirectoryEnumerationSession(IEnumerable<ProjectedFileSystemEntry> entries!!)
+    public DirectoryEnumerationSession(IEnumerable<ProjectedFileSystemEntry> entries)
     {
         Entries = entries;
     }

@@ -25,8 +25,11 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     protected int BufferSize { get; set; } = 4096; // 4kB
 
-    protected ProjectedFileSystemBase(string rootFolder!!)
+    protected ProjectedFileSystemBase(string rootFolder)
     {
+        if (rootFolder is null)
+            throw new ArgumentNullException(nameof(rootFolder));
+
         if (!Environment.Is64BitProcess)
             throw new NotSupportedException("Projected File System is only supported on 64-bit process");
 

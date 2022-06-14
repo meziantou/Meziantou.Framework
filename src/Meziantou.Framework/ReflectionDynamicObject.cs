@@ -15,8 +15,10 @@ public sealed class ReflectionDynamicObject : DynamicObject
     private readonly TypeCache _typeCache;
 
     [RequiresUnreferencedCode("Use reflection")]
-    public ReflectionDynamicObject(object obj!!)
+    public ReflectionDynamicObject(object obj)
     {
+        ArgumentNullException.ThrowIfNull(obj);
+
         _originalObject = obj;
 
         var type = obj.GetType();
@@ -24,8 +26,10 @@ public sealed class ReflectionDynamicObject : DynamicObject
     }
 
     [RequiresUnreferencedCode("Use reflection")]
-    public ReflectionDynamicObject(Type type!!)
+    public ReflectionDynamicObject(Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         _typeCache = Cache.GetOrAdd(type, TypeCache.Create);
     }
 

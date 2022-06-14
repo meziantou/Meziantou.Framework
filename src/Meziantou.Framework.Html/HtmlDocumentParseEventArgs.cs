@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Html;
 
 public sealed class HtmlDocumentParseEventArgs : CancelEventArgs
 {
-    public HtmlDocumentParseEventArgs(HtmlReader reader!!)
+    public HtmlDocumentParseEventArgs(HtmlReader reader)
     {
-        Reader = reader;
+        Reader = reader ?? throw new ArgumentNullException(nameof(reader));
     }
 
     public HtmlReader Reader { get; }

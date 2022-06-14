@@ -19,8 +19,10 @@ namespace Meziantou.Framework
     public static class ThrottleExtensions
     {
 <# for (int i = 0; i < count; i++) { #>
-        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action!!, TimeSpan interval)
+        public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             Task? task = null;
             var l = new object();
 <# if (i > 0) { #>

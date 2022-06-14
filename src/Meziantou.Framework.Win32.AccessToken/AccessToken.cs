@@ -182,13 +182,19 @@ public sealed class AccessToken : IDisposable
         return default!;
     }
 
-    public void EnablePrivilege(string privilegeName!!)
+    public void EnablePrivilege(string privilegeName)
     {
+        if (privilegeName is null)
+            throw new ArgumentNullException(nameof(privilegeName));
+
         AdjustPrivilege(privilegeName, PrivilegeOperation.Enable);
     }
 
-    public void DisablePrivilege(string privilegeName!!)
+    public void DisablePrivilege(string privilegeName)
     {
+        if (privilegeName is null)
+            throw new ArgumentNullException(nameof(privilegeName));
+
         AdjustPrivilege(privilegeName, PrivilegeOperation.Disable);
     }
 
@@ -199,8 +205,11 @@ public sealed class AccessToken : IDisposable
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
-    public void RemovePrivilege(string privilegeName!!)
+    public void RemovePrivilege(string privilegeName)
     {
+        if (privilegeName is null)
+            throw new ArgumentNullException(nameof(privilegeName));
+
         AdjustPrivilege(privilegeName, PrivilegeOperation.Remove);
     }
 
@@ -264,8 +273,11 @@ public sealed class AccessToken : IDisposable
         return new AccessToken(tokenHandle);
     }
 
-    public static AccessToken OpenProcessToken(Process process!!, TokenAccessLevels accessLevels)
+    public static AccessToken OpenProcessToken(Process process, TokenAccessLevels accessLevels)
     {
+        if (process is null)
+            throw new ArgumentNullException(nameof(process));
+
         if (!NativeMethods.OpenProcessToken(process.Handle, accessLevels, out var tokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 

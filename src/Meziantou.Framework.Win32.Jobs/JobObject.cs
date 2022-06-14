@@ -81,8 +81,11 @@ public sealed class JobObject : SafeHandle
     /// Assigns a process to an existing job object.
     /// </summary>
     /// <param name="process">The process.</param>
-    public void AssignProcess(Process process!!)
+    public void AssignProcess(Process process)
     {
+        if (process is null)
+            throw new ArgumentNullException(nameof(process));
+
         AssignProcess(process.Handle);
     }
 
@@ -105,8 +108,10 @@ public sealed class JobObject : SafeHandle
     /// Sets limits to the jhob.
     /// </summary>
     /// <param name="limits">The limits. May not be null.</param>
-    public void SetLimits(JobObjectLimits limits!!)
+    public void SetLimits(JobObjectLimits limits)
     {
+        if (limits is null)
+            throw new ArgumentNullException(nameof(limits));
         var info = JOBOBJECT_INFO.From(limits);
         var length = Environment.Is64BitProcess ? Marshal.SizeOf(info.ExtendedLimits64) : Marshal.SizeOf(info.ExtendedLimits32);
         if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.ExtendedLimitInformation, ref info, length))
@@ -130,8 +135,11 @@ public sealed class JobObject : SafeHandle
         }
     }
 
-    public bool IsAssignedToProcess(Process process!!)
+    public bool IsAssignedToProcess(Process process)
     {
+        if (process is null)
+            throw new ArgumentNullException(nameof(process));
+
         if (NativeMethods.IsProcessInJob(process.Handle, this, out var result))
             return result;
 

@@ -7,8 +7,11 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class ShortName
 {
-    public static string? Create(ISet<string> shortNames!!, int maxLength, string name)
+    public static string? Create(ISet<string> shortNames, int maxLength, string name)
     {
+        ArgumentNullException.ThrowIfNull(shortNames);
+        ArgumentNullException.ThrowIfNull(name);
+
         var shortName = name[..((name.Length < maxLength) ? name.Length : maxLength)];
         var number = 0;
         var pos = maxLength;
@@ -46,8 +49,11 @@ public static class ShortName
     /// <param name="maxLength">Maximum length of computed short name.</param>
     /// <param name="name">The shorten name.</param>
     /// <returns>A string representing the short name; <c>null</c> if the short name cannot be created</returns>
-    public static string? Create(IEnumerable<string> shortNames, int maxLength, string name!!)
+    public static string? Create(IEnumerable<string> shortNames, int maxLength, string name)
     {
+        ArgumentNullException.ThrowIfNull(shortNames);
+        ArgumentNullException.ThrowIfNull(name);
+
         HashSet<string> dict;
         if (shortNames is HashSet<string> hashSet)
         {
@@ -79,8 +85,10 @@ public static class ShortName
     /// <param name="maxLength">Maximum length of computed short names.</param>
     /// <param name="comparer">Comparer use to compare short names</param>
     /// <returns>A dictionary of shorten names</returns>
-    public static IDictionary<string, string> Create(IEnumerable<string> names!!, int maxLength, IEqualityComparer<string>? comparer)
+    public static IDictionary<string, string> Create(IEnumerable<string> names, int maxLength, IEqualityComparer<string>? comparer)
     {
+        ArgumentNullException.ThrowIfNull(names);
+
         var shortNames = new Dictionary<string, string>(comparer);
         var dict = new HashSet<string>(names, comparer);
         foreach (var name in names)

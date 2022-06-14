@@ -19,8 +19,10 @@ namespace Meziantou.Framework
     public static class DebounceExtensions
     {
 <# for (int i = 0; i < 10; i++) { #>
-        public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action!!, TimeSpan interval)
+        public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             var last = 0;
             return (<#= GetArgsString(i) #>) =>
             {

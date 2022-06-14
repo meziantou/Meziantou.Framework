@@ -7,7 +7,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     public IReadOnlyList<CsvColumn>? Columns { get; }
     public IReadOnlyList<string> Values { get; }
 
-    internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values!!)
+    internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
     {
         Values = values;
         Columns = columns;

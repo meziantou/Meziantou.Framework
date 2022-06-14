@@ -13,11 +13,11 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     private bool _isDispatcherPending;
 
-    public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection!!, Dispatcher dispatcher!!)
+    public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, Dispatcher dispatcher)
         : base(collection)
     {
-        _collection = collection;
-        _dispatcher = dispatcher;
+        _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
     }
 
     private void AssertIsOnDispatcherThread()

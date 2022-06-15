@@ -10,8 +10,11 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
     {
     }
 
-    public CodeObjectCollection(CodeObject parent!!)
+    public CodeObjectCollection(CodeObject parent)
     {
+        if (parent is null)
+            throw new ArgumentNullException(nameof(parent));
+
         Parent = parent;
     }
 
@@ -35,9 +38,12 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
 
     void ICollection<T>.Add(T item) => Add(item);
 
-    public TCodeObject Add<TCodeObject>(TCodeObject item!!)
+    public TCodeObject Add<TCodeObject>(TCodeObject item)
         where TCodeObject : T
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         _list.Add(item);
         item.Parent = Parent;
         return item;

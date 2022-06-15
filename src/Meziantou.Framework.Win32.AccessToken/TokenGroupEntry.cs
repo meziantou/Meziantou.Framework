@@ -2,9 +2,9 @@ namespace Meziantou.Framework.Win32;
 
 public sealed class TokenGroupEntry
 {
-    public TokenGroupEntry(SecurityIdentifier sid!!, GroupSidAttributes attributes)
+    public TokenGroupEntry(SecurityIdentifier sid, GroupSidAttributes attributes)
     {
-        Sid = sid;
+        Sid = sid ?? throw new ArgumentNullException(nameof(sid));
         Attributes = attributes;
     }
 

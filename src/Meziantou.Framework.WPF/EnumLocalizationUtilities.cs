@@ -71,7 +71,7 @@ internal static class EnumLocalizationUtilities
         return value.ToString();
     }
 
-    public static string GetEnumMemberLocalization(Enum value!!)
+    public static string GetEnumMemberLocalization(Enum value)
     {
         var localizedValueCollection = GetEnumLocalization(value.GetType());
         return localizedValueCollection[value].Name;

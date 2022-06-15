@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    private CodeOwnersEntry(string pattern!!, CodeOwnersEntryType entryType, string member!!, CodeOwnersSection? section)
+    private CodeOwnersEntry(string pattern, CodeOwnersEntryType entryType, string member, CodeOwnersSection? section)
     {
         Pattern = pattern;
         Member = member;

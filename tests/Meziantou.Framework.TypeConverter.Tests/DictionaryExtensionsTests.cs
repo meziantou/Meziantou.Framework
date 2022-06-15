@@ -34,7 +34,7 @@ public static class DictionaryExtensionsTests
         var actual = dictionary.GetValueOrDefault("unknown", "");
 
         // Assert
-        actual.Should().Be("");
+        actual.Should().BeEmpty();
     }
 
     [Fact]

@@ -5,10 +5,10 @@ public class Output
     public Template Template { get; }
     public TextWriter Writer { get; }
 
-    public Output(Template template!!, TextWriter writer!!)
+    public Output(Template template, TextWriter writer)
     {
-        Template = template;
-        Writer = writer;
+        Template = template ?? throw new ArgumentNullException(nameof(template));
+        Writer = writer ?? throw new ArgumentNullException(nameof(writer));
     }
 
     public virtual void Write(object? value)

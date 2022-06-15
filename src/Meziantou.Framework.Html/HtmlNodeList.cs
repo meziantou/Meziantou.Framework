@@ -64,8 +64,14 @@ public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IL
         }
     }
 
-    public void Replace(HtmlNode newChild!!, HtmlNode oldChild!!)
+    public void Replace(HtmlNode newChild, HtmlNode oldChild)
     {
+        if (newChild is null)
+            throw new ArgumentNullException(nameof(newChild));
+
+        if (oldChild is null)
+            throw new ArgumentNullException(nameof(oldChild));
+
         if (newChild.ParentNode != null)
             throw new ArgumentException(message: null, nameof(newChild));
 
@@ -108,8 +114,11 @@ public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IL
         RemoveAllNoCheck();
     }
 
-    public void Insert(int index, HtmlNode item!!)
+    public void Insert(int index, HtmlNode item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         if (item.ParentNode != null)
             throw new ArgumentException(message: null, nameof(item));
 
@@ -137,8 +146,11 @@ public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IL
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node));
     }
 
-    public void Add(HtmlNode item!!)
+    public void Add(HtmlNode item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         if (item.ParentNode != null)
             throw new ArgumentException(message: null, nameof(item));
 
@@ -161,8 +173,11 @@ public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IL
         return true;
     }
 
-    public bool Remove(HtmlNode item!!)
+    public bool Remove(HtmlNode item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         var index = _list.IndexOf(item);
         if (index < 0)
             return false;

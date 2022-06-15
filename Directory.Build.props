@@ -16,7 +16,7 @@
     <LangVersion>preview</LangVersion>
     <TreatWarningsAsErrors Condition="'$(Configuration)' != 'Debug'">true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ValidateProjectTargets>true</ValidateProjectTargets>
+    <ValidateProjectTargets Condition="$(ValidateProjectTargets) == ''">true</ValidateProjectTargets>
     <ImplicitUsings>enable</ImplicitUsings>
 
     <IsPackable>False</IsPackable>

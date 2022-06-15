@@ -28,8 +28,11 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         return ((IEnumerable)_expressions).GetEnumerator();
     }
 
-    public void Add(Expression item!!)
+    public void Add(Expression item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         _expressions.Add(item);
         SetParent(item);
     }
@@ -72,8 +75,11 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         return _expressions.IndexOf(item);
     }
 
-    public void Insert(int index, Expression item!!)
+    public void Insert(int index, Expression item)
     {
+        if (item is null)
+            throw new ArgumentNullException(nameof(item));
+
         _expressions.Insert(index, item);
         SetParent(item);
     }

@@ -32,15 +32,24 @@ public partial class CSharpCodeGenerator
         "namespace", "using", "class", "struct", "interface", "enum", "delegate", "checked", "unchecked", "unsafe", "operator", "implicit", "explicit",
     };
 
-    public string Write(CodeObject codeObject!!)
+    public string Write(CodeObject codeObject)
     {
+        if (codeObject is null)
+            throw new ArgumentNullException(nameof(codeObject));
+
         using var sw = new StringWriter();
         Write(sw, codeObject);
         return sw.ToString();
     }
 
-    public void Write(TextWriter writer!!, CodeObject codeObject!!)
+    public void Write(TextWriter writer, CodeObject codeObject)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        if (codeObject is null)
+            throw new ArgumentNullException(nameof(codeObject));
+
         using var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, closeWriter: false)
         {
             NewLine = "\n",
@@ -49,8 +58,14 @@ public partial class CSharpCodeGenerator
         Write(indentedTextWriter, codeObject);
     }
 
-    public void Write(IndentedTextWriter writer!!, CodeObject codeObject!!)
+    public void Write(IndentedTextWriter writer, CodeObject codeObject)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        if (codeObject is null)
+            throw new ArgumentNullException(nameof(codeObject));
+
         switch (codeObject)
         {
             case CompilationUnit o:

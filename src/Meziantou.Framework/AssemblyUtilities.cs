@@ -9,8 +9,10 @@ public static class AssemblyUtilities
     /// </summary>
     /// <param name="assembly">The assembly. May not be null.</param>
     /// <returns>The version represented as a string. May not be null.</returns>
-    public static string? GetInformationalVersion(this Assembly assembly!!)
+    public static string? GetInformationalVersion(this Assembly assembly)
     {
+        ArgumentNullException.ThrowIfNull(assembly);
+
         var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
         if (attr != null)
         {
@@ -25,8 +27,10 @@ public static class AssemblyUtilities
     /// </summary>
     /// <param name="assembly">The assembly. May not be null.</param>
     /// <returns>A valid date time or null if an error occurred.</returns>
-    public static DateTime? GetLinkerTimestampUtc(this Assembly assembly!!)
+    public static DateTime? GetLinkerTimestampUtc(this Assembly assembly)
     {
+        ArgumentNullException.ThrowIfNull(assembly);
+
         try
         {
             var location = assembly.Location;
@@ -49,8 +53,10 @@ public static class AssemblyUtilities
     /// <returns>
     /// A valid date time or null if an error occurred.
     /// </returns>
-    public static DateTime? GetLinkerTimestampUtc(string filePath!!)
+    public static DateTime? GetLinkerTimestampUtc(string filePath)
     {
+        ArgumentNullException.ThrowIfNull(filePath);
+
         try
         {
             if (!File.Exists(filePath))

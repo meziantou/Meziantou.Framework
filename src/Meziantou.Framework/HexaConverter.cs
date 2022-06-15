@@ -30,8 +30,10 @@ public static class HexaConverter
         };
     }
 
-    public static byte[] ParseHexaString(string str!!)
+    public static byte[] ParseHexaString(string str)
     {
+        ArgumentNullException.ThrowIfNull(str);
+
         if (str.Length % 2 != 0)
             throw new ArgumentException("Invalid string length", nameof(str));
 

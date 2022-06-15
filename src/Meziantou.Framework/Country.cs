@@ -5,13 +5,17 @@ namespace Meziantou.Framework;
 
 public static class Country
 {
-    public static string GetUnicodeFlag(RegionInfo region!!)
+    public static string GetUnicodeFlag(RegionInfo region)
     {
+        ArgumentNullException.ThrowIfNull(region);
+
         return GetUnicodeFlag(region.TwoLetterISORegionName);
     }
 
-    public static string GetUnicodeFlag(string twoLetterISORegionName!!)
+    public static string GetUnicodeFlag(string twoLetterISORegionName)
     {
+        ArgumentNullException.ThrowIfNull(twoLetterISORegionName);
+
         const int RegionalIndicatorSymbolLetterA = 0x1F1E6; // https://tools.meziantou.net/char-info?Text=%5CU1F1E6
         const int LatinCapitalLetterA = 0x0041;             // https://tools.meziantou.net/char-info?Text=A
         const int LatinSmallLetterA = 0x0061;               // https://tools.meziantou.net/char-info?Text=a

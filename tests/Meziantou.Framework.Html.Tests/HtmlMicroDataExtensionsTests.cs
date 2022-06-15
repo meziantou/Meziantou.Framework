@@ -57,7 +57,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<a>test</a>");
 
         var value = document.FirstChild.GetItemValue();
-        value.Should().Be(string.Empty);
+        value.Should().BeEmpty();
     }
 
     [Fact]

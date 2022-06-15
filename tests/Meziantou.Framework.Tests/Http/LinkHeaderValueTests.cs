@@ -22,7 +22,7 @@ public sealed class LinkHeaderValueTests
                 item.Url.Should().Be("plop");
                 item.Rel.Should().Be("d\"e;f,");
                 item.GetParameterValue("title").Should().Be("test title");
-                item.GetParameterValue("abc").Should().Be("");
+                item.GetParameterValue("abc").Should().BeEmpty();
                 item.GetParameterValue("unknown").Should().BeNull();
             });
     }

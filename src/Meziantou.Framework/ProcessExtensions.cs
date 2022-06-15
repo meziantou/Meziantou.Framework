@@ -10,13 +10,17 @@ public static partial class ProcessExtensions
 {
 #if NETCOREAPP3_1_OR_GREATER
     [Obsolete("Already implemented in .NET 3.1")]
-    public static void Kill(Process process!!, bool entireProcessTree = false)
+    public static void Kill(Process process, bool entireProcessTree = false)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         process.Kill(entireProcessTree);
     }
 #else
-    public static void Kill(this Process process!!, bool entireProcessTree = false)
+    public static void Kill(this Process process, bool entireProcessTree = false)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         if (!entireProcessTree)
         {
             process.Kill();
@@ -47,8 +51,10 @@ public static partial class ProcessExtensions
 #endif
 
     [SupportedOSPlatform("windows")]
-    public static IReadOnlyList<Process> GetDescendantProcesses(this Process process!!)
+    public static IReadOnlyList<Process> GetDescendantProcesses(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -58,8 +64,10 @@ public static partial class ProcessExtensions
     }
 
     [SupportedOSPlatform("windows")]
-    public static IReadOnlyList<Process> GetChildProcesses(this Process process!!)
+    public static IReadOnlyList<Process> GetChildProcesses(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -69,8 +77,10 @@ public static partial class ProcessExtensions
     }
 
     [SupportedOSPlatform("windows")]
-    public static IEnumerable<int> GetAncestorProcessIds(this Process process!!)
+    public static IEnumerable<int> GetAncestorProcessIds(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             throw new PlatformNotSupportedException("Only supported on Windows");
 
@@ -106,8 +116,10 @@ public static partial class ProcessExtensions
     }
 
     [SupportedOSPlatform("windows")]
-    public static IEnumerable<Process> GetAncestorProcesses(this Process process!!)
+    public static IEnumerable<Process> GetAncestorProcesses(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         return GetAncestorProcesses();
 
         IEnumerable<Process> GetAncestorProcesses()
@@ -166,8 +178,10 @@ public static partial class ProcessExtensions
 
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
-    public static int? GetParentProcessId(this Process process!!)
+    public static int? GetParentProcessId(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var processId = process.Id;
@@ -212,6 +226,8 @@ public static partial class ProcessExtensions
     [SupportedOSPlatform("linux")]
     public static Process? GetParentProcess(this Process process)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         var parentProcessId = GetParentProcessId(process);
         if (parentProcessId == null)
             return null;
@@ -246,6 +262,8 @@ public static partial class ProcessExtensions
     [SupportedOSPlatform("windows")]
     private static void GetChildProcesses(Process process, List<Process> children, int maxDepth, int currentDepth)
     {
+        ArgumentNullException.ThrowIfNull(process);
+
         var entries = new List<ProcessEntry>(100);
         foreach (var entry in GetProcesses())
         {

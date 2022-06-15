@@ -48,13 +48,13 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    protected HtmlNode(string prefix!!, string localName!!, string namespaceURI, HtmlDocument ownerDocument)
+    protected HtmlNode(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
     {
         if (ownerDocument == null && this is not HtmlDocument)
             throw new ArgumentNullException(nameof(ownerDocument));
 
-        _prefix = prefix;
-        _localName = localName;
+        _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
+        _localName = localName ?? throw new ArgumentNullException(nameof(localName));
         DeclaredNamespaceURI = namespaceURI;
         OwnerDocument = ownerDocument;
     }
@@ -411,8 +411,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
 
     public string Id => GetAttributeValue("id");
 
-    protected internal virtual void AddError(HtmlError error!!)
+    protected internal virtual void AddError(HtmlError error)
     {
+        if (error is null)
+            throw new ArgumentNullException(nameof(error));
+
         _errors ??= new Collection<HtmlError>();
         _errors.Add(error);
     }
@@ -576,8 +579,17 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public HtmlAttribute SetAttribute(string prefix!!, string localName!!, string namespaceURI!!, string value)
+    public HtmlAttribute SetAttribute(string prefix, string localName, string namespaceURI, string value)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         var att = Attributes[localName, namespaceURI];
         if (att == null)
         {
@@ -590,8 +602,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return att;
     }
 
-    public bool RemoveAttribute(string name!!)
+    public bool RemoveAttribute(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         if (_attributes == null)
             return false;
 
@@ -599,24 +614,39 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public bool RemoveAttribute(string localName!!, string namespaceURI!!)
+    public bool RemoveAttribute(string localName, string namespaceURI)
     {
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         if (_attributes == null)
             return false;
 
         return Attributes.Remove(localName, namespaceURI);
     }
 
-    public bool RemoveAttributeByPrefix(string prefix!!, string localName!!)
+    public bool RemoveAttributeByPrefix(string prefix, string localName)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
         if (_attributes == null)
             return false;
 
         return Attributes.RemoveByPrefix(prefix, localName);
     }
 
-    public HtmlAttribute SetAttribute(string name!!, string value)
+    public HtmlAttribute SetAttribute(string name, string value)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         var att = Attributes[name];
         if (att == null)
         {
@@ -634,29 +664,44 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     public virtual bool HasChildNodes => _childNodes?.Count > 0;
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public bool HasAttribute(string localName!!, string namespaceURI!!)
+    public bool HasAttribute(string localName, string namespaceURI)
     {
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         if (_attributes == null)
             return false;
 
         return Attributes[localName, namespaceURI] != null;
     }
 
-    public bool HasNonNullNorWhitespaceAttribute(string name!!)
+    public bool HasNonNullNorWhitespaceAttribute(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         return GetNullifiedAttributeValue(name) != null;
     }
 
-    public bool HasAttribute(string name!!)
+    public bool HasAttribute(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         if (_attributes == null)
             return false;
 
         return Attributes[name] != null;
     }
 
-    public string GetAttributeValue(string name!!)
+    public string GetAttributeValue(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         if (_attributes == null)
             return null;
 
@@ -667,8 +712,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return att.Value;
     }
 
-    public string GetAttributeValue(string name!!, string defaultValue)
+    public string GetAttributeValue(string name, string defaultValue)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         if (_attributes == null)
             return defaultValue;
 
@@ -679,8 +727,14 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return att.Value;
     }
 
-    public string GetAttributeValueByPrefix(string prefix!!, string localName!!, string defaultValue)
+    public string GetAttributeValueByPrefix(string prefix, string localName, string defaultValue)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
         if (_attributes == null)
             return defaultValue;
 
@@ -691,8 +745,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return att.Value;
     }
 
-    public string GetNullifiedAttributeValue(string name!!)
+    public string GetNullifiedAttributeValue(string name)
     {
+        if (name is null)
+            throw new ArgumentNullException(nameof(name));
+
         if (_attributes == null)
             return null;
 
@@ -704,8 +761,14 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public string GetNullifiedAttributeValue(string localName!!, string namespaceURI!!)
+    public string GetNullifiedAttributeValue(string localName, string namespaceURI)
     {
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         if (_attributes == null)
             return null;
 
@@ -717,8 +780,14 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public string GetAttributeValue(string localName!!, string namespaceURI!!, string defaultValue)
+    public string GetAttributeValue(string localName, string namespaceURI, string defaultValue)
     {
+        if (localName is null)
+            throw new ArgumentNullException(nameof(localName));
+
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         if (_attributes == null)
             return defaultValue;
 
@@ -737,8 +806,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         ChildNodes.Add(newChild);
     }
 
-    public virtual void InsertAfter(HtmlNode newChild!!, HtmlNode refChild)
+    public virtual void InsertAfter(HtmlNode newChild, HtmlNode refChild)
     {
+        if (newChild is null)
+            throw new ArgumentNullException(nameof(newChild));
+
         if (newChild is HtmlAttribute)
             throw new ArgumentException("Cannot insert an attribute", nameof(newChild));
 
@@ -780,8 +852,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         ChildNodes.Insert(index + 1, newChild);
     }
 
-    public bool IsAncestor(HtmlNode node!!)
+    public bool IsAncestor(HtmlNode node)
     {
+        if (node is null)
+            throw new ArgumentNullException(nameof(node));
+
         for (var n = ParentNode; (n != null) && (n != this); n = n.ParentNode)
         {
             if (n == node)
@@ -790,8 +865,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return false;
     }
 
-    public virtual void InsertBefore(HtmlNode newChild!!, HtmlNode refChild)
+    public virtual void InsertBefore(HtmlNode newChild, HtmlNode refChild)
     {
+        if (newChild is null)
+            throw new ArgumentNullException(nameof(newChild));
+
         if (newChild is HtmlAttribute)
             throw new ArgumentException(message: null, nameof(newChild));
 
@@ -906,8 +984,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         ChildNodes.Replace(newChild, oldChild);
     }
 
-    public virtual string GetNamespaceOfPrefix(string prefix!!)
+    public virtual string GetNamespaceOfPrefix(string prefix)
     {
+        if (prefix is null)
+            throw new ArgumentNullException(nameof(prefix));
+
         if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI != null)
             return DeclaredNamespaceURI;
 
@@ -927,8 +1008,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
-    public virtual string GetPrefixOfNamespace(string namespaceURI!!)
+    public virtual string GetPrefixOfNamespace(string namespaceURI)
     {
+        if (namespaceURI is null)
+            throw new ArgumentNullException(nameof(namespaceURI));
+
         if (namespaceURI.EqualsIgnoreCase(NamespaceURI))
             return Prefix;
 
@@ -947,8 +1031,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return string.Empty;
     }
 
-    public virtual HtmlNode GetParent(Func<HtmlNode, bool> func!!)
+    public virtual HtmlNode GetParent(Func<HtmlNode, bool> func)
     {
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+
         if (ParentNode == null)
             return null;
 
@@ -965,8 +1052,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return namespaces;
     }
 
-    protected virtual void GetNamespaceAttributes(IDictionary<string, string> namespaces!!)
+    protected virtual void GetNamespaceAttributes(IDictionary<string, string> namespaces)
     {
+        if (namespaces is null)
+            throw new ArgumentNullException(nameof(namespaces));
+
         foreach (var att in Attributes)
         {
             if (att.Prefix.EqualsIgnoreCase(XmlnsPrefix))
@@ -998,8 +1088,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return clone;
     }
 
-    public virtual void CopyTo(HtmlNode target!!, HtmlCloneOptions options)
+    public virtual void CopyTo(HtmlNode target, HtmlCloneOptions options)
     {
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
         target.Value = Value;
 
         if ((options & HtmlCloneOptions.StreamOrder) == HtmlCloneOptions.StreamOrder)
@@ -1116,8 +1209,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         }
     }
 
-    protected virtual void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary!!)
+    protected virtual void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary)
     {
+        if (dictionary is null)
+            throw new ArgumentNullException(nameof(dictionary));
+
         if (!string.IsNullOrWhiteSpace(NamespaceURI))
         {
             if (Prefix != null && (scope != XmlNamespaceScope.ExcludeXml || !string.Equals(NamespaceURI, XmlnsNamespaceURI, StringComparison.Ordinal)))
@@ -1168,8 +1264,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return ImportAsXml(owner, deep: true);
     }
 
-    public virtual XmlNode ImportAsXml(XmlDocument owner!!, bool deep)
+    public virtual XmlNode ImportAsXml(XmlDocument owner, bool deep)
     {
+        if (owner is null)
+            throw new ArgumentNullException(nameof(owner));
+
         using var s = new StringWriter();
         using var writer = XmlWriter.Create(s);
         WriteTo(writer);
@@ -1229,8 +1328,11 @@ public abstract class HtmlNode : INotifyPropertyChanged, IXPathNavigable, IXmlNa
         return new HtmlNodeNavigator(OwnerDocument, this, options);
     }
 
-    public virtual IEnumerable<HtmlNode> SelectNodes(string xpath!!, XmlNamespaceManager namespaceManager, HtmlNodeNavigatorOptions options)
+    public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager namespaceManager, HtmlNodeNavigatorOptions options)
     {
+        if (xpath is null)
+            throw new ArgumentNullException(nameof(xpath));
+
         if ((options & HtmlNodeNavigatorOptions.Dynamic) == HtmlNodeNavigatorOptions.Dynamic)
             return DoSelectNodes(xpath, namespaceManager, options);
 

@@ -28,10 +28,10 @@ public sealed class HtmlNodeNavigator : XPathNavigator
     internal static bool EnableTrace { get; set; }
 #endif
 
-    public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode!!, HtmlNodeNavigatorOptions options)
+    public HtmlNodeNavigator(HtmlDocument document, HtmlNode currentNode, HtmlNodeNavigatorOptions options)
     {
+        CurrentNode = currentNode ?? throw new ArgumentNullException(nameof(currentNode));
         Document = document;
-        CurrentNode = currentNode;
         BaseNode = currentNode;
         Options = options;
         if ((options & HtmlNodeNavigatorOptions.RootNode) == HtmlNodeNavigatorOptions.RootNode)
@@ -40,8 +40,11 @@ public sealed class HtmlNodeNavigator : XPathNavigator
         }
     }
 
-    private HtmlNodeNavigator(HtmlNodeNavigator other!!)
+    private HtmlNodeNavigator(HtmlNodeNavigator other)
     {
+        if (other is null)
+            throw new ArgumentNullException(nameof(other));
+
         CurrentNode = other.CurrentNode;
         BaseNode = other.BaseNode;
         Document = other.Document;

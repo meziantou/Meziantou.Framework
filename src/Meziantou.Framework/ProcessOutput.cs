@@ -2,7 +2,7 @@ namespace Meziantou.Framework;
 
 public sealed class ProcessOutput
 {
-    public ProcessOutput(ProcessOutputType type, string text!!)
+    internal ProcessOutput(ProcessOutputType type, string text)
     {
         Type = type;
         Text = text;

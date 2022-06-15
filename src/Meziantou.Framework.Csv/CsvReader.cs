@@ -30,9 +30,9 @@ public class CsvReader
         }
     }
 
-    public CsvReader(TextReader textReader!!)
+    public CsvReader(TextReader textReader)
     {
-        BaseReader = textReader;
+        BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
     }
 
     private async Task<char?> ReadCharAsync()

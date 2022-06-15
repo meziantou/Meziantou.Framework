@@ -17,8 +17,11 @@ public abstract class CodeObject
         SetParent(this, ref field, value);
     }
 
-    protected static void SetParent<T>(CodeObject parent!!, ref T? field, T? value) where T : CodeObject
+    protected static void SetParent<T>(CodeObject parent, ref T? field, T? value) where T : CodeObject
     {
+        if (parent is null)
+            throw new ArgumentNullException(nameof(parent));
+
         if (field != null)
         {
             field.Parent = null; // Detach previous value
@@ -40,8 +43,11 @@ public abstract class CodeObject
         return SetParent(this, value);
     }
 
-    protected static T SetParent<T>(CodeObject parent!!, T? value) where T : CodeObject
+    protected static T SetParent<T>(CodeObject parent, T? value) where T : CodeObject
     {
+        if (parent == null)
+            throw new ArgumentNullException(nameof(parent));
+
         if (value?.Parent != parent)
             throw new ArgumentException("Object already has a parent.", nameof(value));
 

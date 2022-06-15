@@ -10,8 +10,10 @@ internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
     private IEnumerator<T>? _enumerator;
     private bool _enumerated;
 
-    public CachedEnumerableThreadSafe(IEnumerable<T> enumerable!!)
+    public CachedEnumerableThreadSafe(IEnumerable<T> enumerable)
     {
+        ArgumentNullException.ThrowIfNull(enumerable);
+
         _enumerable = enumerable;
     }
 

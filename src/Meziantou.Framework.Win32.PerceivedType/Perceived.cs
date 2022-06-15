@@ -77,8 +77,11 @@ public sealed class Perceived
     /// </summary>
     /// <param name="extension">The file extension. May not be null.</param>
     /// <param name="type">The perceived type.</param>
-    public static Perceived AddPerceived(string extension!!, PerceivedType type)
+    public static Perceived AddPerceived(string extension, PerceivedType type)
     {
+        if (extension is null)
+            throw new ArgumentNullException(nameof(extension));
+
         var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
         lock (SyncObject)
         {
@@ -112,8 +115,11 @@ public sealed class Perceived
     /// <param name="fileName">The file name. May not be null..</param>
     /// <returns>An instance of the PerceivedType type.</returns>
     [SupportedOSPlatform("windows")]
-    public static Perceived GetPerceivedType(string fileName!!)
+    public static Perceived GetPerceivedType(string fileName)
     {
+        if (fileName is null)
+            throw new ArgumentNullException(nameof(fileName));
+
         var extension = Path.GetExtension(fileName);
         if (extension == null)
             throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));

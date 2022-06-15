@@ -19,7 +19,7 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ThrottleExtensions.cs</LastGenOutput>
     </None>
-    <None Include="TaskEx.WhenAll.tt">
+    <None Update="TaskEx.WhenAll.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>TaskEx.WhenAll.cs</LastGenOutput>
     </None>

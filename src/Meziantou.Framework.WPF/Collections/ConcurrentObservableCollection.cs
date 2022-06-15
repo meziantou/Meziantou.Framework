@@ -21,9 +21,9 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     {
     }
 
-    public ConcurrentObservableCollection(Dispatcher dispatcher!!)
+    public ConcurrentObservableCollection(Dispatcher dispatcher)
     {
-        _dispatcher = dispatcher;
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
     }
 
     private static Dispatcher GetCurrentDispatcher()

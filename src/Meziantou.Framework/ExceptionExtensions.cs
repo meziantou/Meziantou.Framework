@@ -4,8 +4,10 @@ namespace Meziantou.Framework;
 
 public static class ExceptionExtensions
 {
-    public static string ToString(this Exception exception!!, bool includeInnerException)
+    public static string ToString(this Exception exception, bool includeInnerException)
     {
+        ArgumentNullException.ThrowIfNull(exception);
+
         if (!includeInnerException)
             return exception.ToString();
 

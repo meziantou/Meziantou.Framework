@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Html;
 [DebuggerDisplay("{Line}x{Column}x{Offset} {ParserState} '{RawValue}'")]
 public sealed class HtmlReaderState
 {
-    public HtmlReaderState(HtmlReader reader!!, HtmlParserState rawParserState, string rawValue)
+    public HtmlReaderState(HtmlReader reader, HtmlParserState rawParserState, string rawValue)
     {
-        Reader = reader;
+        Reader = reader ?? throw new ArgumentNullException(nameof(reader));
         Line = reader.Line;
         Column = reader.Column;
         Offset = reader.Offset;

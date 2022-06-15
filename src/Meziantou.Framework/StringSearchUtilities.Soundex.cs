@@ -15,8 +15,11 @@ public static partial class StringSearchUtilities
     /// <returns> The soundex.</returns>
     /// <exception cref="ArgumentException">Dictionary does not contain character a character of the string <paramref name="s" /></exception>
     [Pure]
-    public static string Soundex(string s!!, IReadOnlyDictionary<char, byte> dic!!, IReadOnlyDictionary<string, char>? replace = null)
+    public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char>? replace = null)
     {
+        ArgumentNullException.ThrowIfNull(s);
+        ArgumentNullException.ThrowIfNull(dic);
+
         s = SoundexStringPrep(s, replace);
         if (s.Length == 0)
         {
@@ -82,8 +85,10 @@ public static partial class StringSearchUtilities
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
     [Pure]
-    public static string Soundex2(string s!!)
+    public static string Soundex2(string s)
     {
+        ArgumentNullException.ThrowIfNull(s);
+
         var sb = new StringBuilder();
         foreach (var t in s.TrimStart().ToUpperInvariant().RemoveDiacritics())
         {
@@ -274,7 +279,7 @@ public static partial class StringSearchUtilities
         return Soundex(s, dic);
     }
 
-    private static void ChangePrefix(StringBuilder sb!!, string prefix!!, string replace!!)
+    private static void ChangePrefix(StringBuilder sb, string prefix, string replace)
     {
         var i = 0;
         while (i < sb.Length && i < prefix.Length)
@@ -292,7 +297,7 @@ public static partial class StringSearchUtilities
     }
 
     [Pure]
-    private static string SoundexStringPrep(string s!!, IReadOnlyDictionary<string, char>? replace = null)
+    private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char>? replace = null)
     {
 
         // takes only the first word of the string.

@@ -106,8 +106,11 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 
     protected override IEnumerable<Task> GetScheduledTasks() => _tasks;
 
-    protected override void QueueTask(Task task!!)
+    protected override void QueueTask(Task task)
     {
+        if (task is null)
+            throw new ArgumentNullException(nameof(task));
+
         _tasks.Enqueue(task);
         _dequeue.Set();
     }

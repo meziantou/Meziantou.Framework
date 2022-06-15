@@ -6,8 +6,10 @@ namespace Meziantou.Framework;
 public static partial class StringBuilderExtensions
 {
     [Pure]
-    public static bool StartsWith(this StringBuilder stringBuilder!!, char prefix)
+    public static bool StartsWith(this StringBuilder stringBuilder, char prefix)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+
         if (stringBuilder.Length == 0)
             return false;
 
@@ -15,8 +17,11 @@ public static partial class StringBuilderExtensions
     }
 
     [Pure]
-    public static bool StartsWith(this StringBuilder stringBuilder!!, string prefix!!)
+    public static bool StartsWith(this StringBuilder stringBuilder, string prefix)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+        ArgumentNullException.ThrowIfNull(prefix);
+
         if (stringBuilder.Length < prefix.Length)
             return false;
 
@@ -30,8 +35,10 @@ public static partial class StringBuilderExtensions
     }
 
     [Pure]
-    public static bool EndsWith(this StringBuilder stringBuilder!!, char suffix)
+    public static bool EndsWith(this StringBuilder stringBuilder, char suffix)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+
         if (stringBuilder.Length == 0)
             return false;
 
@@ -39,8 +46,11 @@ public static partial class StringBuilderExtensions
     }
 
     [Pure]
-    public static bool EndsWith(this StringBuilder stringBuilder!!, string suffix!!)
+    public static bool EndsWith(this StringBuilder stringBuilder, string suffix)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+        ArgumentNullException.ThrowIfNull(suffix);
+
         if (stringBuilder.Length < suffix.Length)
             return false;
 
@@ -53,8 +63,10 @@ public static partial class StringBuilderExtensions
         return true;
     }
 
-    public static void TrimStart(this StringBuilder stringBuilder!!, char trimChar)
+    public static void TrimStart(this StringBuilder stringBuilder, char trimChar)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+
         for (var i = 0; i < stringBuilder.Length; i++)
         {
             if (stringBuilder[i] == trimChar)
@@ -69,8 +81,10 @@ public static partial class StringBuilderExtensions
         }
     }
 
-    public static void TrimEnd(this StringBuilder stringBuilder!!, char trimChar)
+    public static void TrimEnd(this StringBuilder stringBuilder, char trimChar)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+
         for (var i = stringBuilder.Length - 1; i >= 0; i--)
         {
             if (stringBuilder[i] == trimChar)
@@ -87,6 +101,8 @@ public static partial class StringBuilderExtensions
 
     public static void Trim(this StringBuilder stringBuilder, char trimChar)
     {
+        ArgumentNullException.ThrowIfNull(stringBuilder);
+
         TrimEnd(stringBuilder, trimChar);
         TrimStart(stringBuilder, trimChar);
     }

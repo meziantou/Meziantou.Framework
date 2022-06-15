@@ -16,8 +16,11 @@ public sealed class Calendar
         ToIcs(writer);
     }
 
-    public void ToIcs(TextWriter writer!!)
+    public void ToIcs(TextWriter writer)
     {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
         /*
         BEGIN:VCALENDAR
 

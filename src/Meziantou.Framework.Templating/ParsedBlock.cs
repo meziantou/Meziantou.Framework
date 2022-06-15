@@ -2,10 +2,10 @@ namespace Meziantou.Framework.Templating;
 
 public class ParsedBlock
 {
-    public ParsedBlock(Template template!!, string text!!, int index)
+    public ParsedBlock(Template template, string text, int index)
     {
-        Template = template;
-        Text = text;
+        Template = template ?? throw new ArgumentNullException(nameof(template));
+        Text = text ?? throw new ArgumentNullException(nameof(text));
         Index = index;
     }
 

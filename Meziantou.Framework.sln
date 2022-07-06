@@ -229,7 +229,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Chromiu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Trimmable.Wpf", "Samples\Trimmable.Wpf\Trimmable.Wpf.csproj", "{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Html.Tool.Tests", "tests\Meziantou.Framework.Html.Tool.Tests\Meziantou.Framework.Html.Tool.Tests.csproj", "{4208E471-A24B-4AF1-85AA-CDC52766D70E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Html.Tool.Tests", "tests\Meziantou.Framework.Html.Tool.Tests\Meziantou.Framework.Html.Tool.Tests.csproj", "{4208E471-A24B-4AF1-85AA-CDC52766D70E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SimpleQueryLanguage", "src\Meziantou.Framework.SimpleQueryLanguage\Meziantou.Framework.SimpleQueryLanguage.csproj", "{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SimpleQueryLanguage.Tests", "tests\Meziantou.Framework.SimpleQueryLanguage.Tests\Meziantou.Framework.SimpleQueryLanguage.Tests.csproj", "{12703354-06E4-49AE-9AAF-4E2D54600B02}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -633,6 +637,14 @@ Global
 		{4208E471-A24B-4AF1-85AA-CDC52766D70E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4208E471-A24B-4AF1-85AA-CDC52766D70E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4208E471-A24B-4AF1-85AA-CDC52766D70E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -737,6 +749,8 @@ Global
 		{258F2C34-4EDD-4E46-A687-80F38430A5EA} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{4C7D0112-381C-43E5-B07F-87BB8D4DCB8D} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 		{4208E471-A24B-4AF1-85AA-CDC52766D70E} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{12703354-06E4-49AE-9AAF-4E2D54600B02} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

@@ -28,6 +28,7 @@
 | Meziantou.Framework.RelativeDate | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.RelativeDate.svg)](https://www.nuget.org/packages/Meziantou.Framework.RelativeDate/) |
 | Meziantou.Framework.ResxSourceGenerator | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ResxSourceGenerator.svg)](https://www.nuget.org/packages/Meziantou.Framework.ResxSourceGenerator/) |
 | Meziantou.Framework.Scheduling | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Scheduling.svg)](https://www.nuget.org/packages/Meziantou.Framework.Scheduling/) |
+| Meziantou.Framework.SimpleQueryLanguage | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SimpleQueryLanguage.svg)](https://www.nuget.org/packages/Meziantou.Framework.SimpleQueryLanguage/) |
 | Meziantou.Framework.SingleInstance | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SingleInstance.svg)](https://www.nuget.org/packages/Meziantou.Framework.SingleInstance/) |
 | Meziantou.Framework.Slug | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Slug.svg)](https://www.nuget.org/packages/Meziantou.Framework.Slug/) |
 | Meziantou.Framework.StronglyTypedId | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.StronglyTypedId.svg)](https://www.nuget.org/packages/Meziantou.Framework.StronglyTypedId/) |

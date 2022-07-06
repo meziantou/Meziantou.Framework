@@ -32,7 +32,7 @@ public static partial class EnumerableExtensions
 
         return Parallel.ForEachAsync(source, new ParallelOptions { MaxDegreeOfParallelism = degreeOfParallelism, CancellationToken = cancellationToken }, (item, ct) => new ValueTask(action(item)));
     }
-#elif NET5_0 || NETSTANDARD2_0
+#elif NETSTANDARD2_0
     public static async Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
     {
         if (source is null)

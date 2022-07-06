@@ -93,7 +93,6 @@ jobs:
         with:
           dotnet-version: |
             6.0.x
-            5.0.x
             3.1.x
       - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
         name: Build

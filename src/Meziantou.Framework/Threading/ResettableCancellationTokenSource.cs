@@ -33,18 +33,11 @@ public sealed class ResettableCancellationTokenSource : IDisposable
             _cts.Cancel();
         }
 
-#if NET6_0_OR_GREATER
         if (!_cts.TryReset())
         {
             _cts.Dispose();
             _cts = new CancellationTokenSource();
         }
-#elif NET5_0
-        _cts.Dispose();
-        _cts = new CancellationTokenSource();
-#else
-#error Platform not supported
-#endif
     }
 
     public void Dispose()

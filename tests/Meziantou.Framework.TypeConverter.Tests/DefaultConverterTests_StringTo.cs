@@ -255,6 +255,7 @@ public class DefaultConverterTests_StringTo
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base64()
     {
         var converter = new DefaultConverter();
@@ -298,6 +299,7 @@ public class DefaultConverterTests_StringTo
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base16()
     {
         var converter = new DefaultConverter();
@@ -309,6 +311,7 @@ public class DefaultConverterTests_StringTo
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base16Prefixed()
     {
         var converter = new DefaultConverter();

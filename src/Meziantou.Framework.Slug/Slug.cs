@@ -17,11 +17,7 @@ public static class Slug
         if (text == null)
             return null;
 
-        if (options == null)
-        {
-            options = SlugOptions.Default;
-        }
-
+        options ??= SlugOptions.Default;
         text = text.Normalize(NormalizationForm.FormD);
 
         var sb = new StringBuilder(options.MaximumLength > 0 ? Math.Min(text.Length, options.MaximumLength) : text.Length);

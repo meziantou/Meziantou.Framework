@@ -450,10 +450,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
                     var existingEntry = entries.Find(e => e.Name == name);
                     if (existingEntry != null)
                     {
-                        if (existingEntry.Comment == null)
-                        {
-                            existingEntry.Comment = comment;
-                        }
+                        existingEntry.Comment ??= comment;
                     }
                     else
                     {

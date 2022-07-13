@@ -12,11 +12,7 @@ internal struct EnabledScannersArray : IEnabledScannersArray
 
     public void Set(int index)
     {
-        if (_values is null)
-        {
-            _values = new SortedList<int, int>();
-        }
-
+        _values ??= new SortedList<int, int>();
         _values.Add(index, index);
     }
 

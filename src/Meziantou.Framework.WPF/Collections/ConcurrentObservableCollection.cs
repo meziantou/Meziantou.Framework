@@ -45,10 +45,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             {
                 lock (_lock)
                 {
-                    if (_observableCollection == null)
-                    {
-                        _observableCollection = new DispatchedObservableCollection<T>(this, _dispatcher);
-                    }
+                    _observableCollection ??= new DispatchedObservableCollection<T>(this, _dispatcher);
                 }
             }
 

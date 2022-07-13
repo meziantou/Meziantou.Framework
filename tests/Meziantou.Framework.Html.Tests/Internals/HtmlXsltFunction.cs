@@ -107,11 +107,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             StringBuilder sb = null;
             foreach (var arg in enumerable)
             {
-                if (sb == null)
-                {
-                    sb = new StringBuilder();
-                }
-
+                sb ??= new StringBuilder();
                 if (sb.Length > 0 && separator != null)
                 {
                     sb.Append(separator);

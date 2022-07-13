@@ -45,11 +45,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
             if (SearchForReferencesInAssociatedCsprojFiles)
             {
-                if (csprojs == null)
-                {
-                    csprojs = await LoadAssociatedCsProjAsync(context).ConfigureAwait(false);
-                }
-
+                csprojs ??= await LoadAssociatedCsProjAsync(context).ConfigureAwait(false);
                 foreach (var (file, csproj) in csprojs)
                 {
                     await FindInReferences(context, dependency, file, csproj).ConfigureAwait(false);

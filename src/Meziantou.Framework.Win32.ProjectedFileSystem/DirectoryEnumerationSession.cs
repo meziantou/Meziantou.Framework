@@ -19,11 +19,7 @@ internal sealed class DirectoryEnumerationSession : IDisposable
             return current;
         }
 
-        if (_enumerator == null)
-        {
-            _enumerator = Entries.GetEnumerator();
-        }
-
+        _enumerator ??= Entries.GetEnumerator();
         if (_enumerator.MoveNext())
         {
             return _enumerator.Current;

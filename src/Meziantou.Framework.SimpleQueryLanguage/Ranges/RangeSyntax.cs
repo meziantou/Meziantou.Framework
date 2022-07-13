@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
+﻿namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
 
 internal static class RangeSyntax
 {

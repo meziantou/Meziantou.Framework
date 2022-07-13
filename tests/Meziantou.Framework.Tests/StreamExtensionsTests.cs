@@ -8,6 +8,7 @@ public sealed class StreamExtensionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ReadToEndTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -23,6 +24,7 @@ public sealed class StreamExtensionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public async Task ReadToEndAsyncTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -38,6 +40,7 @@ public sealed class StreamExtensionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryReadAllTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -54,6 +57,7 @@ public sealed class StreamExtensionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public async Task TryReadAllAsyncTests(bool canSeek)
     {
         using var stream = new MemoryStream();

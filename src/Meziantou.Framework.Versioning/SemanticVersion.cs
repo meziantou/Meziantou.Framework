@@ -300,11 +300,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         {
             if (TryReadMetadataIdentifier(versionString, ref index, out var label))
             {
-                if (result == null)
-                {
-                    result = new List<string>();
-                }
-
+                result ??= new List<string>();
                 result.Add(label);
             }
 

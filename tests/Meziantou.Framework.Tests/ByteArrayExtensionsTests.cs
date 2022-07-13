@@ -6,6 +6,7 @@ namespace Meziantou.Framework.Tests;
 public class ByteArrayExtensionsTests
 {
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_UpperCase()
     {
         var options = HexaOptions.UpperCase;
@@ -29,6 +30,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_LowerCase()
     {
         var options = HexaOptions.LowerCase;
@@ -52,6 +54,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa()
     {
         AssertTryFromHexa("00", new byte[] { 0x00 });
@@ -86,6 +89,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ParseHexa_WithPrefix()
     {
         HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });
@@ -127,6 +131,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_Span_UpperCase()
     {
         var options = HexaOptions.UpperCase;
@@ -150,6 +155,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_Span_LowerCase()
     {
         var options = HexaOptions.LowerCase;
@@ -173,6 +179,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa_Span()
     {
         AssertTryFromHexa("00", new byte[] { 0x00 });
@@ -209,6 +216,7 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa_Span_WithPrefix()
     {
         HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });

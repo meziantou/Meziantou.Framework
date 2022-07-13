@@ -21,6 +21,7 @@ internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
         }
     }
 
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     protected override Stream OpenRead(string path)
     {
         if (AreFileNamesEqual(path, "a"))

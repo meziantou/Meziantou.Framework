@@ -9,8 +9,7 @@ public sealed class Utf8ExtensionsTests
     [Fact]
     public void EnumerateRunesFromUtf8Test()
     {
-        // 😊=√
-        ReadOnlySpan<byte> bytes = new byte[] { 240, 159, 152, 138, 0x3C, 0xE2, 0x88, 0x9A };
+        ReadOnlySpan<byte> bytes = "😊<√"u8.ToArray();
         var runes = new List<Rune>();
         foreach (var rune in bytes.EnumerateRunesFromUtf8())
         {

@@ -8,10 +8,10 @@ namespace Meziantou.Framework.ChromiumTracing;
 // https://github.com/catapult-project/catapult/blob/6d5a4e52871813b8b2e71b378fc54bca459600c4/tracing/tracing/extras/importer/trace_event_importer.html
 public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 {
-    private static readonly byte[] ArrayEmpty = new[] { (byte)'[', (byte)']' };
-    private static readonly byte[] ArrayStart = new[] { (byte)'[', (byte)'\n' };
-    private static readonly byte[] ArrayEnd = new[] { (byte)'\n', (byte)']' };
-    private static readonly byte[] ArrayItemSeparator = new[] { (byte)',', (byte)'\n' };
+    private static readonly byte[] ArrayEmpty = "[]"u8.ToArray();
+    private static readonly byte[] ArrayStart = "[\n"u8.ToArray();
+    private static readonly byte[] ArrayEnd = "\n]"u8.ToArray();
+    private static readonly byte[] ArrayItemSeparator = ",\n"u8.ToArray();
 
     private readonly bool _streamOwned;
     private readonly Stream _stream;

@@ -284,11 +284,7 @@ internal static class GlobParser
 
         static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
         {
-            if (subSegments == null)
-            {
-                subSegments = new List<Segment>();
-            }
-
+            subSegments ??= new List<Segment>();
             if (currentLiteral.Length > 0)
             {
                 subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));

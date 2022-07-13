@@ -43,10 +43,7 @@ public abstract class RecurrenceRuleHumanizer
         if (rrule is null)
             throw new ArgumentNullException(nameof(rrule));
 
-        if (cultureInfo == null)
-        {
-            cultureInfo = CultureInfo.CurrentUICulture;
-        }
+        cultureInfo ??= CultureInfo.CurrentUICulture;
 
         if (!SupportedHumanizers.TryGetValue(cultureInfo, out var humanizer))
         {

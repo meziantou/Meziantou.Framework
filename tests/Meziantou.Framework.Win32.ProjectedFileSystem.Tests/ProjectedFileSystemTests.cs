@@ -5,6 +5,7 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 public sealed class ProjectedFileSystemTests
 {
     [ProjectedFileSystemFact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void Test()
     {
         var guid = Guid.NewGuid();

@@ -18,12 +18,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            if (_types == null)
-            {
-                _types = new CodeObjectCollection<TypeDeclaration>(this);
-            }
-
-            return _types;
+            return _types ??= new CodeObjectCollection<TypeDeclaration>(this);
         }
     }
 
@@ -31,11 +26,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            if (_namespaces == null)
-            {
-                _namespaces = new CodeObjectCollection<NamespaceDeclaration>(this);
-            }
-
+            _namespaces ??= new CodeObjectCollection<NamespaceDeclaration>(this);
             return _namespaces;
         }
     }
@@ -44,11 +35,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            if (_usings == null)
-            {
-                _usings = new CodeObjectCollection<UsingDirective>(this);
-            }
-            return _usings;
+            return _usings ??= new CodeObjectCollection<UsingDirective>(this);
         }
     }
 

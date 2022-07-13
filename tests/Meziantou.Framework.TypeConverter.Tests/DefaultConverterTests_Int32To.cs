@@ -60,6 +60,7 @@ public class DefaultConverterTests_Int32To
     }
 
     [Fact]
+    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_Int32ToByteArray()
     {
         var converter = new DefaultConverter();

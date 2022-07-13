@@ -10,6 +10,8 @@
 
     <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework)</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows)</LatestTargetFrameworksWindows>
+
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>
 
   <PropertyGroup>

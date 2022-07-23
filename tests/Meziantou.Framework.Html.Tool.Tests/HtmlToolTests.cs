@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -77,4 +78,32 @@ public class HtmlToolTests
         await ContentEquals(htmlPath, "<span>replaced</span>");
     }
 
+    [Fact]
+    public async Task InlineResources()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var htmlPath = await temp.CreateTextFileAsync("test.html",
+            """
+<link href="style.css" />
+<script src="script.js" />
+<img src="img.png" />
+<img src="img.jpg" />
+""");
+
+        await temp.CreateTextFileAsync("style.css", "a");
+        await temp.CreateTextFileAsync("script.js", "b");
+        await temp.CreateTextFileAsync("img.png", "c");
+
+        var result = await Program.MainImpl(new[] { "inline-resources", "--single-file=" + htmlPath, "--resource-patterns=.(png|js|css)$" }, new XunitConsole(_testOutputHelper));
+        using (new AssertionScope())
+        {
+            result.Should().Be(0);
+            await ContentEquals(htmlPath, """
+<style>a</style>
+<script>b</script>
+<img src="data:image/png;base64,Yw==" />
+<img src="img.jpg" />
+""");
+        }
+    }
 }

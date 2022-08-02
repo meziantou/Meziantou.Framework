@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -176,7 +177,12 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
     }
 
     public static FullPath GetTempPath() => FromPath(Path.GetTempPath());
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public static FullPath GetTempFileName() => FromPath(Path.GetTempFileName());
+
+    public static FullPath CreateTempFile() => FromPath(Path.GetTempFileName());
+
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 

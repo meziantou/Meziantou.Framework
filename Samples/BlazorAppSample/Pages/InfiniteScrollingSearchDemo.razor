@@ -1,0 +1,37 @@
+﻿@page "/infinite-scrolling-search"
+@using System.Globalization
+
+<h1>Infinite scrolling!</h1>
+
+<input type="number" value="@query" @oninput="QueryChanged" />
+
+<InfiniteScrolling @ref="InfiniteScrollingInstance" ItemsProvider="request => GetItems(request)">
+    <ItemTemplate Context="item">
+        <div>Item @item</div>
+    </ItemTemplate>
+    <LoadingTemplate>
+        <div><span class="oi oi-reload spin"></span> Loading more items...</div>
+    </LoadingTemplate>
+</InfiniteScrolling>
+
+@code {
+    InfiniteScrolling<int> InfiniteScrollingInstance;
+    string query = "0";
+
+    async Task<IEnumerable<int>> GetItems(InfiniteScrollingItemsProviderRequest request)
+    {
+        if (!int.TryParse(query, System.Globalization.NumberStyles.None, CultureInfo.InvariantCulture, out var minValue))
+        {
+            minValue = 0;
+        }
+
+        await Task.Delay(500);
+        return Enumerable.Range(request.StartIndex + minValue, 10);
+    }
+
+    private async Task QueryChanged(ChangeEventArgs e)
+    {
+        query = (string)e.Value;
+        await InfiniteScrollingInstance.RefreshDataAsync();
+    }
+}

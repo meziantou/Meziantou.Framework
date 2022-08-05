@@ -7,7 +7,7 @@
 
 @foreach (var item in _items)
 {
-    @if(ItemTemplate != null)
+    @if (ItemTemplate != null)
     {
         @ItemTemplate(item)
     }
@@ -27,6 +27,7 @@
     private IJSObjectReference? _instance;
     private bool _loading = false;
     private CancellationTokenSource? _loadItemsCts;
+    private InfiniteScrollingItemsProviderRequestDelegate<T>? _itemsProvider;
 
     [Parameter]
     public InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get; set; }
@@ -40,36 +41,63 @@
     [JSInvokable]
     public async Task LoadMoreItems()
     {
-        if (_loading)
+        if (_loadItemsCts != null)
             return;
 
         if (ItemsProvider == null)
             return;
 
-        _loading = true;
+        var items = _items;
+        var cts = new CancellationTokenSource();
+        _loadItemsCts = cts;
         try
         {
-            _loadItemsCts ??= new CancellationTokenSource();
-
             StateHasChanged(); // Allow the UI to display the loading indicator
             try
             {
-                var newItems = await ItemsProvider(new InfiniteScrollingItemsProviderRequest(_items.Count, _loadItemsCts.Token));
-                _items.AddRange(newItems);
-                System.Diagnostics.Debug.Assert(_instance != null);
-                await _instance.InvokeVoidAsync("onNewItems");
+                var newItems = await ItemsProvider(new InfiniteScrollingItemsProviderRequest(items.Count, cts.Token));
+                if (!cts.IsCancellationRequested)
+                {
+                    items.AddRange(newItems);
+
+                    System.Diagnostics.Debug.Assert(_instance != null);
+                    await _instance.InvokeVoidAsync("onNewItems");
+                }
             }
-            catch (OperationCanceledException oce) when (oce.CancellationToken == _loadItemsCts.Token)
+            catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
             {
                 // No-op; we canceled the operation, so it's fine to suppress this exception.
             }
         }
         finally
         {
-            _loading = false;
+            _loadItemsCts = null;
+            cts.Dispose();
         }
 
         StateHasChanged(); // Display the new items and hide the loading indicator
+    }
+
+    public async Task RefreshDataAsync()
+    {
+        _loadItemsCts?.Cancel(); // Will be disposed by the LoadMoreData method
+        _loadItemsCts = null;
+
+        _items = new List<T>();
+        await LoadMoreItems();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+
+        // Clear items when the provider changed
+        if (ItemsProvider != _itemsProvider)
+        {
+            _items.Clear();
+        }
+
+        _itemsProvider = ItemsProvider;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

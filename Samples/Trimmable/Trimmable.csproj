@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <TargetFramework>$(LatestTargetFrameworkPreview)</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
 
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <TrimMode>full</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>

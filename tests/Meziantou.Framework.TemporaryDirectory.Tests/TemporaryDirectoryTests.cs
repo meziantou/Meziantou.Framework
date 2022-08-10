@@ -58,7 +58,7 @@ public class TemporaryDirectoryTests
         {
             path = dir.FullPath;
 
-#if NET461 || NET472
+#if NET461 || NET462 || NET472
             File.WriteAllText(dir.GetFullPath("a.txt"), "content");
 #elif NETCOREAPP3_1_OR_GREATER
             await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");

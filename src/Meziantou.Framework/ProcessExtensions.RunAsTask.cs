@@ -293,7 +293,7 @@ public static partial class ProcessExtensions
                 return await Task.ConfigureAwait(false);
             }
         }
-#elif NET461 || NETSTANDARD2_0
+#elif NET461 || NET462 || NETSTANDARD2_0
         public async Task<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;

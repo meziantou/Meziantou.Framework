@@ -1,4 +1,4 @@
-#if NET461
+#if NET462
 namespace TestUtilities;
 
 internal static class StringExtensions

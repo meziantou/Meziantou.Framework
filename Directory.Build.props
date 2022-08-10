@@ -42,7 +42,7 @@
     <Using Include="System.Diagnostics.CodeAnalysis" />
 
     <!-- System.Net.Http doesn't exit in net461 by default -->
-    <Reference Include="System.Net.Http" Condition="$(TargetFramework) == 'net461' OR $(TargetFramework) == 'net472'" />
+    <Reference Include="System.Net.Http" Condition="$(TargetFramework) == 'net461' OR $(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'" />
   </ItemGroup>
 
   <!-- Package configuration -->

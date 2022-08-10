@@ -493,6 +493,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
             return null;
         }
+
+        public bool CanUseStaticInterface()
+        {
+            if (Compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions options)
+                return options.LanguageVersion == LanguageVersion.Preview;
+
+            return false;
+        }
     }
 
     [Flags]

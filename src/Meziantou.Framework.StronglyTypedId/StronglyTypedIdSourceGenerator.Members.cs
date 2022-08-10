@@ -6,6 +6,7 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
+    // ISpanFormattable
     private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context)
     {
         var idType = context.AttributeInfo.IdType;
@@ -229,7 +230,6 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // Parse
-        if (!context.IsParseDefined_String())
         {
             var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
             parseMethod.ReturnType = structDeclaration;
@@ -253,6 +253,105 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsTryParseDefined_String())
         {
             GenerateTryParseMethod(structDeclaration, context, idType, isReadOnlySpan: false);
+        }
+
+        if (context.CanUseStaticInterface())
+        {
+            // ISpanParsable
+            if (context.SupportReadOnlySpan() && compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null)
+            {
+                structDeclaration.Implements.Add(new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration));
+
+                // TryParse
+                {
+                    var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Static });
+                    tryParseMethod.PrivateImplementationType = new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration);
+                    tryParseMethod.ReturnType = typeof(bool);
+                    var valueArg = tryParseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
+                    var providerArg = tryParseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
+                    var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
+                    if (context.IsReferenceType)
+                    {
+                        resultArg.Type = resultArg.Type?.MakeNullable();
+                    }
+
+                    if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                    {
+                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
+                    }
+
+                    tryParseMethod.Statements =
+                            new ReturnStatement(
+                                new MethodInvokeExpression(
+                                    new MemberReferenceExpression(structDeclaration, "TryParse"),
+                                    valueArg,
+                                    new MethodInvokeArgumentExpression(resultArg, Direction.Out)));
+                }
+
+                // Parse
+                {
+                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Static });
+                    parseMethod.PrivateImplementationType = new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration);
+                    parseMethod.ReturnType = structDeclaration;
+                    var valueArg = parseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
+                    var providerArg = parseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
+                    parseMethod.Statements = new StatementCollection();
+                    var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
+                    parseMethod.Statements =
+                            new ReturnStatement(
+                                new MethodInvokeExpression(
+                                    new MemberReferenceExpression(structDeclaration, "Parse"),
+                                    valueArg));
+                }
+            }
+
+            // IParsable
+            if (compilation.GetTypeByMetadataName("System.IParsable`1") != null)
+            {
+                structDeclaration.Implements.Add(new TypeReference("System.IParsable").MakeGeneric(structDeclaration));
+
+                // TryParse
+                {
+                    var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Static });
+                    tryParseMethod.PrivateImplementationType = new TypeReference("System.IParsable").MakeGeneric(structDeclaration);
+                    tryParseMethod.ReturnType = typeof(bool);
+                    var valueArg = tryParseMethod.AddArgument("value", new TypeReference(typeof(string)).MakeNullable());
+                    var providerArg = tryParseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
+                    var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
+                    if (context.IsReferenceType)
+                    {
+                        resultArg.Type = resultArg.Type?.MakeNullable();
+                    }
+
+                    if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                    {
+                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
+                    }
+
+                    tryParseMethod.Statements =
+                            new ReturnStatement(
+                                new MethodInvokeExpression(
+                                    new MemberReferenceExpression(structDeclaration, "TryParse"),
+                                    valueArg,
+                                    new MethodInvokeArgumentExpression(resultArg, Direction.Out)));
+                }
+
+                // Parse
+                {
+                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Static });
+                    parseMethod.PrivateImplementationType = new TypeReference("System.IParsable").MakeGeneric(structDeclaration);
+                    parseMethod.ReturnType = structDeclaration;
+                    var valueArg = parseMethod.AddArgument("value", typeof(string));
+                    var providerArg = parseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
+                    parseMethod.Statements = new StatementCollection();
+                    var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
+                    parseMethod.Statements =
+                            new ReturnStatement(
+                                new MethodInvokeExpression(
+                                    new MemberReferenceExpression(structDeclaration, "Parse"),
+                                    valueArg));
+                }
+            }
         }
 
         static void GenerateTryParseMethod(ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context, IdType idType, bool isReadOnlySpan)

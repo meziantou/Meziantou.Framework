@@ -125,6 +125,22 @@ public sealed partial class StronglyTypedIdTests
         typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32").GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().BeNull();
     }
 
+#if NET7_0_OR_GREATER
+    [Fact]
+    public void IParsable_Int32()
+    {
+        Parse<IdInt32>("test");
+        void Parse<T>(string _) where T : IParsable<IdInt32> { }
+    }
+
+    [Fact]
+    public void ISpanParsable_Int32()
+    {
+        Parse<IdInt32>("test");
+        void Parse<T>(string _) where T : ISpanParsable<IdInt32> { }
+    }
+#endif
+
     [Fact]
     public void String_Parse()
     {
@@ -184,21 +200,21 @@ public sealed partial class StronglyTypedIdTests
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("null");
         value.Should().BeNull();
     }
-    
+
     [Fact]
     public void NewtonsoftJson_NullableInt32_ParseValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("42");
         value.Value.Value.Should().Be(42);
     }
-    
+
     [Fact]
     public void NewtonsoftJson_IdClassString_ParseNull()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdClassString>("null");
         value.Should().BeNull();
     }
-    
+
     [Fact]
     public void NewtonsoftJson_IdClassString_ParseString()
     {

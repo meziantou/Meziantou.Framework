@@ -1,4 +1,5 @@
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.DependencyScanning.Locations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,7 +9,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
 {
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("global.json", StringComparison.Ordinal);
+        return context.HasFileName("global.json", ignoreCase: false);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -19,15 +20,15 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
             using var jsonReader = new JsonTextReader(sr);
             var doc = await JToken.ReadFromAsync(jsonReader, context.CancellationToken).ConfigureAwait(false);
 
-            await ExtractSdk(context, doc).ConfigureAwait(false);
-            await ExtractMsBuildSdks(context, doc).ConfigureAwait(false);
+            ExtractSdk(context, doc);
+            ExtractMsBuildSdks(context, doc);
         }
         catch (JsonException)
         {
         }
     }
 
-    private static async Task ExtractMsBuildSdks(ScanFileContext context, JToken doc)
+    private static void ExtractMsBuildSdks(ScanFileContext context, JToken doc)
     {
         var sdksToken = doc.SelectToken("$.msbuild-sdks");
         if (sdksToken is JObject sdks)
@@ -37,18 +38,22 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
                 var sdkVersion = sdk.Value.Value<string>();
                 if (sdkVersion != null)
                 {
-                    await context.ReportDependency(new Dependency(sdk.Name, sdkVersion, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(sdk.Value), sdk.Value.Path))).ConfigureAwait(false);
+                    context.ReportDependency(new Dependency(sdk.Name, sdkVersion, DependencyType.NuGet,
+                        nameLocation: new NonUpdatableLocation(context),
+                        versionLocation: new JsonLocation(context, sdk.Value)));
                 }
             }
         }
     }
 
-    private static async Task ExtractSdk(ScanFileContext context, JToken doc)
+    private static void ExtractSdk(ScanFileContext context, JToken doc)
     {
         var token = doc.SelectToken("$.sdk.version");
         if (token?.Value<string>() is string version)
         {
-            await context.ReportDependency(new Dependency(".NET SDK", version, DependencyType.DotNetSdk, new JsonLocation(context.FullPath, LineInfo.FromJToken(token), token.Path))).ConfigureAwait(false);
+            context.ReportDependency(new Dependency(name: null, version, DependencyType.DotNetSdk,
+                nameLocation: null,
+                versionLocation: new JsonLocation(context, token)));
         }
     }
 }

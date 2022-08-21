@@ -1,4 +1,5 @@
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.DependencyScanning.Locations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,7 +9,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 {
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("package.json", StringComparison.Ordinal);
+        return context.HasFileName("package.json", ignoreCase: false);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -48,7 +49,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private static async ValueTask ScanDependenciesAsync(ScanFileContext context, JObject deps)
+    private static ValueTask ScanDependenciesAsync(ScanFileContext context, JObject deps)
     {
         foreach (var dep in deps.Properties())
         {
@@ -85,9 +86,13 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 
             if (dep.Value != null)
             {
-                var dependency = new Dependency(packageName, version, DependencyType.Npm, new JsonLocation(context.FullPath, LineInfo.FromJToken(dep), dep.Value.Path));
-                await context.ReportDependency(dependency).ConfigureAwait(false);
+                var dependency = new Dependency(packageName, version, DependencyType.Npm,
+                    nameLocation: new NonUpdatableLocation(context),
+                    versionLocation: new JsonLocation(context, dep.Value));
+                context.ReportDependency(dependency);
             }
         }
+
+        return ValueTask.CompletedTask;
     }
 }

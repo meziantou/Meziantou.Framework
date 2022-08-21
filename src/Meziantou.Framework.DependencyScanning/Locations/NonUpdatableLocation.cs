@@ -2,14 +2,20 @@ namespace Meziantou.Framework.DependencyScanning.Locations;
 
 internal sealed class NonUpdatableLocation : Location
 {
-    public NonUpdatableLocation(string filePath)
-        : base(filePath)
+    public NonUpdatableLocation(ScanFileContext context)
+        : base(context.FileSystem, context.FullPath)
     {
     }
+
+    public NonUpdatableLocation(IFileSystem fileSystem, string filePath)
+        : base(fileSystem, filePath)
+    {
+    }
+
     public override bool IsUpdatable => false;
 
-    protected internal override Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
-        throw new InvalidOperationException("This dependency cannot be updated");
+        throw new NotSupportedException("Cannot update this location");
     }
 }

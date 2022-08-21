@@ -13,7 +13,7 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.EndsWith(".nuspec", StringComparison.OrdinalIgnoreCase);
+        return context.HasExtension(".nuspec", ignoreCase: true);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -24,12 +24,15 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
 
         foreach (var dependency in doc.Descendants(DependencyXName))
         {
-            var id = dependency.Attribute(IdXName)?.Value;
-            var version = dependency.Attribute(VersionXName)?.Value;
-
+            var idAttribute = dependency.Attribute(IdXName);
+            var id = idAttribute?.Value;
+            var versionAttribute = dependency.Attribute(VersionXName);
+            var version = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(version))
             {
-                await context.ReportDependency(new Dependency(id, version, DependencyType.NuGet, new XmlLocation(context.FullPath, dependency, "version"))).ConfigureAwait(false);
+                context.ReportDependency(new Dependency(id, version, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, idAttribute),
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute)));
             }
         }
     }

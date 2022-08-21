@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.0.0-alpha.9</Version>
+    <Version>1.0.0-alpha.10</Version>
   </PropertyGroup>
 
   <ItemGroup>

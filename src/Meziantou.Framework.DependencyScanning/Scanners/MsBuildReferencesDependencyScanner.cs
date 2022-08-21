@@ -13,9 +13,9 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
-            || context.FileName.EndsWith(".props", StringComparison.OrdinalIgnoreCase)
-            || context.FileName.EndsWith(".targets", StringComparison.OrdinalIgnoreCase);
+        return context.HasExtension(".csproj", ignoreCase: true)
+            || context.HasExtension(".props", ignoreCase: true)
+            || context.HasExtension(".targets", ignoreCase: true);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -25,78 +25,100 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             return;
 
         var ns = doc.Root.GetDefaultNamespace();
-        foreach (var package in doc.Descendants(ns + "PackageReference"))
+        foreach (var package in doc.Descendants(ns + "ItemGroup").Elements(ns + "PackageReference"))
         {
-            var packageName = package.Attribute(IncludeXName)?.Value;
-            if (string.IsNullOrEmpty(packageName))
+            var nameAttribute = package.Attribute(IncludeXName);
+            var nameValue = nameAttribute?.Value;
+            if (string.IsNullOrEmpty(nameValue))
                 continue;
 
-            var versionAttribute = package.Attribute(VersionXName)?.Value;
-            if (!string.IsNullOrEmpty(versionAttribute))
+            var versionAttribute = package.Attribute(VersionXName);
+            var versionAttributeValue = versionAttribute?.Value;
+            if (!string.IsNullOrEmpty(versionAttributeValue))
             {
-                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionXName.LocalName))).ConfigureAwait(false);
+                context.ReportDependency(new Dependency(nameValue, versionAttributeValue, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute)));
             }
             else
             {
                 var versionElement = package.Element(ns + "Version");
                 if (!string.IsNullOrEmpty(versionElement?.Value))
                 {
-                    await context.ReportDependency(new Dependency(packageName, versionElement.Value, DependencyType.NuGet, new XmlLocation(context.FullPath, versionElement))).ConfigureAwait(false);
+                    context.ReportDependency(new Dependency(nameValue, versionElement.Value, DependencyType.NuGet,
+                        nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
+                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionElement)));
                 }
             }
 
-            var versionOverrideAttribute = package.Attribute(VersionOverrideXName)?.Value;
-            if (!string.IsNullOrEmpty(versionOverrideAttribute))
+            var versionOverrideAttribute = package.Attribute(VersionOverrideXName);
+            var versionOverrideAttributeValue = versionOverrideAttribute?.Value;
+            if (!string.IsNullOrEmpty(versionOverrideAttributeValue))
             {
-                await context.ReportDependency(new Dependency(packageName, versionOverrideAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionOverrideXName.LocalName))).ConfigureAwait(false);
+                context.ReportDependency(new Dependency(nameValue, versionOverrideAttributeValue, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionOverrideAttribute)));
             }
             else
             {
                 var versionOverrideElement = package.Element(ns + "VersionOverride");
                 if (!string.IsNullOrEmpty(versionOverrideElement?.Value))
                 {
-                    await context.ReportDependency(new Dependency(packageName, versionOverrideElement.Value, DependencyType.NuGet, new XmlLocation(context.FullPath, versionOverrideElement))).ConfigureAwait(false);
+                    context.ReportDependency(new Dependency(nameValue, versionOverrideElement.Value, DependencyType.NuGet,
+                        nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
+                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionOverrideElement)));
                 }
             }
         }
 
-        foreach (var package in doc.Descendants(ns + "PackageVersion"))
+        foreach (var package in doc.Descendants(ns + "ItemGroup").Elements(ns + "PackageVersion"))
         {
-            var packageName = package.Attribute(IncludeXName)?.Value;
+            var packageNameAttr = package.Attribute(IncludeXName);
+            var packageName = packageNameAttr?.Value;
             if (string.IsNullOrEmpty(packageName))
                 continue;
 
-            var versionAttribute = package.Attribute(VersionXName)?.Value;
-            if (!string.IsNullOrEmpty(versionAttribute))
+            var versionAttribute = package.Attribute(VersionXName);
+            var versionAttributeValue = versionAttribute?.Value;
+            if (!string.IsNullOrEmpty(versionAttributeValue))
             {
-                await context.ReportDependency(new Dependency(packageName, versionAttribute, DependencyType.NuGet, new XmlLocation(context.FullPath, package, VersionXName.LocalName))).ConfigureAwait(false);
+                context.ReportDependency(new Dependency(packageName, versionAttributeValue, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, packageNameAttr),
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute)));
             }
             else
             {
                 var versionElement = package.Element(ns + "Version");
                 if (!string.IsNullOrEmpty(versionElement?.Value))
                 {
-                    await context.ReportDependency(new Dependency(packageName, versionElement.Value, DependencyType.NuGet, new XmlLocation(context.FullPath, versionElement))).ConfigureAwait(false);
+                    context.ReportDependency(new Dependency(packageName, versionElement.Value, DependencyType.NuGet,
+                        nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, packageNameAttr),
+                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionElement)));
                 }
             }
         }
 
         foreach (var sdk in doc.Descendants(ns + "Sdk"))
         {
-            var name = sdk.Attribute(NameXName)?.Value;
+            var nameAttribute = sdk.Attribute(NameXName);
+            var name = nameAttribute?.Value;
             if (string.IsNullOrEmpty(name))
                 continue;
 
-            var version = sdk.Attribute(VersionXName)?.Value;
+            var versionAttribute = sdk.Attribute(VersionXName);
+            var version = versionAttribute?.Value;
             if (string.IsNullOrEmpty(version))
                 continue;
 
-            await context.ReportDependency(new Dependency(name, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, VersionXName.LocalName))).ConfigureAwait(false);
+            context.ReportDependency(new Dependency(name, version, DependencyType.NuGet,
+                nameLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, nameAttribute),
+                versionLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, versionAttribute)));
         }
 
         foreach (var sdk in doc.Descendants().Where(element => element.Name == ns + "Import" || element.Name == ns + "Project"))
         {
-            var value = sdk.Attribute(SdkXName)?.Value;
+            var sdkAttribute = sdk.Attribute(SdkXName);
+            var value = sdkAttribute?.Value;
             if (string.IsNullOrEmpty(value))
                 continue;
 
@@ -106,7 +128,40 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 var packageName = value[..index];
                 var version = value[(index + 1)..];
 
-                await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new XmlLocation(context.FullPath, sdk, SdkXName.LocalName, column: index + 1, value.Length - index - 1))).ConfigureAwait(false);
+                context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, sdkAttribute, column: 0, index),
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, sdkAttribute, column: index + 1, value.Length - index - 1)));
+            }
+        }
+
+        foreach (var element in doc.Descendants(ns + "PropertyGroup"))
+        {
+            foreach (var targetFrameworkElement in element.Elements("TargetFrameworkVersion"))
+            {
+                context.ReportDependency(new Dependency(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                    nameLocation: null,
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement)));
+            }
+
+            foreach (var targetFrameworkElement in element.Elements("TargetFramework"))
+            {
+                context.ReportDependency(new Dependency(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                    nameLocation: null,
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement)));
+            }
+
+            foreach (var targetFrameworkElement in element.Elements("TargetFrameworks"))
+            {
+                var column = 0;
+                var parts = targetFrameworkElement.Value.Split(';');
+                foreach (var part in parts)
+                {
+                    context.ReportDependency(new Dependency(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                        nameLocation: null,
+                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement, column, part.Length)));
+
+                    column += part.Length + 1;
+                }
             }
         }
     }

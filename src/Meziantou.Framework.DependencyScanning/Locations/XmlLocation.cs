@@ -8,30 +8,31 @@ internal class XmlLocation : Location, ILocationLineInfo
 {
     private readonly LineInfo _lineInfo;
 
-    public XmlLocation(string filePath, XElement element)
-        : this(filePath, element, attributeName: null)
+    public XmlLocation(IFileSystem fileSystem, string filePath, XElement element)
+        : this(fileSystem, filePath, element, attribute: null)
     {
     }
 
-    public XmlLocation(string filePath, XElement element, string? attributeName)
-        : base(filePath)
+    public XmlLocation(IFileSystem fileSystem, string filePath, XElement element, XAttribute? attribute)
+        : base(fileSystem, filePath)
     {
         XPath = XmlUtilities.CreateXPath(element);
-        _lineInfo = LineInfo.FromXElement(element);
-        AttributeName = attributeName;
+        _lineInfo = LineInfo.FromXObject((XObject?)attribute ?? element);
+        AttributeName = attribute?.Name.LocalName;
     }
 
-    public XmlLocation(string filePath, XElement element, int column, int length)
-        : this(filePath, element, attributeName: null, column, length)
+    public XmlLocation(IFileSystem fileSystem, string filePath, XElement element, int column, int length)
+        : this(fileSystem, filePath, element, attribute: null, column, length)
     {
     }
 
-    public XmlLocation(string filePath, XElement element, string? attributeName, int column, int length)
-        : base(filePath)
+    public XmlLocation(IFileSystem fileSystem, string filePath, XElement element, XAttribute? attribute, int column, int length)
+        : base(fileSystem, filePath)
     {
         XPath = XmlUtilities.CreateXPath(element);
-        _lineInfo = LineInfo.FromXElement(element);
-        AttributeName = attributeName;
+        var lineInfo = LineInfo.FromXObject((XObject?)attribute ?? element);
+        _lineInfo = column == 0 && lineInfo != default ? lineInfo : new LineInfo(lineInfo.LineNumber, lineInfo.LinePosition + column);
+        AttributeName = attribute?.Name.LocalName;
         StartPosition = column;
         Length = length;
     }
@@ -44,28 +45,36 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     public override bool IsUpdatable => true;
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
-
     int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
-    protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
-        var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.PreserveWhitespace, cancellationToken).ConfigureAwait(false);
-        foreach (var element in doc.XPathSelectElements(XPath))
+        var stream = FileSystem.OpenReadWrite(FilePath);
+        try
         {
+            var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.PreserveWhitespace, cancellationToken).ConfigureAwait(false);
+            var element = doc.XPathSelectElement(XPath);
+            if (element == null)
+                throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+
             if (AttributeName != null)
             {
                 var attributeName = XName.Get(AttributeName);
-                var value = UpdateTextValue(element.Attribute(attributeName)?.Value, newVersion);
+                var value = UpdateTextValue(element.Attribute(attributeName)?.Value, oldValue, newValue);
                 element.SetAttributeValue(attributeName, value);
             }
             else
             {
-                var value = UpdateTextValue(element.Value, newVersion);
+                var value = UpdateTextValue(element.Value, oldValue, newValue);
                 element.SetValue(value);
             }
 
             stream.SetLength(0);
             await XmlUtilities.SaveDocumentWithoutClosingStream(stream, doc, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await stream.DisposeAsync().ConfigureAwait(false);
         }
     }
 
@@ -79,13 +88,21 @@ internal class XmlLocation : Location, ILocationLineInfo
         return FormattableString.Invariant($"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
     }
 
-    private string UpdateTextValue(string? value, string version)
+    private string UpdateTextValue(string? elementOrAttributeValue, string? oldValue, string newValue)
     {
-        if (value == null || StartPosition < 0)
-            return version;
+        if (elementOrAttributeValue == null || StartPosition < 0)
+        {
+            if (oldValue != null)
+                throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
 
-        return value
+            return newValue;
+        }
+
+        if (oldValue != null && elementOrAttributeValue.AsSpan().Slice(StartPosition, Length).Equals(oldValue, StringComparison.Ordinal))
+            throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
+
+        return elementOrAttributeValue
             .Remove(StartPosition, Length)
-            .Insert(StartPosition, version);
+            .Insert(StartPosition, newValue);
     }
 }

@@ -1,32 +1,16 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Meziantou.Framework.DependencyScanning.Internals;
-using Meziantou.Framework.Globbing;
 
 namespace Meziantou.Framework.DependencyScanning;
 
 public abstract class DependencyScanner
 {
-    public static IAsyncEnumerable<Dependency> ScanDirectoryAsync(string path, ScannerOptions? options, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyCollection<Dependency>> ScanDirectoryAsync(string path, ScannerOptions? options, CancellationToken cancellationToken = default)
     {
-        if (!Directory.Exists(path))
-            throw new DirectoryNotFoundException(path);
-
-        options ??= ScannerOptions.Default;
-        if (options.Scanners.Count == 0)
-            return EmptyAsyncEnumerable<Dependency>.Instance;
-
-        if (options.DegreeOfParallelism == 1)
-            return ScanDirectorySingleThreadedAsync(path, options, cancellationToken);
-
-        if (options.Scanners.Count <= EnabledScannersArray32.MaxValues)
-            return ScanDirectoryParallelAsync<EnabledScannersArray32>(path, options, cancellationToken);
-
-        if (options.Scanners.Count <= EnabledScannersArray64.MaxValues)
-            return ScanDirectoryParallelAsync<EnabledScannersArray64>(path, options, cancellationToken);
-
-        return ScanDirectoryParallelAsync<EnabledScannersArray>(path, options, cancellationToken);
+        var result = new ConcurrentBag<Dependency>();
+        await ScanDirectoryAsync(path, options, result.Add, cancellationToken).ConfigureAwait(false);
+        return result;
     }
 
     public static Task ScanDirectoryAsync(string path, ScannerOptions? options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
@@ -47,7 +31,85 @@ public abstract class DependencyScanner
         return options.DegreeOfParallelism == 1 ? ScanDirectoryAsync<EnabledScannersArray>(path, options, onDependencyFound, cancellationToken) : ScanDirectoryParallelAsync<EnabledScannersArray>(path, options, onDependencyFound, cancellationToken);
     }
 
-    private static async Task ScanDirectoryAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
+    public static Task<IReadOnlyCollection<Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, CancellationToken cancellationToken = default)
+    {
+        return ScanFileAsync(rootDirectory, filePath, content, scanners: null, cancellationToken);
+    }
+
+    public static async Task<IReadOnlyCollection<Dependency>> ScanFileAsync(string rootDirectory, string filePath, byte[] content, IReadOnlyList<DependencyScanner>? scanners, CancellationToken cancellationToken = default)
+    {
+        var options = new ScannerOptions
+        {
+            FileSystem = new SingleFileInMemoryFileSystem(filePath, content),
+        };
+
+        if (scanners != null)
+        {
+            options.Scanners = scanners;
+        }
+
+        var result = new ConcurrentBag<Dependency>();
+        await ScanFileAsync(options, result.Add, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
+    public static async Task<IReadOnlyCollection<Dependency>> ScanFileAsync(string rootDirectory, string filePath, ScannerOptions? options, CancellationToken cancellationToken = default)
+    {
+        options ??= ScannerOptions.Default;
+        if (options.Scanners.Count == 0)
+            return Array.Empty<Dependency>();
+
+        var result = new ConcurrentBag<Dependency>();
+        await ScanFileAsync(options, result.Add, rootDirectory, filePath, cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
+    public static async Task<IReadOnlyCollection<Dependency>> ScanFilesAsync(string rootDirectory, IEnumerable<string> filePaths, ScannerOptions? options, CancellationToken cancellationToken = default)
+    {
+        options ??= ScannerOptions.Default;
+        if (options.Scanners.Count == 0)
+            return Array.Empty<Dependency>();
+
+        var result = new ConcurrentBag<Dependency>();
+        await ScanFilesAsync(rootDirectory, filePaths, options, result.Add, cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
+    public static Task ScanFilesAsync(string rootDirectory, IEnumerable<string> filePaths, ScannerOptions? options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
+    {
+        options ??= ScannerOptions.Default;
+        if (options.Scanners.Count == 0)
+            return Task.CompletedTask;
+
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = options.DegreeOfParallelism,
+            CancellationToken = cancellationToken,
+        };
+        return Parallel.ForEachAsync(filePaths, parallelOptions, async (filePath, cancellationToken) => await ScanFileAsync(options, onDependencyFound, rootDirectory, filePath, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static async Task ScanFileAsync(ScannerOptions options, DependencyFound onDependencyFound, string rootDirectory, string filePath, CancellationToken cancellationToken)
+    {
+        var scanFileContext = new ScanFileContext(filePath, onDependencyFound, options.FileSystem, cancellationToken);
+        try
+        {
+            foreach (var scanner in options.Scanners)
+            {
+                if (!scanner.ShouldScanFile(rootDirectory, filePath))
+                    continue;
+
+                scanFileContext.ResetStream();
+                await scanner.ScanAsync(scanFileContext).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            await scanFileContext.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private static async Task ScanDirectoryAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken)
         where T : struct, IEnabledScannersArray
     {
         var fileSystem = options.FileSystem;
@@ -78,7 +140,7 @@ public abstract class DependencyScanner
         }
     }
 
-    private static Task ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken = default)
+    private static Task ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, DependencyFound onDependencyFound, CancellationToken cancellationToken)
         where T : struct, IEnabledScannersArray
     {
         var fileSystem = options.FileSystem;
@@ -142,104 +204,13 @@ public abstract class DependencyScanner
         return Task.WhenAll(tasks);
     }
 
-    private static async IAsyncEnumerable<Dependency> ScanDirectorySingleThreadedAsync(string path, ScannerOptions options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public bool ShouldScanFile(ReadOnlySpan<char> rootDirectory, ReadOnlySpan<char> fullPath)
     {
-        var result = new List<Dependency>();
-        await ScanDirectoryAsync(path, options, dep => { result.Add(dep); return default; }, cancellationToken).ConfigureAwait(false);
-        foreach (var item in result)
-            yield return item;
-    }
-
-    private static async IAsyncEnumerable<Dependency> ScanDirectoryParallelAsync<T>(string path, ScannerOptions options, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        where T : struct, IEnabledScannersArray
-    {
-        var fileSystem = options.FileSystem;
-        var filesToScanChannel = Channel.CreateBounded<FileToScan<T>>(new BoundedChannelOptions(1000)
-        {
-            AllowSynchronousContinuations = true,
-            SingleWriter = true,
-            SingleReader = false,
-            FullMode = BoundedChannelFullMode.Wait,
-        });
-
-        var dependenciesChannel = Channel.CreateUnbounded<Dependency>(new UnboundedChannelOptions
-        {
-            AllowSynchronousContinuations = true,
-            SingleWriter = false,
-            SingleReader = true,
-        });
-
-        // Start enumerating
-        var enumeratorTask = Task.Run(async () =>
-        {
-            try
-            {
-                using var enumerator = new ScannerFileEnumerator<T>(path, options);
-                while (enumerator.MoveNext())
-                {
-                    await filesToScanChannel.Writer.WriteAsync(enumerator.Current, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                filesToScanChannel.Writer.Complete();
-            }
-        }, cancellationToken);
-
-        // Parse files
-        var exceptions = new ConcurrentBag<Exception>();
-        var tasks = new Task[options.DegreeOfParallelism];
-        Array.Fill(tasks, Task.Run(async () =>
-        {
-            var reader = filesToScanChannel.Reader;
-            while (await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
-            {
-                while (reader.TryRead(out var entry))
-                {
-                    var scanFileContext = new ScanFileContext(entry.FullPath, d => dependenciesChannel.Writer.WriteAsync(d, cancellationToken), fileSystem, cancellationToken);
-                    try
-                    {
-                        for (var i = 0; i < options.Scanners.Count; i++)
-                        {
-                            if (!entry.Scanners.Get(i))
-                                continue;
-
-                            var scanner = options.Scanners[i];
-
-                            scanFileContext.ResetStream();
-                            await scanner.ScanAsync(scanFileContext).ConfigureAwait(false);
-                        }
-                    }
-                    finally
-                    {
-                        await scanFileContext.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-            }
-        }, cancellationToken));
-
-        var whenAllTasks = Task.WhenAll(tasks);
-        var writerCompleteTask = whenAllTasks.ContinueWith(_ => dependenciesChannel.Writer.Complete(), cancellationToken, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
-        await foreach (var value in dependenciesChannel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
-        {
-            yield return value;
-        }
-
-        await Task.WhenAll(enumeratorTask, writerCompleteTask, whenAllTasks).ConfigureAwait(false);
-    }
-
-    public GlobCollection? FilePatterns { get; set; }
-
-    public bool ShouldScanFile(ReadOnlySpan<char> fullPath)
-    {
-        return ShouldScanFileCore(new CandidateFileContext(Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath)));
+        return ShouldScanFileCore(new CandidateFileContext(rootDirectory, Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath)));
     }
 
     public bool ShouldScanFile(CandidateFileContext context)
     {
-        if (FilePatterns != null)
-            return FilePatterns.IsMatch(context.Directory, context.FileName);
-
         return ShouldScanFileCore(context);
     }
 
@@ -247,11 +218,26 @@ public abstract class DependencyScanner
 
     public abstract ValueTask ScanAsync(ScanFileContext context);
 
-    public static async Task UpdateAllAsync(IEnumerable<Dependency> dependencies, string newVersion, CancellationToken cancellationToken)
+    private sealed class SingleFileInMemoryFileSystem : IFileSystem
     {
-        foreach (var dependency in dependencies.Where(d => d.Location.IsUpdatable))
+        private readonly string _path;
+        private readonly byte[] _content;
+
+        public SingleFileInMemoryFileSystem(string path, byte[] content)
         {
-            await dependency.UpdateAsync(newVersion, cancellationToken).ConfigureAwait(false);
+            _path = path;
+            _content = content;
         }
+
+        public Stream OpenRead(string path)
+        {
+            if (path == _path)
+                return new MemoryStream(_content);
+
+            throw new FileNotFoundException("File not found", path);
+        }
+
+        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
+        public Stream OpenReadWrite(string path) => throw new NotSupportedException();
     }
 }

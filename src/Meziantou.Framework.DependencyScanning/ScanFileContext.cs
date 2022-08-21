@@ -23,9 +23,9 @@ public readonly struct ScanFileContext : IAsyncDisposable
     public CancellationToken CancellationToken { get; }
     public IFileSystem FileSystem { get; }
 
-    public ValueTask ReportDependency(Dependency dependency)
+    public void ReportDependency(Dependency dependency)
     {
-        return _onDependencyFound(dependency);
+        _onDependencyFound(dependency);
     }
 
     internal void ResetStream()

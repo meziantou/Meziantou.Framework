@@ -50,7 +50,7 @@ internal sealed class ScannerFileEnumerator<T> : FileSystemEnumerator<FileToScan
         var scanners = new T();
         for (var i = 0; i < _options.Scanners.Count; i++)
         {
-            if (_options.Scanners[i].ShouldScanFile(new CandidateFileContext(entry.Directory, entry.FileName)))
+            if (_options.Scanners[i].ShouldScanFile(new CandidateFileContext(entry.RootDirectory, entry.Directory, entry.FileName)))
             {
                 scanners.Set(i);
             }

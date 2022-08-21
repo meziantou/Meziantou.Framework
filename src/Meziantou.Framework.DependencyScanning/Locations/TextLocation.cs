@@ -6,8 +6,8 @@ internal sealed class TextLocation : Location, ILocationLineInfo
 {
     private static readonly char[] NewLineCharacters = { '\r', '\n' };
 
-    public TextLocation(string filePath, int line, int column, int length)
-        : base(filePath)
+    public TextLocation(IFileSystem fileSystem, string filePath, int line, int column, int length)
+        : base(fileSystem, filePath)
     {
         if (line < 1)
             throw new ArgumentException("line must be greater or equal to 1", nameof(line));
@@ -28,66 +28,80 @@ internal sealed class TextLocation : Location, ILocationLineInfo
 
     public override bool IsUpdatable => true;
 
-    protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
-        if (newVersion.IndexOfAny(NewLineCharacters) >= 0)
-            throw new ArgumentException("New version contains a \\r or \\n", nameof(newVersion));
+        if (newValue.IndexOfAny(NewLineCharacters) >= 0)
+            throw new ArgumentException("New version contains a \\r or \\n", nameof(newValue));
 
-        // Line and Column are 1-based index.
-        var line = LineNumber - 1;
-        var column = LinePosition - 1;
-        if (line >= 0 && column >= 0)
+        var stream = FileSystem.OpenReadWrite(FilePath);
+        try
         {
-            var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            string content;
-            using (var reader = StreamUtilities.CreateReader(stream, encoding))
+            // Line and Column are 1-based index.
+            var line = LineNumber - 1;
+            var column = LinePosition - 1;
+            if (line >= 0 && column >= 0)
             {
+                var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                string content;
+                using (var reader = StreamUtilities.CreateReader(stream, encoding))
+                {
 #if NET7_0_OR_GREATER
-                content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                    content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 #else
                 content = await reader.ReadToEndAsync().ConfigureAwait(false);
 #endif
-            }
+                }
 
-            var currentLine = 0;
-            var currentIndex = 0;
-            int endOfLine;
-            if (line > 0)
-            {
-                while (currentLine < line && currentIndex < content.Length)
+                var currentLine = 0;
+                var currentIndex = 0;
+                int endOfLine;
+                if (line > 0)
                 {
-                    var newIndex = content.IndexOf('\n', currentIndex);
-                    if (newIndex == -1)
-                        throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+                    while (currentLine < line && currentIndex < content.Length)
+                    {
+                        var newIndex = content.IndexOf('\n', currentIndex);
+                        if (newIndex == -1)
+                            throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-                    currentIndex = newIndex + 1;
-                    currentLine++;
+                        currentIndex = newIndex + 1;
+                        currentLine++;
+                    }
+                }
+
+                endOfLine = content.IndexOf('\n', currentIndex);
+                if (currentIndex + column + Length > (endOfLine == -1 ? content.Length : endOfLine))
+                    throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
+
+                if(oldValue != null)
+                {
+                    if (content.Substring(currentIndex + column, Length) != oldValue)
+                        throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
+                }
+
+                stream.SetLength(0);
+                var writer = StreamUtilities.CreateWriter(stream, encoding);
+                try
+                {
+                    var contentAsMemory = content.AsMemory();
+                    await writer.WriteAsync(contentAsMemory[0..(currentIndex + column)], cancellationToken).ConfigureAwait(false);
+                    await writer.WriteAsync(newValue.AsMemory(), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteAsync(contentAsMemory[(currentIndex + column + Length)..], cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await writer.DisposeAsync().ConfigureAwait(false);
                 }
             }
-
-            endOfLine = content.IndexOf('\n', currentIndex);
-            if (currentIndex + column + Length > (endOfLine == -1 ? content.Length : endOfLine))
-                throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
-
-            stream.SetLength(0);
-            var writer = StreamUtilities.CreateWriter(stream, encoding);
-            try
+            else
             {
-                var contentAsMemory = content.AsMemory();
-                await writer.WriteAsync(contentAsMemory[0..(currentIndex + column)], cancellationToken).ConfigureAwait(false);
-                await writer.WriteAsync(newVersion.AsMemory(), cancellationToken).ConfigureAwait(false);
-                await writer.WriteAsync(contentAsMemory[(currentIndex + column + Length)..], cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                await writer.DisposeAsync().ConfigureAwait(false);
+                throw new DependencyScannerException("Dependency not found");
             }
         }
-        else
+        finally
         {
-            throw new DependencyScannerException("Dependency not found");
+            await stream.DisposeAsync().ConfigureAwait(false);
         }
     }
 
@@ -96,14 +110,14 @@ internal sealed class TextLocation : Location, ILocationLineInfo
         return FormattableString.Invariant($"{FilePath}:{LineNumber},{LinePosition}-{LinePosition + Length}");
     }
 
-    internal static TextLocation FromIndex(string filePath, string text, int index, int length)
+    internal static TextLocation FromIndex(IFileSystem fileSystem, string filePath, string text, int index, int length)
     {
         var line = 1;
         var lineIndex = 0;
         for (var i = 0; i < text.Length; i++)
         {
             if (i == index)
-                return new TextLocation(filePath, line, index - lineIndex, length);
+                return new TextLocation(fileSystem, filePath, line, index - lineIndex, length);
 
             if (text[i] == '\n')
             {

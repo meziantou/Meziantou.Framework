@@ -9,5 +9,6 @@ public enum DependencyType
     DockerImage,
     GitSubmodule,
     DotNetSdk,
+    DotNetTargetFramework,
     GitHubActions,
 }

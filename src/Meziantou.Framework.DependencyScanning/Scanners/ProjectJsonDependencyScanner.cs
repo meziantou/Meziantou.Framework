@@ -1,4 +1,5 @@
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.DependencyScanning.Locations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,7 +9,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
 {
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("project.json", StringComparison.OrdinalIgnoreCase);
+        return context.HasFileName("project.json", ignoreCase: true);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -28,6 +29,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
                     if (dep.Value.Type == JTokenType.String)
                     {
                         version = dep.Value.Value<string>();
+                        valueElement = dep.Value;
                     }
                     else if (dep.Value.Type == JTokenType.Object)
                     {
@@ -45,7 +47,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
 
                     if (version != null)
                     {
-                        await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(dep), valueElement.Path))).ConfigureAwait(false);
+                        context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement)));
                     }
                 }
             }

@@ -4,6 +4,7 @@ using System.Globalization;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework;
 using Meziantou.Framework.DependencyScanning;
+using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace DependencyScanningBenchmarks;
 
@@ -122,18 +123,19 @@ public class DependencyScannerBenchmark
     private async Task GetDependenciesForEach(ScannerOptions options)
     {
         options.DegreeOfParallelism = DegreeOfParallelism;
-        await foreach (var _ in DependencyScanner.ScanDirectoryAsync(Directory10000, options).ConfigureAwait(false))
+        foreach (var _ in await DependencyScanner.ScanDirectoryAsync(Directory10000, options).ConfigureAwait(false))
         {
         }
     }
 
     private sealed class DummyScanner : DependencyScanner
     {
-        internal static readonly Dependency Dependency = new("", "", DependencyType.Unknown, new TextLocation("", 1, 1, 1));
+        internal static readonly Dependency Dependency = new("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, "", 1, 1, 1));
 
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            return context.ReportDependency(Dependency);
+            context.ReportDependency(Dependency);
+            return ValueTask.CompletedTask;
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
@@ -143,7 +145,8 @@ public class DependencyScannerBenchmark
     {
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
+            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            return ValueTask.CompletedTask;
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => false;

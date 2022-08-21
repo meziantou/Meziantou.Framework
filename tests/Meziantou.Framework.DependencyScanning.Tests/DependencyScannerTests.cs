@@ -1,5 +1,6 @@
-using System.IO.Enumeration;
+using System.Text;
 using FluentAssertions;
+using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using Xunit;
@@ -30,12 +31,7 @@ public sealed class DependencyScannerTests
         _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
         stopwatch = ValueStopwatch.StartNew();
 
-        var items = new List<Dependency>(FileCount);
-        await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScanner() } }))
-        {
-            items.Add(item);
-        }
-
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
         items.Should().HaveCount(FileCount);
     }
@@ -54,12 +50,7 @@ public sealed class DependencyScannerTests
         _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
         stopwatch = ValueStopwatch.StartNew();
 
-        var items = new List<Dependency>(FileCount);
-        await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScannerNeverMatch() } }))
-        {
-            items.Add(item);
-        }
-
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScannerNeverMatch() } });
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
         items.Should().BeEmpty();
     }
@@ -72,10 +63,10 @@ public sealed class DependencyScannerTests
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, onDependencyFound: _ => { }))
             .Should().ThrowExactlyAsync<InvalidOperationException>();
 
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, _ => ValueTask.CompletedTask))
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, onDependencyFound: _ => { }))
             .Should().ThrowExactlyAsync<InvalidOperationException>();
     }
 
@@ -89,14 +80,14 @@ public sealed class DependencyScannerTests
 
         await new Func<Task>(async () =>
         {
-            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
+            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
             {
             }
         }).Should().ThrowExactlyAsync<InvalidOperationException>();
 
         await new Func<Task>(async () =>
         {
-            await foreach (var item in DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
+            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
             {
             }
         }).Should().ThrowExactlyAsync<InvalidOperationException>();
@@ -116,8 +107,10 @@ public sealed class DependencyScannerTests
         scanners.Should().BeEquivalentTo(allScanners);
     }
 
-    [Fact]
-    public async Task UsingGlobs()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task UsingGlobs(int degreeOfParallelism)
     {
         await using var directory = TemporaryDirectory.Create();
         var file1 = directory.CreateEmptyFile($"packages.json");
@@ -127,23 +120,78 @@ public sealed class DependencyScannerTests
         var options = new ScannerOptions()
         {
             RecurseSubdirectories = true,
-            ShouldScanFilePredicate = (ref FileSystemEntry entry) => globs.IsMatch(ref entry),
-            ShouldRecursePredicate = (ref FileSystemEntry entry) => globs.IsPartialMatch(ref entry),
+            DegreeOfParallelism = degreeOfParallelism,
+            ShouldScanFilePredicate = globs.IsMatch,
+            ShouldRecursePredicate = globs.IsPartialMatch,
             Scanners = new DependencyScanner[]
             {
                 new DummyScanner(),
             },
         };
-        var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options).ToListAsync();
+        var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options);
+        result.Should().SatisfyRespectively(dep => dep.VersionLocation.FilePath.Should().Be(file1));
+    }
 
-        result.Should().SatisfyRespectively(dep => dep.Location.FilePath.Should().Be(file1));
+    [Fact]
+    public async Task ScanFile()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath($"text.txt");
+        await File.WriteAllTextAsync(filePath, "");
+
+        var items = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
+        items.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ScanFiles()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath1 = directory.GetFullPath($"text0.txt");
+        var filePath2 = directory.GetFullPath($"text1.txt");
+        await File.WriteAllTextAsync(filePath1, "");
+        await File.WriteAllTextAsync(filePath2, "");
+
+        var items = await DependencyScanner.ScanFilesAsync(directory.FullPath, new string[] { filePath1, filePath2 }, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
+        items.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task ScanFiles_InMemory()
+    {
+        var fs = new InMemoryFileSystem();
+        fs.AddFile("test.txt", "");
+
+        var items = await DependencyScanner.ScanFilesAsync("/", new string[] { "/dir/test.txt" }, new ScannerOptions { FileSystem = fs, Scanners = new[] { new DummyScanner() } });
+        items.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task ScanFile_InMemory()
+    {
+        var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", Array.Empty<byte>(), new[] { new DummyScanner() });
+        items.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task DetectChangedLocation()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        var filePath = directory.GetFullPath($"text0.txt");
+        await File.WriteAllTextAsync(filePath, "test");
+
+        var location = new TextLocation(FileSystem.Instance, filePath, 1, 2, 1);
+        await location.UpdateAsync("e", "a");
+
+        await FluentActions.Invoking(() => location.UpdateAsync("e", "b")).Should().ThrowExactlyAsync<DependencyScannerException>();
     }
 
     private sealed class DummyScanner : DependencyScanner
     {
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
+            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            return ValueTask.CompletedTask;
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
@@ -153,7 +201,8 @@ public sealed class DependencyScannerTests
     {
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            return context.ReportDependency(new Dependency("", "", DependencyType.Unknown, new TextLocation(context.FullPath, 1, 1, 1)));
+            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            return ValueTask.CompletedTask;
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => false;
@@ -177,5 +226,36 @@ public sealed class DependencyScannerTests
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => throw new InvalidOperationException();
+    }
+
+    private sealed class InMemoryFileSystem : IFileSystem
+    {
+        private readonly List<(string Path, byte[] Content)> _files = new();
+
+        public void AddFile(string path, byte[] content)
+        {
+            _files.Add((path, content));
+        }
+
+        public void AddFile(string path, string content)
+        {
+            _files.Add((path, Encoding.UTF8.GetBytes(content)));
+        }
+
+        public Stream OpenRead(string path)
+        {
+            foreach (var file in _files)
+            {
+                if (file.Path == path)
+                {
+                    return new MemoryStream(file.Content);
+                }
+            }
+
+            throw new FileNotFoundException("File not found", path);
+        }
+
+        public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions) => throw new NotSupportedException();
+        public Stream OpenReadWrite(string path) => throw new NotSupportedException();
     }
 }

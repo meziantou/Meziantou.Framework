@@ -9,7 +9,7 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("requirements.txt", StringComparison.Ordinal);
+        return context.HasFileName("requirements.txt", ignoreCase: true);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -30,12 +30,14 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
                 continue;
 
             // Name==1.2.2
-            var packageName = match.Groups["PACKAGENAME"].Value;
+            var packageNameGroup = match.Groups["PACKAGENAME"];
+            var packageName = packageNameGroup.Value;
             var versionGroup = match.Groups["VERSION"];
             var version = versionGroup.Value;
 
-            var column = versionGroup.Index + 1;
-            await context.ReportDependency(new Dependency(packageName, version, DependencyType.PyPi, new TextLocation(context.FullPath, lineNo, column, versionGroup.Length))).ConfigureAwait(false);
+            context.ReportDependency(new Dependency(packageName, version, DependencyType.PyPi,
+                nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
+                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length)));
         }
     }
 }

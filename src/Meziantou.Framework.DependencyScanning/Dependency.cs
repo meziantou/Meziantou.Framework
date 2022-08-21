@@ -2,31 +2,39 @@ namespace Meziantou.Framework.DependencyScanning;
 
 public sealed class Dependency
 {
-    public Dependency(string name, string version, DependencyType type, Location location)
+    public Dependency(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)
     {
         Name = name;
         Version = version;
         Type = type;
-        Location = location;
+        NameLocation = nameLocation;
+        VersionLocation = versionLocation;
     }
 
-    public string Name { get; }
-    public string Version { get; }
+    public string? Name { get; }
+    public string? Version { get; }
     public DependencyType Type { get; }
-    public Location Location { get; }
+    public Location? NameLocation { get; }
+    public Location? VersionLocation { get; }
 
-    public Task UpdateAsync(string newVersion, CancellationToken cancellationToken = default)
+    public Task UpdateNameAsync(string newValue, CancellationToken cancellationToken = default)
     {
-        return Location.UpdateAsync(newVersion, cancellationToken);
+        if (NameLocation == null)
+            throw new InvalidOperationException("Name is not updatable");
+
+        return NameLocation.UpdateAsync(Name, newValue, cancellationToken);
     }
 
-    public Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken = default)
+    public Task UpdateVersionAsync(string newValue, CancellationToken cancellationToken = default)
     {
-        return Location.UpdateAsync(stream, newVersion, cancellationToken);
+        if (VersionLocation == null)
+            throw new InvalidOperationException("Version is not updatable");
+
+        return VersionLocation.UpdateAsync(Version, newValue, cancellationToken);
     }
 
     public override string ToString()
     {
-        return $"{Type}:{Name}@{Version}:{Location}";
+        return $"{Type}:{Name}@{Version}:{VersionLocation}";
     }
 }

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class DockerfileDependencyScanner : DependencyScanner
 {
-    private static readonly Regex FromRegex = new(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+    private static readonly Regex FromRegex = new(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
@@ -23,16 +23,18 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
             if (!match.Success)
                 continue;
 
-            var packageName = match.Groups["ImageName"].Value;
+            var packageNameGroup = match.Groups["ImageName"];
+            var packageName = packageNameGroup.Value;
             var versionGroup = match.Groups["Version"];
             var version = versionGroup.Value;
-            var column = versionGroup.Index + 1;
-            await context.ReportDependency(new Dependency(packageName, version, DependencyType.DockerImage, new TextLocation(context.FullPath, lineNo, column, versionGroup.Length))).ConfigureAwait(false);
+            context.ReportDependency(new Dependency(packageName, version, DependencyType.DockerImage,
+                nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
+                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length)));
         }
     }
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("Dockerfile", StringComparison.OrdinalIgnoreCase);
+        return context.HasFileName("Dockerfile", ignoreCase: true);
     }
 }

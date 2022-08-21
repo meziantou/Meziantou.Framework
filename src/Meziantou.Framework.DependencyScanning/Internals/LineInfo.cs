@@ -22,14 +22,21 @@ internal readonly struct LineInfo : IEquatable<LineInfo>
     {
         var propertyLineInfo = (IJsonLineInfo)token;
         if (propertyLineInfo.HasLineInfo())
+        {
+            if (token.Type == JTokenType.String)
+            {
+                return new LineInfo(propertyLineInfo.LineNumber, propertyLineInfo.LinePosition - ((string)token!).Length);
+            }
+
             return new LineInfo(propertyLineInfo.LineNumber, propertyLineInfo.LinePosition);
+        }
 
         return default;
     }
 
-    public static LineInfo FromXElement(XElement element)
+    public static LineInfo FromXObject(XObject obj)
     {
-        var lineInfo = (IXmlLineInfo)element;
+        var lineInfo = (IXmlLineInfo)obj;
         if (lineInfo.HasLineInfo())
             return new LineInfo(lineInfo.LineNumber, lineInfo.LinePosition);
 

@@ -1,3 +1,3 @@
 namespace Meziantou.Framework.DependencyScanning;
 
-public delegate ValueTask DependencyFound(Dependency dependency);
+public delegate void DependencyFound(Dependency dependency);

@@ -2,8 +2,11 @@ namespace Meziantou.Framework.DependencyScanning;
 
 public abstract class Location
 {
-    protected Location(string filePath)
+    protected IFileSystem FileSystem { get; }
+
+    protected Location(IFileSystem fileSystem, string filePath)
     {
+        FileSystem = fileSystem;
         FilePath = filePath;
     }
 
@@ -11,18 +14,22 @@ public abstract class Location
 
     public abstract bool IsUpdatable { get; }
 
-    internal async Task UpdateAsync(string newVersion, CancellationToken cancellationToken)
+    public async Task UpdateAsync(string? oldValue, string newValue, CancellationToken cancellationToken = default)
     {
-        var stream = File.Open(FilePath, FileMode.Open, FileAccess.ReadWrite);
-        try
-        {
-            await UpdateAsync(stream, newVersion, cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            await stream.DisposeAsync().ConfigureAwait(false);
-        }
+        EnsureUpdatable();
+        await UpdateCoreAsync(oldValue, newValue, cancellationToken).ConfigureAwait(false);
     }
 
-    protected internal abstract Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken);
+    public Task UpdateAsync(string newValue, CancellationToken cancellationToken = default)
+    {
+        return UpdateAsync(oldValue: null, newValue, cancellationToken);
+    }
+
+    protected internal abstract Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken);
+
+    private void EnsureUpdatable()
+    {
+        if (!IsUpdatable)
+            throw new InvalidOperationException("Location is not updatable");
+    }
 }

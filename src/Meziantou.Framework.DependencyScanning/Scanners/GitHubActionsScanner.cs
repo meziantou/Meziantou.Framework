@@ -10,21 +10,24 @@ public sealed class GitHubActionsScanner : DependencyScanner
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#about-yaml-syntax-for-workflows
-        if (context.FileName.EndsWith(".yml", StringComparison.Ordinal) || context.FileName.EndsWith(".yaml", StringComparison.Ordinal))
+        if (context.HasExtension(".yml", ignoreCase: false) || context.HasExtension(".yaml", ignoreCase: false))
         {
             var directoryName = Path.GetFileName(context.Directory);
             if (directoryName.Equals("workflows", StringComparison.Ordinal))
             {
-                directoryName = Path.GetFileName(Path.GetDirectoryName(context.Directory));
+                var parentDirectory = Path.GetDirectoryName(context.Directory);
+                directoryName = Path.GetFileName(parentDirectory);
                 if (directoryName.Equals(".github", StringComparison.Ordinal))
-                    return true;
+                {
+                    return Path.GetDirectoryName(parentDirectory).Equals(context.RootDirectory, StringComparison.Ordinal);
+                }
             }
         }
 
         return false;
     }
 
-    public override async ValueTask ScanAsync(ScanFileContext context)
+    public override ValueTask ScanAsync(ScanFileContext context)
     {
         using var textReader = new StreamReader(context.Content);
         var reader = new MergingParser(new Parser(textReader));
@@ -50,22 +53,39 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 if (uses is YamlScalarNode usesValue && usesValue.Value != null)
                                 {
                                     var value = usesValue.Value;
+
+                                    // uses: docker://alpine:3.8
                                     if (value.StartsWith(DockerPrefix, StringComparison.OrdinalIgnoreCase)) // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#example-using-a-docker-hub-action
                                     {
                                         var index = value.AsSpan()[DockerPrefix.Length..].LastIndexOf(':');
                                         if (index > 0)
                                         {
-                                            var location = new TextLocation(context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length + index + 1, value.Length - DockerPrefix.Length - index - 1);
-                                            await context.ReportDependency(new Dependency(value[DockerPrefix.Length..(DockerPrefix.Length + index)], value[(DockerPrefix.Length + index + 1)..], DependencyType.DockerImage, location)).ConfigureAwait(false);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length + index + 1, value.Length - DockerPrefix.Length - index - 1);
+                                            context.ReportDependency(new Dependency(value[DockerPrefix.Length..(DockerPrefix.Length + index)], value[(DockerPrefix.Length + index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
+                                        }
+                                        else
+                                        {
+                                            // no version
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length, value.Length - DockerPrefix.Length);
+                                            context.ReportDependency(new Dependency(value[DockerPrefix.Length..], version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
+
                                         }
                                     }
+                                    // use: action@v1
                                     else
                                     {
                                         var index = value.IndexOf('@', StringComparison.Ordinal);
                                         if (index > 0)
                                         {
-                                            var location = new TextLocation(context.FullPath, usesValue.Start.Line, usesValue.Start.Column + index + 1, value.Length - index - 1);
-                                            await context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.GitHubActions, location)).ConfigureAwait(false);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + index + 1, value.Length - index - 1);
+                                            context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.GitHubActions, nameLocation, versionLocation));
+                                        }
+                                        else if (!value.StartsWith("./", StringComparison.Ordinal))
+                                        {
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column, value.Length);
+                                            context.ReportDependency(new Dependency(value, version: null, DependencyType.GitHubActions, nameLocation, versionLocation: null));
                                         }
                                     }
                                 }
@@ -82,8 +102,14 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 var index = value.LastIndexOf(':');
                                 if (index > 0)
                                 {
-                                    var location = new TextLocation(context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
-                                    await context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, location)).ConfigureAwait(false);
+                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, index);
+                                    var versionLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
+                                    context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
+                                }
+                                else
+                                {
+                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, value.Length);
+                                    context.ReportDependency(new Dependency(value, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
                                 }
                             }
                         }
@@ -102,8 +128,14 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                         var index = value.LastIndexOf(':');
                                         if (index > 0)
                                         {
-                                            var location = new TextLocation(context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
-                                            await context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, location)).ConfigureAwait(false);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
+                                            context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
+                                        }
+                                        else
+                                        {
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, value.Length);
+                                            context.ReportDependency(new Dependency(value, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
                                         }
                                     }
                                 }
@@ -113,6 +145,8 @@ public sealed class GitHubActionsScanner : DependencyScanner
                 }
             }
         }
+
+        return ValueTask.CompletedTask;
     }
 
     private static YamlNode? GetProperty(YamlMappingNode node, string propertyName, StringComparison stringComparison)

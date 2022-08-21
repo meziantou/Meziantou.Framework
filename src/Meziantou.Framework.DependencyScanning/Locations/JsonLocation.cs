@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -8,13 +9,18 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
 {
     private readonly LineInfo _lineInfo;
 
-    internal JsonLocation(string filePath, LineInfo lineInfo, string jsonPath)
-        : base(filePath)
+    internal JsonLocation(ScanFileContext context, JToken token)
+        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path)
+    {
+
+    }
+
+    internal JsonLocation(IFileSystem fileSystem, string filePath, LineInfo lineInfo, string jsonPath)
+        : base(fileSystem, filePath)
     {
         _lineInfo = lineInfo;
         JsonPath = jsonPath;
     }
-
 
     public string JsonPath { get; }
 
@@ -22,52 +28,66 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
     int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
 
-    protected internal override async Task UpdateAsync(Stream stream, string newVersion, CancellationToken cancellationToken)
+    protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
-        var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
-        stream.Seek(0, SeekOrigin.Begin);
-
-        string text;
-        using (var textReader = StreamUtilities.CreateReader(stream, encoding))
+        var stream = FileSystem.OpenReadWrite(FilePath);
+        try
         {
+            var encoding = await StreamUtilities.GetEncodingAsync(stream, cancellationToken).ConfigureAwait(false);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            string text;
+            using (var textReader = StreamUtilities.CreateReader(stream, encoding))
+            {
 #if NET7_0_OR_GREATER
-            text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+                text = await textReader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 #else
             text = await textReader.ReadToEndAsync().ConfigureAwait(false);
 #endif
-        }
+            }
 
-        var jobject = JObject.Parse(text);
-        if (jobject.SelectToken(JsonPath) is JValue token)
-        {
-            token.Value = newVersion;
-
-            stream.SetLength(0);
-
-            var textWriter = StreamUtilities.CreateWriter(stream, encoding);
-            try
+            var jobject = JObject.Parse(text);
+            if (jobject.SelectToken(JsonPath) is JValue token)
             {
-                using var jsonWriter = new JsonTextWriter(textWriter)
+                if (oldValue != null)
                 {
-                    Formatting = Formatting.Indented,
-                };
+                    if (token.Value is not string existingValue || existingValue != oldValue)
+                        throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
+                }
 
-                await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+                token.Value = newValue;
 
+                stream.SetLength(0);
+
+                var textWriter = StreamUtilities.CreateWriter(stream, encoding);
+                try
+                {
+                    using var jsonWriter = new JsonTextWriter(textWriter)
+                    {
+                        Formatting = Formatting.Indented,
+                    };
+
+                    await jobject.WriteToAsync(jsonWriter, cancellationToken).ConfigureAwait(false);
+
+                }
+                finally
+                {
+                    await textWriter.DisposeAsync().ConfigureAwait(false);
+                }
             }
-            finally
+            else
             {
-                await textWriter.DisposeAsync().ConfigureAwait(false);
+                throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
             }
         }
-        else
+        finally
         {
-            throw new DependencyScannerException("Dependency not found");
+            await stream.DisposeAsync().ConfigureAwait(false);
         }
     }
 
     public override string ToString()
     {
-        return FormattableString.Invariant($"{FilePath}:{JsonPath}:{_lineInfo}");
+        return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{JsonPath}:{_lineInfo}");
     }
 }

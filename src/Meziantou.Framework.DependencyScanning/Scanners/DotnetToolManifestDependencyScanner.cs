@@ -1,4 +1,5 @@
 using Meziantou.Framework.DependencyScanning.Internals;
+using Meziantou.Framework.DependencyScanning.Locations;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -8,7 +9,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 {
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.FileName.Equals("dotnet-tools.json", StringComparison.OrdinalIgnoreCase);
+        return context.HasFileName("dotnet-tools.json", ignoreCase: false);
     }
 
     public override async ValueTask ScanAsync(ScanFileContext context)
@@ -45,7 +46,9 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 
                     if (version != null)
                     {
-                        await context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, new JsonLocation(context.FullPath, LineInfo.FromJToken(dep), valueElement.Path))).ConfigureAwait(false);
+                        context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet,
+                            nameLocation: new NonUpdatableLocation(context),
+                            versionLocation: new JsonLocation(context, valueElement)));
                     }
                 }
             }

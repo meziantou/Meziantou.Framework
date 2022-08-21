@@ -8,9 +8,9 @@ internal sealed class FileSystem : IFileSystem
 
     public static IFileSystem Instance { get; } = new FileSystem();
 
-    public IEnumerable<string> GetFiles(string path, string pattern)
+    public IEnumerable<string> GetFiles(string path, string pattern, SearchOption searchOptions)
     {
-        return Directory.EnumerateFiles(path, pattern, SearchOption.TopDirectoryOnly);
+        return Directory.EnumerateFiles(path, pattern, searchOptions);
     }
 
     public Stream OpenRead(string path)

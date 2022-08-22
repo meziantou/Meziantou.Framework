@@ -123,6 +123,7 @@ public sealed class ScannerTests : IDisposable
   <ItemGroup>
     <PackageReference Include="TestPackage" Version="4.2.1" />
     <PackageReference Include="PackageA" VersionOverride="1.2.1" />
+    <PackageDownload Include="PackageC" Version="1.2.2" />
   </ItemGroup>
 
 </Project>
@@ -142,6 +143,7 @@ public sealed class ScannerTests : IDisposable
   <ItemGroup>
     <PackageReference Include="dummy2" Version="2.0.0" />
     <PackageReference Include="dummy3" VersionOverride="2.0.0" />
+    <PackageDownload Include="dummy4" Version="2.0.0" />
   </ItemGroup>
 
 </Project>
@@ -152,7 +154,8 @@ public sealed class ScannerTests : IDisposable
         AssertContainDependency(result,
             (DependencyType.NuGet, "PackageA", "1.0.0", 8, 42),
             (DependencyType.NuGet, "PackageA", "1.2.1", 14, 42),
-            (DependencyType.NuGet, "TestPackage", "4.2.1", 13, 45));
+            (DependencyType.NuGet, "TestPackage", "4.2.1", 13, 45),
+            (DependencyType.NuGet, "PackageC", "1.2.2", 15, 41));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);

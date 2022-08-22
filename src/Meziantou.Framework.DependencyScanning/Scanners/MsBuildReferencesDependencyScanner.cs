@@ -25,7 +25,8 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             return;
 
         var ns = doc.Root.GetDefaultNamespace();
-        foreach (var package in doc.Descendants(ns + "ItemGroup").Elements(ns + "PackageReference"))
+        var itemGroups = doc.Descendants(ns + "ItemGroup");
+        foreach (var package in itemGroups.Elements(ns + "PackageReference").Concat(itemGroups.Elements(ns + "PackageDownload")))
         {
             var nameAttribute = package.Attribute(IncludeXName);
             var nameValue = nameAttribute?.Value;
@@ -71,7 +72,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             }
         }
 
-        foreach (var package in doc.Descendants(ns + "ItemGroup").Elements(ns + "PackageVersion"))
+        foreach (var package in itemGroups.Elements(ns + "PackageVersion"))
         {
             var packageNameAttr = package.Attribute(IncludeXName);
             var packageName = packageNameAttr?.Value;

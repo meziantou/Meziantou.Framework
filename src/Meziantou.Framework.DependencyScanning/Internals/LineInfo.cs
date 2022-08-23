@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Linq;
@@ -61,7 +62,7 @@ internal readonly struct LineInfo : IEquatable<LineInfo>
 
     public override string ToString()
     {
-        return FormattableString.Invariant($"{LineNumber},{LinePosition}");
+        return string.Create(CultureInfo.InvariantCulture, $"{LineNumber},{LinePosition}");
     }
 
     public static bool operator ==(LineInfo left, LineInfo right) => left.Equals(right);

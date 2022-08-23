@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Meziantou.Framework.Globbing;
@@ -91,7 +92,7 @@ internal static class Program
             }
 
             doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
-            Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
+            Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
         }
     }
 
@@ -241,7 +242,7 @@ internal static class Program
                     doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
                 }
 
-                Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
+                Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
             }
         });
 
@@ -389,7 +390,7 @@ internal static class Program
                     doc.Save(file, doc.DetectedEncoding ?? doc.StreamEncoding);
                 }
 
-                Console.WriteLine(FormattableString.Invariant($"Updated {count} nodes in '{file}'"));
+                Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"Updated {count} nodes in '{file}'"));
             }
         });
 

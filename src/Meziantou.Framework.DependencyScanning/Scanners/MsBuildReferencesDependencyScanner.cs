@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Meziantou.Framework.DependencyScanning.Internals;
 
@@ -18,6 +19,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             || context.HasExtension(".targets", ignoreCase: true);
     }
 
+    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout", Justification = "The regex has no backtracking")]
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(context.Content, context.CancellationToken).ConfigureAwait(false);
@@ -153,15 +155,17 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
             foreach (var targetFrameworkElement in element.Elements("TargetFrameworks"))
             {
-                var column = 0;
-                var parts = targetFrameworkElement.Value.Split(';');
-                foreach (var part in parts)
+#if NET7_0_OR_GREATER
+                const RegexOptions Options = RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking;
+#else
+                const RegexOptions Options = RegexOptions.ExplicitCapture;
+#endif
+                foreach (Match match in Regex.Matches(targetFrameworkElement.Value, @"\s*(?<version>.+?)\s*(;|$)", Options))
                 {
-                    context.ReportDependency(new Dependency(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                    var group = match.Groups["version"];
+                    context.ReportDependency(new Dependency(name: null, group.Value, DependencyType.DotNetTargetFramework,
                         nameLocation: null,
-                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement, column, part.Length)));
-
-                    column += part.Length + 1;
+                        versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement, group.Index, group.Length)));
                 }
             }
         }

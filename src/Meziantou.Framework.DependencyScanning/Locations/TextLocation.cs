@@ -1,3 +1,4 @@
+using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning;
@@ -107,7 +108,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
 
     public override string ToString()
     {
-        return FormattableString.Invariant($"{FilePath}:{LineNumber},{LinePosition}-{LinePosition + Length}");
+        return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{LineNumber},{LinePosition}-{LinePosition + Length}");
     }
 
     internal static TextLocation FromIndex(IFileSystem fileSystem, string filePath, string text, int index, int length)

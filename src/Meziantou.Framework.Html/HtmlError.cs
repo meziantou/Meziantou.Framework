@@ -1,5 +1,7 @@
 #nullable disable
 
+using System.Globalization;
+
 namespace Meziantou.Framework.Html;
 
 public sealed class HtmlError
@@ -28,6 +30,6 @@ public sealed class HtmlError
 
     public override string ToString()
     {
-        return FormattableString.Invariant($"{Line}x{Column}x{Offset} {ErrorType}");
+        return string.Create(CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
     }
 }

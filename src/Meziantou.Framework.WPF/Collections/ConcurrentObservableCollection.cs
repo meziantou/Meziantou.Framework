@@ -85,10 +85,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             lock (_lock)
             {
                 _items = _items.SetItem(index, value);
-                if (_observableCollection != null)
-                {
-                    _observableCollection.EnqueueReplace(index, value);
-                }
+                _observableCollection?.EnqueueReplace(index, value);
             }
         }
     }

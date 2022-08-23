@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Meziantou.Framework.DependencyScanning.Internals;
@@ -82,10 +83,10 @@ internal class XmlLocation : Location, ILocationLineInfo
     {
         if (AttributeName == null)
         {
-            return FormattableString.Invariant($"{FilePath}:{XPath}:{_lineInfo}");
+            return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}:{_lineInfo}");
         }
 
-        return FormattableString.Invariant($"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
+        return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
     }
 
     private string UpdateTextValue(string? elementOrAttributeValue, string? oldValue, string newValue)

@@ -117,7 +117,7 @@ public class DependencyScannerBenchmark
     private async Task GetDependenciesChannel(ScannerOptions options)
     {
         options.DegreeOfParallelism = DegreeOfParallelism;
-        await DependencyScanner.ScanDirectoryAsync(Directory10000, options, _ => new ValueTask()).ConfigureAwait(false);
+        await DependencyScanner.ScanDirectoryAsync(Directory10000, options, _ => { }).ConfigureAwait(false);
     }
 
     private async Task GetDependenciesForEach(ScannerOptions options)

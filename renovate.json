@@ -3,7 +3,7 @@
   "extends": [
     "config:base"
   ],
-  "schedule": ["every monday before 5:00am"],
+  "schedule": ["before 5am on monday"],
   "packageRules": [
     {
       "matchPackagePatterns": [".*"],

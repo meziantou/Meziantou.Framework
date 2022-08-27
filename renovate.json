@@ -3,5 +3,11 @@
   "extends": [
     "config:base"
   ],
-  "schedule": ["every monday before 5:00am"]
+  "schedule": ["every monday before 5:00am"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": [".*"],
+      "groupName": "all"
+    }
+  ]
 }

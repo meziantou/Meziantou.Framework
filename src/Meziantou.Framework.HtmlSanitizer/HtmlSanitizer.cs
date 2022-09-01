@@ -7,6 +7,7 @@ namespace Meziantou.Framework.Sanitizers;
 public sealed class HtmlSanitizer
 {
     // Inspiration: https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/html_sanitizer.ts
+    // https://wicg.github.io/sanitizer-api/#default-configuration-dictionary
 
     // Safe Void Elements - HTML5
     // http://dev.w3.org/html5/spec/Overview.html#void-elements

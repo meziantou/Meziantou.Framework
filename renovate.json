@@ -12,7 +12,8 @@
         "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
         "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"
       ],
-      "groupName": "roslyn-analyzers"
+      "groupName": "roslyn-analyzers",
+      "enabled": false
     },
     {
       "matchPackagePatterns": [".*"],

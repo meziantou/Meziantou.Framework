@@ -6,6 +6,15 @@
   "schedule": ["before 5am on monday"],
   "packageRules": [
     {
+      "matchPackageNames": ["Microsoft.CodeAnalysis"],
+      "matchFiles": [
+        "src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj",
+        "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
+        "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"
+      ],
+      "groupName": "roslyn-analyzers"
+    },
+    {
       "matchPackagePatterns": [".*"],
       "groupName": "all"
     }

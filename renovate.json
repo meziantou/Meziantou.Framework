@@ -18,7 +18,7 @@
     },
     {
       "matchPackagePatterns": [".*"],
-      "groupName": "all"
+      "groupName": "all dependencies"
     }
   ]
 }

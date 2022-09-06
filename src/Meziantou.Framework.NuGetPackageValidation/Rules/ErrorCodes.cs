@@ -14,6 +14,8 @@ internal static class ErrorCodes
     public const int UseDeprecatedIconUrl = 31;
     public const int IconNotSet = 32;
     public const int IconNotFound = 33;
+    public const int IconFileTooLarge = 34;
+    public const int IconFileFormatNotSupported = 35;
 
     public const int UseDeprecatedSummary = 41;
     public const int DescriptionNotSet = 42;

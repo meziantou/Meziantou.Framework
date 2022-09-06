@@ -5,6 +5,7 @@
     <Version>2.0.2</Version>
     <RazorLanguageVersion>2.0</RazorLanguageVersion>
     <IsTrimmable>false</IsTrimmable>
+    <Description>Components and services for Blazor</Description>
 
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>

@@ -35,7 +35,7 @@ internal static partial class Program
             var packagePath = FullPath.FromPath(path);
             var result = await NuGetPackageValidator.ValidateAsync(packagePath, rules, context.GetCancellationToken()).ConfigureAwait(false);
             var json = JsonSerializer.Serialize(result, ResultContext.Default.NuGetPackageValidationResult);
-            context.Console.Write(json);
+            context.Console.WriteLine(json);
             if (!result.IsValid)
             {
                 context.ExitCode = 1;

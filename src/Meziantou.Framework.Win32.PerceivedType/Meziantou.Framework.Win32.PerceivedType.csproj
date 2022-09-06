@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Description>Wrapper for Perceived types</Description>
+    <Description>Wrapper for Windows Perceived types</Description>
     <Version>2.0.2</Version>
   </PropertyGroup>
 

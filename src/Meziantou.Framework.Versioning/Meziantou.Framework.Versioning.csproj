@@ -5,6 +5,7 @@
     <Version>1.3.2</Version>
     <CompatibilityRange>true</CompatibilityRange>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Provide a SemanticVersion class to parse, compare, format semantic versions</Description>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net462'">

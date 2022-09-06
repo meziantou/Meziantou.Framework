@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>3.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Basic command line parser</Description>
   </PropertyGroup>
 
 </Project>

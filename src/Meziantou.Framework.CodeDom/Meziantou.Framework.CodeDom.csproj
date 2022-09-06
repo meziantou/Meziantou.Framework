@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <Description>C# code generator</Description>
+    <Description>A replacement for CodeDom to generate C# files</Description>
     <Version>4.0.5</Version>
     <CompatibilityRange>true</CompatibilityRange>
     <IsTrimmable>true</IsTrimmable>

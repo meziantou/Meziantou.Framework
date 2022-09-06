@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Services for Blazor WebAssembly</Description>
 
     <!-- https://github.com/dotnet/aspnetcore/issues/42200 -->
     <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>

@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
     <Version>1.0.1</Version>
     <IsTrimmable>false</IsTrimmable>
+    <Description>A log viewer component for Blazor</Description>
 
     <!-- StaticWebAssets are duplicated when multitargeting -->
     <NoWarn>$(NoWarn);NU5118</NoWarn>

@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.3</Version>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Stopwatch without any allocation</Description>
   </PropertyGroup>
 
 </Project>

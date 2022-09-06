@@ -5,6 +5,7 @@
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.3.3</Version>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Format a DateTime or DateTimeOffset using a relative format (e.g. 5 minutes ago)</Description>
   </PropertyGroup>
 
 </Project>

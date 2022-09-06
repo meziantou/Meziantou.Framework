@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>false</IsTrimmable>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>meziantou.validate-nuget-package</ToolCommandName>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.NuGetPackageValidation\Meziantou.Framework.NuGetPackageValidation.csproj" />
+  </ItemGroup>
+
+</Project>

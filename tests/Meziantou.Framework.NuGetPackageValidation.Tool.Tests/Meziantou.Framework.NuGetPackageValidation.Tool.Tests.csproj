@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.NuGetPackageValidation.Tool\Meziantou.Framework.NuGetPackageValidation.Tool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../Meziantou.Framework.NuGetPackageValidation.Tests/Packages/*.nupkg" LinkBase="Packages">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

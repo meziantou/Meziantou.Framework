@@ -1,0 +1,199 @@
+﻿using FluentAssertions;
+using Meziantou.Framework.NuGetPackageValidation.Rules;
+using Xunit;
+
+namespace Meziantou.Framework.NuGetPackageValidation.Tests;
+
+public sealed class NuGetPackageValidatorTests
+{
+    private static async Task<NuGetPackageValidationResult> ValidateAsync(string packageName, params NuGetPackageValidationRule[] rules)
+    {
+        var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
+        return await NuGetPackageValidator.ValidateAsync(path, rules);
+    }
+
+    private static void AssertNoErrors(NuGetPackageValidationResult result)
+    {
+        result.Errors.Should().BeEmpty();
+    }
+
+    private static void AssertHasError(NuGetPackageValidationResult result, int expectedErrorCode)
+    {
+        result.Errors.Should().Contain(item => item.ErrorCode == expectedErrorCode);
+    }
+
+    [Fact]
+    public async Task Validate_AssembliesMustBeOptimizedMustBeSet_Debug()
+    {
+        var result = await ValidateAsync("Debug.1.0.0.nupkg", NuGetPackageValidationRules.AssembliesMustBeOptimized);
+        AssertHasError(result, ErrorCodes.AssemblyIsNotOptimized);
+    }
+
+    [Fact]
+    public async Task Validate_AssembliesMustBeOptimizedMustBeSet_Release()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.AssembliesMustBeOptimized);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Description_DefaultDescription()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.DescriptionMustBeSet);
+        AssertHasError(result, ErrorCodes.PackageHasDefaultDescription);
+    }
+
+    [Fact]
+    public async Task Validate_Description_HasCustomDescription()
+    {
+        var result = await ValidateAsync("Release_Description.1.0.0.nupkg", NuGetPackageValidationRules.DescriptionMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_NoIcon()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertHasError(result, ErrorCodes.IconNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_IconUrl()
+    {
+        var result = await ValidateAsync("Release_IconUrl.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertHasError(result, ErrorCodes.UseDeprecatedIconUrl);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_HasIcon()
+    {
+        var result = await ValidateAsync("Release_Icon.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Readme_NoReadme()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.ReadmeMustBeSet);
+        AssertHasError(result, ErrorCodes.ReadmeNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_Readme_HasReadme()
+    {
+        var result = await ValidateAsync("Release_Readme.1.0.0.nupkg", NuGetPackageValidationRules.ReadmeMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_License_LicenseNotSet()
+    {
+        var result = await ValidateAsync("Release.1.0.0.nupkg", NuGetPackageValidationRules.LicenseMustBeSet);
+        AssertHasError(result, ErrorCodes.LicenseNotSet);
+    }
+
+    [Fact]
+    public async Task Validate_License_LicenseUrl()
+    {
+        var result = await ValidateAsync("Release_LicenseUrl.1.0.0.nupkg", NuGetPackageValidationRules.LicenseMustBeSet);
+        AssertHasError(result, ErrorCodes.UseDeprecatedLicenseUrl);
+    }
+
+    [Fact]
+    public async Task Validate_License_LicenseExpression()
+    {
+        var result = await ValidateAsync("Release_LicenseExpression.1.0.0.nupkg", NuGetPackageValidationRules.LicenseMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_License_LicenseFile()
+    {
+        var result = await ValidateAsync("Release_License.1.0.0.nupkg", NuGetPackageValidationRules.LicenseMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Author_DefaultAuthor()
+    {
+        var result = await ValidateAsync("Release_DefaultAuthor.1.0.0.nupkg", NuGetPackageValidationRules.AuthorMustBeSet);
+        AssertHasError(result, ErrorCodes.DefaultAuthorSet);
+    }
+
+    [Fact]
+    public async Task Validate_Author_AuthorSet()
+    {
+        var result = await ValidateAsync("Release_Author.1.0.0.nupkg", NuGetPackageValidationRules.AuthorMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_NonDeterministic()
+    {
+        var result = await ValidateAsync("Release_NonDeterministic_Pdb.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertHasError(result, ErrorCodes.NonDeterministic);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_Embedded()
+    {
+        var result = await ValidateAsync("Release_Deterministic_Embedded.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_Embedded_NoSources()
+    {
+        var result = await ValidateAsync("Release_Deterministic_Embedded_SourceNotEmbedded.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertHasError(result, ErrorCodes.SourceFileNotAccessible);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_Pdb()
+    {
+        var result = await ValidateAsync("Release_Deterministic_Pdb.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_Snupkg()
+    {
+        var result = await ValidateAsync("Release_Deterministic_Snupkg.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Deterministic_Embedded_SourceLink()
+    {
+        var result = await ValidateAsync("meziantou.framework.win32.credentialmanager.1.4.2.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_CompilerFlags_NotPresent()
+    {
+        var result = await ValidateAsync("meziantou.framework.2.6.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertHasError(result, ErrorCodes.CompilerFlagsNotPresent);
+    }
+
+    [Fact]
+    public async Task Validate_Symbols_FullPdb()
+    {
+        var result = await ValidateAsync("Release_Deterministic_Pdb_Full.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        AssertHasError(result, ErrorCodes.FullPdb);
+    }
+
+    [Fact]
+    public async Task Validate_XmlDocumentation_NotPresent()
+    {
+        var result = await ValidateAsync("Debug.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
+        AssertHasError(result, ErrorCodes.XmlDocumentationNotFound);
+    }
+
+    [Fact]
+    public async Task Validate_XmlDocumentation_Present()
+    {
+        var result = await ValidateAsync("Release_XmlDocumentation.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
+        AssertNoErrors(result);
+    }
+}

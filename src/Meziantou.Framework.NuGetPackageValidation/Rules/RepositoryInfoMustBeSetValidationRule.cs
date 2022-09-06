@@ -11,7 +11,7 @@ internal sealed class RepositoryInfoMustBeSetValidationRule : NuGetPackageValida
             return Task.CompletedTask;
         }
 
-        else if (string.IsNullOrEmpty(repo.Type))
+        if (string.IsNullOrEmpty(repo.Type))
         {
             context.ReportError(ErrorCodes.RepositoryTypeNotSet, "Repository type is not set");
         }

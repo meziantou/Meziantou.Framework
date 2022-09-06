@@ -13,7 +13,8 @@ public static class NuGetPackageValidationRules
     public static NuGetPackageValidationRule PackageIdAvailableOnNuGetOrg { get; } = new PackageIdAvailableOnNuGetOrgValidationRule();
     public static NuGetPackageValidationRule ProjectUrlMustBeSet { get; } = new ProjectUrlBeSetValidationRule();
     public static NuGetPackageValidationRule ReadmeMustBeSet { get; } = new ReadmeMustBeSetValidationRule();
-    public static NuGetPackageValidationRule RepositoryInfoMustBeSet { get; } = new RepositoryInfoMustBeSetValidationRule();
+    public static NuGetPackageValidationRule RepositoryMustBeSet { get; } = new RepositoryInfoMustBeSetValidationRule();
+    public static NuGetPackageValidationRule RepositoryBranchMustBeSet { get; } = new RepositoryBranchMustBeSetValidationRule();
     public static NuGetPackageValidationRule Symbols { get; } = new SymbolsValidationRule();
     public static NuGetPackageValidationRule XmlDocumentationMustBePresent { get; } = new XmlDocumentationMustBePresentValidationRule();
 
@@ -29,7 +30,8 @@ public static class NuGetPackageValidationRules
             LicenseMustBeSet,
             ProjectUrlMustBeSet,
             ReadmeMustBeSet,
-            RepositoryInfoMustBeSet,
+            RepositoryMustBeSet,
+            RepositoryBranchMustBeSet,
             Symbols,
             XmlDocumentationMustBePresent);
     }

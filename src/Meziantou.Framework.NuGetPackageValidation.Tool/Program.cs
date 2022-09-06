@@ -21,8 +21,10 @@ internal static partial class Program
         var rootCommand = new RootCommand();
         var pathArgument = new Argument<string>("package-path", "Path to the NuGet package to validate") { Arity = ArgumentArity.ExactlyOne };
         var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseValues);
+        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseValues);
         rootCommand.AddArgument(pathArgument);
         rootCommand.AddOption(rulesOptions);
+        rootCommand.AddOption(excludedRulesOptions);
         rootCommand.SetHandler(async context =>
         {
             var path = context.ParseResult.GetValueForArgument(pathArgument);
@@ -30,6 +32,15 @@ internal static partial class Program
             if (rules == null || rules.Count == 0)
             {
                 rules = NuGetPackageValidationRules.Default;
+            }
+
+            var excludedRules = context.ParseResult.GetValueForOption(excludedRulesOptions);
+            if (excludedRules != null && excludedRules.Length > 0)
+            {
+                foreach (var excludedRule in excludedRules)
+                {
+                    rules.Remove(excludedRule);
+                }
             }
 
             var packagePath = FullPath.FromPath(path);

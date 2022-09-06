@@ -20,7 +20,7 @@ internal static partial class Program
     {
         var rootCommand = new RootCommand();
         var pathArgument = new Argument<string>("package-path", "Path to the NuGet package to validate") { Arity = ArgumentArity.ExactlyOne };
-        var rulesOptions = new Option<NuGetPackageValidationRule[]>("--rules", description: GetRulesDescription(), parseArgument: ParseValues);
+        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseValues);
         rootCommand.AddArgument(pathArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.SetHandler(async context =>

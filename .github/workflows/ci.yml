@@ -61,9 +61,18 @@ jobs:
           path: ${{ env.NuGetDirectory }}
       - name: Run dotnet validate
         run: |
+          dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global --no-cache --add-source "${{ env.NuGetDirectory }}"
           $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
+          $Errors = $false
           foreach($file in $files) {
-              dotnet run src/Meziantou.Framework.NuGetPackageValidation.Tool -- "$file"
+              & meziantou.validate-nuget-package "$file"
+              if ($LASTEXITCODE -ne 0) {
+                $Errors = $true
+              }
+          }
+
+          if($Errors){
+            exit 1
           }
 
   build_and_test:

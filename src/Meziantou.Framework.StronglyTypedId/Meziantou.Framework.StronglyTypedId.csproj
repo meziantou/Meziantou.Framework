@@ -9,6 +9,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
+    <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json or Newtonsoft.Json.</Description>
   </PropertyGroup>
 
   <ItemGroup>

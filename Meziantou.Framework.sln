@@ -235,6 +235,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SimpleQ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SimpleQueryLanguage.Tests", "tests\Meziantou.Framework.SimpleQueryLanguage.Tests\Meziantou.Framework.SimpleQueryLanguage.Tests.csproj", "{12703354-06E4-49AE-9AAF-4E2D54600B02}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPackageValidation", "src\Meziantou.Framework.NuGetPackageValidation\Meziantou.Framework.NuGetPackageValidation.csproj", "{21208BCE-3889-47D6-8914-F6F09ED0972F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPackageValidation.Tests", "tests\Meziantou.Framework.NuGetPackageValidation.Tests\Meziantou.Framework.NuGetPackageValidation.Tests.csproj", "{6585762D-F064-473B-90E5-8A4F866B829C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.NuGetPackageValidation.Tool", "src\Meziantou.Framework.NuGetPackageValidation.Tool\Meziantou.Framework.NuGetPackageValidation.Tool.csproj", "{0C658C6D-9BAC-459B-A95F-B39354F9D403}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.NuGetPackageValidation.Tool.Tests", "tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj", "{C62D7002-1CAB-4C71-AB66-2C2637978D73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -645,6 +653,22 @@ Global
 		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12703354-06E4-49AE-9AAF-4E2D54600B02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21208BCE-3889-47D6-8914-F6F09ED0972F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21208BCE-3889-47D6-8914-F6F09ED0972F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21208BCE-3889-47D6-8914-F6F09ED0972F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21208BCE-3889-47D6-8914-F6F09ED0972F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6585762D-F064-473B-90E5-8A4F866B829C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6585762D-F064-473B-90E5-8A4F866B829C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6585762D-F064-473B-90E5-8A4F866B829C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6585762D-F064-473B-90E5-8A4F866B829C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C658C6D-9BAC-459B-A95F-B39354F9D403}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C658C6D-9BAC-459B-A95F-B39354F9D403}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C658C6D-9BAC-459B-A95F-B39354F9D403}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C658C6D-9BAC-459B-A95F-B39354F9D403}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -751,6 +775,10 @@ Global
 		{4208E471-A24B-4AF1-85AA-CDC52766D70E} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{C6B1022C-C5D7-4BB7-A8E3-7ABECCA76A71} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{12703354-06E4-49AE-9AAF-4E2D54600B02} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{21208BCE-3889-47D6-8914-F6F09ED0972F} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{6585762D-F064-473B-90E5-8A4F866B829C} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{0C658C6D-9BAC-459B-A95F-B39354F9D403} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{C62D7002-1CAB-4C71-AB66-2C2637978D73} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

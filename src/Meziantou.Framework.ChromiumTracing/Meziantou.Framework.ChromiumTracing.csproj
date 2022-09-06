@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>1.0.5</Version>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Classes to generate a tracing file that can be opened by Chromium browsers and other tools</Description>
   </PropertyGroup>
 
 </Project>

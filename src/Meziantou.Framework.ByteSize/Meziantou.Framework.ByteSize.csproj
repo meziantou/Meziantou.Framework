@@ -6,6 +6,7 @@
     <Version>2.1.0</Version>
     <CompatibilityRange>true</CompatibilityRange>
     <IsTrimmable>true</IsTrimmable>
+    <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net462'">

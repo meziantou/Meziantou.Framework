@@ -9,6 +9,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
+    <Description>Generate code to access resx files using strongly-typed properties and methods</Description>
   </PropertyGroup>
 
   <ItemGroup>

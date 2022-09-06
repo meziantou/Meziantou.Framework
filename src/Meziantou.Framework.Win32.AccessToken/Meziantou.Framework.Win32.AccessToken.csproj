@@ -5,6 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Version>2.0.2</Version>
+    <Description>Allow to manipulate Windows Access Tokens</Description>
   </PropertyGroup>
 
 </Project>

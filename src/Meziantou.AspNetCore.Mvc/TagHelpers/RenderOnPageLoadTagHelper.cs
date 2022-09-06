@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
-/// <seealso cref="https://www.meziantou.net/loading-stylesheets-asynchronously-using-a-taghelper-in-asp-net-core.htm"/>
+/// <seealso href="https://www.meziantou.net/loading-stylesheets-asynchronously-using-a-taghelper-in-asp-net-core.htm"/>
 [HtmlTargetElement("render-on-page-load")]
 public sealed class RenderOnPageLoadTagHelper : TagHelper
 {

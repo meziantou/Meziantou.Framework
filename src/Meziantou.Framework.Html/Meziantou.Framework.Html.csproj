@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Version>2.0.2</Version>
     <IsTrimmable>false</IsTrimmable>
+    <Description>HTML parser for .NET</Description>
   </PropertyGroup>
 
 </Project>

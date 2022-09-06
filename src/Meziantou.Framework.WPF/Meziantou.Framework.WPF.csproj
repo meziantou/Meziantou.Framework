@@ -5,6 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
     <Version>1.5.4</Version>
+    <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
 
   <ItemGroup>

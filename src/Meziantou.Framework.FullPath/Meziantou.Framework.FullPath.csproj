@@ -4,8 +4,9 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netcoreapp3.1;net472</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.10</Version>
+    <Version>1.0.11</Version>
     <CompatibilityRange>true</CompatibilityRange>
+    <Description>FullPath makes it easier to deal with paths</Description>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">

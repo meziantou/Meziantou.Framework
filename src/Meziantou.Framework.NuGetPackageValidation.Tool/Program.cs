@@ -28,10 +28,10 @@ internal static partial class Program
         rootCommand.SetHandler(async context =>
         {
             var path = context.ParseResult.GetValueForArgument(pathArgument);
-            ICollection<NuGetPackageValidationRule>? rules = context.ParseResult.GetValueForOption(rulesOptions);
+            var rules = context.ParseResult.GetValueForOption(rulesOptions)?.ToList();
             if (rules == null || rules.Count == 0)
             {
-                rules = NuGetPackageValidationRules.Default;
+                rules = NuGetPackageValidationRules.Default.ToList();
             }
 
             var excludedRules = context.ParseResult.GetValueForOption(excludedRulesOptions);

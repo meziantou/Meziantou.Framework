@@ -197,7 +197,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 
     private static async Task<bool> IsDotNetAssembly(NuGetPackageValidationContext context, string fileName)
     {
-        var stream = context.Package.GetStream(fileName);
+        var stream = await context.Package.GetStreamAsync(fileName, context.CancellationToken).ConfigureAwait(false);
         try
         {
             var seekableStream = await CreateSeekableStream(stream, context.CancellationToken).ConfigureAwait(false);

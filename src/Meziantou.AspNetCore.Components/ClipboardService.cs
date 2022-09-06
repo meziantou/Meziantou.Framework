@@ -2,7 +2,7 @@ using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <seealso cref="https://www.meziantou.net/copying-text-to-clipboard-in-a-blazor-application.htm"/>
+/// <seealso href="https://www.meziantou.net/copying-text-to-clipboard-in-a-blazor-application.htm"/>
 public sealed class ClipboardService
 {
     private readonly IJSRuntime _jsRuntime;

@@ -16,7 +16,7 @@ internal sealed class XmlDocumentationMustBePresentValidationRule : NuGetPackage
                 {
                     if (await IsDotNetLibrary(context, item).ConfigureAwait(false))
                     {
-                        context.ReportError(ErrorCodes.XmlDocumentationNotFound, "XML documentation not found for a library", item);
+                        context.ReportError(ErrorCodes.XmlDocumentationNotFound, "XML documentation not found", item);
                     }
                 }
             }
@@ -25,7 +25,7 @@ internal sealed class XmlDocumentationMustBePresentValidationRule : NuGetPackage
 
     private static async Task<bool> IsDotNetLibrary(NuGetPackageValidationContext context, string fileName)
     {
-        var stream = context.Package.GetStream(fileName);
+        var stream = await context.Package.GetStreamAsync(fileName, context.CancellationToken).ConfigureAwait(false);
         try
         {
             var seekableStream = await CreateSeekableStream(stream, context.CancellationToken).ConfigureAwait(false);

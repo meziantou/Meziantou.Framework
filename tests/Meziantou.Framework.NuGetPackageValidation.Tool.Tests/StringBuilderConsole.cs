@@ -1,7 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.IO;
 using System.Text;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 

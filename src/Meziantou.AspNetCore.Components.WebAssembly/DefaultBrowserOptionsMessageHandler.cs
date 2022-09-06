@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace Meziantou.AspNetCore.Components.WebAssembly;
 
-/// <seealso cref="https://www.meziantou.net/bypass-browser-cache-using-httpclient-in-blazor-webassembly.htm"/>
+/// <seealso href="https://www.meziantou.net/bypass-browser-cache-using-httpclient-in-blazor-webassembly.htm"/>
 public sealed class DefaultBrowserOptionsMessageHandler : DelegatingHandler
 {
     private static readonly HttpRequestOptionsKey<IDictionary<string, object>> FetchRequestOptionsKey = new("WebAssemblyFetchOptions");

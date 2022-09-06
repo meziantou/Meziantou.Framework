@@ -32,7 +32,7 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v2
       - run: dotnet build eng/build.proj --configuration Release /bl
-      - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /bl
+      - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl
       - uses: actions/upload-artifact@v3
         if: always()
         with:

@@ -21,7 +21,7 @@ public static class UrlSanitizer
      *     Otherwise, a colon after a double solidus (//) must be in the authority
      *     (before port).
      *
-     * The pattern disallows &, used in HTML entity declarations before
+     * The pattern disallows &amp;, used in HTML entity declarations before
      * one of the characters in [/?#]. This disallows HTML entities used in the
      * protocol name, which should never happen, e.g. "h&#116;tp" for "http".
      * It also disallows HTML entities in the first path part of a relative path,

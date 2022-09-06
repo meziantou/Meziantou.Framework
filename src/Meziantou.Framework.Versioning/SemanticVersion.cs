@@ -4,7 +4,7 @@ using System.Text;
 namespace Meziantou.Framework.Versioning;
 
 /// <summary>
-/// Implements Semantic Version 2.0.0. <see cref="https://semver.org/"/>
+/// Implements Semantic Version 2.0.0. <see href="https://semver.org/"/>
 /// </summary>
 // https://github.com/semver/semver/blob/master/semver.md
 // https://github.com/semver/semver/blob/master/semver.svg

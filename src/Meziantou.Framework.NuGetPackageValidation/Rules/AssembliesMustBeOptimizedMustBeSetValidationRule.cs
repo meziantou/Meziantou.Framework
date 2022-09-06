@@ -7,7 +7,7 @@ internal sealed class AssembliesMustBeOptimizedMustBeSetValidationRule : NuGetPa
 {
     public override async Task ExecuteAsync(NuGetPackageValidationContext context)
     {
-        foreach (var file in context.Package.GetFiles())
+        foreach (var file in await context.Package.GetFilesAsync(context.CancellationToken).ConfigureAwait(false))
         {
             var extension = Path.GetExtension(file);
             if (string.Equals(extension, ".dll", StringComparison.OrdinalIgnoreCase) ||

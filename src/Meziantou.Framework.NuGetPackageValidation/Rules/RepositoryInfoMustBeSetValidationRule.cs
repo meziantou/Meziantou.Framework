@@ -11,22 +11,22 @@ internal sealed class RepositoryInfoMustBeSetValidationRule : NuGetPackageValida
             return Task.CompletedTask;
         }
 
-        else if (!string.IsNullOrEmpty(repo.Type))
+        else if (string.IsNullOrEmpty(repo.Type))
         {
             context.ReportError(ErrorCodes.RepositoryTypeNotSet, "Repository type is not set");
         }
 
-        if (!string.IsNullOrEmpty(repo.Url))
+        if (string.IsNullOrEmpty(repo.Url))
         {
             context.ReportError(ErrorCodes.RepositoryUrlNotSet, "Repository URL is not set");
         }
 
-        if (!string.IsNullOrEmpty(repo.Commit))
+        if (string.IsNullOrEmpty(repo.Commit))
         {
             context.ReportError(ErrorCodes.RepositoryCommitNotSet, "Repository commit is not set");
         }
 
-        if (!string.IsNullOrEmpty(repo.Branch))
+        if (string.IsNullOrEmpty(repo.Branch))
         {
             context.ReportError(ErrorCodes.RepositoryBranchNotSet, "Repository branch is not set");
         }

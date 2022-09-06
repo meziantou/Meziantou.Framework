@@ -25,6 +25,9 @@
 
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
 
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    
     <!-- TODO: Enable when dotnet/linker#2718 is fixed -->
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
   </PropertyGroup>

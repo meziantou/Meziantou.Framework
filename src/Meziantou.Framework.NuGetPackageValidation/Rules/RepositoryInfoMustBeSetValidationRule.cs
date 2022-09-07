@@ -26,11 +26,6 @@ internal sealed class RepositoryInfoMustBeSetValidationRule : NuGetPackageValida
             context.ReportError(ErrorCodes.RepositoryCommitNotSet, "Repository commit is not set");
         }
 
-        if (string.IsNullOrEmpty(repo.Branch))
-        {
-            context.ReportError(ErrorCodes.RepositoryBranchNotSet, "Repository branch is not set");
-        }
-
         return Task.CompletedTask;
     }
 }

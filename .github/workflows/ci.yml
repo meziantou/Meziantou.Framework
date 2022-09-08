@@ -65,7 +65,7 @@ jobs:
           $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
           $Errors = $false
           foreach($file in $files) {
-              & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet"
+              & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet,TagsMustBeSet"
               if ($LASTEXITCODE -ne 0) {
                 $Errors = $true
               }

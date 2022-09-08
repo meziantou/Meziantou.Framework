@@ -20,6 +20,7 @@ internal static class ErrorCodes
     public const int UseDeprecatedSummary = 41;
     public const int DescriptionNotSet = 42;
     public const int PackageHasDefaultDescription = 43;
+    public const int PackageDescriptionIsTooLong = 44;
 
     public const int ProjectUrlNotSet = 51;
 
@@ -48,4 +49,6 @@ internal static class ErrorCodes
     public const int FullPdb = 117;
     public const int PdbDoesNotMatchAssembly = 118;
 
+    public const int TagsNotSet = 131;
+    public const int TagsTooLong = 132;
 }

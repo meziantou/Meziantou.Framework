@@ -18,6 +18,10 @@ internal sealed class DescriptionMustBeSetValidationRule : NuGetPackageValidatio
         {
             context.ReportError(ErrorCodes.PackageHasDefaultDescription, "The package description is not set");
         }
+        else if (description.Length > 4000)
+        {
+            context.ReportError(ErrorCodes.PackageDescriptionIsTooLong, "The package description is limited to 4000 characters");
+        }
 
         return Task.CompletedTask;
     }

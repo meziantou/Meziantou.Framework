@@ -16,6 +16,7 @@ public static class NuGetPackageValidationRules
     public static NuGetPackageValidationRule RepositoryMustBeSet { get; } = new RepositoryInfoMustBeSetValidationRule();
     public static NuGetPackageValidationRule RepositoryBranchMustBeSet { get; } = new RepositoryBranchMustBeSetValidationRule();
     public static NuGetPackageValidationRule Symbols { get; } = new SymbolsValidationRule();
+    public static NuGetPackageValidationRule TagsMustBeSet { get; } = new TagsMustBeSetValidationRule();
     public static NuGetPackageValidationRule XmlDocumentationMustBePresent { get; } = new XmlDocumentationMustBePresentValidationRule();
 
     public static ImmutableArray<NuGetPackageValidationRule> Default { get; } = CreateRuleSet();
@@ -33,6 +34,7 @@ public static class NuGetPackageValidationRules
             RepositoryMustBeSet,
             RepositoryBranchMustBeSet,
             Symbols,
+            TagsMustBeSet,
             XmlDocumentationMustBePresent);
     }
 }

@@ -7,7 +7,7 @@
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.validate-nuget-package</ToolCommandName>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>CLI tool to validate NuGet packages follows best-practices</Description>
   </PropertyGroup>
 

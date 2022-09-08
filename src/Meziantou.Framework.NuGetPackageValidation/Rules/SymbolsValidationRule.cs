@@ -28,6 +28,9 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 
         foreach (var item in allItems)
         {
+            if (IsSatelliteAssembly(item))
+                continue;
+
             var itemExtension = Path.GetExtension(item);
             if (string.Equals(itemExtension, ".dll", StringComparison.OrdinalIgnoreCase) || string.Equals(itemExtension, ".exe", StringComparison.OrdinalIgnoreCase))
             {

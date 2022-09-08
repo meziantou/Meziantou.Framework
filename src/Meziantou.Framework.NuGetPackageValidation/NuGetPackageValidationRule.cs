@@ -1,4 +1,5 @@
-﻿using NuGet.Packaging;
+﻿using System.Text.RegularExpressions;
+using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;
 
@@ -33,5 +34,10 @@ public abstract class NuGetPackageValidationRule
             await ms.DisposeAsync().ConfigureAwait(false);
             throw;
         }
+    }
+
+    private protected static bool IsSatelliteAssembly(string path)
+    {
+        return Regex.IsMatch(path, @"(\\|/)[^\\/]+(\\|/)([^\\/]+).resources.dll$", RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
     }
 }

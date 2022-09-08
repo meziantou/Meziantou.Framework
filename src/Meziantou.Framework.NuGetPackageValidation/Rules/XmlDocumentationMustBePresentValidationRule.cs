@@ -12,6 +12,9 @@ internal sealed class XmlDocumentationMustBePresentValidationRule : NuGetPackage
         {
             foreach (var item in group.Items)
             {
+                if (IsSatelliteAssembly(item))
+                    continue;
+
                 if (!PackageFileExists(context.Package, Path.ChangeExtension(item, ".xml")))
                 {
                     if (await IsDotNetLibrary(context, item).ConfigureAwait(false))

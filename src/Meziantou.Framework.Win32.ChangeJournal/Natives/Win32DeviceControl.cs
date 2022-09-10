@@ -1,13 +1,17 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
+using Windows.Win32;
 
 namespace Meziantou.Framework.Win32.Natives;
 
 internal static class Win32DeviceControl
 {
-    internal static byte[] ControlWithInput<TStructure>(ChangeJournalSafeHandle handle, Win32ControlCode code, ref TStructure structure, int bufferlen) where TStructure : struct
+    [SupportedOSPlatform("windows5.1.2600")]
+    internal static unsafe byte[] ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int bufferlen) where TStructure : struct
     {
-        uint datalen;
+        uint returnedSize;
         bool controlResult;
         GCHandle structureHandle;
         GCHandle bufferHandle;
@@ -22,7 +26,7 @@ internal static class Win32DeviceControl
 
         try
         {
-            controlResult = Win32Methods.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, out datalen, IntPtr.Zero);
+            controlResult = PInvoke.DeviceIoControl(handle, (uint)code, (void*)structurePointer, (uint)Marshal.SizeOf(structure), (void*)bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
         }
         finally
         {
@@ -33,21 +37,22 @@ internal static class Win32DeviceControl
         if (!controlResult)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        if (datalen < bufferlen && datalen != 0)
+        if (returnedSize < bufferlen && returnedSize != 0)
         {
-            var tempBuffer = new byte[datalen];
-            Array.Copy(buffer, 0, tempBuffer, 0, datalen);
+            var tempBuffer = new byte[returnedSize];
+            Array.Copy(buffer, 0, tempBuffer, 0, returnedSize);
             buffer = tempBuffer;
         }
 
         return buffer;
     }
 
-    internal static void ControlWithOutput<TStructure>(ChangeJournalSafeHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : struct
+    [SupportedOSPlatform("windows5.1.2600")]
+    internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : struct
     {
         bool controlResult;
         GCHandle structureHandle;
-        IntPtr structurePointer;
+        nint structurePointer;
 
         // get our object pointer
         structureHandle = GCHandle.Alloc(structure, GCHandleType.Pinned);
@@ -55,7 +60,8 @@ internal static class Win32DeviceControl
 
         try
         {
-            controlResult = Win32Methods.DeviceIoControl(handle, (uint)code, IntPtr.Zero, 0, structurePointer, (uint)Marshal.SizeOf(structure), out _, IntPtr.Zero);
+            uint returnedSize = 0;
+            controlResult = PInvoke.DeviceIoControl(handle, (uint)code, lpInBuffer: null, 0u, (void*)structurePointer, (uint)Marshal.SizeOf(structure), &returnedSize, lpOverlapped: null);
         }
         finally
         {

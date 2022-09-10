@@ -1,0 +1,7 @@
+﻿CreateJobObject
+OpenJobObject
+SetInformationJobObject
+TerminateJobObject
+AssignProcessToJobObject
+CloseHandle
+IsProcessInJob

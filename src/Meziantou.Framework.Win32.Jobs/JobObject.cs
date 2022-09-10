@@ -3,15 +3,25 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
+using Microsoft.Win32.SafeHandles;
+using Windows.Win32.Foundation;
+using Windows.Win32.System.JobObjects;
 
 namespace Meziantou.Framework.Win32;
 
 /// <summary>
 /// A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.
 /// </summary>
-[SupportedOSPlatform("windows")]
-public sealed class JobObject : SafeHandle
+[SupportedOSPlatform("windows5.1.2600")]
+public sealed class JobObject : IDisposable
 {
+    private readonly SafeFileHandle _jobHandle;
+
+    private JobObject(SafeFileHandle jobHandle)
+    {
+        _jobHandle = jobHandle;
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="JobObject"/> class. The associated job object will have no name.
     /// </summary>
@@ -24,41 +34,38 @@ public sealed class JobObject : SafeHandle
     /// Initializes a new instance of the <see cref="JobObject"/> class.
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
-    public JobObject(string? name)
-        : base(IntPtr.Zero, ownsHandle: true)
+    public unsafe JobObject(string? name)
     {
-        var atts = new SECURITY_ATTRIBUTES
+        var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
         {
-            InheritHandle = true,
-            SecurityDescriptor = IntPtr.Zero,
-            Length = Marshal.SizeOf(typeof(SECURITY_ATTRIBUTES)),
+            bInheritHandle = true,
+            lpSecurityDescriptor = IntPtr.Zero.ToPointer(),
+            nLength = (uint)Marshal.SizeOf(typeof(Windows.Win32.Security.SECURITY_ATTRIBUTES)),
         };
 
-        SetHandle(NativeMethods.CreateJobObject(ref atts, name));
+        _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);
+        if (_jobHandle.IsInvalid)
+        {
+            _jobHandle.Dispose();
+            var lastError = Marshal.GetLastWin32Error();
+            throw new Win32Exception(lastError);
+        }
     }
 
     public static JobObject Open(JobObjectAccessRights desiredAccess, bool inherited, string name)
     {
-        return NativeMethods.OpenJobObject(desiredAccess, inherited, name);
+        var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
+        if (handle.IsInvalid)
+        {
+            handle.Dispose();
+            var lastError = Marshal.GetLastWin32Error();
+            throw new Win32Exception(lastError);
+        }
+
+        return new JobObject(handle);
     }
 
-
-    /// <summary>
-    /// When overridden in a derived class, gets a value indicating whether the handle value is invalid.
-    /// </summary>
-    /// <returns>true if the handle value is invalid; otherwise, false.</returns>
-    public override bool IsInvalid => IsClosed || handle == IntPtr.Zero;
-
-    /// <summary>
-    /// When overridden in a derived class, executes the code required to free the handle.
-    /// </summary>
-    /// <returns>
-    /// true if the handle is released successfully; otherwise, in the event of a catastrophic failure, false. In this case, it generates a releaseHandleFailed MDA Managed Debugging Assistant.
-    /// </returns>
-    protected override bool ReleaseHandle()
-    {
-        return NativeMethods.CloseHandle(handle);
-    }
+    public void Dispose() => _jobHandle.Dispose();
 
     /// <summary>
     /// Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.
@@ -74,7 +81,7 @@ public sealed class JobObject : SafeHandle
     /// <param name="exitCode">The exit code to be used by all processes and threads in the job object.</param>
     public void Terminate(int exitCode)
     {
-        NativeMethods.TerminateJobObject(this, unchecked((uint)exitCode));
+        Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode));
     }
 
     /// <summary>
@@ -98,7 +105,7 @@ public sealed class JobObject : SafeHandle
     /// </returns>
     public void AssignProcess(IntPtr processHandle)
     {
-        if (!NativeMethods.AssignProcessToJobObject(this, processHandle))
+        if (!Windows.Win32.PInvoke.AssignProcessToJobObject((HANDLE)_jobHandle.DangerousGetHandle(), (HANDLE)processHandle))
         {
             throw new Win32Exception(Marshal.GetLastWin32Error());
         }
@@ -108,39 +115,39 @@ public sealed class JobObject : SafeHandle
     /// Sets limits to the jhob.
     /// </summary>
     /// <param name="limits">The limits. May not be null.</param>
-    public void SetLimits(JobObjectLimits limits)
+    public unsafe void SetLimits(JobObjectLimits limits)
     {
         if (limits is null)
             throw new ArgumentNullException(nameof(limits));
         var info = JOBOBJECT_INFO.From(limits);
-        var length = Environment.Is64BitProcess ? Marshal.SizeOf(info.ExtendedLimits64) : Marshal.SizeOf(info.ExtendedLimits32);
-        if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.ExtendedLimitInformation, ref info, length))
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, JOBOBJECT_INFO.Size))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
         }
     }
 
-    public void SetUIRestrictions(JobObjectUILimit limits)
+    public unsafe void SetUIRestrictions(JobObjectUILimit limits)
     {
         var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
         {
             UIRestrictionsClass = limits,
         };
 
-        if (!NativeMethods.SetInformationJobObject(this, JobObjectInfoClass.BasicUIRestrictions, ref restriction, Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
         }
     }
 
-    public bool IsAssignedToProcess(Process process)
+    public unsafe bool IsAssignedToProcess(Process process)
     {
         if (process is null)
             throw new ArgumentNullException(nameof(process));
 
-        if (NativeMethods.IsProcessInJob(process.Handle, this, out var result))
+        BOOL result = default;
+        if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))
             return result;
 
         var err = Marshal.GetLastWin32Error();

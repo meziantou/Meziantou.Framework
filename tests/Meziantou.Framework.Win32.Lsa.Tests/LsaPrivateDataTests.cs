@@ -20,7 +20,7 @@ public sealed class LsaPrivateDataTests
         // Remove
         LsaPrivateData.RemoveValue("LsaPrivateDataTests");
         value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-        value.Should().BeEmpty();
+        value.Should().BeNull();
     }
 
     [RunIfWindowsAdministratorFact]

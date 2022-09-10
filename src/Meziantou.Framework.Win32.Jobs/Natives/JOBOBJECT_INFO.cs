@@ -11,6 +11,8 @@ internal struct JOBOBJECT_INFO
     [FieldOffset(0)]
     public JOBOBJECT_EXTENDED_LIMIT_INFORMATION64 ExtendedLimits64;
 
+    public static readonly unsafe uint Size = (uint)(Environment.Is64BitProcess ? Marshal.SizeOf(typeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION64)) : Marshal.SizeOf(typeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION32)));
+
     public static JOBOBJECT_INFO From(JobObjectLimits limits)
     {
         var info = new JOBOBJECT_INFO();

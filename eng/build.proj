@@ -3,7 +3,7 @@
     <ProjectReference Include="../**/*.*proj" />
   </ItemGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsOsPlatform('WINDOWS')) == false">
+  <ItemGroup Condition="$([MSBuild]::IsOsPlatform('Windows')) == false">
     <ProjectReference Remove="../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
     <ProjectReference Remove="../tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <ProjectReference Remove="../Samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
@@ -11,5 +11,9 @@
     <ProjectReference Remove="../Samples/Meziantou.Framework.WPF.CollectionSamples/Meziantou.Framework.WPF.CollectionSamples.csproj" />
     <ProjectReference Remove="../Samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
     <ProjectReference Remove="../Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(Architecture)' == 'x86'">
+    <ProjectReference Remove="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
   </ItemGroup>
 </Project>

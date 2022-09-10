@@ -73,10 +73,14 @@ public sealed class CredentialManagerTests : IDisposable
         cred.Should().BeNull();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
-    public void CredentialManager_LimitSecret()
+    [RunIfTheory(FactOperatingSystem.Windows)]
+    [InlineData(512)]
+    [InlineData(513)]
+    [InlineData(1024)]
+    [InlineData(512 * 5 / 2)]
+    public void CredentialManager_LimitSecret(int secretLength)
     {
-        var secret = new string('a', 512 * 5 / 2);
+        var secret = new string('a', secretLength);
         CredentialManager.WriteCredential(_credentialName1, "John", secret, CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);

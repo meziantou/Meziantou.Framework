@@ -6,7 +6,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows5.1.2600")]
 internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
 {
     private readonly ChangeJournal _changeJournal;

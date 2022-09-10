@@ -1,0 +1,3 @@
+﻿CloseHandle
+CreateFileW
+DeviceIoControl

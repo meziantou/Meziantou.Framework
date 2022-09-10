@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using FluentAssertions;
 using TestUtilities;
@@ -55,7 +56,7 @@ public class JobObjectTests
         process.WaitForExit(500).Should().BeFalse(); // Ensure process is started
 
         job.AssignProcess(process);
-        job.Close();
+        job.Dispose();
 
         process.WaitForExit();
     }
@@ -65,10 +66,24 @@ public class JobObjectTests
     {
         var objectName = Guid.NewGuid().ToString("N");
         using var job = new JobObject(objectName);
-        job.IsInvalid.Should().BeFalse();
 
-        using var openedJob = JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName);
-        openedJob.IsInvalid.Should().BeFalse();
+        using (JobObject.Open(JobObjectAccessRights.AllAccess, inherited: true, objectName))
+        {
+        }
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void InvalidName_TooLong()
+    {
+        var objectName = "Local\\" + new string('a', 40000);
+        FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void InvalidName_InvalidCharacter()
+    {
+        var objectName = "Local\\a\\b";
+        FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]

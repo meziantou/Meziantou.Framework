@@ -2,19 +2,22 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
+using Microsoft.Win32.SafeHandles;
+using Windows.Win32;
+using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows5.1.2600")]
 public sealed class ChangeJournal : IDisposable
 {
-    internal ChangeJournalSafeHandle ChangeJournalHandle { get; }
+    internal SafeFileHandle ChangeJournalHandle { get; }
 
     public JournalData Data { get; private set; }
 
     public IEnumerable<JournalEntry> Entries { get; }
 
-    private ChangeJournal(ChangeJournalSafeHandle handle)
+    private ChangeJournal(SafeFileHandle handle)
     {
         ChangeJournalHandle = handle;
         Data = ReadJournalDataImpl();
@@ -27,7 +30,15 @@ public sealed class ChangeJournal : IDisposable
             throw new ArgumentNullException(nameof(driveInfo));
 
         var volume = VolumeHelper.GetValidVolumePath(driveInfo);
-        var handle = Win32Methods.CreateFileW(volume, FileAccess.Read, FileShare.Read | FileShare.Write, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
+        var handle = PInvoke.CreateFile(
+            volume,
+            FILE_ACCESS_FLAGS.FILE_GENERIC_READ,
+            FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE,
+            lpSecurityAttributes: null,
+            FILE_CREATION_DISPOSITION.OPEN_EXISTING,
+            default,
+            hTemplateFile: null);
+
         if (handle.IsInvalid)
             throw new Win32Exception(Marshal.GetLastWin32Error());
 

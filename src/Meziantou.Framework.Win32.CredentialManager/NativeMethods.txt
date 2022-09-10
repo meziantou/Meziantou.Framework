@@ -1,0 +1,14 @@
+﻿CredRead
+CredDelete
+CredWrite
+CredEnumerate
+CredFree
+
+CREDUI_MAX_USERNAME_LENGTH
+WIN32_ERROR
+
+CredUICmdLinePromptForCredentialsW
+CredUIParseUserName
+CredPackAuthenticationBuffer
+CredUnPackAuthenticationBufferW
+CredUIPromptForWindowsCredentials

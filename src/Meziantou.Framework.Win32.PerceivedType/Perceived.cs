@@ -1,6 +1,7 @@
-using System.Runtime.InteropServices;
+using System.Collections.Concurrent;
 using System.Runtime.Versioning;
-using Microsoft.Win32;
+using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace Meziantou.Framework.Win32;
 
@@ -9,7 +10,7 @@ namespace Meziantou.Framework.Win32;
 /// </summary>
 public sealed class Perceived
 {
-    private static readonly Dictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
 
     private static object SyncObject { get; } = new object();
 
@@ -114,8 +115,8 @@ public sealed class Perceived
     /// </summary>
     /// <param name="fileName">The file name. May not be null..</param>
     /// <returns>An instance of the PerceivedType type.</returns>
-    [SupportedOSPlatform("windows")]
-    public static Perceived GetPerceivedType(string fileName)
+    [SupportedOSPlatform("windows5.1.2600")]
+    public static unsafe Perceived GetPerceivedType(string fileName)
     {
         if (fileName is null)
             throw new ArgumentNullException(nameof(fileName));
@@ -137,47 +138,25 @@ public sealed class Perceived
             var source = PerceivedTypeSource.Undefined;
             if (!PerceivedTypes.TryGetValue(extension, out ptype))
             {
-                using (var key = Registry.ClassesRoot.OpenSubKey(extension, writable: false))
-                {
-                    if (key != null)
-                    {
-                        var ct = key.GetStringValue("PerceivedType");
-                        if (ct != null)
-                        {
-                            type = Extensions.GetEnumValue(ct, PerceivedType.Custom);
-                            source = PerceivedTypeSource.SoftCoded;
-                        }
-                        else
-                        {
-                            ct = key.GetStringValue("Content Type");
-                            if (ct != null)
-                            {
-                                var pos = ct.IndexOf('/', StringComparison.Ordinal);
-                                if (pos > 0)
-                                {
-                                    type = Extensions.GetEnumValue(ct[..pos], PerceivedType.Custom);
-                                    source = PerceivedTypeSource.Mime;
-                                }
-                            }
-                        }
-                    }
-                }
-
                 if (type == PerceivedType.Unknown)
                 {
-                    var text = IntPtr.Zero;
-                    type = PerceivedType.Unknown;
                     source = PerceivedTypeSource.Undefined;
-                    var hr = AssocGetPerceivedType(extension, ref type, ref source, ref text);
-                    if (hr != 0)
+                    PWSTR text = default;
+                    var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, &text);
+                    if (hr.Failed)
                     {
                         type = PerceivedType.Unspecified;
                         source = PerceivedTypeSource.Undefined;
                     }
+                    else
+                    {
+                        type = (PerceivedType)perceivedType;
+                        source = (PerceivedTypeSource)flag;
+                    }
                 }
 
                 ptype = new Perceived(extension, type, source);
-                PerceivedTypes.Add(extension, ptype);
+                PerceivedTypes.TryAdd(extension, ptype);
             }
 
             return ptype;
@@ -197,14 +176,6 @@ public sealed class Perceived
 
     private static bool IsSupportedPlatform()
     {
-        return Environment.OSVersion.Platform == PlatformID.Win32NT;
+        return OperatingSystem.IsWindows();
     }
-
-    [DllImport("shlwapi.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int AssocGetPerceivedType(
-        [MarshalAs(UnmanagedType.LPWStr)] string pszExt,
-        ref PerceivedType ptype,
-        ref PerceivedTypeSource pflag,
-        ref IntPtr ppszType);
 }

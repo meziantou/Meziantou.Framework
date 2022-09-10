@@ -64,18 +64,18 @@ jobs:
           dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global --no-cache --add-source "${{ env.NuGetDirectory }}"
           $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
           $Errors = $false
-          foreach($file in $files) {
+          foreach ($file in $files) {
               & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet,TagsMustBeSet"
               if ($LASTEXITCODE -ne 0) {
                 $Errors = $true
               }
           }
 
-          if($Errors){
+          if ($Errors) {
             exit 1
           }
 
-  build_and_test:
+  build_and_test_x64:
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 30
     env:
@@ -85,6 +85,7 @@ jobs:
         runs-on: [ windows-2019, windows-2022, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
+        architecture: [ x64 ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v3
@@ -96,14 +97,16 @@ jobs:
           dotnet-version: |
             6.0.x
             3.1.x
-      - run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-        name: Build
-      - run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --logger "GitHubActions;report-warnings=false" --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
-        name: Run tests
+      - name: Build
+        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        
+      - name: Run tests
+        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
+        
       - uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
@@ -112,7 +115,75 @@ jobs:
         uses: dorny/test-reporter@v1
         if: github.actor != 'dependabot[bot]' && (success() || failure()) # the step doesn't work for dependabot
         with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
+          path: ${{ env.TestResultsDirectory }}/**/*.trx
+          path-replace-backslashes: 'true'
+          reporter: dotnet-trx
+
+  build_and_test_windows_x86:
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 30
+    env:
+      TestResultsDirectory: ${{github.workspace}}/TestResults
+      Architecture: ${{ matrix.architecture }}
+    strategy:
+      matrix:
+        configuration: [ Debug, Release ]
+        additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
+        include:
+        - runs-on: windows-2019
+          architecture: x86
+        - runs-on: windows-2022
+          architecture: x86
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and Run Tests
+        run: |
+          echo "::group::Install .NET"
+
+          echo "Downloading dotnet-install.ps1 script"
+          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
+
+          echo "Installing .NET 3.1"
+          ./dotnet-install.ps1 -Channel 3.1 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
+
+          echo "Installing .NET 6.0"
+          ./dotnet-install.ps1 -Channel 6.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
+          
+          echo "Installing .NET (global.json)"
+          ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet
+
+          Get-Command dotnet
+          dotnet --info
+          echo "::endgroup::"
+
+          echo "::group::Build"
+          dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          echo "::endgroup::"
+
+          echo "::group::Run tests"
+          dotnet test eng/build.proj --configuration "${{ matrix.configuration }}" --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 2min ${{ matrix.additionalArguments }}
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+          echo "::endgroup::"
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
+          if-no-files-found: error
+          retention-days: 3
+          path: ${{ env.TestResultsDirectory }}/**/*
+      - uses: codecov/codecov-action@v3
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: github.actor != 'dependabot[bot]' && (success() || failure())
+        with:
+          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           path: ${{ env.TestResultsDirectory }}/**/*.trx
           path-replace-backslashes: 'true'
           reporter: dotnet-trx
@@ -146,7 +217,7 @@ jobs:
       
   deploy:
     runs-on: 'ubuntu-20.04'
-    needs: [ validate_readme, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
+    needs: [ validate_readme, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
       - uses: actions/download-artifact@v3
         with:

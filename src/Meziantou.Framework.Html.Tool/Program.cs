@@ -20,7 +20,7 @@ internal static class Program
 
     internal static Task<int> MainImpl(string[] args, IConsole? console)
     {
-        var rootCommand = new RootCommand();
+        var rootCommand = new RootCommand() { Name = "meziantou.html" }; // Name must match <ToolCommandName> in csproj
         AddReplaceValueCommand(rootCommand);
         AddAppendVersionCommand(rootCommand);
         InlineResourceCommand(rootCommand);

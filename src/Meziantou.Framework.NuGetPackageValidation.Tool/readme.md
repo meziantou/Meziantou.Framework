@@ -28,17 +28,19 @@ meziantou.validate-nuget-package --help
 <!-- help -->
 ```
 Description:
+  Validate a NuGet package
 
 Usage:
-  Meziantou.Framework.NuGetPackageValidation.Tool <package-path> [options]
+  meziantou.validate-nuget-package <package-path> [options]
 
 Arguments:
   <package-path>  Path to the NuGet package to validate
 
 Options:
-  --rules <rules>                    Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
-  --excluded-rules <excluded-rules>  Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
-  --version                          Show version information
-  -?, -h, --help                     Show help and usage information
+  --rules <rules>                          Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --excluded-rules <excluded-rules>        Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude
+  --version                                Show version information
+  -?, -h, --help                           Show help and usage information
 ```
 <!-- help -->

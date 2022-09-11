@@ -22,6 +22,15 @@ public class HtmlToolTests
     }
 
     [Fact]
+    public async Task Help()
+    {
+        var console = new StringBuilderConsole();
+        var result = await Program.MainImpl(new[] { "--help" }, console);
+        result.Should().Be(0);
+        console.Output.Should().Contain("meziantou.html");
+    }
+
+    [Fact]
     public async Task AppendVersion_SingleFile()
     {
         await using var temp = TemporaryDirectory.Create();

@@ -6,10 +6,21 @@ public static class NuGetPackageValidator
 {
     public static Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, CancellationToken cancellationToken = default)
     {
-        return ValidateAsync(packagePath, NuGetPackageValidationRules.Default, cancellationToken);
+        return ValidateAsync(packagePath, NuGetPackageValidationOptions.Default, cancellationToken);
     }
 
-    public static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, IEnumerable<NuGetPackageValidationRule> rules, CancellationToken cancellationToken = default)
+    public static Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, IEnumerable<NuGetPackageValidationRule> rules, CancellationToken cancellationToken = default)
+    {
+        var options = new NuGetPackageValidationOptions();
+        foreach (var rule in rules)
+        {
+            options.Rules.Add(rule);
+        }
+
+        return ValidateAsync(packagePath, options, cancellationToken);
+    }
+
+    public static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, NuGetPackageValidationOptions options, CancellationToken cancellationToken = default)
     {
         if (!File.Exists(packagePath))
         {
@@ -19,8 +30,8 @@ public static class NuGetPackageValidator
             });
         }
 
-        using var context = new NuGetPackageValidationContext(packagePath, cancellationToken);
-        foreach (var rule in rules)
+        using var context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);
+        foreach (var rule in options.Rules)
         {
             await rule.ExecuteAsync(context).ConfigureAwait(false);
         }

@@ -6,10 +6,12 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 public sealed class NuGetPackageValidationContext : IDisposable
 {
     private readonly ConcurrentBag<NuGetPackageValidationError> _errors = new();
+    private readonly NuGetPackageValidationOptions _options;
 
-    internal NuGetPackageValidationContext(FullPath file, CancellationToken cancellationToken)
+    internal NuGetPackageValidationContext(FullPath file, NuGetPackageValidationOptions options, CancellationToken cancellationToken)
     {
         PackagePath = file;
+        _options = options;
         CancellationToken = cancellationToken;
         Package = new PackageArchiveReader(file);
 
@@ -35,6 +37,9 @@ public sealed class NuGetPackageValidationContext : IDisposable
 
     public void ReportError(int errorCode, string message, string? fileName = null)
     {
+        if (_options.ExcludedRuleIds.Contains(errorCode))
+            return;
+
         _errors.Add(new NuGetPackageValidationError(errorCode, message, fileName));
     }
 }

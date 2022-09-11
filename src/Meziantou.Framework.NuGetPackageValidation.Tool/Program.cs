@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -18,20 +19,27 @@ internal static partial class Program
 
     internal static Task<int> MainImpl(string[] args, IConsole? console)
     {
-        var rootCommand = new RootCommand();
+        var rootCommand = new RootCommand("Validate a NuGet package") { Name = "meziantou.validate-nuget-package" }; // Name must match <ToolCommandName> in csproj
         var pathArgument = new Argument<string>("package-path", "Path to the NuGet package to validate") { Arity = ArgumentArity.ExactlyOne };
-        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseValues);
-        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseValues);
+        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
+        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
+        var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude", parseArgument: ParseIntValues);
         rootCommand.AddArgument(pathArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.AddOption(excludedRulesOptions);
+        rootCommand.AddOption(excludedRuleIdsOptions);
         rootCommand.SetHandler(async context =>
         {
             var path = context.ParseResult.GetValueForArgument(pathArgument);
-            var rules = context.ParseResult.GetValueForOption(rulesOptions)?.ToList();
-            if (rules == null || rules.Count == 0)
+            var options = new NuGetPackageValidationOptions();
+
+            var includedRules = context.ParseResult.GetValueForOption(rulesOptions);
+            if (includedRules == null || includedRules.Length == 0)
             {
-                rules = NuGetPackageValidationRules.Default.ToList();
+                foreach (var rule in NuGetPackageValidationRules.Default)
+                {
+                    options.Rules.Add(rule);
+                }
             }
 
             var excludedRules = context.ParseResult.GetValueForOption(excludedRulesOptions);
@@ -39,12 +47,21 @@ internal static partial class Program
             {
                 foreach (var excludedRule in excludedRules)
                 {
-                    rules.Remove(excludedRule);
+                    options.Rules.Remove(excludedRule);
+                }
+            }
+
+            var excludedRuleIds = context.ParseResult.GetValueForOption(excludedRuleIdsOptions);
+            if (excludedRuleIds != null && excludedRuleIds.Length > 0)
+            {
+                foreach (var excludedRuleId in excludedRuleIds)
+                {
+                    options.ExcludedRuleIds.Add(excludedRuleId);
                 }
             }
 
             var packagePath = FullPath.FromPath(path);
-            var result = await NuGetPackageValidator.ValidateAsync(packagePath, rules, context.GetCancellationToken()).ConfigureAwait(false);
+            var result = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
             var json = JsonSerializer.Serialize(result, ResultContext.Default.NuGetPackageValidationResult);
             context.Console.WriteLine(json);
             if (!result.IsValid)
@@ -52,6 +69,7 @@ internal static partial class Program
                 context.ExitCode = 1;
             }
         });
+
         return rootCommand.InvokeAsync(args, console);
     }
 
@@ -63,7 +81,7 @@ internal static partial class Program
             .Select(m => m.Name));
     }
 
-    private static NuGetPackageValidationRule[]? ParseValues(ArgumentResult result)
+    private static NuGetPackageValidationRule[]? ParseRuleValues(ArgumentResult result)
     {
         var rules = new List<NuGetPackageValidationRule>();
         foreach (var token in result.Tokens)
@@ -73,6 +91,12 @@ internal static partial class Program
 
             foreach (var ruleName in token.Value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
+                if (string.Equals(ruleName, "default", StringComparison.OrdinalIgnoreCase))
+                {
+                    rules.AddRange(NuGetPackageValidationRules.Default);
+                    continue;
+                }
+
                 var members = typeof(NuGetPackageValidationRules).GetMember(ruleName, BindingFlags.Public | BindingFlags.Static);
                 if (members == null || members.Length != 1)
                 {
@@ -90,7 +114,29 @@ internal static partial class Program
             }
         }
 
-        return rules.ToArray();
+        return rules.Distinct().ToArray();
+    }
+    private static int[]? ParseIntValues(ArgumentResult result)
+    {
+        var resultValue = new List<int>();
+        foreach (var token in result.Tokens)
+        {
+            if (string.IsNullOrEmpty(token.Value))
+                continue;
+
+            foreach (var value in token.Value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedValue))
+                {
+                    result.ErrorMessage = $"Invalid value '{value}'";
+                    return null;
+                }
+
+                resultValue.Add(parsedValue);
+            }
+        }
+
+        return resultValue.ToArray();
     }
 
     [JsonSourceGenerationOptions(

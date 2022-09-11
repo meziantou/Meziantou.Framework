@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.NuGetPackageValidation.Tool
+# Meziantou.Framework.NuGetPackageValidation.Tool
 
 `Meziantou.Framework.NuGetPackageValidation.Tool` is a tool to validate local `nupkg` file before pushing them to a server such as nuget.org.
 It ensures the NuGet package follows good practices.
@@ -24,3 +24,21 @@ You can show available options using:
 ````bash
 meziantou.validate-nuget-package --help
 ````
+
+<!-- help -->
+```
+Description:
+
+Usage:
+  Meziantou.Framework.NuGetPackageValidation.Tool <package-path> [options]
+
+Arguments:
+  <package-path>  Path to the NuGet package to validate
+
+Options:
+  --rules <rules>                    Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --excluded-rules <excluded-rules>  Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --version                          Show version information
+  -?, -h, --help                     Show help and usage information
+```
+<!-- help -->

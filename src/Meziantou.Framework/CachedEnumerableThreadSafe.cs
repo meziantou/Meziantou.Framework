@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Diagnostics;
+using Meziantou.Framework.Collections;
 
 namespace Meziantou.Framework;
 
 internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
 {
-    private readonly List<T> _cache = new();
+    private readonly AppendOnlyCollection<T> _cache = new();
     private readonly IEnumerable<T> _enumerable;
     private IEnumerator<T>? _enumerator;
     private bool _enumerated;

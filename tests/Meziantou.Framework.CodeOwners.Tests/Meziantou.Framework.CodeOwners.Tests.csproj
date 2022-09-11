@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netcoreapp3.1</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net462</TargetFrameworks>
   </PropertyGroup>
 

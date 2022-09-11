@@ -22,9 +22,13 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v3
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v2
       - name: Validate Readme
         run: .\eng\update-readme.ps1
-
+      - name: Validate Tool Readme
+        run: .\eng\update-tool-readme.ps1
+          
   create_nuget:
     runs-on: windows-2022
     steps:

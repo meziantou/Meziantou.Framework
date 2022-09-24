@@ -189,6 +189,13 @@ public sealed class NuGetPackageValidatorTests
         var result = await ValidateAsync("Debug.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
         AssertHasError(result, ErrorCodes.XmlDocumentationNotFound);
     }
+    
+    [Fact]
+    public async Task Validate_XmlDocumentation_NotPresent_Failure()
+    {
+        var result = await ValidateAsync("Release_NonDeterministic_Pdb.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
+        AssertHasError(result, ErrorCodes.XmlDocumentationNotFound);
+    }
 
     [Fact]
     public async Task Validate_XmlDocumentation_Present()

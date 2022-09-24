@@ -44,6 +44,11 @@ internal sealed class XmlDocumentationMustBePresentValidationRule : NuGetPackage
 
                 return peReader.PEHeaders.IsDll;
             }
+            catch
+            {
+                // The assembly is not valid
+                return false;
+            }
             finally
             {
                 await seekableStream.DisposeAsync().ConfigureAwait(false);

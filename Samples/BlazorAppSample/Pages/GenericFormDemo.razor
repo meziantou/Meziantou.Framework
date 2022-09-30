@@ -19,7 +19,7 @@
 <button type="button" @onclick="() => StateHasChanged()">Refresh</button>
 
 <div>
-@MyModel
+    @MyModel
 </div>
 
 @code {
@@ -49,8 +49,14 @@
         public float SingleValue { get; set; }
         public double DoubleValue { get; set; }
         public decimal DecimalValue { get; set; }
-		public decimal? DecimalValueNullable { get; set; }
-        
+        public decimal? DecimalValueNullable { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Editable(false)]
+        public byte ByteValue { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Display(Name = "Byte Value")]
+        public int ByteValueBindable { get => ByteValue; set => ByteValue = (byte)value; }
+
         [System.ComponentModel.Editor(typeof(GenericFormDemoCustomEditor), typeof(Microsoft.AspNetCore.Components.Forms.InputBase<>))]
         public string Choice { get; set; }
 

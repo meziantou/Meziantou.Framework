@@ -6,8 +6,11 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
-public class InputUrl<TValue> : InputDate<TValue>
+public class InputUrl<TValue> : InputBase<TValue>
 {
+    [Parameter] public string ParsingErrorMessage { get; set; } = string.Empty;
+    [DisallowNull] public ElementReference? Element { get; protected set; }
+
     protected override void BuildRenderTree(RenderTreeBuilder builder)
     {
         builder.OpenElement(0, "input");
@@ -16,6 +19,7 @@ public class InputUrl<TValue> : InputDate<TValue>
         builder.AddAttribute(3, "class", CssClass);
         builder.AddAttribute(4, "value", BindConverter.FormatValue(CurrentValueAsString));
         builder.AddAttribute(5, "onchange", EventCallback.Factory.CreateBinder<string?>(this, value => CurrentValueAsString = value, CurrentValueAsString));
+        builder.AddElementReferenceCapture(6, inputReference => Element = inputReference);
         builder.CloseElement();
     }
 

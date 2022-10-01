@@ -115,6 +115,22 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    public string? Prompt
+    {
+        get
+        {
+            var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
+            if (displayAttribute != null)
+            {
+                var prompt = displayAttribute.GetPrompt();
+                if (!string.IsNullOrEmpty(prompt))
+                    return prompt;
+            }
+
+            return null;
+        }
+    }
+
     public Type PropertyType => Property.PropertyType;
 
     public object? Value
@@ -159,7 +175,8 @@ public sealed class GenericFormField<TModel>
                 builder.AddAttribute(3, "ValueExpression", lambda);
                 builder.AddAttribute(4, "id", EditorId);
                 builder.AddAttribute(5, "class", _form.EditorClass);
-                builder.AddMultipleAttributes(6, additonalAttributes);
+                builder.AddAttribute(6, "placeholder", Prompt);
+                builder.AddMultipleAttributes(7, additonalAttributes);
                 builder.CloseComponent();
             };
         }

@@ -16,6 +16,7 @@ internal static class ErrorCodes
     public const int IconNotFound = 33;
     public const int IconFileTooLarge = 34;
     public const int IconFileFormatNotSupported = 35;
+    public const int IconFileInvalidExtension = 36;
 
     public const int UseDeprecatedSummary = 41;
     public const int DescriptionNotSet = 42;
@@ -48,6 +49,7 @@ internal static class ErrorCodes
     public const int CompilerDoesNotSupportReproducibleBuilds = 116;
     public const int FullPdb = 117;
     public const int PdbDoesNotMatchAssembly = 118;
+    public const int UrlIsNotAccessible = 119;
 
     public const int TagsNotSet = 131;
     public const int TagsTooLong = 132;

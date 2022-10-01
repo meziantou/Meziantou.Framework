@@ -29,6 +29,11 @@ public sealed class NuGetPackageValidationContext : IDisposable
 
     internal IReadOnlyCollection<NuGetPackageValidationError> Errors => _errors;
 
+    public bool IsRuleExcluded(int ruleId)
+    {
+        return _options.ExcludedRuleIds.Contains(ruleId);
+    }
+
     public void Dispose()
     {
         Package.Dispose();

@@ -18,6 +18,8 @@ dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_Description
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_Readme --configuration Release /p:PackageReadmeFile="README.md"
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_Icon --configuration Release /p:PackageIcon="icon.png"
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_IconUrl --configuration Release /p:PackageIconUrl="https://www.example.com/image.png"
+dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_Icon_IconUrl --configuration Release /p:PackageIcon="icon.png" /p:PackageIconUrl="https://www.example.com/image.png"
+dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_Icon_WrongExtension --configuration Release /p:PackageIcon="icon_wrongextension.jpg"
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_LicenseExpression --configuration Release /p:PackageLicenseExpression="MIT"
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_License --configuration Release /p:PackageLicenseFile="LICENSE.txt"
 dotnet pack $ProjectFile --output $OutputFolder /p:PackageId=Release_LicenseUrl --configuration Release /p:PackageLicenseUrl="https://www.example.com/license.txt"

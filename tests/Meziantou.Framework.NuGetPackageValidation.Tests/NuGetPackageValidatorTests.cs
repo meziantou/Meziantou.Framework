@@ -6,10 +6,23 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tests;
 
 public sealed class NuGetPackageValidatorTests
 {
-    private static async Task<NuGetPackageValidationResult> ValidateAsync(string packageName, params NuGetPackageValidationRule[] rules)
+    private static async Task<NuGetPackageValidationResult> ValidateAsync(string packageName, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
     {
         var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
-        return await NuGetPackageValidator.ValidateAsync(path, rules);
+        var options = new NuGetPackageValidationOptions();
+        options.Rules.AddRange(rules);
+
+        if (excludedRuleIds != null)
+        {
+            options.ExcludedRuleIds.AddRange(excludedRuleIds);
+        }
+
+        return await NuGetPackageValidator.ValidateAsync(path, options);
+    }
+
+    private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, params NuGetPackageValidationRule[] rules)
+    {
+        return ValidateAsync(packageName, excludedRuleIds: null, rules);
     }
 
     private static void AssertNoErrors(NuGetPackageValidationResult result)
@@ -65,9 +78,23 @@ public sealed class NuGetPackageValidatorTests
     }
 
     [Fact]
+    public async Task Validate_Icon_InvalidFileExtension()
+    {
+        var result = await ValidateAsync("Release_Icon_WrongExtension.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertHasError(result, ErrorCodes.IconFileInvalidExtension);
+    }
+
+    [Fact]
     public async Task Validate_Icon_HasIcon()
     {
         var result = await ValidateAsync("Release_Icon.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_HasIconAndIconUrl()
+    {
+        var result = await ValidateAsync("Release_Icon_IconUrl.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
         AssertNoErrors(result);
     }
 
@@ -151,7 +178,7 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_Deterministic_Pdb()
     {
-        var result = await ValidateAsync("Release_Deterministic_Pdb.1.0.0.nupkg", NuGetPackageValidationRules.Symbols);
+        var result = await ValidateAsync("Release_Deterministic_Pdb.1.0.0.nupkg", new int[] { 119 }, NuGetPackageValidationRules.Symbols);
         AssertNoErrors(result);
     }
 
@@ -165,7 +192,7 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_Deterministic_Embedded_SourceLink()
     {
-        var result = await ValidateAsync("meziantou.framework.win32.credentialmanager.1.4.2.nupkg", NuGetPackageValidationRules.Symbols);
+        var result = await ValidateAsync("meziantou.framework.win32.credentialmanager.1.4.2.nupkg", new int[] { 119 }, NuGetPackageValidationRules.Symbols);
         AssertNoErrors(result);
     }
 
@@ -189,7 +216,7 @@ public sealed class NuGetPackageValidatorTests
         var result = await ValidateAsync("Debug.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
         AssertHasError(result, ErrorCodes.XmlDocumentationNotFound);
     }
-    
+
     [Fact]
     public async Task Validate_XmlDocumentation_NotPresent_Failure()
     {

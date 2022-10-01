@@ -10,6 +10,8 @@ namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 {
+    private static readonly HttpClient HttpClient = new();
+
     private static readonly Guid SourceLinkId = new(0xCC110556, 0xA091, 0x4D38, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A);
     private static readonly Guid EmbeddedSourceId = new(0x0E8A571B, 0x6926, 0x466E, 0xB4, 0xAD, 0x8A, 0xB0, 0x46, 0x11, 0xF5, 0xFE);
     private static readonly Guid CompilerFlagsId = new(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8);
@@ -174,6 +176,17 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         if (!isEmbeddedFile && url == null)
                         {
                             context.ReportError(ErrorCodes.SourceFileNotAccessible, $"Source file '{name}' is not accessible from the symbols", fileName: item);
+                        }
+                        else if (!isEmbeddedFile && url != null)
+                        {
+                            if (!context.IsRuleExcluded(ErrorCodes.UrlIsNotAccessible))
+                            {
+                                using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
+                                if (!response.IsSuccessStatusCode)
+                                {
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
+                                }
+                            }
                         }
                     }
                 }

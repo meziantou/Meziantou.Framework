@@ -10,7 +10,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ResxSourceGenerator\Meziantou.Framework.ResxSourceGenerator.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" />
   </ItemGroup>
 
 </Project>

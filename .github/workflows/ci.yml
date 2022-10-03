@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - name: Validate Readme
         run: .\eng\update-readme.ps1
       - name: Validate Tool Readme
@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - run: dotnet build eng/build.proj --configuration Release /bl
       - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl
       - uses: actions/upload-artifact@v3
@@ -65,7 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - uses: actions/download-artifact@v3
         with:
           name: nuget
@@ -101,9 +101,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: |
             6.0.x
@@ -210,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -223,7 +223,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   deploy:
@@ -235,7 +235,7 @@ jobs:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v3
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

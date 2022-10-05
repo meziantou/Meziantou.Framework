@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using FluentAssertions;
@@ -289,7 +290,11 @@ public sealed class FullPathTests
     {
         if (IsWindows())
         {
-            CreateSymbolicLink(source, target, options);
+            if (!CreateSymbolicLink(source, target, options))
+            {
+                var error = Marshal.GetLastWin32Error();
+                throw new Win32Exception(error, "Cannot create the symbolic link. You may need to enable Developer Mode or run the tests as admin.");
+            }
         }
 #if NETCOREAPP3_1_OR_GREATER
         else
@@ -299,7 +304,8 @@ public sealed class FullPathTests
 #endif
     }
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.I1)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName, SymbolicLink dwFlags);
 

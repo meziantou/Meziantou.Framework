@@ -497,6 +497,7 @@ public sealed class ScannerTests : IDisposable
         await ExecuteProcess("git", "init", remote.FullPath);
         await ExecuteProcess("git", "config user.name test", remote.FullPath);
         await ExecuteProcess("git", "config user.email test@example.com", remote.FullPath);
+        await ExecuteProcess("git", "config commit.gpgsign false", remote.FullPath);
         await File.WriteAllTextAsync(remote.GetFullPath("test.txt"), "content");
         await ExecuteProcess("git", "add .", remote.FullPath);
         await ExecuteProcess("git", "commit -m commit-message", remote.FullPath);
@@ -513,6 +514,7 @@ public sealed class ScannerTests : IDisposable
         await ExecuteProcess("git", "init", _directory.FullPath);
         await ExecuteProcess("git", "config user.name test", _directory.FullPath);
         await ExecuteProcess("git", "config user.email test@example.com", _directory.FullPath);
+        await ExecuteProcess("git", "config commit.gpgsign false", _directory.FullPath);
         await File.WriteAllTextAsync(_directory.GetFullPath("test.txt"), "content");
         await ExecuteProcess("git", "add .", _directory.FullPath);
         await ExecuteProcess("git", "commit -m commit-message", _directory.FullPath);

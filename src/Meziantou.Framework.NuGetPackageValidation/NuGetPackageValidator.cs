@@ -26,7 +26,7 @@ public static class NuGetPackageValidator
         {
             return new NuGetPackageValidationResult(packagePath, new NuGetPackageValidationError[]
             {
-                new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found"),
+                new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found", helpText: null),
             });
         }
 

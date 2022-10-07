@@ -40,11 +40,11 @@ public sealed class NuGetPackageValidationContext : IDisposable
         SymbolPackage?.Dispose();
     }
 
-    public void ReportError(int errorCode, string message, string? fileName = null)
+    public void ReportError(int errorCode, string message, string? helpText = null, string? fileName = null)
     {
         if (_options.ExcludedRuleIds.Contains(errorCode))
             return;
 
-        _errors.Add(new NuGetPackageValidationError(errorCode, message, fileName));
+        _errors.Add(new NuGetPackageValidationError(errorCode, message, helpText, fileName));
     }
 }

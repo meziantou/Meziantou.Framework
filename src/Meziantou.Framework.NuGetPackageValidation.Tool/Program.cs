@@ -23,7 +23,7 @@ internal static partial class Program
         var pathArgument = new Argument<string>("package-path", "Path to the NuGet package to validate") { Arity = ArgumentArity.ExactlyOne };
         var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
-        var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude", parseArgument: ParseIntValues);
+        var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude from analysis", parseArgument: ParseIntValues);
         rootCommand.AddArgument(pathArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.AddOption(excludedRulesOptions);

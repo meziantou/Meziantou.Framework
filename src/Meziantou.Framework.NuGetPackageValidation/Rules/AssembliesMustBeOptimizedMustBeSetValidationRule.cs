@@ -36,7 +36,8 @@ internal sealed class AssembliesMustBeOptimizedMustBeSetValidationRule : NuGetPa
                                 var isAssemblyOptimized = value.AsSpan().SequenceEqual(new byte[] { 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 });
                                 if (!isAssemblyOptimized)
                                 {
-                                    context.ReportError(ErrorCodes.AssemblyIsNotOptimized, "Assembly is not optimized", fileName: file);
+                                    context.ReportError(ErrorCodes.AssemblyIsNotOptimized, "Assembly is not optimized", fileName: file,
+                                        helpText: "Build the package using the Release configuration: 'dotnet pack --configuration Release'. Alternatively you can add '<Optimize>true</Optimize>' in the csproj (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/code-generation?WT.mc_id=DT-MVP-5003978#optimize)");
                                 }
                             }
                         }

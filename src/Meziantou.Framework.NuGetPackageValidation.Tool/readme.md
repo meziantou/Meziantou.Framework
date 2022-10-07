@@ -1,7 +1,7 @@
 # Meziantou.Framework.NuGetPackageValidation.Tool
 
 `Meziantou.Framework.NuGetPackageValidation.Tool` is a tool to validate local `nupkg` file before pushing them to a server such as nuget.org.
-It ensures the NuGet package follows good practices.
+It helps you producing valuable the NuGet package. Best practices for NuGet packages are explained [in this post](https://www.meziantou.net/ensuring-best-practices-for-nuget-packages.htm).
 
 # How to use it
 
@@ -39,7 +39,7 @@ Arguments:
 Options:
   --rules <rules>                          Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
   --excluded-rules <excluded-rules>        Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
-  --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude
+  --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude from analysis
   --version                                Show version information
   -?, -h, --help                           Show help and usage information
 ```

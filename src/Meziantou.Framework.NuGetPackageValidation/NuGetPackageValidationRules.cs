@@ -32,7 +32,6 @@ public static class NuGetPackageValidationRules
             ProjectUrlMustBeSet,
             ReadmeMustBeSet,
             RepositoryMustBeSet,
-            RepositoryBranchMustBeSet,
             Symbols,
             TagsMustBeSet,
             XmlDocumentationMustBePresent);

@@ -125,7 +125,8 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     {
                         if (PackageFileExists(context.Package, pdbPath) || (context.SymbolPackage != null && PackageFileExists(context.SymbolPackage, pdbPath)))
                         {
-                            context.ReportError(ErrorCodes.FullPdb, "Symbol file is not a portable PDB", fileName: item);
+                            context.ReportError(ErrorCodes.FullPdb, "Symbol file is not a portable PDB", fileName: item,
+                                helpText: "Update the csproj file with '<DebugType>Portable</DebugType>' or '<DebugType>embedded</DebugType>' (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/code-generation?WT.mc_id=DT-MVP-5003978#debugtype)");
                             continue;
                         }
 
@@ -148,7 +149,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     var compilerInfo = GetCompilerFlags(reader);
                     if (string.IsNullOrEmpty(compilerInfo.Version))
                     {
-                        context.ReportError(ErrorCodes.CompilerFlagsNotPresent, $"Compiler flags not present", fileName: item);
+                        context.ReportError(ErrorCodes.CompilerFlagsNotPresent, "Compiler flags not present", fileName: item, helpText: "Use at least .NET SDK 5.0.300 to use a compiler that adds compiler flags to the PDB files.");
                     }
                     else if (!int.TryParse(compilerInfo.Version, NumberStyles.None, CultureInfo.InvariantCulture, out var compilerVersion))
                     {
@@ -156,7 +157,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     }
                     else if (compilerVersion < 2)
                     {
-                        context.ReportError(ErrorCodes.CompilerDoesNotSupportReproducibleBuilds, $"Compiler is too old and does not support reproducible builds", fileName: item);
+                        context.ReportError(ErrorCodes.CompilerDoesNotSupportReproducibleBuilds, "Compiler is too old and does not support reproducible builds", fileName: item, helpText: "Use at least .NET SDK 2.1.300");
                     }
 
                     foreach (var documentHandle in reader.Documents)

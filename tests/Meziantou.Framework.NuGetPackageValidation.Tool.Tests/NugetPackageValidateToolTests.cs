@@ -16,24 +16,24 @@ public sealed class NugetPackageValidateToolTests
         _testOutputHelper = testOutputHelper;
     }
 
-    private sealed record Result(int ExitCode, string Output, NuGetPackageValidationResult ValidationResult);
+    private sealed record Result(int ExitCode, string Output, NuGetPackageValidationResult[] ValidationResults, NuGetPackageValidationResult ValidationResult);
 
     private async Task<Result> RunValidation(params string[] arguments)
     {
         var console = new StringBuilderConsole();
         var exitCode = await Program.MainImpl(arguments, console);
 
-        NuGetPackageValidationResult deserializedResult = null;
+        NuGetPackageValidationResult[] deserializedResult = null;
         try
         {
-            deserializedResult = JsonSerializer.Deserialize<NuGetPackageValidationResult>(console.Output);
+            deserializedResult = JsonSerializer.Deserialize<NuGetPackageValidationResult[]>(console.Output);
         }
         catch
         {
         }
 
         _testOutputHelper.WriteLine(console.Output);
-        return new Result(exitCode, console.Output, deserializedResult);
+        return new Result(exitCode, console.Output, deserializedResult, deserializedResult?.FirstOrDefault());
     }
 
     [Fact]
@@ -67,6 +67,25 @@ public sealed class NugetPackageValidateToolTests
             result.ExitCode.Should().Be(1);
             result.ValidationResult.IsValid.Should().BeFalse();
             result.ValidationResult.Errors.Should().Contain(item => item.ErrorCode == 81);
+        }
+    }
+    
+    [Fact]
+    public async Task TestPackage_Multiple()
+    {
+        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "Packages/Release.1.0.0.nupkg");
+        using (new AssertionScope())
+        {
+            result.ExitCode.Should().Be(1);
+            result.ValidationResults.Should().HaveCount(2);
+
+            result.ValidationResults[0].IsValid.Should().BeFalse();
+            result.ValidationResults[0].File.Value.Should().Contain("Debug.1.0.0.nupkg");
+            result.ValidationResults[0].Errors.Should().Contain(item => item.ErrorCode == 81);
+
+            result.ValidationResults[1].IsValid.Should().BeFalse();
+            result.ValidationResults[1].File.Value.Should().Contain("Release.1.0.0.nupkg");
+            result.ValidationResults[1].Errors.Should().Contain(item => item.ErrorCode == 101);
         }
     }
 

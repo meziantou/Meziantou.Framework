@@ -31,10 +31,10 @@ Description:
   Validate a NuGet package
 
 Usage:
-  meziantou.validate-nuget-package <package-path> [options]
+  meziantou.validate-nuget-package <package-path>... [options]
 
 Arguments:
-  <package-path>  Path to the NuGet package to validate
+  <package-path>  Paths to the NuGet packages to validate
 
 Options:
   --rules <rules>                          Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent

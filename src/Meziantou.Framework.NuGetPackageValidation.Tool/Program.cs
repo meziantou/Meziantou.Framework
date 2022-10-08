@@ -20,17 +20,17 @@ internal static partial class Program
     internal static Task<int> MainImpl(string[] args, IConsole? console)
     {
         var rootCommand = new RootCommand("Validate a NuGet package") { Name = "meziantou.validate-nuget-package" }; // Name must match <ToolCommandName> in csproj
-        var pathArgument = new Argument<string>("package-path", "Path to the NuGet package to validate") { Arity = ArgumentArity.ExactlyOne };
+        var pathsArgument = new Argument<string[]>("package-path", "Paths to the NuGet packages to validate") { Arity = ArgumentArity.OneOrMore };
         var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude from analysis", parseArgument: ParseIntValues);
-        rootCommand.AddArgument(pathArgument);
+        rootCommand.AddArgument(pathsArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.AddOption(excludedRulesOptions);
         rootCommand.AddOption(excludedRuleIdsOptions);
         rootCommand.SetHandler(async context =>
         {
-            var path = context.ParseResult.GetValueForArgument(pathArgument);
+            var paths = context.ParseResult.GetValueForArgument(pathsArgument);
             var options = new NuGetPackageValidationOptions();
 
             var includedRules = context.ParseResult.GetValueForOption(rulesOptions);
@@ -60,11 +60,17 @@ internal static partial class Program
                 }
             }
 
-            var packagePath = FullPath.FromPath(path);
-            var result = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
-            var json = JsonSerializer.Serialize(result, ResultContext.Default.NuGetPackageValidationResult);
+            var results = new List<NuGetPackageValidationResult>(capacity: paths.Length);
+            foreach (var path in paths)
+            {
+                var packagePath = FullPath.FromPath(path);
+                var result = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
+                results.Add(result);
+            }
+
+            var json = JsonSerializer.Serialize(results, ResultContext.Default.ListNuGetPackageValidationResult);
             context.Console.WriteLine(json);
-            if (!result.IsValid)
+            if (results.Any(result => !result.IsValid))
             {
                 context.ExitCode = 1;
             }
@@ -144,6 +150,7 @@ internal static partial class Program
        WriteIndented = true,
        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
     [JsonSerializable(typeof(NuGetPackageValidationResult))]
+    [JsonSerializable(typeof(List<NuGetPackageValidationResult>))]
     private sealed partial class ResultContext : JsonSerializerContext
     {
     }

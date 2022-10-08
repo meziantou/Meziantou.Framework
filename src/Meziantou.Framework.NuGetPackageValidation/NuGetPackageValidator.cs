@@ -24,7 +24,7 @@ public static class NuGetPackageValidator
     {
         if (!File.Exists(packagePath))
         {
-            return new NuGetPackageValidationResult(packagePath, new NuGetPackageValidationError[]
+            return new NuGetPackageValidationResult(new NuGetPackageValidationError[]
             {
                 new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found", helpText: null),
             });
@@ -36,6 +36,6 @@ public static class NuGetPackageValidator
             await rule.ExecuteAsync(context).ConfigureAwait(false);
         }
 
-        return new NuGetPackageValidationResult(packagePath, context.Errors);
+        return new NuGetPackageValidationResult(context.Errors);
     }
 }

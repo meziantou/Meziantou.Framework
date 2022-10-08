@@ -60,17 +60,21 @@ internal static partial class Program
                 }
             }
 
-            var results = new List<NuGetPackageValidationResult>(capacity: paths.Length);
+            var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths.Length, StringComparer.Ordinal);
             foreach (var path in paths)
             {
                 var packagePath = FullPath.FromPath(path);
-                var result = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
-                results.Add(result);
+                if (packageResults.ContainsKey(packagePath))
+                    continue;
+
+                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
+                packageResults.Add(packagePath, packageResult);
             }
 
-            var json = JsonSerializer.Serialize(results, ResultContext.Default.ListNuGetPackageValidationResult);
+            var result = new Result(packageResults);
+            var json = JsonSerializer.Serialize(result, ResultContext.Default.Result);
             context.Console.WriteLine(json);
-            if (results.Any(result => !result.IsValid))
+            if (!result.IsValid)
             {
                 context.ExitCode = 1;
             }
@@ -122,6 +126,7 @@ internal static partial class Program
 
         return rules.Distinct().ToArray();
     }
+
     private static int[]? ParseIntValues(ArgumentResult result)
     {
         var resultValue = new List<int>();
@@ -145,12 +150,20 @@ internal static partial class Program
         return resultValue.ToArray();
     }
 
+    private sealed class Result
+    {
+        public Result(Dictionary<string, NuGetPackageValidationResult> packages) => Packages = packages ?? throw new ArgumentNullException(nameof(packages));
+
+        public bool IsValid => Packages.All(p => p.Value.IsValid);
+
+        public Dictionary<string, NuGetPackageValidationResult> Packages { get; }
+    }
+
     [JsonSourceGenerationOptions(
        GenerationMode = JsonSourceGenerationMode.Serialization,
        WriteIndented = true,
        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
-    [JsonSerializable(typeof(NuGetPackageValidationResult))]
-    [JsonSerializable(typeof(List<NuGetPackageValidationResult>))]
+    [JsonSerializable(typeof(Result))]
     private sealed partial class ResultContext : JsonSerializerContext
     {
     }

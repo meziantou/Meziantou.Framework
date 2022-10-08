@@ -16,24 +16,26 @@ public sealed class NugetPackageValidateToolTests
         _testOutputHelper = testOutputHelper;
     }
 
-    private sealed record Result(int ExitCode, string Output, NuGetPackageValidationResult[] ValidationResults, NuGetPackageValidationResult ValidationResult);
+    private sealed record RunResult(int ExitCode, string Output, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
 
-    private async Task<Result> RunValidation(params string[] arguments)
+    private sealed record ValidationResult(bool IsValid, Dictionary<string, NuGetPackageValidationResult> Packages);
+
+    private async Task<RunResult> RunValidation(params string[] arguments)
     {
         var console = new StringBuilderConsole();
         var exitCode = await Program.MainImpl(arguments, console);
 
-        NuGetPackageValidationResult[] deserializedResult = null;
+        ValidationResult deserializedResult = null;
         try
         {
-            deserializedResult = JsonSerializer.Deserialize<NuGetPackageValidationResult[]>(console.Output);
+            deserializedResult = JsonSerializer.Deserialize<ValidationResult>(console.Output);
         }
         catch
         {
         }
 
         _testOutputHelper.WriteLine(console.Output);
-        return new Result(exitCode, console.Output, deserializedResult, deserializedResult?.FirstOrDefault());
+        return new RunResult(exitCode, console.Output, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
     }
 
     [Fact]
@@ -73,19 +75,19 @@ public sealed class NugetPackageValidateToolTests
     [Fact]
     public async Task TestPackage_Multiple()
     {
-        var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "Packages/Release.1.0.0.nupkg");
+        var path1 = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
+        var path2 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
+        var result = await RunValidation(path1, path2);
         using (new AssertionScope())
         {
             result.ExitCode.Should().Be(1);
-            result.ValidationResults.Should().HaveCount(2);
+            result.ValidationResults.Packages.Should().HaveCount(2);
 
-            result.ValidationResults[0].IsValid.Should().BeFalse();
-            result.ValidationResults[0].File.Value.Should().Contain("Debug.1.0.0.nupkg");
-            result.ValidationResults[0].Errors.Should().Contain(item => item.ErrorCode == 81);
+            result.ValidationResults.Packages[path1].IsValid.Should().BeFalse();
+            result.ValidationResults.Packages[path1].Errors.Should().Contain(item => item.ErrorCode == 81);
 
-            result.ValidationResults[1].IsValid.Should().BeFalse();
-            result.ValidationResults[1].File.Value.Should().Contain("Release.1.0.0.nupkg");
-            result.ValidationResults[1].Errors.Should().Contain(item => item.ErrorCode == 101);
+            result.ValidationResults.Packages[path2].IsValid.Should().BeFalse();
+            result.ValidationResults.Packages[path2].Errors.Should().Contain(item => item.ErrorCode == 101);
         }
     }
 

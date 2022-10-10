@@ -24,6 +24,7 @@ internal static class ErrorCodes
     public const int PackageDescriptionIsTooLong = 44;
 
     public const int ProjectUrlNotSet = 51;
+    public const int ProjectUrlNotAccessible = 52;
 
     public const int ReadmeNotSet = 61;
     public const int ReadmeFileNotFound = 62;
@@ -50,6 +51,9 @@ internal static class ErrorCodes
     public const int FullPdb = 117;
     public const int PdbDoesNotMatchAssembly = 118;
     public const int UrlIsNotAccessible = 119;
+    public const int FileHashIsNotValid = 120;
+    public const int FileHashIsNotProvided = 121;
+    public const int NotSupportedHashAlgorithm = 122;
 
     public const int TagsNotSet = 131;
     public const int TagsTooLong = 132;

@@ -2,19 +2,23 @@
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.NuGetPackageValidation.Internal;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 {
-    private static readonly HttpClient HttpClient = new();
-
     private static readonly Guid SourceLinkId = new(0xCC110556, 0xA091, 0x4D38, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A);
     private static readonly Guid EmbeddedSourceId = new(0x0E8A571B, 0x6926, 0x466E, 0xB4, 0xAD, 0x8A, 0xB0, 0x46, 0x11, 0xF5, 0xFE);
     private static readonly Guid CompilerFlagsId = new(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8);
+
+    // https://github.com/dotnet/runtime/blob/18d0ead1f33808def27f8b57ccd907ec9efb14ac/docs/design/specs/PortablePdb-Metadata.md#document-table-0x30
+    private static readonly Guid HashAlgorithmSha1 = new(0xFF1816EC, 0xAA5E, 0x4D10, 0x87, 0xF7, 0x6F, 0x49, 0x63, 0x83, 0x34, 0x60);
+    private static readonly Guid HashAlgorithmSha256 = new(0x8829D00F, 0x11B8, 0x4213, 0x87, 0x8B, 0x77, 0x0E, 0x85, 0x97, 0xAC, 0x16);
 
     public override async Task ExecuteAsync(NuGetPackageValidationContext context)
     {
@@ -180,10 +184,51 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         }
                         else if (!isEmbeddedFile && url != null)
                         {
-                            if (!context.IsRuleExcluded(ErrorCodes.UrlIsNotAccessible))
+                            if (!context.IsRuleExcluded(ErrorCodes.UrlIsNotAccessible) && !context.IsRuleExcluded(ErrorCodes.FileHashIsNotValid))
                             {
-                                using var response = await HttpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
-                                if (!response.IsSuccessStatusCode)
+                                try
+                                {
+                                    using var response = await ShareHttpClient.Instance.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
+                                    if (!response.IsSuccessStatusCode)
+                                    {
+                                        context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
+                                    }
+                                    else
+                                    {
+                                        if (document.Hash.IsNil)
+                                        {
+                                            context.ReportError(ErrorCodes.FileHashIsNotProvided, $"Source file '{url}' has no hash", fileName: item);
+                                        }
+                                        else
+                                        {
+                                            var data = await response.Content.ReadAsByteArrayAsync(context.CancellationToken).ConfigureAwait(false);
+                                            var hashAlgorithm = reader.GetGuid(document.HashAlgorithm);
+                                            if (hashAlgorithm == HashAlgorithmSha1)
+                                            {
+                                                var hash = SHA1.HashData(data);
+                                                var expectedHash = reader.GetBlobBytes(document.Hash);
+                                                if (!expectedHash.SequenceEqual(hash))
+                                                {
+                                                    context.ReportError(ErrorCodes.FileHashIsNotValid, $"Source file '{url}' hash differ from the expected hash", fileName: item);
+                                                }
+                                            }
+                                            else if (hashAlgorithm == HashAlgorithmSha256)
+                                            {
+                                                var hash = SHA256.HashData(data);
+                                                var expectedHash = reader.GetBlobBytes(document.Hash);
+                                                if (!expectedHash.SequenceEqual(hash))
+                                                {
+                                                    context.ReportError(ErrorCodes.FileHashIsNotValid, $"Source file '{url}' hash differ from the expected hash", fileName: item);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                context.ReportError(ErrorCodes.NotSupportedHashAlgorithm, $"Source file '{url}' hash algorithm '{hashAlgorithm}' is not supported", fileName: item);
+                                            }
+                                        }
+                                    }
+                                }
+                                catch
                                 {
                                     context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
                                 }

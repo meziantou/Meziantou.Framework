@@ -5,13 +5,16 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    private CodeOwnersEntry(string pattern, CodeOwnersEntryType entryType, string member, CodeOwnersSection? section)
+    private CodeOwnersEntry(int patternIndex, string pattern, CodeOwnersEntryType entryType, string member, CodeOwnersSection? section)
     {
         Pattern = pattern;
+        PatternIndex = patternIndex;
         Member = member;
         Section = section;
         EntryType = entryType;
     }
+
+    public int PatternIndex { get; }
 
     public string Pattern { get; }
 
@@ -23,14 +26,14 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
     public bool IsOptional => Section?.IsOptional ?? false;
 
-    internal static CodeOwnersEntry FromUsername(string pattern, string username, CodeOwnersSection? section)
+    internal static CodeOwnersEntry FromUsername(int patternIndex, string pattern, string username, CodeOwnersSection? section)
     {
-        return new CodeOwnersEntry(pattern, CodeOwnersEntryType.Username, username, section);
+        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.Username, username, section);
     }
 
-    internal static CodeOwnersEntry FromEmailAddress(string pattern, string emailAddress, CodeOwnersSection? section)
+    internal static CodeOwnersEntry FromEmailAddress(int patternIndex, string pattern, string emailAddress, CodeOwnersSection? section)
     {
-        return new CodeOwnersEntry(pattern, CodeOwnersEntryType.EmailAddress, emailAddress, section);
+        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.EmailAddress, emailAddress, section);
     }
 
     public override bool Equals(object? obj)

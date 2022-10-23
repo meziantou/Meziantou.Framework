@@ -20,6 +20,7 @@ public static class CodeOwnersParser
         private readonly List<CodeOwnersEntry> _entries;
         private readonly StringLexer _lexer;
         private CodeOwnersSection? _currentSection;
+        private int _index;
 
         private static ObjectPool<StringBuilder> CreateStringBuilderPool()
         {
@@ -71,7 +72,8 @@ public static class CodeOwnersParser
                 return;
 
             // Parse members (username or email)
-            ParseMembers(pattern);
+            ParseMembers(pattern, _index);
+            _index++;
         }
 
         private readonly bool TryParseSection(out CodeOwnersSection section)
@@ -141,7 +143,7 @@ public static class CodeOwnersParser
             return StringBuilderPool.ToStringAndReturn(sb);
         }
 
-        private readonly void ParseMembers(string pattern)
+        private readonly void ParseMembers(string pattern, int patternIndex)
         {
             while (!_lexer.EndOfFile)
             {
@@ -162,14 +164,14 @@ public static class CodeOwnersParser
                 {
                     if (_lexer.TryConsumeEndOfLineOrEndOfFile())
                     {
-                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern);
+                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
                         return;
                     }
 
                     c = _lexer.Consume();
                     if (c == ' ' || c == '\t')
                     {
-                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern);
+                        AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
                         break;
                     }
 
@@ -178,15 +180,15 @@ public static class CodeOwnersParser
             }
         }
 
-        private readonly void AddEntry(bool isMember, string name, string pattern)
+        private readonly void AddEntry(bool isMember, string name, string pattern, int patternIndex)
         {
             if (isMember)
             {
-                _entries.Add(CodeOwnersEntry.FromUsername(pattern, name, _currentSection));
+                _entries.Add(CodeOwnersEntry.FromUsername(patternIndex, pattern, name, _currentSection));
             }
             else
             {
-                _entries.Add(CodeOwnersEntry.FromEmailAddress(pattern, name, _currentSection));
+                _entries.Add(CodeOwnersEntry.FromEmailAddress(patternIndex, pattern, name, _currentSection));
             }
         }
     }

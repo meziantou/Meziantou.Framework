@@ -112,7 +112,7 @@ namespace test
 
         AssertCsharp(type, @"class Sample<T1, T2>
     where T1 : struct
-    where T2 : class, System.ICloneable, new()
+    where T2 : class, global::System.ICloneable, new()
 {
 }
 ");
@@ -156,7 +156,7 @@ namespace test
 
         AssertCsharp(type, @"interface Sample<T1, T2>
     where T1 : struct
-    where T2 : class, System.ICloneable, new()
+    where T2 : class, global::System.ICloneable, new()
 {
 }
 ");
@@ -180,7 +180,7 @@ namespace test
             },
         };
 
-        AssertCsharp(type, @"[System.FlagsAttribute]
+        AssertCsharp(type, @"[global::System.FlagsAttribute]
 internal enum Sample : uint
 {
     A = 1,
@@ -218,7 +218,7 @@ internal enum Sample : uint
 {
     int _a;
 
-    private System.Type _b;
+    private global::System.Type _b;
 
     protected int _c = 10;
 }
@@ -233,7 +233,7 @@ internal enum Sample : uint
 
         AssertCsharp(type, @"class Sample
 {
-    public event System.EventHandler A;
+    public event global::System.EventHandler A;
 }
 ");
     }
@@ -473,11 +473,11 @@ catch
 {
     TrySnippet
 }
-catch (System.NotImplementedException nie)
+catch (global::System.NotImplementedException nie)
 {
     Catch1
 }
-catch (System.Exception ex)
+catch (global::System.Exception ex)
 {
     throw;
 }
@@ -544,7 +544,7 @@ finally
     public void CSharpCodeGenerator_Throw()
     {
         var expr = new ThrowStatement(new NewObjectExpression(typeof(Exception)));
-        AssertCsharp(expr, @"throw new System.Exception();
+        AssertCsharp(expr, @"throw new global::System.Exception();
 ");
     }
 
@@ -560,7 +560,7 @@ finally
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute]
+        AssertCsharp(method, @"[global::TestAttribute]
 void Sample()
 {
 }
@@ -585,7 +585,7 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute(""arg1"")]
+        AssertCsharp(method, @"[global::TestAttribute(""arg1"")]
 void Sample()
 {
 }
@@ -611,7 +611,7 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute(""arg1"", ""arg2"")]
+        AssertCsharp(method, @"[global::TestAttribute(""arg1"", ""arg2"")]
 void Sample()
 {
 }
@@ -636,7 +636,7 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute(Name1 = ""arg1"")]
+        AssertCsharp(method, @"[global::TestAttribute(Name1 = ""arg1"")]
 void Sample()
 {
 }
@@ -662,7 +662,7 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute(Name1 = ""arg1"", Name2 = ""arg2"")]
+        AssertCsharp(method, @"[global::TestAttribute(Name1 = ""arg1"", Name2 = ""arg2"")]
 void Sample()
 {
 }
@@ -689,7 +689,7 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute(""arg1"", ""arg3"", Name2 = ""arg2"")]
+        AssertCsharp(method, @"[global::TestAttribute(""arg1"", ""arg3"", Name2 = ""arg2"")]
 void Sample()
 {
 }
@@ -709,8 +709,8 @@ void Sample()
             },
         };
 
-        AssertCsharp(method, @"[TestAttribute1]
-[TestAttribute2]
+        AssertCsharp(method, @"[global::TestAttribute1]
+[global::TestAttribute2]
 void Sample()
 {
 }
@@ -793,7 +793,7 @@ void Sample()
             Statements = new StatementCollection(),
         };
 
-        AssertCsharp(method, @"void Foo.IBar.A()
+        AssertCsharp(method, @"void global::Foo.IBar.A()
 {
 }
 ");
@@ -808,7 +808,7 @@ void Sample()
             Getter = new ReturnStatement(10),
         };
 
-        AssertCsharp(prop, @"int Foo.IBar.A
+        AssertCsharp(prop, @"int global::Foo.IBar.A
 {
     get
     {
@@ -868,7 +868,7 @@ void Sample()
             Setter = new PropertyAccessorDeclaration(),
         };
 
-        AssertCsharp(prop, @"System.Nullable<int> A
+        AssertCsharp(prop, @"global::System.Nullable<int> A
 {
     set
     {
@@ -887,7 +887,7 @@ void Sample()
             RemoveAccessor = new StatementCollection(),
         };
 
-        AssertCsharp(method, @"event System.EventHandler Foo.IBar.A
+        AssertCsharp(method, @"event global::System.EventHandler global::Foo.IBar.A
 {
     add
     {
@@ -904,7 +904,7 @@ void Sample()
     {
         var statement = new ExpressionStatement(new NewObjectExpression(new TypeReference("Disposable")));
 
-        AssertCsharp(statement, @"new Disposable();
+        AssertCsharp(statement, @"new global::Disposable();
 ");
     }
 
@@ -924,7 +924,7 @@ void Sample()
             Statement = new NewObjectExpression(new TypeReference("Disposable")),
         };
 
-        AssertCsharp(statement, @"using (new Disposable())
+        AssertCsharp(statement, @"using (new global::Disposable())
 {
 }
 ");
@@ -939,7 +939,7 @@ void Sample()
             Body = (Statement)new MethodInvokeExpression(new VariableReferenceExpression("disposable")),
         };
 
-        AssertCsharp(statement, @"using (var disposable = new Disposable())
+        AssertCsharp(statement, @"using (var disposable = new global::Disposable())
 {
     disposable();
 }
@@ -950,10 +950,10 @@ void Sample()
     public void CSharpCodeGenerator_MethodInvoke()
     {
         var expression = new MethodInvokeExpression(
-            new MemberReferenceExpression(new TypeReference("Console"), "Write"),
+            new MemberReferenceExpression(new TypeReference("System.Console"), "Write"),
             "test");
 
-        AssertCsharp(expression, @"Console.Write(""test"")");
+        AssertCsharp(expression, @"global::System.Console.Write(""test"")");
     }
 
     [Fact]
@@ -964,7 +964,7 @@ void Sample()
             "test");
         expression.Parameters.Add(typeof(string));
 
-        AssertCsharp(expression, @"Console.Write<string>(""test"")");
+        AssertCsharp(expression, @"global::Console.Write<string>(""test"")");
     }
 
     [Fact]
@@ -974,7 +974,7 @@ void Sample()
             new MemberReferenceExpression(new TypeReference("Console"), "Write"),
             new MethodInvokeArgumentExpression(new VariableReferenceExpression("test")) { Direction = Direction.Out });
 
-        AssertCsharp(expression, "Console.Write(out test)");
+        AssertCsharp(expression, "global::Console.Write(out test)");
     }
 
     [Fact]
@@ -986,12 +986,12 @@ void Sample()
         statement.Condition = new BinaryExpression(BinaryOperator.LessThan, variable, 10);
         statement.IncrementStatement = new UnaryExpression(UnaryOperator.PostIncrement, variable);
         statement.Body = new MethodInvokeExpression(
-            new MemberReferenceExpression(new TypeReference("Console"), "Write"),
+            new MemberReferenceExpression(new TypeReference("System.Console"), "Write"),
             variable);
 
         AssertCsharp(statement, @"for (var i = 0; (i < 10); (i++))
 {
-    Console.Write(i);
+    global::System.Console.Write(i);
 }
 ");
     }
@@ -1221,7 +1221,7 @@ void Sample()
     {
         var expression = new TypeReferenceExpression(typeof(Console));
 
-        AssertCsharp(expression, "System.Console");
+        AssertCsharp(expression, "global::System.Console");
     }
 
     [Fact]
@@ -1229,7 +1229,7 @@ void Sample()
     {
         var expression = new TypeReferenceExpression(typeof(SampleEnum));
 
-        AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum");
+        AssertCsharp(expression, "global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum");
     }
 
     [Fact]
@@ -1237,7 +1237,7 @@ void Sample()
     {
         var expression = new TypeReferenceExpression(typeof(Sample<int>));
 
-        AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>");
+        AssertCsharp(expression, "global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.Sample<int>");
     }
 
     [Fact]
@@ -1357,7 +1357,7 @@ void Sample()
     {
         Expression expression = SampleEnum.A;
 
-        AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A");
+        AssertCsharp(expression, "global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.A");
     }
 
     [Fact]
@@ -1365,7 +1365,7 @@ void Sample()
     {
         Expression expression = SampleEnum.All;
 
-        AssertCsharp(expression, "Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All");
+        AssertCsharp(expression, "global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum.All");
     }
 
     [Fact]
@@ -1373,7 +1373,7 @@ void Sample()
     {
         Expression expression = (SampleEnum)3;
 
-        AssertCsharp(expression, "((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)");
+        AssertCsharp(expression, "((global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)3)");
     }
 
     [Fact]
@@ -1381,7 +1381,7 @@ void Sample()
     {
         Expression expression = (SampleEnum)10;
 
-        AssertCsharp(expression, "((Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)");
+        AssertCsharp(expression, "((global::Meziantou.Framework.CodeDom.Tests.CSharpCodeGeneratorTests.SampleEnum)10)");
     }
 
     [Theory]
@@ -1627,7 +1627,7 @@ null
         };
 
         var variable = new VariableDeclarationStatement("demo", new TypeReference(innerStruct));
-        AssertCsharp(variable, @"A.B.C.D demo;
+        AssertCsharp(variable, @"global::A.B.C.D demo;
 ");
     }
 }

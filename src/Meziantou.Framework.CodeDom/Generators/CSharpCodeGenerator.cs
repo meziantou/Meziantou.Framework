@@ -1361,6 +1361,7 @@ public partial class CSharpCodeGenerator
         }
         else
         {
+            writer.Write("global::");
             if (type.TypeName != null)
             {
                 writer.Write(type.TypeName.Replace('+', '.'));

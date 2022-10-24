@@ -47,7 +47,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
             return true;
         }
 
-        static EnumToProcess? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, System.Threading.CancellationToken cancellationToken)
+        static EnumToProcess? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
         {
             var compilation = ctx.SemanticModel.Compilation;
             var fastEnumToStringAttributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
@@ -149,7 +149,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                 sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
                 sb.AppendLine("{");
 
-                sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this ").Append(enumeration.FullCsharpName).AppendLine(" value)");
+                sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this global::").Append(enumeration.FullCsharpName).AppendLine(" value)");
                 sb.AppendLine("    {");
                 sb.AppendLine("        return value switch");
                 sb.AppendLine("        {");

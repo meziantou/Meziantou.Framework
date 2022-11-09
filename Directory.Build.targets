@@ -31,6 +31,10 @@
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />
   </Target>
 
+  <Target Name="CheckPreviewFramework" BeforeTargets="Build" Condition="$(LatestTargetFrameworkLts) != '' AND $(MSBuildProjectFile) != 'build.proj' AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFrameworkLts)')) == false">
+    <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFrameworkLts)" />
+  </Target>
+
   <Target Name="CheckPreviewFramework" BeforeTargets="Build" Condition="$(LatestTargetFrameworkPreview) != '' AND $(MSBuildProjectFile) != 'build.proj' AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFrameworkPreview)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFrameworkPreview)" />
   </Target>

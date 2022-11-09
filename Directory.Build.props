@@ -4,11 +4,11 @@
   <PropertyGroup>
     <LatestTargetFrameworkLts>net6.0</LatestTargetFrameworkLts>
     <LatestTargetFramework>net7.0</LatestTargetFramework>
-    <LatestTargetFrameworkPreview>net7.0</LatestTargetFrameworkPreview>
+    <LatestTargetFrameworkPreview></LatestTargetFrameworkPreview>
 
     <LatestTargetFrameworkLtsWindows>$(LatestTargetFrameworkLts)-windows</LatestTargetFrameworkLtsWindows>
     <LatestTargetFrameworkWindows>$(LatestTargetFramework)-windows</LatestTargetFrameworkWindows>
-    <LatestTargetFrameworkPreviewWindows>$(LatestTargetFrameworkPreview)-windows</LatestTargetFrameworkPreviewWindows>
+    <LatestTargetFrameworkPreviewWindows Condition="'$(LatestTargetFrameworkPreview)' != ''">$(LatestTargetFrameworkPreview)-windows</LatestTargetFrameworkPreviewWindows>
 
     <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework);$(LatestTargetFrameworkLts)</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows);$(LatestTargetFrameworkLtsWindows)</LatestTargetFrameworksWindows>

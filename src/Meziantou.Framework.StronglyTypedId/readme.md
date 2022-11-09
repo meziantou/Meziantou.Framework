@@ -9,7 +9,7 @@ public partial struct ProjectId { }
 
 `StronglyTypedId` generates the following code:
 
-````
+````csharp
 [System.ComponentModel.TypeConverterAttribute(typeof(ProjectIdTypeConverter))]
 [System.Text.Json.Serialization.JsonConverterAttribute(typeof(ProjectIdJsonConverter))]
 [Newtonsoft.Json.JsonConverterAttribute(typeof(ProjectIdNewtonsoftJsonConverter))]

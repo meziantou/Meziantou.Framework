@@ -98,10 +98,14 @@ public sealed class QueryStringService
 
     private static object? ConvertValue(StringValues value, Type type)
     {
+        var firstValue = value[0];
         if (type == typeof(string))
-            return value[0];
+            return firstValue;
 
-        return JsonSerializer.Deserialize(value[0], type);
+        if (firstValue is null)
+            return Activator.CreateInstance(type);
+
+        return JsonSerializer.Deserialize(firstValue, type);
     }
 
     private static string ConvertToString(object value)

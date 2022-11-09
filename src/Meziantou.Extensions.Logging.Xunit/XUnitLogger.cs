@@ -30,7 +30,7 @@ public class XUnitLogger : ILogger
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
-    public IDisposable BeginScope<TState>(TState state) => _scopeProvider.Push(state);
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _scopeProvider.Push(state);
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {

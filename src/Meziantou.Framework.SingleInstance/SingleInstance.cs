@@ -191,7 +191,7 @@ public sealed class SingleInstance : IDisposable
     {
 #if NET5_0_OR_GREATER
         return Environment.ProcessId;
-#elif NET461 || NET462 || NETCOREAPP3_1
+#elif NET461 || NET462
         return System.Diagnostics.Process.GetCurrentProcess().Id;
 #else
 #error Platform not supported

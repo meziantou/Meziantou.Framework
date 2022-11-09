@@ -2,14 +2,16 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <LatestTargetFramework>net6.0</LatestTargetFramework>
+    <LatestTargetFrameworkLts>net6.0</LatestTargetFrameworkLts>
+    <LatestTargetFramework>net7.0</LatestTargetFramework>
     <LatestTargetFrameworkPreview>net7.0</LatestTargetFrameworkPreview>
 
+    <LatestTargetFrameworkLtsWindows>$(LatestTargetFrameworkLts)-windows</LatestTargetFrameworkLtsWindows>
     <LatestTargetFrameworkWindows>$(LatestTargetFramework)-windows</LatestTargetFrameworkWindows>
     <LatestTargetFrameworkPreviewWindows>$(LatestTargetFrameworkPreview)-windows</LatestTargetFrameworkPreviewWindows>
 
-    <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework)</LatestTargetFrameworks>
-    <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows)</LatestTargetFrameworksWindows>
+    <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework);$(LatestTargetFrameworkLts)</LatestTargetFrameworks>
+    <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows);$(LatestTargetFrameworkLtsWindows)</LatestTargetFrameworksWindows>
 
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>

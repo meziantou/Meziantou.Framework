@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworksWindows);netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net462</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <CompatibilityRecord>true</CompatibilityRecord>
@@ -9,7 +9,7 @@
 
   <ItemGroup Condition=" $(TargetFramework) == 'net462' ">
     <Reference Include="System.Windows" />
-    <PackageReference Include="System.Text.Json" Version="6.0.6" />
+    <PackageReference Include="System.Text.Json" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>

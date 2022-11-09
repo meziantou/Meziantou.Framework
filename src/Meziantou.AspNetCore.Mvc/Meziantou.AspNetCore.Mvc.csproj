@@ -6,9 +6,6 @@
     <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>TagHelpers for Razor Pages</Description>
-
-    <!-- https://github.com/dotnet/aspnetcore/issues/42200 -->
-    <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>
 
   <ItemGroup>

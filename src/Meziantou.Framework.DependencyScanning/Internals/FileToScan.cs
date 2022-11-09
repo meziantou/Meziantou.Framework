@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
-internal struct FileToScan<T>
+internal readonly struct FileToScan<T>
     where T : IEnabledScannersArray
 {
     public FileToScan(T scanners, string fullPath)

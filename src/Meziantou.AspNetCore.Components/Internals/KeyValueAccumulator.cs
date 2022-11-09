@@ -6,7 +6,7 @@ namespace Meziantou.AspNetCore.Components.Internals;
 internal struct KeyValueAccumulator
 {
     private Dictionary<string, StringValues> _accumulator;
-    private Dictionary<string, List<string>> _expandingAccumulator;
+    private Dictionary<string, List<string?>> _expandingAccumulator;
 
     public void Append(string key, string value)
     {
@@ -21,17 +21,17 @@ internal struct KeyValueAccumulator
             else if (values.Count == 1)
             {
                 // Second value for this key
-                _accumulator[key] = new string[] { values[0], value };
+                _accumulator[key] = new string?[] { values[0], value };
             }
             else
             {
                 // Third value for this key
                 // Add zero count entry and move to data to expanding list dictionary
                 _accumulator[key] = default;
-                _expandingAccumulator ??= new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                _expandingAccumulator ??= new Dictionary<string, List<string?>>(StringComparer.OrdinalIgnoreCase);
 
                 // Already 3 entries so use starting allocated as 8; then use List's expansion mechanism for more
-                var list = new List<string>(8);
+                var list = new List<string?>(8);
                 var array = values.ToArray();
 
                 list.Add(array[0]);

@@ -22,7 +22,7 @@ public static class NavigationManagerExtensions
             var parameters = QueryHelpers.ParseNullableQuery(uri.Query);
             if (parameters != null && parameters.TryGetValue(parameterName, out var values))
             {
-                return values.ToArray();
+                return values.ToArray()!;
             }
         }
 

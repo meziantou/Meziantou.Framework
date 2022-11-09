@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netcoreapp3.1;net462</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);net462</TargetFrameworks>
     <Version>1.1.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>SingleInstance allows to ensure only one instance of an application runs. Following instances can notify the main instance before closing.</Description>

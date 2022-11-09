@@ -168,8 +168,6 @@ public class GlobTests
         globi.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
 
 #if NET472
-#elif NETCOREAPP3_1
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
 #else
         if (OperatingSystem.IsWindows())
 #endif

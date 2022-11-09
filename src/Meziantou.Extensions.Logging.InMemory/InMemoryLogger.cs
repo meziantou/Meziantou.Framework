@@ -18,7 +18,7 @@ public sealed class InMemoryLogger : ILogger
         _category = category;
     }
 
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull
     {
         return _scopeProvider.Push(state);
     }

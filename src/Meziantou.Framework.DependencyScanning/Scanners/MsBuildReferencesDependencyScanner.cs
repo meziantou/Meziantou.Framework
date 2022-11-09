@@ -28,7 +28,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
         var ns = doc.Root.GetDefaultNamespace();
         var itemGroups = doc.Descendants(ns + "ItemGroup");
-        foreach (var package in itemGroups.Elements(ns + "PackageReference").Concat(itemGroups.Elements(ns + "PackageDownload")))
+        foreach (var package in itemGroups.Elements(ns + "PackageReference").Concat(itemGroups.Elements(ns + "PackageDownload")).Concat(itemGroups.Elements(ns + "GlobalPackageReference")))
         {
             var nameAttribute = package.Attribute(IncludeXName);
             var nameValue = nameAttribute?.Value;

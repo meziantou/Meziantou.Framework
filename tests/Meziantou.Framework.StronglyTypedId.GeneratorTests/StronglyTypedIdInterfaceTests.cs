@@ -6,6 +6,8 @@ using global::Xunit;
 
 public sealed partial class StronglyTypedIdInterfaceTests
 {
+    private const string IStronglyTypedIdInterfaceName = "IStronglyTypedId`1";
+
     [Fact]
     public void PropertyShould_Be_StronglyTypedId()
     {
@@ -118,15 +120,14 @@ public sealed partial class StronglyTypedIdInterfaceTests
         var interfaces = type.GetInterfaces();
 
         interfaces.Should()
-            .Contain(_ => _.Name == "IStronglyTypedId");
+            .Contain(_ => _.Name == IStronglyTypedIdInterfaceName);
     }
 
     [Fact]
     public void ShouldImplement_Interface_StronglyTypedId_AsGuid()
     {
         var someEntity = new EntityWithGuidStronglyTypedId();
-        var props = someEntity.GetType()
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
         someEntity.GetType()
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Should()
@@ -286,8 +287,5 @@ public sealed partial class StronglyTypedIdInterfaceTests
         public IdGuidWithInterface BookId { get; }
 
         public string BookName { get; }
-
     }
-
 }
- 

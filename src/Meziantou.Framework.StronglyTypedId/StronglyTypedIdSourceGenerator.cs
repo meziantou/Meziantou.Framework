@@ -163,7 +163,7 @@ public static class StronglyTypedIdExtensions
     public static bool IsStronglyTypedId(this Type type)
     {
         return type.GetInterfaces()
-            .Any(_ => _.Name == ""IStronglyTypedId"");
+            .Any(_ => _.Name == ""IStronglyTypedId`1""); 
     }
 }
 
@@ -197,7 +197,7 @@ public static class StronglyTypedIdExtensions
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
 
-        context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdExtensions.g.cs", SourceText.From(StronglyTypedExtensions, Encoding.UTF8)));
+       context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdExtensions.g.cs", SourceText.From(StronglyTypedExtensions, Encoding.UTF8)));
         context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
         context.RegisterPostInitializationOutput(ctx => ctx.AddSource("IStronglyTypedId" + ".g.cs", SourceText.From(IStronglyTypedIdInterface, Encoding.UTF8)));
 

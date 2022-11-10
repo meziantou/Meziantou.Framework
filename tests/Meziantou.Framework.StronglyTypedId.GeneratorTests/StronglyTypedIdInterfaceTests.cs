@@ -286,6 +286,8 @@ public sealed partial class StronglyTypedIdInterfaceTests
         public IdGuidWithInterface BookId { get; }
 
         public string BookName { get; }
+
     }
+
 }
  

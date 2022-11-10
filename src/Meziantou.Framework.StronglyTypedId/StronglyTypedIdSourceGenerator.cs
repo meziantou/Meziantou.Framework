@@ -187,7 +187,11 @@ public static class StronglyTypedIdExtensions
     /// <summary>
     /// Interface marker used to identify 'strongly-typed id' properties from other properties
     /// </summary>    
-    internal interface IStronglyTypedId {}";
+    public interface IStronglyTypedId<out TType>
+     
+{
+    TType Value { get; }
+}";
 
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -666,4 +670,15 @@ public static class StronglyTypedIdExtensions
         System_UInt32,
         System_UInt64,
     }
+}
+
+public interface IStronglyTypedId<out TType>
+     
+{
+    TType Value { get; }
+}
+
+public class Example : IStronglyTypedId<int>
+{
+    public int Value { get; }
 }

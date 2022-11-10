@@ -58,14 +58,18 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+
+    private const string IStronglyTypedIdInterface = @"public interface IStronglyTypedId {}";
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
+        context.RegisterPostInitializationOutput(ctx => ctx.AddSource("IStronglyTypedId" + ".g.cs", SourceText.From(IStronglyTypedIdInterface, Encoding.UTF8)));
 
         var types = context.SyntaxProvider.CreateSyntaxProvider(
-          predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
-          transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
-              .Where(static m => m is not null)!;
+                predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
+                transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
+            .Where(static m => m is not null)!;
 
         var typesToProcess = types.Combine(context.CompilationProvider);
 
@@ -304,7 +308,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 TypeDeclaration typeDeclaration = typeSymbol.IsValueType ? new StructDeclaration() : new ClassDeclaration();
                 typeDeclaration.Name = typeSymbol.Name;
                 typeDeclaration.Modifiers = Modifiers.Partial;
-
                 ((ClassOrStructDeclaration)typeDeclaration).AddType(root);
                 root = typeDeclaration;
             }

@@ -222,6 +222,19 @@ public sealed partial class StronglyTypedIdTests
         value.Should().Be(IdClassString.FromString("test"));
     }
 
+ 
+    
+    [Fact]
+    public void ShouldImplement_Interface_IStronglyTypedId()
+    {
+
+        var newStronglyTypedIdValueObject = IdClassString.FromString(Guid.NewGuid()
+            .ToString());
+        var type = newStronglyTypedIdValueObject.GetType();
+        var interfaces = type.GetInterfaces();
+        interfaces.Should().HaveCount(4);
+        interfaces.Should().Contain(_ => _.Name == "IStronglyTypedId");
+    }
     private static T BsonClone<T>(T value)
     {
         using var stream = new MemoryStream();

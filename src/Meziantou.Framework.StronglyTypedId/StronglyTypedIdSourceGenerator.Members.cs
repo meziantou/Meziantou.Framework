@@ -116,6 +116,9 @@ public partial class StronglyTypedIdSourceGenerator
             }
         }
 
+        // IStronglyTypedId (used as a 'marker interface' to locate strongly typed id's during runtime.
+        structDeclaration.Implements.Add(new TypeReference("IStronglyTypedId"));
+
         // IEquatable<T>
         structDeclaration.Implements.Add(new TypeReference(typeof(IEquatable<>)).MakeGeneric(structDeclaration));
         if (!context.IsIEquatableEqualsDefined())
@@ -482,3 +485,4 @@ public partial class StronglyTypedIdSourceGenerator
         }
     }
 }
+ 

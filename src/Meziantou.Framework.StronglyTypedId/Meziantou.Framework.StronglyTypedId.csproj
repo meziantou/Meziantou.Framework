@@ -1,28 +1,34 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <CompatibilityRange>true</CompatibilityRange>
-    <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.22</Version>
+    <PropertyGroup>
+        <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+        <CompatibilityRange>true</CompatibilityRange>
+        <TargetFrameworks>net7.0;netstandard2.0</TargetFrameworks>
 
-    <developmentDependency>true</developmentDependency>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <NoPackageAnalysis>true</NoPackageAnalysis>
-    <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json or Newtonsoft.Json.</Description>
-  </PropertyGroup>
+        <CompatibilityRecord>true</CompatibilityRecord>
+        <Version>1.0.22</Version>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <developmentDependency>true</developmentDependency>
+        <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <NoPackageAnalysis>true</NoPackageAnalysis>
+        <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json or Newtonsoft.Json.</Description>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+    <Target Name="RemoveSourceGeneratedFiles" BeforeTargets="CoreCompile">
+        <ItemGroup>
+            <Compile Remove="**/*.SourceGenerated.cs" />
+        </ItemGroup>
+    </Target>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" PrivateAssets="all" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" PrivateAssets="all" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="../Meziantou.Framework.CodeDom/**/*.cs" Visible="False" />
-    <Compile Remove="../Meziantou.Framework.CodeDom/bin/**/*.cs" Visible="False" />
-    <Compile Remove="../Meziantou.Framework.CodeDom/obj/**/*.cs" Visible="False" />
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Include="../Meziantou.Framework.CodeDom/**/*.cs" Visible="False" />
+        <Compile Remove="../Meziantou.Framework.CodeDom/bin/**/*.cs" Visible="False" />
+        <Compile Remove="../Meziantou.Framework.CodeDom/obj/**/*.cs" Visible="False" />
+    </ItemGroup>
 </Project>

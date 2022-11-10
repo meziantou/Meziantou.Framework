@@ -70,7 +70,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -111,7 +111,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -147,7 +147,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -190,7 +190,7 @@ public partial struct Test : System.IEquatable<Test>
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         result.Assembly.Should().NotBeNull();
     }
@@ -205,7 +205,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -231,6 +231,40 @@ public partial struct Test {}
     }
 
     [Fact]
+    public async Task  ShouldImplement_Interface_StronglyTypedId()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(int))]
+public partial struct Test {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            alc.LoadFromStream(new MemoryStream(result.Assembly));
+            foreach (var a in alc.Assemblies)
+            {
+                var type = a.GetType("Test");
+                var interfaces = type.GetInterfaces();
+                interfaces.Should()
+                    .HaveCount(2);
+
+                interfaces.Should()
+                    .Contain(_ => _.Name == "IStronglyTypedId");
+               
+            }
+        }
+        finally
+        {
+            alc.Unload();
+        }
+    }
+
+    [Fact]
     public async Task GenerateStruct_Parse_ReadOnlySpan()
     {
         var sourceCode = @"
@@ -240,7 +274,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -269,7 +303,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Length.Should().Be(3);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try

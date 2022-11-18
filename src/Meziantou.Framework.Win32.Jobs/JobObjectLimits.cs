@@ -1,4 +1,4 @@
-using Meziantou.Framework.Win32.Natives;
+using Windows.Win32.System.JobObjects;
 
 namespace Meziantou.Framework.Win32;
 
@@ -9,17 +9,17 @@ public sealed class JobObjectLimits
 {
     private long _perProcessUserTimeLimit;
     private long _perJobUserTimeLimit;
-    private ulong _minimumWorkingSetSize;
-    private ulong _maximumWorkingSetSize;
+    private nuint _minimumWorkingSetSize;
+    private nuint _maximumWorkingSetSize;
     private uint _activeProcessLimit;
-    private IntPtr _affinity;
+    private nuint _affinity;
     private uint _priorityClass;
     private uint _schedulingClass;
-    private ulong _processMemoryLimit;
-    private ulong _jobMemoryLimit;
+    private nuint _processMemoryLimit;
+    private nuint _jobMemoryLimit;
     private JobObjectLimitFlags _flags;
 
-    internal LimitFlags InternalFlags { get; set; }
+    internal JOB_OBJECT_LIMIT InternalFlags { get; set; }
 
     /// <summary>
     /// Defines options for a job object.
@@ -33,7 +33,7 @@ public sealed class JobObjectLimits
         set
         {
             _flags = value;
-            InternalFlags |= (LimitFlags)_flags;
+            InternalFlags |= (JOB_OBJECT_LIMIT)_flags;
         }
     }
 
@@ -49,7 +49,7 @@ public sealed class JobObjectLimits
         set
         {
             _perProcessUserTimeLimit = value;
-            InternalFlags |= LimitFlags.ProcessTime;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PROCESS_TIME;
         }
     }
 
@@ -65,7 +65,7 @@ public sealed class JobObjectLimits
         set
         {
             _perJobUserTimeLimit = value;
-            InternalFlags |= LimitFlags.JobTime;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_JOB_TIME;
         }
     }
 
@@ -75,18 +75,13 @@ public sealed class JobObjectLimits
     /// <value>
     /// The minimum working set size for each process associated with the job.
     /// </value>
-    public ulong MinimumWorkingSetSize
+    public nuint MinimumWorkingSetSize
     {
         get => _minimumWorkingSetSize;
         set
         {
-            if (IntPtr.Size == 4 && value > uint.MaxValue)
-            {
-                value = uint.MaxValue;
-            }
-
             _minimumWorkingSetSize = value;
-            InternalFlags |= LimitFlags.WorkingSet;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_WORKINGSET;
         }
     }
 
@@ -96,18 +91,13 @@ public sealed class JobObjectLimits
     /// <value>
     /// The maximum working set size for each process associated with the job.
     /// </value>
-    public ulong MaximumWorkingSetSize
+    public nuint MaximumWorkingSetSize
     {
         get => _maximumWorkingSetSize;
         set
         {
-            if (IntPtr.Size == 4 && value > uint.MaxValue)
-            {
-                value = uint.MaxValue;
-            }
-
             _maximumWorkingSetSize = value;
-            InternalFlags |= LimitFlags.WorkingSet;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_WORKINGSET;
         }
     }
 
@@ -123,7 +113,7 @@ public sealed class JobObjectLimits
         set
         {
             _activeProcessLimit = value;
-            InternalFlags |= LimitFlags.ActiveProcess;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
         }
     }
 
@@ -133,13 +123,13 @@ public sealed class JobObjectLimits
     /// <value>
     /// The processor affinity for all processes associated with the job.
     /// </value>
-    public IntPtr Affinity
+    public nuint Affinity
     {
         get => _affinity;
         set
         {
             _affinity = value;
-            InternalFlags |= LimitFlags.Affinity;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_AFFINITY;
         }
     }
 
@@ -155,7 +145,7 @@ public sealed class JobObjectLimits
         set
         {
             _priorityClass = value;
-            InternalFlags |= LimitFlags.PriorityClass;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PRIORITY_CLASS;
         }
     }
 
@@ -171,7 +161,7 @@ public sealed class JobObjectLimits
         set
         {
             _schedulingClass = value;
-            InternalFlags |= LimitFlags.SchedulingClass;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_SCHEDULING_CLASS;
         }
     }
 
@@ -181,18 +171,14 @@ public sealed class JobObjectLimits
     /// <value>
     /// The limit for the virtual memory that can be committed by a process.
     /// </value>
-    public ulong ProcessMemoryLimit
+    public nuint ProcessMemoryLimit
     {
         get => _processMemoryLimit;
         set
         {
-            if (IntPtr.Size == 4 && value > uint.MaxValue)
-            {
-                value = uint.MaxValue;
-            }
 
             _processMemoryLimit = value;
-            InternalFlags |= LimitFlags.ProcessMemory;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PROCESS_MEMORY;
         }
     }
 
@@ -202,18 +188,13 @@ public sealed class JobObjectLimits
     /// <value>
     /// The limit for the virtual memory that can be committed for the job.
     /// </value>
-    public ulong JobMemoryLimit
+    public nuint JobMemoryLimit
     {
         get => _jobMemoryLimit;
         set
         {
-            if (IntPtr.Size == 4 && value > uint.MaxValue)
-            {
-                value = uint.MaxValue;
-            }
-
             _jobMemoryLimit = value;
-            InternalFlags |= LimitFlags.JobMemory;
+            InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_JOB_MEMORY;
         }
     }
 }

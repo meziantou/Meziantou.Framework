@@ -112,15 +112,32 @@ public sealed class JobObject : IDisposable
     }
 
     /// <summary>
-    /// Sets limits to the jhob.
+    /// Sets limits to the job.
     /// </summary>
     /// <param name="limits">The limits. May not be null.</param>
     public unsafe void SetLimits(JobObjectLimits limits)
     {
         if (limits is null)
             throw new ArgumentNullException(nameof(limits));
-        var info = JOBOBJECT_INFO.From(limits);
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, JOBOBJECT_INFO.Size))
+        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+            {
+                ActiveProcessLimit = limits.ActiveProcessLimit,
+                Affinity = limits.Affinity,
+                MaximumWorkingSetSize = limits.MaximumWorkingSetSize,
+                MinimumWorkingSetSize = limits.MinimumWorkingSetSize,
+                PerJobUserTimeLimit = limits.PerJobUserTimeLimit,
+                PerProcessUserTimeLimit = limits.PerProcessUserTimeLimit,
+                PriorityClass = limits.PriorityClass,
+                SchedulingClass = limits.SchedulingClass,
+                LimitFlags = limits.InternalFlags,
+            },
+            ProcessMemoryLimit = limits.ProcessMemoryLimit,
+            JobMemoryLimit = limits.JobMemoryLimit,
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -131,10 +148,134 @@ public sealed class JobObject : IDisposable
     {
         var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
         {
-            UIRestrictionsClass = limits,
+            UIRestrictionsClass = (JOB_OBJECT_UILIMIT)limits,
         };
 
         if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
+    /// Set the job's CPU rate is a hard limit. After the job reaches its CPU
+    /// cycle limit for the current scheduling interval, no threads associated
+    /// with the job will run until the next interval.
+    /// </summary>
+    /// <param name="cpuRate">
+    /// Specifies the portion of processor cycles that the threads in a job object
+    /// can use during each scheduling interval, as the number of cycles per 10,000 cycles.
+    /// For example, to let the job use 20% of the CPU, set CpuRate to 20 times 100, or 2,000.
+    /// </param>
+    public unsafe void SetCpuRateHardCap(int cpuRate)
+    {
+        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        {
+            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
+            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            {
+                CpuRate = (uint)cpuRate,
+            },
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
+    /// Set the job's CPU rate is calculated based on its relative weight to the weight of other jobs.
+    /// </summary>
+    /// <param name="weigth">
+    /// Specifies the scheduling weight of the job object, which determines the share of processor time given to the job relative to other workloads on the processor.
+    /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
+    /// </param>
+    public unsafe void SetCpuRateWeight(int weigth)
+    {
+        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        {
+            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
+            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            {
+                Weight = (uint)weigth,
+            },
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
+    /// Set the job's CPU rate is a hard limit. After the job reaches its CPU cycle limit for the current scheduling interval, no threads associated with the job will run until the next interval.
+    /// </summary>
+    /// <param name="minRate">
+    /// Specifies the minimum portion of the processor cycles that the threads in a job object can reserve during each scheduling interval.
+    /// Specify this rate as a percentage times 100. For example, to set a minimum rate of 50%, specify 50 times 100, or 5,000.
+    /// </param>
+    /// <param name="maxRate">
+    /// Specifies the maximum portion of processor cycles that the threads in a job object can use during each scheduling interval.
+    /// Specify this rate as a percentage times 100. For example, to set a maximum rate of 50%, specify 50 times 100, or 5,000.
+    ///
+    /// After the job reaches this limit for a scheduling interval, no threads associated with the job can run until the next scheduling interval.
+    /// </param>
+    public unsafe void SetCpuRate(int minRate, int maxRate)
+    {
+        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
+        {
+            ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_MIN_MAX_RATE,
+            Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
+            {
+                Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union._Anonymous_e__Struct
+                {
+                    MinRate = (ushort)minRate,
+                    MaxRate = (ushort)maxRate,
+                },
+            },
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
+    /// Set bandwidth limits for the job.
+    /// </summary>
+    /// <param name="maxBandwidth">The maximum bandwidth for outgoing network traffic for the job, in bytes.</param>
+    public unsafe void SetNetRateLimits(ulong maxBandwidth)
+    {
+        var restriction = new JOBOBJECT_NET_RATE_CONTROL_INFORMATION
+        {
+            ControlFlags = JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_ENABLE | JOB_OBJECT_NET_RATE_CONTROL_FLAGS.JOB_OBJECT_NET_RATE_CONTROL_MAX_BANDWIDTH,
+            MaxBandwidth = maxBandwidth,
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectNetRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_NET_RATE_CONTROL_INFORMATION>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
+    /// Set security limits for the job.
+    /// </summary>
+    public unsafe void SetSecurityLimits(JobObjectSecurityLimit securityLimit)
+    {
+        var restriction = new JOBOBJECT_SECURITY_LIMIT_INFORMATION
+        {
+            SecurityLimitFlags = (JOB_OBJECT_SECURITY)securityLimit,
+        };
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectSecurityLimitInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_SECURITY_LIMIT_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);

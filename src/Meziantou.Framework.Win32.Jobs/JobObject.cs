@@ -35,10 +35,20 @@ public sealed class JobObject : IDisposable
     /// </summary>
     /// <param name="name">The job object name. May be null.</param>
     public unsafe JobObject(string? name)
+        : this(name, inheritHandle: false)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JobObject"/> class.
+    /// </summary>
+    /// <param name="name">The job object name. May be null.</param>
+    /// <param name="inheritHandle">A Boolean value that specifies whether the returned handle is inherited when a new process is created. If this member is <see langword="true" />, the new process inherits the handle.</param>
+    public unsafe JobObject(string? name, bool inheritHandle)
     {
         var atts = new Windows.Win32.Security.SECURITY_ATTRIBUTES
         {
-            bInheritHandle = true,
+            bInheritHandle = inheritHandle,
             lpSecurityDescriptor = IntPtr.Zero.ToPointer(),
             nLength = (uint)Marshal.SizeOf(typeof(Windows.Win32.Security.SECURITY_ATTRIBUTES)),
         };

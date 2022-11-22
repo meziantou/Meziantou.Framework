@@ -43,6 +43,18 @@ job.SetCpuRateWeight(5); // 1 to 9
 
 // Network limits
 job.SetNetRateLimits(10000); // 10Kb/s
+
+// Security limits
+job.SetSecurityLimits(JobObjectSecurityLimit.NoAdmin);
+
+// IO Rate limits
+job.SetIoLimits(new JobIoRateLimits
+{
+    ControlFlags = JobIoRateFlags.Enable,
+    MaxBandwidth = 100,
+    MaxIops = 100,
+    ReservationIops = 100,
+});
 ````
 
 You can terminate all processes associated to the job:

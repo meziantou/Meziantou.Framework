@@ -291,6 +291,31 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
+    /// <summary>
+    /// Sets I/O limits on a job object.
+    /// </summary>
+    [SupportedOSPlatform("windows10.0.10240")]
+    public unsafe void SetIoLimits(JobIoRateLimits limits)
+    {
+        fixed (char* volumeNamePtr = limits.VolumeName)
+        {
+            var restriction = new JOBOBJECT_IO_RATE_CONTROL_INFORMATION
+            {
+                ControlFlags = (JOB_OBJECT_IO_RATE_CONTROL_FLAGS)limits.ControlFlags,
+                BaseIoSize = limits.BaseIoSize,
+                MaxBandwidth = limits.MaxBandwidth,
+                MaxIops = limits.MaxIops,
+                ReservationIops = limits.ReservationIops,
+                VolumeName = volumeNamePtr,
+            };
+
+            if (Windows.Win32.PInvoke.SetIoRateControlInformationJobObject(_jobHandle, in restriction) == 0)
+            {
+                var err = Marshal.GetLastWin32Error();
+                throw new Win32Exception(err);
+            }
+        }
+    }
 
     public unsafe bool IsAssignedToProcess(Process process)
     {

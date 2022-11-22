@@ -92,6 +92,19 @@ public class JobObjectTests
         using var job = new JobObject();
         job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
     }
+    
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void SetIoRateLimits()
+    {
+        using var job = new JobObject();
+        job.SetIoLimits(new JobIoRateLimits
+        {
+            ControlFlags = JobIoRateFlags.Enable,
+            MaxBandwidth = 100,
+            MaxIops = 100,
+            ReservationIops = 100,
+        });
+    }
 
     [RunIfFact(FactOperatingSystem.Windows)]
     public void IsAssignedToProcess_NotAssociated()

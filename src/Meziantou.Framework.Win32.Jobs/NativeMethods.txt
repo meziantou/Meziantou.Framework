@@ -1,6 +1,7 @@
 ﻿CreateJobObject
 OpenJobObject
 SetInformationJobObject
+SetIoRateControlInformationJobObject
 TerminateJobObject
 AssignProcessToJobObject
 CloseHandle

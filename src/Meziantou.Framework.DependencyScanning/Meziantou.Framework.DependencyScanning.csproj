@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="LibGit2Sharp" Version="0.27.0-preview-0182" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="YamlDotNet" Version="12.0.2" />
   </ItemGroup>
 

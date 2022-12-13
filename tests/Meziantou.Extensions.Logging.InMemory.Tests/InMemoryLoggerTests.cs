@@ -11,7 +11,7 @@ public sealed partial class InMemoryLoggerTests
     [Fact]
     public void WithoutScope()
     {
-        var logger = new InMemoryLogger("my_category");
+        var logger = new InMemoryLogger("my_category", NullExternalScopeProvider.Instance);
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
         logger.LogInformation("Test");
 #pragma warning restore CA1848
@@ -27,7 +27,7 @@ public sealed partial class InMemoryLoggerTests
     [Fact]
     public void WithScope()
     {
-        var logger = new InMemoryLogger("my_category");
+        var logger = new InMemoryLogger("my_category", new LoggerExternalScopeProvider());
         using (logger.BeginScope(new { Name = "test" }))
         using (logger.BeginScope(new { Age = 52, Name = "John" }))
         {
@@ -47,7 +47,7 @@ public sealed partial class InMemoryLoggerTests
     [Fact]
     public void WithScope_LoggerMessage()
     {
-        var logger = new InMemoryLogger("my_category");
+        var logger = new InMemoryLogger("my_category", new LoggerExternalScopeProvider());
         using (logger.BeginScope(new { Name = "test" }))
         using (logger.BeginScope(new { Age = 52, Name = "John" }))
         {
@@ -68,7 +68,7 @@ public sealed partial class InMemoryLoggerTests
     [Fact]
     public void LogManyMessages()
     {
-        var logger = new InMemoryLogger("my_category");
+        var logger = new InMemoryLogger("my_category", NullExternalScopeProvider.Instance);
         Parallel.For(0, 100_000, i => Log(logger, 1));
 
         logger.Logs.Should().HaveCount(100_000);

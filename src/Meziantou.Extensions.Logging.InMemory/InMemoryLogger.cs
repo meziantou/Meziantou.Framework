@@ -5,17 +5,19 @@ namespace Meziantou.Extensions.Logging.InMemory;
 public sealed class InMemoryLogger : ILogger
 {
     private readonly string? _category;
-    private readonly LoggerExternalScopeProvider _scopeProvider = new();
+    private readonly IExternalScopeProvider _scopeProvider;
 
     public InMemoryLogCollection Logs { get; } = new InMemoryLogCollection();
 
-    public InMemoryLogger()
+    public InMemoryLogger(IExternalScopeProvider scopeProvider)
     {
+        _scopeProvider = scopeProvider;
     }
 
-    public InMemoryLogger(string category)
+    public InMemoryLogger(string category, IExternalScopeProvider scopeProvider)
     {
         _category = category;
+        _scopeProvider = scopeProvider;
     }
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull

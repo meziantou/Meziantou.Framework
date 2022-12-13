@@ -21,8 +21,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
             {
                 _firstChunk = _lastChunk = new Chunk<InMemoryLogEntry>(16);
             }
-
-            if (_lastChunk.Count == _lastChunk.Items.Length)
+            else if (_lastChunk.Count == _lastChunk.Items.Length)
             {
                 var newCapacity = Math.Min(MaxChunkSize, _lastChunk.Count * 2);
                 var newChunk = new Chunk<InMemoryLogEntry>(newCapacity);
@@ -43,7 +42,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
         {
             for (var i = 0; i < chunk.Count; i++)
             {
-                sb.Append((InMemoryLogEntry?)chunk.Items[i]).AppendLine();
+                sb.Append(chunk.Items[i]).AppendLine();
             }
 
             chunk = chunk.Next;

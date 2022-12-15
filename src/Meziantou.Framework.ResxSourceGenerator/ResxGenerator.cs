@@ -1,5 +1,6 @@
 #pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
+using System.Collections.Immutable;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -48,15 +49,18 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        var compilationProvider = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
+                    (compilation.AssemblyName, SupportNullableReferenceTypes: compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute") != null));
+
+        var resxProvider = context.AdditionalTextsProvider.Where(text => text.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase)).Collect();
+
         context.RegisterSourceOutput(
-            source: context.AnalyzerConfigOptionsProvider.Combine(context.CompilationProvider.Combine(context.AdditionalTextsProvider.Where(text => text.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase)).Collect())),
-            action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left, source.Right.Right));
+            source: context.AnalyzerConfigOptionsProvider.Combine(compilationProvider.Combine(resxProvider)),
+            action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left.AssemblyName, source.Right.Left.SupportNullableReferenceTypes, source.Right.Right));
     }
 
-    private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, Compilation compilation, System.Collections.Immutable.ImmutableArray<AdditionalText> files)
+    private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, string assemblyName, bool supportNullableReferenceTypes, ImmutableArray<AdditionalText> files)
     {
-        var hasNotNullIfNotNullAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute") != null;
-
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
         var resxGroups = files
             .GroupBy(file => GetResourceName(file.Path), StringComparer.OrdinalIgnoreCase)
@@ -69,7 +73,6 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroug);
             var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroug);
             var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroug);
-            var assemblyName = compilation.AssemblyName;
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
             var projectDir = projectDirConfiguration ?? assemblyName ?? "";
@@ -113,7 +116,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
             if (resourceName != null && entries != null)
             {
-                content += GenerateCode(ns, className, resourceName, entries, hasNotNullIfNotNullAttribute);
+                content += GenerateCode(ns, className, resourceName, entries, supportNullableReferenceTypes);
             }
 
             context.AddSource($"{Path.GetFileName(resxGroug.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));

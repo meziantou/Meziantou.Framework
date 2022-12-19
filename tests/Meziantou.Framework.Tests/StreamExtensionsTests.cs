@@ -73,6 +73,7 @@ public sealed class StreamExtensionsTests
 
     private sealed class CustomStream : Stream
     {
+        [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Stream is owned by the caller")]
         private readonly Stream _stream;
         private readonly bool _canSeek;
 

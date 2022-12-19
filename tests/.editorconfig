@@ -1,7 +1,7 @@
 root = false
 
 [*.cs]
-# Validate nullable argument
+dotnet_diagnostic.CA1054.severity = none
 dotnet_diagnostic.CA1062.severity = none
 
 # Validate platform compatibility
@@ -10,6 +10,8 @@ dotnet_diagnostic.CA1416.severity = none
 # Remove underscore from member name
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1812.severity = none
+dotnet_diagnostic.CA1851.severity = none
+dotnet_diagnostic.CA2201.severity = none
 dotnet_diagnostic.CA2234.severity = none
 
 dotnet_diagnostic.MA0003.severity = none

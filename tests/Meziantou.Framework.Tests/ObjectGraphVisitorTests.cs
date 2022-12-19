@@ -27,7 +27,7 @@ public sealed class ObjectGraphVisitorTests
         visitor.VisitedValues.Should().Contain(new object[] { "a", "b" });
     }
 
-    private record Recursive(object Value, Recursive Parent);
+    private sealed record Recursive(object Value, Recursive Parent);
 
     private sealed class TestObjectGraphVisitor : ObjectGraphVisitor
     {

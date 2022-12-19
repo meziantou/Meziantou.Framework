@@ -882,7 +882,7 @@ public sealed class QueryBuilderTests
         query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
     }
 
-    public sealed class Sample
+    private sealed class Sample
     {
         public byte ByteValue { get; set; }
         public sbyte SByteValue { get; set; }

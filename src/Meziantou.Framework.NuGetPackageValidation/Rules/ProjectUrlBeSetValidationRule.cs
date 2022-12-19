@@ -12,9 +12,28 @@ internal sealed class ProjectUrlBeSetValidationRule : NuGetPackageValidationRule
         {
             context.ReportError(ErrorCodes.ProjectUrlNotSet, "Project url is not set");
         }
-        else if (!await ShareHttpClient.Instance.IsUrlAccessible(projectUrl, context.CancellationToken).ConfigureAwait(false))
+
+        if (!string.IsNullOrWhiteSpace(projectUrl))
         {
-            context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Project url '{projectUrl}' is not accessible");
+            if (!Uri.TryCreate(projectUrl, UriKind.Absolute, out var uri))
+            {
+                context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Project url '{projectUrl}' is not valid");
+            }
+            else if (!await ShareHttpClient.Instance.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
+            {
+                context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Project url '{projectUrl}' is not accessible");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(repositoryUrl))
+        {
+            if (Uri.TryCreate(repositoryUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+            {
+                if (!await ShareHttpClient.Instance.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
+                {
+                    context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Repository url '{projectUrl}' is not accessible");
+                }
+            }
         }
     }
 }

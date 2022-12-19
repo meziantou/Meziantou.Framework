@@ -123,7 +123,10 @@ public sealed class QueryStringService
 
     private static string? GetQueryStringParameterName(PropertyInfo property)
     {
+#pragma warning disable CS0618 // Type or member is obsolete
         var attribute = property.GetCustomAttribute<QueryStringParameterAttribute>();
+#pragma warning restore CS0618
+
         if (attribute != null)
             return attribute.Name ?? property.Name;
 

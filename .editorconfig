@@ -40,4 +40,8 @@ insert_final_newline = true
 
 [*.cs]
 dotnet_diagnostic.CA1008.severity = none
+dotnet_diagnostic.CA1308.severity = none
 dotnet_diagnostic.RS2008.severity = none
+
+[Samples/**/*.cs]
+dotnet_diagnostic.CA1852.severity = none

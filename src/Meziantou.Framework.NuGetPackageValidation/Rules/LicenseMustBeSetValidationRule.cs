@@ -17,7 +17,7 @@ internal sealed class LicenseMustBeSetValidationRule : NuGetPackageValidationRul
                 context.ReportError(ErrorCodes.LicenseFileNotFound, "License file not found", fileName: metadata.License);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(context.Package.NuspecReader.GetLicenseUrl()) || metadata?.LicenseUrl != null)
+        else if (!string.IsNullOrWhiteSpace(context.Package.NuspecReader.GetLicenseUrl()))
         {
             context.ReportError(ErrorCodes.UseDeprecatedLicenseUrl, "The nuspec file use the deprecated licenseUrl metadata");
         }

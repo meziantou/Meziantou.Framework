@@ -73,7 +73,7 @@ public static class ShortName
     /// <param name="names">The input collection of names to shorten. May not be null.</param>
     /// <param name="maxLength">Maximum length of computed short names.</param>
     /// <returns>A dictionary of shorten names</returns>
-    public static IDictionary<string, string> Create(IEnumerable<string> names, int maxLength)
+    public static IDictionary<string, string> Create(IReadOnlyCollection<string> names, int maxLength)
     {
         return Create(names, maxLength, StringComparer.OrdinalIgnoreCase);
     }
@@ -85,7 +85,7 @@ public static class ShortName
     /// <param name="maxLength">Maximum length of computed short names.</param>
     /// <param name="comparer">Comparer use to compare short names</param>
     /// <returns>A dictionary of shorten names</returns>
-    public static IDictionary<string, string> Create(IEnumerable<string> names, int maxLength, IEqualityComparer<string>? comparer)
+    public static IDictionary<string, string> Create(IReadOnlyCollection<string> names, int maxLength, IEqualityComparer<string>? comparer)
     {
         ArgumentNullException.ThrowIfNull(names);
 

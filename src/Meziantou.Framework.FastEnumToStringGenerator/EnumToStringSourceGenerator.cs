@@ -191,7 +191,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         return IsVisibleOutsideOfAssembly(symbol.ContainingType);
     }
 
-    private record EnumToProcess(ITypeSymbol EnumSymbol, List<EnumMemberToProcess> Members, bool IsPublic, string? Namespace)
+    private sealed record EnumToProcess(ITypeSymbol EnumSymbol, List<EnumMemberToProcess> Members, bool IsPublic, string? Namespace)
     {
         public string FullCsharpName => EnumSymbol.ToString()!;
         public string? FullNamespace => Namespace ?? GetNamespace(EnumSymbol);
@@ -218,5 +218,5 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         }
     }
 
-    private record EnumMemberToProcess(string Name, object Value);
+    private sealed record EnumMemberToProcess(string Name, object Value);
 }

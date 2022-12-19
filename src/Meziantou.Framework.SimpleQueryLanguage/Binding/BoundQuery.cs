@@ -25,7 +25,7 @@ public abstract class BoundQuery
             QuerySyntaxKind.AndQuery => CreateAndExpression((AndQuerySyntax)syntax),
             QuerySyntaxKind.NegatedQuery => CreateNegatedExpression((NegatedQuerySyntax)syntax),
             QuerySyntaxKind.ParenthesizedQuery => CreateParenthesizedExpression((ParenthesizedQuerySyntax)syntax),
-            _ => throw new Exception($"Unexpected node {syntax.Kind}"),
+            _ => throw new ArgumentOutOfRangeException(nameof(syntax), $"Unexpected node {syntax.Kind}"),
         };
     }
 
@@ -139,7 +139,7 @@ public abstract class BoundQuery
             BoundNegatedQuery negated => NegateNegatedQuery(negated),
             BoundAndQuery and => NegateAndQuery(and),
             BoundOrQuery or => NegateOrQuery(or),
-            _ => throw new Exception($"Unexpected node {node.GetType()}"),
+            _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node {node.GetType()}"),
         };
     }
 
@@ -273,7 +273,8 @@ public abstract class BoundQuery
                     writer.Indent--;
                     break;
                 default:
-                    throw new Exception($"Unexpected node {node.GetType()}");
+                    writer.WriteLine(node.GetType().FullName);
+                    break;
             }
 
             static string ToString(KeyValueOperator op)
@@ -286,7 +287,7 @@ public abstract class BoundQuery
                     KeyValueOperator.LessThanOrEqual => "<=",
                     KeyValueOperator.GreaterThan => ">",
                     KeyValueOperator.GreaterThanOrEqual => ">=",
-                    _ => throw new ArgumentOutOfRangeException(nameof(op)),
+                    _ => op.ToString(),
                 };
             }
         }

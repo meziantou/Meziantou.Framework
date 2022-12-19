@@ -47,8 +47,6 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
                 case QuerySyntaxKind.ParenthesizedQuery:
                     WalkParenthesizedExpression(writer, (ParenthesizedQuerySyntax)node);
                     break;
-                default:
-                    throw new Exception($"Unexpected node: {node.Kind}");
             }
         }
 

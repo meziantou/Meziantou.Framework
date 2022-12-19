@@ -3,7 +3,7 @@ internal static class ShareHttpClient
 {
     public static HttpClient Instance { get; } = CreateHttpClient();
 
-    public static async Task<bool> IsUrlAccessible(this HttpClient httpClient, string url, CancellationToken cancellationToken)
+    public static async Task<bool> IsUrlAccessible(this HttpClient httpClient, Uri url, CancellationToken cancellationToken)
     {
         try
         {
@@ -16,6 +16,7 @@ internal static class ShareHttpClient
         }
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False-positive")]
     private static HttpClient CreateHttpClient()
     {
         var socketHandler = new SocketsHttpHandler()

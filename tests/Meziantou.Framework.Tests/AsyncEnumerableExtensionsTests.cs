@@ -97,7 +97,7 @@ public sealed class AsyncEnumerableExtensionsTests
         (await CreateEnumerable(0, 1, 2, 3, 4).TakeWhileAsync(item => item < 3).ToListAsync()).Should().Equal(new[] { 0, 1, 2 });
     }
 
-    private record Dummy(string Value);
+    private sealed record Dummy(string Value);
 
     private static async IAsyncEnumerable<T> CreateEnumerable<T>(params T[] items)
     {

@@ -20,6 +20,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
     private static readonly Guid HashAlgorithmSha1 = new(0xFF1816EC, 0xAA5E, 0x4D10, 0x87, 0xF7, 0x6F, 0x49, 0x63, 0x83, 0x34, 0x60);
     private static readonly Guid HashAlgorithmSha256 = new(0x8829D00F, 0x11B8, 0x4213, 0x87, 0x8B, 0x77, 0x0E, 0x85, 0x97, 0xAC, 0x16);
 
+    [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "SHA1 is not use for crypto")]
     public override async Task ExecuteAsync(NuGetPackageValidationContext context)
     {
         var allItems = new List<string>();
@@ -186,9 +187,15 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         {
                             if (!context.IsRuleExcluded(ErrorCodes.UrlIsNotAccessible) && !context.IsRuleExcluded(ErrorCodes.FileHashIsNotValid))
                             {
+                                if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                                {
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not a valid uri", fileName: item);
+                                    continue;
+                                }
+
                                 try
                                 {
-                                    using var response = await ShareHttpClient.Instance.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
+                                    using var response = await ShareHttpClient.Instance.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
                                     if (!response.IsSuccessStatusCode)
                                     {
                                         context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
@@ -238,7 +245,10 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 }
                 finally
                 {
+#pragma warning disable CA1508 // Avoid dead conditional code
                     peReader?.Dispose();
+#pragma warning restore CA1508
+
                     metadataReaderProvider?.Dispose();
                     if (pdbStreamSeekable != null)
                     {

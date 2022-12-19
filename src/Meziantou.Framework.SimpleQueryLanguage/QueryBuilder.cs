@@ -11,8 +11,8 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
     private readonly Dictionary<FilterKeyValue, Func<T, KeyValueOperator, string, bool>> _filters = new();
-    private Func<T, string, bool>? _freeTextFilter = null;
-    private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter = null;
+    private Func<T, string, bool>? _freeTextFilter;
+    private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter;
 
     private void AddHandler(string key, string? value, Func<T, KeyValueOperator, string, bool> handler)
     {
@@ -196,7 +196,7 @@ public sealed class QueryBuilder<T>
         {
             BoundTextQuery textQuery => CreatePredicate(textQuery),
             BoundKeyValueQuery keyValueQuery => CreatePredicate(keyValueQuery),
-            _ => throw new Exception($"Unexpected node: {node.GetType()}")
+            _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node: {node.GetType()}")
         };
     }
 
@@ -234,7 +234,7 @@ public sealed class QueryBuilder<T>
         return CreatePredicate(new BoundTextQuery(node.IsNegated, $"{node.Key}:{node.Value}"));
     }
 
-    private record struct FilterKeyValue
+    private readonly record struct FilterKeyValue
     {
         public FilterKeyValue(string key, string? value)
         {

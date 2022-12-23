@@ -74,7 +74,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
-            return (syntax.IsKind(SyntaxKind.StructDeclaration) || syntax.IsKind(SyntaxKind.ClassDeclaration) || syntax.IsKind(SyntaxKind.RecordDeclaration)) &&
+            return (syntax.IsKind(SyntaxKind.StructDeclaration) || syntax.IsKind(SyntaxKind.ClassDeclaration) || syntax.IsKind(SyntaxKind.RecordDeclaration) || syntax.IsKind(SyntaxKind.RecordStructDeclaration)) &&
                    ((TypeDeclarationSyntax)syntax).AttributeLists.Count > 0;
         }
 
@@ -291,6 +291,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         {
             { IsClass: true } => new ClassDeclaration(source.Name) { Modifiers = Modifiers.Partial },
             { IsRecord: true } => new RecordDeclaration(source.Name) { Modifiers = Modifiers.Partial },
+            { IsRecordStruct: true } => new RecordStructDeclaration(source.Name) { Modifiers = Modifiers.Partial },
             _ => new StructDeclaration(source.Name) { Modifiers = Modifiers.Partial },
         };
 
@@ -301,7 +302,13 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         {
             if (containingSymbol is ITypeSymbol typeSymbol)
             {
-                TypeDeclaration typeDeclaration = typeSymbol.IsValueType ? new StructDeclaration() : new ClassDeclaration();
+                TypeDeclaration typeDeclaration = (typeSymbol.IsValueType, typeSymbol.IsRecord) switch
+                {
+                    (false, false) => new ClassDeclaration(),
+                    (false, true) => new RecordDeclaration(),
+                    (true, false) => new StructDeclaration(),
+                    (true, true) => new RecordStructDeclaration(),
+                };
                 typeDeclaration.Name = typeSymbol.Name;
                 typeDeclaration.Modifiers = Modifiers.Partial;
 
@@ -376,6 +383,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     {
         public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
         public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
+        public bool IsRecordStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordStructDeclaration);
         public bool IsStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.StructDeclaration);
         public bool IsReferenceType => IsClass || IsRecord;
 

@@ -52,6 +52,7 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdClassUInt64), "FromUInt64", (ulong) 42 },
 
             { typeof(IdRecordInt32), "FromInt32", 42 },
+            { typeof(IdRecordStructInt32), "FromInt32", 42 },
         };
     }
 
@@ -353,6 +354,11 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(int))]
     private sealed partial record IdRecordInt32
+    {
+    }
+    
+    [StronglyTypedId(typeof(int))]
+    private partial record struct IdRecordStructInt32
     {
     }
 

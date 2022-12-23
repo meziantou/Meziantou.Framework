@@ -245,6 +245,10 @@ public class Visitor
                 VisitRecordDeclaration(recordDeclaration);
                 break;
 
+            case RecordStructDeclaration recordStructDeclaration:
+                VisitRecordStructDeclaration(recordStructDeclaration);
+                break;
+
             case ThisExpression thisExpression:
                 VisitThisExpression(thisExpression);
                 break;
@@ -852,6 +856,15 @@ public class Visitor
         VisitTypeDeclarationContainer(recordDeclaration);
         VisitTypeReferenceCollection(recordDeclaration.Implements);
         VisitTypeReferenceIfNotNull(recordDeclaration.BaseType);
+    }
+    
+    public virtual void VisitRecordStructDeclaration(RecordStructDeclaration recordDeclaration)
+    {
+        VisitTypeDeclaration(recordDeclaration);
+        VisitMemberContainer(recordDeclaration);
+        VisitParametrableType(recordDeclaration);
+        VisitTypeDeclarationContainer(recordDeclaration);
+        VisitTypeReferenceCollection(recordDeclaration.Implements);
     }
 
     public virtual void VisitExpressions(CodeObjectCollection<Expression> expressions)

@@ -292,7 +292,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
 ");
 
-        foreach (var entry in entries.OrderBy(e => e.Name))
+        foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
         {
             if (string.IsNullOrEmpty(entry.Name))
                 continue;

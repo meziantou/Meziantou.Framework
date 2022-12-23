@@ -196,6 +196,10 @@ public partial class CSharpCodeGenerator
                 WriteRecordDeclaration(writer, o);
                 break;
 
+            case RecordStructDeclaration o:
+                WriteRecordStructDeclaration(writer, o);
+                break;
+
             default:
                 throw new NotSupportedException();
         }
@@ -603,6 +607,29 @@ public partial class CSharpCodeGenerator
 
         writer.WriteLine();
         WriteGenericParameterConstraints(writer, type);
+
+        writer.WriteLine("{");
+        writer.Indent++;
+        WriteLines(writer, Concat(type.Members, type.Types), endOfLine: null);
+        writer.Indent--;
+        writer.WriteLine("}");
+    }
+
+    protected virtual void WriteRecordStructDeclaration(IndentedTextWriter writer, RecordStructDeclaration type)
+    {
+        writer.Write("record struct ");
+        WriteIdentifier(writer, type.Name);
+        WriteGenericParameters(writer, type);
+
+        writer.WriteLine();
+        WriteGenericParameterConstraints(writer, type);
+
+        var baseTypes = type.Implements;
+        if (baseTypes.Any())
+        {
+            writer.Write(" : ");
+            WriteTypeReferences(writer, baseTypes, ", ");
+        }
 
         writer.WriteLine("{");
         writer.Indent++;

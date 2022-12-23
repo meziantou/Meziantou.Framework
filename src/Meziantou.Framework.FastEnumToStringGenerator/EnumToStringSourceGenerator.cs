@@ -133,10 +133,10 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
     {
         var sb = new StringBuilder();
 
-        foreach (var enumerationGroup in enums.GroupBy(en => en.FullNamespace, StringComparer.Ordinal))
+        foreach (var enumerationGroup in enums.GroupBy(en => en.FullNamespace, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
         {
             var typeVisibility = enumerationGroup.Any(enumeration => enumeration.IsPublic) ? "public" : "internal";
-            foreach (var enumeration in enumerationGroup)
+            foreach (var enumeration in enumerationGroup.OrderBy(e => e.FullCsharpName, StringComparer.Ordinal))
             {
                 var methodVisibility = enumeration.IsPublic ? "public" : "internal";
 

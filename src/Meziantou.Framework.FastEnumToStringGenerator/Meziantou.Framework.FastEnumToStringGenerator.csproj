@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <Description>Generate a faster ToString method for enumerations</Description>
 
     <developmentDependency>true</developmentDependency>

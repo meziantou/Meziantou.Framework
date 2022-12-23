@@ -64,6 +64,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
         var resxGroups = files
             .GroupBy(file => GetResourceName(file.Path), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x.Key, StringComparer.Ordinal)
             .ToList();
 
         foreach (var resxGroug in resxGroups)

@@ -282,7 +282,7 @@ public partial class StronglyTypedIdSourceGenerator
                     }
                     using (writer.BeginBlock("else"))
                     {
-                        writer.WriteLine("return TryParse(value.AsSpan(), out result);");
+                        writer.WriteLine("return TryParse(global::System.MemoryExtensions.AsSpan(value), out result);");
                     }
                 }
                 else
@@ -328,9 +328,10 @@ public partial class StronglyTypedIdSourceGenerator
                                 writer.WriteLine($"if (global::System.Guid.TryParse(value, out var parsedValue))");
                                 break;
 
-                            case IdType.System_Decimal:
-                            case IdType.System_Double:
+                            case IdType.System_Half:
                             case IdType.System_Single:
+                            case IdType.System_Double:
+                            case IdType.System_Decimal:
                             case IdType.System_Byte:
                             case IdType.System_SByte:
                             case IdType.System_Int16:
@@ -341,6 +342,7 @@ public partial class StronglyTypedIdSourceGenerator
                             case IdType.System_UInt32:
                             case IdType.System_UInt64:
                             case IdType.System_UInt128:
+                            case IdType.System_Numerics_BigInteger:
                                 writer.WriteLine($"if ({GetTypeReference(idType)}.TryParse(value, global::System.Globalization.NumberStyles.Any, global::System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))");
                                 break;
 

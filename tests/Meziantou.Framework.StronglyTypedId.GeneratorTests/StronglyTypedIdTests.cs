@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Globalization;
+using System.Numerics;
 using System.Reflection;
 using FluentAssertions;
 using MongoDB.Bson;
@@ -18,6 +20,7 @@ public sealed partial class StronglyTypedIdTests
 
         return new TheoryData<Type, string, object>
         {
+            { typeof(IdBigInteger), "FromBigInteger", BigInteger.Parse("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890", CultureInfo.InvariantCulture) },
             { typeof(IdBoolean), "FromBoolean", true },
             { typeof(IdByte), "FromByte", (byte)42 },
             { typeof(IdDateTime), "FromDateTime", now },
@@ -25,11 +28,12 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdDecimal), "FromDecimal", 42m },
             { typeof(IdDouble), "FromDouble", 42d },
             { typeof(IdGuid), "FromGuid", Guid.NewGuid() },
+            { typeof(IdHalf), "FromHalf", Half.MaxValue },
             { typeof(IdInt16), "FromInt16", (short)42 },
             { typeof(IdInt32), "FromInt32", 42 },
             { typeof(IdInt64), "FromInt64", 42L },
 #if NET7_0_OR_GREATER
-            { typeof(IdInt128), "FromInt128", new Int128(0ul, 42ul) },
+            { typeof(IdInt128), "FromInt128", Int128.MaxValue },
 #endif
             { typeof(IdSByte), "FromSByte", (sbyte)42 },
             { typeof(IdSingle), "FromSingle", 42f },
@@ -38,7 +42,7 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdUInt32), "FromUInt32", (uint) 42 },
             { typeof(IdUInt64), "FromUInt64", (ulong) 42 },
 #if NET7_0_OR_GREATER
-            { typeof(IdUInt128), "FromUInt128", new UInt128(0ul, 42ul) },
+            { typeof(IdUInt128), "FromUInt128", UInt128.MaxValue },
 #endif
 
             { typeof(IdClassBoolean), "FromBoolean", true },
@@ -81,9 +85,6 @@ public sealed partial class StronglyTypedIdTests
         }
 
         // Newtonsoft.Json
-#if NET7_0_OR_GREATER
-        if (value is not Int128 and not UInt128)
-#endif
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(instance);
             var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
@@ -104,9 +105,6 @@ public sealed partial class StronglyTypedIdTests
         }
 
         // BsonConverter
-#if NET7_0_OR_GREATER
-        if (value is not Int128 and not UInt128)
-#endif
         {
             var json = BsonExtensionMethods.ToJson(instance, type);
             var deserialized = BsonSerializer.Deserialize(json, type);
@@ -216,14 +214,14 @@ public sealed partial class StronglyTypedIdTests
         var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null");
         action.Should().Throw<JsonException>();
     }
-    
+
     [Fact]
     public void NewtonsoftJson_IdRecordStructInt32_ParseNull()
     {
         var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdRecordStructInt32>("null");
         action.Should().Throw<JsonException>();
     }
-    
+
     [Fact]
     public void NewtonsoftJson_NullableInt32_ParseNull()
     {
@@ -237,6 +235,90 @@ public sealed partial class StronglyTypedIdTests
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("42");
         value.Value.Value.Should().Be(42);
     }
+
+#if NET7_0_OR_GREATER
+    [Fact]
+    public void NewtonsoftJson_Int128_ParseStringValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("\"170141183460469231731687303715884105727\"");
+        value.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int128_ParseLargeIntValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("170141183460469231731687303715884105727");
+        value.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_Int128_ParseIntValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("42");
+        value.Value.Value.Should().Be(Int128.Parse("42", CultureInfo.InvariantCulture));
+    }
+    [Fact]
+    public void NewtonsoftJson_UInt128_ParseStringValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("\"340282366920938463463374607431768211455\"");
+        value.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_UInt128_ParseLargeIntValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("340282366920938463463374607431768211455");
+        value.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void NewtonsoftJson_UInt128_ParseIntValue()
+    {
+        var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("42");
+        value.Value.Value.Should().Be(UInt128.Parse("42", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void SystemTextJson_Int128_ParseStringValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("\"170141183460469231731687303715884105727\"");
+        value.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void SystemTextJson_Int128_ParseLargeIntValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("170141183460469231731687303715884105727");
+        value.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void SystemTextJson_Int128_ParseIntValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("42");
+        value.Value.Value.Should().Be(Int128.Parse("42", CultureInfo.InvariantCulture));
+    }
+    [Fact]
+    public void SystemTextJson_UInt128_ParseStringValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("\"340282366920938463463374607431768211455\"");
+        value.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void SystemTextJson_UInt128_ParseLargeIntValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("340282366920938463463374607431768211455");
+        value.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void SystemTextJson_UInt128_ParseIntValue()
+    {
+        var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("42");
+        value.Value.Value.Should().Be(UInt128.Parse("42", CultureInfo.InvariantCulture));
+    }
+#endif
 
     [Fact]
     public void NewtonsoftJson_IdClassString_ParseNull()
@@ -301,9 +383,15 @@ public sealed partial class StronglyTypedIdTests
     private partial struct IdInt64 { }
 
 #if NET7_0_OR_GREATER
-    [StronglyTypedId(typeof(Int128), generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    [StronglyTypedId(typeof(Int128))]
     private partial struct IdInt128 { }
 #endif
+
+    [StronglyTypedId(typeof(BigInteger))]
+    private partial struct IdBigInteger { }
+
+    [StronglyTypedId(typeof(Half))]
+    private partial struct IdHalf { }
 
     [StronglyTypedId(typeof(sbyte))]
     private partial struct IdSByte { }
@@ -324,7 +412,7 @@ public sealed partial class StronglyTypedIdTests
     private partial struct IdUInt64 { }
 
 #if NET7_0_OR_GREATER
-    [StronglyTypedId(typeof(UInt128), generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    [StronglyTypedId(typeof(UInt128))]
     private partial struct IdUInt128 { }
 #endif
 

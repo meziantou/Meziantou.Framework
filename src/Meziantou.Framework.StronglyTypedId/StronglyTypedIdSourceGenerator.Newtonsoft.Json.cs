@@ -30,7 +30,18 @@ public partial class StronglyTypedIdSourceGenerator
                 }
                 using (writer.BeginBlock("else"))
                 {
-                    writer.WriteLine($"writer.WriteValue((({context.Name})value).Value);");
+                    if (idType is IdType.System_Half)
+                    {
+                        writer.WriteLine($"writer.WriteValue((float)(({context.Name})value).Value);");
+                    }
+                    else if (idType is IdType.System_Int128 or IdType.System_UInt128)
+                    {
+                        writer.WriteLine($"writer.WriteRawValue((({context.Name})value).ValueAsString);");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"writer.WriteValue((({context.Name})value).Value);");
+                    }
                 }
             }
 
@@ -73,7 +84,20 @@ public partial class StronglyTypedIdSourceGenerator
                 }
                 using (writer.BeginBlock("else"))
                 {
-                    writer.WriteLine($"{left}new {context.Name}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                    if (idType is IdType.System_Half)
+                    {
+                        writer.WriteLine($"{left}new {context.Name}(({GetTypeReference(idType)})serializer.Deserialize<float>(reader));");
+                    }
+                    else if (idType is IdType.System_Int128 or IdType.System_UInt128)
+                    {
+                        writer.WriteLine($"{left}new {context.Name}(({GetTypeReference(idType)})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"#nullable disable");
+                        writer.WriteLine($"{left}new {context.Name}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                        writer.WriteLine($"#nullable enable");
+                    }
                 }
             }
         }

@@ -28,7 +28,7 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     writer.WriteLine("writer.WriteBooleanValue(value.Value);");
                 }
-                else if (idType is IdType.System_Int128 or IdType.System_UInt128)
+                else if (idType is IdType.System_Int128 or IdType.System_UInt128 or IdType.System_Numerics_BigInteger or IdType.System_Half)
                 {
                     writer.WriteLine("writer.WriteRawValue(value.ValueAsString);");
                 }
@@ -127,7 +127,7 @@ public partial class StronglyTypedIdSourceGenerator
 
         void ReadValue(string? left = null)
         {
-            if (idType is IdType.System_Int128 or IdType.System_UInt128)
+            if (idType is IdType.System_Int128 or IdType.System_UInt128 or IdType.System_Numerics_BigInteger or IdType.System_Half)
             {
                 writer.BeginBlock("if (reader.HasValueSequence)");
                 writer.WriteLine($"{left}{context.Name}.Parse(global::System.Text.EncodingExtensions.GetString(global::System.Text.Encoding.UTF8, reader.ValueSequence));");
@@ -138,7 +138,9 @@ public partial class StronglyTypedIdSourceGenerator
             }
             else
             {
-                writer.WriteLine($"{left} new {context.Name}(reader.Get{GetShortName(idType)}());");
+                writer.WriteLine($"#nullable disable");
+                writer.WriteLine($"{left}new {context.Name}(reader.Get{GetShortName(idType)}());");
+                writer.WriteLine($"#nullable enable");
             }
         }
     }

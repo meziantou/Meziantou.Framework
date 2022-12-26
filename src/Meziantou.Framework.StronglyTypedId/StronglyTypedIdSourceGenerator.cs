@@ -64,14 +64,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         category: "StronglyTypedId",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
-    
-    private static readonly DiagnosticDescriptor UnsuportedSerializer = new(
-        id: "MFSTID0002",
-        title: "Not supported serializer",
-        messageFormat: "The serializer '{0}' is not supported for type '{1}'",
-        category: "StronglyTypedId",
-        DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -234,18 +226,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 continue;
             }
 
-            if(idType is IdType.System_Int128 or IdType.System_UInt128 && converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(UnsuportedSerializer, declaredTypeSymbol.Locations.FirstOrDefault(), "Newtonsoft.Json", type.ToDisplayString()));
-                continue;
-            }
-
-            if(idType is IdType.System_Int128 or IdType.System_UInt128 && converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(UnsuportedSerializer, declaredTypeSymbol.Locations.FirstOrDefault(), "MongoDB.Bson", type.ToDisplayString()));
-                continue;
-            }
-
             return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
         }
 
@@ -275,6 +255,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Guid")))
             return IdType.System_Guid;
 
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Half")))
+            return IdType.System_Half;
+
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int16")))
             return IdType.System_Int16;
 
@@ -286,6 +269,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int128")))
             return IdType.System_Int128;
+
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Numerics.BigInteger")))
+            return IdType.System_Numerics_BigInteger;
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.SByte")))
             return IdType.System_SByte;
@@ -322,10 +308,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             IdType.System_Decimal => "decimal",
             IdType.System_Double => "double",
             IdType.System_Guid => "global::System.Guid",
+            IdType.System_Half => "global::System.Half",
             IdType.System_Int16 => "short",
             IdType.System_Int32 => "int",
             IdType.System_Int64 => "long",
             IdType.System_Int128 => "global::System.Int128",
+            IdType.System_Numerics_BigInteger => "global::System.Numerics.BigInteger",
             IdType.System_SByte => "sbyte",
             IdType.System_Single => "float",
             IdType.System_String => "string",
@@ -353,10 +341,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             IdType.System_Decimal => "Decimal",
             IdType.System_Double => "Double",
             IdType.System_Guid => "Guid",
+            IdType.System_Half => "Half",
             IdType.System_Int16 => "Int16",
             IdType.System_Int32 => "Int32",
             IdType.System_Int64 => "Int64",
             IdType.System_Int128 => "Int128",
+            IdType.System_Numerics_BigInteger => "BigInteger",
             IdType.System_SByte => "SByte",
             IdType.System_Single => "Single",
             IdType.System_String => "String",
@@ -568,10 +558,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         System_Decimal,
         System_Double,
         System_Guid,
+        System_Half,
         System_Int16,
         System_Int32,
         System_Int64,
         System_Int128,
+        System_Numerics_BigInteger,
         System_SByte,
         System_Single,
         System_String,

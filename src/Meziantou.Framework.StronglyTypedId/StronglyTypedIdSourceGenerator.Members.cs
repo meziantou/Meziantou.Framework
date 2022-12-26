@@ -1,258 +1,208 @@
-using System.Globalization;
-using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    // ISpanFormattable
-    private static void GenerateTypeMembers(Compilation compilation, ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context)
+    private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, Compilation compilation, StronglyTypedIdInfo context)
     {
+        var isFirstMember = true;
+        void WriteNewMember()
+        {
+            StronglyTypedIdSourceGenerator.WriteNewMember(writer, context, addNewLine: !isFirstMember);
+            isFirstMember = false;
+        }
+
         var idType = context.AttributeInfo.IdType;
-        var typeReference = GetTypeReference(idType);
-        var shortName = GetShortName(typeReference);
+        var shortName = GetShortName(idType);
 
         // Field
         if (!context.IsFieldDefined())
         {
-            _ = structDeclaration.AddMember(new FieldDeclaration(FieldName, typeReference) { Modifiers = Modifiers.Private | Modifiers.ReadOnly });
+            WriteNewMember();
+            writer.WriteLine($"private readonly {GetTypeReference(idType)} {FieldName};");
         }
 
         // Value
         if (!context.IsValueDefined())
         {
-            var valuePropertyDeclaration = structDeclaration.AddMember(new PropertyDeclaration(PropertyName, typeReference) { Modifiers = Modifiers.Public });
-            valuePropertyDeclaration.Getter = new PropertyAccessorDeclaration(new ReturnStatement(new MemberReferenceExpression(new ThisExpression(), FieldName)));
+            WriteNewMember();
+            writer.WriteLine($"public {GetTypeReference(idType)} {PropertyName} => {FieldName};");
         }
 
         // ValueAsString
         if (!context.IsValueAsStringDefined())
         {
-            var valueAsStringProperty = structDeclaration.AddMember(new PropertyDeclaration(PropertyAsStringName, typeof(string)) { Modifiers = Modifiers.Public });
-            valueAsStringProperty.Getter = new PropertyAccessorDeclaration(new ReturnStatement(ValueToStringExpression()));
-        }
+            WriteNewMember();
+            writer.WriteLine($"public string {PropertyAsStringName} => {ValueToStringExpression()};");
 
-        MemberReferenceExpression CreateValuePropertyRef() => new(new ThisExpression(), PropertyName);
-        MemberReferenceExpression CreateValueAsStringPropertyRef() => new(new ThisExpression(), PropertyAsStringName);
+            string ValueToStringExpression()
+            {
+                if (idType == IdType.System_String)
+                    return PropertyName;
 
-        Expression ValueToStringExpression()
-        {
-            var valueProperty = CreateValuePropertyRef();
-            if (idType == IdType.System_String)
-                return valueProperty;
+                if (idType == IdType.System_Boolean || idType == IdType.System_Guid)
+                    return $"{PropertyName}.ToString()";
 
-            if (idType == IdType.System_Boolean || idType == IdType.System_Guid)
-                return valueProperty.Member("ToString").InvokeMethod();
+                if (idType == IdType.System_DateTime)
+                    return $"{PropertyName}.ToString(\"o\", global::System.Globalization.CultureInfo.InvariantCulture)";
 
-            if (idType == IdType.System_DateTime)
-                return valueProperty.Member("ToString").InvokeMethod("o", Expression.Member(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)));
+                if (idType == IdType.System_DateTimeOffset)
+                    return $"{PropertyName}.UtcDateTime.ToString(\"o\", global::System.Globalization.CultureInfo.InvariantCulture)";
 
-            if (idType == IdType.System_DateTimeOffset)
-                return valueProperty.Member("UtcDateTime").Member("ToString").InvokeMethod("o", Expression.Member(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)));
-
-            return valueProperty.Member("ToString").InvokeMethod(Expression.Member(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)));
+                return $"{PropertyName}.ToString(global::System.Globalization.CultureInfo.InvariantCulture)";
+            }
         }
 
         // ctor
         if (!context.IsCtorDefined())
         {
-            var constructor = structDeclaration.AddMember(new ConstructorDeclaration { Modifiers = GetPrivateOrProtectedModifier(context) });
-            var constructorArg = constructor.Arguments.Add(typeReference, "value");
-            constructor.Statements = new StatementCollection { new AssignStatement(new MemberReferenceExpression(new ThisExpression(), FieldName), constructorArg) };
+            WriteNewMember();
+            using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.Name}({GetTypeReference(idType)} value)"))
+            {
+                writer.WriteLine($"{FieldName} = value;");
+            }
         }
 
         // From
-        var fromMethod = structDeclaration.AddMember(new MethodDeclaration("From" + shortName) { Modifiers = Modifiers.Public | Modifiers.Static });
-        fromMethod.ReturnType = structDeclaration;
-        var fromMethodArg = fromMethod.Arguments.Add(typeReference, "value");
-        fromMethod.Statements = new StatementCollection { new ReturnStatement(new NewObjectExpression(structDeclaration, fromMethodArg)) };
+        WriteNewMember();
+        writer.WriteLine($"public static {context.Name} From{shortName}({GetTypeReference(idType)} value) => new {context.Name}(value);");
 
         // ToString
         if (!context.IsToStringDefined())
         {
-            var toStringMethod = structDeclaration.AddMember(new MethodDeclaration("ToString") { Modifiers = Modifiers.Public | Modifiers.Override });
-            toStringMethod.ReturnType = typeof(string);
-            if (IsNullable(idType))
+            WriteNewMember();
+            using (writer.BeginBlock("public override string ToString()"))
             {
-                toStringMethod.Statements = new ConditionStatement
+                if (IsNullable(idType))
                 {
-                    Condition = Expression.EqualsNull(CreateValuePropertyRef()),
-                    TrueStatements = new ReturnStatement(structDeclaration.Name + " { Value = <null> }"),
-                    FalseStatements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", CreateValueAsStringPropertyRef(), " }")),
-                };
-            }
-            else
-            {
-                toStringMethod.Statements = new ReturnStatement(Expression.Add(structDeclaration.Name + " { Value = ", CreateValueAsStringPropertyRef(), " }"));
+                    using (writer.BeginBlock($"if ({PropertyName} == null)"))
+                    {
+                        writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                    }
+                    using (writer.BeginBlock("else"))
+                    {
+                        writer.WriteLine($$"""return "{{context.Name}} { Value = <null> }";""");
+                    }
+                }
+                else
+                {
+                    writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                }
             }
         }
 
         // if Guid => New
         if (idType == IdType.System_Guid)
         {
-            var newMethod = structDeclaration.AddMember(new MethodDeclaration("New") { Modifiers = Modifiers.Public | Modifiers.Static });
-            newMethod.ReturnType = structDeclaration;
-            newMethod.Statements = new StatementCollection { new ReturnStatement(new NewObjectExpression(structDeclaration, new MethodInvokeExpression(new MemberReferenceExpression(typeof(Guid), nameof(Guid.NewGuid))))) };
+            WriteNewMember();
+            writer.WriteLine($"public static {context.Name} New() => new {context.Name}(global::System.Guid.NewGuid());");
         }
 
         // GetHashCode
         if (!context.IsGetHashcodeDefined())
         {
-            var getHashCodeMethod = structDeclaration.AddMember(new MethodDeclaration("GetHashCode") { Modifiers = Modifiers.Public | Modifiers.Override });
-            getHashCodeMethod.ReturnType = typeof(int);
+            WriteNewMember();
             if (IsNullable(idType))
             {
-                getHashCodeMethod.Statements = new ConditionStatement
-                {
-                    Condition = Expression.EqualsNull(CreateValuePropertyRef()),
-                    TrueStatements = new ReturnStatement(0),
-                    FalseStatements = new ReturnStatement(CreateValuePropertyRef().Member("GetHashCode").InvokeMethod()),
-                };
+                writer.WriteLine($"public override int GetHashCode() => {PropertyName} == null ? 0 : {PropertyName}.GetHashCode();");
             }
             else
             {
-                getHashCodeMethod.Statements = new ReturnStatement(CreateValuePropertyRef().Member("GetHashCode").InvokeMethod());
+                writer.WriteLine($"public override int GetHashCode() => {PropertyName}.GetHashCode();");
             }
         }
 
         // IEquatable<T>
-        structDeclaration.Implements.Add(new TypeReference(typeof(IEquatable<>)).MakeGeneric(structDeclaration));
         if (!context.IsIEquatableEqualsDefined())
         {
-            var equalsTypedMethod = structDeclaration.AddMember(new MethodDeclaration("Equals") { Modifiers = Modifiers.Public });
-            equalsTypedMethod.ReturnType = typeof(bool);
-
-            var equalsTypedMethodArg = equalsTypedMethod.Arguments.Add(structDeclaration, "other");
-            equalsTypedMethod.Statements = new StatementCollection
-            {
-                new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, CreateValuePropertyRef(), new MemberReferenceExpression(equalsTypedMethodArg, "Value"))),
-            };
-
+            WriteNewMember();
             if (context.IsReferenceType)
             {
-                equalsTypedMethodArg.Type = equalsTypedMethodArg.Type?.MakeNullable();
-                equalsTypedMethod.Statements.Insert(0, new ConditionStatement
-                {
-                    Condition = Expression.ReferenceEqualsNull(equalsTypedMethodArg),
-                    TrueStatements = new ReturnStatement(Expression.False()),
-                });
+                writer.WriteLine($"public bool Equals({context.Name}? other) => other != null && {PropertyName} == other.{PropertyName};");
+            }
+            else
+            {
+                writer.WriteLine($"public bool Equals({context.Name} other) => {PropertyName} == other.{PropertyName};");
             }
         }
 
         // Equals
         if (!context.IsEqualsDefined())
         {
-            var equalsMethod = structDeclaration.AddMember(new MethodDeclaration("Equals") { Modifiers = Modifiers.Public | Modifiers.Override });
-            equalsMethod.ReturnType = typeof(bool);
-            var equalsMethodArg = equalsMethod.Arguments.Add(new TypeReference(typeof(object)).MakeNullable(), "other");
-            equalsMethod.Statements = new StatementCollection
-            {
-                new ConditionStatement()
-                {
-                    Condition = new IsInstanceOfTypeExpression(equalsMethodArg, structDeclaration),
-                    TrueStatements = new ReturnStatement(new MethodInvokeExpression(new ThisExpression().Member("Equals"), new CastExpression(equalsMethodArg, structDeclaration))),
-                    FalseStatements = new ReturnStatement(Expression.False()),
-                },
-            };
+            WriteNewMember();
+            writer.WriteLine($"public override bool Equals(object? other) => other is {context.Name} value && Equals(value);");
         }
 
         // Operator ==
         if (!context.IsOpEqualsDefined())
         {
-            var equalsOperatorMethod = structDeclaration.AddMember(new OperatorDeclaration("==") { Modifiers = Modifiers.Public | Modifiers.Static });
-            equalsOperatorMethod.ReturnType = typeof(bool);
-            var equalsOperatorMethodArg1 = equalsOperatorMethod.Arguments.Add(structDeclaration, "a");
-            var equalsOperatorMethodArg2 = equalsOperatorMethod.Arguments.Add(structDeclaration, "b");
+            WriteNewMember();
             if (context.IsReferenceType)
             {
-                equalsOperatorMethodArg1.Type = equalsOperatorMethodArg1.Type?.MakeNullable();
-                equalsOperatorMethodArg2.Type = equalsOperatorMethodArg2.Type?.MakeNullable();
+                writer.WriteLine($"public static bool operator ==({context.Name}? a, {context.Name}? b) => global::System.Collections.Generic.EqualityComparer<{context.Name}>.Default.Equals(a, b);");
             }
-
-            equalsOperatorMethod.Statements.Add(
-                new ReturnStatement(
-                    new MethodInvokeExpression(
-                        new MemberReferenceExpression(new MemberReferenceExpression(new TypeReference(typeof(EqualityComparer<>)).MakeGeneric(structDeclaration), "Default"), "Equals"),
-                        equalsOperatorMethodArg1,
-                        equalsOperatorMethodArg2)));
+            else
+            {
+                writer.WriteLine($"public static bool operator ==({context.Name} a, {context.Name} b) => global::System.Collections.Generic.EqualityComparer<{context.Name}>.Default.Equals(a, b);");
+            }
         }
 
         // Operator !=
         if (!context.IsOpNotEqualsDefined())
         {
-            var notEqualsOperatorMethod = structDeclaration.AddMember(new OperatorDeclaration("!=") { Modifiers = Modifiers.Public | Modifiers.Static });
-            notEqualsOperatorMethod.ReturnType = typeof(bool);
-            var notEqualsOperatorMethodArg1 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "a");
-            var notEqualsOperatorMethodArg2 = notEqualsOperatorMethod.Arguments.Add(structDeclaration, "b");
+            WriteNewMember();
             if (context.IsReferenceType)
             {
-                notEqualsOperatorMethodArg1.Type = notEqualsOperatorMethodArg1.Type?.MakeNullable();
-                notEqualsOperatorMethodArg2.Type = notEqualsOperatorMethodArg2.Type?.MakeNullable();
+                writer.WriteLine($"public static bool operator !=({context.Name}? a, {context.Name}? b) => !(a == b);");
             }
-
-            notEqualsOperatorMethod.Statements.Add(
-                new ReturnStatement(
-                    new UnaryExpression(UnaryOperator.Not,
-                        new BinaryExpression(BinaryOperator.Equals, notEqualsOperatorMethodArg1, notEqualsOperatorMethodArg2))));
+            else
+            {
+                writer.WriteLine($"public static bool operator !=({context.Name} a, {context.Name} b) => !(a == b);");
+            }
         }
 
         // Parse / TryParse
-        var idTypeReference = GetTypeReference(idType);
         if (context.SupportReadOnlySpan())
         {
             // TryParse(ReadOnlySpan<char>)
             if (!context.IsTryParseDefined_ReadOnlySpan())
             {
-                GenerateTryParseMethod(structDeclaration, context, idType, isReadOnlySpan: true);
+                GenerateTryParseMethod(writer, context, idType, isReadOnlySpan: true);
             }
 
             // Parse(ReadOnlySpan<char>)
             if (!context.IsParseDefined_Span())
             {
-                var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
-                parseMethod.ReturnType = structDeclaration;
-                var valueArg = parseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
-                parseMethod.Statements = new StatementCollection();
-                var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
-                if (context.IsReferenceType)
+                WriteNewMember();
+                using (writer.BeginBlock($"public static {context.Name} Parse(global::System.ReadOnlySpan<char> value)"))
                 {
-                    result.Type = result.Type?.MakeNullable();
-                }
+                    using (writer.BeginBlock($"if (TryParse(value, out var result))"))
+                    {
+                        writer.WriteLine($"return result;");
+                    }
 
-                parseMethod.Statements.Add(new ConditionStatement
-                {
-                    Condition = new MemberReferenceExpression(structDeclaration, "TryParse").InvokeMethod(valueArg, new MethodInvokeArgumentExpression(result) { Direction = Direction.Out }),
-                    TrueStatements = new ReturnStatement(result),
-                    FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(FormatException), Expression.Add("Value '", valueArg.Member("ToString").InvokeMethod(), "' is not valid"))),
-                });
+                    writer.WriteLine($"throw new global::System.FormatException($\"value '{{value.ToString()}}' is not valid\");");
+                }
             }
         }
 
         // Parse
+        WriteNewMember();
+        using (writer.BeginBlock($"public static {context.Name} Parse(string value)"))
         {
-            var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Public | Modifiers.Static });
-            parseMethod.ReturnType = structDeclaration;
-            var valueArg = parseMethod.AddArgument("value", typeof(string));
-            parseMethod.Statements = new StatementCollection();
-            var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
-            if (context.IsReferenceType)
+            using (writer.BeginBlock($"if (TryParse(value, out var result))"))
             {
-                result.Type = result.Type?.MakeNullable();
+                writer.WriteLine($"return result;");
             }
 
-            parseMethod.Statements.Add(new ConditionStatement
-            {
-                Condition = new MemberReferenceExpression(structDeclaration, "TryParse").InvokeMethod(valueArg, new MethodInvokeArgumentExpression(result) { Direction = Direction.Out }),
-                TrueStatements = new ReturnStatement(result),
-                FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(FormatException), Expression.Add("Value '", valueArg, "' is not valid"))),
-            });
+            writer.WriteLine($"throw new global::System.FormatException($\"value '{{value}}' is not valid\");");
         }
 
         // TryParse
         if (!context.IsTryParseDefined_String())
         {
-            GenerateTryParseMethod(structDeclaration, context, idType, isReadOnlySpan: false);
+            GenerateTryParseMethod(writer, context, idType, isReadOnlySpan: false);
         }
 
         if (context.CanUseStaticInterface())
@@ -260,222 +210,152 @@ public partial class StronglyTypedIdSourceGenerator
             // ISpanParsable
             if (context.SupportReadOnlySpan() && compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null)
             {
-                structDeclaration.Implements.Add(new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration));
-
                 // TryParse
                 {
-                    var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Static });
-                    tryParseMethod.PrivateImplementationType = new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration);
-                    tryParseMethod.ReturnType = typeof(bool);
-                    var valueArg = tryParseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
-                    var providerArg = tryParseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
-                    var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
-                    if (context.IsReferenceType)
-                    {
-                        resultArg.Type = resultArg.Type?.MakeNullable();
-                    }
-
+                    var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
                     if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
                     {
-                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
+                        returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                     }
 
-                    tryParseMethod.Statements =
-                            new ReturnStatement(
-                                new MethodInvokeExpression(
-                                    new MemberReferenceExpression(structDeclaration, "TryParse"),
-                                    valueArg,
-                                    new MethodInvokeArgumentExpression(resultArg, Direction.Out)));
+                    WriteNewMember();
+                    using (writer.BeginBlock($"static bool System.ISpanParsable<{context.Name}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
+                    {
+                        writer.WriteLine("return TryParse(value, out result);");
+                    }
                 }
 
                 // Parse
                 {
-                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Static });
-                    parseMethod.PrivateImplementationType = new TypeReference("System.ISpanParsable").MakeGeneric(structDeclaration);
-                    parseMethod.ReturnType = structDeclaration;
-                    var valueArg = parseMethod.AddArgument("value", typeof(ReadOnlySpan<char>));
-                    var providerArg = parseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
-                    parseMethod.Statements = new StatementCollection();
-                    var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
-                    parseMethod.Statements =
-                            new ReturnStatement(
-                                new MethodInvokeExpression(
-                                    new MemberReferenceExpression(structDeclaration, "Parse"),
-                                    valueArg));
+                    WriteNewMember();
+                    using (writer.BeginBlock($"static {context.Name} System.ISpanParsable<{context.Name}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
+                    {
+                        writer.WriteLine("return Parse(value);");
+                    }
                 }
             }
 
             // IParsable
             if (compilation.GetTypeByMetadataName("System.IParsable`1") != null)
             {
-                structDeclaration.Implements.Add(new TypeReference("System.IParsable").MakeGeneric(structDeclaration));
-
                 // TryParse
+                var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
+                if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
                 {
-                    var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Static });
-                    tryParseMethod.PrivateImplementationType = new TypeReference("System.IParsable").MakeGeneric(structDeclaration);
-                    tryParseMethod.ReturnType = typeof(bool);
-                    var valueArg = tryParseMethod.AddArgument("value", new TypeReference(typeof(string)).MakeNullable());
-                    var providerArg = tryParseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
-                    var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
-                    if (context.IsReferenceType)
-                    {
-                        resultArg.Type = resultArg.Type?.MakeNullable();
-                    }
+                    returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
+                }
 
-                    if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
-                    {
-                        resultArg.CustomAttributes.Add(new CustomAttribute(typeof(NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
-                    }
-
-                    tryParseMethod.Statements =
-                            new ReturnStatement(
-                                new MethodInvokeExpression(
-                                    new MemberReferenceExpression(structDeclaration, "TryParse"),
-                                    valueArg,
-                                    new MethodInvokeArgumentExpression(resultArg, Direction.Out)));
+                WriteNewMember();
+                using (writer.BeginBlock($"static bool System.IParsable<{context.Name}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
+                {
+                    writer.WriteLine("return TryParse(value, out result);");
                 }
 
                 // Parse
+                WriteNewMember();
+                using (writer.BeginBlock($"static {context.Name} System.IParsable<{context.Name}>.Parse(string value, global::System.IFormatProvider? provider)"))
                 {
-                    var parseMethod = structDeclaration.AddMember(new MethodDeclaration("Parse") { Modifiers = Modifiers.Static });
-                    parseMethod.PrivateImplementationType = new TypeReference("System.IParsable").MakeGeneric(structDeclaration);
-                    parseMethod.ReturnType = structDeclaration;
-                    var valueArg = parseMethod.AddArgument("value", typeof(string));
-                    var providerArg = parseMethod.AddArgument("provider", new TypeReference(typeof(IFormatProvider)).MakeNullable());
-                    parseMethod.Statements = new StatementCollection();
-                    var result = parseMethod.Statements.Add(new VariableDeclarationStatement("result", structDeclaration));
-                    parseMethod.Statements =
-                            new ReturnStatement(
-                                new MethodInvokeExpression(
-                                    new MemberReferenceExpression(structDeclaration, "Parse"),
-                                    valueArg));
+                    writer.WriteLine("return Parse(value);");
                 }
             }
         }
 
-        static void GenerateTryParseMethod(ClassOrStructDeclaration structDeclaration, StronglyTypedIdInfo context, IdType idType, bool isReadOnlySpan)
+        void GenerateTryParseMethod(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context, IdType idType, bool isReadOnlySpan)
         {
-            var tryParseMethod = structDeclaration.AddMember(new MethodDeclaration("TryParse") { Modifiers = Modifiers.Public | Modifiers.Static });
-            tryParseMethod.ReturnType = typeof(bool);
-            var valueArg = tryParseMethod.AddArgument("value", isReadOnlySpan ? typeof(ReadOnlySpan<char>) : new TypeReference(typeof(string)).MakeNullable());
-            var resultArg = tryParseMethod.AddArgument("result", structDeclaration, Direction.Out);
-            if (context.IsReferenceType)
-            {
-                resultArg.Type = resultArg.Type?.MakeNullable();
-            }
+            var type = isReadOnlySpan ? "global::System.ReadOnlySpan<char>" : "string?";
+            var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
 
             if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
             {
-                resultArg.CustomAttributes.Add(new CustomAttribute(typeof(System.Diagnostics.CodeAnalysis.NotNullWhenAttribute)) { Arguments = { new CustomAttributeArgument(Expression.True()) } });
+                returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
             }
 
-            if (!isReadOnlySpan && context.SupportReadOnlySpan())
+            WriteNewMember();
+            using (writer.BeginBlock($"public static bool TryParse({type} value, {returnType} result)"))
             {
-                // delegate to ReadOnlySpan<char> overload
-                tryParseMethod.Statements = new ConditionStatement()
+                if (!isReadOnlySpan && context.SupportReadOnlySpan())
                 {
-                    Condition = new BinaryExpression(BinaryOperator.Equals, valueArg, Expression.Null()),
-                    TrueStatements = new StatementCollection
+                    using (writer.BeginBlock("if (value == null)"))
                     {
-                        new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
-                        new ReturnStatement(Expression.False()),
-                    },
-                    FalseStatements = new StatementCollection
+                        writer.WriteLine("result = default;");
+                        writer.WriteLine("return false;");
+                    }
+                    using (writer.BeginBlock("else"))
                     {
-                        new ReturnStatement(
-                            new MethodInvokeExpression(
-                                new MemberReferenceExpression(structDeclaration, "TryParse"),
-                                new MethodInvokeExpression(new MemberReferenceExpression(typeof(MemoryExtensions), "AsSpan"), valueArg),
-                                new MethodInvokeArgumentExpression(resultArg, Direction.Out))),
-                    },
-                };
-
-                return;
-            }
-
-            if (idType == IdType.System_String)
-            {
-                tryParseMethod.Statements = new StatementCollection()
-                {
-                    new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, isReadOnlySpan ? new NewObjectExpression(typeof(string), valueArg) : valueArg)),
-                    new ReturnStatement(Expression.True()),
-                };
-
-                if (!isReadOnlySpan)
-                {
-                    tryParseMethod.Statements.Insert(0, new ConditionStatement()
-                    {
-                        Condition = new BinaryExpression(BinaryOperator.Equals, valueArg, Expression.Null()),
-                        TrueStatements = new StatementCollection
-                        {
-                            new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
-                            new ReturnStatement(Expression.False()),
-                        },
-                    });
+                        writer.WriteLine("return TryParse(value.AsSpan(), out result);");
+                    }
                 }
-            }
-            else
-            {
-                tryParseMethod.Statements = new StatementCollection();
-                var result = tryParseMethod.Statements.Add(new VariableDeclarationStatement("id", GetTypeReference(idType)));
-                tryParseMethod.Statements.Add(new ConditionStatement
+                else
                 {
-                    Condition = CreateTryParseExpression(),
-                    TrueStatements = new StatementCollection
+                    if (idType == IdType.System_String)
                     {
-                        new AssignStatement(resultArg, new NewObjectExpression(structDeclaration, result)),
-                        new ReturnStatement(Expression.True()),
-                    },
-                    FalseStatements = new StatementCollection
+                        if (isReadOnlySpan)
+                        {
+                            writer.WriteLine($"result = new {context.Name}(value.ToString());");
+                            writer.WriteLine("return true;");
+                        }
+                        else
+                        {
+                            using (writer.BeginBlock($"if (value != null)"))
+                            {
+                                writer.WriteLine($"result = new {context.Name}(value);");
+                                writer.WriteLine("return true;");
+                            }
+
+                            using (writer.BeginBlock("else"))
+                            {
+                                writer.WriteLine($"result = default;");
+                                writer.WriteLine("return false;");
+                            }
+                        }
+                    }
+                    else
                     {
-                        new AssignStatement(resultArg, new DefaultValueExpression(structDeclaration)),
-                        new ReturnStatement(Expression.False()),
-                    },
-                });
+                        switch (idType)
+                        {
+                            case IdType.System_Boolean:
+                                writer.WriteLine($"if (bool.TryParse(value, out var parsedValue))");
+                                break;
+                            case IdType.System_DateTime:
+                                writer.WriteLine($"if (global::System.DateTime.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsedValue))");
+                                break;
 
-                [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Less readable")]
-                Expression CreateTryParseExpression()
-                {
-                    switch (idType)
-                    {
-                        case IdType.System_Boolean:
-                            return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                valueArg,
-                                new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            case IdType.System_DateTimeOffset:
+                                writer.WriteLine($"if (global::System.DateTimeOffset.TryParse(value, global::System.Globalization.CultureInfo.InvariantCulture, global::System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsedValue))");
+                                break;
 
-                        case IdType.System_DateTime:
-                        case IdType.System_DateTimeOffset:
-                            return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                valueArg,
-                                new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
-                                new MemberReferenceExpression(typeof(DateTimeStyles), nameof(DateTimeStyles.AdjustToUniversal)),
-                                new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            case IdType.System_Guid:
+                                writer.WriteLine($"if (global::System.Guid.TryParse(value, out var parsedValue))");
+                                break;
 
-                        case IdType.System_Guid:
-                            return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                valueArg,
-                                new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            case IdType.System_Decimal:
+                            case IdType.System_Double:
+                            case IdType.System_Single:
+                            case IdType.System_Byte:
+                            case IdType.System_SByte:
+                            case IdType.System_Int16:
+                            case IdType.System_Int32:
+                            case IdType.System_Int64:
+                            case IdType.System_Int128:
+                            case IdType.System_UInt16:
+                            case IdType.System_UInt32:
+                            case IdType.System_UInt64:
+                            case IdType.System_UInt128:
+                                writer.WriteLine($"if ({GetTypeReference(idType)}.TryParse(value, global::System.Globalization.NumberStyles.Any, global::System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))");
+                                break;
 
-                        case IdType.System_Decimal:
-                        case IdType.System_Double:
-                        case IdType.System_Single:
-                        case IdType.System_Byte:
-                        case IdType.System_SByte:
-                        case IdType.System_Int16:
-                        case IdType.System_Int32:
-                        case IdType.System_Int64:
-                        case IdType.System_UInt16:
-                        case IdType.System_UInt32:
-                        case IdType.System_UInt64:
-                            return new MemberReferenceExpression(GetTypeReference(idType), "TryParse").InvokeMethod(
-                                valueArg,
-                                new MemberReferenceExpression(typeof(NumberStyles), nameof(NumberStyles.Any)),
-                                new MemberReferenceExpression(typeof(CultureInfo), nameof(CultureInfo.InvariantCulture)),
-                                new MethodInvokeArgumentExpression(result) { Direction = Direction.Out });
+                            default:
+                                throw new InvalidOperationException("Type not supported");
+                        }
 
-                        default:
-                            throw new InvalidOperationException("Type not supported");
+                        using (writer.BeginBlock())
+                        {
+                            writer.WriteLine($"result = new {context.Name}(parsedValue);");
+                            writer.WriteLine("return true;");
+                        }
+
+                        writer.WriteLine("result = default;");
+                        writer.WriteLine("return false;");
                     }
                 }
             }

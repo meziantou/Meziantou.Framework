@@ -1,6 +1,6 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
-using Meziantou.Framework.CodeDom;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -8,9 +8,16 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.StronglyTypedId;
 
+// TODO1 AddCodeGeneratedAttributeVisitor
+// TODO1 Int128 / UInt128 / BigInteger / Half / Any type that have a specific constraint?
+//      https://github.com/dotnet/runtime/blob/88868b7a781f4e5b9037b8721f30440207a7aa42/src/libraries/System.Text.Json/tests/System.Text.Json.Tests/Serialization/ConvertersForUnsupportedTypesFunctionalTests.cs#L96
+// TODO1 Generate code using global::?
+
 [Generator]
 public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerator
 {
+    private static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+
     private const string FieldName = "_value";
     private const string PropertyName = "Value";
     private const string PropertyAsStringName = "ValueAsString";
@@ -52,8 +59,16 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
     private static readonly DiagnosticDescriptor UnsuportedType = new(
         id: "MFSTID0001",
-        title: "Not support type",
+        title: "Not supported type",
         messageFormat: "The type '{0}' is not supported",
+        category: "StronglyTypedId",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+    
+    private static readonly DiagnosticDescriptor UnsuportedSerializer = new(
+        id: "MFSTID0002",
+        title: "Not supported serializer",
+        messageFormat: "The serializer '{0}' is not supported for type '{1}'",
         category: "StronglyTypedId",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -115,42 +130,67 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         var stronglyTypedId = new StronglyTypedIdInfo(compilation, typeSymbol.ContainingSymbol, typeSymbol, typeSymbol.Name, attributeInfo, typeDeclaration);
 
-        var codeUnit = new CompilationUnit
+        var writer = new CSharpGeneratedFileWriter();
+        writer.WriteLine("#nullable enable");
+
+        var baseTypes = $"global::System.IEquatable<{stronglyTypedId.Name}>";
+        if (stronglyTypedId.CanImplementIParsable())
         {
-            NullableContext = CodeDom.NullableContext.Enable,
+            baseTypes += $", global::System.IParsable<{stronglyTypedId.Name}>";
+        }
+
+        if (stronglyTypedId.CanImplementISpanParsable())
+        {
+            baseTypes += $", global::System.ISpanParsable<{stronglyTypedId.Name}>";
+        }
+
+        var attributes = (CSharpGeneratedFileWriter writer) =>
+        {
+            if (stronglyTypedId.CanGenerateTypeConverter())
+            {
+                writer.WriteLine($"[global::System.ComponentModel.TypeConverterAttribute(typeof({stronglyTypedId.TypeConverterTypeName}))]");
+            }
+
+            if (stronglyTypedId.CanGenerateSystemTextJsonConverter())
+            {
+                writer.WriteLine($"[global::System.Text.Json.Serialization.JsonConverterAttribute(typeof({stronglyTypedId.SystemTextJsonConverterTypeName}))]");
+            }
+
+            if (stronglyTypedId.CanGenerateMongoDbConverter())
+            {
+                writer.WriteLine($"[global::MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute(typeof({stronglyTypedId.MongoDbConverterTypeName}))]");
+            }
+
+            if (stronglyTypedId.CanGenerateNewtonsoftJsonConverter())
+            {
+                writer.WriteLine($"[global::Newtonsoft.Json.JsonConverterAttribute(typeof({stronglyTypedId.NewtonsoftJsonConverterTypeName}))]");
+            }
         };
 
-        var structDeclaration = CreateType(codeUnit, stronglyTypedId);
-        GenerateTypeMembers(compilation, structDeclaration, stronglyTypedId);
-
-        if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_ComponentModel_TypeConverter))
+        using (writer.BeginPartialContext(stronglyTypedId.ExistingTypeSymbol, attributes, baseTypes))
         {
-            GenerateTypeConverter(structDeclaration, compilation, stronglyTypedId.AttributeInfo.IdType);
+            GenerateTypeMembers(writer, compilation, stronglyTypedId);
+            GenerateTypeConverter(writer, stronglyTypedId);
+            GenerateSystemTextJsonConverter(writer, stronglyTypedId);
+            GenerateMongoDBBsonSerializationConverter(writer, stronglyTypedId);
+            GenerateNewtonsoftJsonConverter(writer, stronglyTypedId);
         }
 
-        if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_Text_Json))
+        context.AddSource(stronglyTypedId.Name + ".g.cs", writer.ToSourceText());
+    }
+
+    private static void WriteNewMember(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo info, bool addNewLine)
+    {
+        if (addNewLine)
         {
-            GenerateSystemTextJsonConverter(structDeclaration, compilation, stronglyTypedId);
+            writer.WriteLine();
         }
 
-        if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json))
+        if (info.AttributeInfo.AddCodeGeneratedAttribute)
         {
-            GenerateNewtonsoftJsonConverter(structDeclaration, compilation, stronglyTypedId);
-        }
 
-        if (stronglyTypedId.AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
-        {
-            GenerateMongoDBBsonSerializationConverter(structDeclaration, compilation, stronglyTypedId);
+            writer.WriteLine($"[global::System.CodeDom.Compiler.GeneratedCodeAttribute(\"Meziantou.Framework.StronglyTypedId\", \"{Version}\")]");
         }
-
-        if (stronglyTypedId.AttributeInfo.AddCodeGeneratedAttribute)
-        {
-            var visitor = new AddCodeGeneratedAttributeVisitor();
-            visitor.Visit(codeUnit);
-        }
-
-        var result = codeUnit.ToCsharpString();
-        context.AddSource(stronglyTypedId.Name + ".g.cs", SourceText.From(result, Encoding.UTF8));
     }
 
     private static AttributeInfo? GetAttributeInfo(SourceProductionContext context, SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
@@ -188,10 +228,25 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
 
             var idType = GetIdType(semanticModel.Compilation, type);
-            if (idType != null)
-                return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
+            if (idType == null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), type.ToDisplayString()));
+                continue;
+            }
 
-            context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), idTypeArgument.Type));
+            if(idType is IdType.System_Int128 or IdType.System_UInt128 && converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(UnsuportedSerializer, declaredTypeSymbol.Locations.FirstOrDefault(), "Newtonsoft.Json", type.ToDisplayString()));
+                continue;
+            }
+
+            if(idType is IdType.System_Int128 or IdType.System_UInt128 && converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(UnsuportedSerializer, declaredTypeSymbol.Locations.FirstOrDefault(), "MongoDB.Bson", type.ToDisplayString()));
+                continue;
+            }
+
+            return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
         }
 
         return null;
@@ -229,6 +284,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int64")))
             return IdType.System_Int64;
 
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int128")))
+            return IdType.System_Int128;
+
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.SByte")))
             return IdType.System_SByte;
 
@@ -247,29 +305,34 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt64")))
             return IdType.System_UInt64;
 
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt128")))
+            return IdType.System_UInt128;
+
         return null;
     }
 
-    private static TypeReference GetTypeReference(IdType type)
+    private static string GetTypeReference(IdType type)
     {
         return type switch
         {
-            IdType.System_Boolean => new TypeReference(typeof(bool)),
-            IdType.System_Byte => new TypeReference(typeof(byte)),
-            IdType.System_DateTime => new TypeReference(typeof(DateTime)),
-            IdType.System_DateTimeOffset => new TypeReference(typeof(DateTimeOffset)),
-            IdType.System_Decimal => new TypeReference(typeof(decimal)),
-            IdType.System_Double => new TypeReference(typeof(double)),
-            IdType.System_Guid => new TypeReference(typeof(Guid)),
-            IdType.System_Int16 => new TypeReference(typeof(short)),
-            IdType.System_Int32 => new TypeReference(typeof(int)),
-            IdType.System_Int64 => new TypeReference(typeof(long)),
-            IdType.System_SByte => new TypeReference(typeof(sbyte)),
-            IdType.System_Single => new TypeReference(typeof(float)),
-            IdType.System_String => new TypeReference(typeof(string)),
-            IdType.System_UInt16 => new TypeReference(typeof(ushort)),
-            IdType.System_UInt32 => new TypeReference(typeof(uint)),
-            IdType.System_UInt64 => new TypeReference(typeof(ulong)),
+            IdType.System_Boolean => "bool",
+            IdType.System_Byte => "byte",
+            IdType.System_DateTime => "global::System.DateTime",
+            IdType.System_DateTimeOffset => "global::System.DateTimeOffset",
+            IdType.System_Decimal => "decimal",
+            IdType.System_Double => "double",
+            IdType.System_Guid => "global::System.Guid",
+            IdType.System_Int16 => "short",
+            IdType.System_Int32 => "int",
+            IdType.System_Int64 => "long",
+            IdType.System_Int128 => "global::System.Int128",
+            IdType.System_SByte => "sbyte",
+            IdType.System_Single => "float",
+            IdType.System_String => "string",
+            IdType.System_UInt16 => "ushort",
+            IdType.System_UInt32 => "uint",
+            IdType.System_UInt64 => "ulong",
+            IdType.System_UInt128 => "global::System.UInt128",
             _ => throw new ArgumentException("Type not supported", nameof(type)),
         };
     }
@@ -279,107 +342,43 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         return idType == IdType.System_String;
     }
 
-    private static string GetShortName(TypeReference typeReference)
+    private static string GetShortName(IdType type)
     {
-        var index = typeReference.ClrFullTypeName.LastIndexOf('.');
-        return typeReference.ClrFullTypeName[(index + 1)..];
-    }
-
-    private static ClassOrStructDeclaration CreateType(CompilationUnit unit, StronglyTypedIdInfo source)
-    {
-        TypeDeclaration result = source switch
+        return type switch
         {
-            { IsClass: true } => new ClassDeclaration(source.Name) { Modifiers = Modifiers.Partial },
-            { IsRecord: true } => new RecordDeclaration(source.Name) { Modifiers = Modifiers.Partial },
-            { IsRecordStruct: true } => new RecordStructDeclaration(source.Name) { Modifiers = Modifiers.Partial },
-            _ => new StructDeclaration(source.Name) { Modifiers = Modifiers.Partial },
+            IdType.System_Boolean => "Boolean",
+            IdType.System_Byte => "Byte",
+            IdType.System_DateTime => "DateTime",
+            IdType.System_DateTimeOffset => "DateTimeOffset",
+            IdType.System_Decimal => "Decimal",
+            IdType.System_Double => "Double",
+            IdType.System_Guid => "Guid",
+            IdType.System_Int16 => "Int16",
+            IdType.System_Int32 => "Int32",
+            IdType.System_Int64 => "Int64",
+            IdType.System_Int128 => "Int128",
+            IdType.System_SByte => "SByte",
+            IdType.System_Single => "Single",
+            IdType.System_String => "String",
+            IdType.System_UInt16 => "UInt16",
+            IdType.System_UInt32 => "UInt32",
+            IdType.System_UInt64 => "UInt64",
+            IdType.System_UInt128 => "UInt128",
+            _ => throw new ArgumentException("Type not supported", nameof(type)),
         };
-
-        var root = result;
-
-        var containingSymbol = source.ContainingSymbol;
-        while (containingSymbol != null)
-        {
-            if (containingSymbol is ITypeSymbol typeSymbol)
-            {
-                TypeDeclaration typeDeclaration = (typeSymbol.IsValueType, typeSymbol.IsRecord) switch
-                {
-                    (false, false) => new ClassDeclaration(),
-                    (false, true) => new RecordDeclaration(),
-                    (true, false) => new StructDeclaration(),
-                    (true, true) => new RecordStructDeclaration(),
-                };
-                typeDeclaration.Name = typeSymbol.Name;
-                typeDeclaration.Modifiers = Modifiers.Partial;
-
-                ((ClassOrStructDeclaration)typeDeclaration).AddType(root);
-                root = typeDeclaration;
-            }
-            else if (containingSymbol is INamespaceSymbol nsSymbol)
-            {
-                var ns = GetNamespace(nsSymbol);
-                if (ns == null)
-                {
-                    unit.AddType(root);
-                }
-                else
-                {
-                    var namespaceDeclation = new NamespaceDeclaration(ns);
-                    namespaceDeclation.AddType(root);
-                    unit.AddNamespace(namespaceDeclation);
-                }
-
-                break;
-            }
-            else
-            {
-                throw new InvalidOperationException($"Symbol '{containingSymbol}' of type '{containingSymbol.GetType().FullName}' not expected");
-            }
-
-            containingSymbol = containingSymbol.ContainingSymbol;
-        }
-
-        return (ClassOrStructDeclaration)result;
     }
 
-    private static string? GetNamespace(INamespaceSymbol ns)
-    {
-        string? str = null;
-        while (ns != null && !ns.IsGlobalNamespace)
-        {
-            if (str != null)
-            {
-                str = '.' + str;
-            }
-
-            str = ns.Name + str;
-            ns = ns.ContainingNamespace;
-        }
-
-        return str;
-    }
-
-    private static Modifiers GetPrivateOrProtectedModifier(StronglyTypedIdInfo type)
+    private static string GetPrivateOrProtectedModifier(StronglyTypedIdInfo type)
     {
         if (type.IsReferenceType && !type.IsSealed)
-            return Modifiers.Protected;
+            return "protected";
 
-        return Modifiers.Private;
+        return "private";
     }
 
-    private static bool IsTypeDefined(Compilation compilation, string typeMetadataName)
-    {
-        return compilation.References
-            .Select(compilation.GetAssemblyOrModuleSymbol)
-            .OfType<IAssemblySymbol>()
-            .Select(assemblySymbol => assemblySymbol.GetTypeByMetadataName(typeMetadataName))
-            .WhereNotNull()
-            .Any();
-    }
+    private sealed record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
 
-    private record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
-
-    private record StronglyTypedIdInfo(Compilation Compilation, ISymbol ContainingSymbol, ITypeSymbol? ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
+    private sealed record StronglyTypedIdInfo(Compilation Compilation, ISymbol ContainingSymbol, ITypeSymbol ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
     {
         public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
         public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
@@ -509,6 +508,45 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
             return false;
         }
+
+        public bool CanImplementISpanParsable()
+        {
+            return CanUseStaticInterface() && SupportReadOnlySpan() && Compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null;
+        }
+
+        public bool CanImplementIParsable()
+        {
+            return CanUseStaticInterface() && SupportReadOnlySpan() && Compilation.GetTypeByMetadataName("System.IParsable`1") != null;
+        }
+
+        public bool CanGenerateTypeConverter()
+        {
+            return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_ComponentModel_TypeConverter)
+                && Compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") != null;
+        }
+
+        public bool CanGenerateSystemTextJsonConverter()
+        {
+            return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_Text_Json)
+                && Compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") != null;
+        }
+
+        public bool CanGenerateNewtonsoftJsonConverter()
+        {
+            return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json)
+                && Compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") != null;
+        }
+
+        public bool CanGenerateMongoDbConverter()
+        {
+            return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization)
+                && Compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") != null;
+        }
+
+        public string TypeConverterTypeName => Name + "TypeConverter";
+        public string SystemTextJsonConverterTypeName => Name + "JsonConverter";
+        public string NewtonsoftJsonConverterTypeName => Name + "NewtonsoftJsonConverter";
+        public string MongoDbConverterTypeName => Name + "BsonConverter";
     }
 
     [Flags]
@@ -533,11 +571,13 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         System_Int16,
         System_Int32,
         System_Int64,
+        System_Int128,
         System_SByte,
         System_Single,
         System_String,
         System_UInt16,
         System_UInt32,
         System_UInt64,
+        System_UInt128,
     }
 }

@@ -1,162 +1,80 @@
-using Meziantou.Framework.CodeDom;
-using Microsoft.CodeAnalysis;
-
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateNewtonsoftJsonConverter(ClassOrStructDeclaration typeDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
+    private static void GenerateNewtonsoftJsonConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
     {
-        if (!IsTypeDefined(compilation, "Newtonsoft.Json.JsonConverter"))
+        if (!context.CanGenerateNewtonsoftJsonConverter())
             return;
 
-        var converter = typeDeclaration.AddType(new ClassDeclaration(typeDeclaration.Name + "NewtonsoftJsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
-        typeDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("Newtonsoft.Json.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
-        converter.BaseType = new TypeReference("Newtonsoft.Json.JsonConverter");
+        var idType = context.AttributeInfo.IdType;
 
-        // bool CanRead => true
+        using (writer.BeginBlock($"partial class {context.NewtonsoftJsonConverterTypeName} : global::Newtonsoft.Json.JsonConverter"))
         {
-            var canRead = converter.AddMember(new PropertyDeclaration("CanRead", typeof(bool)) { Modifiers = Modifiers.Public | Modifiers.Override });
-            canRead.Getter = new PropertyAccessorDeclaration()
+            WriteNewMember(writer, context, addNewLine: false);
+            writer.WriteLine("public override bool CanRead => true;");
+
+            WriteNewMember(writer, context, addNewLine: true);
+            writer.WriteLine("public override bool CanWrite => true;");
+
+            WriteNewMember(writer, context, addNewLine: true);
+            writer.WriteLine($"public override bool CanConvert(global::System.Type type) => type == typeof({context.Name});");
+
+            // public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock("public override void WriteJson(global::Newtonsoft.Json.JsonWriter writer, object? value, global::Newtonsoft.Json.JsonSerializer serializer)"))
             {
-                Statements = new ReturnStatement(Expression.True()),
-            };
-        }
-
-        // bool CanWrite => true
-        {
-            var canWrite = converter.AddMember(new PropertyDeclaration("CanWrite", typeof(bool)) { Modifiers = Modifiers.Public | Modifiers.Override });
-            canWrite.Getter = new PropertyAccessorDeclaration()
-            {
-                Statements = new ReturnStatement(Expression.True()),
-            };
-        }
-
-        // CanConvert
-        {
-            var method = converter.AddMember(new MethodDeclaration("CanConvert") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = typeof(bool);
-            var typeArg = method.AddArgument("type", typeof(Type));
-
-            method.Statements = new ReturnStatement(new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeDeclaration)));
-        }
-
-        // public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            var method = converter.AddMember(new MethodDeclaration("WriteJson") { Modifiers = Modifiers.Public | Modifiers.Override });
-            var writerArg = method.AddArgument("writer", new TypeReference("Newtonsoft.Json.JsonWriter"));
-            var valueArg = method.AddArgument("value", new TypeReference(typeof(object)).MakeNullable());
-            _ = method.AddArgument("serializer", new TypeReference("Newtonsoft.Json.JsonSerializer"));
-
-            method.Statements = new ConditionStatement
-            {
-                Condition = Expression.EqualsNull(valueArg),
-                TrueStatements = writerArg.Member("WriteNull").InvokeMethod(),
-                FalseStatements = writerArg.Member("WriteValue").InvokeMethod(new CastExpression(valueArg, typeDeclaration).Member("Value")),
-            };
-        }
-
-        // public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var method = converter.AddMember(new MethodDeclaration("ReadJson") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
-            var readerArg = method.AddArgument("reader", new TypeReference("Newtonsoft.Json.JsonReader"));
-            var typeArg = method.AddArgument("objectType", typeof(Type));
-            _ = method.AddArgument("existingValue", new TypeReference(typeof(object)).MakeNullable());
-            var serializerArg = method.AddArgument("serializer", new TypeReference("Newtonsoft.Json.JsonSerializer"));
-
-            method.Statements = new StatementCollection();
-
-            var valueVariable = method.Statements.Add(new VariableDeclarationStatement("value", new TypeReference(typeof(object)).MakeNullable(), Expression.Null()));
-            method.Statements.Add(new ConditionStatement
-            {
-                Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
-                TrueStatements = CreateObjectParsing(),
-                FalseStatements = ReadValue(),
-            });
-
-            method.Statements.Add(new ReturnStatement(valueVariable));
-
-            BinaryExpression CompareTokenType(BinaryOperator op, string tokenType)
-            {
-                return new BinaryExpression(
-                    op,
-                    readerArg.Member("TokenType"),
-                    new MemberReferenceExpression(new TypeReference("Newtonsoft.Json.JsonToken"), tokenType));
-            }
-
-            StatementCollection CreateObjectParsing()
-            {
-                var statements = new StatementCollection();
-                var valueRead = statements.Add(new VariableDeclarationStatement("valueRead", typeof(bool), Expression.False()));
-                statements.Add(ReaderRead());
-                statements.Add(new WhileStatement()
+                using (writer.BeginBlock("if (value == null)"))
                 {
-                    Condition = CompareTokenType(BinaryOperator.NotEquals, "EndObject"),
-                    Body = new StatementCollection
-                    {
-                        new ConditionStatement()
-                        {
-                            Condition = Expression.And(
-                                UnaryExpression.Not(valueRead),
-                                CompareTokenType(BinaryOperator.Equals, "PropertyName"),
-                                new BinaryExpression(BinaryOperator.Equals, new CastExpression(readerArg.Member("Value"), new TypeReference(typeof(string)).MakeNullable()), new LiteralExpression("Value"))),
-                            TrueStatements = new StatementCollection
-                            {
-                                ReaderRead(),
-                                ReadValue(),
-                                new AssignStatement(valueRead, Expression.True()),
-                                ReaderRead(),
-                            },
-                            FalseStatements = new StatementCollection
-                            {
-                                ReaderSkip(),
-                                ReaderRead(),
-                            },
-                        },
-                    },
-                });
-                return statements;
-            }
-
-            Statement ReaderRead()
-            {
-                return new MethodInvokeExpression(readerArg.Member("Read"));
-            }
-
-            Statement ReaderSkip()
-            {
-                return new MethodInvokeExpression(readerArg.Member("Skip"));
-            }
-
-            Statement ReadValue()
-            {
-                // if (targetType == Nullable<Id> or targetType is class) and token is null => return null;
-                return new ConditionStatement
+                    writer.WriteLine("writer.WriteNull();");
+                }
+                using (writer.BeginBlock("else"))
                 {
-                    Condition =
-                        new BinaryExpression(
-                            BinaryOperator.And,
-                            CompareTokenType(BinaryOperator.Equals, "Null"),
-                            stronglyTypedType.IsReferenceType ? Expression.True() : new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(new TypeReference(typeof(Nullable<>)).MakeGeneric(typeDeclaration)))),
-                    TrueStatements = new StatementCollection
+                    writer.WriteLine($"writer.WriteValue((({context.Name})value).Value);");
+                }
+            }
+
+            // public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock("public override object? ReadJson(global::Newtonsoft.Json.JsonReader reader, global::System.Type objectType, object? existingValue, global::Newtonsoft.Json.JsonSerializer serializer)"))
+            {
+
+                using (writer.BeginBlock("if (reader.TokenType == global::Newtonsoft.Json.JsonToken.StartObject)"))
+                {
+                    writer.WriteLine("object? value = null;");
+                    writer.WriteLine("bool valueRead = false;");
+                    writer.WriteLine("reader.Read();");
+                    using (writer.BeginBlock("while (reader.TokenType != global::Newtonsoft.Json.JsonToken.EndObject)"))
                     {
-                        new AssignStatement(
-                            valueVariable,
-                            Expression.Null()),
-                    },
-                    FalseStatements = new StatementCollection
-                    {
-                        new AssignStatement(
-                            valueVariable,
-                            new NewObjectExpression(
-                                typeDeclaration,
-                                serializerArg.Member("Deserialize").InvokeMethod(new[] { GetTypeReference(stronglyTypedType.AttributeInfo.IdType) }, readerArg)))
+                        using (writer.BeginBlock("if (!valueRead && reader.TokenType == global::Newtonsoft.Json.JsonToken.PropertyName && ((string?)reader.Value) == \"Value\")"))
                         {
-                            NullableContext = CodeDom.NullableContext.Disable,
-                        },
-                    },
-                };
+                            writer.WriteLine("reader.Read();");
+                            ReadValue("value = ");
+                            writer.WriteLine("valueRead = true;");
+                            writer.WriteLine("reader.Read();");
+                        }
+                        using (writer.BeginBlock("else"))
+                        {
+                            writer.WriteLine("reader.Skip();");
+                            writer.WriteLine("reader.Read();");
+                        }
+                    }
+
+                    writer.WriteLine("return value;");
+                }
+                ReadValue("return ");
+            }
+
+            void ReadValue(string? left = null)
+            {
+                using (writer.BeginBlock($"if (reader.TokenType == global::Newtonsoft.Json.JsonToken.Null{(context.IsReferenceType ? "" : (" && objectType == typeof(global::System.Nullable<" + context.Name + ">)"))})"))
+                {
+                    writer.WriteLine($"{left}null;");
+                }
+                using (writer.BeginBlock("else"))
+                {
+                    writer.WriteLine($"{left}new {context.Name}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                }
             }
         }
     }

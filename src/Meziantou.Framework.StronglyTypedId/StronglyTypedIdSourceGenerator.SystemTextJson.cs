@@ -1,222 +1,144 @@
-using Meziantou.Framework.CodeDom;
-using Microsoft.CodeAnalysis;
-
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateSystemTextJsonConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
+    private static void GenerateSystemTextJsonConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
     {
-        if (!IsTypeDefined(compilation, "System.Text.Json.Serialization.JsonConverter`1"))
+        if (!context.CanGenerateSystemTextJsonConverter())
             return;
 
-        var idType = stronglyTypedType.AttributeInfo.IdType;
-        var typeReference = new TypeReference(structDeclaration);
-        if (stronglyTypedType.IsReferenceType)
+        var idType = context.AttributeInfo.IdType;
+
+        using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.Name}>"))
         {
-            typeReference = typeReference.MakeNullable();
-        }
-
-        var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "JsonConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
-        structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("System.Text.Json.Serialization.JsonConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
-        converter.BaseType = new TypeReference("System.Text.Json.Serialization.JsonConverter").MakeGeneric(typeReference);
-
-        // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
-        {
-            var writeMethod = converter.AddMember(new MethodDeclaration("Write") { Modifiers = Modifiers.Public | Modifiers.Override });
-            var writerArg = writeMethod.AddArgument("writer", new TypeReference("System.Text.Json.Utf8JsonWriter"));
-            var valueArg = writeMethod.AddArgument("value", typeReference);
-            var optionsArg = writeMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
-
-            if (stronglyTypedType.IsReferenceType)
+            // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
+            WriteNewMember(writer, context, addNewLine: false);
+            using (writer.BeginBlock($"public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {context.Name} value, global::System.Text.Json.JsonSerializerOptions options)"))
             {
-                writeMethod.Statements = new ConditionStatement
+                if (context.IsReferenceType)
                 {
-                    Condition = Expression.EqualsNull(valueArg),
-                    TrueStatements = writerArg.Member("WriteNullValue").InvokeMethod(),
-                    FalseStatements = GetWriteStatement(),
-                };
-            }
-            else
-            {
-                writeMethod.Statements = GetWriteStatement();
-            }
+                    using (writer.BeginBlock("if (value == null)"))
+                    {
+                        writer.WriteLine("writer.WriteNullValue();");
+                        writer.WriteLine("return;");
+                    }
+                }
 
-            StatementCollection GetWriteStatement()
-            {
                 if (idType == IdType.System_Boolean)
                 {
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteBooleanValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
-                    };
+                    writer.WriteLine("writer.WriteBooleanValue(value.Value);");
+                }
+                else if (idType is IdType.System_Int128 or IdType.System_UInt128)
+                {
+                    writer.WriteLine("writer.WriteRawValue(value.ValueAsString);");
                 }
                 else if (CanUseWriteNumberValue())
                 {
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
-                    };
+                    writer.WriteLine("writer.WriteNumberValue(value.Value);");
                 }
                 else if (CanUseWriteNumberValueWithCastToInt())
                 {
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(valueArg.Member("Value"), typeof(int))),
-                    };
+                    writer.WriteLine("writer.WriteNumberValue((int)value.Value);");
                 }
                 else if (CanUseWriteNumberValueWithCastToUInt())
                 {
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteNumberValue"),
-                            new CastExpression(valueArg.Member("Value"), typeof(uint))),
-                    };
+                    writer.WriteLine("writer.WriteNumberValue((uint)value.Value);");
                 }
                 else if (CanUseWriteStringValue())
                 {
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(writerArg, "WriteStringValue"),
-                            new MemberReferenceExpression(valueArg, "Value")),
-                    };
+                    writer.WriteLine("writer.WriteStringValue(value.Value);");
                 }
-                else
+                else if (CanUseWriteStringValue())
                 {
-                    // JsonSerializer.Serialize(writer, value.Value, options)
-                    return new StatementCollection
-                    {
-                        new MethodInvokeExpression(
-                            new MemberReferenceExpression(new TypeReference("System.Text.Json.JsonSerializer"), "Serialize"),
-                            writerArg,
-                            new MemberReferenceExpression(valueArg, "Value"),
-                            optionsArg),
-                    };
+                    writer.WriteLine("global::System.Text.Json.JsonSerializer.Serialize(writer, value.Value, options);");
+                }
+
+                bool CanUseWriteNumberValue()
+                {
+                    return idType == IdType.System_Decimal
+                        || idType == IdType.System_Double
+                        || idType == IdType.System_Int32
+                        || idType == IdType.System_Int64
+                        || idType == IdType.System_Single
+                        || idType == IdType.System_UInt32
+                        || idType == IdType.System_UInt64;
+                }
+
+                bool CanUseWriteNumberValueWithCastToInt()
+                {
+                    return idType == IdType.System_Int16
+                        || idType == IdType.System_SByte;
+                }
+
+                bool CanUseWriteNumberValueWithCastToUInt()
+                {
+                    return idType == IdType.System_Byte
+                        || idType == IdType.System_UInt16;
+                }
+
+                bool CanUseWriteStringValue()
+                {
+                    return idType == IdType.System_DateTime
+                        || idType == IdType.System_DateTimeOffset
+                        || idType == IdType.System_Guid
+                        || idType == IdType.System_String;
                 }
             }
 
-            bool CanUseWriteNumberValue()
+            // public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock($"public override {context.Name} Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)"))
             {
-                return idType == IdType.System_Decimal
-                    || idType == IdType.System_Double
-                    || idType == IdType.System_Int32
-                    || idType == IdType.System_Int64
-                    || idType == IdType.System_Single
-                    || idType == IdType.System_UInt32
-                    || idType == IdType.System_UInt64;
-            }
+                using (writer.BeginBlock("if (reader.TokenType == global::System.Text.Json.JsonTokenType.StartObject)"))
+                {
+                    writer.WriteLine($"{context.Name} value = default;");
+                    writer.WriteLine("bool valueRead = false;");
+                    writer.WriteLine("reader.Read();");
+                    using (writer.BeginBlock("while (reader.TokenType != System.Text.Json.JsonTokenType.EndObject)"))
+                    {
+                        using (writer.BeginBlock("if (!valueRead && reader.TokenType == global::System.Text.Json.JsonTokenType.PropertyName && reader.ValueTextEquals(\"Value\"))"))
+                        {
+                            writer.WriteLine("reader.Read();");
+                            if (idType == IdType.System_String)
+                            {
+                                writer.WriteLine("#nullable disable");
+                            }
+                            ReadValue("value = ");
+                            if (idType == IdType.System_String)
+                            {
+                                writer.WriteLine("#nullable enable");
+                            }
+                            writer.WriteLine("valueRead = true;");
+                            writer.WriteLine("reader.Read();");
+                        }
+                        using (writer.BeginBlock("else"))
+                        {
+                            writer.WriteLine("reader.Skip();");
+                            writer.WriteLine("reader.Read();");
+                        }
+                    }
 
-            bool CanUseWriteNumberValueWithCastToInt()
-            {
-                return idType == IdType.System_Int16
-                    || idType == IdType.System_SByte;
-            }
+                    writer.WriteLine("return value;");
+                }
 
-            bool CanUseWriteNumberValueWithCastToUInt()
-            {
-                return idType == IdType.System_Byte
-                    || idType == IdType.System_UInt16;
-            }
-
-            bool CanUseWriteStringValue()
-            {
-                return idType == IdType.System_DateTime
-                    || idType == IdType.System_DateTimeOffset
-                    || idType == IdType.System_Guid
-                    || idType == IdType.System_String;
+                ReadValue("return ");
             }
         }
 
-        // public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        void ReadValue(string? left = null)
         {
-            var readMethod = converter.AddMember(new MethodDeclaration("Read") { Modifiers = Modifiers.Public | Modifiers.Override });
-            readMethod.ReturnType = typeReference;
-            var readerArg = readMethod.AddArgument("reader", new TypeReference("System.Text.Json.Utf8JsonReader"), Direction.InOut);
-            _ = readMethod.AddArgument("typeToConvert", typeof(Type));
-            _ = readMethod.AddArgument("options", new TypeReference("System.Text.Json.JsonSerializerOptions"));
-
-            readMethod.Statements = new StatementCollection();
-            var valueVariable = readMethod.Statements.Add(new VariableDeclarationStatement("value", typeReference, new DefaultValueExpression(structDeclaration)));
-            readMethod.Statements.Add(new ConditionStatement
+            if (idType is IdType.System_Int128 or IdType.System_UInt128)
             {
-                Condition = CompareTokenType(BinaryOperator.Equals, "StartObject"),
-                TrueStatements = CreateObjectParsing(),
-                FalseStatements = ReadValue(),
-            });
-
-            readMethod.Statements.Add(new ReturnStatement(valueVariable));
-
-            BinaryExpression CompareTokenType(BinaryOperator op, string tokenType)
-            {
-                return new BinaryExpression(
-                    op,
-                    readerArg.Member("TokenType"),
-                    new MemberReferenceExpression(new TypeReference("System.Text.Json.JsonTokenType"), tokenType));
+                writer.BeginBlock("if (reader.HasValueSequence)");
+                writer.WriteLine($"{left}{context.Name}.Parse(global::System.Text.EncodingExtensions.GetString(global::System.Text.Encoding.UTF8, reader.ValueSequence));");
+                writer.EndBlock();
+                writer.BeginBlock("else");
+                writer.WriteLine($"{left}{context.Name}.Parse(global::System.Text.Encoding.UTF8.GetString(reader.ValueSpan));");
+                writer.EndBlock();
             }
-
-            StatementCollection CreateObjectParsing()
+            else
             {
-                var statements = new StatementCollection();
-                var valueRead = statements.Add(new VariableDeclarationStatement("valueRead", typeof(bool), Expression.False()));
-                statements.Add(ReaderRead());
-                statements.Add(new WhileStatement()
-                {
-                    Condition = CompareTokenType(BinaryOperator.NotEquals, "EndObject"),
-                    Body = new StatementCollection
-                    {
-                        new ConditionStatement()
-                        {
-                            Condition = Expression.And(
-                                UnaryExpression.Not(valueRead),
-                                CompareTokenType(BinaryOperator.Equals, "PropertyName"),
-                                readerArg.Member("ValueTextEquals").InvokeMethod(new LiteralExpression("Value"))),
-                            TrueStatements = new StatementCollection
-                            {
-                                ReaderRead(),
-                                ReadValue(),
-                                new AssignStatement(valueRead, Expression.True()),
-                                ReaderRead(),
-                            },
-                            FalseStatements = new StatementCollection
-                            {
-                                ReaderSkip(),
-                                ReaderRead(),
-                            },
-                        },
-                    },
-                });
-                return statements;
-            }
-
-            Statement ReaderRead()
-            {
-                return new MethodInvokeExpression(readerArg.Member("Read"));
-            }
-
-            Statement ReaderSkip()
-            {
-                return new MethodInvokeExpression(readerArg.Member("Skip"));
-            }
-
-            Statement ReadValue()
-            {
-                return
-                    new AssignStatement(
-                        valueVariable,
-                        new NewObjectExpression(
-                            structDeclaration,
-                            new MethodInvokeExpression(new MemberReferenceExpression(readerArg, "Get" + GetShortName(GetTypeReference(idType))))))
-                    {
-                        NullableContext = CodeDom.NullableContext.Disable,
-                    };
+                writer.WriteLine($"{left} new {context.Name}(reader.Get{GetShortName(idType)}());");
             }
         }
     }

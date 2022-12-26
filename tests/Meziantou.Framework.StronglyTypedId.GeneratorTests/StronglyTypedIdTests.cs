@@ -4,6 +4,7 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Meziantou.Framework.StronglyTypedId.GeneratorTests;
@@ -27,12 +28,18 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdInt16), "FromInt16", (short)42 },
             { typeof(IdInt32), "FromInt32", 42 },
             { typeof(IdInt64), "FromInt64", 42L },
+#if NET7_0_OR_GREATER
+            { typeof(IdInt128), "FromInt128", new Int128(0ul, 42ul) },
+#endif
             { typeof(IdSByte), "FromSByte", (sbyte)42 },
             { typeof(IdSingle), "FromSingle", 42f },
             { typeof(IdString), "FromString", "test" },
             { typeof(IdUInt16), "FromUInt16", (ushort) 42 },
             { typeof(IdUInt32), "FromUInt32", (uint) 42 },
             { typeof(IdUInt64), "FromUInt64", (ulong) 42 },
+#if NET7_0_OR_GREATER
+            { typeof(IdUInt128), "FromUInt128", new UInt128(0ul, 42ul) },
+#endif
 
             { typeof(IdClassBoolean), "FromBoolean", true },
             { typeof(IdClassByte), "FromByte", (byte)42 },
@@ -74,6 +81,9 @@ public sealed partial class StronglyTypedIdTests
         }
 
         // Newtonsoft.Json
+#if NET7_0_OR_GREATER
+        if (value is not Int128 and not UInt128)
+#endif
         {
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(instance);
             var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
@@ -94,6 +104,9 @@ public sealed partial class StronglyTypedIdTests
         }
 
         // BsonConverter
+#if NET7_0_OR_GREATER
+        if (value is not Int128 and not UInt128)
+#endif
         {
             var json = BsonExtensionMethods.ToJson(instance, type);
             var deserialized = BsonSerializer.Deserialize(json, type);
@@ -131,14 +144,16 @@ public sealed partial class StronglyTypedIdTests
     public void IParsable_Int32()
     {
         Parse<IdInt32>("test");
-        void Parse<T>(string _) where T : IParsable<IdInt32> { }
+        void Parse<T>(string _) where T : IParsable<IdInt32>
+        { }
     }
 
     [Fact]
     public void ISpanParsable_Int32()
     {
         Parse<IdInt32>("test");
-        void Parse<T>(string _) where T : ISpanParsable<IdInt32> { }
+        void Parse<T>(string _) where T : ISpanParsable<IdInt32>
+        { }
     }
 #endif
 
@@ -195,6 +210,20 @@ public sealed partial class StronglyTypedIdTests
         value.Should().BeNull();
     }
 
+    [Fact]
+    public void NewtonsoftJson_Int32_ParseNull()
+    {
+        var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null");
+        action.Should().Throw<JsonException>();
+    }
+    
+    [Fact]
+    public void NewtonsoftJson_IdRecordStructInt32_ParseNull()
+    {
+        var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdRecordStructInt32>("null");
+        action.Should().Throw<JsonException>();
+    }
+    
     [Fact]
     public void NewtonsoftJson_NullableInt32_ParseNull()
     {
@@ -271,6 +300,11 @@ public sealed partial class StronglyTypedIdTests
     [StronglyTypedId(typeof(long))]
     private partial struct IdInt64 { }
 
+#if NET7_0_OR_GREATER
+    [StronglyTypedId(typeof(Int128), generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    private partial struct IdInt128 { }
+#endif
+
     [StronglyTypedId(typeof(sbyte))]
     private partial struct IdSByte { }
 
@@ -288,6 +322,11 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(ulong))]
     private partial struct IdUInt64 { }
+
+#if NET7_0_OR_GREATER
+    [StronglyTypedId(typeof(UInt128), generateNewtonsoftJsonConverter: false, generateMongoDBBsonSerialization: false)]
+    private partial struct IdUInt128 { }
+#endif
 
     [StronglyTypedId(typeof(bool))]
     private sealed partial class IdClassBoolean { }
@@ -356,7 +395,7 @@ public sealed partial class StronglyTypedIdTests
     private sealed partial record IdRecordInt32
     {
     }
-    
+
     [StronglyTypedId(typeof(int))]
     private partial record struct IdRecordStructInt32
     {

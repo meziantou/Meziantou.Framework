@@ -1,109 +1,78 @@
-using System.Globalization;
-using Meziantou.Framework.CodeDom;
-using Microsoft.CodeAnalysis;
-
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateTypeConverter(ClassOrStructDeclaration typeDeclaration, Compilation compilation, IdType idType)
+    private static void GenerateTypeConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
     {
-        if (!IsTypeDefined(compilation, "System.ComponentModel.TypeConverter"))
+        if (!context.CanGenerateTypeConverter())
             return;
 
-        var converter = typeDeclaration.AddType(new ClassDeclaration(typeDeclaration.Name + "TypeConverter") { Modifiers = Modifiers.Private | Modifiers.Partial });
-        typeDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("System.ComponentModel.TypeConverterAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
-        converter.BaseType = new TypeReference("System.ComponentModel.TypeConverter");
-
-        // public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        using (writer.BeginBlock($"partial class {context.TypeConverterTypeName} : global::System.ComponentModel.TypeConverter"))
         {
-            var method = converter.AddMember(new MethodDeclaration("CanConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = typeof(bool);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
-            var typeArg = method.AddArgument("sourceType", typeof(Type));
+            var idType = context.AttributeInfo.IdType;
 
-            method.Statements = new ReturnStatement(
-                Expression.Or(
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeof(string))),
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeDeclaration))));
-        }
-
-        // public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
-        {
-            var method = converter.AddMember(new MethodDeclaration("ConvertFrom") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = new TypeReference(typeof(object)).MakeNullable();
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
-            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
-            var valueArg = method.AddArgument("value", typeof(object));
-            method.Statements = new StatementCollection
+            // public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            WriteNewMember(writer, context, addNewLine: false);
+            using (writer.BeginBlock("public override bool CanConvertFrom(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type sourceType)"))
             {
-                new ConditionStatement
-                {
-                    Condition = Expression.EqualsNull(valueArg),
-                    TrueStatements = new ReturnStatement(new DefaultValueExpression(GetTypeReference(idType))),
-                    FalseStatements = new ConditionStatement
-                    {
-                        Condition = new IsInstanceOfTypeExpression(valueArg, GetTypeReference(idType)),
-                        TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "From" + GetShortName(GetTypeReference(idType))).InvokeMethod(new CastExpression(valueArg, GetTypeReference(idType)))),
-                        FalseStatements = new ConditionStatement
-                        {
-                            Condition = new IsInstanceOfTypeExpression(valueArg, typeof(string)),
-                            TrueStatements = new ReturnStatement(new MemberReferenceExpression(typeDeclaration, "Parse").InvokeMethod(new CastExpression(valueArg, typeof(string)))),
-                            FalseStatements = new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to " + typeDeclaration.Name))),
-                        },
-                    },
-                },
-            };
-        }
+                writer.WriteLine($"return sourceType == typeof(string) || sourceType == typeof({GetTypeReference(idType)}) || sourceType == typeof({context.Name});");
+            }
 
-        // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-        {
-            var method = converter.AddMember(new MethodDeclaration("CanConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = typeof(bool);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
-            var typeArg = method.AddArgument("destinationType", new TypeReference(typeof(Type)).MakeNullable());
-            method.Statements = new ReturnStatement(
-                Expression.Or(
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(GetTypeReference(idType))),
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeDeclaration)),
-                    new BinaryExpression(BinaryOperator.Equals, typeArg, new TypeOfExpression(typeof(string)))));
-        }
-
-        // public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-        {
-            var method = converter.AddMember(new MethodDeclaration("ConvertTo") { Modifiers = Modifiers.Public | Modifiers.Override });
-            method.ReturnType = typeof(object);
-            _ = method.AddArgument("context", new TypeReference("System.ComponentModel.ITypeDescriptorContext").MakeNullable());
-            _ = method.AddArgument("culture", new TypeReference(typeof(CultureInfo)).MakeNullable());
-            var valueArg = method.AddArgument("value", new TypeReference(typeof(object)).MakeNullable());
-            var destinationTypeArg = method.AddArgument("destinationType", typeof(Type));
-            method.Statements = new StatementCollection()
+            // public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock("public override object? ConvertFrom(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Globalization.CultureInfo? culture, object value)"))
             {
-                new ConditionStatement
+                using (writer.BeginBlock("if (value == null)"))
                 {
-                    Condition = Expression.NotEqualsNull(valueArg),
-                    TrueStatements = new StatementCollection
+                    writer.WriteLine($"return default({context.Name});");
+                }
+
+                using (writer.BeginBlock($"if (value is {GetTypeReference(idType)} typedValue)"))
+                {
+                    writer.WriteLine($"return {context.Name}.From{GetShortName(idType)}(typedValue);");
+                }
+
+                using (writer.BeginBlock($"if (value is string stringValue)"))
+                {
+                    writer.WriteLine($"return {context.Name}.Parse(stringValue);");
+                }
+
+                writer.WriteLine($"throw new global::System.ArgumentException($\"Cannot convert '{{value}}' to {context.Name}\", nameof(value));");
+            }
+
+            // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock("public override bool CanConvertTo(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type? destinationType)"))
+            {
+                writer.WriteLine($"return destinationType != null && (destinationType == typeof(string) || destinationType == typeof({GetTypeReference(idType)}) || destinationType == typeof({context.Name}));");
+            }
+
+            // public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock("public override object? ConvertTo(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Globalization.CultureInfo? culture, object? value, global::System.Type destinationType)"))
+            {
+                using (writer.BeginBlock("if (value != null)"))
+                {
+
+                    using (writer.BeginBlock("if (destinationType == typeof(string))"))
                     {
-                        new ConditionStatement
-                        {
-                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeof(string))),
-                            TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("ValueAsString")),
-                        },
-                        new ConditionStatement
-                        {
-                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(typeDeclaration)),
-                            TrueStatements = new ReturnStatement(valueArg),
-                        },
-                        new ConditionStatement
-                        {
-                            Condition = new BinaryExpression(BinaryOperator.Equals, destinationTypeArg, new TypeOfExpression(GetTypeReference(idType))),
-                            TrueStatements = new ReturnStatement(new CastExpression(valueArg, typeDeclaration).Member("Value")),
-                        },
-                    },
-                },
-                new ThrowStatement(new NewObjectExpression(typeof(ArgumentException), Expression.Add("Cannot convert '", valueArg, "' to '", destinationTypeArg, "'"))),
-            };
+                        writer.WriteLine($"return (({context.Name})value).ValueAsString;");
+                    }
+
+                    using (writer.BeginBlock($"if (destinationType == typeof({GetTypeReference(idType)}))"))
+                    {
+                        writer.WriteLine($"return (({context.Name})value).Value;");
+                    }
+
+                    using (writer.BeginBlock($"if (destinationType == typeof({context.Name}))"))
+                    {
+                        writer.WriteLine($"return value;");
+                    }
+
+                }
+
+                writer.WriteLine("throw new global::System.InvalidOperationException($\"Cannot convert '{value}' to '{destinationType}'\");");
+            }
         }
     }
 }

@@ -3,13 +3,13 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRange>true</CompatibilityRange>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.22</Version>
+    <Version>1.0.23</Version>
 
     <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
-    <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json or Newtonsoft.Json.</Description>
+    <Description>Source Generator to generate strongly-typed id with all needed helpers such as converters for System.Text.Json, Newtonsoft.Json, or MongoDB.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,10 +19,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" PrivateAssets="all" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="../Meziantou.Framework.CodeDom/**/*.cs" Visible="False" />
-    <Compile Remove="../Meziantou.Framework.CodeDom/bin/**/*.cs" Visible="False" />
-    <Compile Remove="../Meziantou.Framework.CodeDom/obj/**/*.cs" Visible="False" />
-  </ItemGroup>
+  
 </Project>

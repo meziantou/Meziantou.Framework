@@ -1,46 +1,29 @@
-using Meziantou.Framework.CodeDom;
-using Microsoft.CodeAnalysis;
-
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateMongoDBBsonSerializationConverter(ClassOrStructDeclaration structDeclaration, Compilation compilation, StronglyTypedIdInfo stronglyTypedType)
+    private static void GenerateMongoDBBsonSerializationConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
     {
-        if (!IsTypeDefined(compilation, "MongoDB.Bson.Serialization.Serializers.SerializerBase`1"))
+        if (!context.CanGenerateMongoDbConverter())
             return;
 
-        var converter = structDeclaration.AddType(new ClassDeclaration(structDeclaration.Name + "MongoDBBsonSerializer") { Modifiers = Modifiers.Private | Modifiers.Partial });
-        structDeclaration.CustomAttributes.Add(new CustomAttribute(new TypeReference("MongoDB.Bson.Serialization.Attributes.BsonSerializerAttribute")) { Arguments = { new CustomAttributeArgument(new TypeOfExpression(converter)) } });
-        converter.BaseType = new TypeReference("MongoDB.Bson.Serialization.Serializers.SerializerBase").MakeGeneric(structDeclaration);
+        var typeReference = GetTypeReference(context.AttributeInfo.IdType);
 
-        var typeReference = GetTypeReference(stronglyTypedType.AttributeInfo.IdType);
-        // public override A Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
+        using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.Name}>"))
         {
-            var deserialize = converter.AddMember(new MethodDeclaration("Deserialize") { Modifiers = Modifiers.Public | Modifiers.Override });
-            deserialize.ReturnType = structDeclaration;
-            var context = deserialize.AddArgument("context", new TypeReference("MongoDB.Bson.Serialization.BsonDeserializationContext"));
-            var args = deserialize.AddArgument("args", new TypeReference("MongoDB.Bson.Serialization.BsonDeserializationArgs"));
+            WriteNewMember(writer, context, addNewLine: false);
+            using (writer.BeginBlock($"public override {context.Name} Deserialize(global::MongoDB.Bson.Serialization.BsonDeserializationContext context, global::MongoDB.Bson.Serialization.BsonDeserializationArgs args)"))
+            {
+                writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{typeReference}>();");
+                writer.WriteLine($"return new {context.Name}(serializer.Deserialize(context, args));");
+            }
 
-            deserialize.Statements = new StatementCollection();
-            var serializer = deserialize.Statements.Add(new VariableDeclarationStatement("serializer", new TypeReference("MongoDB.Bson.Serialization.IBsonSerializer").MakeGeneric(typeReference)));
-            serializer.InitExpression = new MemberReferenceExpression(new TypeReference("MongoDB.Bson.Serialization.BsonSerializer"), "LookupSerializer").InvokeMethod(new[] { typeReference });
-
-            deserialize.Statements.Add(new ReturnStatement(new NewObjectExpression(structDeclaration, serializer.Member("Deserialize").InvokeMethod(context, args))));
-        }
-
-        // public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, A value)
-        {
-            var serialize = converter.AddMember(new MethodDeclaration("Serialize") { Modifiers = Modifiers.Public | Modifiers.Override });
-            var context = serialize.AddArgument("context", new TypeReference("MongoDB.Bson.Serialization.BsonSerializationContext"));
-            _ = serialize.AddArgument("args", new TypeReference("MongoDB.Bson.Serialization.BsonSerializationArgs"));
-            var value = serialize.AddArgument("value", new TypeReference(structDeclaration));
-
-            serialize.Statements = new StatementCollection();
-            var serializer = serialize.Statements.Add(new VariableDeclarationStatement("serializer", new TypeReference("MongoDB.Bson.Serialization.IBsonSerializer").MakeGeneric(typeReference)));
-            serializer.InitExpression = new MemberReferenceExpression(new TypeReference("MongoDB.Bson.Serialization.BsonSerializer"), "LookupSerializer").InvokeMethod(new[] { typeReference });
-
-            serialize.Statements.Add(new MemberReferenceExpression(new TypeReference("MongoDB.Bson.Serialization.IBsonSerializerExtensions"), "Serialize").InvokeMethod(serializer, context, new MemberReferenceExpression(value, PropertyName)));
+            WriteNewMember(writer, context, addNewLine: true);
+            using (writer.BeginBlock($"public override void Serialize(global::MongoDB.Bson.Serialization.BsonSerializationContext context, global::MongoDB.Bson.Serialization.BsonSerializationArgs args, {context.Name} value)"))
+            {
+                writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{typeReference}>();");
+                writer.WriteLine($"serializer.Serialize(context, args, value.Value);");
+            }
         }
     }
 }

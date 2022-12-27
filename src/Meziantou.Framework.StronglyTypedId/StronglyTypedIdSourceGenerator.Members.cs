@@ -4,7 +4,7 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, Compilation compilation, StronglyTypedIdInfo context)
+    private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
     {
         var isFirstMember = true;
         void WriteNewMember()
@@ -205,15 +205,15 @@ public partial class StronglyTypedIdSourceGenerator
             GenerateTryParseMethod(writer, context, idType, isReadOnlySpan: false);
         }
 
-        if (context.CanUseStaticInterface())
+        if (context.CompilationInfo.SupportStaticInterfaces)
         {
             // ISpanParsable
-            if (context.SupportReadOnlySpan() && compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null)
+            if (context.CanImplementISpanParsable())
             {
                 // TryParse
                 {
                     var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
-                    if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                    if (context.CompilationInfo.NotNullWhenAttribute != null)
                     {
                         returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                     }
@@ -236,11 +236,11 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             // IParsable
-            if (compilation.GetTypeByMetadataName("System.IParsable`1") != null)
+            if (context.CanImplementIParsable())
             {
                 // TryParse
                 var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
-                if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+                if (context.CompilationInfo.NotNullWhenAttribute != null)
                 {
                     returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                 }
@@ -265,7 +265,7 @@ public partial class StronglyTypedIdSourceGenerator
             var type = isReadOnlySpan ? "global::System.ReadOnlySpan<char>" : "string?";
             var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
 
-            if (context.Compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null)
+            if (context.CompilationInfo.NotNullWhenAttribute != null)
             {
                 returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
             }

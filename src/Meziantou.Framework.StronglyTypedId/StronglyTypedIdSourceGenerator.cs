@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -7,11 +6,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.StronglyTypedId;
-
-// TODO1 AddCodeGeneratedAttributeVisitor
-// TODO1 Int128 / UInt128 / BigInteger / Half / Any type that have a specific constraint?
-//      https://github.com/dotnet/runtime/blob/88868b7a781f4e5b9037b8721f30440207a7aa42/src/libraries/System.Text.Json/tests/System.Text.Json.Tests/Serialization/ConvertersForUnsupportedTypesFunctionalTests.cs#L96
-// TODO1 Generate code using global::?
 
 [Generator]
 public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerator
@@ -74,7 +68,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
           transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
               .Where(static m => m is not null)!;
 
-        var typesToProcess = types.Combine(context.CompilationProvider);
+        var compilation = context.CompilationProvider.Select((compilation, cancellationToken) => new CompilationInfo(compilation));
+
+        var typesToProcess = types.Combine(compilation);
 
         context.RegisterSourceOutput(typesToProcess,
             (spc, source) => Execute(spc, source.Right, source.Left!));
@@ -85,7 +81,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                    ((TypeDeclarationSyntax)syntax).AttributeLists.Count > 0;
         }
 
-        static TypeDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
+        static AttributeInfo? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
         {
             var semanticModel = ctx.SemanticModel;
             var compilation = semanticModel.Compilation;
@@ -102,25 +98,22 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             foreach (var attribute in symbol.GetAttributes())
             {
                 if (attributeSymbol.Equals(attribute.AttributeClass, SymbolEqualityComparer.Default))
-                    return typeDeclaration;
+                    return GetAttributeInfo(semanticModel, attributeSymbol, symbol);
             }
 
             return null;
         }
     }
 
-    private static void Execute(SourceProductionContext context, Compilation compilation, TypeDeclarationSyntax typeDeclaration)
+    private static void Execute(SourceProductionContext context, CompilationInfo compilation, AttributeInfo attribute)
     {
-        var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
-        Debug.Assert(attributeSymbol != null);
-
-        var semanticModel = compilation.GetSemanticModel(typeDeclaration.SyntaxTree);
-        var typeSymbol = semanticModel.GetDeclaredSymbol(typeDeclaration, context.CancellationToken)!;
-        var attributeInfo = GetAttributeInfo(context, semanticModel, attributeSymbol, typeSymbol);
-        if (attributeInfo == null)
+        if (attribute.IdType == IdType.Unknown)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, attribute.AttributeSyntax.GetLocation(), attribute.IdType));
             return;
+        }
 
-        var stronglyTypedId = new StronglyTypedIdInfo(compilation, typeSymbol.ContainingSymbol, typeSymbol, typeSymbol.Name, attributeInfo, typeDeclaration);
+        var stronglyTypedId = new StronglyTypedIdInfo(compilation, attribute);
 
         var writer = new CSharpGeneratedFileWriter();
         writer.WriteLine("#nullable enable");
@@ -159,9 +152,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         };
 
-        using (writer.BeginPartialContext(stronglyTypedId.ExistingTypeSymbol, attributes, baseTypes))
+        using (writer.BeginPartialContext(stronglyTypedId.TypeSymbol, attributes, baseTypes))
         {
-            GenerateTypeMembers(writer, compilation, stronglyTypedId);
+            GenerateTypeMembers(writer, stronglyTypedId);
             GenerateTypeConverter(writer, stronglyTypedId);
             GenerateSystemTextJsonConverter(writer, stronglyTypedId);
             GenerateMongoDBBsonSerializationConverter(writer, stronglyTypedId);
@@ -185,7 +178,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         }
     }
 
-    private static AttributeInfo? GetAttributeInfo(SourceProductionContext context, SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
+    private static AttributeInfo? GetAttributeInfo(SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
     {
         foreach (var attribute in declaredTypeSymbol.GetAttributes())
         {
@@ -219,37 +212,32 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
             }
 
+            var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax();
             var idType = GetIdType(semanticModel.Compilation, type);
-            if (idType == null)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, declaredTypeSymbol.Locations.FirstOrDefault(), type.ToDisplayString()));
-                continue;
-            }
-
-            return new AttributeInfo(attribute.ApplicationSyntaxReference, idType.Value, type, converters, addCodeGeneratedAttribute);
+            return new AttributeInfo(attributeSyntax, declaredTypeSymbol, idType, type, converters, addCodeGeneratedAttribute);
         }
 
         return null;
     }
 
-    private static IdType? GetIdType(Compilation compilation, ITypeSymbol symbol)
+    private static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)
     {
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Boolean")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Boolean)))
             return IdType.System_Boolean;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Byte")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Byte)))
             return IdType.System_Byte;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.DateTime")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_DateTime)))
             return IdType.System_DateTime;
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.DateTimeOffset")))
             return IdType.System_DateTimeOffset;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Decimal")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Decimal)))
             return IdType.System_Decimal;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Double")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Double)))
             return IdType.System_Double;
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Guid")))
@@ -258,13 +246,13 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Half")))
             return IdType.System_Half;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int16")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Int16)))
             return IdType.System_Int16;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int32")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Int32)))
             return IdType.System_Int32;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int64")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Int64)))
             return IdType.System_Int64;
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Int128")))
@@ -273,28 +261,28 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Numerics.BigInteger")))
             return IdType.System_Numerics_BigInteger;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.SByte")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_SByte)))
             return IdType.System_SByte;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.Single")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_Single)))
             return IdType.System_Single;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.String")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_String)))
             return IdType.System_String;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt16")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_UInt16)))
             return IdType.System_UInt16;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt32")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_UInt32)))
             return IdType.System_UInt32;
 
-        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt64")))
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetSpecialType(SpecialType.System_UInt64)))
             return IdType.System_UInt64;
 
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt128")))
             return IdType.System_UInt128;
 
-        return null;
+        return IdType.Unknown;
     }
 
     private static string GetTypeReference(IdType type)
@@ -366,171 +354,250 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         return "private";
     }
 
-    private sealed record AttributeInfo(SyntaxReference? AttributeOwner, IdType IdType, ITypeSymbol IdTypeSymbol, StronglyTypedIdConverters Converters, bool AddCodeGeneratedAttribute);
-
-    private sealed record StronglyTypedIdInfo(Compilation Compilation, ISymbol ContainingSymbol, ITypeSymbol ExistingTypeSymbol, string Name, AttributeInfo AttributeInfo, TypeDeclarationSyntax TypeDeclarationSyntax)
+    private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public bool IsClass => TypeDeclarationSyntax.IsKind(SyntaxKind.ClassDeclaration);
-        public bool IsRecord => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordDeclaration);
-        public bool IsRecordStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.RecordStructDeclaration);
-        public bool IsStruct => TypeDeclarationSyntax.IsKind(SyntaxKind.StructDeclaration);
-        public bool IsReferenceType => IsClass || IsRecord;
-
-        public bool IsSealed
+        public AttributeInfo(SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ISymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute)
         {
-            get
-            {
-                foreach (var modifier in TypeDeclarationSyntax.Modifiers)
-                {
-                    if (modifier.IsKind(SyntaxKind.SealedKeyword))
-                        return true;
-                }
-
-                return false;
-            }
+            AttributeSyntax = attributeSyntax;
+            TypeSymbol = typeSymbol;
+            IdType = idType;
+            IdTypeSymbol = idTypeSymbol;
+            Converters = converters;
+            AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
         }
+
+        public SyntaxNode AttributeSyntax { get; }
+        public INamedTypeSymbol TypeSymbol { get; }
+        public IdType IdType { get; }
+        public ISymbol IdTypeSymbol { get; }
+        public StronglyTypedIdConverters Converters { get; }
+        public bool AddCodeGeneratedAttribute { get; }
+
+        public override bool Equals(object? obj) => Equals(obj as AttributeInfo);
+
+        public bool Equals(AttributeInfo? other)
+        {
+            return other is not null
+                && SymbolEqualityComparer.Default.Equals(TypeSymbol, other.TypeSymbol)
+                && IdType == other.IdType
+                && Converters == other.Converters
+                && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute;
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = SymbolEqualityComparer.Default.GetHashCode(TypeSymbol);
+            hash = (hash * 397) ^ IdType.GetHashCode();
+            hash = (hash * 397) ^ Converters.GetHashCode();
+            hash = (hash * 397) ^ AddCodeGeneratedAttribute.GetHashCode();
+            return hash;
+        }
+    }
+
+    private sealed class CompilationInfo : IEquatable<CompilationInfo?>
+    {
+        public bool SupportStaticInterfaces { get; }
+        public INamedTypeSymbol? StronglyTypedIdAttribute { get; }
+        public INamedTypeSymbol? ReadOnlySpan_Char { get; }
+        public INamedTypeSymbol? IParsable { get; }
+        public INamedTypeSymbol? ISpanParsable { get; }
+        public INamedTypeSymbol? TypeConverter { get; }
+        public INamedTypeSymbol? SystemTextJsonConverter { get; }
+        public INamedTypeSymbol? NewtonsoftJsonConverter { get; }
+        public INamedTypeSymbol? MongoDbConverter { get; }
+        public INamedTypeSymbol? NotNullWhenAttribute { get; }
+
+        public CompilationInfo(Compilation compilation)
+        {
+            StronglyTypedIdAttribute = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
+            IParsable = compilation.GetTypeByMetadataName("System.IParsable`1");
+            ISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1");
+            TypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter");
+            SystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1");
+            NewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter");
+            MongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1");
+            NotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute");
+
+            var readOnlySpan = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
+            if (readOnlySpan != null)
+            {
+                var charSymbol = compilation.GetSpecialType(SpecialType.System_Char);
+                ReadOnlySpan_Char = readOnlySpan.Construct(charSymbol);
+            }
+
+            // Supported by C# 10 (preview) or greater
+            SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions options && options.LanguageVersion is >= (LanguageVersion)1100 or LanguageVersion.Preview;
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as CompilationInfo);
+
+        public bool Equals(CompilationInfo? other)
+        {
+            return other is not null
+                && SupportStaticInterfaces == other.SupportStaticInterfaces
+                && SymbolEqualityComparer.Default.Equals(StronglyTypedIdAttribute, other.StronglyTypedIdAttribute)
+                && SymbolEqualityComparer.Default.Equals(ReadOnlySpan_Char, other.ReadOnlySpan_Char)
+                && SymbolEqualityComparer.Default.Equals(IParsable, other.IParsable)
+                && SymbolEqualityComparer.Default.Equals(ISpanParsable, other.ISpanParsable)
+                && SymbolEqualityComparer.Default.Equals(TypeConverter, other.TypeConverter)
+                && SymbolEqualityComparer.Default.Equals(SystemTextJsonConverter, other.SystemTextJsonConverter)
+                && SymbolEqualityComparer.Default.Equals(NewtonsoftJsonConverter, other.NewtonsoftJsonConverter)
+                && SymbolEqualityComparer.Default.Equals(MongoDbConverter, other.MongoDbConverter)
+                && SymbolEqualityComparer.Default.Equals(NotNullWhenAttribute, other.NotNullWhenAttribute);
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = SupportStaticInterfaces.GetHashCode();
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(StronglyTypedIdAttribute);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(ReadOnlySpan_Char);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(IParsable);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(ISpanParsable);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(TypeConverter);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(SystemTextJsonConverter);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(NewtonsoftJsonConverter);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(MongoDbConverter);
+            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(NotNullWhenAttribute);
+            return hash;
+        }
+    }
+
+    private sealed record StronglyTypedIdInfo(CompilationInfo CompilationInfo, AttributeInfo AttributeInfo)
+    {
+        public string Name => TypeSymbol.Name;
+        public INamedTypeSymbol TypeSymbol => AttributeInfo.TypeSymbol;
+
+        public bool IsClass => TypeSymbol.IsReferenceType && !TypeSymbol.IsRecord;
+        public bool IsRecord => TypeSymbol.IsReferenceType && TypeSymbol.IsRecord;
+        public bool IsStruct => !TypeSymbol.IsReferenceType && !TypeSymbol.IsRecord;
+        public bool IsRecordStruct => !TypeSymbol.IsReferenceType && TypeSymbol.IsRecord;
+        public bool IsReferenceType => TypeSymbol.IsReferenceType;
+
+        public bool IsSealed => TypeSymbol.IsSealed;
 
         public bool IsCtorDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(".ctor").OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers(".ctor").OfType<IMethodSymbol>()
                 .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, AttributeInfo.IdTypeSymbol));
         }
 
         public bool IsFieldDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(FieldName).Any();
+            return TypeSymbol != null && TypeSymbol.GetMembers(FieldName).Any();
         }
 
         public bool IsValueDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(PropertyName).Any();
+            return TypeSymbol != null && TypeSymbol.GetMembers(PropertyName).Any();
         }
 
         public bool IsValueAsStringDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(PropertyAsStringName).Any();
+            return TypeSymbol != null && TypeSymbol.GetMembers(PropertyAsStringName).Any();
         }
 
         public bool IsToStringDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(ToString)).OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers(nameof(ToString)).OfType<IMethodSymbol>()
                 .Any(m => !m.IsStatic && m.Parameters.Length == 0 && m.ReturnType?.SpecialType == SpecialType.System_String);
         }
 
         public bool IsGetHashcodeDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(GetHashCode)).OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers(nameof(GetHashCode)).OfType<IMethodSymbol>()
                 .Any(m => !m.IsStatic && m.Parameters.Length == 0 && m.ReturnType?.SpecialType == SpecialType.System_Int32);
         }
 
         public bool IsEqualsDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
                 .Any(m => !m.IsStatic && m.Parameters.Length == 1 && m.Parameters[0].Type.SpecialType == SpecialType.System_Object && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
         }
 
         public bool IsIEquatableEqualsDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers(nameof(Equals)).OfType<IMethodSymbol>()
-                .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+            return TypeSymbol != null && Enumerable.OfType<IMethodSymbol>(TypeSymbol.GetMembers(nameof(Equals)))
+                .Any(m => !m.IsStatic && m.Parameters.Length == 1 && SymbolEqualityComparer.Default.Equals(TypeSymbol, m.Parameters[0].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
         }
 
         public bool IsOpEqualsDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("op_Equality").OfType<IMethodSymbol>()
-                .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+            return TypeSymbol != null && Enumerable.OfType<IMethodSymbol>(TypeSymbol.GetMembers("op_Equality"))
+                .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(TypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(TypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
         }
 
         public bool IsOpNotEqualsDefined()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("op_Inequality").OfType<IMethodSymbol>()
-                .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(ExistingTypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
+            return TypeSymbol != null && Enumerable.OfType<IMethodSymbol>(TypeSymbol.GetMembers("op_Inequality"))
+                .Any(m => m.IsStatic && m.Parameters.Length == 2 && SymbolEqualityComparer.Default.Equals(TypeSymbol, m.Parameters[0].Type) && SymbolEqualityComparer.Default.Equals(TypeSymbol, m.Parameters[1].Type) && m.ReturnType?.SpecialType == SpecialType.System_Boolean);
         }
 
         public bool IsTryParseDefined_String()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
                 .Any(m => m.IsStatic && m.Parameters.Length > 0 && m.Parameters[0].Type.SpecialType == SpecialType.System_String);
         }
 
         public bool IsTryParseDefined_ReadOnlySpan()
         {
-            var type = GetReadOnlySpanChar();
+            var type = CompilationInfo.ReadOnlySpan_Char;
             if (type == null)
                 return false;
 
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers("TryParse").OfType<IMethodSymbol>()
                 .Any(m => m.IsStatic && m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, type));
         }
 
         public bool IsParseDefined_String()
         {
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
                 .Any(m => m.IsStatic && m.Parameters.Length > 0 && m.Parameters[0].Type.SpecialType == SpecialType.System_String);
         }
 
         public bool IsParseDefined_Span()
         {
-            var type = GetReadOnlySpanChar();
+            var type = CompilationInfo.ReadOnlySpan_Char;
             if (type == null)
                 return false;
 
-            return ExistingTypeSymbol != null && ExistingTypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
+            return TypeSymbol != null && TypeSymbol.GetMembers("Parse").OfType<IMethodSymbol>()
                 .Any(m => m.IsStatic && m.Parameters.Length > 0 && SymbolEqualityComparer.Default.Equals(m.Parameters[0].Type, type));
         }
 
-        public bool SupportReadOnlySpan() => GetReadOnlySpanChar() != null;
-
-        private ITypeSymbol? GetReadOnlySpanChar()
-        {
-            var readOnlySpan = Compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
-            var charSymbol = Compilation.GetTypeByMetadataName("System.Char");
-            if (readOnlySpan != null && charSymbol != null)
-                return readOnlySpan.Construct(charSymbol);
-
-            return null;
-        }
-
-        public bool CanUseStaticInterface()
-        {
-            if (Compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions options)
-                return options.LanguageVersion == LanguageVersion.Preview;
-
-            return false;
-        }
+        public bool SupportReadOnlySpan() => CompilationInfo.ReadOnlySpan_Char != null;
 
         public bool CanImplementISpanParsable()
         {
-            return CanUseStaticInterface() && SupportReadOnlySpan() && Compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null;
+            return CompilationInfo.SupportStaticInterfaces && SupportReadOnlySpan() && CompilationInfo.ISpanParsable != null;
         }
 
         public bool CanImplementIParsable()
         {
-            return CanUseStaticInterface() && SupportReadOnlySpan() && Compilation.GetTypeByMetadataName("System.IParsable`1") != null;
+            return CompilationInfo.SupportStaticInterfaces && SupportReadOnlySpan() && CompilationInfo.IParsable != null;
         }
 
         public bool CanGenerateTypeConverter()
         {
             return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_ComponentModel_TypeConverter)
-                && Compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") != null;
+                && CompilationInfo.TypeConverter != null;
         }
 
         public bool CanGenerateSystemTextJsonConverter()
         {
             return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.System_Text_Json)
-                && Compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") != null;
+                && CompilationInfo.SystemTextJsonConverter != null;
         }
 
         public bool CanGenerateNewtonsoftJsonConverter()
         {
             return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.Newtonsoft_Json)
-                && Compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") != null;
+                && CompilationInfo.NewtonsoftJsonConverter != null;
         }
 
         public bool CanGenerateMongoDbConverter()
         {
             return AttributeInfo.Converters.HasFlag(StronglyTypedIdConverters.MongoDB_Bson_Serialization)
-                && Compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") != null;
+                && CompilationInfo.MongoDbConverter != null;
         }
 
         public string TypeConverterTypeName => Name + "TypeConverter";
@@ -551,6 +618,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
     private enum IdType
     {
+        Unknown,
         System_Boolean,
         System_Byte,
         System_DateTime,

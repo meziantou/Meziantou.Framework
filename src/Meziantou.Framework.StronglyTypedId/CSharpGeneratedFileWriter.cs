@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Meziantou.Framework.StronglyTypedId;
+namespace Meziantou.Framework;
 internal sealed class CSharpGeneratedFileWriter
 {
     private readonly StringBuilder _stringBuilder = new(capacity: 2000);
@@ -11,6 +11,11 @@ internal sealed class CSharpGeneratedFileWriter
 
     public string IndentationString { get; set; } = "\t";
     public int Indentation { get; set; }
+
+    public void EnsureFreeCapacity(int length)
+    {
+        _stringBuilder.EnsureCapacity(_stringBuilder.Capacity + length);
+    }
 
     public void WriteLine()
     {
@@ -31,7 +36,7 @@ internal sealed class CSharpGeneratedFileWriter
         }
 
         WriteIndentation();
-        _stringBuilder.EnsureCapacity(text.Length + 1);
+        EnsureFreeCapacity(text.Length + 1);
         _stringBuilder.Append(text);
         _stringBuilder.Append('\n');
         _mustIndent = true;
@@ -50,7 +55,7 @@ internal sealed class CSharpGeneratedFileWriter
         }
 
         WriteIndentation();
-        _stringBuilder.EnsureCapacity(2);
+        EnsureFreeCapacity(2);
         _stringBuilder.Append(text);
         _stringBuilder.Append('\n');
         _mustIndent = true;
@@ -168,6 +173,31 @@ internal sealed class CSharpGeneratedFileWriter
     }
 
     public SourceText ToSourceText() => SourceText.From(_stringBuilder.ToString(), Encoding.UTF8);
+
+    public void WriteAccessibility(Accessibility accessibility)
+    {
+        switch (accessibility)
+        {
+            case Accessibility.Private:
+                Write("private");
+                break;
+            case Accessibility.ProtectedAndInternal:
+                Write("private protected");
+                break;
+            case Accessibility.Protected:
+                Write("protected");
+                break;
+            case Accessibility.Internal:
+                Write("internal");
+                break;
+            case Accessibility.ProtectedOrInternal:
+                Write("protected internal");
+                break;
+            case Accessibility.Public:
+                Write("public");
+                break;
+        }
+    }
 
     private sealed class CloseBlock : IDisposable
     {

@@ -71,6 +71,18 @@ public sealed class StreamExtensionsTests
         buffer.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
     }
 
+    [Fact]
+    public async Task ToMemoryStreamAsyncTest()
+    {
+        using var stream = new MemoryStream();
+        Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
+        stream.Seek(1, SeekOrigin.Begin);
+
+        using var copy = await stream.ToMemoryStreamAsync();
+
+        copy.ToArray().Should().Equal(new byte[] { 1, 2, 3, 4 });
+    }
+
     private sealed class CustomStream : Stream
     {
         [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Stream is owned by the caller")]

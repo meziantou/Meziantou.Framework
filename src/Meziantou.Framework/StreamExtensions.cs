@@ -81,4 +81,20 @@ public static class StreamExtensions
         await stream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
         return memoryStream.ToArray();
     }
+
+    public static async Task<MemoryStream> ToMemoryStreamAsync(this Stream stream, CancellationToken cancellationToken = default)
+    {
+        var ms = new MemoryStream();
+        try
+        {
+            await stream.CopyToAsync(ms, cancellationToken).ConfigureAwait(false);
+            ms.Seek(0, SeekOrigin.Begin);
+            return ms;
+        }
+        catch
+        {
+            await ms.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
 }

@@ -11,27 +11,33 @@ namespace Meziantou.Framework.StronglyTypedId.Tests;
 
 public sealed class StronglyTypedIdSourceGeneratorTests
 {
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
+    private static async Task<Compilation> CreateCompilation(string sourceText)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
         var newtonsoftJsonRef = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
-        assemblyLocations ??= Array.Empty<string>();
-        var references = assemblyLocations
-            .Concat(netcoreRef)
+        var references = netcoreRef
             .Concat(newtonsoftJsonRef)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();
 
-        var compilation = CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText(file) },
+        return CSharpCompilation.Create("compilation",
+            new[] { CSharpSyntaxTree.ParseText(sourceText) },
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    }
 
+    private static ISourceGenerator InstantiateGenerator()
+    {
         var generator = new StronglyTypedIdSourceGenerator();
-        var wrapperType = (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
+        return (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
+    }
 
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { wrapperType });
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
+    {
+        var compilation = await CreateCompilation(sourceText);
+        var generator = InstantiateGenerator();
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: new ISourceGenerator[] { generator });
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -285,6 +291,88 @@ public partial struct Test {}
         finally
         {
             alc.Unload();
+        }
+    }
+
+    [Fact]
+    public async Task TestIncrementalSupport()
+    {
+        var generator = InstantiateGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: new ISourceGenerator[] { generator },
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+
+        // Run the generator once
+        var sourceCode = "[StronglyTypedId(typeof(int))] public partial struct Test { }";
+        var compilation = await CreateCompilation(sourceCode);
+        var result = RunGenerator();
+
+        // Add dummy syntax tree
+        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(""));
+        result = RunGenerator();
+        AssertCompilationStepIsCached(result);
+        AssertSyntaxStepIsCached(result);
+        AssertOutputIsCached(result);
+
+        // Replace struct with record struct
+        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[StronglyTypedId(typeof(int))] public partial record struct Test { }"));
+        result = RunGenerator(validate: (_, symbol) => (symbol.IsRecord, symbol.IsValueType).Should().Be((true, true)));
+        AssertCompilationStepIsCached(result);
+        AssertSyntaxStepIsNotCached(result);
+        AssertOutputIsNotCached(result);
+
+        // Update syntax
+        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(""));
+
+        result = RunGenerator(shouldGenerateFiles: false);
+        AssertCompilationStepIsCached(result);
+        AssertSyntaxStepIsNotCached(result);
+
+        static void AssertOutputIsCached(GeneratorRunResult result)
+        {
+            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => output.Reason.Should().Be(IncrementalStepRunReason.Cached));
+        }
+
+        static void AssertOutputIsNotCached(GeneratorRunResult result)
+        {
+            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => output.Reason.Should().NotBe(IncrementalStepRunReason.Cached));
+        }
+
+        static void AssertCompilationStepIsCached(GeneratorRunResult result)
+        {
+            result.TrackedSteps["Compilation"].SelectMany(step => step.Outputs).Last().Reason.Should().Be(IncrementalStepRunReason.Unchanged);
+        }
+
+        static void AssertSyntaxStepIsCached(GeneratorRunResult result)
+        {
+            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Should().AllSatisfy(output => output.Reason.Should().Be(IncrementalStepRunReason.Cached));
+        }
+
+        static void AssertSyntaxStepIsNotCached(GeneratorRunResult result)
+        {
+            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Select(output => output.Reason).Should().NotContain(IncrementalStepRunReason.Cached);
+        }
+
+        GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol>? validate = null)
+        {
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+            diagnostics.Should().BeEmpty();
+
+            var type = outputCompilation.GetTypeByMetadataName("Test");
+            validate?.Invoke(outputCompilation, type);
+            if (shouldGenerateFiles)
+            {
+                type.Should().NotBeNull();
+                type.GetMembers("FromInt32").Should().NotBeNull();
+
+                // Run the driver twice to ensure the second invocation is cached
+                var driver2 = driver.RunGenerators(compilation);
+                AssertCompilationStepIsCached(driver2.GetRunResult().Results.Single());
+                AssertSyntaxStepIsCached(driver2.GetRunResult().Results.Single());
+                AssertOutputIsCached(driver2.GetRunResult().Results.Single());
+            }
+
+            return driver.GetRunResult().Results.Single();
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -63,12 +64,17 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     {
         context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
 
-        var types = context.SyntaxProvider.CreateSyntaxProvider(
-          predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
-          transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
-              .Where(static m => m is not null)!;
+        var types = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
+                transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
+            .Where(static m => m is not null)!
+            .WithTrackingName("Syntax");
 
-        var compilation = context.CompilationProvider.Select((compilation, cancellationToken) => new CompilationInfo(compilation));
+        var compilation = context.CompilationProvider
+            .Select((compilation, cancellationToken) => new CompilationInfo(compilation))
+            .WithComparer(EqualityComparer<CompilationInfo>.Default)
+            .WithTrackingName("Compilation");
 
         var typesToProcess = types.Combine(compilation);
 
@@ -98,7 +104,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             foreach (var attribute in symbol.GetAttributes())
             {
                 if (attributeSymbol.Equals(attribute.AttributeClass, SymbolEqualityComparer.Default))
-                    return GetAttributeInfo(semanticModel, attributeSymbol, symbol);
+                    return GetAttributeInfo(semanticModel, attributeSymbol, symbol, cancellationToken);
             }
 
             return null;
@@ -178,7 +184,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         }
     }
 
-    private static AttributeInfo? GetAttributeInfo(SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol)
+    private static AttributeInfo? GetAttributeInfo(SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol, CancellationToken cancellationToken)
     {
         foreach (var attribute in declaredTypeSymbol.GetAttributes())
         {
@@ -212,9 +218,23 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
             }
 
-            var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax();
+            var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax(cancellationToken);
             var idType = GetIdType(semanticModel.Compilation, type);
-            return new AttributeInfo(attributeSyntax, declaredTypeSymbol, idType, type, converters, addCodeGeneratedAttribute);
+
+            var typeSyntaxes = GetNodes(declaredTypeSymbol.DeclaringSyntaxReferences, cancellationToken);
+            return new AttributeInfo(attributeSyntax, typeSyntaxes, declaredTypeSymbol, idType, type, converters, addCodeGeneratedAttribute);
+
+            static SyntaxNode[] GetNodes(ImmutableArray<SyntaxReference> syntaxReferences, CancellationToken cancellationToken)
+            {
+                var result = new SyntaxNode[syntaxReferences.Length];
+                var span = syntaxReferences.AsSpan();
+                for (var i = 0; i < span.Length; i++)
+                {
+                    result[i] = span[i].GetSyntax(cancellationToken);
+                }
+
+                return result;
+            }
         }
 
         return null;
@@ -356,9 +376,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ISymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute)
+        private readonly SyntaxNode[] _typeSyntaxes;
+
+        public AttributeInfo(SyntaxNode attributeSyntax, SyntaxNode[] typeSyntaxes, INamedTypeSymbol typeSymbol, IdType idType, ISymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute)
         {
             AttributeSyntax = attributeSyntax;
+            _typeSyntaxes = typeSyntaxes;
             TypeSymbol = typeSymbol;
             IdType = idType;
             IdTypeSymbol = idTypeSymbol;
@@ -377,8 +400,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         public bool Equals(AttributeInfo? other)
         {
+            // Do not use TypeSymbol as it cannot be compared across Compilation.
             return other is not null
-                && SymbolEqualityComparer.Default.Equals(TypeSymbol, other.TypeSymbol)
+                && ArrayEqualityComparer<SyntaxNode>.Default.Equals(_typeSyntaxes, other._typeSyntaxes)
                 && IdType == other.IdType
                 && Converters == other.Converters
                 && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute;
@@ -386,7 +410,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         public override int GetHashCode()
         {
-            var hash = SymbolEqualityComparer.Default.GetHashCode(TypeSymbol);
+            var hash = TypeSymbol.IsValueType.GetHashCode();
+            hash = (hash * 397) ^ ArrayEqualityComparer<SyntaxNode>.Default.GetHashCode(_typeSyntaxes);
             hash = (hash * 397) ^ IdType.GetHashCode();
             hash = (hash * 397) ^ Converters.GetHashCode();
             hash = (hash * 397) ^ AddCodeGeneratedAttribute.GetHashCode();
@@ -433,9 +458,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         public bool Equals(CompilationInfo? other)
         {
+            // Do not compare StronglyTypedIdAttribute. This attribute is added by the SourceGenerator, so it does exist.
+            // Also, the comparison returns false, which prevent caching from the source generator
             return other is not null
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
-                && SymbolEqualityComparer.Default.Equals(StronglyTypedIdAttribute, other.StronglyTypedIdAttribute)
                 && SymbolEqualityComparer.Default.Equals(ReadOnlySpan_Char, other.ReadOnlySpan_Char)
                 && SymbolEqualityComparer.Default.Equals(IParsable, other.IParsable)
                 && SymbolEqualityComparer.Default.Equals(ISpanParsable, other.ISpanParsable)
@@ -449,7 +475,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public override int GetHashCode()
         {
             var hash = SupportStaticInterfaces.GetHashCode();
-            hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(StronglyTypedIdAttribute);
             hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(ReadOnlySpan_Char);
             hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(IParsable);
             hash = (hash * 397) ^ SymbolEqualityComparer.Default.GetHashCode(ISpanParsable);

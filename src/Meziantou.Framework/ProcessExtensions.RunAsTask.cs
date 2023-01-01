@@ -177,13 +177,13 @@ public static partial class ProcessExtensions
     }
 
 #if NET6_0_OR_GREATER
-    [Obsolete("Exist in .NET 5.0")]
+    [Obsolete("Exist in .NET 5.0", DiagnosticId = "MEZ_NET5")]
     public static Task WaitForExitAsync(Process process, CancellationToken cancellationToken = default)
     {
         return process.WaitForExitAsync(cancellationToken);
     }
 #else
-    [Obsolete("Exist in .NET 5.0")]
+    [Obsolete("Exist in .NET 5.0", DiagnosticId = "MEZ_NET5")]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static async Task WaitForExitAsync(this Process process, CancellationToken cancellationToken = default)
     {

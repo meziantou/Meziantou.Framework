@@ -7,7 +7,7 @@ public static class DateTimeExtensions
 {
     [Pure]
 #if NETCOREAPP3_1_OR_GREATER
-    [Obsolete("Use System.Globalization.ISOWeek")]
+    [Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
 #elif NET461 || NET462 || NETSTANDARD2_0
 #else
 #error Platform not supported

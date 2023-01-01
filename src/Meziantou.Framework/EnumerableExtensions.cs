@@ -188,7 +188,7 @@ public static partial class EnumerableExtensions
     }
 
 #if NET7_0_OR_GREATER
-    [Obsolete("Use Order()")]
+    [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
 #endif
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> list)
     {
@@ -196,7 +196,7 @@ public static partial class EnumerableExtensions
     }
 
 #if NET7_0_OR_GREATER
-    [Obsolete("Use Order()")]
+    [Obsolete("Use Order()", DiagnosticId = "MEZ_NET7")]
 #endif
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
     {

@@ -1,4 +1,4 @@
-#pragma warning disable CS0618 // Type or member is obsolete
+#pragma warning disable MEZ_NETCORE2_1
 using FluentAssertions;
 using Xunit;
 

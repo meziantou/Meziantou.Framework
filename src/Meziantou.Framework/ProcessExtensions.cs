@@ -9,7 +9,7 @@ namespace Meziantou.Framework;
 public static partial class ProcessExtensions
 {
 #if NETCOREAPP3_1_OR_GREATER
-    [Obsolete("Already implemented in .NET 3.1")]
+    [Obsolete("Already implemented in .NET 3.1", DiagnosticId = "MEZ_NETCORE3_1")]
     public static void Kill(Process process, bool entireProcessTree = false)
     {
         ArgumentNullException.ThrowIfNull(process);

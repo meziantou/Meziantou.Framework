@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework;
 
 [StructLayout(LayoutKind.Auto)]
-[Obsolete("Use System.HashCode")]
+[Obsolete("Use System.HashCode", DiagnosticId = "MEZ_NETCORE2_1")]
 public struct HashCodeCombiner
 {
     private int _hash;

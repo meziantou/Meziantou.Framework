@@ -5,6 +5,7 @@
     <IsPackable>True</IsPackable>
     <Nullable>enable</Nullable>
     <SkipLocalsInit>true</SkipLocalsInit>
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
 
 </Project>

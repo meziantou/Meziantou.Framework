@@ -26,11 +26,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
     }
 
-    private static ISourceGenerator InstantiateGenerator()
-    {
-        var generator = new StronglyTypedIdSourceGenerator();
-        return (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
-    }
+    private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
@@ -154,6 +150,35 @@ namespace A
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+    }
+    
+    [Fact]
+    public async Task MultipleAttribute()
+    {
+        var sourceCode = """
+        [System.Obsolete]
+        [StronglyTypedIdAttribute(typeof(System.Guid))]
+        public partial struct Test { }
+        """;
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task AttributeAlias()
+    {
+        var sourceCode = """
+        using Dummy = StronglyTypedIdAttribute;
+
+        [Dummy(typeof(System.Guid))]
+        public partial struct Test { }
+        """;
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
     }
 
     [Fact]
@@ -333,11 +358,11 @@ public partial struct Test {}
         AssertOutputIsNotCached(result);
 
         // Update syntax
-        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(""));
+        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("public partial struct Test { }"));
         result = RunGenerator(shouldGenerateFiles: false);
 
         // Add dummy syntax tree
-        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("[System.ObsoleteAttribute] public partial record struct Test { }"));
+        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("public partial record struct Test2 { }"));
         result = RunGenerator(shouldGenerateFiles: false);
         result.TrackedSteps.Should().BeEmpty();
 

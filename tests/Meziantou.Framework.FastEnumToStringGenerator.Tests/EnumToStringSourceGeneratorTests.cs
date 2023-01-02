@@ -25,11 +25,10 @@ public sealed class EnumToStringSourceGeneratorTests
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        var generator = new EnumToStringSourceGenerator();
-        var wrapperType = (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
+        var generator = new EnumToStringSourceGenerator().AsSourceGenerator();
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { wrapperType });
+            generators: new ISourceGenerator[] { generator });
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();

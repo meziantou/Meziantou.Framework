@@ -25,10 +25,9 @@ public class ResxGeneratorTest
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-        var generator = new ResxGenerator();
-        var wrapperType = (ISourceGenerator)Activator.CreateInstance(Type.GetType("Microsoft.CodeAnalysis.IncrementalGeneratorWrapper, Microsoft.CodeAnalysis", throwOnError: true), generator);
+        var generator = new ResxGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { wrapperType },
+            generators: new ISourceGenerator[] { generator },
             additionalTexts: files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray(),
             optionsProvider: optionProvider);
 

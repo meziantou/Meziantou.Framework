@@ -30,7 +30,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 // ------------------------------------------------------------------------------
 
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]
-[System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class)]
+[System.AttributeUsage(System.AttributeTargets.Struct | System.AttributeTargets.Class, AllowMultiple = false)]
 internal sealed class StronglyTypedIdAttribute : System.Attribute
 {
     /// <summary>
@@ -66,7 +66,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         context.RegisterPostInitializationOutput(ctx => ctx.AddSource("StronglyTypedIdAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
 
         var types = context.SyntaxProvider
-            .CreateSyntaxProvider(
+            .ForAttributeWithMetadataName(
+                "StronglyTypedIdAttribute",
                 predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)!
@@ -98,24 +99,45 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        static AttributeInfo? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
+        static AttributeInfo? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
         {
             var semanticModel = ctx.SemanticModel;
             var compilation = semanticModel.Compilation;
-            var typeDeclaration = (TypeDeclarationSyntax)ctx.Node;
+            var typeDeclaration = (TypeDeclarationSyntax)ctx.TargetNode;
 
-            var attributeSymbol = compilation.GetTypeByMetadataName("StronglyTypedIdAttribute");
-            if (attributeSymbol == null)
-                return null;
-
-            var symbol = semanticModel.GetDeclaredSymbol(typeDeclaration, cancellationToken);
-            if (symbol == null)
-                return null;
-
-            foreach (var attribute in symbol.GetAttributes())
+            foreach (var attribute in ctx.Attributes)
             {
-                if (attributeSymbol.Equals(attribute.AttributeClass, SymbolEqualityComparer.Default))
-                    return GetAttributeInfo(semanticModel, attributeSymbol, symbol, cancellationToken);
+                var arguments = attribute.ConstructorArguments;
+                if (arguments.Length != 6)
+                    continue;
+
+                var idTypeArgument = arguments[0];
+                if (idTypeArgument.Value is not ITypeSymbol type)
+                    continue;
+
+                var converters = StronglyTypedIdConverters.None;
+                AddConverter(arguments[1], StronglyTypedIdConverters.System_Text_Json);
+                AddConverter(arguments[2], StronglyTypedIdConverters.Newtonsoft_Json);
+                AddConverter(arguments[3], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
+                AddConverter(arguments[4], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
+                void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
+                {
+                    if (value.Value is bool argumentValue && argumentValue)
+                    {
+                        converters |= converterValue;
+                    }
+                }
+
+                var addCodeGeneratedAttribute = false;
+                if (arguments[5].Value is bool addCodeGeneratedAttributeValue)
+                {
+                    addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
+                }
+
+                var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax(cancellationToken);
+                var idType = GetIdType(semanticModel.Compilation, type);
+
+                return new AttributeInfo(semanticModel.Compilation, attributeSyntax, (INamedTypeSymbol)ctx.TargetSymbol, idType, type, converters, addCodeGeneratedAttribute);
             }
 
             return null;
@@ -235,49 +257,6 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         {
             writer.WriteLine(GeneratedCodeAttribute);
         }
-    }
-
-    private static AttributeInfo? GetAttributeInfo(SemanticModel semanticModel, ITypeSymbol attributeSymbol, INamedTypeSymbol declaredTypeSymbol, CancellationToken cancellationToken)
-    {
-        foreach (var attribute in declaredTypeSymbol.GetAttributes())
-        {
-            if (!SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, attributeSymbol))
-                continue;
-
-            var arguments = attribute.ConstructorArguments;
-            if (arguments.Length != 6)
-                continue;
-
-            var idTypeArgument = arguments[0];
-            if (idTypeArgument.Value is not ITypeSymbol type)
-                continue;
-
-            var converters = StronglyTypedIdConverters.None;
-            AddConverter(arguments[1], StronglyTypedIdConverters.System_Text_Json);
-            AddConverter(arguments[2], StronglyTypedIdConverters.Newtonsoft_Json);
-            AddConverter(arguments[3], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
-            AddConverter(arguments[4], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
-            void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
-            {
-                if (value.Value is bool argumentValue && argumentValue)
-                {
-                    converters |= converterValue;
-                }
-            }
-
-            var addCodeGeneratedAttribute = false;
-            if (arguments[5].Value is bool addCodeGeneratedAttributeValue)
-            {
-                addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
-            }
-
-            var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax(cancellationToken);
-            var idType = GetIdType(semanticModel.Compilation, type);
-
-            return new AttributeInfo(semanticModel.Compilation, attributeSyntax, declaredTypeSymbol, idType, type, converters, addCodeGeneratedAttribute);
-        }
-
-        return null;
     }
 
     private static IdType GetIdType(Compilation compilation, ITypeSymbol symbol)

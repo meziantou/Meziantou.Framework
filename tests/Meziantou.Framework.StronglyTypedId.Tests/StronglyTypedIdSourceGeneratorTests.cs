@@ -310,14 +310,12 @@ public partial struct Test {}
         // Add dummy syntax tree
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText(""));
         result = RunGenerator();
-        AssertCompilationStepIsCached(result);
         AssertSyntaxStepIsCached(result);
         AssertOutputIsCached(result);
 
         // Replace struct with record struct
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[StronglyTypedId(typeof(int))] public partial record struct Test { }"));
         result = RunGenerator(validate: (_, symbol) => (symbol.IsRecord, symbol.IsValueType).Should().Be((true, true)));
-        AssertCompilationStepIsCached(result);
         AssertSyntaxStepIsNotCached(result);
         AssertOutputIsNotCached(result);
 
@@ -325,7 +323,6 @@ public partial struct Test {}
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(""));
 
         result = RunGenerator(shouldGenerateFiles: false);
-        AssertCompilationStepIsCached(result);
         AssertSyntaxStepIsNotCached(result);
 
         static void AssertOutputIsCached(GeneratorRunResult result)
@@ -336,11 +333,6 @@ public partial struct Test {}
         static void AssertOutputIsNotCached(GeneratorRunResult result)
         {
             result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => output.Reason.Should().NotBe(IncrementalStepRunReason.Cached));
-        }
-
-        static void AssertCompilationStepIsCached(GeneratorRunResult result)
-        {
-            result.TrackedSteps["Compilation"].SelectMany(step => step.Outputs).Last().Reason.Should().Be(IncrementalStepRunReason.Unchanged);
         }
 
         static void AssertSyntaxStepIsCached(GeneratorRunResult result)
@@ -367,7 +359,6 @@ public partial struct Test {}
 
                 // Run the driver twice to ensure the second invocation is cached
                 var driver2 = driver.RunGenerators(compilation);
-                AssertCompilationStepIsCached(driver2.GetRunResult().Results.Single());
                 AssertSyntaxStepIsCached(driver2.GetRunResult().Results.Single());
                 AssertOutputIsCached(driver2.GetRunResult().Results.Single());
             }

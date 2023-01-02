@@ -1,10 +1,8 @@
-using Microsoft.CodeAnalysis;
-
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
+    private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {
         var isFirstMember = true;
         void WriteNewMember()
@@ -13,25 +11,25 @@ public partial class StronglyTypedIdSourceGenerator
             isFirstMember = false;
         }
 
-        var idType = context.AttributeInfo.IdType;
+        var idType = context.IdType;
         var shortName = GetShortName(idType);
 
         // Field
-        if (!context.IsFieldDefined())
+        if (!context.IsFieldDefined)
         {
             WriteNewMember();
             writer.WriteLine($"private readonly {GetTypeReference(idType)} {FieldName};");
         }
 
         // Value
-        if (!context.IsValueDefined())
+        if (!context.IsValueDefined)
         {
             WriteNewMember();
             writer.WriteLine($"public {GetTypeReference(idType)} {PropertyName} => {FieldName};");
         }
 
         // ValueAsString
-        if (!context.IsValueAsStringDefined())
+        if (!context.IsValueAsStringDefined)
         {
             WriteNewMember();
             writer.WriteLine($"public string {PropertyAsStringName} => {ValueToStringExpression()};");
@@ -55,10 +53,10 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // ctor
-        if (!context.IsCtorDefined())
+        if (!context.IsCtorDefined)
         {
             WriteNewMember();
-            using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.Name}({GetTypeReference(idType)} value)"))
+            using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.TypeName}({GetTypeReference(idType)} value)"))
             {
                 writer.WriteLine($"{FieldName} = value;");
             }
@@ -66,10 +64,10 @@ public partial class StronglyTypedIdSourceGenerator
 
         // From
         WriteNewMember();
-        writer.WriteLine($"public static {context.Name} From{shortName}({GetTypeReference(idType)} value) => new {context.Name}(value);");
+        writer.WriteLine($"public static {context.TypeName} From{shortName}({GetTypeReference(idType)} value) => new {context.TypeName}(value);");
 
         // ToString
-        if (!context.IsToStringDefined())
+        if (!context.IsToStringDefined)
         {
             WriteNewMember();
             using (writer.BeginBlock("public override string ToString()"))
@@ -78,16 +76,16 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     using (writer.BeginBlock($"if ({PropertyName} == null)"))
                     {
-                        writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                        writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
                     }
                     using (writer.BeginBlock("else"))
                     {
-                        writer.WriteLine($$"""return "{{context.Name}} { Value = <null> }";""");
+                        writer.WriteLine($$"""return "{{context.TypeName}} { Value = <null> }";""");
                     }
                 }
                 else
                 {
-                    writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                    writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
                 }
             }
         }
@@ -96,11 +94,11 @@ public partial class StronglyTypedIdSourceGenerator
         if (idType == IdType.System_Guid)
         {
             WriteNewMember();
-            writer.WriteLine($"public static {context.Name} New() => new {context.Name}(global::System.Guid.NewGuid());");
+            writer.WriteLine($"public static {context.TypeName} New() => new {context.TypeName}(global::System.Guid.NewGuid());");
         }
 
         // GetHashCode
-        if (!context.IsGetHashcodeDefined())
+        if (!context.IsGetHashcodeDefined)
         {
             WriteNewMember();
             if (IsNullable(idType))
@@ -114,68 +112,68 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // IEquatable<T>
-        if (!context.IsIEquatableEqualsDefined())
+        if (!context.IsIEquatableEqualsDefined)
         {
             WriteNewMember();
             if (context.IsReferenceType)
             {
-                writer.WriteLine($"public bool Equals({context.Name}? other) => other != null && {PropertyName} == other.{PropertyName};");
+                writer.WriteLine($"public bool Equals({context.TypeName}? other) => other != null && {PropertyName} == other.{PropertyName};");
             }
             else
             {
-                writer.WriteLine($"public bool Equals({context.Name} other) => {PropertyName} == other.{PropertyName};");
+                writer.WriteLine($"public bool Equals({context.TypeName} other) => {PropertyName} == other.{PropertyName};");
             }
         }
 
         // Equals
-        if (!context.IsEqualsDefined())
+        if (!context.IsEqualsDefined)
         {
             WriteNewMember();
-            writer.WriteLine($"public override bool Equals(object? other) => other is {context.Name} value && Equals(value);");
+            writer.WriteLine($"public override bool Equals(object? other) => other is {context.TypeName} value && Equals(value);");
         }
 
         // Operator ==
-        if (!context.IsOpEqualsDefined())
+        if (!context.IsOpEqualsDefined)
         {
             WriteNewMember();
             if (context.IsReferenceType)
             {
-                writer.WriteLine($"public static bool operator ==({context.Name}? a, {context.Name}? b) => global::System.Collections.Generic.EqualityComparer<{context.Name}>.Default.Equals(a, b);");
+                writer.WriteLine($"public static bool operator ==({context.TypeName}? a, {context.TypeName}? b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
             }
             else
             {
-                writer.WriteLine($"public static bool operator ==({context.Name} a, {context.Name} b) => global::System.Collections.Generic.EqualityComparer<{context.Name}>.Default.Equals(a, b);");
+                writer.WriteLine($"public static bool operator ==({context.TypeName} a, {context.TypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
             }
         }
 
         // Operator !=
-        if (!context.IsOpNotEqualsDefined())
+        if (!context.IsOpNotEqualsDefined)
         {
             WriteNewMember();
             if (context.IsReferenceType)
             {
-                writer.WriteLine($"public static bool operator !=({context.Name}? a, {context.Name}? b) => !(a == b);");
+                writer.WriteLine($"public static bool operator !=({context.TypeName}? a, {context.TypeName}? b) => !(a == b);");
             }
             else
             {
-                writer.WriteLine($"public static bool operator !=({context.Name} a, {context.Name} b) => !(a == b);");
+                writer.WriteLine($"public static bool operator !=({context.TypeName} a, {context.TypeName} b) => !(a == b);");
             }
         }
 
         // Parse / TryParse
-        if (context.SupportReadOnlySpan())
+        if (context.SupportReadOnlySpanChar)
         {
             // TryParse(ReadOnlySpan<char>)
-            if (!context.IsTryParseDefined_ReadOnlySpan())
+            if (!context.IsTryParseDefined_ReadOnlySpan)
             {
-                GenerateTryParseMethod(writer, context, idType, isReadOnlySpan: true);
+                GenerateTryParseMethod(writer, context, isReadOnlySpan: true);
             }
 
             // Parse(ReadOnlySpan<char>)
-            if (!context.IsParseDefined_Span())
+            if (!context.IsParseDefined_Span)
             {
                 WriteNewMember();
-                using (writer.BeginBlock($"public static {context.Name} Parse(global::System.ReadOnlySpan<char> value)"))
+                using (writer.BeginBlock($"public static {context.TypeName} Parse(global::System.ReadOnlySpan<char> value)"))
                 {
                     using (writer.BeginBlock($"if (TryParse(value, out var result))"))
                     {
@@ -189,7 +187,7 @@ public partial class StronglyTypedIdSourceGenerator
 
         // Parse
         WriteNewMember();
-        using (writer.BeginBlock($"public static {context.Name} Parse(string value)"))
+        using (writer.BeginBlock($"public static {context.TypeName} Parse(string value)"))
         {
             using (writer.BeginBlock($"if (TryParse(value, out var result))"))
             {
@@ -200,26 +198,26 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // TryParse
-        if (!context.IsTryParseDefined_String())
+        if (!context.IsTryParseDefined_String)
         {
-            GenerateTryParseMethod(writer, context, idType, isReadOnlySpan: false);
+            GenerateTryParseMethod(writer, context, isReadOnlySpan: false);
         }
 
-        if (context.CompilationInfo.SupportStaticInterfaces)
+        if (context.SupportStaticInterfaces)
         {
             // ISpanParsable
             if (context.CanImplementISpanParsable())
             {
                 // TryParse
                 {
-                    var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
-                    if (context.CompilationInfo.NotNullWhenAttribute != null)
+                    var returnType = "out " + (context.IsReferenceType ? $"{context.TypeName}?" : context.TypeName);
+                    if (context.SupportNotNullWhenAttribute)
                     {
                         returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                     }
 
                     WriteNewMember();
-                    using (writer.BeginBlock($"static bool System.ISpanParsable<{context.Name}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
+                    using (writer.BeginBlock($"static bool System.ISpanParsable<{context.TypeName}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
                     {
                         writer.WriteLine("return TryParse(value, out result);");
                     }
@@ -228,7 +226,7 @@ public partial class StronglyTypedIdSourceGenerator
                 // Parse
                 {
                     WriteNewMember();
-                    using (writer.BeginBlock($"static {context.Name} System.ISpanParsable<{context.Name}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
+                    using (writer.BeginBlock($"static {context.TypeName} System.ISpanParsable<{context.TypeName}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
                     {
                         writer.WriteLine("return Parse(value);");
                     }
@@ -239,33 +237,33 @@ public partial class StronglyTypedIdSourceGenerator
             if (context.CanImplementIParsable())
             {
                 // TryParse
-                var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
-                if (context.CompilationInfo.NotNullWhenAttribute != null)
+                var returnType = "out " + (context.IsReferenceType ? $"{context.TypeName}?" : context.TypeName);
+                if (context.SupportNotNullWhenAttribute)
                 {
                     returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                 }
 
                 WriteNewMember();
-                using (writer.BeginBlock($"static bool System.IParsable<{context.Name}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
+                using (writer.BeginBlock($"static bool System.IParsable<{context.TypeName}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
                 {
                     writer.WriteLine("return TryParse(value, out result);");
                 }
 
                 // Parse
                 WriteNewMember();
-                using (writer.BeginBlock($"static {context.Name} System.IParsable<{context.Name}>.Parse(string value, global::System.IFormatProvider? provider)"))
+                using (writer.BeginBlock($"static {context.TypeName}  System.IParsable< {context.TypeName}>.Parse(string value, global::System.IFormatProvider? provider)"))
                 {
                     writer.WriteLine("return Parse(value);");
                 }
             }
         }
 
-        void GenerateTryParseMethod(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context, IdType idType, bool isReadOnlySpan)
+        void GenerateTryParseMethod(CSharpGeneratedFileWriter writer, AttributeInfo context, bool isReadOnlySpan)
         {
             var type = isReadOnlySpan ? "global::System.ReadOnlySpan<char>" : "string?";
-            var returnType = "out " + (context.IsReferenceType ? $"{context.Name}?" : context.Name);
+            var returnType = "out " + (context.IsReferenceType ? $"{context.TypeName}?" : context.TypeName);
 
-            if (context.CompilationInfo.NotNullWhenAttribute != null)
+            if (context.SupportNotNullWhenAttribute)
             {
                 returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
             }
@@ -273,7 +271,7 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember();
             using (writer.BeginBlock($"public static bool TryParse({type} value, {returnType} result)"))
             {
-                if (!isReadOnlySpan && context.SupportReadOnlySpan())
+                if (!isReadOnlySpan && context.SupportReadOnlySpanChar)
                 {
                     using (writer.BeginBlock("if (value == null)"))
                     {
@@ -291,14 +289,14 @@ public partial class StronglyTypedIdSourceGenerator
                     {
                         if (isReadOnlySpan)
                         {
-                            writer.WriteLine($"result = new {context.Name}(value.ToString());");
+                            writer.WriteLine($"result = new {context.TypeName}(value.ToString());");
                             writer.WriteLine("return true;");
                         }
                         else
                         {
                             using (writer.BeginBlock($"if (value != null)"))
                             {
-                                writer.WriteLine($"result = new {context.Name}(value);");
+                                writer.WriteLine($"result = new {context.TypeName}(value);");
                                 writer.WriteLine("return true;");
                             }
 
@@ -352,7 +350,7 @@ public partial class StronglyTypedIdSourceGenerator
 
                         using (writer.BeginBlock())
                         {
-                            writer.WriteLine($"result = new {context.Name}(parsedValue);");
+                            writer.WriteLine($"result = new {context.TypeName}(parsedValue);");
                             writer.WriteLine("return true;");
                         }
 

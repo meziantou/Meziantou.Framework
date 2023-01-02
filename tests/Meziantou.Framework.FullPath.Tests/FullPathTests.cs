@@ -115,7 +115,7 @@ public sealed class FullPathTests
     [Fact]
     public void JsonSerialize_NonEmpty()
     {
-        var path = System.Environment.CurrentDirectory;
+        var path = Environment.CurrentDirectory;
         JsonSerializer.Serialize(FullPath.FromPath(path)).Should().Be(JsonSerializer.Serialize(path));
         JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value.Should().Be(path);
     }

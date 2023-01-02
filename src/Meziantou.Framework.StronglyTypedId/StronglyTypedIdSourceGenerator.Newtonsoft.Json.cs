@@ -2,12 +2,12 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateNewtonsoftJsonConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
+    private static void GenerateNewtonsoftJsonConverter(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {
         if (!context.CanGenerateNewtonsoftJsonConverter())
             return;
 
-        var idType = context.AttributeInfo.IdType;
+        var idType = context.IdType;
 
         using (writer.BeginBlock($"partial class {context.NewtonsoftJsonConverterTypeName} : global::Newtonsoft.Json.JsonConverter"))
         {
@@ -18,7 +18,7 @@ public partial class StronglyTypedIdSourceGenerator
             writer.WriteLine("public override bool CanWrite => true;");
 
             WriteNewMember(writer, context, addNewLine: true);
-            writer.WriteLine($"public override bool CanConvert(global::System.Type type) => type == typeof({context.Name});");
+            writer.WriteLine($"public override bool CanConvert(global::System.Type type) => type == typeof({context.TypeName});");
 
             // public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             WriteNewMember(writer, context, addNewLine: true);
@@ -32,15 +32,15 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     if (idType is IdType.System_Half)
                     {
-                        writer.WriteLine($"writer.WriteValue((float)(({context.Name})value).Value);");
+                        writer.WriteLine($"writer.WriteValue((float)(({context.TypeName})value).Value);");
                     }
                     else if (idType is IdType.System_Int128 or IdType.System_UInt128)
                     {
-                        writer.WriteLine($"writer.WriteRawValue((({context.Name})value).ValueAsString);");
+                        writer.WriteLine($"writer.WriteRawValue((({context.TypeName})value).ValueAsString);");
                     }
                     else
                     {
-                        writer.WriteLine($"writer.WriteValue((({context.Name})value).Value);");
+                        writer.WriteLine($"writer.WriteValue((({context.TypeName})value).Value);");
                     }
                 }
             }
@@ -78,7 +78,7 @@ public partial class StronglyTypedIdSourceGenerator
 
             void ReadValue(string? left = null)
             {
-                using (writer.BeginBlock($"if (reader.TokenType == global::Newtonsoft.Json.JsonToken.Null{(context.IsReferenceType ? "" : (" && objectType == typeof(global::System.Nullable<" + context.Name + ">)"))})"))
+                using (writer.BeginBlock($"if (reader.TokenType == global::Newtonsoft.Json.JsonToken.Null{(context.IsReferenceType ? "" : (" && objectType == typeof(global::System.Nullable<" + context.TypeName + ">)"))})"))
                 {
                     writer.WriteLine($"{left}null;");
                 }
@@ -86,16 +86,16 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     if (idType is IdType.System_Half)
                     {
-                        writer.WriteLine($"{left}new {context.Name}(({GetTypeReference(idType)})serializer.Deserialize<float>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<float>(reader));");
                     }
                     else if (idType is IdType.System_Int128 or IdType.System_UInt128)
                     {
-                        writer.WriteLine($"{left}new {context.Name}(({GetTypeReference(idType)})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
                     }
                     else
                     {
                         writer.WriteLine($"#nullable disable");
-                        writer.WriteLine($"{left}new {context.Name}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
                         writer.WriteLine($"#nullable enable");
                     }
                 }

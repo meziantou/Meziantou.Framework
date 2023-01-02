@@ -2,18 +2,18 @@ namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static void GenerateSystemTextJsonConverter(CSharpGeneratedFileWriter writer, StronglyTypedIdInfo context)
+    private static void GenerateSystemTextJsonConverter(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {
         if (!context.CanGenerateSystemTextJsonConverter())
             return;
 
-        var idType = context.AttributeInfo.IdType;
+        var idType = context.IdType;
 
-        using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.Name}>"))
+        using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.TypeName}>"))
         {
             // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
             WriteNewMember(writer, context, addNewLine: false);
-            using (writer.BeginBlock($"public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {context.Name} value, global::System.Text.Json.JsonSerializerOptions options)"))
+            using (writer.BeginBlock($"public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {context.TypeName} value, global::System.Text.Json.JsonSerializerOptions options)"))
             {
                 if (context.IsReferenceType)
                 {
@@ -87,11 +87,11 @@ public partial class StronglyTypedIdSourceGenerator
 
             // public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             WriteNewMember(writer, context, addNewLine: true);
-            using (writer.BeginBlock($"public override {context.Name} Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)"))
+            using (writer.BeginBlock($"public override {context.TypeName} Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)"))
             {
                 using (writer.BeginBlock("if (reader.TokenType == global::System.Text.Json.JsonTokenType.StartObject)"))
                 {
-                    writer.WriteLine($"{context.Name} value = default;");
+                    writer.WriteLine($"{context.TypeName} value = default;");
                     writer.WriteLine("bool valueRead = false;");
                     writer.WriteLine("reader.Read();");
                     using (writer.BeginBlock("while (reader.TokenType != System.Text.Json.JsonTokenType.EndObject)"))
@@ -130,16 +130,16 @@ public partial class StronglyTypedIdSourceGenerator
             if (idType is IdType.System_Int128 or IdType.System_UInt128 or IdType.System_Numerics_BigInteger or IdType.System_Half)
             {
                 writer.BeginBlock("if (reader.HasValueSequence)");
-                writer.WriteLine($"{left}{context.Name}.Parse(global::System.Text.EncodingExtensions.GetString(global::System.Text.Encoding.UTF8, reader.ValueSequence));");
+                writer.WriteLine($"{left}{context.TypeName}.Parse(global::System.Text.EncodingExtensions.GetString(global::System.Text.Encoding.UTF8, reader.ValueSequence));");
                 writer.EndBlock();
                 writer.BeginBlock("else");
-                writer.WriteLine($"{left}{context.Name}.Parse(global::System.Text.Encoding.UTF8.GetString(reader.ValueSpan));");
+                writer.WriteLine($"{left}{context.TypeName}.Parse(global::System.Text.Encoding.UTF8.GetString(reader.ValueSpan));");
                 writer.EndBlock();
             }
             else
             {
                 writer.WriteLine($"#nullable disable");
-                writer.WriteLine($"{left}new {context.Name}(reader.Get{GetShortName(idType)}());");
+                writer.WriteLine($"{left}new {context.TypeName}(reader.Get{GetShortName(idType)}());");
                 writer.WriteLine($"#nullable enable");
             }
         }

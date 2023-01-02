@@ -515,4 +515,12 @@ public sealed partial class StronglyTypedIdTests
         {
         }
     }
+
+    private sealed partial class SampleContainer
+    {
+        [StronglyTypedId(typeof(int))]
+        private readonly partial struct IdInt32Contained
+        {
+        }
+    }
 }

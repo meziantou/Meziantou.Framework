@@ -50,7 +50,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         if (mustCompile)
         {
             var diags = string.Join("\n", result.Diagnostics);
-            var generated = (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString();
+            var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
             result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
             result.Diagnostics.Should().BeEmpty();
         }
@@ -76,7 +76,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -117,7 +117,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -144,6 +144,19 @@ namespace A
     }
 
     [Fact]
+    public async Task DummyAttribute()
+    {
+        var sourceCode = """
+        [System.Obsolete]
+        public partial struct Test { }
+        """;
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+    }
+
+    [Fact]
     public async Task GenerateStruct_Guid_New()
     {
         var sourceCode = @"
@@ -153,7 +166,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -196,7 +209,7 @@ public partial struct Test : System.IEquatable<Test>
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         result.Assembly.Should().NotBeNull();
     }
@@ -211,7 +224,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -246,7 +259,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -275,7 +288,7 @@ public partial struct Test {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Length.Should().Be(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -321,9 +334,12 @@ public partial struct Test {}
 
         // Update syntax
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText(""));
-
         result = RunGenerator(shouldGenerateFiles: false);
-        AssertSyntaxStepIsNotCached(result);
+
+        // Add dummy syntax tree
+        compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("[System.ObsoleteAttribute] public partial record struct Test { }"));
+        result = RunGenerator(shouldGenerateFiles: false);
+        result.TrackedSteps.Should().BeEmpty();
 
         static void AssertOutputIsCached(GeneratorRunResult result)
         {

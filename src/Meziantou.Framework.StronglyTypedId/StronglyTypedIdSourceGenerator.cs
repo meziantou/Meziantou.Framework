@@ -89,7 +89,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 {
                     foreach (var attribute in attributeList.Attributes)
                     {
-                        if (attribute.ArgumentList.Arguments.Count > 0)
+                        if (attribute.ArgumentList != null && attribute.ArgumentList.Arguments.Count > 0)
                             return true;
                     }
                 }
@@ -521,7 +521,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         // Only use to report diagnostic
         public SyntaxNode AttributeSyntax { get; }
 
-        // Info provided by the attibute
+        // Info provided by the attribute
         public PartialTypeContext PartialTypeContext { get; }
         public IdType IdType { get; }
         public StronglyTypedIdConverters Converters { get; }

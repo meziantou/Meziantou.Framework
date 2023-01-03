@@ -36,7 +36,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     {
         var compilation = await CreateCompilation(sourceText, new[]
         {
-            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+            new NuGetReference("Microsoft.NETCore.App.Ref", "6.0.12", "ref/"),
             new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
         });
         var generator = InstantiateGenerator();

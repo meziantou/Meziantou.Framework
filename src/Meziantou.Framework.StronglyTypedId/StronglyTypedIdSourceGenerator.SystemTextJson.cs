@@ -91,7 +91,15 @@ public partial class StronglyTypedIdSourceGenerator
             {
                 using (writer.BeginBlock("if (reader.TokenType == global::System.Text.Json.JsonTokenType.StartObject)"))
                 {
-                    writer.WriteLine($"{context.TypeName} value = default;");
+                    if (context.IsReferenceType)
+                    {
+                        writer.WriteLine($"{context.TypeName}? value = default;");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"{context.TypeName} value = default;");
+                    }
+
                     writer.WriteLine("bool valueRead = false;");
                     writer.WriteLine("reader.Read();");
                     using (writer.BeginBlock("while (reader.TokenType != System.Text.Json.JsonTokenType.EndObject)"))
@@ -110,7 +118,16 @@ public partial class StronglyTypedIdSourceGenerator
                         }
                     }
 
-                    writer.WriteLine("return value;");
+                    if (context.IsReferenceType)
+                    {
+                        writer.WriteLine($"#nullable disable");
+                        writer.WriteLine($"return value ?? new {context.TypeName}(default({GetTypeReference(idType)}));");
+                        writer.WriteLine($"#nullable enable");
+                    }
+                    else
+                    {
+                        writer.WriteLine("return value;");
+                    }
                 }
 
                 ReadValue("return ");

@@ -99,15 +99,7 @@ public partial class StronglyTypedIdSourceGenerator
                         using (writer.BeginBlock("if (!valueRead && reader.TokenType == global::System.Text.Json.JsonTokenType.PropertyName && reader.ValueTextEquals(\"Value\"))"))
                         {
                             writer.WriteLine("reader.Read();");
-                            if (idType == IdType.System_String)
-                            {
-                                writer.WriteLine("#nullable disable");
-                            }
                             ReadValue("value = ");
-                            if (idType == IdType.System_String)
-                            {
-                                writer.WriteLine("#nullable enable");
-                            }
                             writer.WriteLine("valueRead = true;");
                             writer.WriteLine("reader.Read();");
                         }
@@ -138,9 +130,17 @@ public partial class StronglyTypedIdSourceGenerator
             }
             else
             {
-                writer.WriteLine($"#nullable disable");
+                if (idType is IdType.System_String)
+                {
+                    writer.WriteLine($"#nullable disable");
+                }
+
                 writer.WriteLine($"{left}new {context.TypeName}(reader.Get{GetShortName(idType)}());");
-                writer.WriteLine($"#nullable enable");
+
+                if (idType is IdType.System_String)
+                {
+                    writer.WriteLine($"#nullable enable");
+                }
             }
         }
     }

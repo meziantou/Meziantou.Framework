@@ -94,9 +94,17 @@ public partial class StronglyTypedIdSourceGenerator
                     }
                     else
                     {
-                        writer.WriteLine($"#nullable disable");
+                        if (idType is IdType.System_String)
+                        {
+                            writer.WriteLine($"#nullable disable");
+                        }
+
                         writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
-                        writer.WriteLine($"#nullable enable");
+
+                        if (idType is IdType.System_String)
+                        {
+                            writer.WriteLine($"#nullable enable");
+                        }
                     }
                 }
             }

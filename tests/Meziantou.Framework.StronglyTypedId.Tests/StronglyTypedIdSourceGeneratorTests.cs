@@ -1,3 +1,5 @@
+#pragma warning disable CA1034 // Nested types should not be visible
+#pragma warning disable CA1819 // Properties should not return arrays
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Reflection;
 using System.Runtime.Loader;
@@ -11,26 +13,32 @@ namespace Meziantou.Framework.StronglyTypedId.Tests;
 
 public sealed class StronglyTypedIdSourceGeneratorTests
 {
-    private static async Task<Compilation> CreateCompilation(string sourceText)
-    {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
-        var newtonsoftJsonRef = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
-        var references = netcoreRef
-            .Concat(newtonsoftJsonRef)
-            .Select(loc => MetadataReference.CreateFromFile(loc))
-            .ToArray();
+    public sealed record NuGetReference(string Name, string Version, string ReferencePath);
 
+    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences)
+    {
+        var dlls = new List<string>();
+        foreach (var nuGetReference in nuGetReferences)
+        {
+            dlls.AddRange(await NuGetHelpers.GetNuGetReferences(nuGetReference.Name, nuGetReference.Version, nuGetReference.ReferencePath));
+        }
+
+        var references = dlls.Select(loc => MetadataReference.CreateFromFile(loc)).ToArray();
         return CSharpCompilation.Create("compilation",
             new[] { CSharpSyntaxTree.ParseText(sourceText) },
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, warningLevel: 9999, generalDiagnosticOption: ReportDiagnostic.Error, nullableContextOptions: NullableContextOptions.Enable));
     }
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
-        var compilation = await CreateCompilation(sourceText);
+        var compilation = await CreateCompilation(sourceText, new[]
+        {
+            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+            new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
+        });
         var generator = InstantiateGenerator();
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: new ISourceGenerator[] { generator });
@@ -151,7 +159,7 @@ namespace A
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
-    
+
     [Fact]
     public async Task MultipleAttribute()
     {
@@ -165,7 +173,7 @@ namespace A
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
     }
-    
+
     [Fact]
     public async Task AttributeAlias()
     {
@@ -223,10 +231,10 @@ public partial struct Test {}
 [StronglyTypedIdAttribute(typeof(int))]
 public partial struct Test : System.IEquatable<Test>
 {
-    public override string ToString() => null;
-    public override bool Equals(object a) => true;
+    public override string? ToString() => null;
+    public override bool Equals(object? a) => true;
     public override int GetHashCode() => 0;    
-    public bool Equals(Test a) => true;
+    public bool Equals(Test? a) => true;
     public static bool operator ==(Test a, Test b) => true;
     public static bool operator !=(Test a, Test b) => true;
 }
@@ -342,7 +350,10 @@ public partial struct Test {}
 
         // Run the generator once
         var sourceCode = "[StronglyTypedId(typeof(int))] public partial struct Test { }";
-        var compilation = await CreateCompilation(sourceCode);
+        var compilation = await CreateCompilation(sourceCode, new[]
+        {
+            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+        });
         var result = RunGenerator();
 
         // Add dummy syntax tree
@@ -355,6 +366,12 @@ public partial struct Test {}
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[StronglyTypedId(typeof(int))] public partial record struct Test { }"));
         result = RunGenerator(validate: (_, symbol) => (symbol.IsRecord, symbol.IsValueType).Should().Be((true, true)));
         AssertSyntaxStepIsNotCached(result);
+        AssertOutputIsNotCached(result);
+
+        // Update references
+        var newReferences = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
+        compilation = compilation.AddReferences(newReferences.Select(path => MetadataReference.CreateFromFile(path)));
+        result = RunGenerator(validate: (_, symbol) => symbol.GetTypeMembers("TestNewtonsoftJsonConverter").Should().NotBeEmpty());
         AssertOutputIsNotCached(result);
 
         // Update syntax
@@ -406,5 +423,84 @@ public partial struct Test {}
 
             return driver.GetRunResult().Results.Single();
         }
+    }
+
+    public sealed record BuildMatrixArguments(string IdType, string TypeDeclaration, NuGetReference[] NuGetReferences);
+
+    public static IEnumerable<object[]> BuildMatrixTestCases()
+    {
+        return BuildMatrixTestCases().Select(data => new object[] { data });
+
+        static IEnumerable<BuildMatrixArguments> BuildMatrixTestCases()
+        {
+            var types = new[] { "string", "int" };
+            var declarations = new[]
+            {
+                "partial struct Test { }",
+                "readonly partial struct Test { }",
+                "partial class Test { }",
+                "sealed partial class Test { }",
+                "partial record Test { }",
+                "sealed partial record Test { }",
+                "partial record struct Test { }",
+                "readonly partial record struct Test { }",
+            };
+
+            foreach (var type in types)
+            {
+                foreach (var declaration in declarations)
+                {
+                    foreach (var netcoreVersion in new[] { "5.0.0", "6.0.12", "7.0.1" })
+                    {
+                        yield return new BuildMatrixArguments(type, declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/") });
+                    }
+
+                    foreach (var newtonsoftJson in new[] { "12.0.3" })
+                    {
+                        yield return new BuildMatrixArguments(type, declaration, new[]
+                        {
+                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("Newtonsoft.Json", newtonsoftJson, "lib/netstandard2.0/"),
+                        });
+                    }
+
+                    foreach (var mongodb in new[] { "2.18.0" })
+                    {
+                        yield return new BuildMatrixArguments(type, declaration, new[]
+                        {
+                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(BuildMatrixTestCases))]
+    public async Task BuildMatrix(BuildMatrixArguments arg)
+    {
+        var generator = InstantiateGenerator();
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            generators: new ISourceGenerator[] { generator },
+            driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
+
+        // Run the generator once
+        var sourceCode = $"[StronglyTypedId(typeof({arg.IdType}))] {arg.TypeDeclaration}";
+        var compilation = await CreateCompilation(sourceCode, arg.NuGetReferences);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+        diagnostics.Should().BeEmpty();
+
+        var runResult = driver.GetRunResult();
+
+        // Validate the output project compiles
+        using var ms = new MemoryStream();
+        var compilationOutput = outputCompilation.Emit(ms);
+
+        var diags = string.Join("\n", compilationOutput.Diagnostics);
+        var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
+        compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
+        compilationOutput.Diagnostics.Should().BeEmpty();
     }
 }

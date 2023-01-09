@@ -96,11 +96,11 @@ public sealed class DependencyScannerTests
     [Fact]
     public void DefaultScannersIncludeAllScanners()
     {
-        var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName).ToArray();
+        var scanners = new ScannerOptions().Scanners.Select(t => t.GetType()).OrderBy(t => t.FullName, StringComparer.Ordinal).ToArray();
 
         var allScanners = typeof(ScannerOptions).Assembly.GetExportedTypes()
             .Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(DependencyScanner)) && type != typeof(RegexScanner))
-            .OrderBy(t => t.FullName)
+            .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToArray();
 
         scanners.Should().NotBeEmpty();

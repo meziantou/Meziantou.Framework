@@ -412,7 +412,7 @@ public class GlobTests
         var items = glob.EnumerateFiles(directory.FullPath)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
-            .OrderBy(x => x)
+            .OrderBy(x => x, StringComparer.Ordinal)
             .ToList();
 
         items.Should().Equal(expectedResult);
@@ -423,7 +423,7 @@ public class GlobTests
         var items = glob.EnumerateFiles(directory.FullPath)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
-            .OrderBy(x => x)
+            .OrderBy(x => x, StringComparer.Ordinal)
             .ToList();
 
         items.Should().Equal(expectedResult);

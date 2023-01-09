@@ -10,7 +10,7 @@ public class VisitorTests
     {
         var types = typeof(CodeObject).Assembly.GetTypes()
             .Where(t => t.IsPublic && !t.IsAbstract && !t.ContainsGenericParameters && typeof(CodeObject).IsAssignableFrom(t) && t != typeof(CommentCollection) && t != typeof(XmlCommentCollection))
-            .OrderBy(t => t.FullName)
+            .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
 
         foreach (var type in types)

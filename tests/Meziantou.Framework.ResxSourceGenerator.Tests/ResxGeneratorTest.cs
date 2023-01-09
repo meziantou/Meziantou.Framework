@@ -107,7 +107,7 @@ public class ResxGeneratorTest
                 RootNamespace = "Test",
             });
 
-        result.GeneratedTrees.OrderBy(t => t.FilePath).Should().SatisfyRespectively(tree =>
+        result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).Should().SatisfyRespectively(tree =>
             {
                 var fileContent = tree.GetRoot().ToFullString();
                 Path.GetFileName(tree.FilePath).Should().Be("test.NewResource.resx.g.cs");

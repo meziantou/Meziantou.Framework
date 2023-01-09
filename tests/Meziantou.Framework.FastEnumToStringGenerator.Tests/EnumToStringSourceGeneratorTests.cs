@@ -118,7 +118,7 @@ namespace A
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
         var methods1 = ns1Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(m => m.Name == "ToStringFast")
-            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
         using (new AssertionScope())
         {
@@ -129,8 +129,8 @@ namespace A
 
             var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
             var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => m.Name == "ToStringFast")
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+                .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
+                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
             ns3Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal);
             methods3.Should().SatisfyRespectively(
@@ -139,7 +139,7 @@ namespace A
             var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
             var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
                 .Where(m => m.Name == "ToStringFast")
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName);
+                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
             ns4Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
             methods4.Should().SatisfyRespectively(

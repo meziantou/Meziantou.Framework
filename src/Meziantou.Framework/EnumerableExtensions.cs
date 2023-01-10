@@ -601,6 +601,14 @@ public static partial class EnumerableExtensions
         return TimeSpan.FromTicks(result / count);
     }
 
+    /// <summary>
+    /// Ensure the enumerable instance is enumerated only once.
+    /// </summary>
+    public static IEnumerable<T> AsEnumerableOnce<T>(this IEnumerable<T> enumerable)
+    {
+        return new EnumerableOnce<T>(enumerable);
+    }
+
     public static IEnumerable<T> ToOnlyEnumerable<T>(this IEnumerable<T> enumerable)
     {
         if (enumerable is null)
@@ -648,5 +656,24 @@ public static partial class EnumerableExtensions
 
         var result = await task.ConfigureAwait(false);
         return result.ToArray();
+    }
+
+    private sealed class EnumerableOnce<TSource> : IEnumerable<TSource>
+    {
+        private readonly IEnumerable<TSource> _source;
+        private bool _enumerated;
+
+        public EnumerableOnce(IEnumerable<TSource> source) => _source = source;
+
+        public IEnumerator<TSource> GetEnumerator()
+        {
+            if (_enumerated)
+                throw new InvalidOperationException("The source is already enumerated");
+
+            _enumerated = true;
+            return _source.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

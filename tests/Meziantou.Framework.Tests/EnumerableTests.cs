@@ -352,4 +352,12 @@ public class EnumerableTests
             return new[] { "a", "b", "c" };
         }
     }
+
+    [Fact]
+    public void AsEnumerableOnceTest()
+    {
+        var data = new[] { "a" }.AsEnumerableOnce();
+        _ = data.ToList();
+        FluentActions.Invoking(() => data.ToList()).Should().ThrowExactly<InvalidOperationException>();
+    }
 }

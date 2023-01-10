@@ -5,7 +5,7 @@
     <IsTrimmable>true</IsTrimmable>
 
     <Description>Lots of utility classes</Description>
-    <Version>3.0.30</Version>
+    <Version>3.0.31</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES;PUBLIC_STRING_EXTENSIONS</DefineConstants>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>

@@ -239,11 +239,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPackageValidation.Tests", "tests\Meziantou.Framework.NuGetPackageValidation.Tests\Meziantou.Framework.NuGetPackageValidation.Tests.csproj", "{6585762D-F064-473B-90E5-8A4F866B829C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.NuGetPackageValidation.Tool", "src\Meziantou.Framework.NuGetPackageValidation.Tool\Meziantou.Framework.NuGetPackageValidation.Tool.csproj", "{0C658C6D-9BAC-459B-A95F-B39354F9D403}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPackageValidation.Tool", "src\Meziantou.Framework.NuGetPackageValidation.Tool\Meziantou.Framework.NuGetPackageValidation.Tool.csproj", "{0C658C6D-9BAC-459B-A95F-B39354F9D403}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.NuGetPackageValidation.Tool.Tests", "tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj", "{C62D7002-1CAB-4C71-AB66-2C2637978D73}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.NuGetPackageValidation.Tool.Tests", "tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests\Meziantou.Framework.NuGetPackageValidation.Tool.Tests.csproj", "{C62D7002-1CAB-4C71-AB66-2C2637978D73}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SourceGenerators", "SourceGenerators", "{1C1313E3-82C2-4340-B0FF-1E924E018EAD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.SensitiveData", "src\Meziantou.Framework.SensitiveData\Meziantou.Framework.SensitiveData.csproj", "{A84BCC60-CB79-42B8-A0C1-74FFE4219A37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.SensitiveData.Tests", "tests\Meziantou.Framework.SensitiveData.Tests\Meziantou.Framework.SensitiveData.Tests.csproj", "{935F74DA-5CDC-49A7-88CB-4FA99750BDFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -671,6 +675,14 @@ Global
 		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C62D7002-1CAB-4C71-AB66-2C2637978D73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A84BCC60-CB79-42B8-A0C1-74FFE4219A37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A84BCC60-CB79-42B8-A0C1-74FFE4219A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A84BCC60-CB79-42B8-A0C1-74FFE4219A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A84BCC60-CB79-42B8-A0C1-74FFE4219A37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{935F74DA-5CDC-49A7-88CB-4FA99750BDFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{935F74DA-5CDC-49A7-88CB-4FA99750BDFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{935F74DA-5CDC-49A7-88CB-4FA99750BDFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{935F74DA-5CDC-49A7-88CB-4FA99750BDFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -782,6 +794,8 @@ Global
 		{0C658C6D-9BAC-459B-A95F-B39354F9D403} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{C62D7002-1CAB-4C71-AB66-2C2637978D73} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{1C1313E3-82C2-4340-B0FF-1E924E018EAD} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{A84BCC60-CB79-42B8-A0C1-74FFE4219A37} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{935F74DA-5CDC-49A7-88CB-4FA99750BDFD} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

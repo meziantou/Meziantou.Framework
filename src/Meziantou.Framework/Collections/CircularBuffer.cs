@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Collections;
 
@@ -113,7 +114,12 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         if (Count == 0)
             throw new InvalidOperationException("The buffer is empty");
 
-        var item = _items[_startIndex];
+        ref var item = ref _items[_startIndex];
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            item = default;
+        }
+
         Count--;
         _startIndex = (_startIndex + 1) % Capacity;
         _version++;
@@ -125,7 +131,13 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         if (Count == 0)
             throw new InvalidOperationException("The buffer is empty");
 
-        var item = _items[(_startIndex + Count) % Capacity];
+        var index = (_startIndex + Count) % Capacity;
+        ref var item = ref _items[index];
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            item = default;
+        }
+
         Count--;
         _version++;
         return item;
@@ -144,9 +156,9 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
     public void Clear()
     {
-        if (Count > 0)
+        // Clear the elements so that the gc can reclaim the references.
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>() && Count > 0)
         {
-            // Clear the elements so that the gc can reclaim the references.
             Array.Clear(_items, _startIndex, Math.Min(Count - _startIndex, Capacity - _startIndex));
             if (_startIndex + Count > Capacity)
             {

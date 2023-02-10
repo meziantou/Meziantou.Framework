@@ -20,7 +20,7 @@
 }
 
 @code{
-    internal string BaseEditorId { get; } = Guid.NewGuid().ToString();
+    internal string BaseEditorId { get; } = "form-" + Guid.NewGuid().ToString();
     private List<GenericFormField<TModel>>? fields;
 
     [Parameter]

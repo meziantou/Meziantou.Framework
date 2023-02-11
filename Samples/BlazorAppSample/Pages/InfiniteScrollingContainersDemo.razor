@@ -1,0 +1,57 @@
+﻿@page "/infinite-scrolling-containers"
+
+<h1>Infinite scrolling!</h1>
+
+<h2>Vertical</h2>
+
+<div style="overflow-y: scroll; max-height: 200px">
+    <InfiniteScrolling ItemsProvider="GetItems">
+        <ItemTemplate Context="item">
+            <div>Item @item</div>
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div><span class="oi oi-reload spin"></span> Loading more items...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+<h2>Horizontal</h2>
+
+<div style="overflow-x: scroll; display: flex; flex-direction: row; max-width: 200px">
+    <InfiniteScrolling ItemsProvider="GetItems">
+        <ItemTemplate Context="item">
+            <div>Item @item</div>
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div><span class="oi oi-reload spin"></span> Loading more items...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>
+
+<h2>Table</h2>
+
+<table style="overflow-y: scroll; max-height: 200px">
+    <thead>
+        <tr><th>Items</th></tr>
+    </thead>
+    <InfiniteScrolling ItemsProvider="GetItems" LastItemIndicatorElement="tr">
+        <ItemTemplate Context="item">
+            <tr><td>Item @item</td></tr>
+        </ItemTemplate>
+        <LoadingTemplate>
+            <tr><td><span class="oi oi-reload spin"></span> Loading more items...</td></tr>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</table>
+
+
+@code {
+    async Task<IEnumerable<int>> GetItems(InfiniteScrollingItemsProviderRequest request)
+    {
+        await Task.Delay(100);
+        if (request.StartIndex > 50)
+            return Enumerable.Empty<int>();
+
+        return Enumerable.Range(request.StartIndex, 10);
+    }
+}

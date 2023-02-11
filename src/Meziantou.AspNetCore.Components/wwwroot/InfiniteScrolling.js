@@ -4,9 +4,13 @@ export function initialize(lastIndicator, instance) {
         rootMargin: '0px',
         threshold: 0,
     };
+    if (isValidTableElement(lastIndicator.parentElement)) {
+        lastIndicator.style.display = 'table-row';
+    }
     const observer = new IntersectionObserver(async (entries) => {
         for (const entry of entries) {
             if (entry.isIntersecting) {
+                observer.unobserve(lastIndicator);
                 await instance.invokeMethodAsync("LoadMoreItems");
             }
         }
@@ -32,4 +36,11 @@ function findClosestScrollContainer(element) {
 }
 function infiniteScollingDispose(observer) {
     observer.disconnect();
+}
+function isValidTableElement(element) {
+    if (element === null) {
+        return false;
+    }
+    return ((element instanceof HTMLTableElement && element.style.display === '') || element.style.display === 'table')
+        || ((element instanceof HTMLTableSectionElement && element.style.display === '') || element.style.display === 'table-row-group');
 }

@@ -1,4 +1,5 @@
 ﻿@using System.Threading
+@using Microsoft.AspNetCore.Components.Rendering;
 @using Microsoft.JSInterop
 @typeparam T
 @inject IJSRuntime JSRuntime
@@ -17,7 +18,10 @@
     @LoadingTemplate
 }
 
-<div @ref="_lastItemIndicator" style="height:1px"></div>
+@if (!_enumerationCompleted)
+{
+    @RenderLastElement
+}
 
 @code {
     private List<T> _items = new();
@@ -26,6 +30,7 @@
     private IJSObjectReference? _module;
     private IJSObjectReference? _instance;
     private bool _loading = false;
+    private bool _enumerationCompleted;
     private CancellationTokenSource? _loadItemsCts;
     private InfiniteScrollingItemsProviderRequestDelegate<T>? _itemsProvider;
 
@@ -37,6 +42,18 @@
 
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
+
+    /// <summary>
+    /// Gets or sets the tag name of the HTML element that will be used as the virtualization spacer.
+    /// One such element will be rendered before the visible items, and one more after them, using
+    /// an explicit "height" style to control the scroll range.
+    ///
+    /// The default value is "div". If you are placing the <see cref="InfiniteScrolling{T}"/> instance inside
+    /// an element that requires a specific child tag name, consider setting that here. For example when
+    /// rendering inside a "tbody", consider setting <see cref="LastItemIndicatorElement"/> to the value "tr".
+    /// </summary>
+    [Parameter]
+    public string LastItemIndicatorElement { get; set; } = "div";
 
     [JSInvokable]
     public async Task LoadMoreItems()
@@ -58,10 +75,18 @@
                 var newItems = await ItemsProvider(new InfiniteScrollingItemsProviderRequest(items.Count, cts.Token));
                 if (!cts.IsCancellationRequested)
                 {
+                    var length = items.Count;
                     items.AddRange(newItems);
 
-                    System.Diagnostics.Debug.Assert(_instance != null);
-                    await _instance.InvokeVoidAsync("onNewItems");
+                    if (items.Count == length)
+                    {
+                        _enumerationCompleted = true;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.Assert(_instance != null);
+                        await _instance.InvokeVoidAsync("onNewItems");
+                    }
                 }
             }
             catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
@@ -134,5 +159,14 @@
         }
 
         _currentComponentReference?.Dispose();
+    }
+
+    private void RenderLastElement(RenderTreeBuilder __builder)
+    {
+        // This is the last element, so let's use a huge value
+        __builder.OpenElement(1000, LastItemIndicatorElement);
+        __builder.AddAttribute(1001, "style", "height:1px;width:1px;flex-shrink:0");
+        __builder.AddElementReferenceCapture(1002, element => _lastItemIndicator = element);
+        __builder.CloseElement();
     }
 }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <RazorLanguageVersion>2.0</RazorLanguageVersion>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>

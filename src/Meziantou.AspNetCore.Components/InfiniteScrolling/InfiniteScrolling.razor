@@ -18,10 +18,7 @@
     @LoadingTemplate
 }
 
-@if (!_enumerationCompleted)
-{
-    @RenderLastElement
-}
+@RenderLastElement
 
 @code {
     private List<T> _items = new();
@@ -109,6 +106,7 @@
         _loadItemsCts = null;
 
         _items = new List<T>();
+        _enumerationCompleted = false;
         await LoadMoreItems();
     }
 
@@ -119,7 +117,8 @@
         // Clear items when the provider changed
         if (ItemsProvider != _itemsProvider)
         {
-            _items.Clear();
+            _items = new List<T>();
+            _enumerationCompleted = false;
         }
 
         _itemsProvider = ItemsProvider;
@@ -165,7 +164,8 @@
     {
         // This is the last element, so let's use a huge value
         __builder.OpenElement(1000, LastItemIndicatorElement);
-        __builder.AddAttribute(1001, "style", "height:1px;width:1px;flex-shrink:0");
+        var style = _enumerationCompleted ? "height:0;width:0" : "height:1px;width:1px;flex-shrink:0";
+        __builder.AddAttribute(1001, "style", style);
         __builder.AddElementReferenceCapture(1002, element => _lastItemIndicator = element);
         __builder.CloseElement();
     }

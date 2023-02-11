@@ -19,4 +19,10 @@ public sealed class NuGetPackageValidationOptions
     public ICollection<NuGetPackageValidationRule> Rules { get; } = new HashSet<NuGetPackageValidationRule>();
 
     public ICollection<int> ExcludedRuleIds { get; } = new HashSet<int>();
+
+    public IList<string> SymbolServers { get; } = new List<string>()
+    {
+        "https://msdl.microsoft.com/download/symbols/",
+        "https://symbols.nuget.org/download/symbols/",
+    };
 }

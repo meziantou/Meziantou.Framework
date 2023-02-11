@@ -6,9 +6,14 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tests;
 
 public sealed class NuGetPackageValidatorTests
 {
-    private static async Task<NuGetPackageValidationResult> ValidateAsync(string packageName, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
+    private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
     {
         var path = FullPath.FromPath(typeof(NuGetPackageValidatorTests).Assembly.Location).Parent / "Packages" / packageName;
+        return ValidateAsync(path, excludedRuleIds, rules);
+    }
+
+    private static async Task<NuGetPackageValidationResult> ValidateAsync(FullPath packagePath, int[] excludedRuleIds, params NuGetPackageValidationRule[] rules)
+    {
         var options = new NuGetPackageValidationOptions();
         options.Rules.AddRange(rules);
 
@@ -17,7 +22,23 @@ public sealed class NuGetPackageValidatorTests
             options.ExcludedRuleIds.AddRange(excludedRuleIds);
         }
 
-        return await NuGetPackageValidator.ValidateAsync(path, options);
+        return await NuGetPackageValidator.ValidateAsync(packagePath, options);
+    }
+
+    private static async Task<FullPath> DownloadPackageAsync(string packageName, string version)
+    {
+        var filePath = FullPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Meziantou.FrameworkTests", "nuget", $"{packageName}.{version}.nupkg");
+        if (!File.Exists(filePath))
+        {
+            using var httpClient = new HttpClient();
+            await using var stream = await httpClient.GetStreamAsync(new Uri($"https://www.nuget.org/api/v2/package/{packageName}/{version}")).ConfigureAwait(false);
+
+            filePath.CreateParentDirectory();
+            await using var fileStream = File.OpenWrite(filePath);
+            await stream.CopyToAsync(fileStream);
+        }
+
+        return filePath;
     }
 
     private static Task<NuGetPackageValidationResult> ValidateAsync(string packageName, params NuGetPackageValidationRule[] rules)
@@ -228,6 +249,14 @@ public sealed class NuGetPackageValidatorTests
     public async Task Validate_XmlDocumentation_Present()
     {
         var result = await ValidateAsync("Release_XmlDocumentation.1.0.0.nupkg", NuGetPackageValidationRules.XmlDocumentationMustBePresent);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_WithSymbolsServer()
+    {
+        var path = await DownloadPackageAsync("Newtonsoft.Json", "13.0.2");
+        var result = await ValidateAsync(path, excludedRuleIds: new[] { ErrorCodes.FileHashIsNotValid }, rules: new[] { NuGetPackageValidationRules.Symbols });
         AssertNoErrors(result);
     }
 }

@@ -26,6 +26,27 @@ public sealed class NuGetPackageValidationContext : IDisposable
     public CancellationToken CancellationToken { get; }
     public PackageReaderBase Package { get; }
     public PackageReaderBase? SymbolPackage { get; }
+    public IEnumerable<Uri> SymbolServers
+    {
+        get
+        {
+            foreach (var server in _options.SymbolServers)
+            {
+                if (string.IsNullOrEmpty(server))
+                    continue;
+
+                yield return new Uri(EnsureTrailingSlash(server));
+
+                static string EnsureTrailingSlash(string url)
+                {
+                    if (url.EndsWith('/'))
+                        return url;
+
+                    return url + "/";
+                }
+            }
+        }
+    }
 
     internal IReadOnlyCollection<NuGetPackageValidationError> Errors => _errors;
 

@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -12,10 +13,11 @@ namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 {
+    private const ushort PortableCodeViewVersionMagic = 0x504d;
+
     private static readonly Guid SourceLinkId = new(0xCC110556, 0xA091, 0x4D38, 0x9F, 0xEC, 0x25, 0xAB, 0x9A, 0x35, 0x1A, 0x6A);
     private static readonly Guid EmbeddedSourceId = new(0x0E8A571B, 0x6926, 0x466E, 0xB4, 0xAD, 0x8A, 0xB0, 0x46, 0x11, 0xF5, 0xFE);
     private static readonly Guid CompilerFlagsId = new(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8);
-
     // https://github.com/dotnet/runtime/blob/18d0ead1f33808def27f8b57ccd907ec9efb14ac/docs/design/specs/PortablePdb-Metadata.md#document-table-0x30
     private static readonly Guid HashAlgorithmSha1 = new(0xFF1816EC, 0xAA5E, 0x4D10, 0x87, 0xF7, 0x6F, 0x49, 0x63, 0x83, 0x34, 0x60);
     private static readonly Guid HashAlgorithmSha256 = new(0x8829D00F, 0x11B8, 0x4213, 0x87, 0x8B, 0x77, 0x0E, 0x85, 0x97, 0xAC, 0x16);
@@ -45,8 +47,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 if (!await IsDotNetAssembly(context, item).ConfigureAwait(false))
                     continue;
 
-
-                // Symbols can be embeded, in a pdb file next to the dll, or in a snupkg file
+                // Symbols can be embedded, in a pdb file next to the dll, or in a snupkg file, or from a symbol server
                 var pdbPath = Path.ChangeExtension(item, ".pdb");
                 Stream? dllStream = null;
                 Stream? pdbStream = null;
@@ -61,6 +62,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     peReader = new PEReader(dllStreamSeekable);
                     var entries = peReader.ReadDebugDirectory();
                     var codeViewEntry = entries.FirstOrDefault(e => e.IsPortableCodeView);
+                    var pdbChecksums = entries.Where(e => e.Type == DebugDirectoryEntryType.PdbChecksum).Select(peReader.ReadPdbChecksumDebugDirectoryData).ToArray();
 
                     // Try to load embedded pdb
                     try
@@ -100,6 +102,46 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                             }
                             catch (FileNotFoundException)
                             {
+                            }
+                        }
+
+                        // load pdb from the symbol server
+                        if (metadataReaderProvider == null)
+                        {
+                            // Portable PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PortablePDBFileKeyGenerator.cs#L84
+                            // Windows PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PDBFileKeyGenerator.cs#L52
+                            var data = peReader.ReadCodeViewDebugDirectoryData(codeViewEntry);
+                            var isPortable = codeViewEntry.MinorVersion == PortableCodeViewVersionMagic;
+                            var signature = data.Guid;
+                            var age = data.Age;
+
+                            var symbolId = isPortable
+                                ? signature.ToString("N", CultureInfo.InvariantCulture) + "FFFFFFFF"
+                                : string.Format(CultureInfo.InvariantCulture, "{0}{1:x}", signature.ToString("N", CultureInfo.InvariantCulture), age);
+
+                            foreach (var symbolServer in context.SymbolServers)
+                            {
+                                foreach (var checksum in pdbChecksums)
+                                {
+                                    var url = symbolServer + Path.GetFileName(pdbPath) + "/" + symbolId + "/" + Path.GetFileName(pdbPath);
+                                    var checksumHeader = checksum.AlgorithmName + ":" + Convert.ToHexString(checksum.Checksum.AsSpan());
+                                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                                    request.Headers.Add("SymbolChecksum", checksumHeader);
+
+                                    using var response = await ShareHttpClient.Instance.SendAsync(request, context.CancellationToken).ConfigureAwait(false);
+                                    if (response.IsSuccessStatusCode)
+                                    {
+                                        var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
+                                        await using (pdbData.ConfigureAwait(false))
+                                        {
+                                            metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (metadataReaderProvider != null)
+                                    break;
                             }
                         }
 
@@ -212,18 +254,16 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                             var hashAlgorithm = reader.GetGuid(document.HashAlgorithm);
                                             if (hashAlgorithm == HashAlgorithmSha1)
                                             {
-                                                var hash = SHA1.HashData(data);
                                                 var expectedHash = reader.GetBlobBytes(document.Hash);
-                                                if (!expectedHash.SequenceEqual(hash))
+                                                if (!MatchHash(data, expectedHash, HashAlgorithmName.SHA1))
                                                 {
                                                     context.ReportError(ErrorCodes.FileHashIsNotValid, $"Source file '{url}' hash differ from the expected hash", fileName: item);
                                                 }
                                             }
                                             else if (hashAlgorithm == HashAlgorithmSha256)
                                             {
-                                                var hash = SHA256.HashData(data);
                                                 var expectedHash = reader.GetBlobBytes(document.Hash);
-                                                if (!expectedHash.SequenceEqual(hash))
+                                                if (!MatchHash(data, expectedHash, HashAlgorithmName.SHA256))
                                                 {
                                                     context.ReportError(ErrorCodes.FileHashIsNotValid, $"Source file '{url}' hash differ from the expected hash", fileName: item);
                                                 }
@@ -360,6 +400,53 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
         }
 
         return new CompilerData(version);
+    }
+
+    private static bool MatchHash(ReadOnlySpan<byte> content, ReadOnlySpan<byte> expectedHash, HashAlgorithmName hashAlgorithmName)
+    {
+        using var hash = IncrementalHash.CreateHash(hashAlgorithmName);
+
+        hash.AppendData(content);
+        var actualHash = hash.GetHashAndReset();
+        if (expectedHash.SequenceEqual(actualHash))
+            return true;
+
+        actualHash = CalculateHashWithLineBreakSubstituted(hash, content, "\r\n"u8);
+        if (expectedHash.SequenceEqual(actualHash))
+            return true;
+
+        actualHash = CalculateHashWithLineBreakSubstituted(hash, content, "\n"u8);
+        if (expectedHash.SequenceEqual(actualHash))
+            return true;
+
+        return false;
+
+        static byte[] CalculateHashWithLineBreakSubstituted(IncrementalHash incrementalHash, ReadOnlySpan<byte> content, ReadOnlySpan<byte> newLine)
+        {
+            while (!content.IsEmpty)
+            {
+                var index = content.IndexOf((byte)'\n');
+                if (index < 0)
+                {
+                    incrementalHash.AppendData(content);
+                    return incrementalHash.GetHashAndReset();
+                }
+
+                if (index > 0 && content[index - 1] == (byte)'\r')
+                {
+                    incrementalHash.AppendData(content[..(index - 1)]);
+                }
+                else
+                {
+                    incrementalHash.AppendData(content[..index]);
+                }
+
+                incrementalHash.AppendData(newLine);
+                content = content[(index + 1)..];
+            }
+
+            return incrementalHash.GetHashAndReset();
+        }
     }
 
     private sealed record CompilerData(string? Version);

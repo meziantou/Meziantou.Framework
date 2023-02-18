@@ -66,6 +66,7 @@
         _loadItemsCts = cts;
         try
         {
+            _loading = true;
             StateHasChanged(); // Allow the UI to display the loading indicator
             try
             {
@@ -95,6 +96,7 @@
         {
             _loadItemsCts = null;
             cts.Dispose();
+            _loading = false;
         }
 
         StateHasChanged(); // Display the new items and hide the loading indicator

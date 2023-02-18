@@ -334,6 +334,27 @@ public sealed partial class StronglyTypedIdTests
         value.Should().Be(IdClassString.FromString("test"));
     }
 
+    [Fact]
+    public void IdClassString_ToString_Null()
+    {
+        var value = IdClassString.FromString(null);
+        value.ToString().Should().Be("IdClassString { Value = <null> }");
+    }
+
+    [Fact]
+    public void IdClassString_ToString_NonNull()
+    {
+        var value = IdClassString.FromString("test");
+        value.ToString().Should().Be("IdClassString { Value = test }");
+    }
+
+    [Fact]
+    public void IdInt32_ToString_NonNull()
+    {
+        var value = IdInt32.FromInt32(-1);
+        value.ToString().Should().Be("IdInt32 { Value = -1 }");
+    }
+
     private static T BsonClone<T>(T value)
     {
         using var stream = new MemoryStream();

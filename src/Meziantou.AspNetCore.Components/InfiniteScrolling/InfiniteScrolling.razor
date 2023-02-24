@@ -13,7 +13,7 @@
         @ItemTemplate(item)
     }
 }
-@if (_loading)
+@if (IsLoading)
 {
     @LoadingTemplate
 }
@@ -26,10 +26,11 @@
     private DotNetObjectReference<InfiniteScrolling<T>>? _currentComponentReference;
     private IJSObjectReference? _module;
     private IJSObjectReference? _instance;
-    private bool _loading = false;
     private bool _enumerationCompleted;
     private CancellationTokenSource? _loadItemsCts;
     private InfiniteScrollingItemsProviderRequestDelegate<T>? _itemsProvider;
+
+    private bool IsLoading => _loadItemsCts != null;
 
     [Parameter]
     public InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get; set; }

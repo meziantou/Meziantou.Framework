@@ -50,6 +50,7 @@
   <!-- Package configuration -->
   <PropertyGroup>
     <_PackageReadmeFilePath Condition="Exists('$(MSBuildProjectDirectory)\readme.md')">$(MSBuildProjectDirectory)\readme.md</_PackageReadmeFilePath>
+    <_PackageThirdPartyNoticesPath Condition="Exists('$(MSBuildProjectDirectory)\THIRD-PARTY-NOTICES.TXT')">$(MSBuildProjectDirectory)\THIRD-PARTY-NOTICES.TXT</_PackageThirdPartyNoticesPath>
 
     <Authors>Meziantou</Authors>
     <Company>Meziantou</Company>
@@ -63,6 +64,7 @@
     <None Include="$(MSBuildThisFileDirectory)\icon.png" Pack="true" PackagePath="" Visible="false" />
     <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
     <None Include="$(_PackageReadmeFilePath)" Pack="true" PackagePath="" Condition="$(_PackageReadmeFilePath) != ''" />
+    <None Include="$(_PackageThirdPartyNoticesPath)" Pack="true" PackagePath="" Condition="$(_PackageThirdPartyNoticesPath) != ''" />
   </ItemGroup>
 
   <!-- Analyzers -->

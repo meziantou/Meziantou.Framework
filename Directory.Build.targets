@@ -2,7 +2,8 @@
   <Import Project="$(MSBuildThisFileDirectory)/eng/npm.targets" />
 
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
+    <Compile Condition="'$(MSBuildProjectExtension)' == '.csproj'"
+             Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs" />
 
     <Compile Condition="'$(SkipLocalsInit)' == 'true'"

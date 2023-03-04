@@ -27,6 +27,7 @@
 | Meziantou.Framework.HtmlSanitizer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) |
 | Meziantou.Framework.NuGetPackageValidation | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.NuGetPackageValidation.svg)](https://www.nuget.org/packages/Meziantou.Framework.NuGetPackageValidation/) |
 | Meziantou.Framework.NuGetPackageValidation.Tool | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.NuGetPackageValidation.Tool.svg)](https://www.nuget.org/packages/Meziantou.Framework.NuGetPackageValidation.Tool/) |
+| Meziantou.Framework.ObjectMethodExecutor | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ObjectMethodExecutor.svg)](https://www.nuget.org/packages/Meziantou.Framework.ObjectMethodExecutor/) |
 | Meziantou.Framework.RelativeDate | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.RelativeDate.svg)](https://www.nuget.org/packages/Meziantou.Framework.RelativeDate/) |
 | Meziantou.Framework.ResxSourceGenerator | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ResxSourceGenerator.svg)](https://www.nuget.org/packages/Meziantou.Framework.ResxSourceGenerator/) |
 | Meziantou.Framework.Scheduling | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Scheduling.svg)](https://www.nuget.org/packages/Meziantou.Framework.Scheduling/) |

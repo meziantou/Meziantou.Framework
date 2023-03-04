@@ -14,7 +14,7 @@ public sealed class ObjectMethodExecutor
     private readonly MethodExecutor? _executor;
 
     private static readonly ConstructorInfo ObjectMethodExecutorAwaitableConstructor =
-        typeof(ObjectMethodExecutorAwaitable).GetConstructor(new[] {
+        typeof(ObjectMethodExecutorAwaitable).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] {
             typeof(object),                 // customAwaitable
             typeof(Func<object, object>),   // getAwaiterMethod
             typeof(Func<object, bool>),     // isCompletedMethod
@@ -69,8 +69,7 @@ public sealed class ObjectMethodExecutor
 
     private Type? AsyncResultType { get; }
 
-    // This field is made internal set because it is set in unit tests.
-    internal Type MethodReturnType { get; set; }
+    private Type MethodReturnType { get; set; }
 
     public bool IsMethodAsync { get; }
 
@@ -137,7 +136,7 @@ public sealed class ObjectMethodExecutor
         return _executorAsync(target, parameters);
     }
 
-    public object? GetDefaultValueForParameter(int index)
+    private object? GetDefaultValueForParameter(int index)
     {
         if (_parameterDefaultValues == null)
         {

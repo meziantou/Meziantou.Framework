@@ -29,7 +29,7 @@ public readonly struct ObjectMethodExecutorAwaitable
     // We can reconsider this in the future if there's a need to optimize for ValueTask<T>
     // or other value-typed awaitables.
 
-    public ObjectMethodExecutorAwaitable(
+    internal ObjectMethodExecutorAwaitable(
         object customAwaitable,
         Func<object, object> getAwaiterMethod,
         Func<object, bool> isCompletedMethod,

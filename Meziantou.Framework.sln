@@ -251,9 +251,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.Sensiti
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ObjectMethodExecutor", "src\Meziantou.Framework.ObjectMethodExecutor\Meziantou.Framework.ObjectMethodExecutor.csproj", "{EC1F980A-C592-4FCB-83EB-E1F89C9A1067}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.ObjectMethodExecutor.Tests", "tests\Meziantou.Framework.ObjectMethodExecutor.Tests\Meziantou.Framework.ObjectMethodExecutor.Tests.csproj", "{60C59F22-BB4D-4C56-9D3D-ACEB18AE4D64}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.ObjectMethodExecutor.Tests", "tests\Meziantou.Framework.ObjectMethodExecutor.Tests\Meziantou.Framework.ObjectMethodExecutor.Tests.csproj", "{60C59F22-BB4D-4C56-9D3D-ACEB18AE4D64}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Meziantou.Framework.ObjectMethodExecutor.FSharpTests", "tests\Meziantou.Framework.ObjectMethodExecutor.FSharpTests\Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj", "{54FE4DE7-1A34-460E-A021-DDF48B3C8483}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Meziantou.Framework.ObjectMethodExecutor.FSharpTests", "tests\Meziantou.Framework.ObjectMethodExecutor.FSharpTests\Meziantou.Framework.ObjectMethodExecutor.FSharpTests.fsproj", "{54FE4DE7-1A34-460E-A021-DDF48B3C8483}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.InlineSnapshotTesting", "src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj", "{E9B61503-B13E-4902-88BB-70C7C2AA6702}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Meziantou.Framework.InlineSnapshotTesting.Tests", "tests\Meziantou.Framework.InlineSnapshotTesting.Tests\Meziantou.Framework.InlineSnapshotTesting.Tests.csproj", "{0E8877EC-EB9F-4139-A219-7841756E1E56}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon", "src\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj", "{7EB29C99-5044-4B60-BED3-34B433FB83C0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -701,6 +707,18 @@ Global
 		{54FE4DE7-1A34-460E-A021-DDF48B3C8483}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{54FE4DE7-1A34-460E-A021-DDF48B3C8483}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{54FE4DE7-1A34-460E-A021-DDF48B3C8483}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9B61503-B13E-4902-88BB-70C7C2AA6702}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9B61503-B13E-4902-88BB-70C7C2AA6702}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9B61503-B13E-4902-88BB-70C7C2AA6702}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9B61503-B13E-4902-88BB-70C7C2AA6702}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E8877EC-EB9F-4139-A219-7841756E1E56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E8877EC-EB9F-4139-A219-7841756E1E56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E8877EC-EB9F-4139-A219-7841756E1E56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E8877EC-EB9F-4139-A219-7841756E1E56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EB29C99-5044-4B60-BED3-34B433FB83C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EB29C99-5044-4B60-BED3-34B433FB83C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EB29C99-5044-4B60-BED3-34B433FB83C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EB29C99-5044-4B60-BED3-34B433FB83C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -817,6 +835,9 @@ Global
 		{EC1F980A-C592-4FCB-83EB-E1F89C9A1067} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{60C59F22-BB4D-4C56-9D3D-ACEB18AE4D64} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
 		{54FE4DE7-1A34-460E-A021-DDF48B3C8483} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{E9B61503-B13E-4902-88BB-70C7C2AA6702} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
+		{0E8877EC-EB9F-4139-A219-7841756E1E56} = {E4DDFF3F-B830-4687-B3D3-E253CDAC33BF}
+		{7EB29C99-5044-4B60-BED3-34B433FB83C0} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

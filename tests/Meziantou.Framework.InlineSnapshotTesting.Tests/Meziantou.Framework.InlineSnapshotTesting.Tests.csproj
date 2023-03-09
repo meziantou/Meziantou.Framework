@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);$(LatestTargetFrameworksWindows);net472</TargetFrameworks>
+    <CompatibilityRecord>true</CompatibilityRecord>
+    <CompatibilityRange>true</CompatibilityRange>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" Visible="False" />
+  </ItemGroup>
+</Project>

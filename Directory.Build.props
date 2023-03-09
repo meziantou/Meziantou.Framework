@@ -13,6 +13,7 @@
     <LatestTargetFrameworks>$(LatestTargetFrameworkPreview);$(LatestTargetFramework);$(LatestTargetFrameworkLts)</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>$(LatestTargetFrameworkPreviewWindows);$(LatestTargetFrameworkWindows);$(LatestTargetFrameworkLtsWindows)</LatestTargetFrameworksWindows>
 
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>
 

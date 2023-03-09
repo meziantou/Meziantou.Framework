@@ -25,6 +25,8 @@
 | Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |
 | Meziantou.Framework.Html.Tool | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.Tool.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html.Tool/) |
 | Meziantou.Framework.HtmlSanitizer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) |
+| Meziantou.Framework.InlineSnapshotTesting | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.InlineSnapshotTesting.svg)](https://www.nuget.org/packages/Meziantou.Framework.InlineSnapshotTesting/) |
+| Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.svg)](https://www.nuget.org/packages/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/) |
 | Meziantou.Framework.NuGetPackageValidation | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.NuGetPackageValidation.svg)](https://www.nuget.org/packages/Meziantou.Framework.NuGetPackageValidation/) |
 | Meziantou.Framework.NuGetPackageValidation.Tool | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.NuGetPackageValidation.Tool.svg)](https://www.nuget.org/packages/Meziantou.Framework.NuGetPackageValidation.Tool/) |
 | Meziantou.Framework.ObjectMethodExecutor | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ObjectMethodExecutor.svg)](https://www.nuget.org/packages/Meziantou.Framework.ObjectMethodExecutor/) |

@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks);$(LatestTargetFrameworksWindows);netstandard2.0</TargetFrameworks>
+    <CompatibilityRecord>true</CompatibilityRecord>
+    <CompatibilityRange>true</CompatibilityRange>
+    <Description>Enables verification of objects using inline snapshots</Description>
+    
+    <UseWindowsForms Condition="$(TargetFramework.Contains('-windows'))">true</UseWindowsForms>
+    <DefineConstants Condition="$(TargetFramework.Contains('-windows'))">$(DefineConstants);WinForms</DefineConstants>
+
+    <!-- Buggy -->
+    <EnablePackageValidation>false</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.InlineSnapshotTesting.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DiffEngine" Version="11.2.0" />
+    <PackageReference Include="DiffPlex" Version="1.7.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+    <PackageReference Include="YamlDotNet" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
+  </ItemGroup>
+
+</Project>

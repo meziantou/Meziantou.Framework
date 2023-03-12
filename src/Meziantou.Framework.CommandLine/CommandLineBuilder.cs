@@ -3,7 +3,12 @@ using System.Text;
 namespace Meziantou.Framework;
 
 // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
-public static class CommandLineBuilder
+#if CommandLineBuilder_PUBLIC
+public
+#else
+internal
+#endif
+static class CommandLineBuilder
 {
     private static readonly char[] ReservedCharacters = { ' ', '\t', '\n', '\v', '"' };
     private static readonly char[] CmdReservedCharacters = { '(', ')', '%', '!', '^', '"', '<', '>', '&', '|' };

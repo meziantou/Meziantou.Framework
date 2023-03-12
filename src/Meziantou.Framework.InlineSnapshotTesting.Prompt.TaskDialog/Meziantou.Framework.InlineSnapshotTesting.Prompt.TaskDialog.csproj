@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>False</IsPackable>
+
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationMode.cs" Link="PromptConfigurationMode.cs" />
+    <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptConfigurationScope.cs" Link="PromptConfigurationScope.cs" />
+    <Compile Include="..\Meziantou.Framework.InlineSnapshotTesting\SnapshotUpdateStrategies\PromptResult.cs" Link="PromptResult.cs" />
+  </ItemGroup>
+</Project>

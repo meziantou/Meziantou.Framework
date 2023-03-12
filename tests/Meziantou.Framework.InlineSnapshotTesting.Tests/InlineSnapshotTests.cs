@@ -19,9 +19,9 @@ public sealed class InlineSnapshotTests
     public async Task UpdateSnapshotUsingQuotedString()
     {
         await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new object(), "");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "");
             """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new object(), "{}");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
             """);
     }
 
@@ -35,7 +35,7 @@ public sealed class InlineSnapshotTests
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(data, "");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, "");
             """", $$""""
             var data = new
             {
@@ -43,7 +43,7 @@ public sealed class InlineSnapshotTests
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(data, """
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, """
                 FirstName: Gérald
                 LastName: Barré
                 NickName: meziantou
@@ -60,7 +60,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
             }
             """", $$""""
             Helper("{}");
@@ -68,7 +68,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
             }
             """");
     }
@@ -78,17 +78,17 @@ public sealed class InlineSnapshotTests
     {
         await AssertSnapshot($$""""
             Console.WriteLine("first");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new { A = 1, B = 2 }, "");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 1, B = 2 }, "");
             Console.WriteLine("Second");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new { A = 3, B = 4 }, "");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 3, B = 4 }, "");
             """", $$""""
             Console.WriteLine("first");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new { A = 1, B = 2 }, """
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 1, B = 2 }, """
                 A: 1
                 B: 2
                 """);
             Console.WriteLine("Second");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new { A = 3, B = 4 }, """
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 3, B = 4 }, """
                 A: 3
                 B: 4
                 """);
@@ -103,7 +103,7 @@ public sealed class InlineSnapshotTests
     public async Task DoNotUpdateOnCI(string key, string value)
     {
         await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Verify)}}(new object(), "");
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "");
             """,
             autoDetectCI: true,
             environmentVariables: new[] { new KeyValuePair<string, string>(key, value) });

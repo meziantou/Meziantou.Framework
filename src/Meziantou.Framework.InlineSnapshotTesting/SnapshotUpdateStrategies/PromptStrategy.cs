@@ -1,5 +1,4 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
@@ -13,13 +12,6 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
 
     private readonly Prompt _prompt;
 
-#if WINDOWS
-    public PromptStrategy()
-    {
-        _prompt = new TaskDialogPrompt();
-    }
-#endif
-
     public PromptStrategy(Prompt prompt)
     {
         _prompt = prompt;
@@ -31,6 +23,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
     {
         var processInfo = ProcessInfo.GetContextProcess();
         ConfigurationFile configuration;
+        var folder = Path.GetDirectoryName(path);
 
         using var fs = OpenConfigurationFile();
         configuration = ConfigurationFile.LoadFromJsonStream(fs);
@@ -44,6 +37,9 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
                 if (entry.File != null && entry.File != path)
                     continue;
 
+                if (entry.Folder != null && entry.Folder != folder)
+                    continue;
+
                 if (entry.Process != null && (processInfo == null || entry.Process != processInfo))
                     continue;
 
@@ -55,7 +51,8 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         AppendEntry(fs, new ConfigurationFileEntry
         {
             Process = processInfo,
-            File = result.ApplyToAllFiles ? null : path,
+            File = result.Scope == PromptConfigurationScope.CurrentFile ? path : null,
+            Folder = result.Scope == PromptConfigurationScope.CurrentFolder ? folder : null,
             Mode = result.Mode,
             ExpirationDate = result.RememberPeriod == null && processInfo != null ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.Add(result.RememberPeriod.Value),
         });
@@ -155,6 +152,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
     {
         public ProcessInfo? Process { get; set; }
         public string? File { get; set; }
+        public string? Folder { get; set; }
         public PromptConfigurationMode Mode { get; set; }
         public DateTimeOffset ExpirationDate { get; set; }
 

@@ -31,22 +31,14 @@ public abstract class SnapshotUpdateStrategy
     /// </summary>
     public static SnapshotUpdateStrategy OverwriteWithoutFailure { get; } = new AlwaysWithoutFailureStrategy();
 
-#if WINDOWS
-    /// <summary>
-    /// Ask the user what to do when the snapshots are different. You can persist the choice for the current session.
-    /// </summary>
-    public static SnapshotUpdateStrategy Prompt { get; } = new PromptStrategy();
-#endif
-
-    internal static SnapshotUpdateStrategy Default
+    public static SnapshotUpdateStrategy Default
     {
         get
         {
-#if WINDOWS
-            return Prompt;
-#else
+            if (TaskDialogPrompt.IsSupported())
+                return new PromptStrategy(new TaskDialogPrompt());
+
             return MergeTool;
-#endif
         }
     }
 

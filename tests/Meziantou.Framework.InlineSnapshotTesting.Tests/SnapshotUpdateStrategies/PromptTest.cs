@@ -9,7 +9,7 @@ public sealed class PromptTest
     public void ApplyToAllFiles()
     {
         var prompt = new PromptMock(
-                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), ApplyToAllFiles: true));
+                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), PromptConfigurationScope.ParentProcess));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
         instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs").Should().BeFalse();
@@ -21,8 +21,8 @@ public sealed class PromptTest
     public void DifferentPerFile()
     {
         var prompt = new PromptMock(
-                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), ApplyToAllFiles: false),
-                    ctx => new PromptResult(PromptConfigurationMode.OverwriteWithoutFailure, TimeSpan.FromHours(1), ApplyToAllFiles: false));
+                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), PromptConfigurationScope.CurrentFile),
+                    ctx => new PromptResult(PromptConfigurationMode.OverwriteWithoutFailure, TimeSpan.FromHours(1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
         instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs").Should().BeFalse();
@@ -35,8 +35,8 @@ public sealed class PromptTest
     {
         // Use negative period to be sure the entry is not reused
         var prompt = new PromptMock(
-                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(-1), ApplyToAllFiles: false),
-                    ctx => new PromptResult(PromptConfigurationMode.Overwrite, TimeSpan.FromHours(-1), ApplyToAllFiles: false));
+                    ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(-1), PromptConfigurationScope.CurrentFile),
+                    ctx => new PromptResult(PromptConfigurationMode.Overwrite, TimeSpan.FromHours(-1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
         instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs").Should().BeFalse();

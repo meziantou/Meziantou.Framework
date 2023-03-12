@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);$(LatestTargetFrameworksWindows);net472</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
     <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>

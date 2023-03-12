@@ -1,20 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);$(LatestTargetFrameworksWindows);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
     <CompatibilityRange>true</CompatibilityRange>
     <Description>Enables verification of objects using inline snapshots</Description>
-    
-    <UseWindowsForms Condition="$(TargetFramework.Contains('-windows'))">true</UseWindowsForms>
-    <DefineConstants Condition="$(TargetFramework.Contains('-windows'))">$(DefineConstants);WinForms</DefineConstants>
 
-    <!-- Buggy -->
+    <NoWarn>$(NoWarn);NU5100</NoWarn>
+
+    <!-- Buggy because of netstandard2.0 -->
     <EnablePackageValidation>false</EnablePackageValidation>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\Meziantou.Framework.CommandLine\CommandLineBuilder.cs" Link="Utils\CommandLineBuilder.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.InlineSnapshotTesting.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,4 +33,9 @@
     <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
 
+  <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/bin/Release/net6.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
+    <None Include="package/**/*" Pack="true" PackagePath="" />    
+  </ItemGroup>
 </Project>

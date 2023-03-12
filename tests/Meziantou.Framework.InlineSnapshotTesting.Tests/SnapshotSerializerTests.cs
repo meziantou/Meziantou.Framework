@@ -14,7 +14,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void Argon()
     {
-        InlineSnapshot.Verify(new ArgonSnapshotSerializer().Serialize(new Sample()), Settings, """
+        InlineSnapshot.Validate(new ArgonSnapshotSerializer().Serialize(new Sample()), Settings, """
             {
                 Int32: 42,
                 NullableInt32: null,
@@ -64,7 +64,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void Json()
     {
-        InlineSnapshot.Verify(new JsonSnapshotSerializer().Serialize(new Sample()), Settings, """
+        InlineSnapshot.Validate(new JsonSnapshotSerializer().Serialize(new Sample()), Settings, """
             {
               "Int32": 42,
               "NullableInt32": null,
@@ -112,7 +112,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void Yaml()
     {
-        InlineSnapshot.Verify(YamlSnapshotSerializer.Instance.Serialize(new Sample()), Settings, """
+        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(new Sample()), Settings, """
             Int32: 42
             NullableInt32:
             NullableInt32_NotNull: 42
@@ -152,9 +152,9 @@ public sealed class SnapshotSerializerTests
               NullableEnum:
             """);
 
-        InlineSnapshot.Verify(YamlSnapshotSerializer.Instance.Serialize(null), Settings, "---");
+        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(null), Settings, "---");
 
-        InlineSnapshot.Verify(YamlSnapshotSerializer.Instance.Serialize(new { A = 1, B = 2 }), Settings, """
+        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(new { A = 1, B = 2 }), Settings, """
             A: 1
             B: 2
             """);

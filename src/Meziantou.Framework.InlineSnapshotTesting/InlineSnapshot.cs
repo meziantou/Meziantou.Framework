@@ -7,7 +7,7 @@ public static class InlineSnapshot
 {
     [InlineSnapshotAssertion(nameof(expected))]
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Verify(object? subject, InlineSnapshotSettings? settings, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    public static void Validate(object? subject, InlineSnapshotSettings? settings, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         settings ??= InlineSnapshotSettings.Default;
         var context = CallerContext.Get(settings, filePath, lineNumber);
@@ -16,7 +16,7 @@ public static class InlineSnapshot
 
     [InlineSnapshotAssertion(nameof(expected))]
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Verify(object? subject, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    public static void Validate(object? subject, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         var settings = InlineSnapshotSettings.Default;
         var context = CallerContext.Get(settings, filePath, lineNumber);

@@ -20,14 +20,6 @@ internal static class Program
     {
         var expirationPeriod = TimeSpan.FromHours(1);
 
-#if DEBUG
-        var envMode = Environment.GetEnvironmentVariable("Meziantou_Framework_InlineSnapshotTesting_Prompt_TaskDialog_Mode");
-        var envScope = Environment.GetEnvironmentVariable("Meziantou_Framework_InlineSnapshotTesting_Prompt_TaskDialog_Scope");
-
-        if (Enum.TryParse<PromptConfigurationMode>(envMode, ignoreCase: true, out var parsedMode) && Enum.TryParse<PromptConfigurationScope>(envMode, ignoreCase: true, out var parsedScope))
-            return new PromptResult(parsedMode, expirationPeriod, parsedScope);
-#endif
-
         Application.EnableVisualStyles();
         var btnDisallow = new TaskDialogCommandLinkButton("Do &not update the snapshot");
         var btnMerge = new TaskDialogCommandLinkButton("Open Merge &Tool");

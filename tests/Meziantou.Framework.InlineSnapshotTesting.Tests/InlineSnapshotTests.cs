@@ -24,6 +24,26 @@ public sealed class InlineSnapshotTests
             {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
             """);
     }
+    
+    [Fact]
+    public async Task UpdateSnapshotPreserveComments()
+    {
+        await AssertSnapshot($$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "" /* after */);
+            """, $$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "{}" /* after */);
+            """);
+    }
+    
+    [Fact]
+    public async Task UpdateSnapshotWhenExpectedIsNull()
+    {
+        await AssertSnapshot($$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected: null);
+            """, $$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected: "{}");
+            """);
+    }
 
     [Fact]
     public async Task UpdateSnapshotUsingRawString()
@@ -204,7 +224,7 @@ public sealed class InlineSnapshotTests
         _testOutputHelper.WriteLine(stderr);
 
         var actual = File.ReadAllText(mainPath);
-        actual.Should().Be(expected ?? source, "\n\n" + InlineDiffAssertionMessageFormatter.Instance.FormatMessage(expected, actual));
+        actual.Should().Be(expected ?? source, InlineDiffAssertionMessageFormatter.Instance.FormatMessage(expected, actual));
 
         FullPath CreateTextFile(string path, string content)
         {

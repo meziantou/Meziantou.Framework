@@ -69,6 +69,10 @@ var settings = InlineSnapshotSettings.Default with
 InlineSnapshot.Validate(data, settings, "");
 ````
 
+## Environment variables
+
+- `DiffEngine_Tool`: Set the default merge tool
+
 ## Using helper methods
 
 If you want to use helper methods before calling `Validate()`, you need to decorate the methods with `[InlineSnapshotAssertion]` and use `[CallerFilePath]` and `[CallerLineNumber]`.

@@ -23,7 +23,7 @@ public static class InlineSnapshot
         ShouldMatchInlineSnapshot(subject, context, settings, expected);
     }
 
-    private static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string expected)
+    private static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
     {
         var actual = settings.SnapshotSerializer.Serialize(subject);
         var normalizedActual = settings.SnapshotComparer.NormalizeValue(actual);

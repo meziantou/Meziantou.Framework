@@ -59,7 +59,7 @@ internal static class FileEditor
         }
     }
 
-    public static void UpdateFile(CallerContext context, InlineSnapshotSettings settings, string existingValue, string newValue)
+    public static void UpdateFile(CallerContext context, InlineSnapshotSettings settings, string? existingValue, string? newValue)
     {
         var lockObject = FileLocks.GetOrAdd(context.FilePath, _ => new object());
         lock (lockObject)
@@ -68,7 +68,7 @@ internal static class FileEditor
                 throw new InlineSnapshotException("The previous merged cannot be resolved. Restart the tests to update this snapshot.");
 
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs"));
-            
+
             var options = new CSharpParseOptions();
             var sourceText = GetSourceText(settings, File.Exists(tempPath) ? tempPath : context.FilePath);
             var tree = CSharpSyntaxTree.ParseText(sourceText);
@@ -109,7 +109,9 @@ internal static class FileEditor
             var startPosition = invocationExpression.GetLocation().GetMappedLineSpan().StartLinePosition.Character;
 
             var formattedValue = CSharpStringLiteral.Create(newValue, settings.AllowedStringFormats, indentation, startPosition, eol);
-            var newArgumentExpression = ((LiteralExpressionSyntax)argumentExpression).WithToken(SyntaxFactory.Literal(formattedValue, newValue));
+            var newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue))
+                .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
+                .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
             var newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
 
             // Save the file
@@ -156,7 +158,7 @@ internal static class FileEditor
         }
     }
 
-    private static ExpressionSyntax FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string existingValue)
+    private static ExpressionSyntax FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string? existingValue)
     {
         // Try find by name
         ExpressionSyntax? argumentExpression = null;
@@ -198,13 +200,21 @@ internal static class FileEditor
         return null;
     }
 
-    private static bool ExpressionSyntaxMatchesValue(ExpressionSyntax? expression, string value, out string? actualValue)
+    private static bool ExpressionSyntaxMatchesValue(ExpressionSyntax? expression, string? value, out string? actualValue)
     {
-        if (expression != null && expression.IsKind(SyntaxKind.StringLiteralExpression))
+        if (expression != null)
         {
-            var literalExpression = (LiteralExpressionSyntax)expression;
-            actualValue = (string?)literalExpression.Token.Value;
-            return actualValue == value;
+            if (expression.IsKind(SyntaxKind.NullLiteralExpression))
+            {
+                actualValue = null;
+                return actualValue == value;
+            }
+            else if (expression.IsKind(SyntaxKind.StringLiteralExpression))
+            {
+                var literalExpression = (LiteralExpressionSyntax)expression;
+                actualValue = (string?)literalExpression.Token.Value;
+                return actualValue == value;
+            }
         }
 
         actualValue = null;

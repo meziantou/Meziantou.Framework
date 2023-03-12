@@ -1,9 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
-using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
-namespace Meziantou.Framework.InlineSnapshotTesting;
+namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 internal sealed class TaskDialogPrompt : Prompt
 {
@@ -59,7 +58,7 @@ internal sealed class TaskDialogPrompt : Prompt
 #if NETSTANDARD2_0
             return Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major >= 6;
 #else
-        return OperatingSystem.IsWindowsVersionAtLeast(6);
+            return OperatingSystem.IsWindowsVersionAtLeast(6);
 #endif
         }
     }

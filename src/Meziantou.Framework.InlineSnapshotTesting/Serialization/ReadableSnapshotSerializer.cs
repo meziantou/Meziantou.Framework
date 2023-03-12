@@ -1,6 +1,6 @@
 ﻿namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
-internal sealed class ReadableSnapshotSerializer : SnapshotSerializer
+public sealed class ReadableSnapshotSerializer : SnapshotSerializer
 {
     internal static ReadableSnapshotSerializer Instance { get; } = new();
 

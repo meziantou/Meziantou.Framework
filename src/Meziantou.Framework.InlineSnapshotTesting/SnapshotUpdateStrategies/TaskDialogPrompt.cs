@@ -23,26 +23,34 @@ internal sealed class TaskDialogPrompt : Prompt
         if (File.Exists(exeLocation))
             return exeLocation;
 
-#if DEBUG
-        if (dllLocation != null)
+#if DEBUG_TaskDialogPrompt
+        foreach (var configuration in new[] { "Release", "Debug" })
         {
-            var root = FindParentDirectoryByName(Path.GetDirectoryName(exeLocation), "Meziantou.Framework");
-            if (root != null)
+            var pathFromRoot = Path.Combine("src", "Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog", "bin", configuration, "net6.0-windows", ExeFileName);
+            if (dllLocation != null)
             {
-                exeLocation = Path.GetFullPath(Path.Combine(root, "src", "Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog", "bin", "Debug", "net6.0-windows", ExeFileName));
-                if (File.Exists(exeLocation))
-                    return exeLocation;
+                var root = FindParentDirectoryByName(Path.GetDirectoryName(exeLocation), "Meziantou.Framework");
+                if (root != null)
+                {
+                    exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
+                    if (File.Exists(exeLocation))
+                        return exeLocation;
+                }
             }
-        }
 
-        {
-            var root = FindParentDirectoryByName(Environment.CurrentDirectory, "Meziantou.Framework");
-            if (root != null)
             {
-                exeLocation = Path.GetFullPath(Path.Combine(root, "src", "Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog", "bin", "Debug", "net6.0-windows", ExeFileName));
-                if (File.Exists(exeLocation))
-                    return exeLocation;
+                var root = FindParentDirectoryByName(Environment.CurrentDirectory, "Meziantou.Framework");
+                if (root != null)
+                {
+                    exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
+                    if (File.Exists(exeLocation))
+                        return exeLocation;
+                }
             }
+
+            exeLocation = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, pathFromRoot));
+            if (File.Exists(exeLocation))
+                return exeLocation;
         }
 #endif
 
@@ -84,13 +92,13 @@ internal sealed class TaskDialogPrompt : Prompt
         return JsonSerializer.Deserialize<PromptResult>(json);
     }
 
-#if DEBUG
+#if DEBUG_TaskDialogPrompt
     private static string? FindParentDirectoryByName(string currentFolder, string name)
     {
         do
         {
             var folderName = Path.GetFileName(currentFolder);
-            if (folderName == name)
+            if (string.Equals(folderName, name, StringComparison.OrdinalIgnoreCase))
                 return currentFolder;
 
             currentFolder = Path.GetDirectoryName(currentFolder)!;

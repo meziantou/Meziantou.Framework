@@ -5,7 +5,8 @@
     <CompatibilityRecord>true</CompatibilityRecord>
     <CompatibilityRange>true</CompatibilityRange>
     <Description>Enables verification of objects using inline snapshots</Description>
-
+    <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
+    
     <NoWarn>$(NoWarn);NU5100</NoWarn>
 
     <!-- Buggy because of netstandard2.0 -->

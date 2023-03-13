@@ -24,6 +24,46 @@ internal static class ShareHttpClient
             PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
             PooledConnectionLifetime = TimeSpan.FromMinutes(1),
         };
-        return new HttpClient(socketHandler, disposeHandler: true);
+
+        return new HttpClient(new HttpRetryMessageHandler(socketHandler), disposeHandler: true);
     }
+    private sealed class HttpRetryMessageHandler : DelegatingHandler
+    {
+        public HttpRetryMessageHandler(HttpMessageHandler handler)
+            : base(handler)
+        {
+        }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            const int MaxRetries = 5;
+            for (var i = 1; ; i++)
+            {
+                HttpResponseMessage? result = null;
+                try
+                {
+                    result = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    if (!IsLastAttempt(i) && ((int)result.StatusCode >= 500 || result.StatusCode is System.Net.HttpStatusCode.RequestTimeout))
+                    {
+                        result.Dispose();
+                    }
+                    else
+                    {
+                        return result;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    result?.Dispose();
+                    if (IsLastAttempt(i))
+                        throw;
+                }
+
+                await Task.Delay(100 * i, cancellationToken).ConfigureAwait(false);
+
+                static bool IsLastAttempt(int i) => i >= MaxRetries;
+            }
+        }
+    }
+
 }

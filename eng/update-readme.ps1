@@ -7,6 +7,11 @@ $OriginalContent = Get-Content $ReadmePath
 $content = "| Name | Version |`n";
 $content += "| :--- | :---: |`n";
 foreach ($Proj in $Projs) {
+    [xml]$ProjContent = Get-Content -LiteralPath $Proj
+    if($ProjContent.Project.PropertyGroup.IsPackable -eq $False) {
+        continue;
+    }
+
     $FileName = $Proj.BaseName;
     $content += "| $FileName | [![NuGet](https://img.shields.io/nuget/v/$FileName.svg)](https://www.nuget.org/packages/$FileName/) |`n"
 }

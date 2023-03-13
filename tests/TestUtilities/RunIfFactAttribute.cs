@@ -38,7 +38,7 @@ public sealed class RunIfFactAttribute : FactAttribute
                 return "Does not run in invariant globalization mode";
             }
         }
-        if (operatingSystems != FactOperatingSystem.All)
+        if (operatingSystems != FactOperatingSystem.NotSpecified)
         {
             if (!IsValidOperatingSystem(operatingSystems))
                 return "Run only on " + operatingSystems;

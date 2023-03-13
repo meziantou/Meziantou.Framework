@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
+    <CompatibilityRecord>true</CompatibilityRecord>
+    <CompatibilityRange>true</CompatibilityRange>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+</Project>

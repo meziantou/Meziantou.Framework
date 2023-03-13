@@ -42,8 +42,9 @@ jobs:
       - uses: actions/checkout@v3
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v3
-      - run: dotnet build eng/build.proj --configuration Release /bl
-      - run: dotnet pack eng/build.proj --configuration Release --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl
+      - run: dotnet build eng/build.proj --configuration Release /p:IsOfficialBuild=true /bl
+      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release /p:IsOfficialBuild=true /bl
+      - run: dotnet pack eng/build.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl
       - uses: actions/upload-artifact@v3
         if: always()
         with:

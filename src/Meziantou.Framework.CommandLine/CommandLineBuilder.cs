@@ -46,7 +46,7 @@ static class CommandLineBuilder
         }
     }
 
-    [return: NotNullIfNotNull(parameterName: "value")]
+    [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsQuotedArgument(string? value)
     {
         if (value == null)

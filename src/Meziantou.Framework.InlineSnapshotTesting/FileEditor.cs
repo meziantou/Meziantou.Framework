@@ -175,11 +175,11 @@ internal static class FileEditor
         }
 
         if (argumentExpression == null && context.ParameterIndex >= 0 && context.ParameterIndex < arguments.Count)
+        {
             argumentExpression = arguments[context.ParameterIndex].Expression;
+        }
 
-        if (argumentExpression == null)
-            argumentExpression = FindSingleArgumentMatchingValue(arguments, existingValue);
-
+        argumentExpression ??= FindSingleArgumentMatchingValue(arguments, existingValue);
         if (argumentExpression == null)
             throw new InlineSnapshotException("Cannot find the argument to update");
 

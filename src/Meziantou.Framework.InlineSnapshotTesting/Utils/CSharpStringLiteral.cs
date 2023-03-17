@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 internal static class CSharpStringLiteral

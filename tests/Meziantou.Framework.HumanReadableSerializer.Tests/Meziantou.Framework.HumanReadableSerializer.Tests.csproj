@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
+    <CompatibilityRecord>true</CompatibilityRecord>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

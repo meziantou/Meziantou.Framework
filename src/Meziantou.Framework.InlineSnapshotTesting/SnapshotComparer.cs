@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.InlineSnapshotTesting.Utils;
+﻿using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 

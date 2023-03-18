@@ -1,13 +1,13 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
+namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class StringUtils
 {
 #if NETSTANDARD2_0
     public static bool Contains(this string str, char value, StringComparison stringComparison)
     {
-        if(stringComparison != StringComparison.Ordinal)
+        if (stringComparison != StringComparison.Ordinal)
             throw new ArgumentOutOfRangeException(nameof(stringComparison));
 
         return str.IndexOf(value) != -1;
@@ -16,12 +16,15 @@ internal static class StringUtils
     [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Does not apply")]
     public static string Replace(this string str, string oldValue, string newValue, StringComparison stringComparison)
     {
-        if(stringComparison != StringComparison.Ordinal)
+        if (stringComparison != StringComparison.Ordinal)
             throw new ArgumentOutOfRangeException(nameof(stringComparison));
 
         return str.Replace(oldValue, newValue);
     }
 #endif
+
+    public static bool IsMultiLines(ReadOnlySpan<char> value) => IndexOfNewlineChar(value, out _) >= 0;
+    public static bool IsMultiLines(string value) => IndexOfNewlineChar(value.AsSpan(), out _) >= 0;
 
     public static SpanLineEnumerator EnumerateLines(string value) => new(value.AsSpan());
     public static SpanLineEnumerator EnumerateLines(ReadOnlySpan<char> value) => new(value);
@@ -49,7 +52,8 @@ internal static class StringUtils
         {
             var idx = IndexOfNewlineChar(remaining, out stride);
             if (idx < 0)
-                break; builder.Append(replacementText);
+                break;
+            builder.Append(replacementText);
             builder.Append(remaining.Slice(0, idx));
             remaining = remaining.Slice(idx + stride);
         }
@@ -91,7 +95,7 @@ internal static class StringUtils
     public ref struct SpanLineEnumerator
     {
         private ReadOnlySpan<char> _remaining;
-        private ReadOnlySpan<char> _current;
+        private SpanLine _current;
         private bool _isEnumeratorActive;
 
         internal SpanLineEnumerator(ReadOnlySpan<char> buffer)
@@ -104,7 +108,7 @@ internal static class StringUtils
         /// <summary>
         /// Gets the line at the current position of the enumerator.
         /// </summary>
-        public readonly ReadOnlySpan<char> Current => _current;
+        public readonly SpanLine Current => _current;
 
         /// <summary>
         /// Returns this instance as an enumerator.
@@ -126,7 +130,7 @@ internal static class StringUtils
             var idx = IndexOfNewlineChar(_remaining, out var stride);
             if (idx >= 0)
             {
-                _current = _remaining.Slice(0, idx);
+                _current = new SpanLine(_remaining.Slice(0, idx), _remaining.Slice(idx, stride));
                 _remaining = _remaining.Slice(idx + stride);
             }
             else
@@ -134,12 +138,33 @@ internal static class StringUtils
                 // We've reached EOF, but we still need to return 'true' for this final
                 // iteration so that the caller can query the Current property once more.
 
-                _current = _remaining;
+                _current = new SpanLine(_remaining, ReadOnlySpan<char>.Empty);
                 _remaining = default;
                 _isEnumeratorActive = false;
             }
 
             return true;
+        }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public readonly ref struct SpanLine
+    {
+        public SpanLine(ReadOnlySpan<char> line, ReadOnlySpan<char> endOfLine)
+        {
+            Line = line;
+            EndOfLine = endOfLine;
+        }
+
+        public ReadOnlySpan<char> Line { get; }
+        public ReadOnlySpan<char> EndOfLine { get; }
+
+        public static implicit operator ReadOnlySpan<char>(SpanLine spanLine) => spanLine.Line;
+
+        public void Deconstruct(out ReadOnlySpan<char> line, out ReadOnlySpan<char> endofLine)
+        {
+            line = Line;
+            endofLine = EndOfLine;
         }
     }
 }

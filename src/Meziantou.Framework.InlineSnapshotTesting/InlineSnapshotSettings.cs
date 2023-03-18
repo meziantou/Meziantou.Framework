@@ -14,7 +14,7 @@ public sealed record InlineSnapshotSettings
 
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
     public SnapshotUpdateStrategy SnapshotUpdateStrategy { get; set; } = SnapshotUpdateStrategy.Default;
-    public SnapshotSerializer SnapshotSerializer { get; set; } = ReadableSnapshotSerializer.Instance;
+    public SnapshotSerializer SnapshotSerializer { get; set; } = HumanReadableSnapshotSerializer.Instance;
     public SnapshotComparer SnapshotComparer { get; set; } = SnapshotComparer.Default;
     public AssertionMessageFormatter ErrorMessageFormatter { get; set; } = InlineDiffAssertionMessageFormatter.Instance;
     public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = new AssertionExceptionBuilder();
@@ -22,6 +22,12 @@ public sealed record InlineSnapshotSettings
     public DiffTool? MergeTool { get; set; }
     public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get; set; } = true;
     public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get; set; } = true;
+
+    /// <summary>
+    /// Update snapshots even when the snapshot is already valid.
+    /// This can be use to reformat snapshots.
+    /// </summary>
+    public bool ForceUpdateSnapshots { get; set; }
 
     [DoesNotReturn]
     internal void Assert(string expected, string actual)

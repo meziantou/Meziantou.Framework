@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Xml.Linq;
 using FluentAssertions;
+using Meziantou.Framework.HumanReadable;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -24,7 +25,7 @@ public sealed class InlineSnapshotTests
             {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
             """);
     }
-    
+
     [Fact]
     public async Task UpdateSnapshotPreserveComments()
     {
@@ -34,7 +35,7 @@ public sealed class InlineSnapshotTests
             {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "{}" /* after */);
             """);
     }
-    
+
     [Fact]
     public async Task UpdateSnapshotWhenExpectedIsNull()
     {
@@ -92,6 +93,40 @@ public sealed class InlineSnapshotTests
             }
             """");
     }
+    
+    [Fact]
+    public async Task SupportMultiLevelsHelperMethods()
+    {
+        await AssertSnapshot($$""""
+            Helper("");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                Helper2(expected, filePath, lineNumber);
+            }
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+            }
+            """", $$""""
+            Helper("{}");
+            
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                Helper2(expected, filePath, lineNumber);
+            }
+            
+            [InlineSnapshotAssertion(nameof(expected))]
+            static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+            }
+            """");
+    }
 
     [Fact]
     public async Task UpdateMultipleSnapshots()
@@ -115,6 +150,28 @@ public sealed class InlineSnapshotTests
             """");
     }
 
+    [Fact]
+    public async Task UpdateSnapshotWhenForceUpdateSnapshotsIsEnabled()
+    {
+        await AssertSnapshot(forceUpdateSnapshots: true, source: $$""""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), """
+                {}
+                """);
+            """", expected: $$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
+            """);
+    }
+
+    [Fact]
+    public async Task DoNotUpdateSnapshotWhenForceUpdateSnapshotsIsDisableAndTheValueIsOk()
+    {
+        await AssertSnapshot(forceUpdateSnapshots: false, source: $$""""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), """
+                {}
+                """);
+            """");
+    }
+
     [Theory]
     [InlineData("CI", "true")]
     [InlineData("CI", "TRUE")]
@@ -130,7 +187,7 @@ public sealed class InlineSnapshotTests
     }
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot(string source, string expected = null, bool autoDetectCI = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null)
+    private async Task AssertSnapshot(string source, string expected = null, bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -142,6 +199,7 @@ public sealed class InlineSnapshotTests
                 <Nullable>disable</Nullable>
               </PropertyGroup>
               <ItemGroup>
+                <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />
                 <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
               </ItemGroup>
               <ItemGroup>
@@ -166,6 +224,7 @@ public sealed class InlineSnapshotTests
                     {
                         {{nameof(InlineSnapshotSettings.AutoDetectContinuousEnvironment)}} = {{(autoDetectCI ? "true" : "false")}},
                         {{nameof(InlineSnapshotSettings.SnapshotUpdateStrategy)}} = {{nameof(SnapshotUpdateStrategy)}}.{{nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure)}},
+                        {{nameof(InlineSnapshotSettings.ForceUpdateSnapshots)}} = {{(forceUpdateSnapshots ? "true" : "false")}},
                     };
                 }
             }
@@ -224,7 +283,11 @@ public sealed class InlineSnapshotTests
         _testOutputHelper.WriteLine(stderr);
 
         var actual = File.ReadAllText(mainPath);
-        actual.Should().Be(expected ?? source, InlineDiffAssertionMessageFormatter.Instance.FormatMessage(expected, actual));
+        expected ??= source;
+        if (actual != expected)
+        {
+            Assert.Fail("Snapshots are different\n" + InlineDiffAssertionMessageFormatter.Instance.FormatMessage(expected, actual));
+        }
 
         FullPath CreateTextFile(string path, string content)
         {

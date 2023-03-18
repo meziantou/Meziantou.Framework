@@ -26,6 +26,8 @@ public sealed class SnapshotSerializerTests
                     4,
                     5
                 ],
+                EmptyArray: [],
+                NullArray: null,
                 IEnumerableInt32: [
                     0,
                     1
@@ -51,11 +53,14 @@ public sealed class SnapshotSerializerTests
                 NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00,
                 Guid: 4871547b-835b-4c06-ab0e-10931af0cd8d,
                 NestedObject: {
+                    StringValueStartingWithExclamationMark: !1,
                     StringValue: Dummy,
                     MultiLineStringValue: Line1
             Line2
             Line3,
-                    NullableEnum: null
+                    NullableEnum: null,
+                    StringValue1: Constant,
+                    StringValue2: Constant
                 }
             }
             """);
@@ -76,6 +81,8 @@ public sealed class SnapshotSerializerTests
                 4,
                 5
               ],
+              "EmptyArray": [],
+              "NullArray": null,
               "IEnumerableInt32": [
                 0,
                 1
@@ -101,20 +108,23 @@ public sealed class SnapshotSerializerTests
               "NullableDateTimeOffset_NotNull": "2000-01-01T01:01:01+00:00",
               "Guid": "4871547b-835b-4c06-ab0e-10931af0cd8d",
               "NestedObject": {
+                "StringValueStartingWithExclamationMark": "!1",
                 "StringValue": "Dummy",
                 "MultiLineStringValue": "Line1\nLine2\nLine3",
-                "NullableEnum": null
+                "NullableEnum": null,
+                "StringValue1": "Constant",
+                "StringValue2": "Constant"
               }
             }
             """);
     }
 
     [Fact]
-    public void Yaml()
+    public void Readable()
     {
-        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(new Sample()), Settings, """
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(new Sample()), Settings, """
             Int32: 42
-            NullableInt32:
+            NullableInt32: <null>
             NullableInt32_NotNull: 42
             Int32Array:
               - 1
@@ -122,39 +132,48 @@ public sealed class SnapshotSerializerTests
               - 3
               - 4
               - 5
+            EmptyArray: []
+            NullArray: <null>
             IEnumerableInt32:
               - 0
               - 1
             IDictionary:
-              1: 2
-              3: 4
+              - Key: 1
+                Value: 2
+              - Key: 3
+                Value: 4
             IReadOnlyDictionary:
-              1: 2
-              3: 4
+              - Key: 1
+                Value: 2
+              - Key: 3
+                Value: 4
             Enum: Tuesday
             Enum_NotDefined: 100
             FlagsEnum: ReadWrite, Delete
             FlagsEnum_NotDefined: 35
-            DateTime_Utc: 2000-01-01T01:01:01.0000000Z
-            DateTime_Unspecified: 2000-01-01T01:01:01.0000000
-            NullableDateTime:
-            DateTimeOffset_Zero: 2000-01-01T01:01:01.0000000+00:00
-            DateTimeOffset_NonZero: 2000-01-01T01:01:01.0000000+02:00
-            NullableDateTimeOffset:
-            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01.0000000+00:00
+            DateTime_Utc: 2000-01-01T01:01:01Z
+            DateTime_Unspecified: 2000-01-01T01:01:01
+            NullableDateTime: <null>
+            DateTimeOffset_Zero: 2000-01-01T01:01:01+00:00
+            DateTimeOffset_NonZero: 2000-01-01T01:01:01+02:00
+            NullableDateTimeOffset: <null>
+            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
             Guid: 4871547b-835b-4c06-ab0e-10931af0cd8d
             NestedObject:
+              StringValueStartingWithExclamationMark: !1
               StringValue: Dummy
-              MultiLineStringValue: |-
+              MultiLineStringValue:
                 Line1
                 Line2
                 Line3
-              NullableEnum:
+              NullableEnum: <null>
+              StringValue1: Constant
+              StringValue2: Constant
             """);
 
-        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(null), Settings, "---");
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(null), Settings, "<null>");
 
-        InlineSnapshot.Validate(YamlSnapshotSerializer.Instance.Serialize(new { A = 1, B = 2 }), Settings, """
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(new { A = 1, B = 2 }), Settings, """
             A: 1
             B: 2
             """);
@@ -166,6 +185,8 @@ public sealed class SnapshotSerializerTests
         public int? NullableInt32 { get; set; }
         public int? NullableInt32_NotNull { get; set; } = 42;
         public int[] Int32Array { get; set; } = new int[] { 1, 2, 3, 4, 5 };
+        public int[] EmptyArray { get; set; } = Array.Empty<int>();
+        public int[] NullArray { get; set; }
         public IEnumerable<int> IEnumerableInt32 { get; set; } = Enumerable.Range(0, 2);
         public IDictionary<int, int> IDictionary { get; set; } = new Dictionary<int, int>() { [1] = 2, [3] = 4 };
         public IReadOnlyDictionary<int, int> IReadOnlyDictionary { get; set; } = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>() { [1] = 2, [3] = 4 });
@@ -186,8 +207,14 @@ public sealed class SnapshotSerializerTests
 
     private sealed class NestedSample
     {
+        private const string Value = "Constant";
+
+        public string StringValueStartingWithExclamationMark { get; set; } = "!1";
         public string StringValue { get; set; } = "Dummy";
         public string MultiLineStringValue { get; set; } = "Line1\nLine2\nLine3";
         public DayOfWeek? NullableEnum { get; set; }
+
+        public string StringValue1 { get; set; } = Value;
+        public string StringValue2 { get; set; } = Value;
     }
 }

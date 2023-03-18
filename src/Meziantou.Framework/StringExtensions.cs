@@ -869,7 +869,7 @@ static partial class StringExtensions
 #endif
 
     [Pure]
-    [return: NotNullIfNotNull(parameterName: "str")]
+    [return: NotNullIfNotNull(parameterName: nameof(str))]
     public static string? RemoveDiacritics(this string? str)
     {
         if (str == null)

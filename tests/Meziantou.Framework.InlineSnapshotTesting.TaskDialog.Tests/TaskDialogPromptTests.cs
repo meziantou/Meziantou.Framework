@@ -73,20 +73,20 @@ public sealed class TaskDialogPromptTests
     [InlineData(0, true, PromptConfigurationMode.Disallow, PromptConfigurationScope.ParentProcess)]
     internal void Ask(int buttonIndex, bool applyToAllFiles, PromptConfigurationMode expectedMode, PromptConfigurationScope expectedScope)
     {
-        var result = Invoke(new PromptContext("path.cs", "devenv", 123), buttonIndex, applyToAllFiles);
+        var result = Invoke(new PromptContext("path.cs", "dummy test", ParentProcessInfo: null), buttonIndex, applyToAllFiles);
 
         result.Mode.Should().Be(expectedMode);
         result.Scope.Should().Be(expectedScope);
-        result.RememberPeriod.Should().Be(TimeSpan.FromHours(1));        
+        result.RememberPeriod.Should().Be(TimeSpan.FromHours(1));
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]    
+    [RunIfFact(FactOperatingSystem.Windows)]
     internal void Ask_Cancel()
     {
-        var result = Invoke(new PromptContext("path.cs", "devenv", 123), buttonIndex: 4, applyToAllFiles: false);
+        var result = Invoke(new PromptContext("path.cs", "dummy test", ParentProcessInfo: null), buttonIndex: 4, applyToAllFiles: false);
 
         result.Mode.Should().Be(PromptConfigurationMode.Disallow);
         result.Scope.Should().Be(PromptConfigurationScope.CurrentSnapshot);
-        result.RememberPeriod.Should().BeLessThanOrEqualTo(TimeSpan.Zero);        
+        result.RememberPeriod.Should().BeLessThanOrEqualTo(TimeSpan.Zero);
     }
 }

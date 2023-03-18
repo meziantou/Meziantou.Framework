@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using DiffEngine;
-
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public static class InlineSnapshot
@@ -47,6 +46,13 @@ public static class InlineSnapshot
             {
                 settings.Assert(normalizedExpected, normalizedActual);
             }
+        }
+        else if (settings.ForceUpdateSnapshots)
+        {
+            if (context.FilePath == null)
+                throw new InlineSnapshotException("Cannot update source file as the path is null");
+
+            FileEditor.UpdateFile(context, settings, expected, actual);
         }
     }
 }

@@ -13,6 +13,7 @@ public sealed class HumanReadableTextWriter
     private readonly Stack<Scope> _scopes = new();
 
     private int _indentation;
+    private int _depth;
 
     private WriterContext _context;
 
@@ -23,9 +24,6 @@ public sealed class HumanReadableTextWriter
 
     private void WritePendingText()
     {
-        if (_indentation > _options.MaxDepth)
-            throw new HumanReadableSerializerException($"Current depth ({_indentation}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
-
         if (_context is WriterContext.NewLine)
         {
             _text.Append(NewLine);
@@ -176,8 +174,16 @@ public sealed class HumanReadableTextWriter
         _context = WriterContext.PropertyName;
     }
 
+    private void IncrementDepth()
+    {
+        _depth++;
+        if (_depth > _options.MaxDepth)
+            throw new HumanReadableSerializerException($"Current depth ({_depth}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
+    }
+
     public void StartObject()
     {
+        IncrementDepth();
         if (_text.Length > 0 && _context != WriterContext.ArrayItemStart)
         {
             WriteNewLine();
@@ -192,6 +198,7 @@ public sealed class HumanReadableTextWriter
 
     public void EndObject()
     {
+        _depth--;
         _scopes.Pop().Dispose();
     }
 

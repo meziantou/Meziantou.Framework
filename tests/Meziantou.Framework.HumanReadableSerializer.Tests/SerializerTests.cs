@@ -716,6 +716,14 @@ public sealed partial class SerializerTests
         Assert.Throws<HumanReadableSerializerException>(() => HumanReadableSerializer.Serialize(new InvalidConverters_NotAConverter()));
     }
 
+    [Fact]
+    public void OptionsAreReadOnlyAfterFirstUse()
+    {
+        var options = new HumanReadableSerializerOptions();
+        AssertSerialization("", options, "");
+        Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new DummyConverter()));
+    }
+
     [TypeConverter(typeof(CustomTypeConverterImpl))]
     private sealed class CustomTypeConverter
     {
@@ -791,5 +799,11 @@ public sealed partial class SerializerTests
     {
         [HumanReadableConverter(typeof(DuplicateNameException))]
         public int Prop1 { get; set; }
+    }
+
+    private sealed class DummyConverter : HumanReadableConverter
+    {
+        public override bool CanConvert(Type type) => throw new NotSupportedException();
+        public override void WriteValue(HumanReadableTextWriter writer, object value, HumanReadableSerializerOptions options) => throw new NotSupportedException();
     }
 }

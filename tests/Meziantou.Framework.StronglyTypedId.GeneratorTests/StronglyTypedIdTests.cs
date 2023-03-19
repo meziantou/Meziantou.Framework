@@ -355,6 +355,16 @@ public sealed partial class StronglyTypedIdTests
         value.ToString().Should().Be("IdInt32 { Value = -1 }");
     }
 
+    [Fact]
+    public void ImplementStronglyTypedIdInterface()
+    {
+        var value = IdInt32.FromInt32(1);
+
+        // The following should compile
+        Assert.IsAssignableFrom<IStronglyTypedId>(value);
+        Assert.IsAssignableFrom<IStronglyTypedId<int>>(value);
+    }
+
     private static T BsonClone<T>(T value)
     {
         using var stream = new MemoryStream();

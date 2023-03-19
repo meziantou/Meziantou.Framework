@@ -39,6 +39,7 @@
 | Meziantou.Framework.SingleInstance | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.SingleInstance.svg)](https://www.nuget.org/packages/Meziantou.Framework.SingleInstance/) |
 | Meziantou.Framework.Slug | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Slug.svg)](https://www.nuget.org/packages/Meziantou.Framework.Slug/) |
 | Meziantou.Framework.StronglyTypedId | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.StronglyTypedId.svg)](https://www.nuget.org/packages/Meziantou.Framework.StronglyTypedId/) |
+| Meziantou.Framework.StronglyTypedId.Interfaces | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.StronglyTypedId.Interfaces.svg)](https://www.nuget.org/packages/Meziantou.Framework.StronglyTypedId.Interfaces/) |
 | Meziantou.Framework.Templating | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating/) |
 | Meziantou.Framework.Templating.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating.Html/) |
 | Meziantou.Framework.TemporaryDirectory | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TemporaryDirectory.svg)](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/) |

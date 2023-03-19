@@ -6,6 +6,7 @@ using System.Runtime.Loader;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using NuGet.Frameworks;
 using TestUtilities;
 using Xunit;
 
@@ -332,6 +333,43 @@ public partial struct Test {}
                 var type = a.GetType("Test");
                 var parse = type.GetMember("Parse").Length;
                 parse.Should().Be(2);
+            }
+        }
+        finally
+        {
+            alc.Unload();
+        }
+    }
+
+    [Fact]
+    public async Task Generate_IStronglyTypedId()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(string))]
+public partial struct Test {}
+
+namespace Meziantou.Framework
+{
+interface IStronglyTypedId {}
+interface IStronglyTypedId<T> {}
+}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            alc.LoadFromStream(new MemoryStream(result.Assembly));
+            foreach (var a in alc.Assemblies)
+            {
+                var type = a.GetType("Test");
+
+                var interfaces = type.GetInterfaces();
+                Assert.Contains(interfaces, x => x.FullName == "Meziantou.Framework.IStronglyTypedId");
+                Assert.Contains(interfaces, x => x.FullName.StartsWith("Meziantou.Framework.IStronglyTypedId`1", StringComparison.Ordinal));
             }
         }
         finally

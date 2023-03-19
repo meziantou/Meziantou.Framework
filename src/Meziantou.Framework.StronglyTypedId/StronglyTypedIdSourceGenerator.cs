@@ -166,6 +166,16 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             baseTypes += $", global::System.ISpanParsable<{attribute.TypeName}>";
         }
 
+        if (attribute.SupportIStronglyTyped)
+        {
+            baseTypes += $", global::Meziantou.Framework.IStronglyTypedId";
+        }
+
+        if (attribute.SupportIStronglyTypedOfT)
+        {
+            baseTypes += $", global::Meziantou.Framework.IStronglyTypedId<{GetTypeReference(attribute.IdType)}>";
+        }
+
         var attributes = (CSharpGeneratedFileWriter writer) =>
         {
             if (attribute.CanGenerateTypeConverter())
@@ -455,6 +465,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
 
             SupportReadOnlySpanChar = readOnlySpanCharSymbol != null;
+            SupportIStronglyTyped = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") != null;
+            SupportIStronglyTypedOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") != null;
             SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") != null;
             SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null;
             SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") != null;
@@ -534,6 +546,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public bool SupportMongoDbConverter { get; }
         public bool SupportNotNullWhenAttribute { get; }
         public bool SupportReadOnlySpanChar { get; }
+        public bool SupportIStronglyTyped { get; }
+        public bool SupportIStronglyTypedOfT { get; }
 
         public string TypeConverterTypeName => TypeName + "TypeConverter";
         public string SystemTextJsonConverterTypeName => TypeName + "JsonConverter";
@@ -568,6 +582,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 && IsParseDefined_String == other.IsParseDefined_String
                 && IsParseDefined_Span == other.IsParseDefined_Span
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
+                && SupportIStronglyTyped == other.SupportIStronglyTyped
+                && SupportIStronglyTypedOfT == other.SupportIStronglyTypedOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
                 && SupportTypeConverter == other.SupportTypeConverter
@@ -602,6 +618,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             hash = (hash * 397) ^ IsTryParseDefined_ReadOnlySpan.GetHashCode();
             hash = (hash * 397) ^ IsParseDefined_String.GetHashCode();
             hash = (hash * 397) ^ IsParseDefined_Span.GetHashCode();
+            hash = (hash * 397) ^ SupportIStronglyTyped.GetHashCode();
+            hash = (hash * 397) ^ SupportIStronglyTypedOfT.GetHashCode();
             hash = (hash * 397) ^ SupportStaticInterfaces.GetHashCode();
             hash = (hash * 397) ^ SupportIParsable.GetHashCode();
             hash = (hash * 397) ^ SupportISpanParsable.GetHashCode();

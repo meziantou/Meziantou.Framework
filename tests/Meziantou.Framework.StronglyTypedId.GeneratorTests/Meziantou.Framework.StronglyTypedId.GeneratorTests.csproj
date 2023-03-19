@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId.Interfaces\Meziantou.Framework.StronglyTypedId.Interfaces.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.StronglyTypedId\Meziantou.Framework.StronglyTypedId.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
   </ItemGroup>
 

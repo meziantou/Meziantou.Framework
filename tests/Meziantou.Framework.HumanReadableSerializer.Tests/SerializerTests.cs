@@ -11,6 +11,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Numerics;
 using System.Xml;
+using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using TestUtilities;
 using Xunit;
 
@@ -41,6 +42,25 @@ public sealed partial class SerializerTests
         AssertSerialization(validation.Subject, validation.Options, validation.Expected);
     }
 
+    [Fact]
+    public void FSharp_DiscriminatedUnion_Rectangle()
+    {
+        AssertSerialization(Shape.NewRectangle(1, 2), """
+            Tag: Rectangle
+            width: 1
+            length: 2
+            """);
+    }
+    
+    [Fact]
+    public void FSharp_DiscriminatedUnion_Circle()
+    {
+        AssertSerialization(Shape.NewCircle(1), """
+            Tag: Circle
+            radius: 1
+            """);
+    }
+    
     [Fact]
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");

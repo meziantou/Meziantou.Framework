@@ -115,6 +115,7 @@ public sealed record HumanReadableSerializerOptions
             new MultiDimentionalArrayConverter(),
             new EnumerableKeyValuePairConverter(),
             new EnumerableConverter(),
+            new DiscriminatedUnionConverter(),
             new ObjectConverter(),
         };
 

@@ -11,21 +11,18 @@ public partial class StronglyTypedIdSourceGenerator
             isFirstMember = false;
         }
 
-        var idType = context.IdType;
-        var shortName = GetShortName(idType);
-
         // Field
         if (!context.IsFieldDefined)
         {
             WriteNewMember();
-            writer.WriteLine($"private readonly {GetTypeReference(idType)} {FieldName};");
+            writer.WriteLine($"private readonly {context.ValueTypeCSharpTypeName} {FieldName};");
         }
 
         // Value
         if (!context.IsValueDefined)
         {
             WriteNewMember();
-            writer.WriteLine($"public {GetTypeReference(idType)} {PropertyName} => {FieldName};");
+            writer.WriteLine($"public {context.ValueTypeCSharpTypeName} {PropertyName} => {FieldName};");
         }
 
         // ValueAsString
@@ -36,16 +33,16 @@ public partial class StronglyTypedIdSourceGenerator
 
             string ValueToStringExpression()
             {
-                if (idType == IdType.System_String)
+                if (context.IdType is IdType.System_String)
                     return PropertyName;
 
-                if (idType == IdType.System_Boolean || idType == IdType.System_Guid)
+                if (context.IdType is IdType.System_Boolean or IdType.System_Guid)
                     return $"{PropertyName}.ToString()";
 
-                if (idType == IdType.System_DateTime)
+                if (context.IdType is IdType.System_DateTime)
                     return $"{PropertyName}.ToString(\"o\", global::System.Globalization.CultureInfo.InvariantCulture)";
 
-                if (idType == IdType.System_DateTimeOffset)
+                if (context.IdType is IdType.System_DateTimeOffset)
                     return $"{PropertyName}.UtcDateTime.ToString(\"o\", global::System.Globalization.CultureInfo.InvariantCulture)";
 
                 return $"{PropertyName}.ToString(global::System.Globalization.CultureInfo.InvariantCulture)";
@@ -56,7 +53,7 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsCtorDefined)
         {
             WriteNewMember();
-            using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.TypeName}({GetTypeReference(idType)} value)"))
+            using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.TypeName}({context.ValueTypeCSharpTypeName} value)"))
             {
                 writer.WriteLine($"{FieldName} = value;");
             }
@@ -64,7 +61,7 @@ public partial class StronglyTypedIdSourceGenerator
 
         // From
         WriteNewMember();
-        writer.WriteLine($"public static {context.TypeName} From{shortName}({GetTypeReference(idType)} value) => new {context.TypeName}(value);");
+        writer.WriteLine($"public static {context.TypeName} From{context.ValueTypeShortName}({context.ValueTypeCSharpTypeName} value) => new {context.TypeName}(value);");
 
         // ToString
         if (!context.IsToStringDefined)
@@ -72,7 +69,7 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember();
             using (writer.BeginBlock("public override string ToString()"))
             {
-                if (IsNullable(idType))
+                if (context.IsValueTypeNullable)
                 {
                     using (writer.BeginBlock($"if ({PropertyName} == null)"))
                     {
@@ -91,7 +88,7 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // if Guid => New
-        if (idType == IdType.System_Guid)
+        if (context.IdType is IdType.System_Guid)
         {
             WriteNewMember();
             writer.WriteLine($"public static {context.TypeName} New() => new {context.TypeName}(global::System.Guid.NewGuid());");
@@ -101,7 +98,7 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsGetHashcodeDefined)
         {
             WriteNewMember();
-            if (IsNullable(idType))
+            if (context.IsValueTypeNullable)
             {
                 writer.WriteLine($"public override int GetHashCode() => {PropertyName} == null ? 0 : {PropertyName}.GetHashCode();");
             }
@@ -136,27 +133,60 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsOpEqualsDefined)
         {
             WriteNewMember();
-            if (context.IsReferenceType)
-            {
-                writer.WriteLine($"public static bool operator ==({context.TypeName}? a, {context.TypeName}? b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
-            }
-            else
-            {
-                writer.WriteLine($"public static bool operator ==({context.TypeName} a, {context.TypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
-            }
+            writer.WriteLine($"public static bool operator ==({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
         }
 
         // Operator !=
         if (!context.IsOpNotEqualsDefined)
         {
             WriteNewMember();
-            if (context.IsReferenceType)
+            writer.WriteLine($"public static bool operator !=({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => !(a == b);");
+        }
+
+        // Compare
+        if (context.MustImplementComparable())
+        {
+            if (!context.ImplementsIComparable_CompareTo)
             {
-                writer.WriteLine($"public static bool operator !=({context.TypeName}? a, {context.TypeName}? b) => !(a == b);");
+                WriteNewMember();
+                writer.WriteLine($"public int CompareTo(object? other) => other == null ? 1 : CompareTo(({context.TypeName})other);");
             }
-            else
+
+            if (!context.ImplementsIComparableOfT_CompareTo)
             {
-                writer.WriteLine($"public static bool operator !=({context.TypeName} a, {context.TypeName} b) => !(a == b);");
+                WriteNewMember();
+                if (context.IsReferenceType)
+                {
+                    writer.WriteLine($"public int CompareTo({context.TypeName}? other) => other == null ? 1 : global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default.Compare(Value, other.Value);");
+                }
+                else
+                {
+                    writer.WriteLine($"public int CompareTo({context.TypeName} other) => global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default.Compare(Value, other.Value);");
+                }
+            }
+
+            if (!context.IsOpLessThanDefined)
+            {
+                WriteNewMember();
+                writer.WriteLine($"public static bool operator <({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) < 0;");
+            }
+
+            if (!context.IsOpLessThanOrEqualDefined)
+            {
+                WriteNewMember();
+                writer.WriteLine($"public static bool operator <=({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) <= 0;");
+            }
+
+            if (!context.IsOpGreaterThanDefined)
+            {
+                WriteNewMember();
+                writer.WriteLine($"public static bool operator >({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) > 0;");
+            }
+
+            if (!context.IsOpGreaterThanOrEqualDefined)
+            {
+                WriteNewMember();
+                writer.WriteLine($"public static bool operator >=({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) >= 0;");
             }
         }
 
@@ -285,7 +315,7 @@ public partial class StronglyTypedIdSourceGenerator
                 }
                 else
                 {
-                    if (idType == IdType.System_String)
+                    if (context.IdType is IdType.System_String)
                     {
                         if (isReadOnlySpan)
                         {
@@ -309,7 +339,7 @@ public partial class StronglyTypedIdSourceGenerator
                     }
                     else
                     {
-                        switch (idType)
+                        switch (context.IdType)
                         {
                             case IdType.System_Boolean:
                                 writer.WriteLine($"if (bool.TryParse(value, out var parsedValue))");
@@ -341,7 +371,7 @@ public partial class StronglyTypedIdSourceGenerator
                             case IdType.System_UInt64:
                             case IdType.System_UInt128:
                             case IdType.System_Numerics_BigInteger:
-                                writer.WriteLine($"if ({GetTypeReference(idType)}.TryParse(value, global::System.Globalization.NumberStyles.Any, global::System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))");
+                                writer.WriteLine($"if ({context.ValueTypeCSharpTypeName}.TryParse(value, global::System.Globalization.NumberStyles.Any, global::System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))");
                                 break;
 
                             default:

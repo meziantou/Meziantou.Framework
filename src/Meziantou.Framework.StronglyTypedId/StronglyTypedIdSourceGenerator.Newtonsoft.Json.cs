@@ -86,11 +86,11 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     if (idType is IdType.System_Half)
                     {
-                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<float>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({context.ValueTypeCSharpTypeName})serializer.Deserialize<float>(reader));");
                     }
                     else if (idType is IdType.System_Int128 or IdType.System_UInt128)
                     {
-                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({context.ValueTypeCSharpTypeName})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
                     }
                     else
                     {
@@ -99,7 +99,7 @@ public partial class StronglyTypedIdSourceGenerator
                             writer.WriteLine($"#nullable disable");
                         }
 
-                        writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{context.ValueTypeCSharpTypeName}>(reader));");
 
                         if (idType is IdType.System_String)
                         {

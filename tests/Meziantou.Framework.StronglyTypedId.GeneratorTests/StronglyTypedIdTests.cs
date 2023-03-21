@@ -365,6 +365,31 @@ public sealed partial class StronglyTypedIdTests
         Assert.IsAssignableFrom<IStronglyTypedId<int>>(value);
     }
 
+    [Fact]
+    public void IdInt32Comparable_ImplementsMembers()
+    {
+        var value = IdInt32Comparable.FromInt32(1);
+
+        // The following should compile
+        Assert.IsAssignableFrom<IComparable>(value);
+        Assert.IsAssignableFrom<IComparable<IdInt32Comparable>>(value);
+    }
+
+    [Fact]
+    public void IdInt32ComparableOfT_ImplementsMembers()
+    {
+        var value1 = IdInt32ComparableOfT.FromInt32(1);
+        var value2 = IdInt32ComparableOfT.FromInt32(2);
+
+        // The following should compile
+        Assert.IsAssignableFrom<IComparable>(value1);
+        Assert.IsAssignableFrom<IComparable<IdInt32ComparableOfT>>(value1);
+        Assert.True(value1 < value2);
+        Assert.True(value1 <= value2);
+        Assert.False(value1 > value2);
+        Assert.False(value1 >= value2);
+    }
+
     private static T BsonClone<T>(T value)
     {
         using var stream = new MemoryStream();
@@ -532,6 +557,16 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(int), addCodeGeneratedAttribute: false)]
     private sealed partial record IdInt32WithoutCodeGeneratedAttribute
+    {
+    }
+
+    [StronglyTypedId(typeof(int))]
+    private sealed partial class IdInt32Comparable : IComparable
+    {
+    }
+
+    [StronglyTypedId(typeof(int))]
+    private sealed partial class IdInt32ComparableOfT : IComparable<IdInt32ComparableOfT>
     {
     }
 

@@ -121,7 +121,7 @@ public partial class StronglyTypedIdSourceGenerator
                     if (context.IsReferenceType)
                     {
                         writer.WriteLine($"#nullable disable");
-                        writer.WriteLine($"return value ?? new {context.TypeName}(default({GetTypeReference(idType)}));");
+                        writer.WriteLine($"return value ?? new {context.TypeName}(default({context.ValueTypeCSharpTypeName}));");
                         writer.WriteLine($"#nullable enable");
                     }
                     else
@@ -152,7 +152,7 @@ public partial class StronglyTypedIdSourceGenerator
                     writer.WriteLine($"#nullable disable");
                 }
 
-                writer.WriteLine($"{left}new {context.TypeName}(reader.Get{GetShortName(idType)}());");
+                writer.WriteLine($"{left}new {context.TypeName}(reader.Get{context.ValueTypeShortName}());");
 
                 if (idType is IdType.System_String)
                 {

@@ -3,6 +3,7 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -56,11 +57,27 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var diags = string.Join("\n", result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
-            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
+            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + NumberLine(generated));
             result.Diagnostics.Should().BeEmpty();
         }
 
         return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
+
+        static string NumberLine(string value)
+        {
+            var sb = new StringBuilder();
+            var i = 0;
+            foreach (var line in value.SplitLines())
+            {
+                i++;
+                sb.Append(i.ToStringInvariant("#000"));
+                sb.Append(' ');
+                sb.Append(line.Line);
+                sb.Append(line.Separator);
+            }
+
+            return sb.ToString();
+        }
     }
 
     [Fact]
@@ -376,6 +393,58 @@ interface IStronglyTypedId<T> {}
         {
             alc.Unload();
         }
+    }
+
+    [Fact]
+    public async Task Generate_IComparable_Struct_ReferenceType()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(string))]
+public partial struct Test : System.IComparable<Test> {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Generate_IComparable_Struct_ValueType()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(int))]
+public partial struct Test : System.IComparable<Test> {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Generate_IComparable_Class_ReferenceType()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(string))]
+public partial class Test : System.IComparable<Test> {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Generate_IComparable_Class_ValueType()
+    {
+        var sourceCode = @"
+[StronglyTypedIdAttribute(typeof(int))]
+public partial class Test : System.IComparable<Test> {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
     }
 
     [Fact]

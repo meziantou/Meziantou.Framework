@@ -7,8 +7,6 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.CanGenerateMongoDbConverter())
             return;
 
-        var typeReference = GetTypeReference(context.IdType);
-
         using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}>"))
         {
             WriteNewMember(writer, context, addNewLine: false);
@@ -26,7 +24,7 @@ public partial class StronglyTypedIdSourceGenerator
                 }
                 else
                 {
-                    writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{typeReference}>();");
+                    writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{context.ValueTypeCSharpTypeName}>();");
                     writer.WriteLine($"return new {context.TypeName}(serializer.Deserialize(context, args));");
                 }
             }
@@ -55,7 +53,7 @@ public partial class StronglyTypedIdSourceGenerator
                         }
                     }
 
-                    if (IsNullable(context.IdType))
+                    if (context.IsValueTypeNullable)
                     {
                         using (writer.BeginBlock($"if (value.Value == null)"))
                         {
@@ -64,7 +62,7 @@ public partial class StronglyTypedIdSourceGenerator
                         }
                     }
 
-                    writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{typeReference}>();");
+                    writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<{context.ValueTypeCSharpTypeName}>();");
                     writer.WriteLine($"serializer.Serialize(context, args, value.Value);");
                 }
             }

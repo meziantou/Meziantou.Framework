@@ -15,7 +15,7 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(writer, context, addNewLine: false);
             using (writer.BeginBlock("public override bool CanConvertFrom(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type sourceType)"))
             {
-                writer.WriteLine($"return sourceType == typeof(string) || sourceType == typeof({GetTypeReference(idType)}) || sourceType == typeof({context.TypeName});");
+                writer.WriteLine($"return sourceType == typeof(string) || sourceType == typeof({context.ValueTypeCSharpTypeName}) || sourceType == typeof({context.TypeName});");
             }
 
             // public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
@@ -27,9 +27,9 @@ public partial class StronglyTypedIdSourceGenerator
                     writer.WriteLine($"return default({context.TypeName});");
                 }
 
-                using (writer.BeginBlock($"if (value is {GetTypeReference(idType)} typedValue)"))
+                using (writer.BeginBlock($"if (value is {context.ValueTypeCSharpTypeName} typedValue)"))
                 {
-                    writer.WriteLine($"return {context.TypeName}.From{GetShortName(idType)}(typedValue);");
+                    writer.WriteLine($"return {context.TypeName}.From{context.ValueTypeShortName}(typedValue);");
                 }
 
                 using (writer.BeginBlock($"if (value is string stringValue)"))
@@ -44,7 +44,7 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(writer, context, addNewLine: true);
             using (writer.BeginBlock("public override bool CanConvertTo(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type? destinationType)"))
             {
-                writer.WriteLine($"return destinationType != null && (destinationType == typeof(string) || destinationType == typeof({GetTypeReference(idType)}) || destinationType == typeof({context.TypeName}));");
+                writer.WriteLine($"return destinationType != null && (destinationType == typeof(string) || destinationType == typeof({context.ValueTypeCSharpTypeName}) || destinationType == typeof({context.TypeName}));");
             }
 
             // public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
@@ -59,7 +59,7 @@ public partial class StronglyTypedIdSourceGenerator
                         writer.WriteLine($"return (({context.TypeName})value).ValueAsString;");
                     }
 
-                    using (writer.BeginBlock($"if (destinationType == typeof({GetTypeReference(idType)}))"))
+                    using (writer.BeginBlock($"if (destinationType == typeof({context.ValueTypeCSharpTypeName}))"))
                     {
                         writer.WriteLine($"return (({context.TypeName})value).Value;");
                     }

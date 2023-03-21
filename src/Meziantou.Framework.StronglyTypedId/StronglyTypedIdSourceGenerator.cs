@@ -53,7 +53,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 }
 """;
 
-    private static readonly DiagnosticDescriptor UnsuportedType = new(
+    private static readonly DiagnosticDescriptor UnsupportedType = new(
         id: "MFSTID0001",
         title: "Not supported type",
         messageFormat: "The type '{0}' is not supported",
@@ -148,7 +148,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     {
         if (attribute.IdType == IdType.Unknown)
         {
-            context.ReportDiagnostic(Diagnostic.Create(UnsuportedType, attribute.AttributeSyntax.GetLocation(), attribute.IdType));
+            context.ReportDiagnostic(Diagnostic.Create(UnsupportedType, attribute.AttributeSyntax.GetLocation(), attribute.IdType));
             return;
         }
 
@@ -173,7 +173,17 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         if (attribute.SupportIStronglyTypedOfT)
         {
-            baseTypes += $", global::Meziantou.Framework.IStronglyTypedId<{GetTypeReference(attribute.IdType)}>";
+            baseTypes += $", global::Meziantou.Framework.IStronglyTypedId<{attribute.ValueTypeCSharpTypeName}>";
+        }
+
+        if (attribute.ImplementsIComparable && !attribute.ImplementsIComparableOfT)
+        {
+            baseTypes += $", global::System.IComparable<{attribute.TypeName}>";
+        }
+
+        if (!attribute.ImplementsIComparable && attribute.ImplementsIComparableOfT)
+        {
+            baseTypes += $", global::System.IComparable";
         }
 
         var attributes = (CSharpGeneratedFileWriter writer) =>
@@ -311,68 +321,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt128")))
             return IdType.System_UInt128;
 
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("MongoDB.Bson.ObjectId")))
+            return IdType.MongoDB_Bson_ObjectId;
+
         return IdType.Unknown;
-    }
-
-    private static string GetTypeReference(IdType type)
-    {
-        return type switch
-        {
-            IdType.System_Boolean => "bool",
-            IdType.System_Byte => "byte",
-            IdType.System_DateTime => "global::System.DateTime",
-            IdType.System_DateTimeOffset => "global::System.DateTimeOffset",
-            IdType.System_Decimal => "decimal",
-            IdType.System_Double => "double",
-            IdType.System_Guid => "global::System.Guid",
-            IdType.System_Half => "global::System.Half",
-            IdType.System_Int16 => "short",
-            IdType.System_Int32 => "int",
-            IdType.System_Int64 => "long",
-            IdType.System_Int128 => "global::System.Int128",
-            IdType.System_Numerics_BigInteger => "global::System.Numerics.BigInteger",
-            IdType.System_SByte => "sbyte",
-            IdType.System_Single => "float",
-            IdType.System_String => "string",
-            IdType.System_UInt16 => "ushort",
-            IdType.System_UInt32 => "uint",
-            IdType.System_UInt64 => "ulong",
-            IdType.System_UInt128 => "global::System.UInt128",
-            _ => throw new ArgumentException("Type not supported", nameof(type)),
-        };
-    }
-
-    private static bool IsNullable(IdType idType)
-    {
-        return idType == IdType.System_String;
-    }
-
-    private static string GetShortName(IdType type)
-    {
-        return type switch
-        {
-            IdType.System_Boolean => "Boolean",
-            IdType.System_Byte => "Byte",
-            IdType.System_DateTime => "DateTime",
-            IdType.System_DateTimeOffset => "DateTimeOffset",
-            IdType.System_Decimal => "Decimal",
-            IdType.System_Double => "Double",
-            IdType.System_Guid => "Guid",
-            IdType.System_Half => "Half",
-            IdType.System_Int16 => "Int16",
-            IdType.System_Int32 => "Int32",
-            IdType.System_Int64 => "Int64",
-            IdType.System_Int128 => "Int128",
-            IdType.System_Numerics_BigInteger => "BigInteger",
-            IdType.System_SByte => "SByte",
-            IdType.System_Single => "Single",
-            IdType.System_String => "String",
-            IdType.System_UInt16 => "UInt16",
-            IdType.System_UInt32 => "UInt32",
-            IdType.System_UInt64 => "UInt64",
-            IdType.System_UInt128 => "UInt128",
-            _ => throw new ArgumentException("Type not supported", nameof(type)),
-        };
     }
 
     private static string GetPrivateOrProtectedModifier(AttributeInfo type)
@@ -412,6 +364,22 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
                     case IMethodSymbol { IsStatic: true, Name: "op_Inequality", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, var param2] } when SymbolEqual(param1.Type, typeSymbol) && SymbolEqual(param2.Type, typeSymbol):
                         IsOpNotEqualsDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "op_LessThan", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, var param2] } when SymbolEqual(param1.Type, typeSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsOpLessThanDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "op_GreaterThan", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, var param2] } when SymbolEqual(param1.Type, typeSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsOpGreaterThanDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "op_LessThanOrEqual", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, var param2] } when SymbolEqual(param1.Type, typeSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsOpLessThanOrEqualDefined = true;
+                        break;
+
+                    case IMethodSymbol { IsStatic: true, Name: "op_GreaterThanOrEqual", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [var param1, var param2] } when SymbolEqual(param1.Type, typeSymbol) && SymbolEqual(param2.Type, typeSymbol):
+                        IsOpGreaterThanOrEqualDefined = true;
                         break;
 
                     case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] } method:
@@ -476,6 +444,42 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null;
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
 
+            var icomparableSymbol = compilation.GetTypeByMetadataName("System.IComparable");
+            var icomparableCompareToMember = icomparableSymbol?.GetMembers("CompareTo").FirstOrDefault();
+            if (icomparableSymbol != null && icomparableCompareToMember != null)
+            {
+                ImplementsIComparable = Implements(typeSymbol, icomparableSymbol);
+                ImplementsIComparable_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableCompareToMember) != null;
+            }
+
+            var icomparableOfTSymbol = compilation.GetTypeByMetadataName("System.IComparable`1");
+            var icomparableOfTypeSymbol = icomparableOfTSymbol?.Construct(typeSymbol);
+            var icomparableOfTCompareToMember = icomparableOfTypeSymbol?.GetMembers("CompareTo").FirstOrDefault();
+            if (icomparableOfTSymbol != null && icomparableOfTCompareToMember != null)
+            {
+                ImplementsIComparableOfT = Implements(typeSymbol, icomparableOfTypeSymbol);
+                ImplementsIComparableOfT_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableOfTCompareToMember) != null;
+            }
+
+            CSharpNullableTypeName = IsReferenceType ? (TypeName + "?") : TypeName;
+            ValueTypeShortName = GetShortName(IdType);
+            ValueTypeCSharpTypeName = GetCSharpTypeName(IdType);
+            ValueTypeCSharpNullableTypeName = ValueTypeCSharpTypeName + (IsReferenceType ? "?" : "");
+
+            static bool Implements(ITypeSymbol symbol, ITypeSymbol? interfaceSymbol)
+            {
+                if (interfaceSymbol == null)
+                    return false;
+
+                foreach (var iface in symbol.AllInterfaces)
+                {
+                    if (SymbolEqual(iface, interfaceSymbol))
+                        return true;
+                }
+
+                return false;
+            }
+
             static bool SymbolEqual(ITypeSymbol? left, ITypeSymbol? right) => SymbolEqualityComparer.Default.Equals(left, right);
 
             static PartialTypeContext GetContext(ITypeSymbol typeSymbol)
@@ -536,6 +540,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public bool IsTryParseDefined_ReadOnlySpan { get; }
         public bool IsParseDefined_String { get; }
         public bool IsParseDefined_Span { get; }
+        public bool IsOpLessThanDefined { get; }
+        public bool IsOpGreaterThanDefined { get; }
+        public bool IsOpLessThanOrEqualDefined { get; }
+        public bool IsOpGreaterThanOrEqualDefined { get; }
+        public bool ImplementsIComparable { get; }
+        public bool ImplementsIComparable_CompareTo { get; }
+        public bool ImplementsIComparableOfT { get; }
+        public bool ImplementsIComparableOfT_CompareTo { get; }
 
         public bool SupportStaticInterfaces { get; }
         public bool SupportIParsable { get; }
@@ -553,6 +565,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public string SystemTextJsonConverterTypeName => TypeName + "JsonConverter";
         public string NewtonsoftJsonConverterTypeName => TypeName + "NewtonsoftJsonConverter";
         public string MongoDbConverterTypeName => TypeName + "BsonConverter";
+
+        public string ValueTypeShortName { get; }
+        public string ValueTypeCSharpTypeName { get; }
+        public string ValueTypeCSharpNullableTypeName { get; }
+        public string CSharpNullableTypeName { get; }
+
+        public bool IsValueTypeNullable => IdType is IdType.System_String;
+        public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId;
 
         public override bool Equals(object? obj) => Equals(obj as AttributeInfo);
 
@@ -591,7 +611,15 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 && SupportNewtonsoftJsonConverter == other.SupportNewtonsoftJsonConverter
                 && SupportMongoDbConverter == other.SupportMongoDbConverter
                 && SupportNotNullWhenAttribute == other.SupportNotNullWhenAttribute
-                && SupportReadOnlySpanChar == other.SupportReadOnlySpanChar;
+                && SupportReadOnlySpanChar == other.SupportReadOnlySpanChar
+                && IsOpLessThanDefined == other.IsOpLessThanDefined
+                && IsOpGreaterThanDefined == other.IsOpGreaterThanDefined
+                && IsOpLessThanOrEqualDefined == other.IsOpLessThanOrEqualDefined
+                && IsOpGreaterThanOrEqualDefined == other.IsOpGreaterThanOrEqualDefined
+                && ImplementsIComparable == other.ImplementsIComparable
+                && ImplementsIComparable_CompareTo == other.ImplementsIComparable_CompareTo
+                && ImplementsIComparableOfT == other.ImplementsIComparableOfT
+                && ImplementsIComparableOfT_CompareTo == other.ImplementsIComparableOfT_CompareTo;
         }
 
         public override int GetHashCode()
@@ -629,12 +657,20 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             hash = (hash * 397) ^ SupportMongoDbConverter.GetHashCode();
             hash = (hash * 397) ^ SupportNotNullWhenAttribute.GetHashCode();
             hash = (hash * 397) ^ SupportReadOnlySpanChar.GetHashCode();
+            hash = (hash * 397) ^ IsOpLessThanDefined.GetHashCode();
+            hash = (hash * 397) ^ IsOpGreaterThanDefined.GetHashCode();
+            hash = (hash * 397) ^ IsOpLessThanOrEqualDefined.GetHashCode();
+            hash = (hash * 397) ^ IsOpGreaterThanOrEqualDefined.GetHashCode();
+            hash = (hash * 397) ^ ImplementsIComparable.GetHashCode();
+            hash = (hash * 397) ^ ImplementsIComparable_CompareTo.GetHashCode();
+            hash = (hash * 397) ^ ImplementsIComparableOfT.GetHashCode();
+            hash = (hash * 397) ^ ImplementsIComparableOfT_CompareTo.GetHashCode();
             return hash;
         }
 
         public bool CanImplementISpanParsable()
         {
-            return SupportStaticInterfaces && SupportISpanParsable && SupportReadOnlySpanChar;
+            return SupportStaticInterfaces && SupportISpanParsable && SupportReadOnlySpanChar && ValueTypeHasParseReadOnlySpan;
         }
 
         public bool CanImplementIParsable()
@@ -661,6 +697,70 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         {
             return SupportMongoDbConverter && (Converters & StronglyTypedIdConverters.MongoDB_Bson_Serialization) == StronglyTypedIdConverters.MongoDB_Bson_Serialization;
         }
+
+        public bool MustImplementComparable()
+        {
+            return ImplementsIComparable || ImplementsIComparableOfT;
+        }
+
+        private static string GetCSharpTypeName(IdType type)
+        {
+            return type switch
+            {
+                IdType.System_Boolean => "bool",
+                IdType.System_Byte => "byte",
+                IdType.System_DateTime => "global::System.DateTime",
+                IdType.System_DateTimeOffset => "global::System.DateTimeOffset",
+                IdType.System_Decimal => "decimal",
+                IdType.System_Double => "double",
+                IdType.System_Guid => "global::System.Guid",
+                IdType.System_Half => "global::System.Half",
+                IdType.System_Int16 => "short",
+                IdType.System_Int32 => "int",
+                IdType.System_Int64 => "long",
+                IdType.System_Int128 => "global::System.Int128",
+                IdType.System_Numerics_BigInteger => "global::System.Numerics.BigInteger",
+                IdType.System_SByte => "sbyte",
+                IdType.System_Single => "float",
+                IdType.System_String => "string",
+                IdType.System_UInt16 => "ushort",
+                IdType.System_UInt32 => "uint",
+                IdType.System_UInt64 => "ulong",
+                IdType.System_UInt128 => "global::System.UInt128",
+                IdType.MongoDB_Bson_ObjectId => "global::MongoDB.Bson.ObjectId",
+                _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
+            };
+        }
+
+        private static string GetShortName(IdType type)
+        {
+            return type switch
+            {
+                IdType.System_Boolean => "Boolean",
+                IdType.System_Byte => "Byte",
+                IdType.System_DateTime => "DateTime",
+                IdType.System_DateTimeOffset => "DateTimeOffset",
+                IdType.System_Decimal => "Decimal",
+                IdType.System_Double => "Double",
+                IdType.System_Guid => "Guid",
+                IdType.System_Half => "Half",
+                IdType.System_Int16 => "Int16",
+                IdType.System_Int32 => "Int32",
+                IdType.System_Int64 => "Int64",
+                IdType.System_Int128 => "Int128",
+                IdType.System_Numerics_BigInteger => "BigInteger",
+                IdType.System_SByte => "SByte",
+                IdType.System_Single => "Single",
+                IdType.System_String => "String",
+                IdType.System_UInt16 => "UInt16",
+                IdType.System_UInt32 => "UInt32",
+                IdType.System_UInt64 => "UInt64",
+                IdType.System_UInt128 => "UInt128",
+                IdType.MongoDB_Bson_ObjectId => "ObjectId",
+                _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
+            };
+        }
+
     }
 
     [Flags]
@@ -696,6 +796,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         System_UInt32,
         System_UInt64,
         System_UInt128,
+        MongoDB_Bson_ObjectId,
     }
 
     private sealed record PartialTypeContext(string Keyword, string? Namespace, string Name)

@@ -49,7 +49,6 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(writer, context, addNewLine: true);
             using (writer.BeginBlock("public override object? ReadJson(global::Newtonsoft.Json.JsonReader reader, global::System.Type objectType, object? existingValue, global::Newtonsoft.Json.JsonSerializer serializer)"))
             {
-
                 using (writer.BeginBlock("if (reader.TokenType == global::Newtonsoft.Json.JsonToken.StartObject)"))
                 {
                     writer.WriteLine("object? value = null;");
@@ -86,11 +85,15 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     if (idType is IdType.System_Half)
                     {
-                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<float>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({context.ValueTypeCSharpTypeName})serializer.Deserialize<float>(reader));");
                     }
                     else if (idType is IdType.System_Int128 or IdType.System_UInt128)
                     {
-                        writer.WriteLine($"{left}new {context.TypeName}(({GetTypeReference(idType)})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(({context.ValueTypeCSharpTypeName})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                    }
+                    else if (idType is IdType.MongoDB_Bson_ObjectId)
+                    {
+                        writer.WriteLine($"{left}{context.TypeName}.Parse(serializer.Deserialize<string>(reader));");
                     }
                     else
                     {
@@ -99,7 +102,7 @@ public partial class StronglyTypedIdSourceGenerator
                             writer.WriteLine($"#nullable disable");
                         }
 
-                        writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{GetTypeReference(idType)}>(reader));");
+                        writer.WriteLine($"{left}new {context.TypeName}(serializer.Deserialize<{context.ValueTypeCSharpTypeName}>(reader));");
 
                         if (idType is IdType.System_String)
                         {

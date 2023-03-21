@@ -51,7 +51,7 @@ public sealed partial class SerializerTests
             length: 2
             """);
     }
-    
+
     [Fact]
     public void FSharp_DiscriminatedUnion_Circle()
     {
@@ -60,7 +60,7 @@ public sealed partial class SerializerTests
             radius: 1
             """);
     }
-    
+
     [Fact]
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");
@@ -702,6 +702,19 @@ public sealed partial class SerializerTests
             d␊
             e␀
             """,
+        });
+    }
+
+    [Fact]
+    public void String_Multiline_InObject_NoStartingWhitespace()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new
+            {
+                A = "abc\n\ndef",
+            },
+            Expected = "A:\n  abc\n\n  def",
         });
     }
 

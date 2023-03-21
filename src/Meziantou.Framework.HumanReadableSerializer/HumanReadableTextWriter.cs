@@ -22,7 +22,7 @@ public sealed class HumanReadableTextWriter
         _options = options;
     }
 
-    private void WritePendingText()
+    private void WritePendingText(bool indent = true)
     {
         if (_context is WriterContext.NewLine)
         {
@@ -33,7 +33,7 @@ public sealed class HumanReadableTextWriter
             _text.Append(' ');
         }
 
-        if (_context is WriterContext.NewLine)
+        if (indent && _context is WriterContext.NewLine)
         {
             for (var i = 0; i < _indentation; i++)
             {
@@ -56,7 +56,7 @@ public sealed class HumanReadableTextWriter
         {
             foreach (var (line, eol) in StringUtils.EnumerateLines(value))
             {
-                WritePendingText();
+                WritePendingText(indent: !line.IsEmpty);
                 ReplaceInvisibleCharacters(_text, line);
                 ReplaceInvisibleCharacters(_text, eol);
             }
@@ -70,7 +70,7 @@ public sealed class HumanReadableTextWriter
                     WriteNewLine();
                 }
 
-                WritePendingText();
+                WritePendingText(indent: !line.IsEmpty);
                 if (isValue && _options.ShowInvisibleCharactersInValues)
                 {
                     ReplaceInvisibleCharacters(_text, line);

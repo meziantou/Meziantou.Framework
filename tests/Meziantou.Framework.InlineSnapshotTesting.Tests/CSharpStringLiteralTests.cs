@@ -21,12 +21,19 @@ public sealed class CSharpStringLiteralTests
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Quoted, "    ", 0, "\n");
         result.Should().Be("\"line1\\nline2\"");
     }
-
+    
     [Fact]
     public void CreateRawString()
     {
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Raw, "    ", 0, "\n");
         result.Should().Be("\"\"\"\n    line1\n    line2\n    \"\"\"");
+    }
+
+    [Fact]
+    public void CreateRawStringWithEmptyLine()
+    {
+        var result = CSharpStringLiteral.Create("line1\n    \nline2", CSharpStringFormats.Raw, "    ", 0, "\n");
+        result.Should().Be("\"\"\"\n    line1\n\n    line2\n    \"\"\"");
     }
 
     [Fact]

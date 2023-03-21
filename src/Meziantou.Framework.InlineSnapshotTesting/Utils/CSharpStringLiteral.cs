@@ -117,8 +117,13 @@ internal static class CSharpStringLiteral
 
         foreach (var line in StringUtils.EnumerateLines(value))
         {
-            AppendIndentation(sb);
-            sb.Append(line);
+            var trimmedLine = TrimEndWhitespace(line.Line);
+            if (!trimmedLine.IsEmpty)
+            {
+                AppendIndentation(sb);
+                sb.Append(line);
+            }
+
             sb.Append(eol);
         }
 
@@ -190,5 +195,15 @@ internal static class CSharpStringLiteral
         }
 
         return Math.Max(maximumConsecutiveCharacters, consecutiveCharacters);
+    }
+
+    private static ReadOnlySpan<char> TrimEndWhitespace(ReadOnlySpan<char> span)
+    {
+        while (!span.IsEmpty && char.IsWhiteSpace(span[^1]))
+        {
+            span = span[..^1];
+        }
+
+        return span;
     }
 }

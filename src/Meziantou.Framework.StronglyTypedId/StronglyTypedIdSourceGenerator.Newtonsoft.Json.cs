@@ -49,7 +49,6 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(writer, context, addNewLine: true);
             using (writer.BeginBlock("public override object? ReadJson(global::Newtonsoft.Json.JsonReader reader, global::System.Type objectType, object? existingValue, global::Newtonsoft.Json.JsonSerializer serializer)"))
             {
-
                 using (writer.BeginBlock("if (reader.TokenType == global::Newtonsoft.Json.JsonToken.StartObject)"))
                 {
                     writer.WriteLine("object? value = null;");
@@ -91,6 +90,10 @@ public partial class StronglyTypedIdSourceGenerator
                     else if (idType is IdType.System_Int128 or IdType.System_UInt128)
                     {
                         writer.WriteLine($"{left}new {context.TypeName}(({context.ValueTypeCSharpTypeName})serializer.Deserialize<global::System.Numerics.BigInteger>(reader));");
+                    }
+                    else if (idType is IdType.MongoDB_Bson_ObjectId)
+                    {
+                        writer.WriteLine($"{left}{context.TypeName}.Parse(serializer.Deserialize<string>(reader));");
                     }
                     else
                     {

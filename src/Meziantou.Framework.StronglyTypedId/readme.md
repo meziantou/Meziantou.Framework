@@ -67,6 +67,32 @@ public partial struct ProjectId : System.IEquatable<ProjectId>
 }
 ````
 
+If the `Meziantou.Framework.StronglyTypedId.Interfaces` NuGet package is present, the generator will implements `IStronglyTypedId` and `IStronglyTypedId<T>`.
+
+# Supported types
+
+- `System.Boolean`
+- `System.Byte`
+- `System.DateTime`
+- `System.DateTimeOffset`
+- `System.Decimal`
+- `System.Double`
+- `System.Guid`
+- `System.Half`
+- `System.Int16`
+- `System.Int32`
+- `System.Int64`
+- `System.Int128`
+- `System.Numerics.BigInteger`
+- `System.SByte`
+- `System.Single`
+- `System.String`
+- `System.Uint16`
+- `System.Uint32`
+- `System.Uint64`
+- `System.Uint128`
+- `MongoDB.Bson.ObjectId`
+
 # Configuration
 
 You can configure the code generation using the `[StronglyTypedIdAttribute]` attribute:
@@ -80,6 +106,13 @@ You can configure the code generation using the `[StronglyTypedIdAttribute]` att
                  addCodeGeneratedAttribute: true
                  )]
 public partial struct ProjectId { }
+````
+
+You can generate `IComparable`, `IComparable<T>` and comparison operators by adding one interface:
+
+````c#
+[StronglyTypedId(typeof(int)]
+public partial struct ProjectId : IComparable { }
 ````
 
 # Additional resources

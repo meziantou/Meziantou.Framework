@@ -36,7 +36,7 @@ public partial class StronglyTypedIdSourceGenerator
                 if (context.IdType is IdType.System_String)
                     return PropertyName;
 
-                if (context.IdType is IdType.System_Boolean or IdType.System_Guid)
+                if (context.IdType is IdType.System_Boolean or IdType.System_Guid or IdType.MongoDB_Bson_ObjectId)
                     return $"{PropertyName}.ToString()";
 
                 if (context.IdType is IdType.System_DateTime)
@@ -191,7 +191,7 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // Parse / TryParse
-        if (context.SupportReadOnlySpanChar)
+        if (context.SupportReadOnlySpanChar && context.ValueTypeHasParseReadOnlySpan)
         {
             // TryParse(ReadOnlySpan<char>)
             if (!context.IsTryParseDefined_ReadOnlySpan)
@@ -301,7 +301,7 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember();
             using (writer.BeginBlock($"public static bool TryParse({type} value, {returnType} result)"))
             {
-                if (!isReadOnlySpan && context.SupportReadOnlySpanChar)
+                if (!isReadOnlySpan && context.ValueTypeHasParseReadOnlySpan)
                 {
                     using (writer.BeginBlock("if (value == null)"))
                     {
@@ -374,8 +374,12 @@ public partial class StronglyTypedIdSourceGenerator
                                 writer.WriteLine($"if ({context.ValueTypeCSharpTypeName}.TryParse(value, global::System.Globalization.NumberStyles.Any, global::System.Globalization.CultureInfo.InvariantCulture, out var parsedValue))");
                                 break;
 
+                            case IdType.MongoDB_Bson_ObjectId:
+                                writer.WriteLine($"if (MongoDB.Bson.ObjectId.TryParse(value, out var parsedValue))");
+                                break;
+
                             default:
-                                throw new InvalidOperationException("Type not supported");
+                                throw new InvalidOperationException($"Type '{context.IdType}' not supported");
                         }
 
                         using (writer.BeginBlock())

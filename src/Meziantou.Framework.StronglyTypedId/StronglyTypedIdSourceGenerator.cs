@@ -321,6 +321,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("System.UInt128")))
             return IdType.System_UInt128;
 
+        if (SymbolEqualityComparer.Default.Equals(symbol, compilation.GetTypeByMetadataName("MongoDB.Bson.ObjectId")))
+            return IdType.MongoDB_Bson_ObjectId;
+
         return IdType.Unknown;
     }
 
@@ -564,14 +567,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public string MongoDbConverterTypeName => TypeName + "BsonConverter";
 
         public string ValueTypeShortName { get; }
-
         public string ValueTypeCSharpTypeName { get; }
-
         public string ValueTypeCSharpNullableTypeName { get; }
-
         public string CSharpNullableTypeName { get; }
 
         public bool IsValueTypeNullable => IdType is IdType.System_String;
+        public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId;
 
         public override bool Equals(object? obj) => Equals(obj as AttributeInfo);
 
@@ -669,7 +670,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
         public bool CanImplementISpanParsable()
         {
-            return SupportStaticInterfaces && SupportISpanParsable && SupportReadOnlySpanChar;
+            return SupportStaticInterfaces && SupportISpanParsable && SupportReadOnlySpanChar && ValueTypeHasParseReadOnlySpan;
         }
 
         public bool CanImplementIParsable()
@@ -726,7 +727,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 IdType.System_UInt32 => "uint",
                 IdType.System_UInt64 => "ulong",
                 IdType.System_UInt128 => "global::System.UInt128",
-                _ => throw new ArgumentException("Type not supported", nameof(type)),
+                IdType.MongoDB_Bson_ObjectId => "global::MongoDB.Bson.ObjectId",
+                _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
             };
         }
 
@@ -754,7 +756,8 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 IdType.System_UInt32 => "UInt32",
                 IdType.System_UInt64 => "UInt64",
                 IdType.System_UInt128 => "UInt128",
-                _ => throw new ArgumentException("Type not supported", nameof(type)),
+                IdType.MongoDB_Bson_ObjectId => "ObjectId",
+                _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
             };
         }
 
@@ -793,6 +796,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         System_UInt32,
         System_UInt64,
         System_UInt128,
+        MongoDB_Bson_ObjectId,
     }
 
     private sealed record PartialTypeContext(string Keyword, string? Namespace, string Name)

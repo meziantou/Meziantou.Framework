@@ -64,6 +64,8 @@ public sealed partial class StronglyTypedIdTests
 
             { typeof(IdRecordInt32), "FromInt32", 42 },
             { typeof(IdRecordStructInt32), "FromInt32", 42 },
+
+            { typeof(BsonObjectId), "FromObjectId", ObjectId.GenerateNewId() },
         };
     }
 
@@ -572,6 +574,11 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(int))]
     private partial class IdInt32Base
+    {
+    }
+    
+    [StronglyTypedId(typeof(MongoDB.Bson.ObjectId))]
+    private sealed partial class BsonObjectId
     {
     }
 

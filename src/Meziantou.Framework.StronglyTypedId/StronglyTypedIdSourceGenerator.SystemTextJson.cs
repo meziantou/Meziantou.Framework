@@ -32,6 +32,10 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     writer.WriteLine("writer.WriteRawValue(value.ValueAsString);");
                 }
+                else if (idType is IdType.MongoDB_Bson_ObjectId)
+                {
+                    writer.WriteLine("writer.WriteStringValue(value.Value.ToString());");
+                }
                 else if (CanUseWriteNumberValue())
                 {
                     writer.WriteLine("writer.WriteNumberValue(value.Value);");
@@ -48,7 +52,7 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     writer.WriteLine("writer.WriteStringValue(value.Value);");
                 }
-                else if (CanUseWriteStringValue())
+                else
                 {
                     writer.WriteLine("global::System.Text.Json.JsonSerializer.Serialize(writer, value.Value, options);");
                 }
@@ -136,7 +140,7 @@ public partial class StronglyTypedIdSourceGenerator
 
         void ReadValue(string? left = null)
         {
-            if (idType is IdType.System_Int128 or IdType.System_UInt128 or IdType.System_Numerics_BigInteger or IdType.System_Half)
+            if (idType is IdType.System_Int128 or IdType.System_UInt128 or IdType.System_Numerics_BigInteger or IdType.System_Half or IdType.MongoDB_Bson_ObjectId)
             {
                 writer.BeginBlock("if (reader.HasValueSequence)");
                 writer.WriteLine($"{left}{context.TypeName}.Parse(global::System.Text.EncodingExtensions.GetString(global::System.Text.Encoding.UTF8, reader.ValueSequence));");

@@ -838,7 +838,7 @@ public sealed class QueryBuilderTests
     }
 
     [Fact]
-    public void Parenthese()
+    public void Parentheses()
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
@@ -880,6 +880,32 @@ public sealed class QueryBuilderTests
         query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }).Should().BeFalse();
         query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }).Should().BeFalse();
         query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
+    }
+
+    [Fact]
+    public void FieldAndText()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+        var query = queryBuilder.Build("int32:1 sample");
+
+        query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }).Should().BeTrue();
+        query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }).Should().BeFalse();
+        query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }).Should().BeFalse();
+    }
+    
+    [Fact]
+    public void FieldAndNotText()
+    {
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
+        queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
+        var query = queryBuilder.Build("int32:1 AND NOT sample");
+
+        query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }).Should().BeFalse();
+        query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }).Should().BeTrue();
+        query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }).Should().BeFalse();
     }
 
     private sealed class Sample

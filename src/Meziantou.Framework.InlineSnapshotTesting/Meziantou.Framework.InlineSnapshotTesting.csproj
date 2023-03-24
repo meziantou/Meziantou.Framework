@@ -7,7 +7,7 @@
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
 
     <!-- Buggy because of netstandard2.0 -->
@@ -36,6 +36,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
@@ -43,6 +44,7 @@
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/bin/Release/net6.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/bin/Release/net6.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
     <None Include="package/**/*" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>

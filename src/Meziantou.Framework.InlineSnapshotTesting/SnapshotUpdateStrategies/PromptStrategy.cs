@@ -1,15 +1,10 @@
 ﻿using System.Diagnostics;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 
 internal sealed class PromptStrategy : SnapshotUpdateStrategy
 {
-    private static readonly string DefaultFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "meziantou.framework.inlinesnapshot", "settings.json");
-
     private readonly Prompt _prompt;
 
     public PromptStrategy(Prompt prompt)
@@ -17,16 +12,19 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         _prompt = prompt;
     }
 
-    internal string FilePath { get; set; } = DefaultFilePath;
+    internal string FilePath { get; set; } = PromptConfigurationFile.DefaultFilePath;
 
     private SnapshotUpdateStrategy GetEffectiveStrategy(string path)
     {
+        _prompt.OnSnapshotChanged();
+
         var context = PromptContext.Get(path);
-        ConfigurationFile configuration;
         var folder = Path.GetDirectoryName(path);
 
-        using var fs = OpenConfigurationFile();
-        configuration = ConfigurationFile.LoadFromJsonStream(fs);
+        using var configuration = PromptConfigurationFile.LoadFromPath(FilePath);
+        if (configuration.DefaultMode != null)
+            return GetStrategy(configuration.DefaultMode.Value);
+
         if (configuration?.Entries != null)
         {
             foreach (var entry in configuration.Entries)
@@ -48,7 +46,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         }
 
         var result = _prompt.Ask(context);
-        AppendEntry(fs, new ConfigurationFileEntry
+        AppendEntry(configuration, new PromptConfigurationFileEntry
         {
             Process = context.ParentProcessInfo,
             File = result.Scope == PromptConfigurationScope.CurrentFile ? path : null,
@@ -59,27 +57,9 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         return GetStrategy(result.Mode);
     }
 
-    private FileStream OpenConfigurationFile()
+    private static void AppendEntry(PromptConfigurationFile configuration, PromptConfigurationFileEntry entry)
     {
-        var filePath = FilePath;
-        while (true)
-        {
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-                return File.Open(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
-            }
-            catch
-            {
-                Thread.Sleep(15);
-            }
-        }
-    }
-
-    private static void AppendEntry(FileStream fs, ConfigurationFileEntry entry)
-    {
-        var configuration = ConfigurationFile.LoadFromJsonStream(fs);
-        configuration.Entries ??= new List<ConfigurationFileEntry>();
+        configuration.Entries ??= new List<PromptConfigurationFileEntry>();
         configuration.Entries.RemoveAll(entry => entry.IsExpired);
         if (configuration.Entries.Count > 100)
         {
@@ -105,9 +85,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         configuration.Entries.Insert(0, entry);
 
         // Overwrite the file
-        fs.Seek(0, SeekOrigin.Begin);
-        fs.SetLength(0);
-        JsonSerializer.Serialize(fs, configuration);
+        configuration.Save();
     }
 
     private static SnapshotUpdateStrategy GetStrategy(PromptConfigurationMode mode)
@@ -130,33 +108,4 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
 
     public override void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile)
         => GetEffectiveStrategy(targetFile).UpdateFile(settings, targetFile, tempFile);
-
-    private sealed class ConfigurationFile
-    {
-        public List<ConfigurationFileEntry>? Entries { get; set; }
-
-        public static ConfigurationFile LoadFromJsonStream(Stream stream)
-        {
-            try
-            {
-                return JsonSerializer.Deserialize<ConfigurationFile>(stream);
-            }
-            catch
-            {
-                return new ConfigurationFile();
-            }
-        }
-    }
-
-    private sealed class ConfigurationFileEntry
-    {
-        public ProcessInfo? Process { get; set; }
-        public string? File { get; set; }
-        public string? Folder { get; set; }
-        public PromptConfigurationMode Mode { get; set; }
-        public DateTimeOffset ExpirationDate { get; set; }
-
-        [JsonIgnore]
-        public bool IsExpired => ExpirationDate < DateTimeOffset.UtcNow;
-    }
 }

@@ -12,7 +12,12 @@ public sealed class TaskDialogPromptTests
 {
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)
     {
-        var prompt = new TaskDialogPrompt();
+        var prompt = new TaskDialogPrompt()
+        {
+            MustRegisterUriScheme = false,
+            MustStartNotificationTray = false,
+            MustShowDialog = true,
+        };
 
         Automation.AddAutomationEventHandler(
             eventId: WindowPattern.WindowOpenedEvent,

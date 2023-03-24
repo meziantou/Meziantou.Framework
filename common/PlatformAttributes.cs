@@ -105,6 +105,22 @@ namespace System.Runtime.Versioning
         {
         }
     }
+
+    [AttributeUsage(AttributeTargets.Field |
+                AttributeTargets.Method |
+                AttributeTargets.Property,
+                AllowMultiple = true, Inherited = false)]
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    sealed class SupportedOSPlatformGuardAttribute : OSPlatformAttribute
+    {
+        public SupportedOSPlatformGuardAttribute(string platformName) : base(platformName)
+        {
+        }
+    }
 }
 #else
 #error Platform not supported

@@ -12,7 +12,7 @@ public partial class StronglyTypedIdSourceGenerator
         using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.TypeName}>"))
         {
             // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
-            WriteNewMember(writer, context, addNewLine: false);
+            WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
             using (writer.BeginBlock($"public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {context.TypeName} value, global::System.Text.Json.JsonSerializerOptions options)"))
             {
                 if (context.IsReferenceType)
@@ -90,7 +90,7 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             // public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock($"public override {context.TypeName} Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)"))
             {
                 using (writer.BeginBlock("if (reader.TokenType == global::System.Text.Json.JsonTokenType.StartObject)"))

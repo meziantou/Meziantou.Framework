@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -266,11 +267,16 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         }
     }
 
-    private static void WriteNewMember(CSharpGeneratedFileWriter writer, AttributeInfo info, bool addNewLine)
+    private static void WriteNewMember(CSharpGeneratedFileWriter writer, AttributeInfo info, bool addNewLine, XNode[]? xmlDocumentation = null)
     {
         if (addNewLine)
         {
             writer.WriteLine();
+        }
+
+        if(xmlDocumentation != null)
+        {
+            writer.WriteXmlComment(xmlDocumentation);
         }
 
         if (info.AddCodeGeneratedAttribute)

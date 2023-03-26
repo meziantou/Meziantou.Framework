@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
@@ -170,6 +171,25 @@ internal sealed class CSharpGeneratedFileWriter
     {
         Indentation--;
         WriteLine('}');
+    }
+
+    public void WriteXmlComment(XNode[] nodes)
+    {
+        foreach (var node in nodes)
+        {
+            WriteXmlComment(node);
+        }
+    }
+    
+    public void WriteXmlComment(XNode node)
+    {
+        var content = node.ToString();
+        using var reader = new StringReader(content);
+        while (reader.ReadLine() is string line)
+        {
+            Write("/// ");
+            WriteLine(line);
+        }
     }
 
     public SourceText ToSourceText() => SourceText.From(_stringBuilder.ToString(), Encoding.UTF8);

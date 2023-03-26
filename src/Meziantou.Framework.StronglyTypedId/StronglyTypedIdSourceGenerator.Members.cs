@@ -1,13 +1,26 @@
+using System;
+using System.Xml;
+using System.Xml.Linq;
+
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
+    private static readonly XNode[] InheritDocComment = new XNode[] { new XElement("inheritdoc") };
+
+    private static XNode XmlSeeCref(string type) => new XElement("see", new XAttribute("cref", type));
+    private static XNode XmlSummary(params object[] description) => new XElement("summary", description);
+    private static XNode XmlReturn(params object[] description) => new XElement("return", description);
+    private static XNode XmlParam(string name, params object[] description) => new XElement("param", new XAttribute("name", name), description);
+    private static XNode XmlParamRef(string name) => new XElement("paramref", new XAttribute("name", name));
+    private static XNode XmlSeeLangword(string name) => new XElement("see", new XAttribute("langword", name));
+
     private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {
         var isFirstMember = true;
-        void WriteNewMember()
+        void WriteNewMember(params XNode[]? xmlDocumentation)
         {
-            StronglyTypedIdSourceGenerator.WriteNewMember(writer, context, addNewLine: !isFirstMember);
+            StronglyTypedIdSourceGenerator.WriteNewMember(writer, context, addNewLine: !isFirstMember, xmlDocumentation);
             isFirstMember = false;
         }
 
@@ -21,14 +34,18 @@ public partial class StronglyTypedIdSourceGenerator
         // Value
         if (!context.IsValueDefined)
         {
-            WriteNewMember();
+            WriteNewMember(
+                XmlSummary("Get the value contained in this instance."),
+                XmlReturn("The value contained in this instance."));
             writer.WriteLine($"public {context.ValueTypeCSharpTypeName} {PropertyName} => {FieldName};");
         }
 
         // ValueAsString
         if (!context.IsValueAsStringDefined)
         {
-            WriteNewMember();
+            WriteNewMember(
+                XmlSummary("Get the value contained in this instance converted to string using the ", new XElement("see", XmlSeeCref("global::System.Globalization.CultureInfo.InvariantCulture")), "."),
+                XmlReturn("The value converted to string using the ", new XElement("see", XmlSeeCref("global::System.Globalization.CultureInfo.InvariantCulture")), "."));
             writer.WriteLine($"public string {PropertyAsStringName} => {ValueToStringExpression()};");
 
             string ValueToStringExpression()
@@ -52,7 +69,9 @@ public partial class StronglyTypedIdSourceGenerator
         // ctor
         if (!context.IsCtorDefined)
         {
-            WriteNewMember();
+            WriteNewMember(
+                XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " using the specified value."),
+                XmlParam("value", "The value to create the instance."));
             using (writer.BeginBlock($"{GetPrivateOrProtectedModifier(context)} {context.TypeName}({context.ValueTypeCSharpTypeName} value)"))
             {
                 writer.WriteLine($"{FieldName} = value;");
@@ -60,13 +79,16 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // From
-        WriteNewMember();
+        WriteNewMember(
+            XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " from an ", XmlSeeCref(context.ValueTypeCSharpTypeName), " value."),
+            XmlParam("value", "The value to create the instance."),
+            XmlReturn("A new instance of ", XmlSeeCref(context.TypeName), "."));
         writer.WriteLine($"public static {context.TypeName} From{context.ValueTypeShortName}({context.ValueTypeCSharpTypeName} value) => new {context.TypeName}(value);");
 
         // ToString
         if (!context.IsToStringDefined)
         {
-            WriteNewMember();
+            WriteNewMember(InheritDocComment);
             using (writer.BeginBlock("public override string ToString()"))
             {
                 if (context.IsValueTypeNullable)
@@ -90,14 +112,16 @@ public partial class StronglyTypedIdSourceGenerator
         // if Guid => New
         if (context.IdType is IdType.System_Guid)
         {
-            WriteNewMember();
+            WriteNewMember(
+                 XmlSummary("Initializes a new instance of the ", XmlSeeCref(context.TypeName), " using a new ", XmlSeeCref("global::System.Guid"), "."),
+                 XmlReturn("A new instance of ", XmlSeeCref(context.TypeName), "."));
             writer.WriteLine($"public static {context.TypeName} New() => new {context.TypeName}(global::System.Guid.NewGuid());");
         }
 
         // GetHashCode
         if (!context.IsGetHashcodeDefined)
         {
-            WriteNewMember();
+            WriteNewMember(InheritDocComment);
             if (context.IsValueTypeNullable)
             {
                 writer.WriteLine($"public override int GetHashCode() => {PropertyName} == null ? 0 : {PropertyName}.GetHashCode();");
@@ -111,7 +135,7 @@ public partial class StronglyTypedIdSourceGenerator
         // IEquatable<T>
         if (!context.IsIEquatableEqualsDefined)
         {
-            WriteNewMember();
+            WriteNewMember(InheritDocComment);
             if (context.IsReferenceType)
             {
                 writer.WriteLine($"public bool Equals({context.TypeName}? other) => other != null && {PropertyName} == other.{PropertyName};");
@@ -125,21 +149,29 @@ public partial class StronglyTypedIdSourceGenerator
         // Equals
         if (!context.IsEqualsDefined)
         {
-            WriteNewMember();
+            WriteNewMember(InheritDocComment);
             writer.WriteLine($"public override bool Equals(object? other) => other is {context.TypeName} value && Equals(value);");
         }
 
         // Operator ==
         if (!context.IsOpEqualsDefined)
         {
-            WriteNewMember();
+            WriteNewMember(
+                XmlSummary("Indicates whether the values of two specified ", XmlSeeCref(context.TypeName), " are equal."),
+                XmlParam("a", "The first object to compare"),
+                XmlParam("b", "The second object to compare"),
+                XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("a"), " and ", XmlParamRef("b"), " are equal; otherwise, ", XmlSeeLangword("false"), "."));
             writer.WriteLine($"public static bool operator ==({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
         }
 
         // Operator !=
         if (!context.IsOpNotEqualsDefined)
         {
-            WriteNewMember();
+            WriteNewMember(
+                 XmlSummary("Indicates whether the values of two specified ", XmlSeeCref(context.TypeName), " are not equal."),
+                 XmlParam("a", "The first object to compare"),
+                 XmlParam("b", "The second object to compare"),
+                 XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("a"), " and ", XmlParamRef("b"), " are not equal; otherwise, ", XmlSeeLangword("false"), "."));
             writer.WriteLine($"public static bool operator !=({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => !(a == b);");
         }
 
@@ -148,13 +180,13 @@ public partial class StronglyTypedIdSourceGenerator
         {
             if (!context.ImplementsIComparable_CompareTo)
             {
-                WriteNewMember();
+                WriteNewMember(InheritDocComment);
                 writer.WriteLine($"public int CompareTo(object? other) => other == null ? 1 : CompareTo(({context.TypeName})other);");
             }
 
             if (!context.ImplementsIComparableOfT_CompareTo)
             {
-                WriteNewMember();
+                WriteNewMember(InheritDocComment);
                 if (context.IsReferenceType)
                 {
                     writer.WriteLine($"public int CompareTo({context.TypeName}? other) => other == null ? 1 : global::System.Collections.Generic.Comparer<{context.ValueTypeCSharpTypeName}>.Default.Compare(Value, other.Value);");
@@ -167,25 +199,41 @@ public partial class StronglyTypedIdSourceGenerator
 
             if (!context.IsOpLessThanDefined)
             {
-                WriteNewMember();
+                WriteNewMember(
+                    XmlSummary("Compares two value values to determine which is less."),
+                    XmlParam("left", "The value compare with ", XmlParamRef("right"), "."),
+                    XmlParam("right", "The value to compare with ", XmlParamRef("left"), "."),
+                    XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("left"), " is less than ", XmlParamRef("right"), "; otherwise, ", XmlSeeLangword("false"), "."));
                 writer.WriteLine($"public static bool operator <({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) < 0;");
             }
 
             if (!context.IsOpLessThanOrEqualDefined)
             {
-                WriteNewMember();
+                WriteNewMember(
+                    XmlSummary("Compares two value values to determine which is less or equal."),
+                    XmlParam("left", "The value compare with ", XmlParamRef("right"), "."),
+                    XmlParam("right", "The value to compare with ", XmlParamRef("left"), "."),
+                    XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("left"), " is less than or equal to ", XmlParamRef("right"), "; otherwise, ", XmlSeeLangword("false"), "."));
                 writer.WriteLine($"public static bool operator <=({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) <= 0;");
             }
 
             if (!context.IsOpGreaterThanDefined)
             {
-                WriteNewMember();
+                WriteNewMember(
+                    XmlSummary("Compares two value values to determine which is greater."),
+                    XmlParam("left", "The value compare with ", XmlParamRef("right"), "."),
+                    XmlParam("right", "The value to compare with ", XmlParamRef("left"), "."),
+                    XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("left"), " is greater than or equal to ", XmlParamRef("right"), "; otherwise, ", XmlSeeLangword("false"), "."));
                 writer.WriteLine($"public static bool operator >({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) > 0;");
             }
 
             if (!context.IsOpGreaterThanOrEqualDefined)
             {
-                WriteNewMember();
+                WriteNewMember(
+                    XmlSummary("Compares two value values to determine which is greater or equal."),
+                    XmlParam("left", "The value compare with ", XmlParamRef("right"), "."),
+                    XmlParam("right", "The value to compare with ", XmlParamRef("left"), "."),
+                    XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("left"), " is greater than ", XmlParamRef("right"), "; otherwise, ", XmlSeeLangword("false"), "."));
                 writer.WriteLine($"public static bool operator >=({context.CSharpNullableTypeName} left, {context.CSharpNullableTypeName} right) => global::System.Collections.Generic.Comparer<{context.TypeName}>.Default.Compare(left, right) >= 0;");
             }
         }
@@ -202,7 +250,10 @@ public partial class StronglyTypedIdSourceGenerator
             // Parse(ReadOnlySpan<char>)
             if (!context.IsParseDefined_Span)
             {
-                WriteNewMember();
+                WriteNewMember(
+                    XmlSummary("Converts the read-only character span that represents of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
+                    XmlParam("value", "The read-only character span to convert."),
+                    XmlReturn("A new instance that contains the value that was parsed"));
                 using (writer.BeginBlock($"public static {context.TypeName} Parse(global::System.ReadOnlySpan<char> value)"))
                 {
                     using (writer.BeginBlock($"if (TryParse(value, out var result))"))
@@ -216,7 +267,10 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // Parse
-        WriteNewMember();
+        WriteNewMember(
+            XmlSummary("Converts the string representation of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
+            XmlParam("value", "The string to convert."),
+            XmlReturn("A new instance that contains the value that was parsed"));
         using (writer.BeginBlock($"public static {context.TypeName} Parse(string value)"))
         {
             using (writer.BeginBlock($"if (TryParse(value, out var result))"))
@@ -246,7 +300,7 @@ public partial class StronglyTypedIdSourceGenerator
                         returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                     }
 
-                    WriteNewMember();
+                    WriteNewMember(InheritDocComment);
                     using (writer.BeginBlock($"static bool System.ISpanParsable<{context.TypeName}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
                     {
                         writer.WriteLine("return TryParse(value, out result);");
@@ -255,7 +309,7 @@ public partial class StronglyTypedIdSourceGenerator
 
                 // Parse
                 {
-                    WriteNewMember();
+                    WriteNewMember(InheritDocComment);
                     using (writer.BeginBlock($"static {context.TypeName} System.ISpanParsable<{context.TypeName}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
                     {
                         writer.WriteLine("return Parse(value);");
@@ -273,15 +327,15 @@ public partial class StronglyTypedIdSourceGenerator
                     returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
                 }
 
-                WriteNewMember();
+                WriteNewMember(InheritDocComment);
                 using (writer.BeginBlock($"static bool System.IParsable<{context.TypeName}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
                 {
                     writer.WriteLine("return TryParse(value, out result);");
                 }
 
                 // Parse
-                WriteNewMember();
-                using (writer.BeginBlock($"static {context.TypeName}  System.IParsable< {context.TypeName}>.Parse(string value, global::System.IFormatProvider? provider)"))
+                WriteNewMember(InheritDocComment);
+                using (writer.BeginBlock($"static {context.TypeName} System.IParsable< {context.TypeName}>.Parse(string value, global::System.IFormatProvider? provider)"))
                 {
                     writer.WriteLine("return Parse(value);");
                 }
@@ -298,7 +352,11 @@ public partial class StronglyTypedIdSourceGenerator
                 returnType = "[global::System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] " + returnType;
             }
 
-            WriteNewMember();
+            WriteNewMember(
+                XmlSummary($"Tries to parse the {(isReadOnlySpan ? "read-only character span" : "string")} representation of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
+                XmlParam("value", $"The {(isReadOnlySpan ? "read-only character span" : "string")} to convert."),
+                XmlParam("result", "When this method returns, contains the result of successfully parsing s or an undefined value on failure."),
+                XmlReturn("A new instance that contains the value that was parsed"));
             using (writer.BeginBlock($"public static bool TryParse({type} value, {returnType} result)"))
             {
                 if (!isReadOnlySpan && context.ValueTypeHasParseReadOnlySpan)

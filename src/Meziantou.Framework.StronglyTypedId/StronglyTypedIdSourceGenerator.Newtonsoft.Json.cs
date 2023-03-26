@@ -11,17 +11,17 @@ public partial class StronglyTypedIdSourceGenerator
 
         using (writer.BeginBlock($"partial class {context.NewtonsoftJsonConverterTypeName} : global::Newtonsoft.Json.JsonConverter"))
         {
-            WriteNewMember(writer, context, addNewLine: false);
+            WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
             writer.WriteLine("public override bool CanRead => true;");
 
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             writer.WriteLine("public override bool CanWrite => true;");
 
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             writer.WriteLine($"public override bool CanConvert(global::System.Type type) => type == typeof({context.TypeName});");
 
             // public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock("public override void WriteJson(global::Newtonsoft.Json.JsonWriter writer, object? value, global::Newtonsoft.Json.JsonSerializer serializer)"))
             {
                 using (writer.BeginBlock("if (value == null)"))
@@ -46,7 +46,7 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             // public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock("public override object? ReadJson(global::Newtonsoft.Json.JsonReader reader, global::System.Type objectType, object? existingValue, global::Newtonsoft.Json.JsonSerializer serializer)"))
             {
                 using (writer.BeginBlock("if (reader.TokenType == global::Newtonsoft.Json.JsonToken.StartObject)"))

@@ -9,7 +9,7 @@ public partial class StronglyTypedIdSourceGenerator
 
         using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}>"))
         {
-            WriteNewMember(writer, context, addNewLine: false);
+            WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
             using (writer.BeginBlock($"public override {context.TypeName} Deserialize(global::MongoDB.Bson.Serialization.BsonDeserializationContext context, global::MongoDB.Bson.Serialization.BsonDeserializationArgs args)"))
             {
                 if (context.IdType is IdType.System_Half)
@@ -29,7 +29,7 @@ public partial class StronglyTypedIdSourceGenerator
                 }
             }
 
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock($"public override void Serialize(global::MongoDB.Bson.Serialization.BsonSerializationContext context, global::MongoDB.Bson.Serialization.BsonSerializationArgs args, {context.TypeName} value)"))
             {
                 if (context.IdType is IdType.System_Half)

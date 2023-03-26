@@ -12,14 +12,14 @@ public partial class StronglyTypedIdSourceGenerator
             var idType = context.IdType;
 
             // public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
-            WriteNewMember(writer, context, addNewLine: false);
+            WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
             using (writer.BeginBlock("public override bool CanConvertFrom(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type sourceType)"))
             {
                 writer.WriteLine($"return sourceType == typeof(string) || sourceType == typeof({context.ValueTypeCSharpTypeName}) || sourceType == typeof({context.TypeName});");
             }
 
             // public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock("public override object? ConvertFrom(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Globalization.CultureInfo? culture, object value)"))
             {
                 using (writer.BeginBlock("if (value == null)"))
@@ -41,14 +41,14 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             // public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock("public override bool CanConvertTo(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Type? destinationType)"))
             {
                 writer.WriteLine($"return destinationType != null && (destinationType == typeof(string) || destinationType == typeof({context.ValueTypeCSharpTypeName}) || destinationType == typeof({context.TypeName}));");
             }
 
             // public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-            WriteNewMember(writer, context, addNewLine: true);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock("public override object? ConvertTo(global::System.ComponentModel.ITypeDescriptorContext? context, global::System.Globalization.CultureInfo? culture, object? value, global::System.Type destinationType)"))
             {
                 using (writer.BeginBlock("if (value != null)"))

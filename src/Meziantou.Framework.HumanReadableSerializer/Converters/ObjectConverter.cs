@@ -83,8 +83,7 @@ internal sealed class ObjectConverter : HumanReadableConverter
                     }
                     else
                     {
-                        var converter = options.GetConverter(propertyType);
-                        converter.WriteValue(writer, propertyValue, options);
+                        HumanReadableSerializer.Serialize(writer, propertyValue, propertyType, options);
                     }
                 }
             }

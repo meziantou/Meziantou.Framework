@@ -17,11 +17,11 @@
              Include="$(MSBuildThisFileDirectory)/common/IsExternalInit.cs"
              Link="Properties/IsExternalInit.cs" />
 
-    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net472'"
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net471' or '$(TargetFramework)' == 'net472'"
              Include="$(MSBuildThisFileDirectory)/common/NullableAttributes.cs"
              Link="Properties/NullableAttributes.cs" />
 
-    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net472'"
+    <Compile Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'netstandard2.1' or '$(TargetFramework)' == 'net461' or '$(TargetFramework)' == 'net462' or '$(TargetFramework)' == 'net471' or '$(TargetFramework)' == 'net472'"
              Include="$(MSBuildThisFileDirectory)/common/PlatformAttributes.cs"
              Link="Properties/PlatformAttributes.cs" />
   </ItemGroup>

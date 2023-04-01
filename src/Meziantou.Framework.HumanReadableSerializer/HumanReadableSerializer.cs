@@ -20,9 +20,14 @@ public static class HumanReadableSerializer
         return writer.ToString();
     }
 
+    internal static void Serialize(HumanReadableTextWriter writer, object? value, Type type, HumanReadableSerializerOptions options)
+    {
+        var converter = options.GetConverter(value?.GetType() ?? type);
+        converter.WriteValue(writer, value, options);
+    }
+
     internal static void Serialize<T>(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
     {
-        var converter = options.GetConverter(value?.GetType() ?? typeof(T));
-        converter.WriteValue(writer, value, options);
+        Serialize(writer, value, typeof(T), options);
     }
 }

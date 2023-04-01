@@ -41,6 +41,7 @@ insert_final_newline = true
 [*.cs]
 dotnet_diagnostic.CA1008.severity = none
 dotnet_diagnostic.CA1308.severity = none
+dotnet_diagnostic.CA2237.severity = none
 dotnet_diagnostic.RS2008.severity = none
 
 dotnet_diagnostic.MFA001.severity = silent

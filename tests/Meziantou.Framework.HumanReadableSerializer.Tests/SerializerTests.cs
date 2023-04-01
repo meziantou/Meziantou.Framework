@@ -5,13 +5,19 @@
 #pragma warning disable MA0110
 #pragma warning disable SYSLIB1045
 using System.Collections;
+using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
 using System.Globalization;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Numerics;
+using System.Text;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
+using NodaTime;
 using TestUtilities;
 using Xunit;
 
@@ -119,6 +125,22 @@ public sealed partial class SerializerTests
         });
     }
 
+    [Fact]
+    public void IEnumerableKeyValuePairStringString_Dictionary()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["A"] = "10",
+                ["B"] = "20",
+            },
+            Expected = """
+                A: 10
+                B: 20
+                """,
+        });
+    }
 
     [Fact]
     public void IEnumerableKeyValuePairObjectObject_EmptyArray()
@@ -293,6 +315,51 @@ public sealed partial class SerializerTests
     }
 
     [Fact]
+    public void AsyncEnumerable_YieldReturnInt32()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = TypedYield(),
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+
+        static async IAsyncEnumerable<int> TypedYield()
+        {
+            await Task.Delay(1);
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+    }
+
+    [Fact]
+    public void AsyncEnumerable_YieldReturnInt32_NoAsync()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = TypedYield(),
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        static async IAsyncEnumerable<int> TypedYield()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+    }
+
+    [Fact]
     public void EnumerableRange()
     {
         AssertSerialization(new Validation
@@ -307,7 +374,7 @@ public sealed partial class SerializerTests
     }
 
     [Fact]
-    public void Enumerable_YieldReturn()
+    public void EnumerableNonGeneric_YieldReturn()
     {
         AssertSerialization(new Validation
         {
@@ -325,7 +392,61 @@ public sealed partial class SerializerTests
             yield return 2;
             yield return 3;
         }
+    }
 
+    [Fact]
+    public void ArrayList()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ArrayList() { 1, 2, 3 },
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ListDictionary()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new System.Collections.Specialized.ListDictionary() { ["a"] = 1, [2] = 3 },
+            Expected = """
+                - Key: a
+                  Value: 1
+                - Key: 2
+                  Value: 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ImmutableDictionaryStringInt32()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = ImmutableDictionary.Create<string, int>(new CustomStringComparer()).Add("a", 1).Add("b", 2),
+            Expected = """
+                a: 1
+                b: 2
+                """,
+        });
+    }
+
+    [Fact]
+    public void ImmutableArrayInt32()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = ImmutableArray.Create<int>().Add(1).Add(2),
+            Expected = """
+                - 1
+                - 2
+                """,
+        });
     }
 
     [Fact]
@@ -338,6 +459,277 @@ public sealed partial class SerializerTests
                 - 1
                 - 2
                 - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ConcurrentBag()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ConcurrentBag<int> { 1, 2, 3 },
+            Expected = """
+                - 3
+                - 2
+                - 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void ConcurrentDictionaryStringInt32()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ConcurrentDictionary<string, int>(new CustomStringComparer())
+            {
+                ["a"] = 1,
+                ["b"] = 2,
+            },
+            Expected = """
+                b: 2
+                a: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void HashSet_int()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new HashSet<int> { 1 },
+            Expected = """
+                - 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void ConcurrentQueue_int()
+    {
+        var queue = new ConcurrentQueue<int>();
+        queue.Enqueue(1);
+        queue.Enqueue(2);
+        queue.Enqueue(3);
+        AssertSerialization(new Validation
+        {
+            Subject = queue,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void Queue_int()
+    {
+        var queue = new Queue<int>();
+        queue.Enqueue(1);
+        queue.Enqueue(2);
+        queue.Enqueue(3);
+        AssertSerialization(new Validation
+        {
+            Subject = queue,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ConcurrentStack_int()
+    {
+        var queue = new ConcurrentStack<int>();
+        queue.Push(1);
+        queue.Push(2);
+        queue.Push(3);
+        AssertSerialization(new Validation
+        {
+            Subject = queue,
+            Expected = """
+                - 3
+                - 2
+                - 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void Stack_int()
+    {
+        var queue = new Stack<int>();
+        queue.Push(1);
+        queue.Push(2);
+        queue.Push(3);
+        AssertSerialization(new Validation
+        {
+            Subject = queue,
+            Expected = """
+                - 3
+                - 2
+                - 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpOptionNone() => AssertSerialization(Factory.create_option_none<int>(), "<null>");
+
+    [Fact]
+    public void FSharpOptionSome() => AssertSerialization(Factory.create_option_some, "1");
+    
+    [Fact]
+    public void FSharpValueOptionNone() => AssertSerialization(Factory.create_valueoption_none<int>(), "<null>");
+
+    [Fact]
+    public void FSharpValueOptionSome() => AssertSerialization(Factory.create_valueoption_some, "1");
+
+    [Fact]
+    public void FSharpArray()
+    {
+        var collection = Factory.create_array;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpList()
+    {
+        var collection = Factory.create_list;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpSeq()
+    {
+        var collection = Factory.create_seq;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpMap()
+    {
+        var collection = Factory.create_map;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                - Key: 1
+                  Value: a
+                - Key: 2
+                  Value: b
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpMap_String()
+    {
+        var collection = Factory.create_map_string;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                a: 1
+                b: 2
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpSet()
+    {
+        var collection = Factory.create_set;
+        AssertSerialization(new Validation
+        {
+            Subject = collection,
+            Expected = """
+                - 1
+                - 2
+                - 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void FSharpTuple()
+    {
+        var tuple = Factory.create_tuple;
+        AssertSerialization(new Validation
+        {
+            Subject = tuple,
+            Expected = """
+                Item1: 1
+                Item2: 2
+                Item3: 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void Tuple()
+    {
+        var tuple = System.Tuple.Create(1, 2, 3);
+        AssertSerialization(new Validation
+        {
+            Subject = tuple,
+            Expected = """
+                Item1: 1
+                Item2: 2
+                Item3: 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ValueTuple()
+    {
+        var tuple = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+        AssertSerialization(new Validation
+        {
+            Subject = tuple,
+            Expected = """
+                Item1: 1
+                Item2: 2
+                Item3: 3
+                Item4: 4
+                Item5: 5
+                Item6: 6
+                Item7: 7
+                Item8: 8
+                Item9: 9
+                Item10: 10
+                Item11: 11
+                Item12: 12
                 """,
         });
     }
@@ -611,6 +1003,19 @@ public sealed partial class SerializerTests
     }
 
     [Fact]
+    public void JsonArray()
+    {
+        var node = System.Text.Json.JsonSerializer.SerializeToNode(new[] { 1, 2, 3 });
+        AssertSerialization(node, """
+            [
+              1,
+              2,
+              3
+            ]
+            """);
+    }
+
+    [Fact]
     public void JsonElement()
     {
         var node = System.Text.Json.JsonSerializer.SerializeToElement(new { Root = 1 });
@@ -676,6 +1081,201 @@ public sealed partial class SerializerTests
             """,
         });
     }
+
+    [Fact]
+    public void HttpMethod_Post()
+    {
+        AssertSerialization(HttpMethod.Post, "POST");
+    }
+
+    [Fact]
+    public void HttpRequestHeaders()
+    {
+        using var message = new HttpRequestMessage();
+        message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+        message.Headers.ExpectContinue = true;
+
+        AssertSerialization(message.Headers, """
+            Accept:
+              - application/json
+              - text/plain
+            Expect: 100-continue
+            """);
+    }
+
+    [Fact]
+    public void HttpResponseHeaders()
+    {
+        using var message = new HttpResponseMessage();
+        message.Headers.ETag = new EntityTagHeaderValue("\"dummy\"");
+        message.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(1));
+        message.Headers.AcceptRanges.Add("1-2");
+        message.Headers.AcceptRanges.Add("3-4");
+
+        AssertSerialization(message.Headers, """
+            ETag: "dummy"
+            Retry-After: 1
+            Accept-Ranges:
+              - 1-2
+              - 3-4
+            """);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
+    public void HttpContent_MultiPartContent()
+    {
+        using var message = new MultipartContent(subtype: "mixed", boundary: "23f7d466-b54f-4db9-9a4b-8d26ea978125")
+        {
+            new StringContent("a"),
+            new StringContent("b"),
+        };
+        AssertSerialization(message, """
+            Headers:
+              Content-Type: multipart/mixed; boundary="23f7d466-b54f-4db9-9a4b-8d26ea978125"
+            Content:
+              - Headers:
+                  Content-Type: text/plain; charset=utf-8
+                Content: a
+              - Headers:
+                  Content-Type: text/plain; charset=utf-8
+                Content: b
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_StringContent()
+    {
+        using var message = new StringContent("dummy");
+        AssertSerialization(message, """
+            Headers:
+              Content-Type: text/plain; charset=utf-8
+            Content: dummy
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_JsonContent()
+    {
+        using var message = JsonContent.Create(new { A = 10 });
+        AssertSerialization(message, """
+            Headers:
+              Content-Type: application/json; charset=utf-8
+            Content: {"a":10}
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_ByteArrayContent()
+    {
+        using var message = new ByteArrayContent(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        AssertSerialization(message, """
+            AQIDBAUGBwgJ
+            """);
+    }
+
+    [Fact]
+    public void HttpContent_ByteArrayContent_WithHeaders()
+    {
+        using var message = new ByteArrayContent(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 })
+        {
+            Headers =
+            {
+                Expires = new DateTimeOffset(2023, 2, 3,4,5,6,7, TimeSpan.Zero),
+            },
+        };
+        AssertSerialization(message, """
+            Headers:
+              Expires: Fri, 03 Feb 2023 04:05:06 GMT
+            Content: AQIDBAUGBwgJ
+            """);
+    }
+    
+    [Fact]
+    public void NodaTime_Instant()
+    {      
+        AssertSerialization(NodaTime.Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc)), """
+            2023-01-02T03:04:05Z
+            """);
+    }
+
+    [Fact]
+    public void NodaTime_LocalDateTime()
+    {      
+        AssertSerialization(new LocalDateTime(2012, 3, 27, 0, 45, 00), """
+            2012-03-27T00:45:00
+            """);
+    }
+    
+    [Fact]
+    public void NodaTime_Duration()
+    {      
+        AssertSerialization(NodaTime.Duration.FromMinutes(3), """
+            0:00:03:00
+            """);
+    }
+    
+    [Fact]
+    public void NodaTime_DateTimeZone()
+    {
+        var london = DateTimeZoneProviders.Tzdb["Europe/London"];
+
+        AssertSerialization(london, """
+            Id: Europe/London
+            MinOffset: -00:01:15
+            MaxOffset: +02
+            """);
+    }
+    
+    [Fact]
+    public void NodaTime_ZonedDateTime()
+    {
+        var instant = NodaTime.Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+        var value = instant.InUtc();
+
+        AssertSerialization(value, """
+            2023-01-02T03:04:05 UTC (+00)
+            """);
+    }
+
+#if NET6_0_OR_GREATER
+    [Fact]
+    public void HttpRequestMessage()
+    {
+        using var obj = new HttpRequestMessage()
+        {
+            RequestUri = new Uri("/sample", UriKind.Relative),
+            Method = HttpMethod.Post,
+            Headers =
+            {
+                Accept = { new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/plain") },
+            },
+            Version = new Version("1.1"),
+            VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            Content = new StringContent("dummy", Encoding.UTF8, "text/plain"),
+        };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Expected = """
+                Version: 1.1
+                VersionPolicy: RequestVersionExact
+                Content:
+                  Headers:
+                    Content-Type: text/plain; charset=utf-8
+                  Content: dummy
+                Method: POST
+                RequestUri: /sample
+                Headers:
+                  Accept: text/plain
+                Properties: {}
+                Options: {}
+                """,
+        });
+    }
+#endif
 
     [Fact]
     public void NullPropertyFollowedByNonNullProperty()
@@ -838,5 +1438,11 @@ public sealed partial class SerializerTests
     {
         public override bool CanConvert(Type type) => throw new NotSupportedException();
         public override void WriteValue(HumanReadableTextWriter writer, object value, HumanReadableSerializerOptions options) => throw new NotSupportedException();
+    }
+
+    private sealed class CustomStringComparer : IEqualityComparer<string>
+    {
+        public bool Equals(string x, string y) => x == y;
+        public int GetHashCode([DisallowNull] string obj) => 0;
     }
 }

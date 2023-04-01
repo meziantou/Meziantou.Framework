@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
-internal sealed class MultiDimentionalArrayConverter : HumanReadableConverter
+internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => type.IsArray && type.GetArrayRank() > 1;
 

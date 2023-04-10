@@ -16,7 +16,7 @@ public class XUnitLogger : ILogger
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly string? _categoryName;
-    private readonly bool _appendScope;
+    private readonly XUnitLoggerOptions _options;
     private readonly LoggerExternalScopeProvider _scopeProvider;
 
     public static ILogger CreateLogger(ITestOutputHelper testOutputHelper) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "");
@@ -28,23 +28,46 @@ public class XUnitLogger : ILogger
     }
 
     public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, bool appendScope)
+        : this(testOutputHelper, scopeProvider, categoryName, options: new XUnitLoggerOptions { IncludeScopes = appendScope })
+    {
+    }
+
+    public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions options)
     {
         _testOutputHelper = testOutputHelper;
         _scopeProvider = scopeProvider;
         _categoryName = categoryName;
-        _appendScope = appendScope;
+        _options = options;
     }
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _scopeProvider.Push(state);
 
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
+    [SuppressMessage("Usage", "MA0011:IFormatProvider is missing")]
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         var sb = new StringBuilder();
-        sb.Append(GetLogLevelString(logLevel))
-          .Append(" [").Append(_categoryName).Append("] ")
-          .Append(formatter(state, exception));
+
+        if (_options.TimestampFormat != null)
+        {
+            var now = _options.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+            var timestamp = now.ToString(_options.TimestampFormat);
+            sb.Append(timestamp).Append(' ');
+        }
+
+        if (_options.IncludeLogLevel)
+        {
+            sb.Append(GetLogLevelString(logLevel)).Append(' ');
+        }
+
+        if (_options.IncludeCategory)
+        {
+            sb.Append('[').Append(_categoryName).Append("] ");
+        }
+
+        sb.Append(formatter(state, exception));
 
         if (exception != null)
         {
@@ -52,7 +75,7 @@ public class XUnitLogger : ILogger
         }
 
         // Append scopes
-        if (_appendScope)
+        if (_options.IncludeScopes)
         {
             _scopeProvider.ForEachScope((scope, state) =>
             {

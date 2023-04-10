@@ -2,21 +2,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
-public sealed class InMemoryLogger : ILogger
+internal sealed class InMemoryLogger : ILogger
 {
     private readonly string? _category;
     private readonly IExternalScopeProvider _scopeProvider;
+    private readonly InMemoryLogCollection _logs;
 
-    public InMemoryLogCollection Logs { get; } = new InMemoryLogCollection();
-
-    public InMemoryLogger(IExternalScopeProvider scopeProvider)
-    {
-        _scopeProvider = scopeProvider;
-    }
-
-    public InMemoryLogger(string category, IExternalScopeProvider scopeProvider)
+    public InMemoryLogger(string category, InMemoryLogCollection logs, IExternalScopeProvider scopeProvider)
     {
         _category = category;
+        _logs = logs;
         _scopeProvider = scopeProvider;
     }
 
@@ -31,6 +26,6 @@ public sealed class InMemoryLogger : ILogger
     {
         var scopes = new List<object?>();
         _scopeProvider.ForEachScope((current, scopes) => scopes.Add(current), scopes);
-        Logs.Add(new InMemoryLogEntry(_category, logLevel, eventId, scopes, state, exception, formatter(state, exception)));
+        _logs.Add(new InMemoryLogEntry(_category, logLevel, eventId, scopes, state, exception, formatter(state, exception)));
     }
 }

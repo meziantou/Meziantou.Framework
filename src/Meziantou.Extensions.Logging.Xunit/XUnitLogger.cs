@@ -16,16 +16,23 @@ public class XUnitLogger : ILogger
 {
     private readonly ITestOutputHelper _testOutputHelper;
     private readonly string? _categoryName;
+    private readonly bool _appendScope;
     private readonly LoggerExternalScopeProvider _scopeProvider;
 
     public static ILogger CreateLogger(ITestOutputHelper testOutputHelper) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "");
     public static ILogger<T> CreateLogger<T>(ITestOutputHelper testOutputHelper) => new XUnitLogger<T>(testOutputHelper, new LoggerExternalScopeProvider());
 
     public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName)
+        : this(testOutputHelper, scopeProvider, categoryName, appendScope: true)
+    {
+    }
+
+    public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, bool appendScope)
     {
         _testOutputHelper = testOutputHelper;
         _scopeProvider = scopeProvider;
         _categoryName = categoryName;
+        _appendScope = appendScope;
     }
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
@@ -45,11 +52,14 @@ public class XUnitLogger : ILogger
         }
 
         // Append scopes
-        _scopeProvider.ForEachScope((scope, state) =>
+        if (_appendScope)
         {
-            state.Append("\n => ");
-            state.Append(scope);
-        }, sb);
+            _scopeProvider.ForEachScope((scope, state) =>
+            {
+                state.Append("\n => ");
+                state.Append(scope);
+            }, sb);
+        }
 
         _testOutputHelper.WriteLine(sb.ToString());
     }

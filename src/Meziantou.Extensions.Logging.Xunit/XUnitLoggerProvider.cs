@@ -10,8 +10,8 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     private readonly LoggerExternalScopeProvider _scopeProvider = new();
 
     public XUnitLoggerProvider(ITestOutputHelper testOutputHelper)
+        : this(testOutputHelper, options: null)
     {
-        _testOutputHelper = testOutputHelper;
     }
 
     public XUnitLoggerProvider(ITestOutputHelper testOutputHelper, bool appendScope)

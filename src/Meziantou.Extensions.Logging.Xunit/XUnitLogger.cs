@@ -32,12 +32,12 @@ public class XUnitLogger : ILogger
     {
     }
 
-    public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions options)
+    public XUnitLogger(ITestOutputHelper testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
         _scopeProvider = scopeProvider;
         _categoryName = categoryName;
-        _options = options;
+        _options = options ?? new();
     }
 
     public bool IsEnabled(LogLevel logLevel) => logLevel != LogLevel.None;
@@ -84,7 +84,14 @@ public class XUnitLogger : ILogger
             }, sb);
         }
 
-        _testOutputHelper.WriteLine(sb.ToString());
+        try
+        {
+            _testOutputHelper.WriteLine(sb.ToString());
+        }
+        catch
+        {
+            // This can happen when the test is not active
+        }
     }
 
     private static string GetLogLevelString(LogLevel logLevel)

@@ -57,7 +57,7 @@ public sealed class CodeOwnersParserTests
                                "# precedence. When someone opens a pull request that only\n" +
                                "# modifies JS files, only @js-owner and not the global\n" +
                                "# owner(s) will be requested for a review.\n" +
-                               "*.js    @js-owner\n" +
+                               "*.js    @js-owner #This is an inline comment.\n" +
                                "\n" +
                                "# You can also use email addresses if you prefer. They'll be\n" +
                                "# used to look up users just like we do for commit author\n" +

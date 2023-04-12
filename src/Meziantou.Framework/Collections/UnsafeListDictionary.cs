@@ -48,7 +48,7 @@ public sealed class UnsafeListDictionary<TKey, TValue> : IDictionary<TKey, TValu
 
     public void Clear() => _items.Clear();
     public bool Contains(KeyValuePair<TKey, TValue> item) => _items.Contains(item);
-    public bool ContainsKey(TKey key) => _items.Any(item => KeyEqual(item.Key, key));
+    public bool ContainsKey(TKey key) => _items.Exists(item => KeyEqual(item.Key, key));
 
     public bool Remove(TKey key)
     {

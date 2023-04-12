@@ -154,6 +154,14 @@ public static class CodeOwnersParser
                 var sb = StringBuilderPool.Get();
 
                 var c = _lexer.Consume();
+
+                // Inline comment
+                if (c == '#')
+                {
+                    _lexer.ConsumeUntil('\n');
+                    return;
+                }
+
                 var isMember = c == '@';
                 if (!isMember)
                 {

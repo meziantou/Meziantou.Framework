@@ -49,11 +49,14 @@ internal static class Program
 
             _trayIcon = new NotifyIcon()
             {
+                Text = "InlineSnapshotTesting configuration",
                 Icon = new Icon(stream),
                 ContextMenuStrip = new ContextMenuStrip
                 {
                     Items =
                     {
+                        new ToolStripMenuItem("InlineSnapshotTesting", image: null) { Enabled = false },
+                        new ToolStripSeparator(),
                         modeMenu,
                         new ToolStripMenuItem("Reset settings", image: null, ResetSettingsClick),
                         new ToolStripMenuItem("Exit", image: null, Exit),

@@ -3,4 +3,14 @@
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
 public sealed class HumanReadableIgnoreAttribute : HumanReadableAttribute
 {
+    /// <summary>
+    /// Specifies the condition that must be met before a property or field will be ignored.
+    /// </summary>
+    /// <remarks>The default value is <see cref="HumanReadableIgnoreCondition.Always"/>.</remarks>
+    public HumanReadableIgnoreCondition Condition { get; set; } = HumanReadableIgnoreCondition.Always;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="HumanReadableIgnoreAttribute"/>.
+    /// </summary>
+    public HumanReadableIgnoreAttribute() { }
 }

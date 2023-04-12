@@ -1,4 +1,6 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+﻿using Meziantou.Framework.HumanReadable.Utils;
+
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class EnumerableKeyValuePairConverterFactory : HumanReadableConverterFactory
 {
@@ -13,7 +15,7 @@ internal sealed class EnumerableKeyValuePairConverterFactory : HumanReadableConv
     private static Type? GetValueType(Type type)
     {
         // IEnumerable<KeyValuePair<string, T>>
-        foreach (var iface in type.GetInterfaces())
+        foreach (var iface in type.GetAllInterfaces())
         {
             if (!iface.IsGenericType)
                 continue;

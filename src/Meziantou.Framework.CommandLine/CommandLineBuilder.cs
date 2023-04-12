@@ -68,7 +68,7 @@ static class CommandLineBuilder
         return string.Join(" ", values.Select(WindowsQuotedArgument));
     }
 
-    [return: NotNullIfNotNull(parameterName: "value")]
+    [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsCmdArgument(string? value)
     {
         if (value == null)

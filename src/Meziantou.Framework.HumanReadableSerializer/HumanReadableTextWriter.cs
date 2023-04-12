@@ -63,25 +63,28 @@ public sealed class HumanReadableTextWriter
         }
         else
         {
-            foreach (var (line, eol) in StringUtils.EnumerateLines(value))
+            if (!value.IsEmpty)
             {
-                if (!first)
+                foreach (var (line, eol) in StringUtils.EnumerateLines(value))
                 {
-                    WriteNewLine();
-                }
+                    if (!first)
+                    {
+                        WriteNewLine();
+                    }
 
-                WritePendingText(indent: !line.IsEmpty);
-                if (isValue && _options.ShowInvisibleCharactersInValues)
-                {
-                    ReplaceInvisibleCharacters(_text, line);
-                    ReplaceInvisibleCharacters(_text, eol);
-                }
-                else
-                {
-                    _text.Append(line);
-                }
+                    WritePendingText(indent: !line.IsEmpty);
+                    if (isValue && _options.ShowInvisibleCharactersInValues)
+                    {
+                        ReplaceInvisibleCharacters(_text, line);
+                        ReplaceInvisibleCharacters(_text, eol);
+                    }
+                    else
+                    {
+                        _text.Append(line);
+                    }
 
-                first = false;
+                    first = false;
+                }
             }
         }
     }

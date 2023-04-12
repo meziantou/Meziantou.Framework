@@ -29,6 +29,7 @@ public sealed partial class SerializerTests
     {
         public object Subject { get; init; }
         public string Expected { get; init; }
+        public Type Type { get; init; }
         public HumanReadableSerializerOptions Options { get; init; }
     }
 
@@ -39,13 +40,18 @@ public sealed partial class SerializerTests
 
     private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, string expected)
     {
-        var text = HumanReadableSerializer.Serialize(obj, options);
+        AssertSerialization(obj, options, type: null, expected);
+    }
+
+    private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, Type? type, string expected)
+    {
+        var text = type == null ? HumanReadableSerializer.Serialize(obj, options) : HumanReadableSerializer.Serialize(obj, type, options);
         Assert.Equal(expected, text, ignoreLineEndingDifferences: true);
     }
 
     private static void AssertSerialization(Validation validation)
     {
-        AssertSerialization(validation.Subject, validation.Options, validation.Expected);
+        AssertSerialization(validation.Subject, validation.Options, validation.Type, validation.Expected);
     }
 
     [Fact]
@@ -82,6 +88,15 @@ public sealed partial class SerializerTests
     [Fact]
     public void SerializeNullableOfInt32_NotNull()
         => AssertSerialization(new { Int32 = (int?)1 }, "Int32: 1");
+
+    [Fact]
+    public void SerializeObject() => AssertSerialization(new object(), "{}");
+
+    [Fact]
+    public void SerializeObject_Null() => AssertSerialization(null, "<null>");
+
+    [Fact]
+    public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object?)null }, "Obj: <null>");
 
     [Fact]
     public void SerializeArray_Empty()
@@ -583,7 +598,7 @@ public sealed partial class SerializerTests
 
     [Fact]
     public void FSharpOptionSome() => AssertSerialization(Factory.create_option_some, "1");
-    
+
     [Fact]
     public void FSharpValueOptionNone() => AssertSerialization(Factory.create_valueoption_none<int>(), "<null>");
 
@@ -877,6 +892,9 @@ public sealed partial class SerializerTests
 
     [Fact]
     public void ByteArray() => AssertSerialization(new byte[] { 1, 2, 3 }, "AQID");
+    
+    [Fact]
+    public void Type() => AssertSerialization(typeof(SerializerTests), "Meziantou.Framework.HumanReadable.Tests.SerializerTests, Meziantou.Framework.HumanReadableSerializer.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
     [Fact]
     public void DateTime_Utc() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc), "2123-04-05T06:07:08Z");
@@ -1191,10 +1209,10 @@ public sealed partial class SerializerTests
             Content: AQIDBAUGBwgJ
             """);
     }
-    
+
     [Fact]
     public void NodaTime_Instant()
-    {      
+    {
         AssertSerialization(NodaTime.Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc)), """
             2023-01-02T03:04:05Z
             """);
@@ -1202,20 +1220,20 @@ public sealed partial class SerializerTests
 
     [Fact]
     public void NodaTime_LocalDateTime()
-    {      
+    {
         AssertSerialization(new LocalDateTime(2012, 3, 27, 0, 45, 00), """
             2012-03-27T00:45:00
             """);
     }
-    
+
     [Fact]
     public void NodaTime_Duration()
-    {      
+    {
         AssertSerialization(NodaTime.Duration.FromMinutes(3), """
             0:00:03:00
             """);
     }
-    
+
     [Fact]
     public void NodaTime_DateTimeZone()
     {
@@ -1227,7 +1245,7 @@ public sealed partial class SerializerTests
             MaxOffset: +02
             """);
     }
-    
+
     [Fact]
     public void NodaTime_ZonedDateTime()
     {
@@ -1357,6 +1375,249 @@ public sealed partial class SerializerTests
         Assert.Throws<InvalidOperationException>(() => options.Converters.Add(new DummyConverter()));
     }
 
+    [Fact]
+    public void IgnoreNullValues_Never()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.Never },
+            Expected = """
+                Dummy:
+                Object: <null>
+                NullableInt32: <null>
+                DefaultStruct: 0
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreNullValues_WhenNull()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull },
+            Expected = """
+                Dummy:
+                DefaultStruct: 0
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreNullValues_WhenDefault()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault },
+            Expected = """
+                Dummy:
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreNullValues_PropertyAttribute()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new IgnoreConditionSetOnProp(),
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.Never },
+            Expected = """
+                PropInt32_Null: 0
+                PropObject2: <null>
+                """,
+        });
+    }
+
+    [Fact]
+    public void AddTypeAttribute()
+    {
+        var instance = new
+        {
+            A = 0,
+            B = 1,
+            C = 2,
+        };
+        var options = new HumanReadableSerializerOptions();
+        options.AddAttribute(instance.GetType(), nameof(instance.B), new HumanReadableIgnoreAttribute());
+
+        AssertSerialization(new Validation
+        {
+            Subject = instance,
+            Options = options,
+            Expected = """
+                A: 0
+                C: 2
+                """,
+        });
+    }
+
+    [Fact]
+    public void ObjectWithFields_IncludeFields_False()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ObjectWithFields { PropInt32 = 1, FieldInt32 = 2, FieldString = "a" },
+            Options = new HumanReadableSerializerOptions { IncludeFields = false },
+            Expected = """
+                _privateFieldIncluded: <null>
+                PropInt32: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void ObjectWithFields_IncludeFields_True()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ObjectWithFields { PropInt32 = 1, FieldInt32 = 2, FieldString = "a" },
+            Options = new HumanReadableSerializerOptions { IncludeFields = true },
+            Expected = """
+                _privateFieldIncluded: <null>
+                FieldString: a
+                FieldInt32: 2
+                PropInt32: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void OrderAttribute()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new OrderedMember(),
+            Expected = """
+                Prop4: 4
+                Field1: 1
+                Prop2: 2
+                Prop3: 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void ObjectHierarchy()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Child(),
+            Expected = """
+                PropRoot: 2
+                PropChild: 3
+                """,
+        });
+    }
+
+    [Fact]
+    public void StructWithDefaultConstructor_New_IgnoreDefault()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new StructWithDefaultConstructor(),
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault },
+            Expected = """
+                Value: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void StructWithDefaultConstructor_Default_IgnoreDefault()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = default(StructWithDefaultConstructor),
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault },
+            Expected = """
+                {}
+                """,
+        });
+    }
+    
+    [Fact]
+    public void ClassWithCustomConverterUsingAttribute()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new ClassWithCustomConverter(),
+            Expected = """
+                dummy
+                """,
+        });
+    }
+
+    private readonly struct StructWithDefaultConstructor
+    {
+        public int Value { get; }
+
+        public StructWithDefaultConstructor()
+        {
+            Value = 1;
+        }
+    }
+
+    private sealed class ObjectWithFields
+    {
+        private string _privateField;
+
+        [HumanReadableInclude]
+        private string _privateFieldIncluded;
+        public string FieldString;
+        public int FieldInt32;
+
+        public int PropInt32 { get; set; }
+
+        // Use the fields
+        public void Dummy()
+        {
+            _privateField = "";
+            _privateFieldIncluded = "";
+            Console.Write(_privateFieldIncluded + _privateField);
+        }
+    }
+
+    private sealed class IgnoreConditionSetOnProp
+    {
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingDefault)]
+        public int PropInt32 { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingNull)]
+        public int PropInt32_Null { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingNull)]
+        public object? PropObject { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Never)]
+        public object? PropObject2 { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingDefault)]
+        public object? PropObject3 { get; set; }
+
+        [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Always)]
+        public object? PropObject4 { get; set; }
+    }
+
+    private sealed class OrderedMember
+    {
+        [HumanReadablePropertyOrder(2)]
+        [HumanReadableInclude]
+        public int Field1 = 1;
+
+        [HumanReadablePropertyOrder(3)]
+        public int Prop2 { get; set; } = 2;
+
+        [HumanReadablePropertyOrder(4)]
+        public int Prop3 { get; set; } = 3;
+
+        [HumanReadablePropertyOrder(1)]
+        public int Prop4 { get; set; } = 4;
+    }
+
     [TypeConverter(typeof(CustomTypeConverterImpl))]
     private sealed class CustomTypeConverter
     {
@@ -1444,5 +1705,27 @@ public sealed partial class SerializerTests
     {
         public bool Equals(string x, string y) => x == y;
         public int GetHashCode([DisallowNull] string obj) => 0;
+    }
+
+    [HumanReadableConverter(typeof(ClassWithCustomConverterConverter))]
+    private sealed record ClassWithCustomConverter();
+
+    private sealed class ClassWithCustomConverterConverter : HumanReadableConverter<ClassWithCustomConverter>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, ClassWithCustomConverter value, HumanReadableSerializerOptions options)
+        {
+            writer.WriteValue("dummy");
+        }
+    }
+
+    private class Root
+    {
+        public int PropRoot { get; set; } = 1;
+    }
+
+    private sealed class Child : Root
+    {
+        public new int PropRoot { get; set; } = 2;
+        public int PropChild { get; set; } = 3;
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Collections;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
+
 internal sealed class EnumerableConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => typeof(IEnumerable).IsAssignableFrom(type);

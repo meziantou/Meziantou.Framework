@@ -1,4 +1,6 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+﻿using Meziantou.Framework.HumanReadable.Utils;
+
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class AsyncEnumerableConverterFactory : HumanReadableConverterFactory
 {
@@ -6,7 +8,7 @@ internal sealed class AsyncEnumerableConverterFactory : HumanReadableConverterFa
 
     private static Type? GetValueType(Type type)
     {
-        foreach (var iface in type.GetInterfaces())
+        foreach (var iface in type.GetAllInterfaces())
         {
             if (!iface.IsGenericType)
                 continue;

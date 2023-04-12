@@ -7,27 +7,30 @@ public static class HumanReadableSerializer
         options ??= new HumanReadableSerializerOptions();
 
         var writer = new HumanReadableTextWriter(options);
-        Serialize(writer, value, options);
+        Serialize(writer, value, value?.GetType() ?? typeof(object), options);
         return writer.ToString();
     }
 
-    public static string Serialize<T>(T? value, HumanReadableSerializerOptions? options = null)
+    public static string Serialize(object? value, Type type, HumanReadableSerializerOptions? options = null)
     {
+        if (value != null && !type.IsAssignableFrom(value.GetType()))
+            throw new ArgumentException($"The provided value cannot be assigned to type '{type.AssemblyQualifiedName}'", nameof(value));
+
         options ??= new HumanReadableSerializerOptions();
 
         var writer = new HumanReadableTextWriter(options);
-        Serialize(writer, value, options);
+        Serialize(writer, value, type, options);
         return writer.ToString();
     }
 
     internal static void Serialize(HumanReadableTextWriter writer, object? value, Type type, HumanReadableSerializerOptions options)
     {
-        var converter = options.GetConverter(value?.GetType() ?? type);
+        var converter = options.GetConverter(type);
         converter.WriteValue(writer, value, options);
     }
 
     internal static void Serialize<T>(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
     {
-        Serialize(writer, value, typeof(T), options);
+        Serialize(writer, value, value?.GetType() ?? typeof(T), options);
     }
 }

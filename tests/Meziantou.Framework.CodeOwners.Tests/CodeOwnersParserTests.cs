@@ -80,7 +80,13 @@ public sealed class CodeOwnersParserTests
                                "\n" +
                                "# In this example, @doctocat owns any file in the `/docs`\n" +
                                "# directory in the root of your repository.\n" +
-                               "/docs/ @doctocat\n";
+                               "/docs/ @doctocat\n" +
+                               "\n" +
+                               "# In this example, @octocat owns any file in the `/apps`\n" +
+                               "# directory in the root of your repository except for the `/apps/github`\n" +
+                               "# subdirectory, as its owners are left empty.\n" +
+                               "/apps/ @octocat\n" +
+                               "/apps/github";
 
         var actual = CodeOwnersParser.Parse(Content).ToArray();
 
@@ -94,6 +100,8 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromEmailAddress(4, "docs/*", "docs@example.com", section: null),
             CodeOwnersEntry.FromUsername(5, "apps/", "octocat", section: null),
             CodeOwnersEntry.FromUsername(6, "/docs/", "doctocat", section: null),
+            CodeOwnersEntry.FromUsername(7, "/apps/", "octocat", section: null),
+            CodeOwnersEntry.FromNone(8, "/apps/github", section: null),
         };
 
         actual.Should().Equal(expected);
@@ -142,6 +150,32 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Section", isOptional: false)),
             CodeOwnersEntry.FromUsername(2, "*.js", "user2", section: new CodeOwnersSection("Optional Section", isOptional: true)),
             CodeOwnersEntry.FromUsername(2, "*.js", "user3", section: new CodeOwnersSection("Optional Section", isOptional: true)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseCodeOwnersWithPatternsWithoutMembers()
+    {
+        const string Content = "* @user1\n" +
+                               "*.txt \n" +
+                               "*.js\n" +
+                               "doc/ @user2\n" +
+                               "*.md #Inline comment\n" +
+                               "app/\n" +
+                               " ";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user1", null),
+            CodeOwnersEntry.FromNone(1, "*.txt", null),
+            CodeOwnersEntry.FromNone(2, "*.js", null),
+            CodeOwnersEntry.FromUsername(3, "doc/", "user2", null),
+            CodeOwnersEntry.FromNone(4, "*.md", null),
+            CodeOwnersEntry.FromNone(5, "app/", null),
         };
 
         actual.Should().Equal(expected);

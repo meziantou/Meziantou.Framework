@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
-    private CodeOwnersEntry(int patternIndex, string pattern, CodeOwnersEntryType entryType, string member, CodeOwnersSection? section)
+    private CodeOwnersEntry(int patternIndex, string pattern, CodeOwnersEntryType entryType, string? member, CodeOwnersSection? section)
     {
         Pattern = pattern;
         PatternIndex = patternIndex;
@@ -20,7 +20,7 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
     public CodeOwnersEntryType EntryType { get; }
 
-    public string Member { get; }
+    public string? Member { get; }
 
     public CodeOwnersSection? Section { get; }
 
@@ -34,6 +34,11 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
     internal static CodeOwnersEntry FromEmailAddress(int patternIndex, string pattern, string emailAddress, CodeOwnersSection? section)
     {
         return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.EmailAddress, emailAddress, section);
+    }
+
+    internal static CodeOwnersEntry FromNone(int patternIndex, string pattern, CodeOwnersSection? section)
+    {
+        return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.None, member: null, section);
     }
 
     public override bool Equals(object? obj)

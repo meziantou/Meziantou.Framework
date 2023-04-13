@@ -68,7 +68,7 @@ public static class CodeOwnersParser
 
             // Parse pattern
             var pattern = ParsePattern();
-            if (pattern == null)
+            if (string.IsNullOrEmpty(pattern))
                 return;
 
             // Parse members (username or email)
@@ -115,17 +115,18 @@ public static class CodeOwnersParser
             var sb = StringBuilderPool.Get();
             while (!_lexer.EndOfFile)
             {
-                if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                    return null;
+                var c = _lexer.Peek();
+                if (c == null || c == '\r' || c == '\n')
+                    return StringBuilderPool.ToStringAndReturn(sb);
 
-                var c = _lexer.Consume();
+                c = _lexer.Consume();
                 switch (c)
                 {
                     // The next character is escaped
                     case '\\':
                         c = _lexer.Consume();
                         if (c == null) // end of file
-                            return null;
+                            return StringBuilderPool.ToStringAndReturn(sb);
 
                         sb.Append(c);
                         break;
@@ -145,11 +146,13 @@ public static class CodeOwnersParser
 
         private readonly void ParseMembers(string pattern, int patternIndex)
         {
+            var foundMember = false;
+
             while (!_lexer.EndOfFile)
             {
                 _lexer.ConsumeSpaces();
                 if (_lexer.TryConsumeEndOfLineOrEndOfFile())
-                    return;
+                    break;
 
                 var sb = StringBuilderPool.Get();
 
@@ -159,7 +162,7 @@ public static class CodeOwnersParser
                 if (c == '#')
                 {
                     _lexer.ConsumeUntil('\n');
-                    return;
+                    break;
                 }
 
                 var isMember = c == '@';
@@ -180,17 +183,25 @@ public static class CodeOwnersParser
                     if (c == ' ' || c == '\t')
                     {
                         AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
+                        foundMember = true;
                         break;
                     }
 
                     sb.Append(c);
                 }
             }
+
+            if (!foundMember)
+                AddEntry(isMember: false, name: null, pattern, patternIndex);
         }
 
-        private readonly void AddEntry(bool isMember, string name, string pattern, int patternIndex)
+        private readonly void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
         {
-            if (isMember)
+            if (name == null)
+            {
+                _entries.Add(CodeOwnersEntry.FromNone(patternIndex, pattern, _currentSection));
+            }
+            else if (isMember)
             {
                 _entries.Add(CodeOwnersEntry.FromUsername(patternIndex, pattern, name, _currentSection));
             }

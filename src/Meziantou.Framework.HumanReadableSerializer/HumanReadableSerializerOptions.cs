@@ -6,9 +6,9 @@ namespace Meziantou.Framework.HumanReadable;
 
 public sealed record HumanReadableSerializerOptions
 {
+    // Cache
     private readonly ConcurrentDictionary<Type, HumanReadableConverter> _converters = new();
     private readonly ConcurrentDictionary<Type, List<HumanReadableMemberInfo>> _memberInfos = new();
-
 
     private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes = new();
     private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes = new();
@@ -18,6 +18,33 @@ public sealed record HumanReadableSerializerOptions
     public HumanReadableSerializerOptions()
     {
         Converters = new ConverterList(this);
+    }
+
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
+    private HumanReadableSerializerOptions(HumanReadableSerializerOptions? options)
+    {
+        Converters = new ConverterList(this);
+        if (options != null)
+        {
+            MaxDepth = options.MaxDepth;
+            ShowInvisibleCharactersInValues = options.ShowInvisibleCharactersInValues;
+            IncludeFields = options.IncludeFields;
+            DefaultIgnoreCondition = options.DefaultIgnoreCondition;
+            foreach (var converter in options.Converters)
+            {
+                Converters.Add(converter);
+            }
+
+            foreach (var attr in options._typeAttributes)
+            {
+                _typeAttributes.Add(attr.Key, attr.Value);
+            }
+
+            foreach (var attr in options._memberAttributes)
+            {
+                _memberAttributes.Add(attr.Key, attr.Value);
+            }
+        }
     }
 
     public bool IsReadOnly { get; private set; }

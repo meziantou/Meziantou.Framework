@@ -395,7 +395,7 @@ public sealed class HtmlDocument : HtmlNode
             if (prefix == null)
                 throw new ArgumentNullException(nameof(prefix));
 
-            _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.InvariantCulture);
+            _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.Ordinal);
             _declaredNamespaces[uri] = prefix;
         }
     }

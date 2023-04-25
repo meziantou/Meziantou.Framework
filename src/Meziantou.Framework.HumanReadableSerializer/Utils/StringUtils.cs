@@ -21,6 +21,11 @@ internal static class StringUtils
 
         return str.Replace(oldValue, newValue);
     }
+
+    public static bool Contains(this ReadOnlySpan<char> span, char c)
+    {
+        return span.IndexOf(c) != -1;
+    }
 #endif
 
     public static bool IsMultiLines(ReadOnlySpan<char> value) => IndexOfNewlineChar(value, out _) >= 0;

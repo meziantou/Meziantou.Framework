@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.HumanReadable.Utils;
+﻿using System.Text;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -17,9 +18,38 @@ public abstract class SnapshotComparer
             if (value == null)
                 return null;
 
-            value = StringUtils.ReplaceLineEndings(value, "\n");
-            value = value.Replace("\t", "    ", StringComparison.Ordinal);
-            return value;
+            var sb = new StringBuilder(value.Length);
+            foreach (var (line, eol) in StringUtils.EnumerateLines(value))
+            {
+                if (!line.IsWhiteSpace())
+                {
+                    if (!line.Contains('\t'))
+                    {
+                        sb.Append(line);
+                    }
+                    else
+                    {
+                        foreach (var c in line)
+                        {
+                            if (c == '\t')
+                            {
+                                sb.Append("    ");
+                            }
+                            else
+                            {
+                                sb.Append(c);
+                            }
+                        }
+                    }
+                }
+
+                if (!eol.IsEmpty)
+                {
+                    sb.Append('\n');
+                }
+            }
+
+            return sb.ToString();
         }
 
         public override bool AreEqual(string actual, string expected) => actual == expected;

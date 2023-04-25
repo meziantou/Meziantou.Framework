@@ -884,9 +884,10 @@ public sealed partial class SerializerTests
         """");
 
     [Fact]
-    public void String_MultiLine_InArray() => AssertSerialization(new string[] { "line1\nline2", "line3" }, """"
+    public void String_MultiLine_InArray() => AssertSerialization(new string[] { "line1\nline2\n", "line3" }, """"
         - line1
           line2
+
         - line3
         """");
 

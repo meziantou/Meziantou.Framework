@@ -13,7 +13,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
     /// </summary>
     /// <see href="https://github.com/dotnet/roslyn/blob/aecd49800750d64e08767836e2678ffa62a4647f/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNames.cs#L109" />
     [SuppressMessage("Security", "MA0009:Add regex evaluation timeout")]
-    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}\d+(_\d+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static CallerContext Get(InlineSnapshotSettings settings, string? filePath, int lineNumber)
@@ -67,20 +67,32 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
 
         var pdbFileName = callerFrame.GetFileName();
         if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && pdbFileName != null && filePath != null && pdbFileName != filePath)
-            throw new InlineSnapshotException($"The call stack doesn't match the file to update. From call stack: {pdbFileName}; From CallerFilePath: {filePath}");
+        {
+            throw new InlineSnapshotException($"""
+                The call stack doesn't match the file to update. This may happen when you build the project in Release configuration.
+                You can disable the validation using {nameof(InlineSnapshotSettings)}.{nameof(InlineSnapshotSettings.ValidateSourceFilePathUsingPdbInfoWhenAvailable)} = false.
+                From call stack: {pdbFileName}; From CallerFilePath: {filePath}
+                """);
+        }
 
         var pdbLine = callerFrame.GetFileLineNumber();
         if (settings.ValidateLineNumberUsingPdbInfoWhenAvailable && pdbLine != 0 && pdbLine != lineNumber)
-            throw new InlineSnapshotException($"The call stack does not match the line to update. From call stack: {pdbLine}; From CallerLineNumber: {lineNumber}");
+        {
+            throw new InlineSnapshotException($""""
+                The call stack does not match the line to update. This may happen when you build the project in Release configuration.
+                You can disable the validation using {nameof(InlineSnapshotSettings)}.{nameof(InlineSnapshotSettings.ValidateLineNumberUsingPdbInfoWhenAvailable)} = false.
+                From call stack: {pdbLine}; From CallerLineNumber: {lineNumber}.
+                """");
+        }
 
         filePath ??= pdbFileName;
         var column = callerFrame.GetFileColumnNumber();
 
         if (filePath == null)
-            throw new InlineSnapshotException("Cannot find the file to update from the call stack.");
+            throw new InlineSnapshotException("Cannot find the file to update from the call stack. The PDB may be missing.");
 
         if (methodName == null)
-            throw new InlineSnapshotException("Cannot find the method to update from the call stack.");
+            throw new InlineSnapshotException("Cannot find the method to update from the call stack. The code may be optimized (Release configuration).");
 
         return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex);
     }

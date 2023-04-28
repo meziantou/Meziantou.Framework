@@ -37,5 +37,11 @@ public enum CSharpStringFormats
     /// <see href="https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/strings/?WT.mc_id=DT-MVP-5003978#raw-string-literals"/>
     LeftAlignedRaw = 0x8,
 
-    Default = Quoted | Verbatim | Raw,
+    /// <summary>
+    /// Determine the allowed syntax from the PDB file. If an incompatible mode is provided, it won't be used.
+    /// </summary>
+    /// <remarks>This is only valid with Portable PDB, and the compiler options must be set.</remarks>
+    DetermineFeatureFromPdb = 0x10,
+
+    Default = DetermineFeatureFromPdb | Quoted | Verbatim | Raw,
 }

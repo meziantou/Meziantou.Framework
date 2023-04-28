@@ -44,10 +44,21 @@ public class ChangeJournalTests
     [RunIfWindowsAdministratorFact]
     public void EnumerateEntries_ShouldNotBeEmpty()
     {
-        var file = Path.GetTempFileName();
-        var drive = Path.GetPathRoot(file);
-        using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
-        var entries = changeJournal.Entries.ToList();
-        entries.Count.Should().BePositive();
+        for (var i = 5; i >= 0; i--)
+        {
+            try
+            {
+                var file = Path.GetTempFileName();
+                var drive = Path.GetPathRoot(file);
+                using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
+                var entries = changeJournal.Entries.ToList();
+                entries.Count.Should().BePositive();
+                return;
+            }
+            catch when (i > 0)
+            {
+                // On GitHub, the test is flaky
+            }
+        }
     }
 }

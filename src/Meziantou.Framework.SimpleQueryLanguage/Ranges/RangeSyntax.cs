@@ -61,7 +61,7 @@ internal static class RangeSyntax
         }
         else if (span.Trim().Equals("this week", StringComparison.OrdinalIgnoreCase))
         {
-            var now = GetUtcNow();
+            var now = new DateTimeOffset(GetUtcNow());
             var start = StartOfWeek(now);
             var end = start.AddDays(7);
             value = new BinaryRangeSyntax<T>(ConvertValue(start), lowerBoundIncluded: true, ConvertValue(end), upperBoundIncluded: false);

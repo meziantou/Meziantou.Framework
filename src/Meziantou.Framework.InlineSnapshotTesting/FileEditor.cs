@@ -108,7 +108,7 @@ internal static class FileEditor
             var eol = settings.EndOfLine ?? DetectEndOfLine(sourceText);
             var startPosition = invocationExpression.GetLocation().GetMappedLineSpan().StartLinePosition.Character;
 
-            var formattedValue = CSharpStringLiteral.Create(newValue, settings.AllowedStringFormats, indentation, startPosition, eol);
+            var formattedValue = CSharpStringLiteral.Create(newValue, context.FilterFormats(settings.AllowedStringFormats), indentation, startPosition, eol);
             var newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue))
                 .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
                 .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());

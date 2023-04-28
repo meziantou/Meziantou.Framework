@@ -73,6 +73,31 @@ public sealed class InlineSnapshotTests
     }
 
     [Fact]
+    public async Task UpdateSnapshotUsingVerbatimWhenCSharpLanguageIs10()
+    {
+        await AssertSnapshot($$""""
+            var data = new
+            {
+                FirstName = "Gérald",
+                LastName = "Barré",
+                NickName = "meziantou",
+            };
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, "");
+            """", $$""""
+            var data = new
+            {
+                FirstName = "Gérald",
+                LastName = "Barré",
+                NickName = "meziantou",
+            };
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, @"FirstName: Gérald
+            LastName: Barré
+            NickName: meziantou");
+            """",
+            languageVersion: "10", forceUpdateSnapshots: true);
+    }
+
+    [Fact]
     public async Task SupportHelperMethods()
     {
         await AssertSnapshot($$""""
@@ -93,7 +118,7 @@ public sealed class InlineSnapshotTests
             }
             """");
     }
-    
+
     [Fact]
     public async Task SupportMultiLevelsHelperMethods()
     {
@@ -187,7 +212,7 @@ public sealed class InlineSnapshotTests
     }
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot(string source, string expected = null, bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null)
+    private async Task AssertSnapshot(string source, string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -195,8 +220,9 @@ public sealed class InlineSnapshotTests
               <PropertyGroup>
                 <TargetType>exe</TargetType>
                 <TargetFramework>{{GetTargetFramework()}}</TargetFramework>
-                <LangVersion>11</LangVersion>
+                <LangVersion>{{languageVersion}}</LangVersion>
                 <Nullable>disable</Nullable>
+                <DebugType>portable</DebugType>
               </PropertyGroup>
               <ItemGroup>
                 <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />
@@ -220,6 +246,7 @@ public sealed class InlineSnapshotTests
                 [ModuleInitializer]
                 public static void Initialize()
                 {
+                    {{(launchDebugger ? "System.Diagnostics.Debugger.Launch();" : "")}}
                     InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with 
                     {
                         {{nameof(InlineSnapshotSettings.AutoDetectContinuousEnvironment)}} = {{(autoDetectCI ? "true" : "false")}},
@@ -284,6 +311,9 @@ public sealed class InlineSnapshotTests
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;
+
+        actual = SnapshotComparer.Default.NormalizeValue(actual);
+        expected = SnapshotComparer.Default.NormalizeValue(expected);
         if (actual != expected)
         {
             Assert.Fail("Snapshots are different\n" + InlineDiffAssertionMessageFormatter.Instance.FormatMessage(expected, actual));

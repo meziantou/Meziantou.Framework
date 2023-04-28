@@ -1,12 +1,17 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-internal record struct CallerContext(string FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex)
+internal record struct CallerContext(string FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex, string? AssemblyLocation)
 {
+    private static readonly ConcurrentDictionary<string, Version> LanguageVersionCache = new(StringComparer.Ordinal);
+
     /// <summary>
     /// Newer Roslyn versions use the format "&lt;callerName&gt;g__functionName|x_y".
     /// Older versions use "&lt;callerName&gt;g__functionNamex_y".
@@ -94,7 +99,84 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         if (methodName == null)
             throw new InlineSnapshotException("Cannot find the method to update from the call stack. The code may be optimized (Release configuration).");
 
-        return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex);
+        string? assemblyLocation = null;
+        if (settings.AllowedStringFormats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
+        {
+            // Read the language version from the PDB
+            assemblyLocation = callerFrame.GetMethod().DeclaringType?.Assembly?.Location;
+        }
+
+        return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);
+    }
+
+    public readonly CSharpStringFormats FilterFormats(CSharpStringFormats formats)
+    {
+        if (AssemblyLocation == null || !formats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
+            return formats;
+
+        var languageVersion = LanguageVersionCache.GetOrAdd(AssemblyLocation, GetCSharpLanguageVersionFromAssemblyLocation);
+        if (languageVersion != null && languageVersion.Major < 11)
+        {
+            formats &= ~(CSharpStringFormats.LeftAlignedRaw | CSharpStringFormats.Raw);
+        }
+
+        return formats;
+    }
+
+    private static Version? GetCSharpLanguageVersionFromAssemblyLocation(string assemblyLocation)
+    {
+        try
+        {
+            using var stream = File.OpenRead(assemblyLocation);
+            using var reader = new PEReader(stream);
+            if (!reader.TryOpenAssociatedPortablePdb(assemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider == null)
+                return null;
+
+            using (metadataReaderProvider)
+            {
+                var metadataReader = metadataReaderProvider.GetMetadataReader();
+                foreach (var handle in metadataReader.GetCustomDebugInformation(EntityHandle.ModuleDefinition))
+                {
+                    var customDebugInformation = metadataReader.GetCustomDebugInformation(handle);
+                    var compilationOptionsGuid = new Guid("B5FEEC05-8CD0-4A83-96DA-466284BB4BD8");
+                    if (metadataReader.GetGuid(customDebugInformation.Kind) == compilationOptionsGuid)
+                    {
+                        var blobReader = metadataReader.GetBlobReader(customDebugInformation.Value);
+
+                        // Compiler flag bytes are UTF-8 null-terminated key-value pairs
+                        var nullIndex = blobReader.IndexOf(0);
+                        while (nullIndex >= 0)
+                        {
+                            var key = blobReader.ReadUTF8(nullIndex);
+
+                            // Skip the null terminator
+                            blobReader.ReadByte();
+
+                            nullIndex = blobReader.IndexOf(0);
+                            var value = blobReader.ReadUTF8(nullIndex);
+
+                            // Skip the null terminator
+                            blobReader.ReadByte();
+
+                            nullIndex = blobReader.IndexOf(0);
+
+                            if (key == "language-version")
+                            {
+                                if (Version.TryParse(value, out var version))
+                                    return version;
+
+                                return default;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
     }
 
     internal static bool ParseLocalFunctionName(string name, [NotNullWhen(true)] out string? functionName)

@@ -10,7 +10,7 @@ public sealed class ShowIfTagHelper : TagHelper
 
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
-        if (Value)
+        if (!Value)
         {
             output.SuppressOutput();
             return;

@@ -9,11 +9,13 @@ public sealed class HumanReadableSerializerOptionsTests
     {
         var options = new HumanReadableSerializerOptions();
         options.Converters.Add(new DummyConverter());
+        HumanReadable.HumanReadableSerializer.Serialize(12, options);
 
         var clone = options with { };
 
         Assert.Equal(1, clone.Converters.Count);
         clone.Converters.Clear();
+        HumanReadable.HumanReadableSerializer.Serialize(12, clone);
 
         Assert.Equal(0, clone.Converters.Count);
         Assert.Equal(1, options.Converters.Count);

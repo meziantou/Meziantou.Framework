@@ -893,7 +893,7 @@ public sealed partial class SerializerTests
 
     [Fact]
     public void ByteArray() => AssertSerialization(new byte[] { 1, 2, 3 }, "AQID");
-    
+
     [Fact]
     public void Type() => AssertSerialization(typeof(SerializerTests), "Meziantou.Framework.HumanReadable.Tests.SerializerTests, Meziantou.Framework.HumanReadableSerializer.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
@@ -1108,6 +1108,17 @@ public sealed partial class SerializerTests
     }
 
     [Fact]
+    public void MediaTypeHeaderValue() => AssertSerialization(new MediaTypeHeaderValue("application/json"), "application/json");
+    
+    [Fact]
+    public void MediaTypeHeaderValue_WithParameters() => AssertSerialization(new MediaTypeHeaderValue("application/json") { Parameters = { new NameValueHeaderValue("foo", "bar") } }, "application/json; foo=bar");
+
+#if NET7_0_OR_GREATER
+    [Fact]
+    public void MediaTypeHeaderValue_WithCharSet() => AssertSerialization(new MediaTypeHeaderValue("application/json", "utf-8"), "application/json; charset=utf-8");
+#endif
+
+    [Fact]
     public void HttpRequestHeaders()
     {
         using var message = new HttpRequestMessage();
@@ -1120,6 +1131,16 @@ public sealed partial class SerializerTests
               - application/json
               - text/plain
             Expect: 100-continue
+            """);
+    }
+    
+    [Fact]
+    public void HttpRequestHeaders_Empty()
+    {
+        using var message = new HttpRequestMessage();
+
+        AssertSerialization(message.Headers, """
+            {}
             """);
     }
 
@@ -1539,7 +1560,7 @@ public sealed partial class SerializerTests
                 """,
         });
     }
-    
+
     [Fact]
     public void ClassWithCustomConverterUsingAttribute()
     {

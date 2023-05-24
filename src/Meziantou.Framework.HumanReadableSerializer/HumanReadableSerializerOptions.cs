@@ -284,6 +284,7 @@ public sealed record HumanReadableSerializerOptions
 #endif
             new IntPtrConverter(),
             new GuidConverter(),
+            new MediaTypeHeaderValueConverter(),
             new RegexConverter(),
             new SByteConverter(),
             new SingleConverter(),

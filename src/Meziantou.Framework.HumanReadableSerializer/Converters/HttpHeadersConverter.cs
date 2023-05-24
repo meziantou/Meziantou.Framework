@@ -9,9 +9,15 @@ internal sealed class HttpHeadersConverter : HumanReadableConverter<HttpHeaders>
     {
         Debug.Assert(value != null);
 
-        writer.StartObject();
+        var hasValue = false;
         foreach (var header in value)
         {
+            if (!hasValue)
+            {
+                writer.StartObject();
+                hasValue = true;
+            }
+
             writer.WritePropertyName(header.Key);
 
             var valueCount = header.Value.Count();
@@ -25,6 +31,13 @@ internal sealed class HttpHeadersConverter : HumanReadableConverter<HttpHeaders>
             }
         }
 
-        writer.EndObject();
+        if (hasValue)
+        {
+            writer.EndObject();
+        }
+        else
+        {
+            writer.WriteEmptyObject();
+        }
     }
 }

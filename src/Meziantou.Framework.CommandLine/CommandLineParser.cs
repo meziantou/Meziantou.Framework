@@ -4,8 +4,8 @@ public sealed class CommandLineParser
 {
     private static readonly string[] HelpArguments = { "-?", "/?", "-help", "/help", "--help" };
 
-    private readonly IDictionary<string, string> _namedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-    private readonly IDictionary<int, string> _positionArguments = new Dictionary<int, string>();
+    private readonly Dictionary<string, string> _namedArguments = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<int, string> _positionArguments = new();
 
     public static CommandLineParser Current { get; } = ParseCurrent();
 

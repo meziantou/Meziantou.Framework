@@ -80,8 +80,7 @@ public sealed class Perceived
     /// <param name="type">The perceived type.</param>
     public static Perceived AddPerceived(string extension, PerceivedType type)
     {
-        if (extension is null)
-            throw new ArgumentNullException(nameof(extension));
+        ArgumentNullException.ThrowIfNull(extension);
 
         var perceived = new Perceived(extension, type, PerceivedTypeSource.HardCoded);
         lock (SyncObject)
@@ -93,7 +92,7 @@ public sealed class Perceived
     }
 
     /// <summary>
-    /// Gets the file's xtension.
+    /// Gets the file's extension.
     /// </summary>
     /// <value>The file's extension.</value>
     public string Extension { get; }
@@ -118,8 +117,7 @@ public sealed class Perceived
     [SupportedOSPlatform("windows5.1.2600")]
     public static unsafe Perceived GetPerceivedType(string fileName)
     {
-        if (fileName is null)
-            throw new ArgumentNullException(nameof(fileName));
+        ArgumentNullException.ThrowIfNull(fileName);
 
         var extension = Path.GetExtension(fileName);
         if (extension == null)

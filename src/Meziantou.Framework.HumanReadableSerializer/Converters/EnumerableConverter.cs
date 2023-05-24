@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using System.Diagnostics;
+
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class EnumerableConverter : HumanReadableConverter
@@ -7,6 +9,8 @@ internal sealed class EnumerableConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         var array = (IEnumerable)value;
         var hasItem = false;
 

@@ -25,7 +25,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         if (configuration.DefaultMode != null)
             return GetStrategy(configuration.DefaultMode.Value);
 
-        if (configuration?.Entries != null)
+        if (configuration.Entries != null)
         {
             foreach (var entry in configuration.Entries)
             {
@@ -52,7 +52,12 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
             File = result.Scope == PromptConfigurationScope.CurrentFile ? path : null,
             Folder = result.Scope == PromptConfigurationScope.CurrentFolder ? folder : null,
             Mode = result.Mode,
-            ExpirationDate = result.RememberPeriod == null && context.ParentProcessInfo != null ? DateTimeOffset.MaxValue : DateTimeOffset.UtcNow.Add(result.RememberPeriod.Value),
+            ExpirationDate = (result.RememberPeriod, context.ParentProcessInfo) switch
+            {
+                (null, not null) => DateTimeOffset.MaxValue,
+                (not null, _) => DateTimeOffset.UtcNow.Add(result.RememberPeriod.Value),
+                _ => DateTimeOffset.UtcNow,
+            },
         });
         return GetStrategy(result.Mode);
     }

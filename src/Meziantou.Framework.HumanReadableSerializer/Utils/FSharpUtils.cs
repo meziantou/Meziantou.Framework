@@ -49,8 +49,8 @@ internal sealed class FSharpUtils
     public FSharpUtils(Assembly assembly)
     {
         FsharpType = assembly.GetType("Microsoft.FSharp.Reflection.FSharpType", throwOnError: false);
-        FsharpOptionType = assembly.GetType("Microsoft.FSharp.Core.FSharpOption`1", throwOnError: false);
-        FsharpValueOptionType = assembly.GetType("Microsoft.FSharp.Core.FSharpValueOption`1", throwOnError: false);
+        FsharpOptionType = assembly.GetType("Microsoft.FSharp.Core.FSharpOption`1", throwOnError: false)!;
+        FsharpValueOptionType = assembly.GetType("Microsoft.FSharp.Core.FSharpValueOption`1", throwOnError: false)!;
         IsUnionMethod = FsharpType?.GetMethod("IsUnion", BindingFlags.Public | BindingFlags.Static);
         GetUnionCasesMethod = FsharpType?.GetMethod("GetUnionCases", BindingFlags.Public | BindingFlags.Static);
         UnionCaseInfoType = assembly.GetType("Microsoft.FSharp.Reflection.UnionCaseInfo", throwOnError: false);
@@ -70,7 +70,7 @@ internal sealed class FSharpUtils
         try
         {
             if (IsUnionMethod != null)
-                return IsUnionMethod.Invoke(obj: null, new object[] { type, null }) is true;
+                return IsUnionMethod.Invoke(obj: null, new object?[] { type, null }) is true;
         }
         catch
         {
@@ -85,7 +85,7 @@ internal sealed class FSharpUtils
         {
             if (GetUnionCasesMethod != null)
             {
-                var array = (object[])GetUnionCasesMethod.Invoke(obj: null, new object[] { type, null });
+                var array = (object[])GetUnionCasesMethod.Invoke(obj: null, new object?[] { type, null })!;
                 return array.Select(o => new UnionCaseInfo(this, o)).ToArray();
             }
 
@@ -102,10 +102,16 @@ internal sealed class FSharpUtils
         try
         {
             var unionCases = GetUnionCases(type);
-            var tag = (int)value.GetType().GetProperty("Tag")?.GetValue(value);
+            if(unionCases == null)
+                return null;
+
+            var tag = value.GetType().GetProperty("Tag")?.GetValue(value);
+            if (tag == null)
+                return null;
+
             foreach (var unionCase in unionCases)
             {
-                if (unionCase.Tag == tag)
+                if (unionCase.Tag == (int)tag)
                 {
                     return unionCase;
                 }

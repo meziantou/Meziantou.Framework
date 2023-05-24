@@ -81,13 +81,14 @@ public sealed class PromptContextTests
                 <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
               </ItemGroup>
               <ItemGroup>
-                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.4.1" />
+                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
                 {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
             </Project>            
             """);
 
         var outputFilePath = directory.GetFullPath("output.txt");
+        outputFilePath.CreateParentDirectory();
 
         source = source.Replace("#TESTCONTENT#", $$""""
             var name = Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies.PromptContext.Get("dummy.cs").TestName;
@@ -132,6 +133,8 @@ public sealed class PromptContextTests
             return "net6.0";
 #elif NET7_0
             return "net7.0";
+#elif NET8_0
+            return "net8.0";
 #endif
         }
     }

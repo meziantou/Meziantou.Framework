@@ -179,13 +179,13 @@ public partial class QuerySyntax
             return ParseTextExpression();
         }
 
-        private QuerySyntax ParseTextExpression()
+        private TextQuerySyntax ParseTextExpression()
         {
             var token = MatchTextOrQuotedText();
             return new TextQuerySyntax(token);
         }
 
-        private QuerySyntax ParseKeyValueExpression()
+        private KeyValueQuerySyntax ParseKeyValueExpression()
         {
             var key = Match(QuerySyntaxKind.TextToken);
             var op = MatchOperator();
@@ -217,7 +217,7 @@ public partial class QuerySyntax
             return new QueryToken(QuerySyntaxKind.TextQuery, queryText, span, value);
         }
 
-        private QuerySyntax ParseParenthesizedExpression()
+        private ParenthesizedQuerySyntax ParseParenthesizedExpression()
         {
             var openParenthesisToken = Match(QuerySyntaxKind.OpenParenthesisToken);
             var expression = ParseExpression();

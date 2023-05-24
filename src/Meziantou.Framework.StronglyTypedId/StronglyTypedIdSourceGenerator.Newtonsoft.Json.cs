@@ -93,7 +93,7 @@ public partial class StronglyTypedIdSourceGenerator
                     }
                     else if (idType is IdType.MongoDB_Bson_ObjectId)
                     {
-                        writer.WriteLine($"{left}{context.TypeName}.Parse(serializer.Deserialize<string>(reader));");
+                        writer.WriteLine($"{left}{context.TypeName}.Parse(serializer.Deserialize<string>(reader)!);");
                     }
                     else
                     {

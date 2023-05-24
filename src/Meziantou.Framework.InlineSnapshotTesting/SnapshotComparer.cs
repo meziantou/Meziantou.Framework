@@ -52,6 +52,6 @@ public abstract class SnapshotComparer
             return sb.ToString();
         }
 
-        public override bool AreEqual(string actual, string expected) => actual == expected;
+        public override bool AreEqual(string? actual, string? expected) => actual == expected;
     }
 }

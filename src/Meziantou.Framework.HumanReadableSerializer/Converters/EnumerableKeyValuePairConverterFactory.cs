@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.HumanReadable.Utils;
+﻿using System.Diagnostics;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -41,8 +42,10 @@ internal sealed class EnumerableKeyValuePairConverterFactory : HumanReadableConv
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class EnumerableKeyValuePairConverter<T> : HumanReadableConverter<IEnumerable<KeyValuePair<string, T>>>
     {
-        protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<KeyValuePair<string, T>> value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
+            Debug.Assert(value != null);
+
             var hasItem = false;
             foreach (var prop in value)
             {

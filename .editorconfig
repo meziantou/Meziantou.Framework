@@ -41,10 +41,16 @@ insert_final_newline = true
 [*.cs]
 dotnet_diagnostic.CA1008.severity = none
 dotnet_diagnostic.CA1308.severity = none
+dotnet_diagnostic.CA2208.severity = none
 dotnet_diagnostic.CA2237.severity = none
 dotnet_diagnostic.RS2008.severity = none
 
 dotnet_diagnostic.MFA001.severity = silent
 
+# disable non-application rules because of multitargeting
+dotnet_diagnostic.CA1510.severity = silent
+dotnet_diagnostic.CA1512.severity = silent
+
 [Samples/**/*.cs]
 dotnet_diagnostic.CA1852.severity = none
+

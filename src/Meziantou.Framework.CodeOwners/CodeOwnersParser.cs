@@ -35,7 +35,7 @@ public static class CodeOwnersParser
             _currentSection = null;
         }
 
-        public IEnumerable<CodeOwnersEntry> Parse()
+        public List<CodeOwnersEntry> Parse()
         {
             while (!_lexer.EndOfFile)
             {

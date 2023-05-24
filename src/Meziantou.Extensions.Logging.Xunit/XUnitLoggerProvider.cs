@@ -19,7 +19,7 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     {
     }
 
-    public XUnitLoggerProvider(ITestOutputHelper testOutputHelper, XUnitLoggerOptions options)
+    public XUnitLoggerProvider(ITestOutputHelper testOutputHelper, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
         _options = options ?? new XUnitLoggerOptions();

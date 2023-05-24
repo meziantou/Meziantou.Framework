@@ -26,5 +26,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.1" />
   </ItemGroup>
+  
+  <ItemGroup Condition="$(TargetFramework) == 'net8.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.0-preview.4.23260.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.0-preview.4.23260.4" />
+  </ItemGroup>
 
 </Project>

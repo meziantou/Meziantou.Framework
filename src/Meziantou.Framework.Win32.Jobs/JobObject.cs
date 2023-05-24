@@ -100,8 +100,7 @@ public sealed class JobObject : IDisposable
     /// <param name="process">The process.</param>
     public void AssignProcess(Process process)
     {
-        if (process is null)
-            throw new ArgumentNullException(nameof(process));
+        ArgumentNullException.ThrowIfNull(process);
 
         AssignProcess(process.Handle);
     }
@@ -127,8 +126,8 @@ public sealed class JobObject : IDisposable
     /// <param name="limits">The limits. May not be null.</param>
     public unsafe void SetLimits(JobObjectLimits limits)
     {
-        if (limits is null)
-            throw new ArgumentNullException(nameof(limits));
+        ArgumentNullException.ThrowIfNull(limits);
+
         var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
         {
             BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION
@@ -319,8 +318,7 @@ public sealed class JobObject : IDisposable
 
     public unsafe bool IsAssignedToProcess(Process process)
     {
-        if (process is null)
-            throw new ArgumentNullException(nameof(process));
+        ArgumentNullException.ThrowIfNull(process);
 
         BOOL result = default;
         if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))

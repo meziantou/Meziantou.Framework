@@ -340,7 +340,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
                 // Instances
                 foreach (var propertyInfo in currentType.GetProperties(InstanceDefaultBindingFlags))
                 {
-                    if (propertyInfo.GetIndexParameters().Any())
+                    if (propertyInfo.GetIndexParameters().Length != 0)
                     {
                         typeCache.InstanceIndexers.Add(propertyInfo);
                     }
@@ -364,7 +364,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
                 // Static
                 foreach (var propertyInfo in currentType.GetProperties(StaticDefaultBindingFlags))
                 {
-                    if (propertyInfo.GetIndexParameters().Any())
+                    if (propertyInfo.GetIndexParameters().Length != 0)
                     {
                         typeCache.StaticIndexers.Add(propertyInfo);
                     }

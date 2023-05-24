@@ -20,11 +20,6 @@ public sealed class HtmlException : Exception
     {
     }
 
-    private HtmlException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-        : base(info, context)
-    {
-    }
-
     public static int GetCode(string message)
     {
         if (message == null)

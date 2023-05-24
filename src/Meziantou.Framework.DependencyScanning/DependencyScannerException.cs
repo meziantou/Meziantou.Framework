@@ -15,8 +15,4 @@ public class DependencyScannerException : Exception
     public DependencyScannerException(string? message, Exception? innerException) : base(message, innerException)
     {
     }
-
-    protected DependencyScannerException(SerializationInfo info, StreamingContext context) : base(info, context)
-    {
-    }
 }

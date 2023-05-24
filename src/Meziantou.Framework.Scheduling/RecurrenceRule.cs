@@ -41,30 +41,30 @@ public abstract class RecurrenceRule
         try
         {
             // Extract parts
-            IDictionary<string, string> values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var parts = rrule.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts)
             {
-                var split = SplitPart(part);
-                if (values.ContainsKey(split.Item1))
+                var (name, value) = SplitPart(part);
+                if (values.ContainsKey(name))
                 {
-                    error = $"Duplicate name: '{split.Item1}'.";
+                    error = $"Duplicate name: '{name}'.";
                     return false;
                 }
 
-                if (string.Equals("UNTIL", split.Item1, StringComparison.OrdinalIgnoreCase) && values.ContainsKey("COUNT"))
-                {
-                    error = "Cannot set UNTIL and COUNT in the same recurrence rule.";
-                    return false;
-                }
-
-                if (string.Equals("COUNT", split.Item1, StringComparison.OrdinalIgnoreCase) && values.ContainsKey("UNTIL"))
+                if (string.Equals("UNTIL", name, StringComparison.OrdinalIgnoreCase) && values.ContainsKey("COUNT"))
                 {
                     error = "Cannot set UNTIL and COUNT in the same recurrence rule.";
                     return false;
                 }
 
-                values.Add(split.Item1, split.Item2);
+                if (string.Equals("COUNT", name, StringComparison.OrdinalIgnoreCase) && values.ContainsKey("UNTIL"))
+                {
+                    error = "Cannot set UNTIL and COUNT in the same recurrence rule.";
+                    return false;
+                }
+
+                values.Add(name, value);
             }
 
             // Set specific properties
@@ -135,7 +135,7 @@ public abstract class RecurrenceRule
         }
     }
 
-    private static Tuple<string, string> SplitPart(string str)
+    private static (string Name, string Value) SplitPart(string str)
     {
         var index = str.IndexOf('=', StringComparison.Ordinal);
         if (index < 0)
@@ -146,15 +146,15 @@ public abstract class RecurrenceRule
             throw new FormatException($"'{str}' is invalid.");
 
         var value = str[(index + 1)..];
-        return Tuple.Create(name, value);
+        return (name, value);
     }
 
-    private static IList<int>? ParseBySetPos(IDictionary<string, string> values)
+    private static List<int>? ParseBySetPos(IDictionary<string, string> values)
     {
         return ParseBySetPos(values.GetValue("BYSETPOS", (string?)null));
     }
 
-    private static IList<int>? ParseBySetPos(string? str)
+    private static List<int>? ParseBySetPos(string? str)
     {
         if (string.IsNullOrEmpty(str))
             return null;
@@ -162,12 +162,12 @@ public abstract class RecurrenceRule
         return SplitToInt32List(str);
     }
 
-    private static IList<int> ParseByMonthDays(IDictionary<string, string> values)
+    private static List<int> ParseByMonthDays(IDictionary<string, string> values)
     {
         return ParseByMonthDays(values.GetValue("BYMONTHDAY", (string?)null));
     }
 
-    private static IList<int> ParseByMonthDays(string? str)
+    private static List<int> ParseByMonthDays(string? str)
     {
         var monthDays = SplitToInt32List(str);
         foreach (var monthDay in monthDays)
@@ -180,12 +180,12 @@ public abstract class RecurrenceRule
         return monthDays;
     }
 
-    private static IList<Month> ParseByMonth(IDictionary<string, string> values)
+    private static List<Month> ParseByMonth(IDictionary<string, string> values)
     {
         return ParseByMonth(values.GetValue("BYMONTH", (string?)null));
     }
 
-    private static IList<Month> ParseByMonth(string? str)
+    private static List<Month> ParseByMonth(string? str)
     {
         var months = SplitToMonthList(str);
         foreach (var month in months)
@@ -198,12 +198,12 @@ public abstract class RecurrenceRule
         return months;
     }
 
-    private static IList<int> ParseByYearDay(IDictionary<string, string> values)
+    private static List<int> ParseByYearDay(IDictionary<string, string> values)
     {
         return ParseByYearDay(values.GetValue("BYYEARDAY", (string?)null));
     }
 
-    private static IList<int> ParseByYearDay(string? str)
+    private static List<int> ParseByYearDay(string? str)
     {
         var yearDays = SplitToInt32List(str);
         foreach (var yearDay in yearDays)
@@ -225,14 +225,14 @@ public abstract class RecurrenceRule
         return ParseDayOfWeek(str);
     }
 
-    private static IList<ByDay> ParseByDayWithOffset(IDictionary<string, string> values)
+    private static ByDay[] ParseByDayWithOffset(IDictionary<string, string> values)
     {
         return ParseByDayWithOffset(values.GetValue("BYDAY", (string?)null));
     }
 
-    private static IList<ByDay> ParseByDayWithOffset(string? str)
+    private static ByDay[] ParseByDayWithOffset(string? str)
     {
-        return SplitToStringList(str).Select(ParseDayOfWeekWithOffset).ToList();
+        return SplitToStringArray(str).Select(ParseDayOfWeekWithOffset).ToArray();
     }
 
     private static IList<DayOfWeek> ParseByDay(IDictionary<string, string> values)
@@ -240,9 +240,9 @@ public abstract class RecurrenceRule
         return ParseByDay(values.GetValue("BYDAY", (string?)null));
     }
 
-    private static IList<DayOfWeek> ParseByDay(string? str)
+    private static DayOfWeek[] ParseByDay(string? str)
     {
-        return SplitToStringList(str).Select(ParseDayOfWeek).ToList();
+        return SplitToStringArray(str).Select(ParseDayOfWeek).ToArray();
     }
 
     private static ByDay ParseDayOfWeekWithOffset(string str)
@@ -429,9 +429,9 @@ public abstract class RecurrenceRule
         }
     }
 
-    private static List<string> SplitToStringList(string? text)
+    private static string[] SplitToStringArray(string? text)
     {
-        return SplitToList(text).ToList();
+        return SplitToList(text).ToArray();
     }
 
     private static List<int> SplitToInt32List(string? text)

@@ -12,7 +12,7 @@ internal sealed class InlineDiffAssertionMessageFormatter : AssertionMessageForm
 
     public static AssertionMessageFormatter Instance { get; } = new InlineDiffAssertionMessageFormatter();
 
-    public override string FormatMessage(string expected, string actual)
+    public override string FormatMessage(string? expected, string? actual)
     {
         var diff = InlineDiffBuilder.Diff(expected ?? "", actual ?? "", ignoreWhiteSpace: false, ignoreCase: false);
 

@@ -39,7 +39,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
             if (TypeConverter != null)
             {
                 var stringValue = TypeConverter.ConvertToInvariantString(context: null, value);
-                writer.WriteValue(stringValue);
+                writer.WriteValue(stringValue ?? "");
             }
             else if (value is IConvertible convertible)
             {

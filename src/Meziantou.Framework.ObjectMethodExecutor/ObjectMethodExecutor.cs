@@ -333,7 +333,7 @@ public sealed class ObjectMethodExecutor
         // If we need to pass the method call result through a coercer function to get an
         // awaitable, then do so.
         var coercedMethodCall = coercedAwaitableInfo.RequiresCoercion
-            ? Expression.Invoke(coercedAwaitableInfo.CoercerExpression, methodCall)
+            ? Expression.Invoke(coercedAwaitableInfo.CoercerExpression!, methodCall)
             : (Expression)methodCall;
 
         // return new ObjectMethodExecutorAwaitable(

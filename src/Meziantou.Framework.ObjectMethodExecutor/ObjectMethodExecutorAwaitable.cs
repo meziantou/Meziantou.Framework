@@ -7,7 +7,7 @@ public readonly struct ObjectMethodExecutorAwaitable
     private readonly object _customAwaitable;
     private readonly Func<object, object> _getAwaiterMethod;
     private readonly Func<object, bool> _isCompletedMethod;
-    private readonly Func<object, object> _getResultMethod;
+    private readonly Func<object, object?> _getResultMethod;
     private readonly Action<object, Action> _onCompletedMethod;
     private readonly Action<object, Action> _unsafeOnCompletedMethod;
 
@@ -33,7 +33,7 @@ public readonly struct ObjectMethodExecutorAwaitable
         object customAwaitable,
         Func<object, object> getAwaiterMethod,
         Func<object, bool> isCompletedMethod,
-        Func<object, object> getResultMethod,
+        Func<object, object?> getResultMethod,
         Action<object, Action> onCompletedMethod,
         Action<object, Action> unsafeOnCompletedMethod)
     {
@@ -56,14 +56,14 @@ public readonly struct ObjectMethodExecutorAwaitable
     {
         private readonly object _customAwaiter;
         private readonly Func<object, bool> _isCompletedMethod;
-        private readonly Func<object, object> _getResultMethod;
+        private readonly Func<object, object?> _getResultMethod;
         private readonly Action<object, Action> _onCompletedMethod;
         private readonly Action<object, Action> _unsafeOnCompletedMethod;
 
         public Awaiter(
             object customAwaiter,
             Func<object, bool> isCompletedMethod,
-            Func<object, object> getResultMethod,
+            Func<object, object?> getResultMethod,
             Action<object, Action> onCompletedMethod,
             Action<object, Action> unsafeOnCompletedMethod)
         {
@@ -76,7 +76,7 @@ public readonly struct ObjectMethodExecutorAwaitable
 
         public bool IsCompleted => _isCompletedMethod(_customAwaiter);
 
-        public object GetResult() => _getResultMethod(_customAwaiter);
+        public object? GetResult() => _getResultMethod(_customAwaiter);
 
         public void OnCompleted(Action continuation)
         {

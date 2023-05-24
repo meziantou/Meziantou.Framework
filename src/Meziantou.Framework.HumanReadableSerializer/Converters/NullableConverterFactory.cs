@@ -9,8 +9,8 @@ internal sealed class NullableConverterFactory : HumanReadableConverterFactory
 
     public override HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options)
     {
-        var underlyingType = Nullable.GetUnderlyingType(typeToConvert);
-        return (HumanReadableConverter)Activator.CreateInstance(typeof(NullableConverter<>).MakeGenericType(underlyingType));
+        var underlyingType = Nullable.GetUnderlyingType(typeToConvert)!;
+        return (HumanReadableConverter)Activator.CreateInstance(typeof(NullableConverter<>).MakeGenericType(underlyingType))!;
     }
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]

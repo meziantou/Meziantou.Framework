@@ -8,12 +8,12 @@ public partial class StronglyTypedIdSourceGenerator
 {
     private static readonly XNode[] InheritDocComment = new XNode[] { new XElement("inheritdoc") };
 
-    private static XNode XmlSeeCref(string type) => new XElement("see", new XAttribute("cref", type));
-    private static XNode XmlSummary(params object[] description) => new XElement("summary", description);
-    private static XNode XmlReturn(params object[] description) => new XElement("return", description);
-    private static XNode XmlParam(string name, params object[] description) => new XElement("param", new XAttribute("name", name), description);
-    private static XNode XmlParamRef(string name) => new XElement("paramref", new XAttribute("name", name));
-    private static XNode XmlSeeLangword(string name) => new XElement("see", new XAttribute("langword", name));
+    private static XElement XmlSeeCref(string type) => new("see", new XAttribute("cref", type));
+    private static XElement XmlSummary(params object[] description) => new("summary", description);
+    private static XElement XmlReturn(params object[] description) => new("return", description);
+    private static XElement XmlParam(string name, params object[] description) => new("param", new XAttribute("name", name), description);
+    private static XElement XmlParamRef(string name) => new("paramref", new XAttribute("name", name));
+    private static XElement XmlSeeLangword(string name) => new("see", new XAttribute("langword", name));
 
     private static void GenerateTypeMembers(CSharpGeneratedFileWriter writer, AttributeInfo context)
     {

@@ -59,7 +59,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left.AssemblyName, source.Right.Left.SupportNullableReferenceTypes, source.Right.Right));
     }
 
-    private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, string assemblyName, bool supportNullableReferenceTypes, ImmutableArray<AdditionalText> files)
+    private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, string? assemblyName, bool supportNullableReferenceTypes, ImmutableArray<AdditionalText> files)
     {
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
         var resxGroups = files

@@ -1,20 +1,23 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Diagnostics;
+using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class HttpHeadersConverter : HumanReadableConverter<HttpHeaders>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, HttpHeaders value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, HttpHeaders? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         writer.StartObject();
         foreach (var header in value)
         {
             writer.WritePropertyName(header.Key);
 
             var valueCount = header.Value.Count();
-            if (valueCount < 2)
+            if (valueCount == 1)
             {
-                writer.WriteValue(header.Value.FirstOrDefault());
+                writer.WriteValue(header.Value.First());
             }
             else
             {

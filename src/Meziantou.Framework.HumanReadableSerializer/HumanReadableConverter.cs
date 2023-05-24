@@ -10,14 +10,15 @@ public abstract class HumanReadableConverter
 
     public abstract void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options);
 
-    internal static HumanReadableConverter CreateFromAttribute(HumanReadableConverterAttribute converterAttribute, Type typeToConvert)
+    [return: NotNullIfNotNull(nameof(converterAttribute))]
+    internal static HumanReadableConverter? CreateFromAttribute(HumanReadableConverterAttribute? converterAttribute, Type typeToConvert)
     {
         HumanReadableConverter? converter = null;
         if (converterAttribute != null)
         {
             converterAttribute.EnsureTypeIsValid();
 
-            converter = (HumanReadableConverter)Activator.CreateInstance(converterAttribute.ConverterType);
+            converter = (HumanReadableConverter)Activator.CreateInstance(converterAttribute.ConverterType)!;
             if (!converter.HandleNull)
                 converter = new NullConverterWrapper(converter);
 

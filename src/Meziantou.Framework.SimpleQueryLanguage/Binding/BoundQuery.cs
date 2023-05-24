@@ -29,14 +29,14 @@ public abstract class BoundQuery
         };
     }
 
-    private static BoundQuery CreateTextExpression(TextQuerySyntax node)
+    private static BoundTextQuery CreateTextExpression(TextQuerySyntax node)
     {
         Debug.Assert(node.TextToken.Value is not null);
 
         return new BoundTextQuery(isNegated: false, node.TextToken.Value);
     }
 
-    private static BoundQuery CreateKeyValueExpression(KeyValueQuerySyntax node)
+    private static BoundKeyValueQuery CreateKeyValueExpression(KeyValueQuerySyntax node)
     {
         Debug.Assert(node.KeyToken.Value is not null);
         Debug.Assert(node.ValueToken.Value is not null);
@@ -58,17 +58,17 @@ public abstract class BoundQuery
         return new BoundKeyValueQuery(isNegated: false, key, value, op);
     }
 
-    private static BoundQuery CreateOrExpression(OrQuerySyntax node)
+    private static BoundOrQuery CreateOrExpression(OrQuerySyntax node)
     {
         return new BoundOrQuery(CreateInternal(node.Left), CreateInternal(node.Right));
     }
 
-    private static BoundQuery CreateAndExpression(AndQuerySyntax node)
+    private static BoundAndQuery CreateAndExpression(AndQuerySyntax node)
     {
         return new BoundAndQuery(CreateInternal(node.Left), CreateInternal(node.Right));
     }
 
-    private static BoundQuery CreateNegatedExpression(NegatedQuerySyntax node)
+    private static BoundNegatedQuery CreateNegatedExpression(NegatedQuerySyntax node)
     {
         return new BoundNegatedQuery(CreateInternal(node.Query));
     }
@@ -143,12 +143,12 @@ public abstract class BoundQuery
         };
     }
 
-    private static BoundQuery NegateKevValueQuery(BoundKeyValueQuery node)
+    private static BoundKeyValueQuery NegateKevValueQuery(BoundKeyValueQuery node)
     {
         return new BoundKeyValueQuery(!node.IsNegated, node.Key, node.Value, node.Operator);
     }
 
-    private static BoundQuery NegateTextQuery(BoundTextQuery node)
+    private static BoundTextQuery NegateTextQuery(BoundTextQuery node)
     {
         return new BoundTextQuery(!node.IsNegated, node.Text);
     }
@@ -158,17 +158,17 @@ public abstract class BoundQuery
         return node.Query;
     }
 
-    private static BoundQuery NegateAndQuery(BoundAndQuery node)
+    private static BoundOrQuery NegateAndQuery(BoundAndQuery node)
     {
         return new BoundOrQuery(Negate(node.Left), Negate(node.Right));
     }
 
-    private static BoundQuery NegateOrQuery(BoundOrQuery node)
+    private static BoundAndQuery NegateOrQuery(BoundOrQuery node)
     {
         return new BoundAndQuery(Negate(node.Left), Negate(node.Right));
     }
 
-    private static IReadOnlyList<IReadOnlyList<BoundQuery>> Flatten(BoundQuery node)
+    private static IReadOnlyList<BoundQuery>[] Flatten(BoundQuery node)
     {
         var disjunctions = new List<IReadOnlyList<BoundQuery>>();
         var conjunctions = new List<BoundQuery>();
@@ -186,7 +186,7 @@ public abstract class BoundQuery
         return disjunctions.ToArray();
     }
 
-    private static IEnumerable<BoundQuery> FlattenAnds(BoundQuery node)
+    private static List<BoundQuery> FlattenAnds(BoundQuery node)
     {
         var stack = new Stack<BoundQuery>();
         var result = new List<BoundQuery>();
@@ -209,7 +209,7 @@ public abstract class BoundQuery
         return result;
     }
 
-    private static IEnumerable<BoundQuery> FlattenOrs(BoundQuery node)
+    private static List<BoundQuery> FlattenOrs(BoundQuery node)
     {
         var stack = new Stack<BoundQuery>();
         var result = new List<BoundQuery>();

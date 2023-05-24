@@ -28,7 +28,7 @@ public sealed class JobIoRateLimits
     /// <para>The NT device name for the volume to which you want to apply the policy for the I/O rate. For information about NT device names, see <a href="https://docs.microsoft.com/windows-hardware/drivers/kernel/nt-device-names">NT Device Names</a>. If this member is <b>NULL</b>, the policy for the I/O rate applies to all of the volumes for the operating system. For example, if this member is <b>NULL</b> and the <b>MaxIops</b> member is 100, the maximum limit for the I/O rate for each volume is set to 100 IOPS, instead of setting an aggregate limit for the I/O rate across all volumes of 100 IOPS.</para>
     /// <para><see href="https://docs.microsoft.com/windows/win32/api//jobapi2/ns-jobapi2-jobobject_io_rate_control_information#members">Read more on docs.microsoft.com</see>.</para>
     /// </summary>
-    public string VolumeName { get; set; }
+    public string? VolumeName { get; set; }
 
     /// <summary>
     /// <para>The base size of the normalized I/O unit, in bytes.  For example, if the <c>BaseIoSize</c> member is 8,000, every 8,000 bytes counts as one I/O unit. 4,000 bytes is also one I/O unit in this example, while 8,001 bytes is two I/O units. You  can set the value of this base I/O size by using the <c>StorageBaseIOSize</c> value of the <c>HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\QoS</c> registry key. The value of the <c>BaseIoSize</c> member is subject to the following constraints: </para>

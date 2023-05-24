@@ -7,22 +7,32 @@ namespace Meziantou.Framework.HumanReadable;
 public sealed record HumanReadableSerializerOptions
 {
     // Cache
-    private readonly ConcurrentDictionary<Type, HumanReadableConverter> _converters = new();
-    private readonly ConcurrentDictionary<Type, List<HumanReadableMemberInfo>> _memberInfos = new();
+    private readonly ConcurrentDictionary<Type, HumanReadableConverter> _convertersCache;
+    private readonly ConcurrentDictionary<Type, List<HumanReadableMemberInfo>> _memberInfosCache;
 
-    private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes = new();
-    private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes = new();
+    private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes;
+    private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes;
     private bool _includeFields;
     private HumanReadableIgnoreCondition _defaultIgnoreCondition;
 
     public HumanReadableSerializerOptions()
     {
+        _memberAttributes = new();
+        _typeAttributes = new();
+        _memberInfosCache = new();
+        _convertersCache = new();
+
         Converters = new ConverterList(this);
     }
 
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private HumanReadableSerializerOptions(HumanReadableSerializerOptions? options)
     {
+        _memberAttributes = new();
+        _typeAttributes = new();
+        _memberInfosCache = new();
+        _convertersCache = new();
+
         Converters = new ConverterList(this);
         if (options != null)
         {
@@ -103,6 +113,8 @@ public sealed record HumanReadableSerializerOptions
     }
 
     private static void AddValue<TKey, TValue>(Dictionary<TKey, List<TValue>> dict, TKey key, TValue value)
+        where TKey : notnull
+        where TValue: notnull
     {
         if (!dict.TryGetValue(key, out var list))
         {
@@ -161,9 +173,9 @@ public sealed record HumanReadableSerializerOptions
         MakeReadOnly();
 
 #if NETSTANDARD2_0 || NET471
-        return _converters.GetOrAdd(type, type => FindConverter(type, Converters));
+        return _convertersCache.GetOrAdd(type, type => FindConverter(type, Converters));
 #else
-        return _converters.GetOrAdd(type, FindConverter, Converters);
+        return _convertersCache.GetOrAdd(type, FindConverter, Converters);
 #endif
 
         static HumanReadableConverter WrapConverter(HumanReadableConverter converter)
@@ -225,9 +237,9 @@ public sealed record HumanReadableSerializerOptions
     internal List<HumanReadableMemberInfo> GetMembers(Type type)
     {
 #if NET6_0_OR_GREATER
-        return _memberInfos.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
+        return _memberInfosCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
 #else
-        return _memberInfos.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
+        return _memberInfosCache.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
 #endif
     }
 

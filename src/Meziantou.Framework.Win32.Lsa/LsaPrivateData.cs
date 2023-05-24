@@ -17,8 +17,7 @@ public static class LsaPrivateData
 
     public static unsafe void SetValue(string key, string? value)
     {
-        if (key is null)
-            throw new ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
 
         if (key.Length == 0)
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));
@@ -57,8 +56,7 @@ public static class LsaPrivateData
 
     public static unsafe string? GetValue(string key)
     {
-        if (key is null)
-            throw new ArgumentNullException(nameof(key));
+        ArgumentNullException.ThrowIfNull(key);
 
         if (key.Length == 0)
             throw new ArgumentException($"{nameof(key)} must not be empty", nameof(key));

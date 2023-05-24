@@ -184,4 +184,20 @@ public class CircularBufferTests
         list.AddLast(1);
         list.Should().Equal(new[] { 1 });
     }
+
+    [Fact]
+    public void RemoveFirst_Class()
+    {
+        var list = new CircularBuffer<object>(3);
+        list.AddLast(new object());
+        Assert.NotNull(list.RemoveFirst());
+    }
+
+    [Fact]
+    public void RemoveLast_Class()
+    {
+        var list = new CircularBuffer<object>(3);
+        list.AddLast(new object());
+        Assert.NotNull(list.RemoveLast());
+    }
 }

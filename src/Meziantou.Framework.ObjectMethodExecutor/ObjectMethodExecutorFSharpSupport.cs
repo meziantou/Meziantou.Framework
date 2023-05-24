@@ -14,17 +14,17 @@ namespace Meziantou.Framework;
 /// </remarks>
 internal static class ObjectMethodExecutorFSharpSupport
 {
-    private static readonly object FsharpValuesCacheLock = new object();
-    private static Assembly s_fsharpCoreAssembly;
-    private static MethodInfo s_fsharpAsyncStartAsTaskGenericMethod;
-    private static PropertyInfo s_fsharpOptionOfTaskCreationOptionsNoneProperty;
-    private static PropertyInfo s_fsharpOptionOfCancellationTokenNoneProperty;
+    private static readonly object FsharpValuesCacheLock = new();
+    private static Assembly? s_fsharpCoreAssembly;
+    private static MethodInfo? s_fsharpAsyncStartAsTaskGenericMethod;
+    private static PropertyInfo? s_fsharpOptionOfTaskCreationOptionsNoneProperty;
+    private static PropertyInfo? s_fsharpOptionOfCancellationTokenNoneProperty;
 
     [UnconditionalSuppressMessage("Trimmer", "IL2060", Justification = "Reflecting over the async FSharpAsync<> contract.")]
     public static bool TryBuildCoercerFromFSharpAsyncToAwaitable(
         Type possibleFSharpAsyncType,
-        out Expression coerceToAwaitableExpression,
-        out Type awaitableType)
+        [NotNullWhen(true)]out Expression? coerceToAwaitableExpression,
+        [NotNullWhen(true)] out Type? awaitableType)
     {
         var methodReturnGenericType = possibleFSharpAsyncType.IsGenericType
             ? possibleFSharpAsyncType.GetGenericTypeDefinition()
@@ -47,7 +47,7 @@ internal static class ObjectMethodExecutorFSharpSupport
         //         FSharpOption<TaskCreationOptions>.None,
         //         FSharpOption<CancellationToken>.None);
         // };
-        var startAsTaskClosedMethod = s_fsharpAsyncStartAsTaskGenericMethod
+        var startAsTaskClosedMethod = s_fsharpAsyncStartAsTaskGenericMethod!
             .MakeGenericMethod(awaiterResultType);
         var coerceToAwaitableParam = Expression.Parameter(typeof(object));
         coerceToAwaitableExpression = Expression.Lambda(
@@ -55,17 +55,20 @@ internal static class ObjectMethodExecutorFSharpSupport
                 Expression.Call(
                     startAsTaskClosedMethod,
                     Expression.Convert(coerceToAwaitableParam, possibleFSharpAsyncType),
-                    Expression.MakeMemberAccess(expression: null, s_fsharpOptionOfTaskCreationOptionsNoneProperty),
-                    Expression.MakeMemberAccess(expression: null, s_fsharpOptionOfCancellationTokenNoneProperty)),
+                    Expression.MakeMemberAccess(expression: null, s_fsharpOptionOfTaskCreationOptionsNoneProperty!),
+                    Expression.MakeMemberAccess(expression: null, s_fsharpOptionOfCancellationTokenNoneProperty!)),
                 typeof(object)),
             coerceToAwaitableParam);
 
         return true;
     }
 
-    private static bool IsFSharpAsyncOpenGenericType(Type possibleFSharpAsyncGenericType)
+    private static bool IsFSharpAsyncOpenGenericType(Type? possibleFSharpAsyncGenericType)
     {
-        var typeFullName = possibleFSharpAsyncGenericType?.FullName;
+        if (possibleFSharpAsyncGenericType == null)
+            return false;
+
+        var typeFullName = possibleFSharpAsyncGenericType.FullName;
         if (typeFullName != "Microsoft.FSharp.Control.FSharpAsync`1")
             return false;
 

@@ -108,8 +108,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 
     protected override void QueueTask(Task task)
     {
-        if (task is null)
-            throw new ArgumentNullException(nameof(task));
+        ArgumentNullException.ThrowIfNull(task);
 
         _tasks.Enqueue(task);
         _dequeue.Set();

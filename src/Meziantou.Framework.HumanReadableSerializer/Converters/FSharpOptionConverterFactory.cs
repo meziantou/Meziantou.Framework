@@ -16,7 +16,7 @@ internal sealed class FSharpOptionConverterFactory : HumanReadableConverterFacto
 
     public override HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options)
     {
-        return (HumanReadableConverter)Activator.CreateInstance(typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, typeToConvert.GenericTypeArguments[0]));
+        return (HumanReadableConverter)Activator.CreateInstance(typeof(FSharpValueOptionConverter<,>).MakeGenericType(typeToConvert, typeToConvert.GenericTypeArguments[0]))!;
     }
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
@@ -27,10 +27,10 @@ internal sealed class FSharpOptionConverterFactory : HumanReadableConverterFacto
 
         public FSharpValueOptionConverter()
         {
-            _valueProperty = typeof(T).GetProperty("Value");
+            _valueProperty = typeof(T).GetProperty("Value")!;
         }
 
-        protected override void WriteValue(HumanReadableTextWriter writer, T value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
             if (value is null)
             {
@@ -38,7 +38,7 @@ internal sealed class FSharpOptionConverterFactory : HumanReadableConverterFacto
             }
             else
             {
-                var propertyValue = (TOption)_valueProperty.GetValue(value);
+                var propertyValue = (TOption?)_valueProperty.GetValue(value);
                 HumanReadableSerializer.Serialize(writer, propertyValue, options);
             }
         }

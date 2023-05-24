@@ -43,7 +43,7 @@ public sealed partial class SerializerTests
         AssertSerialization(obj, options, type: null, expected);
     }
 
-    private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, Type? type, string expected)
+    private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, Type type, string expected)
     {
         var text = type == null ? HumanReadableSerializer.Serialize(obj, options) : HumanReadableSerializer.Serialize(obj, type, options);
         Assert.Equal(expected, text, ignoreLineEndingDifferences: true);
@@ -96,7 +96,7 @@ public sealed partial class SerializerTests
     public void SerializeObject_Null() => AssertSerialization(null, "<null>");
 
     [Fact]
-    public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object?)null }, "Obj: <null>");
+    public void SerializeObject_Null_Nested() => AssertSerialization(new { Obj = (object)null }, "Obj: <null>");
 
     [Fact]
     public void SerializeArray_Empty()
@@ -1381,7 +1381,7 @@ public sealed partial class SerializerTests
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.Never },
             Expected = """
                 Dummy:
@@ -1397,7 +1397,7 @@ public sealed partial class SerializerTests
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull },
             Expected = """
                 Dummy:
@@ -1411,7 +1411,7 @@ public sealed partial class SerializerTests
     {
         AssertSerialization(new Validation
         {
-            Subject = new { Dummy = "", Object = (object?)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
+            Subject = new { Dummy = "", Object = (object)null, NullableInt32 = (int?)null, DefaultStruct = 0 },
             Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault },
             Expected = """
                 Dummy:
@@ -1591,16 +1591,16 @@ public sealed partial class SerializerTests
         public int PropInt32_Null { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingNull)]
-        public object? PropObject { get; set; }
+        public object PropObject { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Never)]
-        public object? PropObject2 { get; set; }
+        public object PropObject2 { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.WhenWritingDefault)]
-        public object? PropObject3 { get; set; }
+        public object PropObject3 { get; set; }
 
         [HumanReadableIgnore(Condition = HumanReadableIgnoreCondition.Always)]
-        public object? PropObject4 { get; set; }
+        public object PropObject4 { get; set; }
     }
 
     private sealed class OrderedMember

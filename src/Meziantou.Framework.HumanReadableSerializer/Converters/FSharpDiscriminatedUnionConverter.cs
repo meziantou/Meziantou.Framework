@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.HumanReadable.Utils;
+﻿using System.Diagnostics;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -12,13 +13,15 @@ internal sealed class FSharpDiscriminatedUnionConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         var type = value.GetType();
         var info = FSharpUtils.Get(type)!;
         var unionCase = info.GetUnionCase(type, value)!;
 
         writer.StartObject();
         writer.WritePropertyName("Tag");
-        writer.WriteValue(unionCase.Name);
+        writer.WriteValue(unionCase.Name ?? "");
 
         foreach (var field in unionCase.GetFields())
         {

@@ -9,8 +9,8 @@ public class HtmlEmailOutput : Output
     private readonly HtmlEncoder _htmlEncoder;
     private readonly UrlEncoder _urlEncoder;
 
-    private readonly IDictionary<string, string> _sections = new Dictionary<string, string>(StringComparer.Ordinal);
-    private readonly IList<HtmlEmailSection> _currentSections = new List<HtmlEmailSection>();
+    private readonly Dictionary<string, string> _sections = new(StringComparer.Ordinal);
+    private readonly List<HtmlEmailSection> _currentSections = new();
 
     public IList<string> ContentIdentifiers { get; } = new List<string>();
 
@@ -77,8 +77,7 @@ public class HtmlEmailOutput : Output
 
     public virtual void WriteContentIdentifier(string cid)
     {
-        if (cid is null)
-            throw new ArgumentNullException(nameof(cid));
+        ArgumentNullException.ThrowIfNull(cid);
 
         ContentIdentifiers.Add(cid);
         Write("cid:");

@@ -510,7 +510,7 @@ public partial class Test : System.IComparable<Test> {}
             result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Select(output => output.Reason).Should().NotContain(IncrementalStepRunReason.Cached);
         }
 
-        GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol>? validate = null)
+        GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol> validate = null)
         {
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
             diagnostics.Should().BeEmpty();

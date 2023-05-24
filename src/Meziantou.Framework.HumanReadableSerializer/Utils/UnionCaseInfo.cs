@@ -13,7 +13,7 @@ internal sealed class UnionCaseInfo
         _inner = inner;
     }
 
-    public string Name
+    public string? Name
     {
         get
         {
@@ -47,6 +47,6 @@ internal sealed class UnionCaseInfo
 
     public PropertyInfo[] GetFields()
     {
-        return (PropertyInfo[])_utils.UnionCaseInfo_GetFieldsMethod.Invoke(_inner, parameters: null);
+        return (PropertyInfo[])_utils.UnionCaseInfo_GetFieldsMethod!.Invoke(_inner, parameters: null)!;
     }
 }

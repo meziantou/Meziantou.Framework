@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WPF;
 
 internal static class EnumLocalizationUtilities
 {
-    private static readonly IDictionary<Type, LocalizedEnumValueCollection> EnumsCache = new Dictionary<Type, LocalizedEnumValueCollection>();
-    private static readonly IDictionary<Expression, object> PropertiesCache = new Dictionary<Expression, object>();
+    private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = new();
+    private static readonly Dictionary<Expression, object> PropertiesCache = new();
 
     public static LocalizedEnumValueCollection GetEnumLocalization<T>()
         where T : struct
@@ -21,7 +21,7 @@ internal static class EnumLocalizationUtilities
         if (EnumsCache.TryGetValue(type, out var value))
             return value;
 
-        IList<LocalizedEnumValue> result = new List<LocalizedEnumValue>();
+        var result = new List<LocalizedEnumValue>();
         var enumValues = type.GetEnumValues();
 
         foreach (Enum? enumValue in enumValues)

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal record struct CallerContext(string FilePath, int LineNumber, int ColumnNumber, string MethodName, string? ParameterName, int ParameterIndex, string? AssemblyLocation)
 {
-    private static readonly ConcurrentDictionary<string, Version> LanguageVersionCache = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Version?> LanguageVersionCache = new(StringComparer.Ordinal);
 
     /// <summary>
     /// Newer Roslyn versions use the format "&lt;callerName&gt;g__functionName|x_y".
@@ -103,7 +103,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         if (settings.AllowedStringFormats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
         {
             // Read the language version from the PDB
-            assemblyLocation = callerFrame.GetMethod().DeclaringType?.Assembly?.Location;
+            assemblyLocation = callerFrame.GetMethod()?.DeclaringType?.Assembly?.Location;
         }
 
         return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);

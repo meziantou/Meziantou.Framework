@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿#nullable enable
+using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory.Tests;
 internal sealed class NullExternalScopeProvider : IExternalScopeProvider

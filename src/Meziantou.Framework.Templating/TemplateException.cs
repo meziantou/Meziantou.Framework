@@ -15,9 +15,4 @@ public class TemplateException : Exception
         : base(message, innerException)
     {
     }
-
-    protected TemplateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
-        : base(info, context)
-    {
-    }
 }

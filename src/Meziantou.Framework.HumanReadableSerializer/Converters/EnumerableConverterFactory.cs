@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.HumanReadable.Utils;
+﻿using System.Diagnostics;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -24,14 +25,16 @@ internal sealed class EnumerableConverterFactory : HumanReadableConverterFactory
 
     public override HumanReadableConverter? CreateConverter(Type typeToConvert, HumanReadableSerializerOptions options)
     {
-        return (HumanReadableConverter)Activator.CreateInstance(typeof(EnumerableConverter<>).MakeGenericType(GetValueType(typeToConvert)));
+        return (HumanReadableConverter)Activator.CreateInstance(typeof(EnumerableConverter<>).MakeGenericType(GetValueType(typeToConvert)!))!;
     }
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class EnumerableConverter<T> : HumanReadableConverter<IEnumerable<T>>
     {
-        protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<T> value, HumanReadableSerializerOptions options)
+        protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<T>? value, HumanReadableSerializerOptions options)
         {
+            Debug.Assert(value != null);
+
             var hasItem = false;
 
             foreach (var item in value)

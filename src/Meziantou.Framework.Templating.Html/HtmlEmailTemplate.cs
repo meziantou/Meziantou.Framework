@@ -20,8 +20,7 @@ public class HtmlEmailTemplate : Template
 
     public virtual string Run(out HtmlEmailMetadata? metadata, IDictionary<string, object?> parameters)
     {
-        if (parameters is null)
-            throw new ArgumentNullException(nameof(parameters));
+        ArgumentNullException.ThrowIfNull(parameters);
 
         using var writer = new StringWriter();
         Run(writer, out metadata, parameters);
@@ -44,10 +43,8 @@ public class HtmlEmailTemplate : Template
 
     public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, IReadOnlyDictionary<string, object?> parameters)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
-        if (parameters is null)
-            throw new ArgumentNullException(nameof(parameters));
+        ArgumentNullException.ThrowIfNull(writer);
+        ArgumentNullException.ThrowIfNull(parameters);
 
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);
@@ -56,8 +53,7 @@ public class HtmlEmailTemplate : Template
 
     public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata, params object?[] parameters)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);
@@ -66,8 +62,7 @@ public class HtmlEmailTemplate : Template
 
     public virtual void Run(TextWriter writer, out HtmlEmailMetadata? metadata)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         var p = CreateMethodParameters(writer, (object[]?)null);
         InvokeRunMethod(p);

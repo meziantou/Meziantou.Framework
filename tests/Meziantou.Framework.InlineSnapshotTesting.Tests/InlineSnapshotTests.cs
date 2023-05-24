@@ -334,6 +334,8 @@ public sealed class InlineSnapshotTests
             return "net6.0";
 #elif NET7_0
             return "net7.0";
+#elif NET8_0
+            return "net8.0";
 #endif
         }
 

@@ -2,7 +2,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public partial class CSharpCodeGenerator
 {
-    private static readonly IDictionary<string, string> PredefinedTypes = new Dictionary<string, string>(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> PredefinedTypes = new(StringComparer.Ordinal)
     {
         [typeof(bool).FullName!] = "bool",
         [typeof(byte).FullName!] = "byte",
@@ -576,7 +576,7 @@ public partial class CSharpCodeGenerator
         WriteGenericParameters(writer, type);
 
         var baseTypes = GetBaseTypes(type);
-        if (baseTypes.Any())
+        if (baseTypes.Count != 0)
         {
             writer.Write(" : ");
             WriteTypeReferences(writer, baseTypes, ", ");
@@ -599,7 +599,7 @@ public partial class CSharpCodeGenerator
         WriteGenericParameters(writer, type);
 
         var baseTypes = GetBaseTypes(type);
-        if (baseTypes.Any())
+        if (baseTypes.Count != 0)
         {
             writer.Write(" : ");
             WriteTypeReferences(writer, baseTypes, ", ");
@@ -668,7 +668,7 @@ public partial class CSharpCodeGenerator
         WriteGenericParameters(writer, type);
 
         var baseTypes = GetBaseTypes(type);
-        if (baseTypes.Any())
+        if (baseTypes.Count != 0)
         {
             writer.Write(" : ");
             WriteTypeReferences(writer, baseTypes, ", ");
@@ -1283,7 +1283,7 @@ public partial class CSharpCodeGenerator
 
     private static void WriteGenericParameters(IndentedTextWriter writer, IParametrableType type)
     {
-        if (type.Parameters.Any())
+        if (type.Parameters.Count != 0)
         {
             writer.Write("<");
             WriteValues(writer, type.Parameters.Select(p => p.Name), ", ");

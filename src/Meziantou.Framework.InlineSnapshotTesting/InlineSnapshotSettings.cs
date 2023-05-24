@@ -30,7 +30,7 @@ public sealed record InlineSnapshotSettings
     public bool ForceUpdateSnapshots { get; set; }
 
     [DoesNotReturn]
-    internal void Assert(string expected, string actual)
+    internal void Assert(string? expected, string? actual)
     {
         var errorMessage = "Snapshots do not match:\n" + ErrorMessageFormatter.FormatMessage(expected, actual);
         throw AssertionExceptionCreator.CreateException(errorMessage);

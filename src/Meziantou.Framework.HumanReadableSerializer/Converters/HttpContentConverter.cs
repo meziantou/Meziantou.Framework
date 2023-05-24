@@ -1,9 +1,13 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+﻿using System.Diagnostics;
+
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, HttpContent value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, HttpContent? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         writer.StartObject();
 
         var hasHeaders = value.Headers.Any();

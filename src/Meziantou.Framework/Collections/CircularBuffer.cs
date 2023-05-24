@@ -115,6 +115,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             throw new InvalidOperationException("The buffer is empty");
 
         ref var item = ref _items[_startIndex];
+        var result = item;
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
         {
             item = default;
@@ -123,7 +124,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         Count--;
         _startIndex = (_startIndex + 1) % Capacity;
         _version++;
-        return item;
+        return result;
     }
 
     public T RemoveLast()
@@ -131,8 +132,9 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         if (Count == 0)
             throw new InvalidOperationException("The buffer is empty");
 
-        var index = (_startIndex + Count) % Capacity;
+        var index = (_startIndex + Count - 1) % Capacity;
         ref var item = ref _items[index];
+        var result = item;
         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
         {
             item = default;
@@ -140,7 +142,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
         Count--;
         _version++;
-        return item;
+        return result;
     }
 
     public T this[int index]

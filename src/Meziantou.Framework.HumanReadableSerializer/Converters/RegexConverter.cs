@@ -1,11 +1,14 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class RegexConverter : HumanReadableConverter<Regex>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, Regex value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, Regex? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         writer.StartObject();
         writer.WritePropertyName("Pattern");
         writer.WriteValue(value.ToString());

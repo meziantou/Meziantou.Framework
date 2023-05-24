@@ -60,7 +60,7 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
         var hashCode = 1707150943;
         hashCode = hashCode * -1521134295 + EntryType.GetHashCode();
         hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Pattern);
-        hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Member);
+        hashCode = hashCode * -1521134295 + (Member is null ? 0 : StringComparer.Ordinal.GetHashCode(Member));
         hashCode = (hashCode * -1521134295) + (Section == null ? 0 : Section.GetHashCode());
         return hashCode;
     }

@@ -6,7 +6,7 @@ public abstract class HumanReadableConverter<T> : HumanReadableConverter
 
     public sealed override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
-        WriteValue(writer, (T)value, options);
+        WriteValue(writer, (T?)value, options);
     }
 
     protected abstract void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options);

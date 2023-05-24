@@ -5,8 +5,8 @@ namespace Meziantou.Framework;
 internal readonly struct CoercedAwaitableInfo
 {
     public AwaitableInfo AwaitableInfo { get; }
-    public Expression CoercerExpression { get; }
-    public Type CoercerResultType { get; }
+    public Expression? CoercerExpression { get; }
+    public Type? CoercerResultType { get; }
     public bool RequiresCoercion => CoercerExpression != null;
 
     public CoercedAwaitableInfo(AwaitableInfo awaitableInfo)
@@ -46,7 +46,7 @@ internal readonly struct CoercedAwaitableInfo
             }
         }
 
-        info = default(CoercedAwaitableInfo);
+        info = default;
         return false;
     }
 }

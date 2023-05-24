@@ -108,17 +108,27 @@ internal static class FileEditor
             var eol = settings.EndOfLine ?? DetectEndOfLine(sourceText);
             var startPosition = invocationExpression.GetLocation().GetMappedLineSpan().StartLinePosition.Character;
 
-            var formattedValue = CSharpStringLiteral.Create(newValue, context.FilterFormats(settings.AllowedStringFormats), indentation, startPosition, eol);
-            var newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue))
-                .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
-                .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
+            LiteralExpressionSyntax newArgumentExpression;
+            if (newValue is null)
+            {
+                newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression);
+            }
+            else
+            {
+                var formattedValue = CSharpStringLiteral.Create(newValue, context.FilterFormats(settings.AllowedStringFormats), indentation, startPosition, eol);
+                newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue));
+            }
+
+            newArgumentExpression = newArgumentExpression
+                    .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
+                    .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
             var newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
 
             // Save the file
             // Create a temp file, show diff if needed, Move or let the tool update the file
             var encoding = settings.FileEncoding ?? sourceText.Encoding ?? DetectEncoding(context) ?? Encoding.UTF8;
 
-            Directory.CreateDirectory(Path.GetDirectoryName(tempPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
             using (var outputStream = File.OpenWrite(tempPath))
             using (var textWriter = new StreamWriter(outputStream, encoding))
             {
@@ -189,7 +199,7 @@ internal static class FileEditor
         return argumentExpression;
     }
 
-    private static ExpressionSyntax? FindSingleArgumentMatchingValue(SeparatedSyntaxList<ArgumentSyntax> arguments, string value)
+    private static ExpressionSyntax? FindSingleArgumentMatchingValue(SeparatedSyntaxList<ArgumentSyntax> arguments, string? value)
     {
         foreach (var argument in arguments)
         {

@@ -24,7 +24,7 @@ public class InputGuid<TValue> : InputBase<TValue>
     }
 
     /// <inheritdoc />
-    protected override string FormatValueAsString(TValue value)
+    protected override string FormatValueAsString(TValue? value)
     {
         return value switch
         {

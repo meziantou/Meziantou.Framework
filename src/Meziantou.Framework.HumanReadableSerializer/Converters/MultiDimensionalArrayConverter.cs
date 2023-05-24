@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics;
+using System.Globalization;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -8,6 +9,8 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         var array = (Array)value;
         var index = 0L;
 

@@ -71,10 +71,10 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 "StronglyTypedIdAttribute",
                 predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
                 transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
-            .Where(static m => m is not null)!
+            .Where(static m => m is not null)
             .WithTrackingName("Syntax");
 
-        context.RegisterSourceOutput(types, Execute);
+        context.RegisterSourceOutput(types, (context, attribute) => Execute(context, attribute!));
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
@@ -100,7 +100,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             }
         }
 
-        static AttributeInfo? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+        static object? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
         {
             var semanticModel = ctx.SemanticModel;
             var compilation = semanticModel.Compilation;
@@ -135,8 +135,11 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                     addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
                 }
 
-                var attributeSyntax = attribute.ApplicationSyntaxReference.GetSyntax(cancellationToken);
+                var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
                 var idType = GetIdType(semanticModel.Compilation, type);
+
+                if (idType == IdType.Unknown)
+                    return Diagnostic.Create(UnsupportedType, attributeSyntax.GetLocation(), type.ToDisplayString());
 
                 return new AttributeInfo(semanticModel.Compilation, attributeSyntax, (INamedTypeSymbol)ctx.TargetSymbol, idType, type, converters, addCodeGeneratedAttribute);
             }
@@ -145,15 +148,22 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         }
     }
 
-    private static void Execute(SourceProductionContext context, AttributeInfo attribute)
+    private static void Execute(SourceProductionContext context, object semanticContext)
     {
-        if (attribute.IdType == IdType.Unknown)
+        if(semanticContext is Diagnostic diagnostic)
         {
-            context.ReportDiagnostic(Diagnostic.Create(UnsupportedType, attribute.AttributeSyntax.GetLocation(), attribute.IdType));
+            context.ReportDiagnostic(diagnostic);
             return;
         }
 
+        var attribute = (AttributeInfo)semanticContext;
+
         var writer = new CSharpGeneratedFileWriter();
+
+        // Write debug info
+        writer.WriteLine("// Id Type: " + attribute.IdType);
+        writer.WriteLine("// TypeName: " + attribute.TypeName);
+
         writer.WriteLine("#nullable enable");
 
         var baseTypes = $"global::System.IEquatable<{attribute.TypeName}>";
@@ -345,14 +355,12 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     {
         public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute)
         {
+            Debug.Assert(idType != IdType.Unknown);
+
             AttributeSyntax = attributeSyntax;
             IdType = idType;
             Converters = converters;
             AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
-
-            if (idType == IdType.Unknown)
-                return;
-
             TypeName = typeSymbol.Name;
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
@@ -388,7 +396,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                         IsOpGreaterThanOrEqualDefined = true;
                         break;
 
-                    case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] } method:
+                    case IMethodSymbol { IsStatic: true, Name: "TryParse", ReturnType.SpecialType: SpecialType.System_Boolean, Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] }:
                         IsTryParseDefined_String = true;
                         break;
 
@@ -396,7 +404,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                         IsTryParseDefined_ReadOnlySpan = true;
                         break;
 
-                    case IMethodSymbol { IsStatic: true, Name: "Parse", Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] } method:
+                    case IMethodSymbol { IsStatic: true, Name: "Parse", Parameters: [{ Type.SpecialType: SpecialType.System_String }, ..] }:
                         IsParseDefined_String = true;
                         break;
 

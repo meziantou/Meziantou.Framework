@@ -1,9 +1,13 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+﻿using System.Diagnostics;
+
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class StringConverter : HumanReadableConverter<string>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, string value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
+        Debug.Assert(value != null);
+
         writer.WriteValue(value);
     }
 }

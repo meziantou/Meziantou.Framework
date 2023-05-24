@@ -38,7 +38,7 @@ public static class SensitiveData
 public sealed unsafe class SensitiveData<T> : IDisposable
     where T : unmanaged
 {
-    private NativeMemorySafeHandle _data;
+    private NativeMemorySafeHandle? _data;
 
     /// <summary>
     /// Creates a new <see cref="SensitiveData{T}"/> from the provided contents.
@@ -129,6 +129,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         }
     }
 
+    [MemberNotNull(nameof(_data))]
     private void ThrowIfDisposed()
     {
 #if NET7_0_OR_GREATER

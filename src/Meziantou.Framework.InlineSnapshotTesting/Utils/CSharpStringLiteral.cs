@@ -4,8 +4,11 @@ using Meziantou.Framework.HumanReadable.Utils;
 namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 internal static class CSharpStringLiteral
 {
-    public static string Create(string value, CSharpStringFormats formats, string indentationString, int startPosition, string eol)
+    public static string Create(string? value, CSharpStringFormats formats, string indentationString, int startPosition, string eol)
     {
+        if (value is null)
+            return "null";
+
         var isMultiline = IsMultiline(value);
 
         if (formats.HasFlag(CSharpStringFormats.Quoted) && !isMultiline && !HasQuotedStringEscapableCharacters(value))

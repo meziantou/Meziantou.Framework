@@ -14,6 +14,8 @@ internal sealed class TaskDialogPrompt : Prompt
     private const string UriScheme = "meziantou-inlinesnapshot";
     private const string FriendlyName = "Meziantou.Framework.InlineSnapshot";
 
+    private static readonly PromptResult Default = new(PromptConfigurationMode.MergeTool, TimeSpan.Zero, PromptConfigurationScope.CurrentSnapshot);
+
     public bool MustRegisterUriScheme { get; set; }
     public bool MustStartNotificationTray { get; set; } = true;
     public bool MustShowDialog { get; set; }
@@ -50,7 +52,7 @@ internal sealed class TaskDialogPrompt : Prompt
     public override PromptResult Ask(PromptContext context)
     {
         if (!MustShowDialog)
-            return new PromptResult(PromptConfigurationMode.MergeTool, TimeSpan.Zero, PromptConfigurationScope.CurrentSnapshot);
+            return Default;
 
         var path = GetExePath(PromptExeFileNameWithoutExtension);
         var psi = new ProcessStartInfo
@@ -67,7 +69,7 @@ internal sealed class TaskDialogPrompt : Prompt
             throw new InvalidOperationException("An exception occurred while running " + psi.FileName);
 
         var json = process.StandardOutput.ReadToEnd();
-        return JsonSerializer.Deserialize<PromptResult>(json);
+        return JsonSerializer.Deserialize<PromptResult>(json) ?? Default;
     }
 
     private static string? GetExePath(string fileName)
@@ -91,7 +93,7 @@ internal sealed class TaskDialogPrompt : Prompt
             var pathFromRoot = Path.Combine("src", Path.GetFileNameWithoutExtension(fileName), "bin", configuration, "net6.0-windows", fileName);
             if (dllLocation != null)
             {
-                var root = FindParentDirectoryByName(Path.GetDirectoryName(exeLocation), "Meziantou.Framework");
+                var root = FindParentDirectoryByName(Path.GetDirectoryName(exeLocation)!, "Meziantou.Framework");
                 if (root != null)
                 {
                     exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));

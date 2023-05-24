@@ -121,6 +121,6 @@ internal sealed class HumanReadableMemberInfo
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private static class DefaultProvider<T>
     {
-        public static T Value => default;
+        public static T? Value => default;
     }
 }

@@ -139,7 +139,14 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 var idType = GetIdType(semanticModel.Compilation, type);
 
                 if (idType == IdType.Unknown)
-                    return Diagnostic.Create(UnsupportedType, attributeSyntax.GetLocation(), type.ToDisplayString());
+                {
+                    return new DiagnosticInfo()
+                    {
+                        Descriptor = UnsupportedType,
+                        Location = attributeSyntax.GetLocation(),
+                        MessageArgs = new[] { type.ToDisplayString() },
+                    };
+                }
 
                 return new AttributeInfo(semanticModel.Compilation, attributeSyntax, (INamedTypeSymbol)ctx.TargetSymbol, idType, type, converters, addCodeGeneratedAttribute);
             }
@@ -150,9 +157,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
     private static void Execute(SourceProductionContext context, object semanticContext)
     {
-        if(semanticContext is Diagnostic diagnostic)
+        if (semanticContext is DiagnosticInfo diagnostic)
         {
-            context.ReportDiagnostic(diagnostic);
+            context.ReportDiagnostic(diagnostic.CreateDiagnostic());
             return;
         }
 
@@ -284,7 +291,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             writer.WriteLine();
         }
 
-        if(xmlDocumentation != null)
+        if (xmlDocumentation != null)
         {
             writer.WriteXmlComment(xmlDocumentation);
         }
@@ -816,5 +823,45 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
     private sealed record PartialTypeContext(string Keyword, string? Namespace, string Name)
     {
         public PartialTypeContext? Parent { get; set; }
+    }
+
+    /// <summary>
+    /// Descriptor for diagnostic instances using structural equality comparison.
+    /// Provides a work-around for https://github.com/dotnet/roslyn/issues/68291.
+    /// </summary>
+    private readonly struct DiagnosticInfo : IEquatable<DiagnosticInfo>
+    {
+        public DiagnosticDescriptor Descriptor { get; init; }
+        public object?[] MessageArgs { get; init; }
+        public Location? Location { get; init; }
+
+        public Diagnostic CreateDiagnostic()
+            => Diagnostic.Create(Descriptor, Location, MessageArgs);
+
+        public override readonly bool Equals(object? obj) => obj is DiagnosticInfo info && Equals(info);
+        public readonly bool Equals(DiagnosticInfo other)
+        {
+            return Descriptor.Equals(other.Descriptor) &&
+                MessageArgs.SequenceEqual(other.MessageArgs) &&
+                Location == other.Location;
+        }
+
+        public override readonly int GetHashCode()
+        {
+            var hashCode = Descriptor.GetHashCode();
+            foreach (var messageArg in MessageArgs)
+            {
+                hashCode = Combine(hashCode, messageArg?.GetHashCode() ?? 0);
+            }
+
+            hashCode = Combine(hashCode, Location?.GetHashCode() ?? 0);
+            return hashCode;
+        }
+
+        private static int Combine(int h1, int h2)
+        {
+            var rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
+            return ((int)rol5 + h1) ^ h2;
+        }
     }
 }

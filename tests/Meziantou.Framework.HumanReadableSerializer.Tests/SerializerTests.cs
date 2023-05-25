@@ -1109,7 +1109,7 @@ public sealed partial class SerializerTests
 
     [Fact]
     public void MediaTypeHeaderValue() => AssertSerialization(new MediaTypeHeaderValue("application/json"), "application/json");
-    
+
     [Fact]
     public void MediaTypeHeaderValue_WithParameters() => AssertSerialization(new MediaTypeHeaderValue("application/json") { Parameters = { new NameValueHeaderValue("foo", "bar") } }, "application/json; foo=bar");
 
@@ -1133,7 +1133,7 @@ public sealed partial class SerializerTests
             Expect: 100-continue
             """);
     }
-    
+
     [Fact]
     public void HttpRequestHeaders_Empty()
     {
@@ -1203,6 +1203,28 @@ public sealed partial class SerializerTests
             Headers:
               Content-Type: application/json; charset=utf-8
             Content: {"a":10}
+            """);
+    }
+
+    [Theory]
+    [InlineData("text/plain")]
+    [InlineData("text/html")]
+    [InlineData("application/javascript")]
+    [InlineData("dummy/custom+xml")]
+    public void HttpContent_TextFromContentType(string contentType)
+    {
+        using var message = new ByteArrayContent(Encoding.UTF8.GetBytes("test"))
+        {
+            Headers =
+            {
+                ContentType = new MediaTypeHeaderValue(contentType),
+            },
+        };
+
+        AssertSerialization(message, $$"""
+            Headers:
+              Content-Type: {{contentType}}
+            Content: test
             """);
     }
 

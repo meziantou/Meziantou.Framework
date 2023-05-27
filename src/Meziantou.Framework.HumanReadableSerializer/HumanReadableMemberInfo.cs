@@ -1,10 +1,13 @@
-﻿using System.Reflection;
+﻿using System.Collections;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace Meziantou.Framework.HumanReadable;
 
+[DebuggerDisplay("{DebuggerDisplay}")]
 internal sealed class HumanReadableMemberInfo
 {
-    public HumanReadableMemberInfo(Type memberType, Func<object, object?> getValue, HumanReadableIgnoreCondition ignoreCondition, string propertyName, HumanReadableConverter? converter, int order, object? defaultValue)
+    public HumanReadableMemberInfo(Type memberType, Func<object, object?> getValue, HumanReadableIgnoreCondition ignoreCondition, string propertyName, HumanReadableConverter? converter, int? order, object? defaultValue)
     {
         MemberType = memberType;
         GetValue = getValue;
@@ -20,10 +23,18 @@ internal sealed class HumanReadableMemberInfo
     public HumanReadableIgnoreCondition IgnoreCondition { get; }
     public string Name { get; }
     public HumanReadableConverter? Converter { get; }
-    public int Order { get; }
+    public int? Order { get; }
     public object? DefaultValue { get; }
 
-    public static List<HumanReadableMemberInfo> Get(Type type, HumanReadableSerializerOptions options)
+    private string DebuggerDisplay
+    {
+        get
+        {
+            return $"{Name} ({MemberType.FullName})";
+        }
+    }
+
+    public static HumanReadableMemberInfo[] Get(Type type, HumanReadableSerializerOptions options)
     {
         var members = new List<HumanReadableMemberInfo>();
 
@@ -41,8 +52,14 @@ internal sealed class HumanReadableMemberInfo
                 members.Add(data);
         }
 
-        members.Sort((a, b) => a.Order.CompareTo(b.Order));
-        return members;
+        members.Sort((a, b) => (a.Order, b.Order) switch
+        {
+            (not null, null) => -1,
+            (null, not null) => 1,
+            ({ } order1, { } order2) => order1.CompareTo(order2),
+            _ => options.PropertyOrder == null ? 0 : options.PropertyOrder.Compare(a.Name, b.Name),
+        });
+        return members.ToArray();
     }
 
     public static HumanReadableMemberInfo? Get(PropertyInfo member, HumanReadableSerializerOptions options)
@@ -54,14 +71,23 @@ internal sealed class HumanReadableMemberInfo
         if (!hasInclude && !(member.GetGetMethod()?.IsPublic ?? false))
             return null;
 
+        if (!options.IncludeObsoleteMembers)
+        {
+            var obsoleteAttribute = member.GetCustomAttribute<ObsoleteAttribute>();
+            if (obsoleteAttribute != null)
+                return null;
+        }
+
         var ignore = options.GetCustomAttribute<HumanReadableIgnoreAttribute>(member)?.Condition ?? options.DefaultIgnoreCondition;
         if (ignore == HumanReadableIgnoreCondition.Always)
             return null;
 
         var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
-        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order ?? 0;
+        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
         var converter = GetConverter(member, member.PropertyType, options);
-        var defaultValue = GetDefaultValue(ignore, member.PropertyType);
+
+        var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
+        var defaultValue = defaultValueAttribute != null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignore, member.PropertyType);
         return new HumanReadableMemberInfo(member.PropertyType, member.GetValue, ignore, propertyName, converter, order, defaultValue);
     }
 
@@ -76,7 +102,7 @@ internal sealed class HumanReadableMemberInfo
             return null;
 
         var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
-        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order ?? 0;
+        var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
         var converter = GetConverter(member, member.FieldType, options);
         var defaultValue = GetDefaultValue(ignore, member.FieldType);
         return new HumanReadableMemberInfo(member.FieldType, member.GetValue, ignore, propertyName, converter, order, defaultValue);
@@ -93,7 +119,7 @@ internal sealed class HumanReadableMemberInfo
 
     private static object? GetDefaultValue(HumanReadableIgnoreCondition ignoreCondition, Type type)
     {
-        if (ignoreCondition != HumanReadableIgnoreCondition.WhenWritingDefault)
+        if (ignoreCondition is not HumanReadableIgnoreCondition.WhenWritingDefault and not HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection)
             return null;
 
         if (type.IsValueType)
@@ -114,8 +140,31 @@ internal sealed class HumanReadableMemberInfo
         {
             HumanReadableIgnoreCondition.WhenWritingDefault => Equals(memberValue, DefaultValue),
             HumanReadableIgnoreCondition.WhenWritingNull => memberValue == null,
+            HumanReadableIgnoreCondition.WhenWritingEmptyCollection => IsEmptyCollection(memberValue),
+            HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection => Equals(memberValue, DefaultValue) || IsEmptyCollection(memberValue),
             _ => false,
         };
+
+        static bool IsEmptyCollection(object? value)
+        {
+            if (value is IEnumerable enumerable)
+            {
+                var enumerator = enumerable.GetEnumerator();
+                try
+                {
+                    return !enumerator.MoveNext();
+                }
+                finally
+                {
+                    if (enumerator is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+            }
+
+            return false;
+        }
     }
 
     [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]

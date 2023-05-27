@@ -1,4 +1,6 @@
 ﻿using System.Collections.ObjectModel;
+using System.Net;
+using System.Net.Http.Headers;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Xunit;
 
@@ -120,26 +122,19 @@ public sealed class SnapshotSerializerTests
     }
 
     [Fact]
-    public void Readable()
+    public void HumanReadable()
     {
         InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(new Sample()), Settings, """
-            Int32: 42
-            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
-            NullableDateTimeOffset: <null>
             DateTimeOffset_NonZero: 2000-01-01T01:01:01+02:00
             DateTimeOffset_Zero: 2000-01-01T01:01:01+00:00
-            NullableDateTime: <null>
             DateTime_Unspecified: 2000-01-01T01:01:01
             DateTime_Utc: 2000-01-01T01:01:01Z
-            FlagsEnum_NotDefined: 35
-            FlagsEnum: ReadWrite, Delete
-            Enum_NotDefined: 100
+            EmptyArray: []
             Enum: Tuesday
-            IReadOnlyDictionary:
-              - Key: 1
-                Value: 2
-              - Key: 3
-                Value: 4
+            Enum_NotDefined: 100
+            FlagsEnum: ReadWrite, Delete
+            FlagsEnum_NotDefined: 35
+            Guid: 4871547b-835b-4c06-ab0e-10931af0cd8d
             IDictionary:
               - Key: 1
                 Value: 2
@@ -148,27 +143,29 @@ public sealed class SnapshotSerializerTests
             IEnumerableInt32:
               - 0
               - 1
-            NullArray: <null>
-            EmptyArray: []
+            IReadOnlyDictionary:
+              - Key: 1
+                Value: 2
+              - Key: 3
+                Value: 4
+            Int32: 42
             Int32Array:
               - 1
               - 2
               - 3
               - 4
               - 5
-            NullableInt32_NotNull: 42
-            NullableInt32: <null>
-            Guid: 4871547b-835b-4c06-ab0e-10931af0cd8d
             NestedObject:
-              StringValueStartingWithExclamationMark: !1
-              StringValue: Dummy
               MultiLineStringValue:
                 Line1
                 Line2
                 Line3
-              NullableEnum: <null>
+              StringValue: Dummy
               StringValue1: Constant
               StringValue2: Constant
+              StringValueStartingWithExclamationMark: !1
+            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
+            NullableInt32_NotNull: 42
             """);
 
         InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(null), Settings, "<null>");
@@ -178,6 +175,120 @@ public sealed class SnapshotSerializerTests
             B: 2
             """);
     }
+
+    [Fact]
+    public void HumanReadable_HttpRequestMessage_Method_Uri()
+    {
+        using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com") };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            Method: GET
+            RequestUri: https://example.com/
+            """);
+    }
+    [Fact]
+    public void HumanReadable_HttpRequestMessage_Method_Uri_Version()
+    {
+        using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com"), Version = HttpVersion.Version10 };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            Method: GET
+            RequestUri: https://example.com/
+            Version: 1.0
+            """);
+    }
+    
+    [Fact]
+    public void HumanReadable_HttpRequestMessage_Method_Uri_Headers()
+    {
+        using var message = new HttpRequestMessage()
+        {
+            RequestUri = new Uri("https://example.com"),
+            Headers =
+            {
+                Accept =
+                {
+                    new MediaTypeWithQualityHeaderValue("text/json"),
+                    new MediaTypeWithQualityHeaderValue("text/html"),
+                },
+            },
+        };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            Method: GET
+            RequestUri: https://example.com/
+            Headers:
+              Accept:
+                - text/json
+                - text/html
+            """);
+    }
+    
+    [Fact]
+    public void HumanReadable_HttpRequestMessage_Method_Uri_Content()
+    {
+        using var message = new HttpRequestMessage()
+        {
+            RequestUri = new Uri("https://example.com"),
+            Content = new StringContent("foo"),
+        };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            Method: GET
+            RequestUri: https://example.com/
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Content: foo
+            """);
+    }
+
+    [Fact]
+    public void HumanReadable_HttpResponseMessage()
+    {
+        using var message = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.OK,
+            Headers =
+            {
+                ETag = new EntityTagHeaderValue("\"dummy\""),
+            },
+            Content = new ByteArrayContent(Array.Empty<byte>()),
+        };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            StatusCode: 200 (OK)
+            Headers:
+              ETag: "dummy"
+            Content:
+            """);
+    }
+
+#if NET5_0_OR_GREATER
+    [Fact]
+    public void HumanReadable_HttpResponseMessage_TrailingHeaders()
+    {
+        using var message = new HttpResponseMessage()
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent("foo"),
+            Headers =
+            {
+                ETag = new EntityTagHeaderValue("\"dummy\""),
+            },
+            TrailingHeaders =
+            {
+                ETag = new EntityTagHeaderValue("\"dummy\""),
+            },
+        };
+        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.Instance.Serialize(message), Settings, """
+            StatusCode: 200 (OK)
+            Headers:
+              ETag: "dummy"
+            TrailingHeaders:
+              ETag: "dummy"
+            Content:
+              Headers:
+                Content-Type: text/plain; charset=utf-8
+              Content: foo
+            """);
+    }
+#endif
 
     private sealed class Sample
     {

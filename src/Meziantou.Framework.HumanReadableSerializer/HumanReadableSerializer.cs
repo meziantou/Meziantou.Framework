@@ -23,13 +23,13 @@ public static class HumanReadableSerializer
         return writer.ToString();
     }
 
-    internal static void Serialize(HumanReadableTextWriter writer, object? value, Type type, HumanReadableSerializerOptions options)
+    public static void Serialize(HumanReadableTextWriter writer, object? value, Type type, HumanReadableSerializerOptions options)
     {
         var converter = options.GetConverter(type);
         converter.WriteValue(writer, value, options);
     }
 
-    internal static void Serialize<T>(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
+    public static void Serialize<T>(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
     {
         Serialize(writer, value, value?.GetType() ?? typeof(T), options);
     }

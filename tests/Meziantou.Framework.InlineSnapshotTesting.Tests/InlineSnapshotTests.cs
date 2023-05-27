@@ -37,6 +37,22 @@ public sealed class InlineSnapshotTests
     }
 
     [Fact]
+    public async Task UpdateSnapshotSupportIfDirective()
+    {
+        await AssertSnapshot(preprocessorSymbols: new[] { "SampleDirective" },
+            source: $$"""
+            #if SampleDirective
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "" /* after */);
+            #endif
+            """,
+            expected: $$"""
+            #if SampleDirective
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "{}" /* after */);
+            #endif
+            """);
+    }
+
+    [Fact]
     public async Task UpdateSnapshotWhenExpectedIsNull()
     {
         await AssertSnapshot($$"""
@@ -212,7 +228,7 @@ public sealed class InlineSnapshotTests
     }
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot(string source, string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null)
+    private async Task AssertSnapshot(string source, string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -223,6 +239,7 @@ public sealed class InlineSnapshotTests
                 <LangVersion>{{languageVersion}}</LangVersion>
                 <Nullable>disable</Nullable>
                 <DebugType>portable</DebugType>
+                <DefineConstants>{{string.Join(";", preprocessorSymbols ?? Array.Empty<string>())}}</DefineConstants>
               </PropertyGroup>
               <ItemGroup>
                 <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />

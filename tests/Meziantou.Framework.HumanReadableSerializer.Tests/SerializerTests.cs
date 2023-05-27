@@ -1163,6 +1163,24 @@ public sealed partial class SerializerTests
     }
 
     [Fact]
+    public void HttpResponseHeaders_Sorted()
+    {
+        using var message = new HttpResponseMessage();
+        message.Headers.ETag = new EntityTagHeaderValue("\"dummy\"");
+        message.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromSeconds(1));
+        message.Headers.AcceptRanges.Add("1-2");
+        message.Headers.AcceptRanges.Add("3-4");
+
+        AssertSerialization(message.Headers, new HumanReadableSerializerOptions { PropertyOrder = StringComparer.Ordinal }, """
+            Accept-Ranges:
+              - 1-2
+              - 3-4
+            ETag: "dummy"
+            Retry-After: 1
+            """);
+    }
+
+    [Fact]
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope")]
     public void HttpContent_MultiPartContent()
     {
@@ -1332,7 +1350,6 @@ public sealed partial class SerializerTests
                 RequestUri: /sample
                 Headers:
                   Accept: text/plain
-                Properties: {}
                 Options: {}
                 """,
         });
@@ -1591,6 +1608,121 @@ public sealed partial class SerializerTests
             Subject = new ClassWithCustomConverter(),
             Expected = """
                 dummy
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreDefaultValueWithCustomDefaultValue()
+    {
+        var obj = new { A = 1, B = 2 };
+
+        var options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault };
+        options.AddAttribute(obj.GetType(), "A", new HumanReadableDefaultValueAttribute(1));
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = options,
+            Expected = """
+                B: 2
+                """,
+        });
+    }    
+
+    [Fact]
+    public void WhenWritingEmptyCollection_EmptyEnumerable()
+    {
+        var obj = new { A = Enumerable.Empty<int>(), B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingEmptyCollection },
+            Expected = """
+                B: 2
+                """,
+        });
+    }
+
+    [Fact]
+    public void WhenWritingEmptyCollection_Null()
+    {
+        var obj = new { A = (string[])null, B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingEmptyCollection },
+            Expected = """
+                A: <null>
+                B: 2
+                """,
+        });
+    }
+    
+    [Fact]
+    public void WhenWritingEmptyCollection_NonEmpty()
+    {
+        var obj = new { A = new string[] { "a", "b" }, B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingEmptyCollection },
+            Expected = """
+                A:
+                  - a
+                  - b
+                B: 2
+                """,
+        });
+    }
+    
+    [Fact]
+    public void WhenWritingDefaultOrEmptyCollection_EmptyEnumerable()
+    {
+        var obj = new { A = Enumerable.Empty<int>(), B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection },
+            Expected = """
+                B: 2
+                """,
+        });
+    }
+
+    [Fact]
+    public void WhenWritingDefaultOrEmptyCollection_Null()
+    {
+        var obj = new { A = (string[])null, B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection },
+            Expected = """
+                B: 2
+                """,
+        });
+    }
+    
+    [Fact]
+    public void WhenWritingDefaultOrEmptyCollection_NonEmpty()
+    {
+        var obj = new { A = new string[] { "a", "b" }, B = 2 };
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = new HumanReadableSerializerOptions { DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection },
+            Expected = """
+                A:
+                  - a
+                  - b
+                B: 2
                 """,
         });
     }

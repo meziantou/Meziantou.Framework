@@ -8,12 +8,14 @@ public sealed record HumanReadableSerializerOptions
 {
     // Cache
     private readonly ConcurrentDictionary<Type, HumanReadableConverter> _convertersCache;
-    private readonly ConcurrentDictionary<Type, List<HumanReadableMemberInfo>> _memberInfosCache;
+    private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfosCache;
 
     private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes;
     private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes;
     private bool _includeFields;
     private HumanReadableIgnoreCondition _defaultIgnoreCondition;
+    private IComparer<string>? _propertyOrder;
+    private bool _includeObsoleteMembers;
 
     public HumanReadableSerializerOptions()
     {
@@ -62,12 +64,33 @@ public sealed record HumanReadableSerializerOptions
     public bool ShowInvisibleCharactersInValues { get; set; }
     public IList<HumanReadableConverter> Converters { get; }
 
+    public IComparer<string>? PropertyOrder
+    {
+        get => _propertyOrder;
+        set
+        {
+            VerifyMutable();
+            _propertyOrder = value;
+        }
+    }
+
     public bool IncludeFields
     {
-        get => _includeFields; set
+        get => _includeFields;
+        set
         {
             VerifyMutable();
             _includeFields = value;
+        }
+    }
+
+    public bool IncludeObsoleteMembers
+    {
+        get => _includeObsoleteMembers;
+        set
+        {
+            VerifyMutable();
+            _includeObsoleteMembers = value;
         }
     }
 
@@ -114,7 +137,7 @@ public sealed record HumanReadableSerializerOptions
 
     private static void AddValue<TKey, TValue>(Dictionary<TKey, List<TValue>> dict, TKey key, TValue value)
         where TKey : notnull
-        where TValue: notnull
+        where TValue : notnull
     {
         if (!dict.TryGetValue(key, out var list))
         {
@@ -142,8 +165,10 @@ public sealed record HumanReadableSerializerOptions
         MakeReadOnly();
         if (_typeAttributes.TryGetValue(type, out var attributes))
         {
-            foreach (var attribute in attributes)
+            // Read reverse, so attributes set by the user override the default attributes
+            for (var i = attributes.Count - 1; i >= 0; i--)
             {
+                var attribute = attributes[i];
                 if (attribute is T result)
                     return result;
             }
@@ -157,8 +182,10 @@ public sealed record HumanReadableSerializerOptions
         MakeReadOnly();
         if (_memberAttributes.TryGetValue(member, out var attributes))
         {
-            foreach (var attribute in attributes)
+            // Read reverse, so attributes set by the user override the default attributes
+            for (var i = attributes.Count - 1; i >= 0; i--)
             {
+                var attribute = attributes[i];
                 if (attribute is T result)
                     return result;
             }
@@ -234,7 +261,7 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
-    internal List<HumanReadableMemberInfo> GetMembers(Type type)
+    internal HumanReadableMemberInfo[] GetMembers(Type type)
     {
 #if NET6_0_OR_GREATER
         return _memberInfosCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
@@ -276,6 +303,7 @@ public sealed record HumanReadableSerializerOptions
             new HttpContentConverter(),
             new HttpMethodConverter(),
             new HttpHeadersConverter(),
+            new HttpStatusCodeConverter(),
             new Int16Converter(),
             new Int32Converter(),
             new Int64Converter(),

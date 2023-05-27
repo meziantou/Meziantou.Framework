@@ -109,6 +109,59 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         return new CallerContext(filePath, lineNumber, column, methodName, parameterName, parameterIndex, assemblyLocation);
     }
 
+    public readonly string[]? GetCompilationDefines()
+    {
+        try
+        {
+            using var stream = File.OpenRead(AssemblyLocation);
+            using var reader = new PEReader(stream);
+            if (!reader.TryOpenAssociatedPortablePdb(AssemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider == null)
+                return null;
+
+            using (metadataReaderProvider)
+            {
+                var metadataReader = metadataReaderProvider.GetMetadataReader();
+                foreach (var handle in metadataReader.GetCustomDebugInformation(EntityHandle.ModuleDefinition))
+                {
+                    var customDebugInformation = metadataReader.GetCustomDebugInformation(handle);
+                    var compilationOptionsGuid = new Guid("B5FEEC05-8CD0-4A83-96DA-466284BB4BD8");
+                    if (metadataReader.GetGuid(customDebugInformation.Kind) == compilationOptionsGuid)
+                    {
+                        var blobReader = metadataReader.GetBlobReader(customDebugInformation.Value);
+
+                        // Compiler flag bytes are UTF-8 null-terminated key-value pairs
+                        var nullIndex = blobReader.IndexOf(0);
+                        while (nullIndex >= 0)
+                        {
+                            var key = blobReader.ReadUTF8(nullIndex);
+
+                            // Skip the null terminator
+                            blobReader.ReadByte();
+
+                            nullIndex = blobReader.IndexOf(0);
+                            var value = blobReader.ReadUTF8(nullIndex);
+
+                            // Skip the null terminator
+                            blobReader.ReadByte();
+
+                            nullIndex = blobReader.IndexOf(0);
+
+                            if (key == "define")
+                            {
+                                return value.Split(',');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
     public readonly CSharpStringFormats FilterFormats(CSharpStringFormats formats)
     {
         if (AssemblyLocation == null || !formats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))

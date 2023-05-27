@@ -39,7 +39,7 @@ internal static class FileEditor
     private static SourceText GetSourceText(InlineSnapshotSettings settings, string tempPath)
     {
         using var fs = File.OpenRead(tempPath);
-        using var stream = fs.CanRead ? fs : CopyToMemoryStream(fs);
+        using var stream = fs.CanSeek ? fs : CopyToMemoryStream(fs);
         return SourceText.From(stream, settings.FileEncoding);
 
         static Stream CopyToMemoryStream(Stream stream)
@@ -68,16 +68,19 @@ internal static class FileEditor
                 throw new InlineSnapshotException("The previous merged cannot be resolved. Restart the tests to update this snapshot.");
 
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs"));
+            var preprocessorSymbols = context.GetCompilationDefines();
 
             var options = new CSharpParseOptions();
             var sourceText = GetSourceText(settings, File.Exists(tempPath) ? tempPath : context.FilePath);
-            var tree = CSharpSyntaxTree.ParseText(sourceText);
+            var tree = CSharpSyntaxTree.ParseText(sourceText, new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols));
             var root = tree.GetRoot();
 
             var actualLine = GetActualLine(context.FilePath, context.LineNumber);
             var span = sourceText.Lines[actualLine - 1].Span;
             if (context.ColumnNumber > 0)
+            {
                 span = new TextSpan(span.Start + context.ColumnNumber, 1);
+            }
 
             var nodes = root.DescendantNodesAndSelf(span)
                 .OfType<InvocationExpressionSyntax>()

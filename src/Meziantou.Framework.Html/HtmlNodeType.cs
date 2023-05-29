@@ -1,7 +1,11 @@
-#nullable disable
 namespace Meziantou.Framework.Html;
 
-public enum HtmlNodeType
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlNodeType
 {
     Attribute,
     Comment,

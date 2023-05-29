@@ -7,7 +7,12 @@ using System.Xml.XPath;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlNodeNavigator : XPathNavigator
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlNodeNavigator : XPathNavigator
 {
     private readonly NameTable _nameTable = new();
     private HtmlNode _currentNode;

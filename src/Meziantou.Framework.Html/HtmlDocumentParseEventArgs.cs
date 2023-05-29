@@ -4,7 +4,12 @@ using System.Text;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlDocumentParseEventArgs : CancelEventArgs
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlDocumentParseEventArgs : CancelEventArgs
 {
     public HtmlDocumentParseEventArgs(HtmlReader reader)
     {

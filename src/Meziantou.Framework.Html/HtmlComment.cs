@@ -5,7 +5,12 @@ using System.Xml;
 namespace Meziantou.Framework.Html;
 
 [DebuggerDisplay("'{Value}'")]
-public sealed class HtmlComment : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlComment : HtmlNode
 {
     private string _value;
 

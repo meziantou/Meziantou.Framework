@@ -4,7 +4,12 @@ using System.Xml;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlAttribute : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlAttribute : HtmlNode
 {
     private char _quoteChar;
     private char _nameQuoteChar;
@@ -208,11 +213,11 @@ public sealed class HtmlAttribute : HtmlNode
         return QuoteChar;
     }
 
-    public void WriteContentToWhenUndefinedQuoteChar(TextWriter writer)
+    private void WriteContentToWhenUndefinedQuoteChar(TextWriter writer)
     {
         var eqc = EscapeQuoteChar;
         var s = GetValue();
-        if (string.IsNullOrWhiteSpace(s) || s.IndexOf('"', StringComparison.Ordinal) < 0)
+        if (string.IsNullOrWhiteSpace(s) || !s.Contains('"', StringComparison.Ordinal))
         {
             writer.Write('"');
             writer.Write(s);

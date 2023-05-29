@@ -1,9 +1,12 @@
-#nullable disable
-
 namespace Meziantou.Framework.Html;
 
 // NOTE: keep in sync with HtmlFragmentType
-public enum HtmlParserState
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlParserState
 {
     Text,
     TagOpen,     // <

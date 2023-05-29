@@ -7,11 +7,12 @@ namespace Meziantou.Framework.HumanReadable;
 [DebuggerDisplay("{DebuggerDisplay}")]
 internal sealed class HumanReadableMemberInfo
 {
-    public HumanReadableMemberInfo(Type memberType, Func<object, object?> getValue, HumanReadableIgnoreCondition ignoreCondition, string propertyName, HumanReadableConverter? converter, int? order, object? defaultValue)
+    public HumanReadableMemberInfo(Type memberType, Func<object, object?> getValue, HumanReadableIgnoreCondition ignoreCondition, Func<object?, bool> customIgnoreCondition, string propertyName, HumanReadableConverter? converter, int? order, object? defaultValue)
     {
         MemberType = memberType;
         GetValue = getValue;
         IgnoreCondition = ignoreCondition;
+        CustomIgnoreCondition = customIgnoreCondition;
         Name = propertyName;
         Converter = converter;
         Order = order;
@@ -21,6 +22,7 @@ internal sealed class HumanReadableMemberInfo
     public Type MemberType { get; }
     public Func<object, object?> GetValue { get; }
     public HumanReadableIgnoreCondition IgnoreCondition { get; }
+    public Func<object?, bool> CustomIgnoreCondition { get; }
     public string Name { get; }
     public HumanReadableConverter? Converter { get; }
     public int? Order { get; }
@@ -78,7 +80,8 @@ internal sealed class HumanReadableMemberInfo
                 return null;
         }
 
-        var ignore = options.GetCustomAttribute<HumanReadableIgnoreAttribute>(member)?.Condition ?? options.DefaultIgnoreCondition;
+        var ignoreAttribute = options.GetCustomAttribute<HumanReadableIgnoreAttribute>(member);
+        var ignore = ignoreAttribute?.Condition ?? options.DefaultIgnoreCondition;
         if (ignore == HumanReadableIgnoreCondition.Always)
             return null;
 
@@ -88,7 +91,7 @@ internal sealed class HumanReadableMemberInfo
 
         var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
         var defaultValue = defaultValueAttribute != null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignore, member.PropertyType);
-        return new HumanReadableMemberInfo(member.PropertyType, member.GetValue, ignore, propertyName, converter, order, defaultValue);
+        return new HumanReadableMemberInfo(member.PropertyType, member.GetValue, ignore, ignoreAttribute?.CustomCondition, propertyName, converter, order, defaultValue);
     }
 
     public static HumanReadableMemberInfo? Get(FieldInfo member, HumanReadableSerializerOptions options)
@@ -97,15 +100,16 @@ internal sealed class HumanReadableMemberInfo
         if (!hasInclude && !(member.IsPublic && options.IncludeFields))
             return null;
 
-        var ignore = options.GetCustomAttribute<HumanReadableIgnoreAttribute>(member)?.Condition ?? options.DefaultIgnoreCondition;
-        if (ignore == HumanReadableIgnoreCondition.Always)
+        var ignoreAttribute = options.GetCustomAttribute<HumanReadableIgnoreAttribute>(member);
+        var ignoreCondition = ignoreAttribute?.Condition ?? options.DefaultIgnoreCondition;
+        if (ignoreCondition == HumanReadableIgnoreCondition.Always)
             return null;
 
         var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
         var order = options.GetCustomAttribute<HumanReadablePropertyOrderAttribute>(member)?.Order;
         var converter = GetConverter(member, member.FieldType, options);
-        var defaultValue = GetDefaultValue(ignore, member.FieldType);
-        return new HumanReadableMemberInfo(member.FieldType, member.GetValue, ignore, propertyName, converter, order, defaultValue);
+        var defaultValue = GetDefaultValue(ignoreCondition, member.FieldType);
+        return new HumanReadableMemberInfo(member.FieldType, member.GetValue, ignoreCondition, ignoreAttribute?.CustomCondition, propertyName, converter, order, defaultValue);
     }
 
     private static HumanReadableConverter? GetConverter(MemberInfo member, Type memberType, HumanReadableSerializerOptions options)
@@ -142,6 +146,7 @@ internal sealed class HumanReadableMemberInfo
             HumanReadableIgnoreCondition.WhenWritingNull => memberValue == null,
             HumanReadableIgnoreCondition.WhenWritingEmptyCollection => IsEmptyCollection(memberValue),
             HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection => Equals(memberValue, DefaultValue) || IsEmptyCollection(memberValue),
+            HumanReadableIgnoreCondition.Custom when CustomIgnoreCondition != null =>  CustomIgnoreCondition(memberValue),
             _ => false,
         };
 

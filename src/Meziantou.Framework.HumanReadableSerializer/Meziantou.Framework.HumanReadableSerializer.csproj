@@ -6,18 +6,25 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Description>One-way serializer to a human readable format</Description>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
+    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net471'">
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
+    <PackageReference Include="System.Text.Json" Version="7.0.2" />
     <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs" />
   </ItemGroup>
 
 </Project>

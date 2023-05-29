@@ -7,7 +7,12 @@ using System.Xml;
 namespace Meziantou.Framework.Html;
 
 [DebuggerDisplay("{Name}")]
-public sealed class HtmlDocument : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlDocument : HtmlNode
 {
     private HtmlOptions _options = new();
     private string _filePath;

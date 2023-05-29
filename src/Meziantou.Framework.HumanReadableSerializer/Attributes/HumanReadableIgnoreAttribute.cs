@@ -10,6 +10,11 @@ public sealed class HumanReadableIgnoreAttribute : HumanReadableAttribute
     public HumanReadableIgnoreCondition Condition { get; set; } = HumanReadableIgnoreCondition.Always;
 
     /// <summary>
+    /// Use when <see cref="Condition" /> is <see cref="HumanReadableIgnoreCondition.Custom"/>
+    /// </summary>
+    public Func<object?, bool>? CustomCondition { get; set; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="HumanReadableIgnoreAttribute"/>.
     /// </summary>
     public HumanReadableIgnoreAttribute() { }

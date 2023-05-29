@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
 using Meziantou.Framework.HumanReadable.Converters;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable;
 
@@ -12,6 +13,7 @@ public sealed record HumanReadableSerializerOptions
 
     private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes;
     private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes;
+    private readonly Dictionary<string, ValueFormatter> _valueFormatters;
     private bool _includeFields;
     private HumanReadableIgnoreCondition _defaultIgnoreCondition;
     private IComparer<string>? _propertyOrder;
@@ -23,6 +25,7 @@ public sealed record HumanReadableSerializerOptions
         _typeAttributes = new();
         _memberInfosCache = new();
         _convertersCache = new();
+        _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
 
         Converters = new ConverterList(this);
     }
@@ -34,6 +37,7 @@ public sealed record HumanReadableSerializerOptions
         _typeAttributes = new();
         _memberInfosCache = new();
         _convertersCache = new();
+        _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
 
         Converters = new ConverterList(this);
         if (options != null)
@@ -55,6 +59,11 @@ public sealed record HumanReadableSerializerOptions
             foreach (var attr in options._memberAttributes)
             {
                 _memberAttributes.Add(attr.Key, attr.Value);
+            }
+
+            foreach (var formatter in options._valueFormatters)
+            {
+                _valueFormatters.Add(formatter.Key, formatter.Value);
             }
         }
     }
@@ -104,6 +113,12 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    public void AddFormatter(string name, ValueFormatter formatter)
+    {
+        VerifyMutable();
+        _valueFormatters[name] = formatter;
+    }
+
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -113,6 +128,13 @@ public sealed record HumanReadableSerializerOptions
     public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
     {
         VerifyMutable();
+
+#if !NET7_0_OR_GREATER
+        // .NET 6 and earlier versions, the GetProperties method does not return properties in a particular order, such as alphabetical or declaration order.
+        // Type.GetMember can change this order. To make sure the order is "always" the same, let's first list all properties.
+        type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+#endif
+
         var members = type.GetMember(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         if (members.Length == 0)
             throw new ArgumentException($"Cannot find an instance member named '{memberName}' in type '{type.AssemblyQualifiedName}'.", nameof(memberName));
@@ -270,6 +292,16 @@ public sealed record HumanReadableSerializerOptions
 #endif
     }
 
+    internal string FormatValue(string? format, string? value)
+    {
+        MakeReadOnly();
+
+        if (format != null && value != null && _valueFormatters.TryGetValue(format, out var formatter))
+            return formatter.Format(value);
+
+        return value ?? "";
+    }
+
     internal void VerifyMutable()
     {
         if (IsReadOnly)
@@ -311,6 +343,7 @@ public sealed record HumanReadableSerializerOptions
             new Int128Converter(),
 #endif
             new IntPtrConverter(),
+            new IPAddressConverter(),
             new GuidConverter(),
             new MediaTypeHeaderValueConverter(),
             new RegexConverter(),
@@ -334,13 +367,14 @@ public sealed record HumanReadableSerializerOptions
             new XmlNodeConverter(),
             new XObjectConverter(),
             new EnumConverter(),
-#if NETCOREAPP3_0_OR_GREATER
             new JsonNodeConverter(),
             new JsonDocumentConverter(),
             new JsonElementConverter(),
-#endif
 #if NETCOREAPP2_0_OR_GREATER || NET471_OR_GREATER
             new ValueTupleConverter(),
+#endif
+#if NETCOREAPP2_1_OR_GREATER
+            new UnixDomainSocketEndPointConverter(),
 #endif
 
             // Last converters

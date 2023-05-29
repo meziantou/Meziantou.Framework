@@ -6,7 +6,12 @@ using System.Xml;
 namespace Meziantou.Framework.Html;
 
 [DebuggerDisplay("'{Value}'")]
-public sealed class HtmlText : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlText : HtmlNode
 {
     private string _value;
     private bool _cData;

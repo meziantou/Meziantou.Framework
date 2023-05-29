@@ -4,22 +4,13 @@ using System.Text;
 namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class StringUtils
 {
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET471
     public static bool Contains(this string str, char value, StringComparison stringComparison)
     {
         if (stringComparison != StringComparison.Ordinal)
             throw new ArgumentOutOfRangeException(nameof(stringComparison));
 
         return str.IndexOf(value) != -1;
-    }
-
-    [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Does not apply")]
-    public static string Replace(this string str, string oldValue, string newValue, StringComparison stringComparison)
-    {
-        if (stringComparison != StringComparison.Ordinal)
-            throw new ArgumentOutOfRangeException(nameof(stringComparison));
-
-        return str.Replace(oldValue, newValue);
     }
 
     public static bool Contains(this ReadOnlySpan<char> span, char c)

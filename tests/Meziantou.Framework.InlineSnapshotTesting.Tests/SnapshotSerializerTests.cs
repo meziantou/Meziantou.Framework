@@ -235,7 +235,7 @@ public sealed class SnapshotSerializerTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-              Content: foo
+              Value: foo
             """);
     }
 
@@ -285,7 +285,7 @@ public sealed class SnapshotSerializerTests
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8
-              Content: foo
+              Value: foo
             """);
     }
 #endif

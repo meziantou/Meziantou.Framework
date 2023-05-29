@@ -5,7 +5,12 @@ using System.Xml;
 namespace Meziantou.Framework.Html;
 
 // this is used only when a XPATH query does not return a node-set, for example "count(//td)" returns a number
-public sealed class HtmlXPathResult : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlXPathResult : HtmlNode
 {
     internal HtmlXPathResult(HtmlDocument ownerDocument, object result)
         : base(string.Empty, "#result", string.Empty, ownerDocument)

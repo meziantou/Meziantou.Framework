@@ -4,7 +4,12 @@ using System.Xml;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlXmlWriter : XmlWriter
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlXmlWriter : XmlWriter
 {
     private WriteState _writeState;
 

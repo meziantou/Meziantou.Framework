@@ -1,6 +1,11 @@
 namespace Meziantou.Framework.Html;
 
-public enum ListSortDirection
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum ListSortDirection
 {
     Ascending,
     Descending,

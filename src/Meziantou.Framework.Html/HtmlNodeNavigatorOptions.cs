@@ -1,9 +1,12 @@
-#nullable disable
-
 namespace Meziantou.Framework.Html;
 
 [Flags]
-public enum HtmlNodeNavigatorOptions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlNodeNavigatorOptions
 {
     None = 0,
     UppercasedNames = 0x1,

@@ -1,7 +1,11 @@
-#nullable disable
 namespace Meziantou.Framework.Html;
 
-public enum HtmlErrorType
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlErrorType
 {
     TagNotClosed,
     TagNotOpened,

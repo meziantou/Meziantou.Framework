@@ -4,7 +4,12 @@ using System.Collections.Specialized;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
 {
     private readonly List<HtmlNode> _list = new();
     private readonly HtmlNode _parent;

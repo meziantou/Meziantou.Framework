@@ -5,7 +5,12 @@ using System.Xml;
 namespace Meziantou.Framework.Html;
 
 [DebuggerDisplay("{Name}")]
-public sealed class HtmlElement : HtmlNode
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlElement : HtmlNode
 {
     private bool? _empty;
     private bool? _dontCloseIfEmpty;

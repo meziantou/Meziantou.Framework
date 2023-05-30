@@ -2,7 +2,12 @@
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlNodeDepthComparer : IComparer<HtmlNode>
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlNodeDepthComparer : IComparer<HtmlNode>
 {
     public ListSortDirection Direction { get; set; }
 

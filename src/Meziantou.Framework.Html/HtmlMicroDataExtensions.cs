@@ -2,7 +2,12 @@
 
 namespace Meziantou.Framework.Html;
 
-public static class HtmlMicroDataExtensions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+static class HtmlMicroDataExtensions
 {
     // https://developers.google.com/structured-data/schema-org?hl=en&rd=1
     //private static readonly Func<string, string> s_schemasOrgParser = (type) =>

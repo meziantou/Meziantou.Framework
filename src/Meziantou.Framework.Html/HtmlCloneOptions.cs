@@ -3,7 +3,12 @@
 namespace Meziantou.Framework.Html;
 
 [Flags]
-public enum HtmlCloneOptions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlCloneOptions
 {
     None = 0x0,
     Deep = 0x1,

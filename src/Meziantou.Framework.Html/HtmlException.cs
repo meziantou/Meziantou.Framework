@@ -1,26 +1,31 @@
-#nullable disable
 using System.Globalization;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlException : Exception
+#if HTML_PUBLIC
+public
+#else
+[SuppressMessage("Design", "CA1064:Exceptions should be public")]
+internal
+#endif
+sealed class HtmlException : Exception
 {
     public HtmlException()
         : base("HTML0001: Html exception")
     {
     }
 
-    public HtmlException(string message)
+    public HtmlException(string? message)
         : base(message)
     {
     }
 
-    public HtmlException(string message, Exception innerException)
+    public HtmlException(string? message, Exception innerException)
         : base(message, innerException)
     {
     }
 
-    public static int GetCode(string message)
+    public static int GetCode(string? message)
     {
         if (message == null)
             return -1;

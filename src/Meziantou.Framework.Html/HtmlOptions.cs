@@ -2,7 +2,12 @@
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlOptions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlOptions
 {
     private readonly Dictionary<string, HtmlElementReadOptions> _readOptions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, HtmlElementWriteOptions> _writeOptions = new(StringComparer.OrdinalIgnoreCase);

@@ -9,6 +9,6 @@ internal sealed class XmlNodeConverter : HumanReadableConverter
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
         var xml = (XmlNode)value!;
-        writer.WriteValue(xml.OuterXml);
+        writer.WriteValue(options.FormatValue("xml", xml.OuterXml));
     }
 }

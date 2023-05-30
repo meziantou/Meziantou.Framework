@@ -4,7 +4,12 @@ using System.Text;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlReader
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlReader
 {
     private readonly StringBuilder _rawValue = new();
     private string _currentElement;

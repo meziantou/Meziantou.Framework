@@ -3,7 +3,12 @@
 namespace Meziantou.Framework.Html;
 
 [Flags]
-public enum HtmlElementReadOptions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlElementReadOptions
 {
     None = 0x0,
     InnerRaw = 0x1,

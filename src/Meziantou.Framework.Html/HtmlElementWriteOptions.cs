@@ -1,9 +1,12 @@
-#nullable disable
-
 namespace Meziantou.Framework.Html;
 
 [Flags]
-public enum HtmlElementWriteOptions
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+enum HtmlElementWriteOptions
 {
     None = 0x0,
     DontCloseIfEmpty = 0x1,

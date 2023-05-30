@@ -34,4 +34,9 @@ public enum HumanReadableIgnoreCondition
     /// If the value implements <see cref="System.Collections.IEnumerable"/> and the collection is empty, or if the value is the default, the property is ignored during serialization.
     /// </summary>
     WhenWritingDefaultOrEmptyCollection,
+
+    /// <summary>
+    /// The ignore logic is provided by <see cref="HumanReadableIgnoreAttribute.CustomCondition" />.
+    /// </summary>
+    Custom,
 }

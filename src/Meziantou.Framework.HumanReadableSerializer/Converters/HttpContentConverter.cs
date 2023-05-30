@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net.Mime;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -10,6 +11,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
         "application/javascript",
         "application/x-ecmascript",
         "application/x-javascript",
+        "application/x-www-form-urlencoded",
         "application/xml",
     };
 
@@ -28,9 +30,8 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
         }
 
         if (hasHeaders || hasMultipleContent)
-        {
-            writer.WritePropertyName("Content");
-        }
+            writer.WritePropertyName("Value");
+
         if (value is IEnumerable<HttpContent> collection)
         {
             options.GetConverter(typeof(IEnumerable<HttpContent>)).WriteValue(writer, collection, options);
@@ -40,6 +41,14 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
             if (CanReadAsString(value))
             {
                 var str = value.ReadAsStringAsync().Result;
+
+                var mediaType = value.Headers.ContentType?.MediaType;
+                if (mediaType != null)
+                {
+                    var format = GetFormat(mediaType);
+                    str = options.FormatValue(format, str);
+                }
+
                 writer.WriteValue(str);
             }
             else
@@ -51,10 +60,38 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
         writer.EndObject();
     }
 
+    private static string? GetFormat(string mediaType)
+    {
+        return mediaType switch
+        {
+            _ when IsJson(mediaType) => "json",
+            _ when IsXml(mediaType) => "xml",
+            _ when IsHtml(mediaType) => "html",
+            _ when IsUrlEncodedForm(mediaType) => "UrlEncodedForm",
+            _ => null,
+        };
+
+        static bool IsHtml(string mediaType) => string.Equals(mediaType, "text/html", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsUrlEncodedForm(string mediaType) => string.Equals(mediaType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsJson(string mediaType) => string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase) || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsXml(string mediaType)
+            => string.Equals(mediaType, "application/xml", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "text/xml", StringComparison.OrdinalIgnoreCase)
+            || mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool CanReadAsString(HttpContent content)
     {
         if (content is StringContent or FormUrlEncodedContent)
             return true;
+
+#if NET5_0_OR_GREATER
+        if (content is System.Net.Http.Json.JsonContent)
+            return true;
+#endif
 
         var charSet = content.Headers.ContentType?.CharSet;
         if (!string.IsNullOrEmpty(charSet))

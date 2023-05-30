@@ -5,6 +5,7 @@
     <Version>2.0.2</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>HTML parser for .NET</Description>
+    <DefineConstants>$(DefineConstants);HTML_PUBLIC</DefineConstants>
   </PropertyGroup>
 
 </Project>

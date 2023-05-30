@@ -1,5 +1,4 @@
-﻿#if NETCOREAPP3_0_OR_GREATER
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -8,7 +7,6 @@ internal sealed class JsonDocumentConverter : HumanReadableConverter<JsonDocumen
     protected override void WriteValue(HumanReadableTextWriter writer, JsonDocument? value, HumanReadableSerializerOptions options)
     {
         var str = JsonSerializer.Serialize(value, JsonElementConverter.IndentedOptions);
-        writer.WriteValue(str);
+        writer.WriteValue(options.FormatValue("json", str));
     }
 }
-#endif

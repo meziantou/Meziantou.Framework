@@ -4,7 +4,12 @@ using System.Globalization;
 
 namespace Meziantou.Framework.Html;
 
-public sealed class HtmlError
+#if HTML_PUBLIC
+public
+#else
+internal
+#endif
+sealed class HtmlError
 {
     public HtmlError(HtmlReaderState state, HtmlErrorType errorType)
     {
@@ -30,6 +35,10 @@ public sealed class HtmlError
 
     public override string ToString()
     {
+#if NET6_0_OR_GREATER
         return string.Create(CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
+#else
+        return FormattableString.Invariant($"{Line}x{Column}x{Offset} {ErrorType}");
+#endif
     }
 }

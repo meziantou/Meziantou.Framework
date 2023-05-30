@@ -4,6 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net471</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
+    <RootNamespace>Meziantou.Framework.HumanReadable.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

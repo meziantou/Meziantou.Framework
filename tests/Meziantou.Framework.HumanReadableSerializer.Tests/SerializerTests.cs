@@ -11,6 +11,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Numerics;
@@ -22,38 +23,8 @@ using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
-
-public sealed partial class SerializerTests
+public sealed partial class SerializerTests : SerializerTestsBase
 {
-    private sealed record Validation
-    {
-        public object Subject { get; init; }
-        public string Expected { get; init; }
-        public Type Type { get; init; }
-        public HumanReadableSerializerOptions Options { get; init; }
-    }
-
-    private static void AssertSerialization(object obj, string expected)
-    {
-        AssertSerialization(obj, options: null, expected);
-    }
-
-    private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, string expected)
-    {
-        AssertSerialization(obj, options, type: null, expected);
-    }
-
-    private static void AssertSerialization(object obj, HumanReadableSerializerOptions options, Type type, string expected)
-    {
-        var text = type == null ? HumanReadableSerializer.Serialize(obj, options) : HumanReadableSerializer.Serialize(obj, type, options);
-        Assert.Equal(expected, text, ignoreLineEndingDifferences: true);
-    }
-
-    private static void AssertSerialization(Validation validation)
-    {
-        AssertSerialization(validation.Subject, validation.Options, validation.Type, validation.Expected);
-    }
-
     [Fact]
     public void FSharp_DiscriminatedUnion_Rectangle()
     {
@@ -1009,7 +980,6 @@ public sealed partial class SerializerTests
         AssertSerialization(document, "<root />");
     }
 
-#if NETCOREAPP3_0_OR_GREATER
     [Fact]
     public void JsonNode()
     {
@@ -1055,7 +1025,6 @@ public sealed partial class SerializerTests
             }
             """);
     }
-#endif
 
     [Fact]
     public void ExpandoObject()
@@ -1113,10 +1082,8 @@ public sealed partial class SerializerTests
     [Fact]
     public void MediaTypeHeaderValue_WithParameters() => AssertSerialization(new MediaTypeHeaderValue("application/json") { Parameters = { new NameValueHeaderValue("foo", "bar") } }, "application/json; foo=bar");
 
-#if NET7_0_OR_GREATER
     [Fact]
-    public void MediaTypeHeaderValue_WithCharSet() => AssertSerialization(new MediaTypeHeaderValue("application/json", "utf-8"), "application/json; charset=utf-8");
-#endif
+    public void MediaTypeHeaderValue_WithCharSet() => AssertSerialization(new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" }, "application/json; charset=utf-8");
 
     [Fact]
     public void HttpRequestHeaders()
@@ -1192,13 +1159,13 @@ public sealed partial class SerializerTests
         AssertSerialization(message, """
             Headers:
               Content-Type: multipart/mixed; boundary="23f7d466-b54f-4db9-9a4b-8d26ea978125"
-            Content:
+            Value:
               - Headers:
                   Content-Type: text/plain; charset=utf-8
-                Content: a
+                Value: a
               - Headers:
                   Content-Type: text/plain; charset=utf-8
-                Content: b
+                Value: b
             """);
     }
 
@@ -1209,7 +1176,7 @@ public sealed partial class SerializerTests
         AssertSerialization(message, """
             Headers:
               Content-Type: text/plain; charset=utf-8
-            Content: dummy
+            Value: dummy
             """);
     }
 
@@ -1220,7 +1187,7 @@ public sealed partial class SerializerTests
         AssertSerialization(message, """
             Headers:
               Content-Type: application/json; charset=utf-8
-            Content: {"a":10}
+            Value: {"a":10}
             """);
     }
 
@@ -1242,7 +1209,7 @@ public sealed partial class SerializerTests
         AssertSerialization(message, $$"""
             Headers:
               Content-Type: {{contentType}}
-            Content: test
+            Value: test
             """);
     }
 
@@ -1268,7 +1235,7 @@ public sealed partial class SerializerTests
         AssertSerialization(message, """
             Headers:
               Expires: Fri, 03 Feb 2023 04:05:06 GMT
-            Content: AQIDBAUGBwgJ
+            Value: AQIDBAUGBwgJ
             """);
     }
 
@@ -1318,6 +1285,64 @@ public sealed partial class SerializerTests
             2023-01-02T03:04:05 UTC (+00)
             """);
     }
+    
+    [Fact]
+    public void DnsEndPoint()
+    {
+        var value = new DnsEndPoint("example.com", 80, System.Net.Sockets.AddressFamily.InterNetwork);
+
+        AssertSerialization(value, """
+            Host: example.com
+            AddressFamily: InterNetwork
+            Port: 80
+            """);
+    }
+    
+    [Fact]
+    public void DnsEndPoint2()
+    {
+        var value = new DnsEndPoint("example.com", 80, System.Net.Sockets.AddressFamily.InterNetworkV6);
+
+        AssertSerialization(value, """
+            Host: example.com
+            AddressFamily: InterNetworkV6
+            Port: 80
+            """);
+    }
+    
+    [Fact]
+    public void IPEndPoint()
+    {
+        var value = new IPEndPoint(System.Net.IPAddress.Parse("1.2.3.4"), 80);
+
+        AssertSerialization(value, """
+            AddressFamily: InterNetwork
+            Address: 1.2.3.4
+            Port: 80
+            """);
+    }
+
+#if NET6_0_OR_GREATER
+    [Fact]
+    public void UnixDomainSocketEndPoint()
+    {
+        var value = new System.Net.Sockets.UnixDomainSocketEndPoint("/var/run/dummy.sock");
+
+        AssertSerialization(value, """
+            /var/run/dummy.sock
+            """);
+    }
+#endif
+
+    [Fact]
+    public void IPAddress()
+    {
+        var value = System.Net.IPAddress.Parse("1.2.3.4");
+
+        AssertSerialization(value, """
+            1.2.3.4
+            """);
+    }
 
 #if NET6_0_OR_GREATER
     [Fact]
@@ -1345,7 +1370,7 @@ public sealed partial class SerializerTests
                 Content:
                   Headers:
                     Content-Type: text/plain; charset=utf-8
-                  Content: dummy
+                  Value: dummy
                 Method: POST
                 RequestUri: /sample
                 Headers:
@@ -1628,7 +1653,7 @@ public sealed partial class SerializerTests
                 B: 2
                 """,
         });
-    }    
+    }
 
     [Fact]
     public void WhenWritingEmptyCollection_EmptyEnumerable()
@@ -1660,7 +1685,7 @@ public sealed partial class SerializerTests
                 """,
         });
     }
-    
+
     [Fact]
     public void WhenWritingEmptyCollection_NonEmpty()
     {
@@ -1678,7 +1703,7 @@ public sealed partial class SerializerTests
                 """,
         });
     }
-    
+
     [Fact]
     public void WhenWritingDefaultOrEmptyCollection_EmptyEnumerable()
     {
@@ -1708,7 +1733,7 @@ public sealed partial class SerializerTests
                 """,
         });
     }
-    
+
     [Fact]
     public void WhenWritingDefaultOrEmptyCollection_NonEmpty()
     {

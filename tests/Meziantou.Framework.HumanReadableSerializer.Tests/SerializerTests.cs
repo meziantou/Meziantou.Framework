@@ -872,6 +872,20 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void ReadOnlyMemoryByte() => AssertSerialization((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 }.AsMemory(), "AQID");
 
     [Fact]
+    public void MemoryInt() => AssertSerialization(new int[] { 1, 2, 3 }.AsMemory(), """
+        - 1
+        - 2
+        - 3
+        """);
+
+    [Fact]
+    public void ReadOnlyMemoryInt() => AssertSerialization((ReadOnlyMemory<int>)new int[] { 1, 2, 3 }.AsMemory(), """
+        - 1
+        - 2
+        - 3
+        """);
+
+    [Fact]
     public void MemoryChar() => AssertSerialization(new char[] { 't', 'e', 's', 't' }.AsMemory(), "test");
 
     [Fact]

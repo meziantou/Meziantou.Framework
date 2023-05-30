@@ -11,4 +11,3 @@ internal sealed class ByteArrayConverter : HumanReadableConverter<byte[]>
         writer.WriteValue(Convert.ToBase64String(value));
     }
 }
-

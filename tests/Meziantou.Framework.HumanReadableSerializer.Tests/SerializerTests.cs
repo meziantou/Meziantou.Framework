@@ -866,6 +866,26 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void ByteArray() => AssertSerialization(new byte[] { 1, 2, 3 }, "AQID");
 
     [Fact]
+    public void MemoryByte() => AssertSerialization(new byte[] { 1, 2, 3 }.AsMemory(), "AQID");
+
+    [Fact]
+    public void ReadOnlyMemoryByte() => AssertSerialization((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 }.AsMemory(), "AQID");
+
+    [Fact]
+    public void MemoryChar() => AssertSerialization(new char[] { 't', 'e', 's', 't' }.AsMemory(), "test");
+
+    [Fact]
+    public void ReadOnlyMemoryChar() => AssertSerialization("test".AsMemory(), "test");
+
+    [Fact]
+    public void StringWriter()
+    {
+        using var value = new StringWriter();
+        value.Write("test");
+        AssertSerialization(value, "test");
+    }
+
+    [Fact]
     public void Type() => AssertSerialization(typeof(SerializerTests), "Meziantou.Framework.HumanReadable.Tests.SerializerTests, Meziantou.Framework.HumanReadableSerializer.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
 
     [Fact]
@@ -1066,6 +1086,18 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Pattern: test
             Options: IgnoreCase
             MatchTimeout: 00:00:02
+            """,
+        });
+    }
+
+    [Fact]
+    public void StringBuilder()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new StringBuilder().Append("test"),
+            Expected = """
+            test
             """,
         });
     }
@@ -1285,7 +1317,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             2023-01-02T03:04:05 UTC (+00)
             """);
     }
-    
+
     [Fact]
     public void DnsEndPoint()
     {
@@ -1297,7 +1329,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Port: 80
             """);
     }
-    
+
     [Fact]
     public void DnsEndPoint2()
     {
@@ -1309,7 +1341,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Port: 80
             """);
     }
-    
+
     [Fact]
     public void IPEndPoint()
     {

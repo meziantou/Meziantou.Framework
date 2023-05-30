@@ -14,7 +14,7 @@ public sealed record InlineSnapshotSettings
 
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
     public SnapshotUpdateStrategy SnapshotUpdateStrategy { get; set; } = SnapshotUpdateStrategy.Default;
-    public SnapshotSerializer SnapshotSerializer { get; set; } = HumanReadableSnapshotSerializer.Instance;
+    public SnapshotSerializer SnapshotSerializer { get; set; } = HumanReadableSnapshotSerializer.DefaultInstance;
     public SnapshotComparer SnapshotComparer { get; set; } = SnapshotComparer.Default;
     public AssertionMessageFormatter ErrorMessageFormatter { get; set; } = InlineDiffAssertionMessageFormatter.Instance;
     public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = new AssertionExceptionBuilder();

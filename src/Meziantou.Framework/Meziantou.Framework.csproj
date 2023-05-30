@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
 
     <Description>Lots of utility classes</Description>
@@ -46,24 +46,4 @@
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
-
-  <!-- .NET Standard 2.0 target is only to support some specific projects.
-       I don't want to support all functionalities in .NET Standard 2.0 as I only have limited time.
-       So, I enable the functionalities that are used. -->
-  <Choose>
-    <When Condition="$(TargetFramework) == 'netstandard2.0'">
-      <PropertyGroup>
-        <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-      </PropertyGroup>
-      <ItemGroup>
-        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
-        <Compile Include="EnumerableExtensions.cs" />
-        <Compile Include="EnumerableExtensions.ParallelForEachAsync.cs" />
-        <Compile Include="IOUtilities.cs" />
-        <Compile Include="IOUtilities.Delete.cs" />
-        <Compile Include="NumberExtensions.cs" />
-        <Compile Include="StringExtensions.cs" />
-      </ItemGroup>
-    </When>
-  </Choose>
 </Project>

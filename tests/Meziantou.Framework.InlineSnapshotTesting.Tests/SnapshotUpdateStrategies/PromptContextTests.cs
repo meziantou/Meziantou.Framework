@@ -67,6 +67,8 @@ public sealed class PromptContextTests
         Assert.Equal("Dummy.MyTest", name);
     }
 
+    [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity", Justification = "Not compatible with net472")]
+    [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Not compatible with net472")]
     private async Task<string> GetTestName(string source, (string PackageName, string Version)[] packages)
     {
         await using var directory = TemporaryDirectory.Create();
@@ -93,7 +95,7 @@ public sealed class PromptContextTests
         source = source.Replace("#TESTCONTENT#", $$""""
             var name = Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies.PromptContext.Get("dummy.cs").TestName;
             System.IO.File.WriteAllText("""{{outputFilePath}}""", name);
-            """", StringComparison.Ordinal);
+            """");
 
         var mainPath = CreateTextFile("Program.cs", source);
 

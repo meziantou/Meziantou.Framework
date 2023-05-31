@@ -15,6 +15,7 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
         return (HumanReadableConverter?)Activator.CreateInstance(typeof(ReadOnlyMemoryConverter<>).MakeGenericType(typeToConvert.GetGenericArguments()[0]));
     }
 
+    [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class ReadOnlyMemoryConverter<T> : HumanReadableConverter<ReadOnlyMemory<T>>
     {
         protected override void WriteValue(HumanReadableTextWriter writer, ReadOnlyMemory<T> value, HumanReadableSerializerOptions options)
@@ -37,7 +38,6 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
         }
     }
 
-    [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class ReadOnlyMemoryByteConverter : HumanReadableConverter<ReadOnlyMemory<byte>>
     {
         protected override void WriteValue(HumanReadableTextWriter writer, ReadOnlyMemory<byte> value, HumanReadableSerializerOptions options)

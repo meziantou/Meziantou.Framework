@@ -68,10 +68,21 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
             _ when IsXml(mediaType) => "xml",
             _ when IsHtml(mediaType) => "html",
             _ when IsUrlEncodedForm(mediaType) => "UrlEncodedForm",
+            _ when IsCss(mediaType) => "css",
+            _ when IsJavaScript(mediaType) => "JavaScript",
             _ => null,
         };
 
         static bool IsHtml(string mediaType) => string.Equals(mediaType, "text/html", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsCss(string mediaType) => string.Equals(mediaType, "text/css", StringComparison.OrdinalIgnoreCase);
+
+        static bool IsJavaScript(string mediaType)
+            => string.Equals(mediaType, "text/javascript", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "application/ecmascript", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "application/javascript", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "application/x-ecmascript", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(mediaType, "application/x-javascript", StringComparison.OrdinalIgnoreCase);
 
         static bool IsUrlEncodedForm(string mediaType) => string.Equals(mediaType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase);
 

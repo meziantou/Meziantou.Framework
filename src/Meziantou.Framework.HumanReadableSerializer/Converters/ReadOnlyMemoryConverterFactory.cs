@@ -37,6 +37,7 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
         }
     }
 
+    [SuppressMessage("Performance", "CA1812", Justification = "The class is instantiated using Activator.CreateInstance")]
     private sealed class ReadOnlyMemoryByteConverter : HumanReadableConverter<ReadOnlyMemory<byte>>
     {
         protected override void WriteValue(HumanReadableTextWriter writer, ReadOnlyMemory<byte> value, HumanReadableSerializerOptions options)

@@ -12,6 +12,6 @@ internal sealed class JsonElementConverter : HumanReadableConverter<JsonElement>
     protected override void WriteValue(HumanReadableTextWriter writer, JsonElement value, HumanReadableSerializerOptions options)
     {
         var str = JsonSerializer.Serialize(value, IndentedOptions);
-        writer.WriteValue(options.FormatValue("json", str));
+        writer.WriteValue(options.FormatValue("application/json", str));
     }
 }

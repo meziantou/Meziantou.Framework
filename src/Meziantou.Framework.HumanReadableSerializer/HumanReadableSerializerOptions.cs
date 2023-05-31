@@ -296,10 +296,54 @@ public sealed record HumanReadableSerializerOptions
     {
         MakeReadOnly();
 
-        if (format != null && value != null && _valueFormatters.TryGetValue(format, out var formatter))
-            return formatter.Format(value);
+        if (format != null && value != null)
+        {
+            if (_valueFormatters.TryGetValue(format, out var formatter))
+                return formatter.Format(value);
+
+            // Normalize the format
+            format = GetFormat(format);
+            if (format != null && _valueFormatters.TryGetValue(format, out formatter))
+                return formatter.Format(value);
+        }
+
 
         return value ?? "";
+
+        static string? GetFormat(string mediaType)
+        {
+            return mediaType switch
+            {
+                _ when IsJson(mediaType) => "application/json",
+                _ when IsXml(mediaType) => "application/xml",
+                _ when IsHtml(mediaType) => "text/html",
+                _ when IsUrlEncodedForm(mediaType) => "application/x-www-form-urlencoded",
+                _ when IsCss(mediaType) => "text/css",
+                _ when IsJavaScript(mediaType) => "text/javascript",
+                _ => null,
+            };
+
+            static bool IsHtml(string mediaType) => string.Equals(mediaType, "text/html", StringComparison.OrdinalIgnoreCase);
+
+            static bool IsCss(string mediaType) => string.Equals(mediaType, "text/css", StringComparison.OrdinalIgnoreCase);
+
+            static bool IsJavaScript(string mediaType)
+                => string.Equals(mediaType, "text/javascript", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/ecmascript", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/javascript", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/x-ecmascript", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "application/x-javascript", StringComparison.OrdinalIgnoreCase);
+
+            static bool IsUrlEncodedForm(string mediaType) => string.Equals(mediaType, "application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase);
+
+            static bool IsJson(string mediaType) => string.Equals(mediaType, "application/json", StringComparison.OrdinalIgnoreCase) || mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase);
+
+            static bool IsXml(string mediaType)
+                => string.Equals(mediaType, "application/xml", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mediaType, "text/xml", StringComparison.OrdinalIgnoreCase)
+                || mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
+        }
+
     }
 
     internal void VerifyMutable()

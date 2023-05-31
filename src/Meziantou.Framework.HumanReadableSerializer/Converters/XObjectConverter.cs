@@ -12,6 +12,6 @@ internal sealed class XObjectConverter : HumanReadableConverter
         Debug.Assert(value != null);
 
         var xml = (XObject)value;
-        writer.WriteValue(options.FormatValue("xml", xml.ToString() ?? ""));
+        writer.WriteValue(options.FormatValue("application/xml", xml.ToString() ?? ""));
     }
 }

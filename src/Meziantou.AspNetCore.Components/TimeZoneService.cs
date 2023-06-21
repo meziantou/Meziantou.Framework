@@ -48,11 +48,7 @@ public sealed class TimeZoneService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-#if NET8_0_OR_GREATER
         await _cts.CancelAsync();
-#else
-        _cts.Cancel();
-#endif
         if (_module != null)
         {
             try

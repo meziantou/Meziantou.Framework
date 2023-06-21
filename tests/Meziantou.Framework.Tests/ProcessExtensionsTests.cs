@@ -119,12 +119,7 @@ public class ProcessExtensionsTests
             (stopwatch.Elapsed > TimeSpan.FromSeconds(10)).Should().BeFalse("Cannot find the process");
         }
 
-#if NET8_0_OR_GREATER
         await cts.CancelAsync();
-#else
-        cts.Cancel();
-#endif
-
         await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
     }
 

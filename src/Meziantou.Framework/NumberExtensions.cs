@@ -219,9 +219,6 @@ public static class NumberExtensions
 
         return number.ToString(CultureInfo.InvariantCulture);
     }
-#elif NETSTANDARD2_0
-#else
-#error Platform not supported
 #endif
 
     [Pure]

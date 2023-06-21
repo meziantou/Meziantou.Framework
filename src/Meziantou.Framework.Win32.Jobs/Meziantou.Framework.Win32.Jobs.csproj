@@ -6,6 +6,8 @@
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
     <Version>3.2.0</Version>
     <Description>.NET wrapper for Windows Job Objects</Description>
+
+    <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
   </PropertyGroup>
 
   <ItemGroup>

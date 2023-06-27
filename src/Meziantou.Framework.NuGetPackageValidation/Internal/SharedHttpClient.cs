@@ -59,7 +59,7 @@ internal static class SharedHttpClient
                         throw;
                 }
 
-                await Task.Delay(delay is { } someDelay && someDelay > TimeSpan.Zero ? someDelay : TimeSpan.FromMicroseconds(100 * i), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay is { } someDelay && someDelay > TimeSpan.Zero ? someDelay : TimeSpan.FromMicroseconds(200 * i), cancellationToken).ConfigureAwait(false);
 
                 static bool IsLastAttempt(int i) => i >= MaxRetries;
             }

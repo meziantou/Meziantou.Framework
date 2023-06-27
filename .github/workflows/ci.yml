@@ -131,7 +131,7 @@ jobs:
       - uses: codecov/codecov-action@v3
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure()) # the step doesn't work for dependabot
+        if: github.actor != 'dependabot[bot]' && (success() || failure()) && github.repository_owner == 'meziantou'
         with:
           name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           path: ${{ env.TestResultsDirectory }}/**/*.trx
@@ -200,7 +200,7 @@ jobs:
       - uses: codecov/codecov-action@v3
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure())
+        if: github.actor != 'dependabot[bot]' && (success() || failure()) && github.repository_owner == 'meziantou'
         with:
           name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           path: ${{ env.TestResultsDirectory }}/**/*.trx

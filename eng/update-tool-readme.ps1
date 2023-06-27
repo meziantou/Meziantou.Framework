@@ -1,5 +1,9 @@
 $SrcRootPath = Join-Path $PSScriptRoot ".." "src" -Resolve
 $EditedFiles = 0
+
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE="1"
+$env:DOTNET_NOLOGO="true"
+
 foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
     Write-Host "Processing $($csproj.FullName)"
 

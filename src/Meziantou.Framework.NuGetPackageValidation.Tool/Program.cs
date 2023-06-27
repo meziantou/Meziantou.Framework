@@ -24,10 +24,12 @@ internal static partial class Program
         var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude from analysis", parseArgument: ParseIntValues);
+        var githubTokenOptions = new Option<string?>("--github-token", description: "GitHub token to authenticate requests");
         rootCommand.AddArgument(pathsArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.AddOption(excludedRulesOptions);
         rootCommand.AddOption(excludedRuleIdsOptions);
+        rootCommand.AddOption(githubTokenOptions);
         rootCommand.SetHandler(async context =>
         {
             var paths = context.ParseResult.GetValueForArgument(pathsArgument);
@@ -58,6 +60,22 @@ internal static partial class Program
                 {
                     options.ExcludedRuleIds.Add(excludedRuleId);
                 }
+            }
+
+            var githubToken = context.ParseResult.GetValueForOption(githubTokenOptions);
+            if (!string.IsNullOrEmpty(githubToken))
+            {
+                options.ConfigureRequest = request =>
+                {
+                    var host = request.RequestUri?.Host;
+                    if (host == null)
+                        return;
+
+                    if (host.EndsWith("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
+                    {
+                        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", githubToken);
+                    }
+                };
             }
 
             var packageResults = new Dictionary<string, NuGetPackageValidationResult>(capacity: paths.Length, StringComparer.Ordinal);

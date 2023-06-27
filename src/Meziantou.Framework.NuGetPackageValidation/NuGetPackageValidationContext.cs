@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using Meziantou.Framework.NuGetPackageValidation.Internal;
 using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;
@@ -68,4 +69,25 @@ public sealed class NuGetPackageValidationContext : IDisposable
 
         _errors.Add(new NuGetPackageValidationError(errorCode, message, helpText, fileName));
     }
+
+    internal Task<HttpResponseMessage> SendHttpRequestAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
+    {
+        _options.ConfigureRequest?.Invoke(httpRequestMessage);
+        return SharedHttpClient.Instance.SendAsync(httpRequestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+    }
+
+    internal async Task<bool> IsUrlAccessible(Uri url, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = await SendHttpRequestAsync(request, cancellationToken).ConfigureAwait(false);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
 }

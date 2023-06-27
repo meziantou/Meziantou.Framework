@@ -1,6 +1,4 @@
-﻿using Meziantou.Framework.NuGetPackageValidation.Internal;
-
-namespace Meziantou.Framework.NuGetPackageValidation.Rules;
+﻿namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed class PackageIdAvailableOnNuGetOrgValidationRule : NuGetPackageValidationRule
 {
@@ -12,7 +10,7 @@ internal sealed class PackageIdAvailableOnNuGetOrgValidationRule : NuGetPackageV
         for (var i = 0; i < 5; i++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, "https://www.nuget.org/packages/" + Uri.EscapeDataString(packageId));
-            using var response = await ShareHttpClient.Instance.SendAsync(request, context.CancellationToken).ConfigureAwait(false);
+            using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
             if ((int)response.StatusCode is >= 200 and <= 400)
             {
                 // The package exists

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Data;
+﻿using System.Data;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
@@ -7,7 +6,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Meziantou.Framework.NuGetPackageValidation.Internal;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
@@ -128,13 +126,23 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                     using var request = new HttpRequestMessage(HttpMethod.Get, url);
                                     request.Headers.Add("SymbolChecksum", checksumHeader);
 
-                                    using var response = await ShareHttpClient.Instance.SendAsync(request, context.CancellationToken).ConfigureAwait(false);
+                                    using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
                                     if (response.IsSuccessStatusCode)
                                     {
                                         var pdbData = await response.Content.ReadAsStreamAsync(context.CancellationToken).ConfigureAwait(false);
                                         await using (pdbData.ConfigureAwait(false))
                                         {
-                                            metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
+                                            if (pdbData.CanSeek)
+                                            {
+                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(pdbData, MetadataStreamOptions.PrefetchMetadata);
+                                            }
+                                            else
+                                            {
+                                                using var ms = new MemoryStream();
+                                                await pdbData.CopyToAsync(ms, context.CancellationToken).ConfigureAwait(false);
+                                                ms.Seek(0, SeekOrigin.Begin);
+                                                metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
+                                            }
                                             break;
                                         }
                                     }
@@ -237,7 +245,8 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 
                                 try
                                 {
-                                    using var response = await ShareHttpClient.Instance.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, context.CancellationToken).ConfigureAwait(false);
+                                    using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                                    using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
                                     if (!response.IsSuccessStatusCode)
                                     {
                                         context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
@@ -275,9 +284,9 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                         }
                                     }
                                 }
-                                catch
+                                catch (Exception ex)
                                 {
-                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
+                                    context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible: {ex}", fileName: item);
                                 }
                             }
                         }

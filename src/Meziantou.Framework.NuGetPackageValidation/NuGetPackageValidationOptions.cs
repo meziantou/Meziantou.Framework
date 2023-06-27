@@ -25,4 +25,6 @@ public sealed class NuGetPackageValidationOptions
         "https://msdl.microsoft.com/download/symbols/",
         "https://symbols.nuget.org/download/symbols/",
     };
+
+    public Action<HttpRequestMessage>? ConfigureRequest { get; set; }
 }

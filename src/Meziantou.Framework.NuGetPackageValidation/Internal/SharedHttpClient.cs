@@ -24,9 +24,10 @@ internal static class SharedHttpClient
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             const int MaxRetries = 5;
-            for (var i = 1; ; i++)
+            var defaultDelay = TimeSpan.FromMilliseconds(200);
+            for (var i = 1; ; i++, defaultDelay *= 2)
             {
-                TimeSpan? delay = null;
+                TimeSpan? delayHint = null;
                 HttpResponseMessage? result = null;
 
                 try
@@ -38,7 +39,7 @@ internal static class SharedHttpClient
                         // either a 503 (Service Unavailable) or 429 (Too Many Requests):
                         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
 
-                        delay = result.Headers.RetryAfter switch
+                        delayHint = result.Headers.RetryAfter switch
                         {
                             { Date : { } date  } => date - DateTimeOffset.UtcNow,
                             { Delta: { } delta } => delta,
@@ -59,7 +60,7 @@ internal static class SharedHttpClient
                         throw;
                 }
 
-                await Task.Delay(delay is { } someDelay && someDelay > TimeSpan.Zero ? someDelay : TimeSpan.FromMicroseconds(200 * i), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delayHint is { } someDelay && someDelay > TimeSpan.Zero ? someDelay : defaultDelay, cancellationToken).ConfigureAwait(false);
 
                 static bool IsLastAttempt(int i) => i >= MaxRetries;
             }

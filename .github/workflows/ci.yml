@@ -7,6 +7,10 @@ on:
     branches:
       - '*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
@@ -78,7 +82,7 @@ jobs:
           $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
           $Errors = $false
           foreach ($file in $files) {
-              & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet,TagsMustBeSet"
+              & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet,TagsMustBeSet" --github-token=${{ secrets.GITHUB_TOKEN }}
               if ($LASTEXITCODE -ne 0) {
                 $Errors = $true
               }

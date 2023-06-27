@@ -1,6 +1,4 @@
-﻿using Meziantou.Framework.NuGetPackageValidation.Internal;
-
-namespace Meziantou.Framework.NuGetPackageValidation.Rules;
+﻿namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed class ProjectUrlBeSetValidationRule : NuGetPackageValidationRule
 {
@@ -19,7 +17,7 @@ internal sealed class ProjectUrlBeSetValidationRule : NuGetPackageValidationRule
             {
                 context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Project url '{projectUrl}' is not valid");
             }
-            else if (!await ShareHttpClient.Instance.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
+            else if (!await context.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
             {
                 context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Project url '{projectUrl}' is not accessible");
             }
@@ -29,7 +27,7 @@ internal sealed class ProjectUrlBeSetValidationRule : NuGetPackageValidationRule
         {
             if (Uri.TryCreate(repositoryUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
             {
-                if (!await ShareHttpClient.Instance.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
+                if (!await context.IsUrlAccessible(uri, context.CancellationToken).ConfigureAwait(false))
                 {
                     context.ReportError(ErrorCodes.ProjectUrlNotAccessible, $"Repository url '{projectUrl}' is not accessible");
                 }

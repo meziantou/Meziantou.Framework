@@ -24,14 +24,28 @@ internal static class SharedHttpClient
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             const int MaxRetries = 5;
-            for (var i = 1; ; i++)
+            var defaultDelay = TimeSpan.FromMilliseconds(200);
+            for (var i = 1; ; i++, defaultDelay *= 2)
             {
+                TimeSpan? delayHint = null;
                 HttpResponseMessage? result = null;
+
                 try
                 {
                     result = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                    if (!IsLastAttempt(i) && ((int)result.StatusCode >= 500 || result.StatusCode is System.Net.HttpStatusCode.RequestTimeout))
+                    if (!IsLastAttempt(i) && ((int)result.StatusCode >= 500 || result.StatusCode is System.Net.HttpStatusCode.RequestTimeout or System.Net.HttpStatusCode.TooManyRequests))
                     {
+                        // Use "Retry-After" value, if available. Typically, this is sent with
+                        // either a 503 (Service Unavailable) or 429 (Too Many Requests):
+                        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After
+
+                        delayHint = result.Headers.RetryAfter switch
+                        {
+                            { Date : { } date  } => date - DateTimeOffset.UtcNow,
+                            { Delta: { } delta } => delta,
+                            _ => null,
+                        };
+
                         result.Dispose();
                     }
                     else
@@ -46,7 +60,7 @@ internal static class SharedHttpClient
                         throw;
                 }
 
-                await Task.Delay(100 * i, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delayHint is { } someDelay && someDelay > TimeSpan.Zero ? someDelay : defaultDelay, cancellationToken).ConfigureAwait(false);
 
                 static bool IsLastAttempt(int i) => i >= MaxRetries;
             }

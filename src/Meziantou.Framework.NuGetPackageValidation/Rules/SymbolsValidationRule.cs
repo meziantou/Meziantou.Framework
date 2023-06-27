@@ -249,7 +249,8 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                     using var response = await context.SendHttpRequestAsync(request, context.CancellationToken).ConfigureAwait(false);
                                     if (!response.IsSuccessStatusCode)
                                     {
-                                        context.ReportError(ErrorCodes.UrlIsNotAccessible, $"Source file '{url}' is not accessible", fileName: item);
+                                        var message = string.Create(CultureInfo.InvariantCulture, $"Source file '{url}' is not accessible (HTTP status code = {(int)response.StatusCode})");
+                                        context.ReportError(ErrorCodes.UrlIsNotAccessible, message, fileName: item);
                                     }
                                     else
                                     {

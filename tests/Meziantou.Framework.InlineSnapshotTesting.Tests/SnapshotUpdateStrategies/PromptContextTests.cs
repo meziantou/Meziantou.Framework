@@ -27,7 +27,7 @@ public sealed class PromptContextTests
         var name = await GetTestName(source, new[] { ("xunit", "2.4.2"), ("xunit.runner.visualstudio", "2.4.5") });
         Assert.Equal("MyTest", name);
     }
-    
+
     [Fact]
     public async Task TestNameFromXUnitTheory()
     {
@@ -83,7 +83,7 @@ public sealed class PromptContextTests
                 <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
               </ItemGroup>
               <ItemGroup>
-                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
                 {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
             </Project>            
@@ -93,13 +93,14 @@ public sealed class PromptContextTests
         outputFilePath.CreateParentDirectory();
 
         source = source.Replace("#TESTCONTENT#", $$""""
+            // System.Diagnostics.Debugger.Launch();
             var name = Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies.PromptContext.Get("dummy.cs").TestName;
             System.IO.File.WriteAllText("""{{outputFilePath}}""", name);
             """");
 
         var mainPath = CreateTextFile("Program.cs", source);
 
-        var psi = new ProcessStartInfo("dotnet", $"test \"{projectPath}\"")
+        var psi = new ProcessStartInfo("dotnet", $"test \"{projectPath}\" -p:UseSharedCompilation=false")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,
@@ -108,16 +109,14 @@ public sealed class PromptContextTests
         };
 
         var process = Process.Start(psi);
+        process.OutputDataReceived += (sender, e) => _testOutputHelper.WriteLine(e.Data ?? "");
+        process.ErrorDataReceived += (sender, e) => _testOutputHelper.WriteLine(e.Data ?? "");
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         process!.WaitForExit();
 
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        _testOutputHelper.WriteLine(stdout);
-
-        var stderr = await process.StandardError.ReadToEndAsync();
-        _testOutputHelper.WriteLine(stderr);
-
-        Assert.Equal(0, process.ExitCode);
         var actual = File.ReadAllText(outputFilePath);
+        Assert.Equal(0, process.ExitCode);
         return actual;
 
         FullPath CreateTextFile(string path, string content)

@@ -16,11 +16,7 @@ internal sealed class CharacterSetInverseSegment : Segment
     {
         bool result;
         var c = pathReader.CurrentText[0];
-#if NET472
-        result = Set.IndexOf(new string(c, 1), _stringComparison) == -1;
-#else
         result = !Set.Contains(c, _stringComparison);
-#endif
         if (result)
         {
             pathReader.ConsumeInSegment(1);

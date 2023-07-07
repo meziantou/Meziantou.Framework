@@ -48,11 +48,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
                 string content;
                 using (var reader = StreamUtilities.CreateReader(stream, encoding))
                 {
-#if NET7_0_OR_GREATER
                     content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-#else
-                content = await reader.ReadToEndAsync().ConfigureAwait(false);
-#endif
                 }
 
                 var currentLine = 0;

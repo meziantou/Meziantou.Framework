@@ -11,7 +11,7 @@ public sealed class ProcessOutput
     public ProcessOutputType Type { get; }
     public string Text { get; }
 
-    public void Desconstruct(out ProcessOutputType type, out string text)
+    public void Deconstruct(out ProcessOutputType type, out string text)
     {
         type = Type;
         text = Text;

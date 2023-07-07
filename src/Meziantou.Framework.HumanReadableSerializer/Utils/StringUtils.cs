@@ -4,63 +4,10 @@ using System.Text;
 namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class StringUtils
 {
-#if NETSTANDARD2_0 || NET471
-    public static bool Contains(this string str, char value, StringComparison stringComparison)
-    {
-        if (stringComparison != StringComparison.Ordinal)
-            throw new ArgumentOutOfRangeException(nameof(stringComparison));
-
-        return str.IndexOf(value) != -1;
-    }
-
-    public static bool Contains(this ReadOnlySpan<char> span, char c)
-    {
-        return span.IndexOf(c) != -1;
-    }
-#endif
-
     public static bool IsMultiLines(ReadOnlySpan<char> value) => IndexOfNewlineChar(value, out _) >= 0;
-    public static bool IsMultiLines(string value) => IndexOfNewlineChar(value.AsSpan(), out _) >= 0;
 
     public static SpanLineEnumerator EnumerateLines(string value) => new(value.AsSpan());
     public static SpanLineEnumerator EnumerateLines(ReadOnlySpan<char> value) => new(value);
-
-    public static string ReplaceLineEndings(string value, string replacementText)
-    {
-        if (replacementText is null)
-            throw new ArgumentNullException(nameof(replacementText));
-
-        // Early-exit: do we need to do anything at all?
-        // If not, return this string as-is.
-        var idxOfFirstNewlineChar = IndexOfNewlineChar(value.AsSpan(), out var stride);
-        if (idxOfFirstNewlineChar < 0)
-            return value;
-
-        // While writing to the builder, we don't bother memcpying the first
-        // or the last segment into the builder. We'll use the builder only
-        // for the intermediate segments, then we'll sandwich everything together
-        // with one final string.Concat call.
-        var firstSegment = value.AsSpan(0, idxOfFirstNewlineChar);
-        var remaining = value.AsSpan(idxOfFirstNewlineChar + stride);
-
-        var builder = new StringBuilder();
-        while (true)
-        {
-            var idx = IndexOfNewlineChar(remaining, out stride);
-            if (idx < 0)
-                break;
-            builder.Append(replacementText);
-            builder.Append(remaining.Slice(0, idx));
-            remaining = remaining.Slice(idx + stride);
-        }
-
-#if NET6_0_OR_GREATER
-        var retVal = string.Concat(firstSegment, builder.ToString(), replacementText, remaining);
-#else
-        var retVal = string.Concat(firstSegment.ToString(), builder.ToString(), replacementText, remaining.ToString());
-#endif
-        return retVal;
-    }
 
     // https://github.com/dotnet/runtime/pull/53115/files#diff-7e02dbe3fd1a8d2b0c52c18e7af8d0dd2e0a5505df37ff01cc2edeebc3224fe7R1248
     private static int IndexOfNewlineChar(ReadOnlySpan<char> text, out int stride)

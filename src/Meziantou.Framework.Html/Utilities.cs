@@ -6,40 +6,6 @@ namespace Meziantou.Framework.Html;
 
 internal static class Utilities
 {
-#if NETSTANDARD2_0 || NET471
-    [SuppressMessage("Usage", "MA0001:StringComparison is missing")]
-    public static bool Contains(this string str, char value, StringComparison stringComparison)
-    {
-        if (stringComparison != StringComparison.Ordinal)
-            throw new ArgumentOutOfRangeException(nameof(stringComparison));
-
-        return str.IndexOf(value) != -1;
-    }
-
-    [SuppressMessage("Usage", "MA0001:StringComparison is missing", Justification = "Would be an infinite recursion")]
-    public static int IndexOf(this string str, char c, StringComparison stringComparison)
-    {
-        if (stringComparison != StringComparison.Ordinal)
-            throw new ArgumentOutOfRangeException(nameof(stringComparison));
-
-        return str.IndexOf(c);
-    }
-
-    [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Does not apply")]
-    public static string Replace(this string str, string oldValue, string newValue, StringComparison stringComparison)
-    {
-        if (stringComparison != StringComparison.Ordinal)
-            throw new ArgumentOutOfRangeException(nameof(stringComparison));
-
-        return str.Replace(oldValue, newValue);
-    }
-
-    public static bool Contains(this ReadOnlySpan<char> span, char c)
-    {
-        return span.IndexOf(c) != -1;
-    }
-#endif
-
     [Pure]
     public static bool EqualsIgnoreCase(this string? str1, string? str2)
     {

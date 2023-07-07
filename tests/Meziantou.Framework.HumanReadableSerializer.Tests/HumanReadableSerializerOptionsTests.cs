@@ -12,12 +12,12 @@ public sealed class HumanReadableSerializerOptionsTests
 
         var clone = options with { };
 
-        Assert.Equal(1, clone.Converters.Count);
+        Assert.Single(clone.Converters);
         clone.Converters.Clear();
         HumanReadableSerializer.Serialize(12, clone);
 
-        Assert.Equal(0, clone.Converters.Count);
-        Assert.Equal(1, options.Converters.Count);
+        Assert.Empty(clone.Converters);
+        Assert.Single(options.Converters);
     }
 
     private sealed class DummyConverter : HumanReadableConverter

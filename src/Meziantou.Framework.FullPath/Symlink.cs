@@ -110,7 +110,7 @@ internal static class Symlink
             {
                 if (!handle.IsInvalid)
                 {
-                    return ((FileAttributes)findData.dwFileAttributes & FileAttributes.ReparsePoint) != 0 &&
+                    return ((FileAttributes)findData.dwFileAttributes & FileAttributes.ReparsePoint) != (FileAttributes)0 &&
                         (findData.dwReserved0 & 0xA000000C) != 0;  // IO_REPARSE_TAG_SYMLINK
                 }
             }

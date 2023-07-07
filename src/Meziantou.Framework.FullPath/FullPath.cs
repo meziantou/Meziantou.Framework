@@ -124,13 +124,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         if (relPath.Length == 0 && path2.Length - 1 == si)
             return "." + directorySeparator; // Truncate the file name
 
-#if NETSTANDARD2_0 || NET472
-        return relPath.Append(path2.AsSpan(si + 1).ToString()).ToString();
-#elif NETCOREAPP3_1_OR_GREATER
         return relPath.Append(path2.AsSpan(si + 1)).ToString();
-#else
-#error Platform not supported
-#endif
     }
 
     public bool IsChildOf(FullPath rootPath)

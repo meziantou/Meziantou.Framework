@@ -220,12 +220,7 @@ public sealed record HumanReadableSerializerOptions
     {
         // Make sure the instance is readonly on the first usage
         MakeReadOnly();
-
-#if NETSTANDARD2_0 || NET471
         return _convertersCache.GetOrAdd(type, type => FindConverter(type, Converters));
-#else
-        return _convertersCache.GetOrAdd(type, FindConverter, Converters);
-#endif
 
         static HumanReadableConverter WrapConverter(HumanReadableConverter converter)
             => converter.HandleNull ? converter : new NullConverterWrapper(converter);

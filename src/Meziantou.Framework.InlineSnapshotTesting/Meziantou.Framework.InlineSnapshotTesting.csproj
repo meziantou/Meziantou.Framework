@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Compile Include="..\Meziantou.Framework.CommandLine\CommandLineBuilder.cs" Link="Utils\CommandLineBuilder.cs" />
-    <Compile Include="..\Meziantou.Framework.HumanReadableSerializer\Utils\StringBuilderExtensions.cs" Link="Utils\StringBuilderExtensions.cs" />
     <Compile Include="..\Meziantou.Framework.HumanReadableSerializer\Utils\StringUtils.cs" Link="Utils\StringUtils.cs" />
   </ItemGroup>
 
@@ -30,9 +29,9 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="DiffEngine" Version="11.2.0" />
+    <PackageReference Include="DiffEngine" Version="11.4.1" />
     <PackageReference Include="DiffPlex" Version="1.7.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">

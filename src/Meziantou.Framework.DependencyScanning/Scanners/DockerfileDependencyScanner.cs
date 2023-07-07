@@ -12,11 +12,7 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
         var lineNo = 0;
         string? line;
-#if NET7_0_OR_GREATER
         while ((line = await sr.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) != null)
-#else
-        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
-#endif
         {
             lineNo++;
             var match = FromRegex.Match(line);

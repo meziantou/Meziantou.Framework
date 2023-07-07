@@ -16,40 +16,6 @@ public class StringExtensionsTests
     }
 
     [Theory]
-    [InlineData("", 'a', false)]
-    [InlineData("abc", 'c', true)]
-    [InlineData("abc", 'd', false)]
-    public void EndsWith_Test(string str, char c, bool expected)
-    {
-        var actual = str.EndsWith(c);
-        actual.Should().Be(expected);
-    }
-
-    [Theory]
-    [InlineData("", 'a', false)]
-    [InlineData("abc", 'a', true)]
-    [InlineData("abc", 'c', false)]
-    public void StartsWith_Test(string str, char c, bool expected)
-    {
-        var actual = str.StartsWith(c);
-        actual.Should().Be(expected);
-    }
-
-    [Fact]
-    public void Replace_ShouldReplaceAllOccurences()
-    {
-        var actual = "abcABC".Replace("ab", "ba", StringComparison.OrdinalIgnoreCase);
-        actual.Should().Be("bacbaC");
-    }
-
-    [Fact]
-    public void Replace_ShouldUseStringComparison()
-    {
-        var actual = "abcABC".Replace("ab", "ba", StringComparison.Ordinal);
-        actual.Should().Be("bacABC");
-    }
-
-    [Theory]
     [InlineData(null, null, true)]
     [InlineData("", "", true)]
     [InlineData("abc", "abc", true)]

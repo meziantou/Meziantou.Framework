@@ -6,12 +6,7 @@ namespace Meziantou.Framework;
 public static class DateTimeExtensions
 {
     [Pure]
-#if NETCOREAPP3_1_OR_GREATER
     [Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
-#elif NET461 || NET462 || NETSTANDARD2_0
-#else
-#error Platform not supported
-#endif
     public static DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, DayOfWeek weekStart = DayOfWeek.Monday)
     {
         var jan1 = new DateTime(year, 1, 1);
@@ -108,7 +103,6 @@ public static class DateTimeExtensions
         return dt.ToString(format, CultureInfo.InvariantCulture);
     }
 
-#if NET6_0_OR_GREATER
     public static string ToStringInvariant(this DateOnly date)
     {
         return date.ToString(CultureInfo.InvariantCulture);
@@ -128,8 +122,4 @@ public static class DateTimeExtensions
     {
         return time.ToString(format, CultureInfo.InvariantCulture);
     }
-#elif NET5_0 || NETSTANDARD2_0
-#else
-#error Platform not supported
-#endif
 }

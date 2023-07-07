@@ -114,7 +114,7 @@ public class ProcessExtensionsTests
             if (processes.Any(p => p.ProcessName.EqualsIgnoreCase("ping") || p.ProcessName.EqualsIgnoreCase("ping.exe")))
                 break;
 
-            await Task.Delay(100);
+            await Task.Delay(100, cts.Token);
 
             (stopwatch.Elapsed > TimeSpan.FromSeconds(10)).Should().BeFalse("Cannot find the process");
         }
@@ -180,99 +180,5 @@ public class ProcessExtensionsTests
         var descendants = grandParent.GetDescendantProcesses();
         descendants.Should().Contain(p => p.Id == current.Id, "Descendants must contains current process");
         descendants.Should().Contain(p => p.Id == parent.Id, "Descendants must contains parent process");
-    }
-
-    [RunIfFact(FactOperatingSystem.Windows)]
-    public void KillProcess_EntireProcessTree_False()
-    {
-        using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
-        try
-        {
-            // We need to wait for the process to be started by cmd
-            IReadOnlyCollection<Process> processes;
-            while ((processes = process.GetChildProcesses()).Count == 0)
-            {
-                Thread.Sleep(100);
-                continue;
-            }
-
-            (processes.Count == 1 || processes.Count == 2).Should().BeTrue($"There should be 1 or 2 children (ping and conhost): {string.Join(",", processes.Select(p => p.ProcessName))}");
-
-            var childProcess = processes.First();
-
-            process.Kill(entireProcessTree: false);
-
-            childProcess.HasExited.Should().BeFalse();
-            childProcess.Kill();
-            childProcess.WaitForExit();
-        }
-        finally
-        {
-            process.Kill(entireProcessTree: true);
-            process.WaitForExit();
-        }
-    }
-
-    [RunIfFact(FactOperatingSystem.Windows)]
-    public void KillProcess_EntireProcessTree_True()
-    {
-        var start = DateTime.UtcNow;
-
-        static Process CreateProcess()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
-            }
-
-            return Process.Start("sh", "-c \"ping 127.0.0.1 -c 10\"");
-        }
-
-        Process GetPingProcess()
-        {
-            var processes = Process.GetProcesses();
-            var pingProcesses = processes.Where(p => p.ProcessName.EqualsIgnoreCase("ping")).ToList();
-            return pingProcesses.SingleOrDefault(p => p.StartTime >= start.ToLocalTime());
-        }
-
-        using var shellProcess = CreateProcess();
-        Process pingProcess = null;
-        try
-        {
-            // We need to wait for the process to be started by cmd
-            while ((pingProcess = GetPingProcess()) == null)
-            {
-                // Must be greater than the ping time to prevent other tests from using this ping instance
-                if (DateTime.UtcNow - start > TimeSpan.FromSeconds(15))
-                {
-                    var allProcesses = Process.GetProcesses();
-                    false.Should().BeTrue("Cannot find the ping process. Running processes: " + string.Join(", ", allProcesses.Select(p => p.ProcessName)));
-                }
-
-                Thread.Sleep(100);
-                continue;
-            }
-
-            pingProcess.Should().NotBeNull();
-
-            ProcessExtensions.Kill(shellProcess, entireProcessTree: true);
-
-            shellProcess.WaitForExit(1000);
-            shellProcess.HasExited.Should().BeTrue($"Shell process ({shellProcess.Id.ToStringInvariant()}) has not exited");
-
-            pingProcess.WaitForExit(1000);
-            pingProcess.HasExited.Should().BeTrue($"Ping process ({pingProcess.Id.ToStringInvariant()}) has not exited");
-        }
-        finally
-        {
-            if (pingProcess != null)
-            {
-                pingProcess.Kill(entireProcessTree: true);
-                pingProcess.WaitForExit();
-            }
-
-            shellProcess.Kill(entireProcessTree: true);
-            shellProcess.WaitForExit();
-        }
     }
 }

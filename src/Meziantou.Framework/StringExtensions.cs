@@ -41,24 +41,11 @@ static partial class StringExtensions
     }
 
     [Pure]
-    public static bool Contains(this string str, string value, StringComparison stringComparison)
-    {
-#if NETSTANDARD2_0
-        return str.IndexOf(value, stringComparison) >= 0;
-#elif NET5_0_OR_GREATER
-        return str.Contains(value, stringComparison);
-#else
-#error Platform not supported
-#endif
-    }
-
-    [Pure]
     public static bool ContainsIgnoreCase(this string str, string value)
     {
         return str.Contains(value, StringComparison.OrdinalIgnoreCase);
     }
 
-#if NET6_0_OR_GREATER
     private static readonly Lazy<Dictionary<char, char>> DiacriticDictionary = new(CreateDiacriticDictionary);
 
     private static Dictionary<char, char> CreateDiacriticDictionary()
@@ -866,7 +853,6 @@ static partial class StringExtensions
             { '\u30FE' /* 'ヾ' ModifierLetter */, '\u30FD' /* 'ヽ' ModifierLetter */ },
         };
     }
-#endif
 
     [Pure]
     [return: NotNullIfNotNull(parameterName: nameof(str))]
@@ -905,46 +891,6 @@ static partial class StringExtensions
 #endif
 
         return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
-    }
-
-    [Pure]
-    public static string Replace(this string str, string oldValue, string newValue, StringComparison comparison)
-    {
-        var sb = new StringBuilder();
-
-        var previousIndex = 0;
-        var index = str.IndexOf(oldValue, comparison);
-        while (index != -1)
-        {
-            sb.Append(str, previousIndex, index - previousIndex);
-            sb.Append(newValue);
-            index += oldValue.Length;
-
-            previousIndex = index;
-            index = str.IndexOf(oldValue, index, comparison);
-        }
-
-        sb.Append(str, previousIndex, str.Length - previousIndex);
-        return sb.ToString();
-    }
-
-    [Pure]
-    [SuppressMessage("Style", "IDE0056:Use index operator", Justification = ".NET Standard 2.0 compatibility")]
-    public static bool EndsWith(this string? str, char c)
-    {
-        if (string.IsNullOrEmpty(str))
-            return false;
-
-        return str[str.Length - 1] == c;
-    }
-
-    [Pure]
-    public static bool StartsWith(this string? str, char c)
-    {
-        if (string.IsNullOrEmpty(str))
-            return false;
-
-        return str[0] == c;
     }
 
     /// <summary>

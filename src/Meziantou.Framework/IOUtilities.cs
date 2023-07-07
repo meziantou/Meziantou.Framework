@@ -189,8 +189,8 @@ static partial class IOUtilities
         // Copy subdirectories
         foreach (var subdir in dirs)
         {
-            var temppath = Path.Combine(destinationPath, subdir.Name);
-            CopyDirectory(subdir.FullName, temppath);
+            var tempPath = Path.Combine(destinationPath, subdir.Name);
+            CopyDirectory(subdir.FullName, tempPath);
         }
     }
 

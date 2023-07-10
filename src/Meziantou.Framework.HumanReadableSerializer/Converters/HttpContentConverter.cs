@@ -9,6 +9,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
     {
         "application/ecmascript",
         "application/javascript",
+        "application/json",
         "application/x-ecmascript",
         "application/x-javascript",
         "application/x-www-form-urlencoded",

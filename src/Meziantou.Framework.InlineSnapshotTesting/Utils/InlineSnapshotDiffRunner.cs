@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using DiffEngine;
 using EmptyFiles;
+using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 internal static partial class InlineSnapshotDiffRunner
@@ -18,6 +19,25 @@ internal static partial class InlineSnapshotDiffRunner
         var variable = Environment.GetEnvironmentVariable("DiffEngine_Tool");
         if (Enum.TryParse<DiffTool>(variable, ignoreCase: true, out var tool))
             return tool;
+
+        return null;
+    }
+
+    private static DiffTool? GetDiffToolFromCurrentProcess()
+    {
+        var process = ProcessInfo.GetContextProcess();
+        if (process == null)
+            return null;
+
+        var name = process.ProcessName;
+        if (string.Equals(name, "devenv", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "devenv.exe", StringComparison.OrdinalIgnoreCase))
+            return DiffTool.VisualStudio;
+
+        if (string.Equals(name, "code", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "code.exe", StringComparison.OrdinalIgnoreCase))
+            return DiffTool.VisualStudioCode;
+
+        if (string.Equals(name, "rider64", StringComparison.OrdinalIgnoreCase) || string.Equals(name, "rider64.exe", StringComparison.OrdinalIgnoreCase))
+            return DiffTool.Rider;
 
         return null;
     }
@@ -40,6 +60,10 @@ internal static partial class InlineSnapshotDiffRunner
                   var env = GetDiffToolFromEnvironment();
                   if (env != null)
                       return DiffTools.TryFindByName(env.Value, out tool);
+
+                  var processTool = GetDiffToolFromCurrentProcess();
+                  if(processTool != null)
+                      return DiffTools.TryFindByName(processTool.Value, out tool);
 
                   var extension = FileExtensions.GetExtension(tempFile);
                   return DiffTools.TryFindByExtension(extension, out tool);

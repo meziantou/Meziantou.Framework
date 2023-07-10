@@ -15,7 +15,7 @@ internal sealed partial record ProcessInfo
     internal static ProcessInfo? GetContextProcess()
     {
 #if NETSTANDARD2_0
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 #else
         if (OperatingSystem.IsWindows())
 #endif

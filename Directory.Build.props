@@ -57,7 +57,7 @@
     <Company>Meziantou</Company>
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile Condition="$(_PackageReadmeFilePath) != ''">readme.md</PackageReadmeFile>
   </PropertyGroup>
 

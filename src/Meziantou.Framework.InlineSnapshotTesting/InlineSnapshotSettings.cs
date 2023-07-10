@@ -19,8 +19,26 @@ public sealed record InlineSnapshotSettings
     public AssertionMessageFormatter ErrorMessageFormatter { get; set; } = InlineDiffAssertionMessageFormatter.Instance;
     public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = new AssertionExceptionBuilder();
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
+
+    /// <summary>
+    /// Set the tool to diff snapshots.
+    /// If null, the diff tool is determined by
+    /// <list type="bullet">
+    ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
+    ///   <item>The current IDE (VS, VSCode, Rider)</item>
+    /// </list>
+    /// </summary>
+    /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
     public DiffTool? MergeTool { get; set; }
+
+    /// <summary>
+    /// Before editing a file, use the PDB to validate the file path containing the snapshot.
+    /// </summary>
     public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get; set; } = true;
+
+    /// <summary>
+    /// Before editing a file, use the PDB to validate the line number containing the snapshot.
+    /// </summary>
     public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get; set; } = true;
 
     /// <summary>

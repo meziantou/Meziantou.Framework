@@ -9,10 +9,10 @@ public sealed record HumanReadableSerializerOptions
 {
     // Cache
     private readonly ConcurrentDictionary<Type, HumanReadableConverter> _convertersCache;
-    private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfosCache;
+    private readonly ConcurrentDictionary<Type, HumanReadableMemberInfo[]> _memberInfoCache;
 
-    private readonly Dictionary<Type, List<HumanReadableAttribute>> _typeAttributes;
-    private readonly Dictionary<MemberInfo, List<HumanReadableAttribute>> _memberAttributes;
+    private readonly List<(Func<Type, bool>? Condition, HumanReadableAttribute Attribute)> _typeAttributes;
+    private readonly List<(Func<MemberInfo, bool>? Condition, HumanReadableAttribute Attribute)> _memberAttributes;
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
     private bool _includeFields;
     private HumanReadableIgnoreCondition _defaultIgnoreCondition;
@@ -23,7 +23,7 @@ public sealed record HumanReadableSerializerOptions
     {
         _memberAttributes = new();
         _typeAttributes = new();
-        _memberInfosCache = new();
+        _memberInfoCache = new();
         _convertersCache = new();
         _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
 
@@ -35,7 +35,7 @@ public sealed record HumanReadableSerializerOptions
     {
         _memberAttributes = new();
         _typeAttributes = new();
-        _memberInfosCache = new();
+        _memberInfoCache = new();
         _convertersCache = new();
         _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
 
@@ -51,15 +51,8 @@ public sealed record HumanReadableSerializerOptions
                 Converters.Add(converter);
             }
 
-            foreach (var attr in options._typeAttributes)
-            {
-                _typeAttributes.Add(attr.Key, attr.Value);
-            }
-
-            foreach (var attr in options._memberAttributes)
-            {
-                _memberAttributes.Add(attr.Key, attr.Value);
-            }
+            _typeAttributes.AddRange(options._typeAttributes);
+            _memberAttributes.AddRange(options._memberAttributes);
 
             foreach (var formatter in options._valueFormatters)
             {
@@ -122,7 +115,7 @@ public sealed record HumanReadableSerializerOptions
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
         VerifyMutable();
-        AddValue(_typeAttributes, type, attribute);
+        _typeAttributes.Add((t => t == type, attribute));
     }
 
     public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
@@ -141,59 +134,48 @@ public sealed record HumanReadableSerializerOptions
 
         foreach (var member in members)
         {
-            AddValue(_memberAttributes, member, attribute);
+            AddAttribute(member, attribute);
         }
     }
 
-    public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute)
+    private void AddAttribute(MemberInfo member, HumanReadableAttribute attribute)
     {
         VerifyMutable();
-        AddValue(_memberAttributes, member, attribute);
+        _memberAttributes.Add((m => m == member, attribute));
     }
 
-    public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute)
+    public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
+
+    public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
+
+    public void AddPropertyAttribute(Func<PropertyInfo, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
-        AddValue(_memberAttributes, member, attribute);
+        _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
     }
 
-    private static void AddValue<TKey, TValue>(Dictionary<TKey, List<TValue>> dict, TKey key, TValue value)
-        where TKey : notnull
-        where TValue : notnull
+    public void AddFieldAttribute(Func<FieldInfo, bool> condition, HumanReadableAttribute attribute)
     {
-        if (!dict.TryGetValue(key, out var list))
-        {
-            list = new List<TValue>(capacity: 1);
-            dict[key] = list;
-        }
-        else
-        {
-            // All attributes has "AllowMultiple = false", so only one attribute can be added to a member
-            for (var i = 0; i < list.Count; i++)
-            {
-                if (list[i].GetType() == value.GetType())
-                {
-                    list[i] = value;
-                    return;
-                }
-            }
-        }
+        VerifyMutable();
+        _memberAttributes.Add((Condition: member => member is FieldInfo field && condition(field), attribute));
+    }
 
-        list.Add(value);
+    public void AddTypeAttribute(Func<Type, bool> condition, HumanReadableAttribute attribute)
+    {
+        VerifyMutable();
+        _typeAttributes.Add((condition, attribute));
     }
 
     internal T? GetCustomAttribute<T>(Type type) where T : HumanReadableAttribute
     {
         MakeReadOnly();
-        if (_typeAttributes.TryGetValue(type, out var attributes))
+
+        // Read reverse, so attributes set by the user override the default attributes
+        for (var i = _typeAttributes.Count - 1; i >= 0; i--)
         {
-            // Read reverse, so attributes set by the user override the default attributes
-            for (var i = attributes.Count - 1; i >= 0; i--)
-            {
-                var attribute = attributes[i];
-                if (attribute is T result)
-                    return result;
-            }
+            var attribute = _typeAttributes[i];
+            if (attribute.Attribute is T result && attribute.Condition(type))
+                return result;
         }
 
         return type.GetCustomAttribute<T>();
@@ -202,18 +184,32 @@ public sealed record HumanReadableSerializerOptions
     internal T? GetCustomAttribute<T>(MemberInfo member) where T : HumanReadableAttribute
     {
         MakeReadOnly();
-        if (_memberAttributes.TryGetValue(member, out var attributes))
+
+        // Read reverse, so attributes set by the user override the default attributes
+        for (var i = _memberAttributes.Count - 1; i >= 0; i--)
         {
-            // Read reverse, so attributes set by the user override the default attributes
-            for (var i = attributes.Count - 1; i >= 0; i--)
-            {
-                var attribute = attributes[i];
-                if (attribute is T result)
-                    return result;
-            }
+            var attribute = _memberAttributes[i];
+            if (attribute.Attribute is T result && attribute.Condition(member))
+                return result;
         }
 
         return member.GetCustomAttribute<T>();
+    }
+
+    internal IEnumerable<T> GetCustomAttributes<T>(MemberInfo member) where T : HumanReadableAttribute
+    {
+        MakeReadOnly();
+
+        // Read reverse, so attributes set by the user override the default attributes
+        for (var i = _memberAttributes.Count - 1; i >= 0; i--)
+        {
+            var attribute = _memberAttributes[i];
+            if (attribute.Attribute is T result && attribute.Condition(member))
+                yield return result;
+        }
+
+        foreach (var attribute in member.GetCustomAttributes<T>())
+            yield return attribute;
     }
 
     internal HumanReadableConverter GetConverter(Type type)
@@ -281,9 +277,9 @@ public sealed record HumanReadableSerializerOptions
     internal HumanReadableMemberInfo[] GetMembers(Type type)
     {
 #if NET6_0_OR_GREATER
-        return _memberInfosCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
+        return _memberInfoCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
 #else
-        return _memberInfosCache.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
+        return _memberInfoCache.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
 #endif
     }
 

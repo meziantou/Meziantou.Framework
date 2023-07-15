@@ -54,9 +54,20 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
                 var members = options.GetMembers(type);
                 foreach (var member in members)
                 {
-                    var memberValue = member.GetValue(value);
-                    if (member.MustIgnore(memberValue))
-                        continue;
+                    object? memberValue;
+                    try
+                    {
+                        memberValue = member.GetValue(value);
+                        if (member.MustIgnore(new HumanReadableIgnoreData(memberValue, exception: null)))
+                            continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (member.MustIgnore(new HumanReadableIgnoreData(value: null, exception: ex)))
+                            continue;
+
+                        throw;
+                    }
 
                     if (!hasMember)
                     {

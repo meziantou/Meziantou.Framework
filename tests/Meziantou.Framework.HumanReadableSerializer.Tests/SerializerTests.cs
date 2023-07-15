@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1720
 #pragma warning disable CA1814
+#pragma warning disable CA1822
 #pragma warning disable CA3075
 #pragma warning disable MA0009
 #pragma warning disable MA0110
@@ -1796,6 +1797,75 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 B: 2
                 """,
         });
+    }
+
+    [Fact]
+    public void ConditionalPropertyAttribute()
+    {
+        var obj = new { A = new string[] { "a", "b" }, B = 2 };
+        var options = new HumanReadableSerializerOptions();
+        options.AddPropertyAttribute(prop => prop.Name == "B", new HumanReadableIgnoreAttribute());
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = options,
+            Expected = """
+                A:
+                  - a
+                  - b
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreException()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersThatThrow<NotSupportedException>();
+
+        AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Options = options,
+            Expected = """
+                B: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreException_ThrowException()
+    {
+        Assert.Throws<NotSupportedException>(() => AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Expected = """
+                B: 1
+                """,
+        }));
+    }
+
+    [Fact]
+    public void IgnoreException_ThrowExceptionUnexpectedException()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersThatThrow<NotImplementedException>();
+
+        Assert.Throws<NotSupportedException>(() => AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Options = options,
+            Expected = """
+                B: 1
+                """,
+        }));
+    }
+
+    private sealed class PropThrowAnException
+    {
+        public int A => throw new NotSupportedException();
+        public int B => 1;
     }
 
     private readonly struct StructWithDefaultConstructor

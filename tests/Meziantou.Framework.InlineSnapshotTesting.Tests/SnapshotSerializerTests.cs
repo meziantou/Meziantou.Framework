@@ -16,7 +16,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void Argon()
     {
-        InlineSnapshot.Validate(new ArgonSnapshotSerializer().Serialize(new Sample()), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(new ArgonSnapshotSerializer().Serialize(new Sample()), """
             {
                 Int32: 42,
                 NullableInt32: null,
@@ -71,7 +71,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void Json()
     {
-        InlineSnapshot.Validate(new JsonSnapshotSerializer().Serialize(new Sample()), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(new JsonSnapshotSerializer().Serialize(new Sample()), """
             {
               "Int32": 42,
               "NullableInt32": null,
@@ -124,7 +124,7 @@ public sealed class SnapshotSerializerTests
     [Fact]
     public void HumanReadable()
     {
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(new Sample()), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(new Sample()), """
             Int32: 42
             NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
             DateTimeOffset_NonZero: 2000-01-01T01:01:01+02:00
@@ -168,9 +168,9 @@ public sealed class SnapshotSerializerTests
               StringValue2: Constant
             """);
 
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(null), Settings, "<null>");
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(null), "<null>");
 
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(new { A = 1, B = 2 }), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(new { A = 1, B = 2 }), """
             A: 1
             B: 2
             """);
@@ -180,22 +180,23 @@ public sealed class SnapshotSerializerTests
     public void HumanReadable_HttpRequestMessage_Method_Uri()
     {
         using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com") };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
             RequestUri: https://example.com/
             """);
     }
+
     [Fact]
     public void HumanReadable_HttpRequestMessage_Method_Uri_Version()
     {
         using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com"), Version = HttpVersion.Version10 };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
             RequestUri: https://example.com/
             Version: 1.0
             """);
     }
-    
+
     [Fact]
     public void HumanReadable_HttpRequestMessage_Method_Uri_Headers()
     {
@@ -211,7 +212,7 @@ public sealed class SnapshotSerializerTests
                 },
             },
         };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
             RequestUri: https://example.com/
             Headers:
@@ -220,7 +221,7 @@ public sealed class SnapshotSerializerTests
                 - text/html
             """);
     }
-    
+
     [Fact]
     public void HumanReadable_HttpRequestMessage_Method_Uri_Content()
     {
@@ -229,7 +230,7 @@ public sealed class SnapshotSerializerTests
             RequestUri = new Uri("https://example.com"),
             Content = new StringContent("foo"),
         };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
             RequestUri: https://example.com/
             Content:
@@ -251,7 +252,7 @@ public sealed class SnapshotSerializerTests
             },
             Content = new ByteArrayContent(Array.Empty<byte>()),
         };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             StatusCode: 200 (OK)
             Headers:
               ETag: "dummy"
@@ -276,7 +277,7 @@ public sealed class SnapshotSerializerTests
                 ETag = new EntityTagHeaderValue("\"dummy\""),
             },
         };
-        InlineSnapshot.Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), Settings, """
+        InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             StatusCode: 200 (OK)
             Headers:
               ETag: "dummy"

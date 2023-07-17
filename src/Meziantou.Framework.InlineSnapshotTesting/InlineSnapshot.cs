@@ -1,30 +1,41 @@
 ﻿using System.Runtime.CompilerServices;
 using DiffEngine;
+
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public static class InlineSnapshot
 {
-    [InlineSnapshotAssertion(nameof(expected))]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Validate(object? subject, InlineSnapshotSettings? settings, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    public static InlineSnapshotBuilder WithSettings(InlineSnapshotSettings? settings) => new(settings);
+    public static InlineSnapshotBuilder WithSettings(Action<InlineSnapshotSettings>? configure)
     {
-        settings ??= InlineSnapshotSettings.Default;
-        var context = CallerContext.Get(settings, filePath, lineNumber);
-        ShouldMatchInlineSnapshot(subject, context, settings, expected);
+        if (configure == null)
+            return new(settings: null);
+
+        var settings = InlineSnapshotSettings.Default with { };
+        configure.Invoke(settings);
+        return new InlineSnapshotBuilder(settings);
     }
 
     [InlineSnapshotAssertion(nameof(expected))]
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void Validate(object? subject, string expected, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
+    public static void Validate(object? subject, string? expected = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = -1)
     {
         var settings = InlineSnapshotSettings.Default;
         var context = CallerContext.Get(settings, filePath, lineNumber);
         ShouldMatchInlineSnapshot(subject, context, settings, expected);
     }
 
-    private static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
+    internal static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
     {
         var actual = settings.SnapshotSerializer.Serialize(subject);
+        if (actual != null)
+        {
+            foreach (var scrubber in settings.Scrubbers)
+            {
+                actual = scrubber.Scrub(actual);
+            }
+        }
+
         var normalizedActual = settings.SnapshotComparer.NormalizeValue(actual);
         var normalizedExpected = settings.SnapshotComparer.NormalizeValue(expected);
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
@@ -39,12 +50,12 @@ public static class InlineSnapshot
 
                 if (settings.SnapshotUpdateStrategy.MustReportError(settings, context.FilePath))
                 {
-                    settings.Assert(normalizedExpected, normalizedActual);
+                    settings.AssertSnapshot(normalizedExpected, normalizedActual);
                 }
             }
             else
             {
-                settings.Assert(normalizedExpected, normalizedActual);
+                settings.AssertSnapshot(normalizedExpected, normalizedActual);
             }
         }
         else if (settings.ForceUpdateSnapshots)

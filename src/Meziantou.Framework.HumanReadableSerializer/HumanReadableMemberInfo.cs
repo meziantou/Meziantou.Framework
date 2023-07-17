@@ -68,6 +68,10 @@ internal sealed class HumanReadableMemberInfo
         if (!member.CanRead)
             return null;
 
+        // Do not serializer indexer (e.g. this[int index])
+        if (member.GetIndexParameters().Length > 0)
+            return null;
+
         var hasInclude = options.GetCustomAttribute<HumanReadableIncludeAttribute>(member) != null;
         if (!hasInclude && !(member.GetGetMethod()?.IsPublic ?? false))
             return null;

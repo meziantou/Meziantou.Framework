@@ -1,4 +1,4 @@
-# Meziantou.Framework.InlineSnapshotTesting
+ï»¿# Meziantou.Framework.InlineSnapshotTesting
 
 `Meziantou.Framework.InlineSnapshotTesting` is a snapshot tool that simplifies the assertion of complex data models and documents. It is inspired on [Verify](https://github.com/VerifyTests/Verify).
 
@@ -13,8 +13,8 @@ First you can write a test with the following code:
 ````c#
 var data = new
 {
-    FirstName = "Gérald",
-    LastName = "Barré",
+    FirstName = "GÃ©rald",
+    LastName = "BarrÃ©",
     NickName = "meziantou",
 };
 
@@ -28,13 +28,13 @@ Once you accept the change, the test is updated:
 ````c#
 var data = new
 {
-    FirstName = "Gérald",
-    LastName = "Barré",
+    FirstName = "GÃ©rald",
+    LastName = "BarrÃ©",
     NickName = "meziantou",
 };
 InlineSnapshot.Validate(data, """
-    FirstName: Gérald,
-    LastName: Barré,
+    FirstName: GÃ©rald,
+    LastName: BarrÃ©,
     NickName: meziantou
     """);
 ````
@@ -69,7 +69,9 @@ var settings = InlineSnapshotSettings.Default with
     SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite,
 };
 
-InlineSnapshot.Validate(data, settings, "");
+InlineSnapshot.CreateBuilder()
+    .WithSettings(settings)
+    .Validate(data, "");
 ````
 
 ## Environment variables
@@ -86,6 +88,6 @@ Helper(""); // This string will be updated
 [InlineSnapshotAssertion(nameof(expected))]
 static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
 {
-    InlineSnapshot.Validate(new object(), null, expected, filePath, lineNumber);
+    InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
 }
 ````

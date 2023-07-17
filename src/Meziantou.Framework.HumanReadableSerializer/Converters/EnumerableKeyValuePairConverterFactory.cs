@@ -45,6 +45,10 @@ internal sealed class EnumerableKeyValuePairConverterFactory : HumanReadableConv
         protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
             Debug.Assert(value != null);
+            if (options.DictionaryKeyOrder != null)
+            {
+                value = value.OrderBy(value => value.Key, options.DictionaryKeyOrder);
+            }
 
             var hasItem = false;
             foreach (var prop in value)

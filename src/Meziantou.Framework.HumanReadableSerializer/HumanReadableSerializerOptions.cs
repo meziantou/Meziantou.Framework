@@ -16,8 +16,12 @@ public sealed record HumanReadableSerializerOptions
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
     private bool _includeFields;
     private HumanReadableIgnoreCondition _defaultIgnoreCondition;
+    private IComparer<string>? _dictionaryKeyOrder;
     private IComparer<string>? _propertyOrder;
     private bool _includeObsoleteMembers;
+
+    [ThreadStatic]
+    private static SerializationContext s_currentContext;
 
     public HumanReadableSerializerOptions()
     {
@@ -61,6 +65,19 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "'By design")]
+    public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
+    {
+        return s_currentContext.GetOrSetSerializationData(name, addValue);
+    }
+
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
+    internal IDisposable BeginScope()
+    {
+        s_currentContext ??= new SerializationContext();
+        return s_currentContext.BeginScope();
+    }
+
     public bool IsReadOnly { get; private set; }
     public int MaxDepth { get; set; } = 64;
     public bool ShowInvisibleCharactersInValues { get; set; }
@@ -73,6 +90,16 @@ public sealed record HumanReadableSerializerOptions
         {
             VerifyMutable();
             _propertyOrder = value;
+        }
+    }
+    
+    public IComparer<string>? DictionaryKeyOrder
+    {
+        get => _dictionaryKeyOrder;
+        set
+        {
+            VerifyMutable();
+            _dictionaryKeyOrder = value;
         }
     }
 
@@ -350,11 +377,14 @@ public sealed record HumanReadableSerializerOptions
         internal static readonly HumanReadableConverter[] DefaultConverters = new HumanReadableConverter[]
         {
             new BigIntegerConverter(),
+            new BitArrayConverter(),
+            new BitVector32Converter(),
             new BooleanConverter(),
             new ByteArrayConverter(),
             new ByteConverter(),
             new CharConverter(),
             new ComplexConverter(),
+            new ConstructorInfoConverter(),
             new CultureInfoConverter(),
 #if NET6_0_OR_GREATER
             new DateOnlyConverter(),
@@ -364,6 +394,7 @@ public sealed record HumanReadableSerializerOptions
             new DBNullConverter(),
             new DecimalConverter(),
             new DoubleConverter(),
+            new ExpressionConverter(),
 #if NET5_0_OR_GREATER
             new HalfConverter(),
 #endif
@@ -379,17 +410,24 @@ public sealed record HumanReadableSerializerOptions
 #endif
             new IntPtrConverter(),
             new IPAddressConverter(),
+            new FieldInfoConverter(),
             new GuidConverter(),
             new MediaTypeHeaderValueConverter(),
             new MemoryConverterFactory(),
+            new MethodInfoConverter(),
+            new NameValueCollectionConverter(),
+            new ParameterInfoConverter(),
+            new PropertyInfoConverter(),
             new ReadOnlyMemoryConverterFactory(),
             new RegexConverter(),
             new SByteConverter(),
             new SingleConverter(),
             new StringBuilderConverter(),
             new StringConverter(),
+            new StringDictionaryConverter(),
             new StringWriterConverter(),
             new SystemTypeConverter(),
+            new TargetInvocationExceptionConverter(),
 #if NET6_0_OR_GREATER
             new TimeOnlyConverter(),
 #endif

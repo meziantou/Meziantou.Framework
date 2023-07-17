@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics;
+using System.Text;
+using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 internal sealed class SystemTypeConverter : HumanReadableConverter<Type>
@@ -7,13 +9,14 @@ internal sealed class SystemTypeConverter : HumanReadableConverter<Type>
     {
         Debug.Assert(value != null);
 
-        if (value.AssemblyQualifiedName != null)
+        var sb = new StringBuilder();
+        TypeUtils.GetHumanDisplayName(sb, value);
+        if (value.Assembly != null)
         {
-            writer.WriteValue(value.AssemblyQualifiedName);
+            sb.Append(", ");
+            sb.Append(value.Assembly.GetName().Name);
         }
-        else
-        {
-            throw new HumanReadableSerializerException($"Cannot serialize type '{value}' as its AssemblyQualifiedName is null");
-        }
+
+        writer.WriteValue(sb.ToString());
     }
 }

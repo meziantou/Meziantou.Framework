@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
 using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.InlineSnapshotTesting.Scrubbers.HumanReadableSerializerScrubbers;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -122,7 +124,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
             }
             """", $$""""
             Helper("{}");
@@ -130,7 +132,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
             }
             """");
     }
@@ -150,7 +152,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
             }
             """", $$""""
             Helper("{}");
@@ -164,7 +166,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), null, expected, filePath, lineNumber);
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
             }
             """");
     }
@@ -211,6 +213,120 @@ public sealed class InlineSnapshotTests
                 {}
                 """);
             """");
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_AddParameter()
+    {
+        await AssertSnapshot($$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}("");
+            """, $$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}("", "");
+            """, launchDebugger: false);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_MultiLine_AddParameter()
+    {
+        await AssertSnapshot($$"""
+            {{nameof(InlineSnapshot)}}
+                .{{nameof(InlineSnapshot.Validate)}}("");
+            """, $$"""
+            {{nameof(InlineSnapshot)}}
+                .{{nameof(InlineSnapshot.Validate)}}("", "");
+            """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_Builder_MultiLine_AddParameter()
+    {
+        await AssertSnapshot($$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.WithSettings)}}(default(InlineSnapshotSettings))
+                .{{nameof(InlineSnapshot.Validate)}}("");
+            """, $$"""
+            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.WithSettings)}}(default(InlineSnapshotSettings))
+                .{{nameof(InlineSnapshot.Validate)}}("", "");
+            """);
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_Regex()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesMatching(new Regex("Line[2]", RegexOptions.None, TimeSpan.FromSeconds(10))))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    public void ScrubLinesMatching_Pattern()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesMatching("Line[2]"))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Testing")]
+    public void ScrubLinesContaining()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesContaining("line2"))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_StringComparison_OrdinalIgnoreCase()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesContaining(StringComparison.OrdinalIgnoreCase, "line2"))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_StringComparison_Ordinal()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesContaining(StringComparison.Ordinal, "line2"))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine2\nLine3");
+    }
+
+    [Fact]
+    public void ScrubLinesWithReplace()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.ToLowerInvariant()))
+            .Validate("Line1\nLine2\nLine3", "line1\nline2\nline3");
+    }
+
+    [Fact]
+    public void ScrubLinesWithReplace_RemoveLine()
+    {
+        InlineSnapshot
+            .WithSettings(settings => settings.ScrubLinesWithReplace(line => line == "Line2" ? null : line))
+            .Validate("Line1\nLine2\nLine3", "Line1\nLine3");
+    }
+
+    [Fact]
+    public void Scrub_Guid()
+    {
+        var guids = new[]
+        {
+            new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
+            new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
+            new Guid("6ff5182f-7644-4bc1-a3a4-38092cb3663a"),
+        };
+
+        // Validate parallelism to be sure Guids are not shared between compilation
+        Parallel.For(1, 1000, _ =>
+        {
+            InlineSnapshot
+                .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubGuid()))
+                .Validate(guids, """
+                    - 00000000-0000-0000-0000-000000000001
+                    - 00000000-0000-0000-0000-000000000001
+                    - 00000000-0000-0000-0000-000000000002
+                    """);
+        });
     }
 
     [Theory]

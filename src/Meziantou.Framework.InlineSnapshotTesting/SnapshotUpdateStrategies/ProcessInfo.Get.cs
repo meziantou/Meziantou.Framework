@@ -7,7 +7,7 @@ internal sealed partial record ProcessInfo
 {
     private static readonly HashSet<string> IdeProcessNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "devenv.exe",
+        "devenv.exe", "devenv",
         "rider64.exe", "rider64",
         "code.exe", "code",
     };

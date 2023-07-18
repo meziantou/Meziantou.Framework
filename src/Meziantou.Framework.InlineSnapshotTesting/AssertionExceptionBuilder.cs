@@ -2,6 +2,8 @@
 
 public class AssertionExceptionBuilder
 {
+    internal static AssertionExceptionBuilder Default { get; } = new AssertionExceptionBuilder();
+
     public virtual Exception CreateException(string message)
     {
         // Try to find the current runner exception.

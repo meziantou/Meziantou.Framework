@@ -17,15 +17,16 @@ public sealed record InlineSnapshotSettings
     public SnapshotSerializer SnapshotSerializer { get; set; } = HumanReadableSnapshotSerializer.DefaultInstance;
     public SnapshotComparer SnapshotComparer { get; set; } = SnapshotComparer.Default;
     public AssertionMessageFormatter ErrorMessageFormatter { get; set; } = InlineDiffAssertionMessageFormatter.Instance;
-    public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = new AssertionExceptionBuilder();
+    public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = AssertionExceptionBuilder.Default;
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
+    public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
     /// Set the tool to diff snapshots.
     /// If null, the diff tool is determined by
     /// <list type="bullet">
     ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
-    ///   <item>The current IDE (VS, VSCode, Rider)</item>
+    ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
     /// </list>
     /// </summary>
     /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
@@ -39,7 +40,12 @@ public sealed record InlineSnapshotSettings
     /// <summary>
     /// Before editing a file, use the PDB to validate the line number containing the snapshot.
     /// </summary>
-    public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get; set; } = true;
+    /// <remarks>
+    /// PDB and <see cref="System.Runtime.CompilerServices.CallerLineNumberAttribute"/> does not provide
+    /// the same value. PDB provide the start of the expression whereas the attribute provide the line
+    /// containing the call to the method. In the case of a multiline expression, the values can differ.
+    /// </remarks>
+    public bool ValidateLineNumberUsingPdbInfoWhenAvailable { get; set; }
 
     /// <summary>
     /// Update snapshots even when the snapshot is already valid.
@@ -47,8 +53,41 @@ public sealed record InlineSnapshotSettings
     /// </summary>
     public bool ForceUpdateSnapshots { get; set; }
 
+    public InlineSnapshotSettings()
+    {
+        Scrubbers = new List<Scrubber>();
+    }
+
+    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
+    private InlineSnapshotSettings(InlineSnapshotSettings? options)
+    {
+        Scrubbers = new List<Scrubber>();
+        if (options != null)
+        {
+            Indentation = options.Indentation;
+            EndOfLine = options.EndOfLine;
+            FileEncoding = options.FileEncoding;
+            AutoDetectContinuousEnvironment = options.AutoDetectContinuousEnvironment;
+            SnapshotUpdateStrategy = options.SnapshotUpdateStrategy;
+            SnapshotSerializer = options.SnapshotSerializer;
+            SnapshotComparer = options.SnapshotComparer;
+            ErrorMessageFormatter = options.ErrorMessageFormatter;
+            AssertionExceptionCreator = options.AssertionExceptionCreator;
+            AllowedStringFormats = options.AllowedStringFormats;
+            MergeTool = options.MergeTool;
+            ValidateSourceFilePathUsingPdbInfoWhenAvailable = options.ValidateSourceFilePathUsingPdbInfoWhenAvailable;
+            ValidateLineNumberUsingPdbInfoWhenAvailable = options.ValidateLineNumberUsingPdbInfoWhenAvailable;
+            ForceUpdateSnapshots = options.ForceUpdateSnapshots;
+
+            foreach (var item in options.Scrubbers)
+            {
+                Scrubbers.Add(item);
+            }
+        }
+    }
+
     [DoesNotReturn]
-    internal void Assert(string? expected, string? actual)
+    internal void AssertSnapshot(string? expected, string? actual)
     {
         var errorMessage = "Snapshots do not match:\n" + ErrorMessageFormatter.FormatMessage(expected, actual);
         throw AssertionExceptionCreator.CreateException(errorMessage);

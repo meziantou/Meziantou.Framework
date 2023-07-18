@@ -18,10 +18,14 @@ public static class HumanReadableHttpExtensions
         {
             IEnumerable<HttpHeaderValueFormatter> headerFormatters = responseOptions.HeaderValueTransformer;
             if (responseOptions.RedactContentSecurityPolicyNonce)
+            {
                 headerFormatters = headerFormatters.Prepend(new ContentSecurityPolicyFormatter());
+            }
 
             if (responseOptions.ExcludedHeaderNames != null || headerFormatters.Any())
+            {
                 options.Converters.Add(new HttpHeadersConverter<HttpResponseHeaders>(responseOptions.ExcludedHeaderNames, headerFormatters));
+            }
         }
 
         ConfigureHttpRequestMessage(options, httpOptions.RequestMessageOptions);
@@ -47,7 +51,7 @@ public static class HumanReadableHttpExtensions
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Headers), new HumanReadableIgnoreAttribute()
         {
             Condition = HumanReadableIgnoreCondition.Custom,
-            CustomCondition = obj => FilterHeaders(obj, requestOptions?.ExcludedHeaderNames),
+            CustomCondition = data => FilterHeaders(data.Value, requestOptions?.ExcludedHeaderNames),
         });
 
         if (requestOptions.OmitProtocolVersion is true)
@@ -81,14 +85,14 @@ public static class HumanReadableHttpExtensions
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Headers), new HumanReadableIgnoreAttribute()
         {
             Condition = HumanReadableIgnoreCondition.Custom,
-            CustomCondition = obj => FilterHeaders(obj, responseOptions?.ExcludedHeaderNames),
+            CustomCondition = data => FilterHeaders(data.Value, responseOptions?.ExcludedHeaderNames),
         });
 
 #if NETCOREAPP3_1_OR_GREATER
         options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.TrailingHeaders), new HumanReadableIgnoreAttribute()
         {
             Condition = HumanReadableIgnoreCondition.Custom,
-            CustomCondition = obj => FilterHeaders(obj, responseOptions?.ExcludedHeaderNames),
+            CustomCondition = data => FilterHeaders(data.Value, responseOptions?.ExcludedHeaderNames),
         });
 #endif
 

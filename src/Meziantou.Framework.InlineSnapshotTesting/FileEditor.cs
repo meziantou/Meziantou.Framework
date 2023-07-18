@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
+using System.Linq.Expressions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -109,7 +110,7 @@ internal static class FileEditor
 
             var indentation = settings.Indentation ?? DetectIndentation(sourceText);
             var eol = settings.EndOfLine ?? DetectEndOfLine(sourceText);
-            var startPosition = invocationExpression.GetLocation().GetMappedLineSpan().StartLinePosition.Character;
+            var startPosition = GetStartPosition(invocationExpression);
 
             LiteralExpressionSyntax newArgumentExpression;
             if (newValue is null)
@@ -122,10 +123,20 @@ internal static class FileEditor
                 newArgumentExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(formattedValue, newValue));
             }
 
-            newArgumentExpression = newArgumentExpression
-                    .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
-                    .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
-            var newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
+            SyntaxNode newRoot;
+            if (argumentExpression != null)
+            {
+                newArgumentExpression = newArgumentExpression
+                        .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
+                        .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
+
+                newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
+            }
+            else
+            {
+                var newInvocation = invocationExpression.AddArgumentListArguments(SyntaxFactory.Argument(newArgumentExpression).WithLeadingTrivia(SyntaxFactory.Space));
+                newRoot = root.ReplaceNode(invocationExpression, newInvocation);
+            }
 
             // Save the file
             // Create a temp file, show diff if needed, Move or let the tool update the file
@@ -146,20 +157,22 @@ internal static class FileEditor
             var mergedSourceText = GetSourceText(settings, File.Exists(tempPath) ? tempPath : context.FilePath);
             var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText);
             var mergedRoot = mergedTree.GetRoot();
-            var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(new TextSpan(argumentExpression.SpanStart, 1)).OfType<LiteralExpressionSyntax>().ToArray();
-            if (potentialMergedExpressions.Length != 1)
+
+            var textSpan = new TextSpan(invocationExpression.SpanStart, 1);
+            var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();
+            if (potentialMergedExpressions.Length == 0)
             {
                 Errors.Add(context.FilePath);
                 return;
             }
 
-            var argumentSpan = argumentExpression.GetLocation().GetMappedLineSpan();
-            var newArgumentSpan = potentialMergedExpressions[0].GetLocation().GetMappedLineSpan();
+            var invocationSpan = invocationExpression.GetLocation().GetMappedLineSpan();
+            var newInvocationSpan = potentialMergedExpressions.MaxBy(e => e.Span.Length).GetLocation().GetMappedLineSpan();
 
             var fileEdit = new FileEdit(
                 context.LineNumber,
-                argumentSpan.EndLinePosition.Line - argumentSpan.StartLinePosition.Line,
-                newArgumentSpan.EndLinePosition.Line - newArgumentSpan.StartLinePosition.Line);
+                invocationSpan.EndLinePosition.Line - invocationSpan.StartLinePosition.Line,
+                newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
             if (!Changes.TryGetValue(context.FilePath, out var fileEdits))
             {
                 fileEdits = new List<FileEdit>();
@@ -171,7 +184,24 @@ internal static class FileEditor
         }
     }
 
-    private static ExpressionSyntax FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string? existingValue)
+    private static int GetStartPosition(InvocationExpressionSyntax invocationExpression)
+    {
+        if (invocationExpression.Expression != null)
+        {
+            var text = invocationExpression.Expression.GetText(Encoding.UTF8);
+            var lastLine = text.Lines[text.Lines.Count - 1];
+            if (!lastLine.Span.IsEmpty)
+            {
+                var lineText = lastLine.ToString();
+                var count = lineText.Length - lineText.AsSpan().TrimStart().Length;
+                return count;
+            }
+        }
+
+        return invocationExpression.GetLocation().GetLineSpan().StartLinePosition.Character;
+    }
+
+    private static ExpressionSyntax? FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string? existingValue)
     {
         // Try find by name
         ExpressionSyntax? argumentExpression = null;
@@ -187,14 +217,21 @@ internal static class FileEditor
             }
         }
 
+        // Try find by index
         if (argumentExpression == null && context.ParameterIndex >= 0 && context.ParameterIndex < arguments.Count)
         {
             argumentExpression = arguments[context.ParameterIndex].Expression;
         }
 
+        // Try find by value
         argumentExpression ??= FindSingleArgumentMatchingValue(arguments, existingValue);
         if (argumentExpression == null)
+        {
+            if (arguments.Count == 1)
+                return null;
+
             throw new InlineSnapshotException("Cannot find the argument to update");
+        }
 
         if (!ExpressionSyntaxMatchesValue(argumentExpression, existingValue, out var actualValue))
             throw new InlineSnapshotException($"Cannot find the argument to update. The current value doesn't match the expected value.\nExpected: <{existingValue}>\nActual: <{actualValue}>");

@@ -36,7 +36,9 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
 #endif
 
         if (options.PropertyOrder != null)
+        {
             values = values.OrderBy(o => o.Key, options.PropertyOrder);
+        }
 
         foreach (var header in values)
         {

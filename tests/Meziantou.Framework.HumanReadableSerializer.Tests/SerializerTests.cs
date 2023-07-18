@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1720
 #pragma warning disable CA1814
+#pragma warning disable CA1822
 #pragma warning disable CA3075
 #pragma warning disable MA0009
 #pragma warning disable MA0110
@@ -7,14 +8,18 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Numerics;
+using System.Reflection;
+using System.Security.Claims;
 using System.Text;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
@@ -95,6 +100,24 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void IEnumerableKeyValuePairStringObject_Array_Order()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>("B", 20),
+                new KeyValuePair<string, object>("A", 10),
+            },
+            Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
+            Expected = """
+                A: 10
+                B: 20
+                """,
+        });
+    }
+
+    [Fact]
     public void IEnumerableKeyValuePairStringObject_Dictionary()
     {
         AssertSerialization(new Validation
@@ -104,6 +127,25 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 ["A"] = 10,
                 ["B"] = 20,
             },
+            Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
+            Expected = """
+                A: 10
+                B: 20
+                """,
+        });
+    }
+
+    [Fact]
+    public void IEnumerableKeyValuePairStringObject_Dictionary_Order()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                ["B"] = 20,
+                ["A"] = 10,
+            },
+            Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
             Expected = """
                 A: 10
                 B: 20
@@ -342,7 +384,52 @@ public sealed partial class SerializerTests : SerializerTestsBase
             yield return 2;
             yield return 3;
         }
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+#pragma warning restore CS1998
+    }
+
+    [Fact]
+    public void AsyncEnumerable_KeyValuePairStringInt32()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = TypedYield(),
+            Expected = """
+                A: 1
+                C: 3
+                B: 2
+                """,
+        });
+
+        static async IAsyncEnumerable<KeyValuePair<string, int>> TypedYield()
+        {
+            await Task.Yield();
+            yield return new KeyValuePair<string, int>("A", 1);
+            yield return new KeyValuePair<string, int>("C", 3);
+            yield return new KeyValuePair<string, int>("B", 2);
+        }
+    }
+
+    [Fact]
+    public void AsyncEnumerable_KeyValuePairStringInt32_Order()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = TypedYield(),
+            Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
+            Expected = """
+                A: 1
+                B: 2
+                C: 3
+                """,
+        });
+
+        static async IAsyncEnumerable<KeyValuePair<string, int>> TypedYield()
+        {
+            await Task.Yield();
+            yield return new KeyValuePair<string, int>("A", 1);
+            yield return new KeyValuePair<string, int>("C", 3);
+            yield return new KeyValuePair<string, int>("B", 2);
+        }
     }
 
     [Fact]
@@ -900,7 +987,86 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
-    public void Type() => AssertSerialization(typeof(SerializerTests), "Meziantou.Framework.HumanReadable.Tests.SerializerTests, Meziantou.Framework.HumanReadableSerializer.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null");
+    public void Type() => AssertSerialization(typeof(SerializerTests), "Meziantou.Framework.HumanReadable.Tests.SerializerTests, Meziantou.Framework.HumanReadableSerializer.Tests");
+
+    [Fact]
+    public void Type_Covariant_Contravariant() => AssertSerialization(typeof(ICovariantContravariantInterface<,>), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+ICovariantContravariantInterface<in T1, out T2>, Meziantou.Framework.HumanReadableSerializer.Tests");
+
+#if NET471
+    [Fact]
+    public void Type_List_OpenGeneric() => AssertSerialization(typeof(List<>), "System.Collections.Generic.List<T>, mscorlib");
+#else
+    [Fact]
+    public void Type_List_OpenGeneric() => AssertSerialization(typeof(List<>), "System.Collections.Generic.List<T>, System.Private.CoreLib");
+#endif
+
+#if NET471
+    [Fact]
+    public void Type_List_Int32() => AssertSerialization(typeof(List<int>), "System.Collections.Generic.List<System.Int32>, mscorlib");
+#else
+    [Fact]
+    public void Type_List_Int32() => AssertSerialization(typeof(List<int>), "System.Collections.Generic.List<System.Int32>, System.Private.CoreLib");
+#endif
+
+    [Fact]
+    public void Type_AnonymType() => AssertSerialization(new { }.GetType(), "<>f__AnonymousType4, Meziantou.Framework.HumanReadableSerializer.Tests");
+
+    [Fact]
+    public void MethodInfo() => AssertSerialization(typeof(object).GetMethod("ToString"), "System.Object.ToString()");
+
+    [Fact]
+    public void MethodInfo_dynamic_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Dynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Dynamic(dynamic value)");
+
+    [Fact]
+    public void MethodInfo_dynamic_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleDynamic((dynamic, System.Int32) value)");
+    
+    [Fact]
+    public void MethodInfo_dynamic_Nested_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleNestedDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleNestedDynamic((dynamic A, (System.Int32 B, dynamic C) D) value)");
+
+    [Fact]
+    public void MethodInfo_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NotNamed)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NotNamed((System.Int32, System.String) a)");
+
+    [Fact]
+    public void MethodInfo_ValueTuple_Named_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.Named)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.Named((System.Int32 A, System.String B) a)");
+
+    [Fact]
+    public void MethodInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.NamedResult)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedResult()");
+
+    [Fact]
+    public void PropertyInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetProperty(nameof(Methods.NamedProperty)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedProperty");
+
+    [Fact]
+    public void MethodInfo_WithParameters() => AssertSerialization(typeof(Guid).GetMethod("Parse", new[] { typeof(string) }), "static System.Guid.Parse(System.String input)");
+
+    [Fact]
+    public void MethodInfo_Generic() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<TEnum>(System.String value)");
+
+    [Fact]
+    public void MethodInfo_Generic_Constructed() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod)).MakeGenericMethod(typeof(DayOfWeek)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<System.DayOfWeek>(System.String value)");
+
+    [Fact]
+    public void FieldInfo() => AssertSerialization(typeof(Guid).GetField("_a", BindingFlags.NonPublic | BindingFlags.Instance), "System.Guid._a");
+
+    [Fact]
+    public void FieldInfo_OpenGenericType() => AssertSerialization(typeof(Nullable<>).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), "System.Nullable<T>.hasValue");
+
+    [Fact]
+    public void FieldInfo_GenericType() => AssertSerialization(typeof(int?).GetField("hasValue", BindingFlags.NonPublic | BindingFlags.Instance), "System.Nullable<System.Int32>.hasValue");
+
+    [Fact]
+    public void PropertyInfo() => AssertSerialization(typeof(string).GetProperty("Length"), "System.String.Length");
+
+    [Fact]
+    public void PropertyInfo_Indexer() => AssertSerialization(typeof(string).GetProperty("Chars"), "System.String.Chars[System.Int32 index]");
+
+    [Fact]
+    public void ConstructorInfo() => AssertSerialization(typeof(object).GetConstructor(Array.Empty<Type>()), "new System.Object()");
+
+    [Fact]
+    public void ConstructorInfo_Static() => AssertSerialization(typeof(ClassWithStaticCtor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)[0], "static Meziantou.Framework.HumanReadable.Tests.SerializerTests+ClassWithStaticCtor()");
+
+    [Fact]
+    public void ParameterInfo() => AssertSerialization(typeof(Guid).GetMethod("Parse", new[] { typeof(string) }).GetParameters()[0], "System.String input");
 
     [Fact]
     public void DateTime_Utc() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc), "2123-04-05T06:07:08Z");
@@ -1288,7 +1454,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void NodaTime_Instant()
     {
-        AssertSerialization(NodaTime.Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc)), """
+        AssertSerialization(Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc)), """
             2023-01-02T03:04:05Z
             """);
     }
@@ -1304,7 +1470,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void NodaTime_Duration()
     {
-        AssertSerialization(NodaTime.Duration.FromMinutes(3), """
+        AssertSerialization(Duration.FromMinutes(3), """
             0:00:03:00
             """);
     }
@@ -1324,11 +1490,91 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void NodaTime_ZonedDateTime()
     {
-        var instant = NodaTime.Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+        var instant = Instant.FromDateTimeUtc(new DateTime(2023, 1, 2, 3, 4, 5, DateTimeKind.Utc));
         var value = instant.InUtc();
 
         AssertSerialization(value, """
             2023-01-02T03:04:05 UTC (+00)
+            """);
+    }
+
+    [Fact]
+    public void StringDictionary()
+    {
+        var value = new StringDictionary()
+        {
+            ["key1"] = "value1",
+            ["key2"] = "value2",
+        };
+
+        AssertSerialization(new Validation
+        {
+            Subject = value,
+            Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
+            Expected = """
+                key1: value1
+                key2: value2
+                """,
+        });
+    }
+
+    [Fact]
+    public void NameValueCollection()
+    {
+        var value = new NameValueCollection()
+        {
+            ["key1"] = "value1",
+            ["key2"] = "value2",
+        };
+
+        AssertSerialization(value, """
+            key1: value1
+            key2: value2
+            """);
+    }
+
+    [Fact]
+    public void BitVector32()
+    {
+        var value = new BitVector32();
+        var section = System.Collections.Specialized.BitVector32.CreateSection(3);
+        value[section] = 2;
+
+        AssertSerialization(value, """
+            00000000000000000000000000000010
+            """);
+    }
+
+    [Fact]
+    public void BitArray()
+    {
+        var value = new BitArray(length: 32);
+        value[1] = true;
+
+        AssertSerialization(value, """
+            01000000000000000000000000000000
+            """);
+    }
+
+    [Fact]
+    public void Expression_NewObject()
+    {
+        var value = Expression.New(typeof(object));
+
+        AssertSerialization(value, """
+            new Object()
+            """);
+    }
+
+    [Fact]
+    public void Expression_Lambda()
+    {
+        var param = Expression.Parameter(typeof(string), "x");
+        var body = Expression.Constant(true);
+        var value = Expression.Lambda(body, param);
+
+        AssertSerialization(value, """
+            x => True
             """);
     }
 
@@ -1798,6 +2044,111 @@ public sealed partial class SerializerTests : SerializerTestsBase
         });
     }
 
+    [Fact]
+    public void ConditionalPropertyAttribute()
+    {
+        var obj = new { A = new string[] { "a", "b" }, B = 2 };
+        var options = new HumanReadableSerializerOptions();
+        options.AddPropertyAttribute(prop => prop.Name == "B", new HumanReadableIgnoreAttribute());
+
+        AssertSerialization(new Validation
+        {
+            Subject = obj,
+            Options = options,
+            Expected = """
+                A:
+                  - a
+                  - b
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreException()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersThatThrow<NotSupportedException>();
+
+        AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Options = options,
+            Expected = """
+                B: 1
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreException_ThrowException()
+    {
+        Assert.Throws<NotSupportedException>(() => AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Expected = """
+                B: 1
+                """,
+        }));
+    }
+
+    [Fact]
+    public void IgnoreException_ThrowExceptionUnexpectedException()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersThatThrow<NotImplementedException>();
+
+        Assert.Throws<NotSupportedException>(() => AssertSerialization(new Validation
+        {
+            Subject = new PropThrowAnException(),
+            Options = options,
+            Expected = """
+                B: 1
+                """,
+        }));
+    }
+
+    [Fact]
+    public void IgnoreMember()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<Exception>("Source", "HResult", "TargetSite", "Data");
+
+        AssertSerialization(new Validation
+        {
+            Subject = new Exception("test"),
+            Options = options,
+            Expected = """
+                HelpLink: <null>
+                InnerException: <null>
+                Message: test
+                StackTrace: <null>
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreMemberWithType()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.IgnoreMembersWithType<string>();
+
+        AssertSerialization(new Validation
+        {
+            Subject = new { Prop1 = "A", Prop2 = 1 },
+            Options = options,
+            Expected = """
+                Prop2: 1
+                """,
+        });
+    }
+
+    private sealed class PropThrowAnException
+    {
+        public int A => throw new NotSupportedException();
+        public int B => 1;
+    }
+
     private readonly struct StructWithDefaultConstructor
     {
         public int Value { get; }
@@ -1965,6 +2316,13 @@ public sealed partial class SerializerTests : SerializerTestsBase
         }
     }
 
+    private sealed class ClassWithStaticCtor
+    {
+        static ClassWithStaticCtor() { Console.WriteLine(); }
+    }
+
+    private interface ICovariantContravariantInterface<in T1, out T2> { }
+
     private class Root
     {
         public int PropRoot { get; set; } = 1;
@@ -1974,5 +2332,26 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         public new int PropRoot { get; set; } = 2;
         public int PropChild { get; set; } = 3;
+    }
+
+    private sealed class Methods
+    {
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        public void NotNamed((int, string) a) { }
+
+        [SuppressMessage("Style", "IDE0060:Remove unused parameter")]
+        public void Named((int A, string B) a) { }
+
+        public (int A, int B) NamedResult() => default;
+
+        public (int A, int B) NamedProperty => default;
+
+        public void GenericMethod<TEnum>(string value) => throw null;
+
+        public void Dynamic(dynamic value) => throw null;
+
+        public void ValueTupleDynamic((dynamic, int) value) => throw null;
+
+        public void ValueTupleNestedDynamic((dynamic A, (int B, dynamic C) D) value) => throw null;
     }
 }

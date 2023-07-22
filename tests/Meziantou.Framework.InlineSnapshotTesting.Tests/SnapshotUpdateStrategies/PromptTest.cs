@@ -12,8 +12,8 @@ public sealed class PromptTest
                     ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), PromptConfigurationScope.ParentProcess));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs").Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs").Should().BeFalse();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null).Should().BeFalse();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null).Should().BeFalse();
         prompt.AssertAllCalled();
     }
 
@@ -25,8 +25,8 @@ public sealed class PromptTest
                     ctx => new PromptResult(PromptConfigurationMode.OverwriteWithoutFailure, TimeSpan.FromHours(1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs").Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs").Should().BeTrue();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null).Should().BeFalse();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null).Should().BeTrue();
         prompt.AssertAllCalled();
     }
     
@@ -39,8 +39,8 @@ public sealed class PromptTest
                     ctx => new PromptResult(PromptConfigurationMode.Overwrite, TimeSpan.FromHours(-1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
 
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs").Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs").Should().BeTrue();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null).Should().BeFalse();
+        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null).Should().BeTrue();
         prompt.AssertAllCalled();
     }
 

@@ -42,10 +42,16 @@ public abstract class SnapshotUpdateStrategy
         }
     }
 
-    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path);
+    /// <summary>
+    /// Indicates if an an inline snapshot must be updated
+    /// </summary>
+    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectSnapshot, string actualSnapshot);
 
     public abstract void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile);
 
+    /// <summary>
+    /// Indicates if an exception must be thrown when the snapshots differ.
+    /// </summary>
     public abstract bool MustReportError(InlineSnapshotSettings settings, string path);
 
     private protected static void MoveFile(string source, string destination)

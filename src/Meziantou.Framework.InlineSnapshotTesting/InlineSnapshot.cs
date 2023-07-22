@@ -41,7 +41,7 @@ public static class InlineSnapshot
         if (!settings.SnapshotComparer.AreEqual(normalizedActual, normalizedExpected))
         {
             var isOnCI = settings.AutoDetectContinuousEnvironment && (BuildServerDetector.Detected || ContinuousTestingDetector.Detected);
-            if (!isOnCI && settings.SnapshotUpdateStrategy.CanUpdateSnapshot(settings, context.FilePath))
+            if (!isOnCI && settings.SnapshotUpdateStrategy.CanUpdateSnapshot(settings, context.FilePath, expected, actual))
             {
                 if (context.FilePath == null)
                     throw new InlineSnapshotException("Cannot update source file as the path is null");

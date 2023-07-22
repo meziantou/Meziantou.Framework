@@ -41,18 +41,21 @@ public class SemanticVersionTests
     {
         SemanticVersion.TryParse(version, out _).Should().BeFalse();
         new Func<object>(() => SemanticVersion.Parse(version)).Should().ThrowExactly<ArgumentException>();
+
+        SemanticVersion.TryParse(version.AsSpan(), out _).Should().BeFalse();
+        new Func<object>(() => SemanticVersion.Parse(version)).Should().ThrowExactly<ArgumentException>();
     }
 
     [Fact]
     public void TryParse_ShouldNotParseNullVersion()
     {
-        SemanticVersion.TryParse(null, out _).Should().BeFalse();
+        SemanticVersion.TryParse((string)null, out _).Should().BeFalse();
     }
 
     [Fact]
     public void Parse_ShouldNotParseNullVersion()
     {
-        new Func<object>(() => SemanticVersion.Parse(null)).Should().ThrowExactly<ArgumentNullException>();
+        new Func<object>(() => SemanticVersion.Parse((string)null)).Should().ThrowExactly<ArgumentNullException>();
     }
 
     [Theory]

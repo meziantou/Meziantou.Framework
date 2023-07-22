@@ -9,6 +9,10 @@ namespace Meziantou.Framework.Versioning;
 // https://github.com/semver/semver/blob/master/semver.md
 // https://github.com/semver/semver/blob/master/semver.svg
 public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
+#if NET7_0_OR_GREATER
+    , IParsable<SemanticVersion>
+    , ISpanParsable<SemanticVersion>
+#endif
 {
     private static readonly IReadOnlyList<string> EmptyArray = Array.Empty<string>();
 
@@ -30,7 +34,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (prereleaseLabel != null)
         {
             var index = 0;
-            PrereleaseLabels = ReadPrereleaseIdentifiers(prereleaseLabel, ref index);
+            PrereleaseLabels = ReadPrereleaseIdentifiers(prereleaseLabel.AsSpan(), ref index);
             if (index != prereleaseLabel.Length)
                 throw new ArgumentException("Value is not valid", nameof(prereleaseLabel));
         }
@@ -38,7 +42,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (metadata != null)
         {
             var index = 0;
-            Metadata = TryReadMetadataIdentifiers(metadata, ref index);
+            Metadata = TryReadMetadataIdentifiers(metadata.AsSpan(), ref index);
             if (index != metadata.Length)
                 throw new ArgumentException("Value is not valid", nameof(metadata));
         }
@@ -49,16 +53,17 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     {
         if (prereleaseLabel != null)
         {
-            var labels = new ReadOnlyList<string>();
+            ReadOnlyList<string>? labels = null;
             foreach (var label in prereleaseLabel)
             {
-                if (!IsPrereleaseIdentifier(label))
+                if (label == null || !IsPrereleaseIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(prereleaseLabel));
 
+                labels ??= new();
                 labels.Add(label);
             }
 
-            if (labels.Count > 0)
+            if (labels != null)
             {
                 labels.Freeze();
                 PrereleaseLabels = labels;
@@ -67,16 +72,17 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
         if (metadata != null)
         {
-            var labels = new ReadOnlyList<string>();
+            ReadOnlyList<string>? labels = null;
             foreach (var label in metadata)
             {
-                if (!IsMetadataIdentifier(label))
+                if (label == null || !IsMetadataIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
+                labels ??= new();
                 labels.Add(label);
             }
 
-            if (labels.Count > 0)
+            if (labels != null)
             {
                 labels.Freeze();
                 Metadata = labels;
@@ -177,6 +183,14 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return SemanticVersionComparer.Instance.Compare(this, other);
     }
 
+#if NET7_0_OR_GREATER
+    static SemanticVersion IParsable<SemanticVersion>.Parse(string versionsString, IFormatProvider? provider) => Parse(versionsString);
+    static bool IParsable<SemanticVersion>.TryParse(string? versionsString, IFormatProvider? provider, out SemanticVersion result) => TryParse(versionsString, out result);
+
+    static SemanticVersion ISpanParsable<SemanticVersion>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+    static bool ISpanParsable<SemanticVersion>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out SemanticVersion result) => TryParse(s, out result);
+#endif
+
     public static SemanticVersion Parse(string versionString)
     {
         if (versionString is null)
@@ -188,7 +202,15 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         throw new ArgumentException("The value is not a valid semantic version", nameof(versionString));
     }
 
-    public static bool TryParse(string versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
+    public static SemanticVersion Parse(ReadOnlySpan<char> versionString)
+    {
+        if (TryParse(versionString, out var result))
+            return result;
+
+        throw new ArgumentException("The value is not a valid semantic version", nameof(versionString));
+    }
+
+    public static bool TryParse(ReadOnlySpan<char> versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
     {
         // 1.2.3
         // v1.2.3
@@ -200,7 +222,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         // 1.2.3+build.1.2
 
         version = default;
-        if (string.IsNullOrEmpty(versionString))
+        if (versionString.IsEmpty)
             return false;
 
         var index = versionString[0] == 'v' || versionString[0] == 'V' ? 1 : 0;
@@ -237,7 +259,18 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return true;
     }
 
-    private static bool TryReadDot(string versionString, ref int index)
+    public static bool TryParse(string versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
+    {
+        if (versionString is null)
+        {
+            version = null;
+            return false;
+        }
+
+        return TryParse(versionString.AsSpan(), out version);
+    }
+
+    private static bool TryReadDot(ReadOnlySpan<char> versionString, ref int index)
     {
         if (index < versionString.Length && versionString[index] == '.')
         {
@@ -248,7 +281,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return false;
     }
 
-    private static bool TryReadPrerelease(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
+    private static bool TryReadPrerelease(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
     {
         if (index < versionString.Length && versionString[index] == '-')
         {
@@ -262,7 +295,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return false;
     }
 
-    private static IReadOnlyList<string> ReadPrereleaseIdentifiers(string versionString, ref int index)
+    private static IReadOnlyList<string> ReadPrereleaseIdentifiers(ReadOnlySpan<char> versionString, ref int index)
     {
         var result = new List<string>();
         while (true)
@@ -279,7 +312,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return result.Count == 0 ? EmptyArray : ReadOnlyList.From(result);
     }
 
-    private static bool TryReadMetadata(string versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
+    private static bool TryReadMetadata(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out IReadOnlyList<string>? labels)
     {
         if (index < versionString.Length && versionString[index] == '+')
         {
@@ -293,7 +326,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return false;
     }
 
-    private static IReadOnlyList<string> TryReadMetadataIdentifiers(string versionString, ref int index)
+    private static IReadOnlyList<string> TryReadMetadataIdentifiers(ReadOnlySpan<char> versionString, ref int index)
     {
         List<string>? result = null;
         while (true)
@@ -311,25 +344,19 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return result == null ? EmptyArray : ReadOnlyList.From(result);
     }
 
-    private static bool IsPrereleaseIdentifier(string label)
+    private static bool IsPrereleaseIdentifier(ReadOnlySpan<char> label)
     {
-        if (label == null)
-            return false;
-
         var index = 0;
         return TryReadPrereleaseIdentifier(label, ref index, out _) && index == label.Length;
     }
 
-    private static bool IsMetadataIdentifier(string label)
+    private static bool IsMetadataIdentifier(ReadOnlySpan<char> label)
     {
-        if (label == null)
-            return false;
-
         var index = 0;
         return TryReadMetadataIdentifier(label, ref index, out _) && index == label.Length;
     }
 
-    private static bool TryReadPrereleaseIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
+    private static bool TryReadPrereleaseIdentifier(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
     {
         var last = index;
         while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
@@ -339,7 +366,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
         if (last > index)
         {
-            value = versionString[index..last];
+            value = versionString[index..last].ToString();
             if (value[0] != '0' || value.Any(c => !IsDigit(c)))
             {
                 index = last;
@@ -357,7 +384,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return IsLetter(c) || IsDigit(c) || IsDash(c);
     }
 
-    private static bool TryReadMetadataIdentifier(string versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
+    private static bool TryReadMetadataIdentifier(ReadOnlySpan<char> versionString, ref int index, [NotNullWhen(returnValue: true)] out string? value)
     {
         var last = index;
         while (last < versionString.Length && IsValidLabelCharacter(versionString[last]))
@@ -367,7 +394,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
         if (last > index)
         {
-            value = versionString[index..last];
+            value = versionString[index..last].ToString();
             index = last;
             return true;
         }
@@ -376,7 +403,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return false;
     }
 
-    private static bool TryReadNumber(string versionString, ref int index, out int value)
+    private static bool TryReadNumber(ReadOnlySpan<char> versionString, ref int index, out int value)
     {
         var last = index;
         while (last < versionString.Length && IsDigit(versionString[last]))
@@ -394,7 +421,11 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 return true;
             }
 
+#if NET7_0_OR_GREATER
             if (str[0] != '0' && int.TryParse(str, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
+#else
+            if (str[0] != '0' && int.TryParse(str.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var n))
+#endif
             {
                 value = n;
                 index = last;

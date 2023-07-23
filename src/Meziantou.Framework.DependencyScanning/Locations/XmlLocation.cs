@@ -89,21 +89,27 @@ internal class XmlLocation : Location, ILocationLineInfo
         return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}/@{AttributeName}:{_lineInfo}");
     }
 
-    private string UpdateTextValue(string? elementOrAttributeValue, string? oldValue, string newValue)
+    private string UpdateTextValue(string? currentValue, string? oldValue, string newValue)
     {
-        if (elementOrAttributeValue == null || StartPosition < 0)
+        if (StartPosition < 0)
         {
-            if (oldValue != null)
-                throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
+            if (oldValue != null && currentValue != oldValue)
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
 
             return newValue;
         }
 
-        if (oldValue != null && elementOrAttributeValue.AsSpan().Slice(StartPosition, Length).Equals(oldValue, StringComparison.Ordinal))
-            throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
+        if (oldValue != null)
+        {
+            var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
+            if(!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue.ToString()}'. The file was probably modified since last scan.");
+        }
 
-        return elementOrAttributeValue
+        return currentValue
             .Remove(StartPosition, Length)
             .Insert(StartPosition, newValue);
+
+
     }
 }

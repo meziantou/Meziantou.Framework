@@ -421,7 +421,7 @@ public sealed class ScannerTests : IDisposable
         AssertContainDependency(result,
             (DependencyType.NuGet, "NUnit", "3.11.0", 3, 90),
             (DependencyType.NuGet, "NUnit", "3.11.0", 7, 26),
-            (DependencyType.NuGet, "NUnit", "3.11.0", 6, 41),
+            (DependencyType.NuGet, "NUnit", "3.11.0.0", 6, 41),
             (DependencyType.NuGet, "NUnit", "3.11.0", 15, 139));
 
         await UpdateDependencies(result, "dummy", "3.12.0-beta00");
@@ -523,7 +523,7 @@ public sealed class ScannerTests : IDisposable
         await ExecuteProcess("git", "commit -m commit-message", _directory.FullPath);
 
         // Add submodule
-        await ExecuteProcess2("git", new string[] { "submodule", "add", remote.FullPath, "submodule_path" }, _directory.FullPath);
+        await ExecuteProcess2("git", new string[] { "-c", "protocol.file.allow=always", "submodule", "add", remote.FullPath, "submodule_path" }, _directory.FullPath);
 
         // List files
         var files = Directory.GetFiles(_directory.FullPath, "*", SearchOption.AllDirectories);
@@ -795,13 +795,19 @@ jobs:
         return dependencies;
     }
 
+    private sealed record DetectedDependency(Dependency Dependency, Location Location, Func<Task> UpdateText);
+
     private static async Task UpdateDependencies(IEnumerable<Dependency> dependencies, string newName, string newVersion)
     {
         // dep name often have unique names (json, yaml, etc.)
         var i = dependencies.Count(d => d.NameLocation != null && d.NameLocation.IsUpdatable);
 
         var allLocations = dependencies
-            .SelectMany(d => new (Location Location, Func<string> NewValue)[] { (d.NameLocation, () => newName + i--.ToStringInvariant()), (d.VersionLocation, () => newVersion) })
+            .SelectMany(d => new DetectedDependency[]
+            {
+                new(d, d.NameLocation, () => d.UpdateNameAsync(newName + i--.ToStringInvariant())),
+                new(d, d.VersionLocation, () => d.UpdateVersionAsync(newVersion)),
+            })
             .Where(item => item.Location != null);
 
         // Group by file location and order by position desc
@@ -816,12 +822,13 @@ jobs:
 
             foreach (var item in locationsWithLineInfo)
             {
-                await item.Location.UpdateAsync(item.NewValue()).ConfigureAwait(false);
+                
+                await item.UpdateText().ConfigureAwait(false);
             }
 
             foreach (var item in locationWithoutLineInfo)
             {
-                await item.Location.UpdateAsync(item.NewValue()).ConfigureAwait(false);
+                await item.UpdateText().ConfigureAwait(false);
             }
         }
     }

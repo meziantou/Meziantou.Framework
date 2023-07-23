@@ -50,7 +50,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
             if (SearchForReferencesInAssociatedCsprojFiles)
             {
-                csprojs ??= await LoadAssociatedCsProjAsync(context).ConfigureAwait(false);
+                csprojs ??= await LoadAssociatedCsprojAsync(context).ConfigureAwait(false);
                 foreach (var (file, csproj) in csprojs)
                 {
                     FindInReferences(context, dependency, file, csproj);
@@ -61,7 +61,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         }
     }
 
-    private static async Task<IReadOnlyList<(string Path, XDocument Document)>> LoadAssociatedCsProjAsync(ScanFileContext context)
+    private static async Task<IReadOnlyList<(string Path, XDocument Document)>> LoadAssociatedCsprojAsync(ScanFileContext context)
     {
         var directory = Path.GetDirectoryName(context.FullPath);
         if (directory == null)
@@ -175,7 +175,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             {
                 Debug.Assert(attribute.Parent != null);
                 var versionLocation = new AssemblyVersionXmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: match.Index, length: match.Value.Length);
-                context.ReportDependency(new Dependency(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
+                context.ReportDependency(new Dependency(dependency.Name, match.Value, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
             }
         }
     }

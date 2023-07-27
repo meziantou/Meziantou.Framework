@@ -252,14 +252,15 @@ jobs:
               Write-Host "Pushing NuGet package: $($file.FullName)"
               if ($env:GITHUB_REF -eq 'refs/heads/main')
               {
-                & dotnet nuget push "$($file.FullName)" --api-key "$env:NuGetApiKey" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
+                & dotnet nuget push "$($file.FullName)" --api-key "$env:NUGETAPIKEY" --source ${{ env.NuGetSource }} --force-english-output --skip-duplicate
               }
               else
               {
-                Write-Host "Not on the default branch => Do not push"
+                & dotnet nuget push "$($file.FullName)" --api-key "$env:FEEDZ_APIKEY" --source "https://f.feedz.io/meziantou/meziantou-framework/nuget/index.json" --force-english-output --skip-duplicate
               }
           }
         name: Publish NuGet packages
         if: always()
         env:
-          NuGetApiKey: ${{ secrets.NuGetApiKey }}
+          NUGETAPIKEY: ${{ secrets.NUGETAPIKEY }}
+          FEEDZ_APIKEY: ${{ secrets.FEEDZ_APIKEY }}

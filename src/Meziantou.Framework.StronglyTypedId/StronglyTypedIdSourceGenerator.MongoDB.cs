@@ -7,11 +7,20 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.CanGenerateMongoDbConverter())
             return;
 
-        using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}>"))
+        using (writer.BeginBlock($"partial class {context.MongoDbConverterTypeName} : global::MongoDB.Bson.Serialization.Serializers.SerializerBase<{context.TypeName}{(context.IsReferenceType ? "?" : "")}>"))
         {
             WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
-            using (writer.BeginBlock($"public override {context.TypeName} Deserialize(global::MongoDB.Bson.Serialization.BsonDeserializationContext context, global::MongoDB.Bson.Serialization.BsonDeserializationArgs args)"))
+            using (writer.BeginBlock($"public override {context.TypeName}{(context.IsReferenceType ? "?" : "")} Deserialize(global::MongoDB.Bson.Serialization.BsonDeserializationContext context, global::MongoDB.Bson.Serialization.BsonDeserializationArgs args)"))
             {
+                if (context.IsReferenceType)
+                {
+                    using (writer.BeginBlock("if (context.Reader.CurrentBsonType is global::MongoDB.Bson.BsonType.Null)"))
+                    {
+                        writer.WriteLine("context.Reader.SkipValue();");
+                        writer.WriteLine("return null;");
+                    }
+                }
+
                 if (context.IdType is IdType.System_Half)
                 {
                     writer.WriteLine($"var serializer = global::MongoDB.Bson.Serialization.BsonSerializer.LookupSerializer<float>();");
@@ -30,7 +39,7 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
-            using (writer.BeginBlock($"public override void Serialize(global::MongoDB.Bson.Serialization.BsonSerializationContext context, global::MongoDB.Bson.Serialization.BsonSerializationArgs args, {context.TypeName} value)"))
+            using (writer.BeginBlock($"public override void Serialize(global::MongoDB.Bson.Serialization.BsonSerializationContext context, global::MongoDB.Bson.Serialization.BsonSerializationArgs args, {context.TypeName}{(context.IsReferenceType ? "?" : "")} value)"))
             {
                 if (context.IdType is IdType.System_Half)
                 {

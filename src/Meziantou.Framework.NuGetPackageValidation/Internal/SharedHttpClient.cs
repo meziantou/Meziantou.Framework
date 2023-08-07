@@ -41,7 +41,7 @@ internal static class SharedHttpClient
 
                         delayHint = result.Headers.RetryAfter switch
                         {
-                            { Date : { } date  } => date - DateTimeOffset.UtcNow,
+                            { Date: { } date } => date - DateTimeOffset.UtcNow,
                             { Delta: { } delta } => delta,
                             _ => null,
                         };
@@ -54,6 +54,12 @@ internal static class SharedHttpClient
                     }
                 }
                 catch (HttpRequestException)
+                {
+                    result?.Dispose();
+                    if (IsLastAttempt(i))
+                        throw;
+                }
+                catch (TaskCanceledException ex) when (ex.CancellationToken != cancellationToken) // catch "The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing"
                 {
                     result?.Dispose();
                     if (IsLastAttempt(i))

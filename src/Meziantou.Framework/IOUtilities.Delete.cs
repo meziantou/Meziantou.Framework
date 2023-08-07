@@ -54,8 +54,8 @@ static partial class IOUtilities
                     {
                         try
                         {
-                            RetryOnSharingViolation(() => RemoveReadOnlyAttribute(childInfo));
-                            RetryOnSharingViolation(() => childInfo.Delete());
+                            Retry(() => RemoveReadOnlyAttribute(childInfo));
+                            Retry(() => childInfo.Delete());
                         }
                         catch (FileNotFoundException)
                         {
@@ -71,8 +71,8 @@ static partial class IOUtilities
                 }
             }
 
-            RetryOnSharingViolation(() => RemoveReadOnlyAttribute(fileSystemInfo));
-            RetryOnSharingViolation(() => DeleteFileSystemInfo(fileSystemInfo));
+            Retry(() => RemoveReadOnlyAttribute(fileSystemInfo));
+            Retry(() => DeleteFileSystemInfo(fileSystemInfo));
         }
         catch (FileNotFoundException)
         {
@@ -82,7 +82,7 @@ static partial class IOUtilities
         }
     }
 
-    private static void RetryOnSharingViolation(Action action)
+    private static void Retry(Action action)
     {
         var attempt = 0;
         while (attempt < 10)
@@ -93,6 +93,9 @@ static partial class IOUtilities
                 return;
             }
             catch (IOException ex) when (IsSharingViolation(ex))
+            {
+            }
+            catch (UnauthorizedAccessException)
             {
             }
 
@@ -188,6 +191,9 @@ static partial class IOUtilities
                 return;
             }
             catch (IOException ex) when (IsSharingViolation(ex))
+            {
+            }
+            catch (UnauthorizedAccessException)
             {
             }
 

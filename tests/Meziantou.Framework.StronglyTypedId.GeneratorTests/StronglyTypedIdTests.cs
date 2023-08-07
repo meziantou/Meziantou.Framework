@@ -392,6 +392,22 @@ public sealed partial class StronglyTypedIdTests
         Assert.False(value1 >= value2);
     }
 
+    [Fact]
+    public void Bson_Guid_Class_Null()
+    {
+        IdClassGuid instance = null;
+        var clone = BsonClone(instance);
+        Assert.Null(clone);
+    }
+    
+    [Fact]
+    public void Bson_Guid_Class_Empty()
+    {
+        var instance = IdClassGuid.FromGuid(Guid.Empty);
+        var clone = BsonClone(instance);
+        Assert.Equal(Guid.Empty, clone.Value);
+    }
+
     [return: NotNullIfNotNull(nameof(value))]
     private static T? BsonClone<T>(T value)
     {

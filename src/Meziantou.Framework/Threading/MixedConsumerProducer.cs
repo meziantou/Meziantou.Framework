@@ -4,12 +4,12 @@ namespace Meziantou.Framework.Threading;
 
 public static class MixedConsumerProducer
 {
-    public static Task Process<T>(T initialItem, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, ValueTask> action)
+    public static Task Process<T>(T initialItem, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
         return Process(new[] { initialItem }, options, action);
     }
 
-    public static async Task Process<T>(T[] initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, ValueTask> action)
+    public static async Task Process<T>(T[] initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
         var degreeOfParallelism = options.MaxDegreeOfParallelism;
         if (degreeOfParallelism <= 0)
@@ -46,7 +46,7 @@ public static class MixedConsumerProducer
                         await Task.WhenAny(clone).ConfigureAwait(false);
                 }
 
-                var task = Task.Run(async () => await action(context, item).ConfigureAwait(false), options.CancellationToken);
+                var task = Task.Run(async () => await action(context, item, options.CancellationToken).ConfigureAwait(false), options.CancellationToken);
 
                 lock (tasks)
                 {

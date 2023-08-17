@@ -6,6 +6,10 @@ using System.IO.Compression;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
+#if NET462
+using System.Net.Http;
+#endif
+
 namespace TestUtilities;
 
 public static class NuGetHelpers

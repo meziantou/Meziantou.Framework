@@ -127,7 +127,7 @@ public sealed class Glob
         return IsMatchCore(pathEnumerator, _segments);
     }
 
-    private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
+    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
     {
         for (var i = 0; i < patternSegments.Length; i++)
         {

@@ -4,13 +4,11 @@ namespace Meziantou.Framework.Threading;
 
 public static class MixedConsumerProducer
 {
-    public static Task Process<T>(T initialItem, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
+    public static async Task Process<T>(IEnumerable<T> initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
-        return Process(new[] { initialItem }, options, action);
-    }
+        if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)
+            return;
 
-    public static async Task Process<T>(T[] initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
-    {
         var degreeOfParallelism = options.MaxDegreeOfParallelism;
         if (degreeOfParallelism <= 0)
         {
@@ -18,10 +16,15 @@ public static class MixedConsumerProducer
         }
 
         var pendingItems = Channel.CreateUnbounded<T>();
+        var hasItem = false;
         foreach (var item in initialItems)
         {
             _ = pendingItems.Writer.TryWrite(item);
+            hasItem = true;
         }
+
+        if (!hasItem)
+            return;
 
         var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
         var tasks = new List<Task>(degreeOfParallelism);

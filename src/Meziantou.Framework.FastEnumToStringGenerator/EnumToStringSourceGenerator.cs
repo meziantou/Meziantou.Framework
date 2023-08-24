@@ -135,7 +135,9 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 
         foreach (var enumerationGroup in enums.GroupBy(en => en.FullNamespace, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal))
         {
-            var typeVisibility = enumerationGroup.Any(enumeration => enumeration.IsPublic) ? "public" : "internal";
+            var typeIsPublic = enumerationGroup.Any(enumeration => enumeration.IsPublic);
+            var typeVisibility = typeIsPublic ? "public" : "internal";
+
             foreach (var enumeration in enumerationGroup.OrderBy(e => e.FullCsharpName, StringComparer.Ordinal))
             {
                 var methodVisibility = enumeration.IsPublic ? "public" : "internal";
@@ -146,8 +148,18 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                     sb.AppendLine("{");
                 }
 
+                if (typeIsPublic)
+                {
+                    sb.AppendLine($"/// <summary>A class with memory-optimized alternative to regular ToString() on enums.</summary>");
+                }
+
                 sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
                 sb.AppendLine("{");
+
+                if (enumeration.IsPublic)
+                {
+                    sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on {enumeration.FullCsharpName} enum.</summary>");
+                }
 
                 sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this global::").Append(enumeration.FullCsharpName).AppendLine(" value)");
                 sb.AppendLine("    {");

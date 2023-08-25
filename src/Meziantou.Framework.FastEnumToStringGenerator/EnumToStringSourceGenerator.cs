@@ -148,19 +148,11 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                     sb.AppendLine("{");
                 }
 
-                if (typeIsPublic)
-                {
-                    sb.AppendLine($"/// <summary>A class with memory-optimized alternative to regular ToString() on enums.</summary>");
-                }
-
+                sb.AppendLine($"/// <summary>A class with memory-optimized alternative to regular ToString() on enums.</summary>");
                 sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
                 sb.AppendLine("{");
 
-                if (enumeration.IsPublic)
-                {
-                    sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on {enumeration.FullCsharpName} enum.</summary>");
-                }
-
+                sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on <see cref=\"{enumeration.FullCsharpName}\">{enumeration.FullCsharpName} enum</see>.</summary>");
                 sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this global::").Append(enumeration.FullCsharpName).AppendLine(" value)");
                 sb.AppendLine("    {");
                 sb.AppendLine("        return value switch");

@@ -161,7 +161,7 @@ public partial class StronglyTypedIdSourceGenerator
                 XmlParam("a", "The first object to compare"),
                 XmlParam("b", "The second object to compare"),
                 XmlReturn(XmlSeeLangword("true"), " if ", XmlParamRef("a"), " and ", XmlParamRef("b"), " are equal; otherwise, ", XmlSeeLangword("false"), "."));
-            writer.WriteLine($"public static bool operator ==({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.TypeName}>.Default.Equals(a, b);");
+            writer.WriteLine($"public static bool operator ==({context.CSharpNullableTypeName} a, {context.CSharpNullableTypeName} b) => global::System.Collections.Generic.EqualityComparer<{context.CSharpNullableTypeName}>.Default.Equals(a, b);");
         }
 
         // Operator !=
@@ -248,7 +248,7 @@ public partial class StronglyTypedIdSourceGenerator
             }
 
             // Parse(ReadOnlySpan<char>)
-            if (!context.IsParseDefined_Span)
+            if (!context.IsParseDefined_ReadOnlySpan)
             {
                 WriteNewMember(
                     XmlSummary("Converts the read-only character span that represents of a ", XmlSeeCref(context.TypeName), " to the equivalent ", XmlSeeCref(context.TypeName), " type."),
@@ -275,7 +275,17 @@ public partial class StronglyTypedIdSourceGenerator
         {
             using (writer.BeginBlock($"if (TryParse(value, out var result))"))
             {
+                if (!context.SupportNotNullWhenAttribute)
+                {
+                    writer.WriteLine($"#nullable disable");
+                }
+
                 writer.WriteLine($"return result;");
+
+                if (!context.SupportNotNullWhenAttribute)
+                {
+                    writer.WriteLine($"#nullable enable");
+                }
             }
 
             writer.WriteLine($"throw new global::System.FormatException($\"value '{{value}}' is not valid\");");

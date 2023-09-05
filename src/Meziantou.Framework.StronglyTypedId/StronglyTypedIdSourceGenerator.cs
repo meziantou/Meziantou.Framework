@@ -416,7 +416,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                         break;
 
                     case IMethodSymbol { IsStatic: true, Name: "Parse", Parameters: [var param1, ..] } when SymbolEqual(param1.Type, readOnlySpanCharSymbol):
-                        IsTryParseDefined_ReadOnlySpan = true;
+                        IsParseDefined_ReadOnlySpan = true;
                         break;
 
                     case IMethodSymbol { IsStatic: false, Name: ".ctor", Parameters: [var param1] } when SymbolEqual(param1.Type, idTypeSymbol):
@@ -560,7 +560,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public bool IsTryParseDefined_String { get; }
         public bool IsTryParseDefined_ReadOnlySpan { get; }
         public bool IsParseDefined_String { get; }
-        public bool IsParseDefined_Span { get; }
+        public bool IsParseDefined_ReadOnlySpan { get; }
         public bool IsOpLessThanDefined { get; }
         public bool IsOpGreaterThanDefined { get; }
         public bool IsOpLessThanOrEqualDefined { get; }
@@ -593,7 +593,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
         public string CSharpNullableTypeName { get; }
 
         public bool IsValueTypeNullable => IdType is IdType.System_String;
-        public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId;
+        public bool ValueTypeHasParseReadOnlySpan => IdType != IdType.MongoDB_Bson_ObjectId && SupportReadOnlySpanChar;
 
         public override bool Equals(object? obj) => Equals(obj as AttributeInfo);
 
@@ -621,7 +621,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 && IsTryParseDefined_String == other.IsTryParseDefined_String
                 && IsTryParseDefined_ReadOnlySpan == other.IsTryParseDefined_ReadOnlySpan
                 && IsParseDefined_String == other.IsParseDefined_String
-                && IsParseDefined_Span == other.IsParseDefined_Span
+                && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
                 && SupportIStronglyTyped == other.SupportIStronglyTyped
                 && SupportIStronglyTypedOfT == other.SupportIStronglyTypedOfT
@@ -666,7 +666,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             hash = (hash * 397) ^ IsTryParseDefined_String.GetHashCode();
             hash = (hash * 397) ^ IsTryParseDefined_ReadOnlySpan.GetHashCode();
             hash = (hash * 397) ^ IsParseDefined_String.GetHashCode();
-            hash = (hash * 397) ^ IsParseDefined_Span.GetHashCode();
+            hash = (hash * 397) ^ IsParseDefined_ReadOnlySpan.GetHashCode();
             hash = (hash * 397) ^ SupportIStronglyTyped.GetHashCode();
             hash = (hash * 397) ^ SupportIStronglyTypedOfT.GetHashCode();
             hash = (hash * 397) ^ SupportStaticInterfaces.GetHashCode();

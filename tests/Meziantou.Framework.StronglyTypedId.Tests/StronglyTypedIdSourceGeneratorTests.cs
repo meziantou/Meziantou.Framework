@@ -7,7 +7,6 @@ using System.Text;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using NuGet.Frameworks;
 using TestUtilities;
 using Xunit;
 
@@ -57,27 +56,11 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var diags = string.Join("\n", result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
-            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + NumberLine(generated));
+            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
             result.Diagnostics.Should().BeEmpty();
         }
 
         return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
-
-        static string NumberLine(string value)
-        {
-            var sb = new StringBuilder();
-            var i = 0;
-            foreach (var line in value.SplitLines())
-            {
-                i++;
-                sb.Append(i.ToStringInvariant("#000"));
-                sb.Append(' ');
-                sb.Append(line.Line);
-                sb.Append(line.Separator);
-            }
-
-            return sb.ToString();
-        }
     }
 
     [Fact]
@@ -420,7 +403,7 @@ public partial struct Test : System.IComparable<Test> {}
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
     }
-    
+
     [Fact]
     public async Task Generate_IComparable_Class_ReferenceType()
     {
@@ -540,7 +523,26 @@ public partial class Test : System.IComparable<Test> {}
 
         static IEnumerable<BuildMatrixArguments> BuildMatrixTestCases()
         {
-            var types = new[] { "string", "int" };
+            var types = new[]
+            {
+                "System.Boolean",
+                "System.Byte",
+                "System.DateTime",
+                "System.DateTimeOffset",
+                "System.Decimal",
+                "System.Double",
+                "System.Guid",
+                "System.Int16",
+                "System.Int32",
+                "System.Int64",
+                "System.SByte",
+                "System.Single",
+                "System.String",
+                "System.UInt16",
+                "System.UInt32",
+                "System.UInt64",
+            };
+
             var declarations = new[]
             {
                 "partial struct Test { }",
@@ -557,6 +559,14 @@ public partial class Test : System.IComparable<Test> {}
             {
                 foreach (var declaration in declarations)
                 {
+                    foreach (var netFrameworkVersion in new[] { "462", "472", "481" })
+                    {
+                        yield return new BuildMatrixArguments(type, declaration, new[]
+                        {
+                            new NuGetReference("Microsoft.NETFramework.ReferenceAssemblies.net" + netFrameworkVersion, "1.0.3", ""),
+                        });
+                    }
+
                     foreach (var netcoreVersion in new[] { "5.0.0", "6.0.12", "7.0.1" })
                     {
                         yield return new BuildMatrixArguments(type, declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/") });
@@ -579,6 +589,24 @@ public partial class Test : System.IComparable<Test> {}
                             new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
                         });
                     }
+                }
+            }
+
+            // Add specific test cases
+            foreach (var declaration in declarations)
+            {
+                yield return new BuildMatrixArguments("System.Half", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
+                yield return new BuildMatrixArguments("System.Int128", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
+                yield return new BuildMatrixArguments("System.UInt128", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
+                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
+
+                foreach (var mongodb in new[] { "2.18.0" })
+                {
+                    yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration, new[]
+                    {
+                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
+                        });
                 }
             }
         }
@@ -607,7 +635,23 @@ public partial class Test : System.IComparable<Test> {}
 
         var diags = string.Join("\n", compilationOutput.Diagnostics);
         var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
-        compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
+        compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
         compilationOutput.Diagnostics.Should().BeEmpty();
+    }
+
+    private static string AddNumberLine(string value)
+    {
+        var sb = new StringBuilder();
+        var i = 0;
+        foreach (var line in value.SplitLines())
+        {
+            i++;
+            sb.Append(i.ToStringInvariant("#000"));
+            sb.Append(' ');
+            sb.Append(line.Line);
+            sb.Append(line.Separator);
+        }
+
+        return sb.ToString();
     }
 }

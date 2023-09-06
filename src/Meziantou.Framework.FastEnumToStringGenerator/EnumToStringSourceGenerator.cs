@@ -152,7 +152,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                 sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
                 sb.AppendLine("{");
 
-                sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on <see cref=\"{enumeration.FullCsharpName}\">{enumeration.FullCsharpName} enum</see>.</summary>");
+                sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on <see cref=\"{enumeration.DocumentationId}\">{enumeration.FullCsharpName} enum</see>.</summary>");
                 sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this global::").Append(enumeration.FullCsharpName).AppendLine(" value)");
                 sb.AppendLine("    {");
                 sb.AppendLine("        return value switch");
@@ -197,8 +197,9 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 
     private sealed record EnumToProcess(ITypeSymbol EnumSymbol, List<EnumMemberToProcess> Members, bool IsPublic, string? Namespace)
     {
-        public string FullCsharpName => EnumSymbol.ToString()!;
-        public string? FullNamespace => Namespace ?? GetNamespace(EnumSymbol);
+        public string FullCsharpName { get; } = EnumSymbol.ToString()!;
+        public string? FullNamespace { get; } = Namespace ?? GetNamespace(EnumSymbol);
+        public string DocumentationId { get; } = DocumentationCommentId.CreateDeclarationId(EnumSymbol);
 
         private static string? GetNamespace(ITypeSymbol symbol)
         {

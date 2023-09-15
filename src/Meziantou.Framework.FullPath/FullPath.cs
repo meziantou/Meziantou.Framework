@@ -84,7 +84,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         if (rootPath == this)
             return ".";
 
-        return PathDifference(rootPath._value + Path.DirectorySeparatorChar, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
+        return PathDifference(rootPath._value, _value, compareCase: FullPathComparer.Default.IsCaseSensitive);
     }
 
     private static string PathDifference(string path1, string path2, bool compareCase)
@@ -93,12 +93,15 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 
         int i;
         var si = -1;
-        for (i = 0; (i < path1.Length) && (i < path2.Length); ++i)
+        for (i = 0; (i <= path1.Length) && (i < path2.Length); ++i)
         {
-            if ((path1[i] != path2[i]) && (compareCase || (char.ToUpperInvariant(path1[i]) != char.ToUpperInvariant(path2[i]))))
+            char c1 = i == path1.Length ? directorySeparator : path1[i];
+            char c2 = path2[i];
+
+            if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
                 break;
 
-            if (path1[i] == directorySeparator)
+            if (c1 == directorySeparator)
             {
                 si = i;
             }
@@ -107,22 +110,20 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         if (i == 0)
             return path2;
 
-        if ((i == path1.Length) && (i == path2.Length))
+        if ((i == path1.Length + 1) && (i == path2.Length))
             return string.Empty;
 
         var relPath = new StringBuilder();
         // Walk down several dirs
-        for (; i < path1.Length; ++i)
+        for (; i <= path1.Length; ++i)
         {
-            if (path1[i] == directorySeparator)
+            char c = i == path1.Length ? directorySeparator : path1[i];
+            if (c == directorySeparator)
             {
                 relPath.Append("..");
                 relPath.Append(directorySeparator);
             }
         }
-        // Same path except that path1 ended with a file name and path2 didn't
-        if (relPath.Length == 0 && path2.Length - 1 == si)
-            return "." + directorySeparator; // Truncate the file name
 
         return relPath.Append(path2.AsSpan(si + 1)).ToString();
     }

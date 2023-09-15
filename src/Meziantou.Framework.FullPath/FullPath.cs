@@ -101,7 +101,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
             if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
                 break;
 
-            if (path1[i] == directorySeparator)
+            if (c1 == directorySeparator)
             {
                 si = i;
             }

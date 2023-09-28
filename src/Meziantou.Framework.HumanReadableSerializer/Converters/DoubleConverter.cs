@@ -6,7 +6,7 @@ internal sealed class DoubleConverter : HumanReadableConverter<double>
 {
     protected override void WriteValue(HumanReadableTextWriter writer, double value, HumanReadableSerializerOptions options)
     {
-        writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
+        writer.WriteValue(value.ToString("G17", CultureInfo.InvariantCulture));
     }
 }
 

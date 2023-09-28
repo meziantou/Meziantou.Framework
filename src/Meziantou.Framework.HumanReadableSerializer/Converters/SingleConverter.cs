@@ -6,7 +6,7 @@ internal sealed class SingleConverter : HumanReadableConverter<float>
 {
     protected override void WriteValue(HumanReadableTextWriter writer, float value, HumanReadableSerializerOptions options)
     {
-        writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
+        writer.WriteValue(value.ToString("G9", CultureInfo.InvariantCulture));
     }
 }
 

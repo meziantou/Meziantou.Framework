@@ -930,7 +930,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     [Fact]
     public void Double() => AssertSerialization(-5.30d, "-5.3");
-    
+
     [Fact]
     public void Double_NaN() => AssertSerialization(double.NaN, "NaN");
 
@@ -1037,7 +1037,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
     [Fact]
     public void MethodInfo_dynamic_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleDynamic((dynamic, System.Int32) value)");
-    
+
     [Fact]
     public void MethodInfo_dynamic_Nested_ValueTuple_Parameter() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.ValueTupleNestedDynamic)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.ValueTupleNestedDynamic((dynamic A, (System.Int32 B, dynamic C) D) value)");
 
@@ -2159,6 +2159,14 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 Prop2: 1
                 """,
         });
+    }
+
+    [Fact]
+    public void FuncConverter()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.Converters.Add<double>(value => value.ToString("G17", CultureInfo.InvariantCulture));
+        AssertSerialization(-5.30d, options, "-5.2999999999999998");
     }
 
     private sealed class PropThrowAnException

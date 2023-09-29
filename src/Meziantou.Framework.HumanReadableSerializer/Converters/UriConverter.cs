@@ -7,8 +7,7 @@ internal sealed class UriConverter : HumanReadableConverter<Uri>
     protected override void WriteValue(HumanReadableTextWriter writer, Uri? value, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value != null);
-
-        writer.WriteValue(value.ToString());
+        writer.WriteValue(value.OriginalString);
     }
 }
 

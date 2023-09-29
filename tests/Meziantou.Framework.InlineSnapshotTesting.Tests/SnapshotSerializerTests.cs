@@ -182,7 +182,7 @@ public sealed class SnapshotSerializerTests
         using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com") };
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
-            RequestUri: https://example.com/
+            RequestUri: https://example.com
             """);
     }
 
@@ -192,7 +192,7 @@ public sealed class SnapshotSerializerTests
         using var message = new HttpRequestMessage() { RequestUri = new Uri("https://example.com"), Version = HttpVersion.Version10 };
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
-            RequestUri: https://example.com/
+            RequestUri: https://example.com
             Version: 1.0
             """);
     }
@@ -214,7 +214,7 @@ public sealed class SnapshotSerializerTests
         };
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
-            RequestUri: https://example.com/
+            RequestUri: https://example.com
             Headers:
               Accept:
                 - text/json
@@ -232,7 +232,7 @@ public sealed class SnapshotSerializerTests
         };
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             Method: GET
-            RequestUri: https://example.com/
+            RequestUri: https://example.com
             Content:
               Headers:
                 Content-Type: text/plain; charset=utf-8

@@ -72,5 +72,4 @@ internal static class SharedHttpClient
             }
         }
     }
-
 }

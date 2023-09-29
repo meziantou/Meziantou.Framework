@@ -9,4 +9,3 @@ internal sealed class DoubleConverter : HumanReadableConverter<double>
         writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
     }
 }
-

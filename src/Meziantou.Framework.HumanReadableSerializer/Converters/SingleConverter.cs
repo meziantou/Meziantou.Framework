@@ -9,4 +9,3 @@ internal sealed class SingleConverter : HumanReadableConverter<float>
         writer.WriteValue(value.ToString(CultureInfo.InvariantCulture));
     }
 }
-

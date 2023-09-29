@@ -920,7 +920,25 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void Single() => AssertSerialization(-5.30f, "-5.3");
 
     [Fact]
+    public void Single_NaN() => AssertSerialization(float.NaN, "NaN");
+
+    [Fact]
+    public void Single_PositiveInfinity() => AssertSerialization(float.PositiveInfinity, "Infinity");
+
+    [Fact]
+    public void Single_NegativeInfinity() => AssertSerialization(float.NegativeInfinity, "-Infinity");
+
+    [Fact]
     public void Double() => AssertSerialization(-5.30d, "-5.3");
+    
+    [Fact]
+    public void Double_NaN() => AssertSerialization(double.NaN, "NaN");
+
+    [Fact]
+    public void Double_PositiveInfinity() => AssertSerialization(double.PositiveInfinity, "Infinity");
+
+    [Fact]
+    public void Double_NegativeInfinity() => AssertSerialization(double.NegativeInfinity, "-Infinity");
 
     [Fact]
     public void Decimal() => AssertSerialization(-5.30m, "-5.30");

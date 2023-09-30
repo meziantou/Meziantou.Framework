@@ -35,11 +35,11 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
-        var compilation = await CreateCompilation(sourceText, new[]
-        {
+        var compilation = await CreateCompilation(sourceText,
+        [
             new NuGetReference("Microsoft.NETCore.App.Ref", "6.0.12", "ref/"),
             new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
-        });
+        ]);
         var generator = InstantiateGenerator();
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: new ISourceGenerator[] { generator });
@@ -54,7 +54,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         var result = outputCompilation.Emit(ms);
         if (mustCompile)
         {
-            var diags = string.Join("\n", result.Diagnostics);
+            var diags = string.Join('\n', result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
             result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
             result.Diagnostics.Should().BeEmpty();
@@ -440,10 +440,10 @@ public partial class Test : System.IComparable<Test> {}
 
         // Run the generator once
         var sourceCode = "[StronglyTypedId(typeof(int))] public partial struct Test { }";
-        var compilation = await CreateCompilation(sourceCode, new[]
-        {
+        var compilation = await CreateCompilation(sourceCode,
+        [
             new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
-        });
+        ]);
         var result = RunGenerator();
 
         // Add dummy syntax tree
@@ -561,33 +561,33 @@ public partial class Test : System.IComparable<Test> {}
                 {
                     foreach (var netFrameworkVersion in new[] { "462", "472", "481" })
                     {
-                        yield return new BuildMatrixArguments(type, declaration, new[]
-                        {
+                        yield return new BuildMatrixArguments(type, declaration,
+                        [
                             new NuGetReference("Microsoft.NETFramework.ReferenceAssemblies.net" + netFrameworkVersion, "1.0.3", ""),
-                        });
+                        ]);
                     }
 
                     foreach (var netcoreVersion in new[] { "5.0.0", "6.0.12", "7.0.1" })
                     {
-                        yield return new BuildMatrixArguments(type, declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/") });
+                        yield return new BuildMatrixArguments(type, declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/")]);
                     }
 
                     foreach (var newtonsoftJson in new[] { "12.0.3" })
                     {
-                        yield return new BuildMatrixArguments(type, declaration, new[]
-                        {
+                        yield return new BuildMatrixArguments(type, declaration,
+                        [
                             new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
                             new NuGetReference("Newtonsoft.Json", newtonsoftJson, "lib/netstandard2.0/"),
-                        });
+                        ]);
                     }
 
                     foreach (var mongodb in new[] { "2.18.0" })
                     {
-                        yield return new BuildMatrixArguments(type, declaration, new[]
-                        {
+                        yield return new BuildMatrixArguments(type, declaration,
+                        [
                             new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
                             new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
-                        });
+                        ]);
                     }
                 }
             }
@@ -595,18 +595,18 @@ public partial class Test : System.IComparable<Test> {}
             // Add specific test cases
             foreach (var declaration in declarations)
             {
-                yield return new BuildMatrixArguments("System.Half", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
-                yield return new BuildMatrixArguments("System.Int128", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
-                yield return new BuildMatrixArguments("System.UInt128", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
-                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, new[] { new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/") });
+                yield return new BuildMatrixArguments("System.Half", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
+                yield return new BuildMatrixArguments("System.Int128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
+                yield return new BuildMatrixArguments("System.UInt128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
+                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
 
                 foreach (var mongodb in new[] { "2.18.0" })
                 {
-                    yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration, new[]
-                    {
+                    yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration,
+                    [
                             new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
                             new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
-                        });
+                        ]);
                 }
             }
         }
@@ -633,7 +633,7 @@ public partial class Test : System.IComparable<Test> {}
         using var ms = new MemoryStream();
         var compilationOutput = outputCompilation.Emit(ms);
 
-        var diags = string.Join("\n", compilationOutput.Diagnostics);
+        var diags = string.Join('\n', compilationOutput.Diagnostics);
         var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
         compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
         compilationOutput.Diagnostics.Should().BeEmpty();

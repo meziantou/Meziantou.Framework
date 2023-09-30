@@ -21,6 +21,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
     private static readonly Guid HashAlgorithmSha256 = new(0x8829D00F, 0x11B8, 0x4213, 0x87, 0x8B, 0x77, 0x0E, 0x85, 0x97, 0xAC, 0x16);
 
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "SHA1 is not use for crypto")]
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False-positive")]
     public override async Task ExecuteAsync(NuGetPackageValidationContext context)
     {
         var allItems = new List<string>();
@@ -486,7 +487,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         continue;
 
                     var url = Documents[key];
-                    var path = m.Groups[1].Value.Replace(@"\", "/", StringComparison.Ordinal);
+                    var path = m.Groups[1].Value.Replace('\\', '/');
                     return url.Replace("*", path, StringComparison.Ordinal);
                 }
                 else

@@ -19,7 +19,7 @@ internal sealed class ReadOnlyList<T> : IList<T>, IReadOnlyList<T>
 
     public ReadOnlyList()
     {
-        _items = new List<T>();
+        _items = [];
     }
 
     public ReadOnlyList(int capacity)

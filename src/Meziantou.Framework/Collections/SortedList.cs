@@ -11,7 +11,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     public SortedList()
     {
-        _items = Array.Empty<T>();
+        _items = [];
         Count = 0;
         _comparer = Comparer<T>.Default;
     }
@@ -21,13 +21,13 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         if (capacity < 0)
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
 
-        _items = capacity == 0 ? Array.Empty<T>() : new T[capacity];
+        _items = capacity == 0 ? [] : new T[capacity];
         _comparer = Comparer<T>.Default;
     }
 
     public SortedList(IComparer<T>? comparer)
     {
-        _items = Array.Empty<T>();
+        _items = [];
         Count = 0;
         _comparer = comparer ?? Comparer<T>.Default;
     }
@@ -37,7 +37,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         if (capacity < 0)
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
 
-        _items = capacity == 0 ? Array.Empty<T>() : new T[capacity];
+        _items = capacity == 0 ? [] : new T[capacity];
         Count = 0;
         _comparer = comparer ?? Comparer<T>.Default;
     }
@@ -75,7 +75,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
                 }
                 else
                 {
-                    _items = Array.Empty<T>();
+                    _items = [];
                 }
             }
         }

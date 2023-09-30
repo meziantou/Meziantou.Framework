@@ -12,6 +12,8 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tool;
 
 internal static partial class Program
 {
+    private static readonly char[] ValueDelimiters = [',', ';'];
+
     public static Task<int> Main(string[] args)
     {
         return MainImpl(args, console: null);
@@ -117,7 +119,7 @@ internal static partial class Program
             if (string.IsNullOrEmpty(token.Value))
                 continue;
 
-            foreach (var ruleName in token.Value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            foreach (var ruleName in token.Value.Split(ValueDelimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 if (string.Equals(ruleName, "default", StringComparison.OrdinalIgnoreCase))
                 {
@@ -153,7 +155,7 @@ internal static partial class Program
             if (string.IsNullOrEmpty(token.Value))
                 continue;
 
-            foreach (var value in token.Value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            foreach (var value in token.Value.Split(ValueDelimiters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
             {
                 if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedValue))
                 {

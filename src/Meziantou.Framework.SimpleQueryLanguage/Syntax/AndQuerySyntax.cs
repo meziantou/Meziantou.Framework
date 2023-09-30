@@ -27,8 +27,8 @@ public sealed class AndQuerySyntax : QuerySyntax
     public override QueryNodeOrToken[] GetChildren()
     {
         if (Operator != null)
-            return new QueryNodeOrToken[] { Left, Operator, Right };
+            return [Left, Operator, Right];
 
-        return new QueryNodeOrToken[] { Left, Right };
+        return [Left, Right];
     }
 }

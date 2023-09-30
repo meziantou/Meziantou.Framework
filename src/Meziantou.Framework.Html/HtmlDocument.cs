@@ -723,11 +723,7 @@ sealed class HtmlDocument : HtmlNode
                         element.IsProcessingInstruction = processingInstruction;
                     }
 
-                    if (current != null)
-                    {
-                        current.ChildNodes.Add(element);
-                    }
-
+                    current?.ChildNodes.Add(element);
                     current = element;
                     break;
 
@@ -814,10 +810,7 @@ sealed class HtmlDocument : HtmlNode
                     error.Node = text;
                     text.Value = "</" + htmlReader.State.Value + ">";
                     text.AddError(error);
-                    if (current != null)
-                    {
-                        current.ChildNodes.Add(text);
-                    }
+                    current?.ChildNodes.Add(text);
                     break;
 
                 case HtmlFragmentType.AttName:
@@ -835,10 +828,7 @@ sealed class HtmlDocument : HtmlNode
                         AddError(error);
                     }
 
-                    if (current != null)
-                    {
-                        current.Attributes.AddNoCheck(att);
-                    }
+                    current?.Attributes.AddNoCheck(att);
                     currentAtt = att;
                     break;
 
@@ -863,10 +853,7 @@ sealed class HtmlDocument : HtmlNode
                     var comment = CreateComment();
                     comment.StreamOrder = htmlReader.Offset;
                     comment.Value = htmlReader.State.Value;
-                    if (current != null)
-                    {
-                        current.ChildNodes.Add(comment);
-                    }
+                    current?.ChildNodes.Add(comment);
                     break;
             }
 

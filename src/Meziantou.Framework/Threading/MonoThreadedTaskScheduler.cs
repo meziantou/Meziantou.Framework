@@ -43,10 +43,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
             _stop.Dispose();
         }
 
-        if (_dequeue != null)
-        {
-            _dequeue.Dispose();
-        }
+        _dequeue?.Dispose();
 
         if (DequeueOnDispose)
         {

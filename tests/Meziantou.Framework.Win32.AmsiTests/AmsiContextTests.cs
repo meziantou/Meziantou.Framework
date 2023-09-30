@@ -9,7 +9,6 @@ namespace Meziantou.Framework.Win32.AmsiTests;
 public class AmsiContextTests
 {
     [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void AmsiShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -28,7 +27,6 @@ public class AmsiContextTests
     }
 
     [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void AmsiSessionShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");

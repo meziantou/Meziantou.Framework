@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Runtime.ConstrainedExecution;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;

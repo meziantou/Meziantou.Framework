@@ -15,19 +15,19 @@ public class CircularBufferTests
         list.AddFirst(2);
         list.AddLast(3);
 
-        list.Should().Equal(new int[] { 2, 1, 3 });
+        list.Should().Equal([2, 1, 3]);
         list[0].Should().Be(2);
         list[1].Should().Be(1);
         list[2].Should().Be(3);
 
         list.AddLast(4);
-        list.Should().Equal(new int[] { 1, 3, 4 });
+        list.Should().Equal([1, 3, 4]);
 
         list.RemoveFirst();
-        list.Should().Equal(new int[] { 3, 4 });
+        list.Should().Equal([3, 4]);
 
         list.RemoveLast();
-        list.Should().Equal(new int[] { 3 });
+        list.Should().Equal([3]);
 
         list[0].Should().Be(3);
 
@@ -35,7 +35,7 @@ public class CircularBufferTests
         list.Should().BeEmpty();
 
         list.AddFirst(1);
-        list.Should().Equal(new int[] { 1 });
+        list.Should().Equal([1]);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class CircularBufferTests
         list.AddLast(2);
         list.AddLast(3);
 
-        list.Should().Equal(new int[] { 1, 2, 3 });
+        list.Should().Equal([1, 2, 3]);
     }
 
     [Fact]
@@ -56,13 +56,13 @@ public class CircularBufferTests
         var list = new CircularBuffer<int>(1) { AllowOverwrite = true };
 
         list.AddFirst(1);
-        list.Should().Equal(new int[] { 1 });
+        list.Should().Equal([1]);
 
         list.AddFirst(2);
-        list.Should().Equal(new int[] { 2 });
+        list.Should().Equal([2]);
 
         list.AddLast(3);
-        list.Should().Equal(new int[] { 3 });
+        list.Should().Equal([3]);
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class CircularBufferTests
         list.RemoveFirst();
 
         list.Capacity = 1;
-        list.Should().Equal(new[] { 2 });
+        list.Should().Equal([2]);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public class CircularBufferTests
         list.AddLast(1);
 
         list.Capacity = 2;
-        list.Should().Equal(new[] { 2, 1 });
+        list.Should().Equal([2, 1]);
     }
 
     [Fact]
@@ -176,13 +176,13 @@ public class CircularBufferTests
         list.AddLast(2);
         list.RemoveFirst();
         list.AddLast(1);
-        list.Should().Equal(new[] { 2, 1 });
+        list.Should().Equal([2, 1]);
 
         list.Clear();
         list.Should().BeEmpty();
 
         list.AddLast(1);
-        list.Should().Equal(new[] { 1 });
+        list.Should().Equal([1]);
     }
 
     [Fact]

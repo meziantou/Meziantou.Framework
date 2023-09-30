@@ -8,7 +8,6 @@ public sealed class StreamExtensionsTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ReadToEndTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -18,13 +17,12 @@ public sealed class StreamExtensionsTests
 
         var result = byteByByteStream.ReadToEnd();
 
-        result.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
+        result.Should().Equal([0, 1, 2, 3, 4]);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public async Task ReadToEndAsyncTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -34,13 +32,12 @@ public sealed class StreamExtensionsTests
 
         var result = await byteByByteStream.ReadToEndAsync();
 
-        result.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
+        result.Should().Equal([0, 1, 2, 3, 4]);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryReadAllTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -51,13 +48,12 @@ public sealed class StreamExtensionsTests
         var buffer = new byte[5];
         byteByByteStream.TryReadAll(buffer, 0, 5);
 
-        buffer.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
+        buffer.Should().Equal([0, 1, 2, 3, 4]);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public async Task TryReadAllAsyncTests(bool canSeek)
     {
         using var stream = new MemoryStream();
@@ -68,7 +64,7 @@ public sealed class StreamExtensionsTests
         var buffer = new byte[5];
         await byteByByteStream.TryReadAllAsync(buffer, 0, 5);
 
-        buffer.Should().Equal(new byte[] { 0, 1, 2, 3, 4 });
+        buffer.Should().Equal([0, 1, 2, 3, 4]);
     }
 
     [Fact]
@@ -80,7 +76,7 @@ public sealed class StreamExtensionsTests
 
         using var copy = await stream.ToMemoryStreamAsync();
 
-        copy.ToArray().Should().Equal(new byte[] { 1, 2, 3, 4 });
+        copy.ToArray().Should().Equal([1, 2, 3, 4]);
     }
 
     private sealed class CustomStream : Stream

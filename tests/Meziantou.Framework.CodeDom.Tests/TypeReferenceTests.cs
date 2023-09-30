@@ -39,7 +39,7 @@ public class TypeReferenceTests
 
         // Assert
         typeReference.ClrFullTypeName.Should().Be("System.Nullable<System.Int32>");
-        typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList().Should().BeEquivalentTo(new[] { typeof(int).FullName });
+        typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList().Should().BeEquivalentTo([typeof(int).FullName]);
     }
 
     private sealed class TestNested

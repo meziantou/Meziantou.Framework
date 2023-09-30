@@ -60,7 +60,6 @@ public class DefaultConverterTests_Int32To
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_Int32ToByteArray()
     {
         var converter = new DefaultConverter();
@@ -68,6 +67,6 @@ public class DefaultConverterTests_Int32To
         var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
 
         converted.Should().BeTrue();
-        value.Should().Equal(new byte[] { 0x78, 0x56, 0x34, 0x12 });
+        value.Should().Equal([0x78, 0x56, 0x34, 0x12]);
     }
 }

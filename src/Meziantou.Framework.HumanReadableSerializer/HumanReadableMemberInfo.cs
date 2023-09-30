@@ -99,7 +99,7 @@ internal sealed class HumanReadableMemberInfo
         var defaultValueAttribute = options.GetCustomAttribute<HumanReadableDefaultValueAttribute>(member);
         var defaultValue = defaultValueAttribute != null ? defaultValueAttribute.DefaultValue : GetDefaultValue(ignoreAttributes, member.PropertyType);
 
-        var getValue = (object? instance) =>
+        object GetValue(object? instance)
         {
             try
             {
@@ -110,8 +110,8 @@ internal sealed class HumanReadableMemberInfo
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                 return null;
             }
-        };
-        return new HumanReadableMemberInfo(member.PropertyType, getValue, ignoreAttributes, propertyName, converter, order, defaultValue);
+        }
+        return new HumanReadableMemberInfo(member.PropertyType, GetValue, ignoreAttributes, propertyName, converter, order, defaultValue);
     }
 
     public static HumanReadableMemberInfo? Get(FieldInfo member, HumanReadableSerializerOptions options)

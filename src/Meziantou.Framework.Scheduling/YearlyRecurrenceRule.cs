@@ -47,7 +47,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
         List<DateTime>? result = null;
         if (!IsEmpty(ByWeekDays))
         {
-            result = new List<DateTime>();
+            result = [];
 
             if (IsEmpty(ByMonths))
             {
@@ -124,7 +124,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
 
         if (!IsEmpty(monthDays))
         {
-            result = new List<DateTime>();
+            result = [];
             for (var i = 0; i < 12; i++)
             {
                 var startOfMonth = startOfYear.AddMonths(i);
@@ -154,7 +154,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
         List<DateTime>? result = null;
         if (!IsEmpty(ByYearDays))
         {
-            result = new List<DateTime>();
+            result = [];
             var daysInYear = DateTime.IsLeapYear(startOfYear.Year) ? 366 : 365;
             foreach (var day in ByYearDays)
             {
@@ -180,7 +180,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
         List<DateTime>? result = null;
         if (!IsEmpty(ByMonths))
         {
-            result = new List<DateTime>();
+            result = [];
             foreach (var month in ByMonths.Distinct().OrderBy(_ => _))
             {
                 if (month >= Month.January && month <= Month.December)
@@ -250,7 +250,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.Append(string.Join(",", ByMonths.Cast<int>()));
+                sb.AppendJoin(',', ByMonths.Cast<int>());
             }
 
             //if (!IsEmpty(ByWeekNo))
@@ -262,25 +262,25 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByYearDays))
             {
                 sb.Append(";BYYEARDAY=");
-                sb.Append(string.Join(",", ByYearDays));
+                sb.AppendJoin(',', ByYearDays);
             }
 
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
-                sb.Append(string.Join(",", ByMonthDays));
+                sb.AppendJoin(',', ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))
             {
                 sb.Append(";BYDAY=");
-                sb.Append(string.Join(",", ByWeekDays));
+                sb.AppendJoin(',', ByWeekDays);
             }
 
             if (!IsEmpty(BySetPositions))
             {
                 sb.Append(";BYSETPOS=");
-                sb.Append(string.Join(",", BySetPositions));
+                sb.AppendJoin(',', BySetPositions);
             }
 
             return sb.ToString();

@@ -128,7 +128,7 @@ internal static class TypeUtils
             foreach (var genericType in type.GenericTypeArguments)
             {
                 var currentName = tupleNames != null && tupleNameIndex < tupleNames.Length ? tupleNames[tupleNameIndex] : null;
-                var isDynamic = dynamicFlags != null && dynamicFlagIndex < dynamicFlags.Count ? dynamicFlags[dynamicFlagIndex] : false;
+                var isDynamic = dynamicFlags != null && dynamicFlagIndex < dynamicFlags.Count && dynamicFlags[dynamicFlagIndex];
 
                 dynamicFlagIndex += 1;
                 tupleNameIndex += 1;

@@ -18,7 +18,7 @@ public class HtmlEmailCodeBlock : CodeBlock
         EvalPrefixString = "#"; // Visual Studio colorizes "{{# Name }}" in HTML file in html file :)
     }
 
-    [return: NotNullIfNotNull(parameterName: "html")]
+    [return: NotNullIfNotNull(parameterName: nameof(html))]
     protected virtual string? HtmlDecode(string? html)
     {
         if (html == null)

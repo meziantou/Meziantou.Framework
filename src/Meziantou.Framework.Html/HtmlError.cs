@@ -1,7 +1,5 @@
 #nullable disable
 
-using System.Globalization;
-
 namespace Meziantou.Framework.Html;
 
 #if HTML_PUBLIC
@@ -36,7 +34,7 @@ sealed class HtmlError
     public override string ToString()
     {
 #if NET6_0_OR_GREATER
-        return string.Create(CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Line}x{Column}x{Offset} {ErrorType}");
 #else
         return FormattableString.Invariant($"{Line}x{Column}x{Offset} {ErrorType}");
 #endif

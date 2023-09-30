@@ -54,32 +54,31 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa()
     {
-        AssertTryFromHexa("00", new byte[] { 0x00 });
-        AssertTryFromHexa("01", new byte[] { 0x01 });
-        AssertTryFromHexa("02", new byte[] { 0x02 });
-        AssertTryFromHexa("03", new byte[] { 0x03 });
-        AssertTryFromHexa("04", new byte[] { 0x04 });
-        AssertTryFromHexa("05", new byte[] { 0x05 });
-        AssertTryFromHexa("06", new byte[] { 0x06 });
-        AssertTryFromHexa("07", new byte[] { 0x07 });
-        AssertTryFromHexa("08", new byte[] { 0x08 });
-        AssertTryFromHexa("09", new byte[] { 0x09 });
-        AssertTryFromHexa("0a", new byte[] { 0x0A });
-        AssertTryFromHexa("0b", new byte[] { 0x0B });
-        AssertTryFromHexa("0c", new byte[] { 0x0C });
-        AssertTryFromHexa("0d", new byte[] { 0x0D });
-        AssertTryFromHexa("0e", new byte[] { 0x0E });
-        AssertTryFromHexa("0f", new byte[] { 0x0F });
-        AssertTryFromHexa("0A", new byte[] { 0x0A });
-        AssertTryFromHexa("0B", new byte[] { 0x0B });
-        AssertTryFromHexa("0C", new byte[] { 0x0C });
-        AssertTryFromHexa("0D", new byte[] { 0x0D });
-        AssertTryFromHexa("0E", new byte[] { 0x0E });
-        AssertTryFromHexa("0F", new byte[] { 0x0F });
-        AssertTryFromHexa("4Faf65", new byte[] { 0x4F, 0xAF, 0x65 });
+        AssertTryFromHexa("00", [0x00]);
+        AssertTryFromHexa("01", [0x01]);
+        AssertTryFromHexa("02", [0x02]);
+        AssertTryFromHexa("03", [0x03]);
+        AssertTryFromHexa("04", [0x04]);
+        AssertTryFromHexa("05", [0x05]);
+        AssertTryFromHexa("06", [0x06]);
+        AssertTryFromHexa("07", [0x07]);
+        AssertTryFromHexa("08", [0x08]);
+        AssertTryFromHexa("09", [0x09]);
+        AssertTryFromHexa("0a", [0x0A]);
+        AssertTryFromHexa("0b", [0x0B]);
+        AssertTryFromHexa("0c", [0x0C]);
+        AssertTryFromHexa("0d", [0x0D]);
+        AssertTryFromHexa("0e", [0x0E]);
+        AssertTryFromHexa("0f", [0x0F]);
+        AssertTryFromHexa("0A", [0x0A]);
+        AssertTryFromHexa("0B", [0x0B]);
+        AssertTryFromHexa("0C", [0x0C]);
+        AssertTryFromHexa("0D", [0x0D]);
+        AssertTryFromHexa("0E", [0x0E]);
+        AssertTryFromHexa("0F", [0x0F]);
+        AssertTryFromHexa("4Faf65", [0x4F, 0xAF, 0x65]);
 
         static void AssertTryFromHexa(string str, byte[] expected)
         {
@@ -89,33 +88,32 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ParseHexa_WithPrefix()
     {
-        HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });
-        HexaConverter.ParseHexaString("0x01").Should().Equal(new byte[] { 0x01 });
-        HexaConverter.ParseHexaString("0x02").Should().Equal(new byte[] { 0x02 });
-        HexaConverter.ParseHexaString("0x03").Should().Equal(new byte[] { 0x03 });
-        HexaConverter.ParseHexaString("0x04").Should().Equal(new byte[] { 0x04 });
-        HexaConverter.ParseHexaString("0x05").Should().Equal(new byte[] { 0x05 });
-        HexaConverter.ParseHexaString("0x06").Should().Equal(new byte[] { 0x06 });
-        HexaConverter.ParseHexaString("0x07").Should().Equal(new byte[] { 0x07 });
-        HexaConverter.ParseHexaString("0x08").Should().Equal(new byte[] { 0x08 });
-        HexaConverter.ParseHexaString("0x09").Should().Equal(new byte[] { 0x09 });
-        HexaConverter.ParseHexaString("0x0a").Should().Equal(new byte[] { 0x0A });
-        HexaConverter.ParseHexaString("0x0b").Should().Equal(new byte[] { 0x0B });
-        HexaConverter.ParseHexaString("0x0c").Should().Equal(new byte[] { 0x0C });
-        HexaConverter.ParseHexaString("0x0d").Should().Equal(new byte[] { 0x0D });
-        HexaConverter.ParseHexaString("0x0e").Should().Equal(new byte[] { 0x0E });
-        HexaConverter.ParseHexaString("0x0f").Should().Equal(new byte[] { 0x0F });
-        HexaConverter.ParseHexaString("0x0A").Should().Equal(new byte[] { 0x0A });
-        HexaConverter.ParseHexaString("0x0B").Should().Equal(new byte[] { 0x0B });
-        HexaConverter.ParseHexaString("0x0C").Should().Equal(new byte[] { 0x0C });
-        HexaConverter.ParseHexaString("0x0D").Should().Equal(new byte[] { 0x0D });
-        HexaConverter.ParseHexaString("0x0E").Should().Equal(new byte[] { 0x0E });
-        HexaConverter.ParseHexaString("0x0F").Should().Equal(new byte[] { 0x0F });
+        HexaConverter.ParseHexaString("0x00").Should().Equal([0x00]);
+        HexaConverter.ParseHexaString("0x01").Should().Equal([0x01]);
+        HexaConverter.ParseHexaString("0x02").Should().Equal([0x02]);
+        HexaConverter.ParseHexaString("0x03").Should().Equal([0x03]);
+        HexaConverter.ParseHexaString("0x04").Should().Equal([0x04]);
+        HexaConverter.ParseHexaString("0x05").Should().Equal([0x05]);
+        HexaConverter.ParseHexaString("0x06").Should().Equal([0x06]);
+        HexaConverter.ParseHexaString("0x07").Should().Equal([0x07]);
+        HexaConverter.ParseHexaString("0x08").Should().Equal([0x08]);
+        HexaConverter.ParseHexaString("0x09").Should().Equal([0x09]);
+        HexaConverter.ParseHexaString("0x0a").Should().Equal([0x0A]);
+        HexaConverter.ParseHexaString("0x0b").Should().Equal([0x0B]);
+        HexaConverter.ParseHexaString("0x0c").Should().Equal([0x0C]);
+        HexaConverter.ParseHexaString("0x0d").Should().Equal([0x0D]);
+        HexaConverter.ParseHexaString("0x0e").Should().Equal([0x0E]);
+        HexaConverter.ParseHexaString("0x0f").Should().Equal([0x0F]);
+        HexaConverter.ParseHexaString("0x0A").Should().Equal([0x0A]);
+        HexaConverter.ParseHexaString("0x0B").Should().Equal([0x0B]);
+        HexaConverter.ParseHexaString("0x0C").Should().Equal([0x0C]);
+        HexaConverter.ParseHexaString("0x0D").Should().Equal([0x0D]);
+        HexaConverter.ParseHexaString("0x0E").Should().Equal([0x0E]);
+        HexaConverter.ParseHexaString("0x0F").Should().Equal([0x0F]);
 
-        HexaConverter.ParseHexaString("0x4Faf65").Should().Equal(new byte[] { 0x4F, 0xAF, 0x65 });
+        HexaConverter.ParseHexaString("0x4Faf65").Should().Equal([0x4F, 0xAF, 0x65]);
     }
 
     [Fact]
@@ -179,32 +177,31 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa_Span()
     {
-        AssertTryFromHexa("00", new byte[] { 0x00 });
-        AssertTryFromHexa("01", new byte[] { 0x01 });
-        AssertTryFromHexa("02", new byte[] { 0x02 });
-        AssertTryFromHexa("03", new byte[] { 0x03 });
-        AssertTryFromHexa("04", new byte[] { 0x04 });
-        AssertTryFromHexa("05", new byte[] { 0x05 });
-        AssertTryFromHexa("06", new byte[] { 0x06 });
-        AssertTryFromHexa("07", new byte[] { 0x07 });
-        AssertTryFromHexa("08", new byte[] { 0x08 });
-        AssertTryFromHexa("09", new byte[] { 0x09 });
-        AssertTryFromHexa("0a", new byte[] { 0x0A });
-        AssertTryFromHexa("0b", new byte[] { 0x0B });
-        AssertTryFromHexa("0c", new byte[] { 0x0C });
-        AssertTryFromHexa("0d", new byte[] { 0x0D });
-        AssertTryFromHexa("0e", new byte[] { 0x0E });
-        AssertTryFromHexa("0f", new byte[] { 0x0F });
-        AssertTryFromHexa("0A", new byte[] { 0x0A });
-        AssertTryFromHexa("0B", new byte[] { 0x0B });
-        AssertTryFromHexa("0C", new byte[] { 0x0C });
-        AssertTryFromHexa("0D", new byte[] { 0x0D });
-        AssertTryFromHexa("0E", new byte[] { 0x0E });
-        AssertTryFromHexa("0F", new byte[] { 0x0F });
-        AssertTryFromHexa("4Faf65", new byte[] { 0x4F, 0xAF, 0x65 });
+        AssertTryFromHexa("00", [0x00]);
+        AssertTryFromHexa("01", [0x01]);
+        AssertTryFromHexa("02", [0x02]);
+        AssertTryFromHexa("03", [0x03]);
+        AssertTryFromHexa("04", [0x04]);
+        AssertTryFromHexa("05", [0x05]);
+        AssertTryFromHexa("06", [0x06]);
+        AssertTryFromHexa("07", [0x07]);
+        AssertTryFromHexa("08", [0x08]);
+        AssertTryFromHexa("09", [0x09]);
+        AssertTryFromHexa("0a", [0x0A]);
+        AssertTryFromHexa("0b", [0x0B]);
+        AssertTryFromHexa("0c", [0x0C]);
+        AssertTryFromHexa("0d", [0x0D]);
+        AssertTryFromHexa("0e", [0x0E]);
+        AssertTryFromHexa("0f", [0x0F]);
+        AssertTryFromHexa("0A", [0x0A]);
+        AssertTryFromHexa("0B", [0x0B]);
+        AssertTryFromHexa("0C", [0x0C]);
+        AssertTryFromHexa("0D", [0x0D]);
+        AssertTryFromHexa("0E", [0x0E]);
+        AssertTryFromHexa("0F", [0x0F]);
+        AssertTryFromHexa("4Faf65", [0x4F, 0xAF, 0x65]);
 
         static void AssertTryFromHexa(string str, byte[] expected)
         {
@@ -216,33 +213,32 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryParseHexa_Span_WithPrefix()
     {
-        HexaConverter.ParseHexaString("0x00").Should().Equal(new byte[] { 0x00 });
-        HexaConverter.ParseHexaString("0x01").Should().Equal(new byte[] { 0x01 });
-        HexaConverter.ParseHexaString("0x02").Should().Equal(new byte[] { 0x02 });
-        HexaConverter.ParseHexaString("0x03").Should().Equal(new byte[] { 0x03 });
-        HexaConverter.ParseHexaString("0x04").Should().Equal(new byte[] { 0x04 });
-        HexaConverter.ParseHexaString("0x05").Should().Equal(new byte[] { 0x05 });
-        HexaConverter.ParseHexaString("0x06").Should().Equal(new byte[] { 0x06 });
-        HexaConverter.ParseHexaString("0x07").Should().Equal(new byte[] { 0x07 });
-        HexaConverter.ParseHexaString("0x08").Should().Equal(new byte[] { 0x08 });
-        HexaConverter.ParseHexaString("0x09").Should().Equal(new byte[] { 0x09 });
-        HexaConverter.ParseHexaString("0x0a").Should().Equal(new byte[] { 0x0A });
-        HexaConverter.ParseHexaString("0x0b").Should().Equal(new byte[] { 0x0B });
-        HexaConverter.ParseHexaString("0x0c").Should().Equal(new byte[] { 0x0C });
-        HexaConverter.ParseHexaString("0x0d").Should().Equal(new byte[] { 0x0D });
-        HexaConverter.ParseHexaString("0x0e").Should().Equal(new byte[] { 0x0E });
-        HexaConverter.ParseHexaString("0x0f").Should().Equal(new byte[] { 0x0F });
-        HexaConverter.ParseHexaString("0x0A").Should().Equal(new byte[] { 0x0A });
-        HexaConverter.ParseHexaString("0x0B").Should().Equal(new byte[] { 0x0B });
-        HexaConverter.ParseHexaString("0x0C").Should().Equal(new byte[] { 0x0C });
-        HexaConverter.ParseHexaString("0x0D").Should().Equal(new byte[] { 0x0D });
-        HexaConverter.ParseHexaString("0x0E").Should().Equal(new byte[] { 0x0E });
-        HexaConverter.ParseHexaString("0x0F").Should().Equal(new byte[] { 0x0F });
+        HexaConverter.ParseHexaString("0x00").Should().Equal([0x00]);
+        HexaConverter.ParseHexaString("0x01").Should().Equal([0x01]);
+        HexaConverter.ParseHexaString("0x02").Should().Equal([0x02]);
+        HexaConverter.ParseHexaString("0x03").Should().Equal([0x03]);
+        HexaConverter.ParseHexaString("0x04").Should().Equal([0x04]);
+        HexaConverter.ParseHexaString("0x05").Should().Equal([0x05]);
+        HexaConverter.ParseHexaString("0x06").Should().Equal([0x06]);
+        HexaConverter.ParseHexaString("0x07").Should().Equal([0x07]);
+        HexaConverter.ParseHexaString("0x08").Should().Equal([0x08]);
+        HexaConverter.ParseHexaString("0x09").Should().Equal([0x09]);
+        HexaConverter.ParseHexaString("0x0a").Should().Equal([0x0A]);
+        HexaConverter.ParseHexaString("0x0b").Should().Equal([0x0B]);
+        HexaConverter.ParseHexaString("0x0c").Should().Equal([0x0C]);
+        HexaConverter.ParseHexaString("0x0d").Should().Equal([0x0D]);
+        HexaConverter.ParseHexaString("0x0e").Should().Equal([0x0E]);
+        HexaConverter.ParseHexaString("0x0f").Should().Equal([0x0F]);
+        HexaConverter.ParseHexaString("0x0A").Should().Equal([0x0A]);
+        HexaConverter.ParseHexaString("0x0B").Should().Equal([0x0B]);
+        HexaConverter.ParseHexaString("0x0C").Should().Equal([0x0C]);
+        HexaConverter.ParseHexaString("0x0D").Should().Equal([0x0D]);
+        HexaConverter.ParseHexaString("0x0E").Should().Equal([0x0E]);
+        HexaConverter.ParseHexaString("0x0F").Should().Equal([0x0F]);
 
-        HexaConverter.ParseHexaString("0x4Faf65").Should().Equal(new byte[] { 0x4F, 0xAF, 0x65 });
+        HexaConverter.ParseHexaString("0x4Faf65").Should().Equal([0x4F, 0xAF, 0x65]);
     }
 
     [Fact]

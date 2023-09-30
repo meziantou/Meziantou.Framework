@@ -25,8 +25,8 @@ public sealed record HumanReadableSerializerOptions
 
     public HumanReadableSerializerOptions()
     {
-        _memberAttributes = new();
-        _typeAttributes = new();
+        _memberAttributes = [];
+        _typeAttributes = [];
         _memberInfoCache = new();
         _convertersCache = new();
         _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
@@ -37,8 +37,8 @@ public sealed record HumanReadableSerializerOptions
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private HumanReadableSerializerOptions(HumanReadableSerializerOptions? options)
     {
-        _memberAttributes = new();
-        _typeAttributes = new();
+        _memberAttributes = [];
+        _typeAttributes = [];
         _memberInfoCache = new();
         _convertersCache = new();
         _valueFormatters = new(StringComparer.OrdinalIgnoreCase);
@@ -374,8 +374,8 @@ public sealed record HumanReadableSerializerOptions
 
     private sealed class ConverterList : ConfigurationList<HumanReadableConverter>
     {
-        internal static readonly HumanReadableConverter[] DefaultConverters = new HumanReadableConverter[]
-        {
+        internal static readonly HumanReadableConverter[] DefaultConverters =
+        [
             new BigIntegerConverter(),
             new BitArrayConverter(),
             new BitVector32Converter(),
@@ -466,7 +466,7 @@ public sealed record HumanReadableSerializerOptions
             new FSharpValueOptionConverterFactory(),
             new FSharpDiscriminatedUnionConverter(),
             new ObjectConverterFactory(),
-        };
+        ];
 
         private readonly HumanReadableSerializerOptions _options;
 

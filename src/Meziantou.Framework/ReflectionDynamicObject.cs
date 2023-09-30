@@ -346,19 +346,13 @@ public sealed class ReflectionDynamicObject : DynamicObject
                     }
                     else
                     {
-                        if (!typeCache.InstanceProperties.ContainsKey(propertyInfo.Name))
-                        {
-                            typeCache.InstanceProperties.Add(propertyInfo.Name, propertyInfo);
-                        }
+                        typeCache.InstanceProperties.TryAdd(propertyInfo.Name, propertyInfo);
                     }
                 }
 
                 foreach (var fieldInfo in currentType.GetFields(InstanceDefaultBindingFlags))
                 {
-                    if (!typeCache.InstanceFields.ContainsKey(fieldInfo.Name))
-                    {
-                        typeCache.InstanceFields.Add(fieldInfo.Name, fieldInfo);
-                    }
+                    typeCache.InstanceFields.TryAdd(fieldInfo.Name, fieldInfo);
                 }
 
                 // Static
@@ -370,19 +364,13 @@ public sealed class ReflectionDynamicObject : DynamicObject
                     }
                     else
                     {
-                        if (!typeCache.StaticProperties.ContainsKey(propertyInfo.Name))
-                        {
-                            typeCache.StaticProperties.Add(propertyInfo.Name, propertyInfo);
-                        }
+                        typeCache.StaticProperties.TryAdd(propertyInfo.Name, propertyInfo);
                     }
                 }
 
                 foreach (var fieldInfo in currentType.GetFields(StaticDefaultBindingFlags))
                 {
-                    if (!typeCache.StaticFields.ContainsKey(fieldInfo.Name))
-                    {
-                        typeCache.StaticFields.Add(fieldInfo.Name, fieldInfo);
-                    }
+                    typeCache.StaticFields.TryAdd(fieldInfo.Name, fieldInfo);
                 }
 
                 currentType = currentType.BaseType;

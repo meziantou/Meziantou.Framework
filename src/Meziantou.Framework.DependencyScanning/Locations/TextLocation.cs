@@ -5,7 +5,7 @@ namespace Meziantou.Framework.DependencyScanning;
 
 internal sealed class TextLocation : Location, ILocationLineInfo
 {
-    private static readonly char[] NewLineCharacters = { '\r', '\n' };
+    private static readonly char[] NewLineCharacters = ['\r', '\n'];
 
     public TextLocation(IFileSystem fileSystem, string filePath, int line, int column, int length)
         : base(fileSystem, filePath)

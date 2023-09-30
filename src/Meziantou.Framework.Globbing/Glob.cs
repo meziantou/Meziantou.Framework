@@ -105,7 +105,7 @@ public sealed class Glob
 
     public bool IsMatch(ReadOnlySpan<char> path)
     {
-        var pathEnumerator = new PathReader(path, ReadOnlySpan<char>.Empty);
+        var pathEnumerator = new PathReader(path, []);
         return IsMatchCore(pathEnumerator, _segments);
     }
 
@@ -173,7 +173,7 @@ public sealed class Glob
 
     public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, ReadOnlySpan<char>.Empty), _segments);
+        return IsPartialMatchCore(new PathReader(folderPath, []), _segments);
     }
 
     public bool IsPartialMatch(ref FileSystemEntry entry)
@@ -186,7 +186,7 @@ public sealed class Glob
         if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
             throw new ArgumentException("Filename contains a directory separator", nameof(filename));
 
-        return IsPartialMatch(directory, filename);
+        return IsPartialMatchCore(directory, filename);
     }
 
     public bool IsPartialMatch(string directory, string filename) => IsPartialMatch(directory.AsSpan(), filename.AsSpan());
@@ -263,7 +263,7 @@ public sealed class Glob
     internal static ReadOnlySpan<char> GetRelativeDirectory(ref FileSystemEntry entry)
     {
         if (entry.Directory.Length == entry.RootDirectory.Length)
-            return ReadOnlySpan<char>.Empty;
+            return [];
 
         return entry.Directory[(entry.RootDirectory.Length + 1)..];
     }

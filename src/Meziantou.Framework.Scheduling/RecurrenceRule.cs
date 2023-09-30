@@ -42,7 +42,7 @@ public abstract class RecurrenceRule
         {
             // Extract parts
             var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var parts = rrule.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = rrule.Split(';', StringSplitOptions.RemoveEmptyEntries);
             foreach (var part in parts)
             {
                 var (name, value) = SplitPart(part);
@@ -235,7 +235,7 @@ public abstract class RecurrenceRule
         return SplitToStringArray(str).Select(ParseDayOfWeekWithOffset).ToArray();
     }
 
-    private static IList<DayOfWeek> ParseByDay(IDictionary<string, string> values)
+    private static DayOfWeek[] ParseByDay(IDictionary<string, string> values)
     {
         return ParseByDay(values.GetValue("BYDAY", (string?)null));
     }
@@ -339,9 +339,9 @@ public abstract class RecurrenceRule
         List<DateTime>? resultByDays = null;
         if (!IsEmpty(byWeekDays))
         {
-            resultByDays = new List<DateTime>();
+            resultByDays = [];
 
-            // 1) Find all dates that match the day of month contraint
+            // 1) Find all dates that match the day of month constraint
             var potentialResults = new Dictionary<ByDay, IList<DateTime>>();
             foreach (var byDay in byWeekDays)
             {
@@ -395,7 +395,7 @@ public abstract class RecurrenceRule
         List<DateTime>? resultByMonthDays = null;
         if (!IsEmpty(byMonthDays))
         {
-            resultByMonthDays = new List<DateTime>();
+            resultByMonthDays = [];
             var daysInMonth = DateTime.DaysInMonth(startOfMonth.Year, startOfMonth.Month);
             foreach (var day in byMonthDays)
             {

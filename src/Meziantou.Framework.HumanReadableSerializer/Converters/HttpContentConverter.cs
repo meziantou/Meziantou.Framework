@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Net.Mime;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 

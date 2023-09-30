@@ -111,7 +111,7 @@ public class DefaultConverter : IConverter
     private static bool EnumTryParse(Type type, string? input, out object? value)
     {
         var mi = EnumTryParseMethodInfo.MakeGenericMethod(type);
-        object?[] args = { input, true, Enum.ToObject(type, 0) };
+        object?[] args = [input, true, Enum.ToObject(type, 0)];
         var b = (bool)mi.Invoke(null, args)!;
         value = args[2];
         return b;
@@ -1317,7 +1317,7 @@ public class DefaultConverter : IConverter
             return false;
         }
 
-        value = op.Invoke(null, new object?[] { input });
+        value = op.Invoke(null, [input]);
         return true;
     }
 }

@@ -165,7 +165,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
         public string Lowercase(object obj)
         {
-            return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, new[] { obj }, docContext: null);
+            return (string)new Lowercase(Context, "Lowercase").Invoke(xsltContext: null, [obj], docContext: null);
         }
 
         // add methods as needed

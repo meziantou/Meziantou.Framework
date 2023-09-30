@@ -9,9 +9,9 @@ namespace Meziantou.Framework;
 // https://referencesource.microsoft.com/#System.Web/UI/DataBinder.cs,bc4362a9cfc4c370,references
 public static class DataBinder
 {
-    private static readonly char[] ExpressionPartSeparator = new char[] { '.' };
-    private static readonly char[] IndexExprStartChars = new char[] { '[', '(' };
-    private static readonly char[] IndexExprEndChars = new char[] { ']', ')' };
+    private static readonly char[] ExpressionPartSeparator = ['.'];
+    private static readonly char[] IndexExprStartChars = ['[', '('];
+    private static readonly char[] IndexExprEndChars = [']', ')'];
     private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> PropertyCache = new();
 
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
@@ -218,7 +218,7 @@ public static class DataBinder
             }
             else
             {
-                var propInfo = collectionProp.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, binder: null, returnType: null, new Type[] { indexValue.GetType() }, modifiers: null);
+                var propInfo = collectionProp.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, binder: null, returnType: null, [indexValue.GetType()], modifiers: null);
                 if (propInfo != null)
                     return propInfo.GetValue(collectionProp, new object[] { indexValue });
 

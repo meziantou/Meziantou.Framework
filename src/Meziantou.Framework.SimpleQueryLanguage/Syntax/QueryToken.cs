@@ -24,7 +24,7 @@ public sealed class QueryToken : QueryNodeOrToken
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return Array.Empty<QueryNodeOrToken>();
+        return [];
     }
 
     public override string ToString()

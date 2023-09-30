@@ -7,7 +7,6 @@ namespace Meziantou.Framework.Tests;
 public class DefaultConverterTests_ByteArrayTo
 {
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_ByteArrayToString_Base64()
     {
         var converter = new DefaultConverter();
@@ -19,7 +18,6 @@ public class DefaultConverterTests_ByteArrayTo
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_ByteArrayToString_Base16WithPrefix()
     {
         var converter = new DefaultConverter
@@ -34,7 +32,6 @@ public class DefaultConverterTests_ByteArrayTo
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_ByteArrayToString_Base16WithoutPrefix()
     {
         var converter = new DefaultConverter

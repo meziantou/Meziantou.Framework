@@ -69,7 +69,7 @@ public sealed class LinkHeaderValue
                 if (index == -1)
                 {
                     parameterName = value.ToString();
-                    value = ReadOnlySpan<char>.Empty;
+                    value = [];
                 }
                 else
                 {
@@ -122,7 +122,7 @@ public sealed class LinkHeaderValue
                         if (index == -1)
                         {
                             parameterValue = value.ToString();
-                            value = ReadOnlySpan<char>.Empty;
+                            value = [];
                         }
                         else
                         {
@@ -157,7 +157,7 @@ public sealed class LinkHeaderValue
                     return value[i..];
             }
 
-            return ReadOnlySpan<char>.Empty;
+            return [];
         }
     }
 }

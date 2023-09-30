@@ -44,11 +44,11 @@ public class StringExtensionsTests
         foreach (var (line, separator) in "a\nb\nc\nd".SplitLines())
         {
             actual.Add((line.ToString(), separator.ToString()));
-            if (line.Equals("b", StringComparison.Ordinal))
+            if (line is "b")
                 break;
         }
 
-        actual.Should().Equal(new[] { ("a", "\n"), ("b", "\n") });
+        actual.Should().Equal([("a", "\n"), ("b", "\n")]);
     }
 
     [Theory]

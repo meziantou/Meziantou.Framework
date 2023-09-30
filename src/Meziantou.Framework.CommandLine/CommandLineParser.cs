@@ -2,7 +2,9 @@ namespace Meziantou.Framework;
 
 public sealed class CommandLineParser
 {
-    private static readonly string[] HelpArguments = { "-?", "/?", "-help", "/help", "--help" };
+    private static readonly string[] HelpArguments = ["-?", "/?", "-help", "/help", "--help"];
+
+    private static readonly char[] ValueDelimiters = [':', '='];
 
     private readonly Dictionary<string, string> _namedArguments = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<int, string> _positionArguments = new();
@@ -43,7 +45,7 @@ public sealed class CommandLineParser
             if (arg[0] == '-' || arg[0] == '/')
             {
                 arg = arg[1..];
-                var indexOfSeparator = arg.IndexOfAny(new[] { ':', '=' });
+                var indexOfSeparator = arg.IndexOfAny(ValueDelimiters);
 
                 var name = arg;
                 var value = string.Empty;

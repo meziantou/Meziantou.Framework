@@ -251,11 +251,10 @@ public class DefaultConverterTests_StringTo
         var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[] value);
 
         converted.Should().BeTrue();
-        value.Should().Equal(new byte[] { 0x0A, 0xFF });
+        value.Should().Equal([0x0A, 0xFF]);
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base64()
     {
         var converter = new DefaultConverter();
@@ -263,7 +262,7 @@ public class DefaultConverterTests_StringTo
         var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[] value);
 
         converted.Should().BeTrue();
-        value.Should().Equal(new byte[] { 1, 2, 3, 4 });
+        value.Should().Equal([1, 2, 3, 4]);
     }
 
     [Fact]
@@ -299,7 +298,6 @@ public class DefaultConverterTests_StringTo
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base16()
     {
         var converter = new DefaultConverter();
@@ -307,11 +305,10 @@ public class DefaultConverterTests_StringTo
         var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[] value);
 
         converted.Should().BeTrue();
-        value.Should().Equal(new byte[] { 0x0d, 0x01, 0x02 });
+        value.Should().Equal([0x0d, 0x01, 0x02]);
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void TryConvert_StringToByteArray_Base16Prefixed()
     {
         var converter = new DefaultConverter();
@@ -319,7 +316,7 @@ public class DefaultConverterTests_StringTo
         var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[] value);
 
         converted.Should().BeTrue();
-        value.Should().Equal(new byte[] { 0x0d, 0x01 });
+        value.Should().Equal([0x0d, 0x01]);
     }
 
     [Theory]

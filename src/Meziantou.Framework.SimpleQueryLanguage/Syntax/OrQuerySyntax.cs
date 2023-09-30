@@ -25,6 +25,6 @@ public sealed class OrQuerySyntax : QuerySyntax
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return new QueryNodeOrToken[] { Left, OperatorToken, Right };
+        return [Left, OperatorToken, Right];
     }
 }

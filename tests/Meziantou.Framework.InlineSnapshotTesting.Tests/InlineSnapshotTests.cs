@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
 using Meziantou.Framework.HumanReadable;
-using Meziantou.Framework.InlineSnapshotTesting.Scrubbers.HumanReadableSerializerScrubbers;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -41,7 +40,7 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshotSupportIfDirective()
     {
-        await AssertSnapshot(preprocessorSymbols: new[] { "SampleDirective" },
+        await AssertSnapshot(preprocessorSymbols: ["SampleDirective"],
             source: $$"""
             #if SampleDirective
             {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "" /* after */);
@@ -344,6 +343,7 @@ public sealed class InlineSnapshotTests
     }
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
+    [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
     private async Task AssertSnapshot(string source, string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
     {
         await using var directory = TemporaryDirectory.Create();
@@ -355,7 +355,7 @@ public sealed class InlineSnapshotTests
                 <LangVersion>{{languageVersion}}</LangVersion>
                 <Nullable>disable</Nullable>
                 <DebugType>portable</DebugType>
-                <DefineConstants>{{string.Join(";", preprocessorSymbols ?? Array.Empty<string>())}}</DefineConstants>
+                <DefineConstants>{{string.Join(";", preprocessorSymbols ?? [])}}</DefineConstants>
               </PropertyGroup>
               <ItemGroup>
                 <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />
@@ -434,7 +434,7 @@ public sealed class InlineSnapshotTests
         }
 
         var process = Process.Start(psi);
-        process!.WaitForExit();
+        await process!.WaitForExitAsync();
 
         var stdout = await process.StandardOutput.ReadToEndAsync();
         _testOutputHelper.WriteLine(stdout);

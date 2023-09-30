@@ -4,5 +4,5 @@ public enum CodeOwnersEntryType
 {
     Username,
     EmailAddress,
-    None
+    None,
 }

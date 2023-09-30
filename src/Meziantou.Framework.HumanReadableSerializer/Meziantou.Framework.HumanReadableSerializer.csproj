@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="../Meziantou.Framework.Html/*.cs" LinkBase="Html" Exclude="../Meziantou.Framework.Html/HtmlXmlWriter.cs" />
   </ItemGroup>
 

@@ -17,7 +17,7 @@ public class LimitListTests
         list.AddFirst(2);
 
         // Assert
-        list.ToList().Should().Equal(new int[] { 2, 1 });
+        list.ToList().Should().Equal([2, 1]);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class LimitListTests
         list.AddFirst(4);
 
         // Assert
-        list.ToList().Should().Equal(new int[] { 4, 3, 2 });
+        list.ToList().Should().Equal([4, 3, 2]);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class LimitListTests
         list.AddLast(2);
 
         // Assert
-        list.ToList().Should().Equal(new int[] { 1, 2 });
+        list.ToList().Should().Equal([1, 2]);
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class LimitListTests
         list.AddLast(4);
 
         // Assert
-        list.ToList().Should().Equal(new int[] { 2, 3, 4 });
+        list.ToList().Should().Equal([2, 3, 4]);
     }
 
     [Fact]

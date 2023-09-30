@@ -38,7 +38,7 @@ public class ResxGeneratorTest
         var result = outputCompilation.Emit(ms);
         if (mustCompile)
         {
-            var diags = string.Join("\n", result.Diagnostics);
+            var diags = string.Join('\n', result.Diagnostics);
             var generated = (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString();
             result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
             result.Diagnostics.Should().BeEmpty();

@@ -204,7 +204,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             baseTypes += $", global::System.IComparable";
         }
 
-        var attributes = (CSharpGeneratedFileWriter writer) =>
+        void WriteAttributes(CSharpGeneratedFileWriter writer)
         {
             if (attribute.CanGenerateTypeConverter())
             {
@@ -225,9 +225,9 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             {
                 writer.WriteLine($"[global::Newtonsoft.Json.JsonConverterAttribute(typeof({attribute.NewtonsoftJsonConverterTypeName}))]");
             }
-        };
+        }
 
-        var indentation = BeginPartialContext(writer, attribute.PartialTypeContext, attributes, baseTypes);
+        var indentation = BeginPartialContext(writer, attribute.PartialTypeContext, WriteAttributes, baseTypes);
         GenerateTypeMembers(writer, attribute);
         GenerateTypeConverter(writer, attribute);
         GenerateSystemTextJsonConverter(writer, attribute);

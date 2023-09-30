@@ -9,7 +9,7 @@ public class ConcurrentHashSetTests
     [Fact]
     public void TestConcurrentHashSet()
     {
-        ConcurrentHashSet<int> set = new();
+        ConcurrentHashSet<int> set = [];
         set.Add(1).Should().BeTrue();
         set.Add(2).Should().BeTrue();
         set.Add(3).Should().BeTrue();

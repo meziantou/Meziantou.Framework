@@ -35,8 +35,8 @@ public sealed class CachedEnumerableTests
         var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));
         using var cachedEnumerable = CachedEnumerable.Create(enumerable);
 
-        cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
-        cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
+        cachedEnumerable.Should().Equal([1, 2, 3]);
+        cachedEnumerable.Should().Equal([1, 2, 3]);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class CachedEnumerableTests
         enumerator1.MoveNext().Should().BeFalse();
         count.Should().Be(3);
 
-        cachedEnumerable.Should().Equal(new[] { 1, 2, 3 });
+        cachedEnumerable.Should().Equal([1, 2, 3]);
     }
 
     [Fact]

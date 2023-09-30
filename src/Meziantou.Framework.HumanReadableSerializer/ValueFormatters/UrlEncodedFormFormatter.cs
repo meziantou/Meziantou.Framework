@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Meziantou.Framework.Html;
 
 namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 

@@ -27,7 +27,7 @@ internal ref struct SplitEnumerator
         var index = span.IndexOf(_separator);
         if (index == -1) // The string is composed of only one line
         {
-            _str = ReadOnlySpan<char>.Empty; // The remaining string is an empty string
+            _str = []; // The remaining string is an empty string
             Current = span;
             return true;
         }

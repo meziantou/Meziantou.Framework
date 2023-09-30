@@ -21,7 +21,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
         if (excludedHeaderNames != null)
             _excludedHeaderNames = new HashSet<string>(excludedHeaderNames, StringComparer.OrdinalIgnoreCase);
 
-        _headerFormatters = headerFormatters?.ToArray() ?? Array.Empty<HttpHeaderValueFormatter>();
+        _headerFormatters = headerFormatters?.ToArray() ?? [];
     }
 
     protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
@@ -59,7 +59,9 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
             var headerValueCount = header.Value.Count;
 #endif
             if (headerValueCount == 0)
+            {
                 writer.WriteValue("");
+            }
             else if (headerValueCount == 1)
             {
                 WriteValueHeader(writer, header.Key, header.Value.First());
@@ -79,7 +81,9 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
         }
 
         if (hasValue)
+        {
             writer.EndObject();
+        }
         else
         {
             writer.WriteEmptyObject();

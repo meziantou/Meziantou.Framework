@@ -169,7 +169,7 @@ public sealed class DependencyScannerTests
     [Fact]
     public async Task ScanFile_InMemory()
     {
-        var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", Array.Empty<byte>(), new[] { new DummyScanner() });
+        var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], new[] { new DummyScanner() });
         items.Should().HaveCount(1);
     }
 

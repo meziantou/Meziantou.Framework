@@ -12,7 +12,7 @@ public class XpathQueryTests
         document.LoadHtml("<div><p>sample1</p><p>sample2</p></div>");
         var nodes = document.SelectNodes("//p/text()", HtmlNodeNavigatorOptions.LowercasedAll).Select(node => node.Value).ToList();
 
-        nodes.Should().Equal(new[] { "sample1", "sample2" });
+        nodes.Should().Equal(["sample1", "sample2"]);
     }
 
     [Fact]

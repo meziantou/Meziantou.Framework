@@ -84,8 +84,7 @@ internal static class QueryHelpers
             uriToBeAppended = uri[..anchorIndex];
         }
 
-        var queryIndex = uriToBeAppended.IndexOf('?', StringComparison.Ordinal);
-        var hasQuery = queryIndex != -1;
+        var hasQuery = uriToBeAppended.Contains('?', StringComparison.Ordinal);
 
         var sb = new StringBuilder();
         sb.Append(uriToBeAppended);

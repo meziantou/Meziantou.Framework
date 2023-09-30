@@ -1,12 +1,10 @@
-using System;
-using System.Xml;
 using System.Xml.Linq;
 
 namespace Meziantou.Framework.StronglyTypedId;
 
 public partial class StronglyTypedIdSourceGenerator
 {
-    private static readonly XNode[] InheritDocComment = new XNode[] { new XElement("inheritdoc") };
+    private static readonly XNode[] InheritDocComment = [new XElement("inheritdoc")];
 
     private static XElement XmlSeeCref(string type) => new("see", new XAttribute("cref", type));
     private static XElement XmlSummary(params object[] description) => new("summary", description);

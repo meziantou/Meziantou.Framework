@@ -26,17 +26,17 @@ internal sealed class SampleVirtualFileSystem : ProjectedFileSystemBase
     {
         if (AreFileNamesEqual(path, "a"))
         {
-            return new MemoryStream(new byte[] { 1 });
+            return new MemoryStream([1]);
         }
 
         if (AreFileNamesEqual(path, "b"))
         {
-            return new MemoryStream(new byte[] { 1, 2 });
+            return new MemoryStream([1, 2]);
         }
 
         if (AreFileNamesEqual(path, "folder\\c"))
         {
-            return new MemoryStream(new byte[] { 1, 2, 3 });
+            return new MemoryStream([1, 2, 3]);
         }
 
         return null;

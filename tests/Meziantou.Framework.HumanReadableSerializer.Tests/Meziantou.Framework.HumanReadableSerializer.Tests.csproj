@@ -14,6 +14,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="System.Net.Http" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer.FSharp.Tests\Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />

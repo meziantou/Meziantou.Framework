@@ -13,11 +13,11 @@ public sealed class GitHubActionsScanner : DependencyScanner
         if (context.HasExtension(".yml", ignoreCase: false) || context.HasExtension(".yaml", ignoreCase: false))
         {
             var directoryName = Path.GetFileName(context.Directory);
-            if (directoryName.Equals("workflows", StringComparison.Ordinal))
+            if (directoryName is "workflows")
             {
                 var parentDirectory = Path.GetDirectoryName(context.Directory);
                 directoryName = Path.GetFileName(parentDirectory);
-                if (directoryName.Equals(".github", StringComparison.Ordinal))
+                if (directoryName is ".github")
                 {
                     return Path.GetDirectoryName(parentDirectory).Equals(context.RootDirectory, StringComparison.Ordinal);
                 }

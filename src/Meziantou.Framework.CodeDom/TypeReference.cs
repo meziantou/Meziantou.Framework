@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public class TypeReference
 {
-    private static readonly char[] ArityOrArrayCharacters = new[] { '`', '[' };
+    private static readonly char[] ArityOrArrayCharacters = ['`', '['];
 
     private TypeParameter? _typeParameter;
     private TypeDeclaration? _typeDeclaration;
@@ -218,11 +218,7 @@ public class TypeReference
 
         if (_parameters != null)
         {
-            clone._parameters = new List<TypeReference>();
-            foreach (var parameter in _parameters)
-            {
-                clone._parameters.Add(parameter);
-            }
+            clone._parameters = [.. _parameters];
         }
         return clone;
     }

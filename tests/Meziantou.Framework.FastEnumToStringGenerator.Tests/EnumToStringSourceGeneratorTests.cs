@@ -14,7 +14,7 @@ public sealed class EnumToStringSourceGeneratorTests
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
-        assemblyLocations ??= Array.Empty<string>();
+        assemblyLocations ??= [];
         var references = assemblyLocations
             .Concat(netcoreRef)
             .Select(loc => MetadataReference.CreateFromFile(loc))
@@ -40,7 +40,7 @@ public sealed class EnumToStringSourceGeneratorTests
         var result = outputCompilation.Emit(ms);
         if (mustCompile)
         {
-            var diags = string.Join("\n", result.Diagnostics);
+            var diags = string.Join('\n', result.Diagnostics);
             var generated = (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString();
             result.Success.Should().BeTrue("Project should build build:\n" + diags + "\n\n\n" + generated);
             result.Diagnostics.Should().BeEmpty();

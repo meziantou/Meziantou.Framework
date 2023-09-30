@@ -32,7 +32,7 @@ public sealed class ObjectMethodExecutorTests
     public void SyncInt32Test()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32"));
-        var result = executor.Execute(new Test(), Array.Empty<object>());
+        var result = executor.Execute(new Test(), []);
 
         result.Should().Be(1);
     }
@@ -72,7 +72,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task AsyncTaskInt32Tests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32"));
-        var result = await executor.ExecuteAsync(new Test(), Array.Empty<object>());
+        var result = await executor.ExecuteAsync(new Test(), []);
 
         result.Should().Be(1);
     }
@@ -81,7 +81,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task ValueTaskInt32Tests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("ValueTaskInt32"));
-        var result = await executor.ExecuteAsync(new Test(), Array.Empty<object>());
+        var result = await executor.ExecuteAsync(new Test(), []);
 
         result.Should().Be(1);
     }
@@ -99,7 +99,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task AsyncCustomAwaiter()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter"));
-        var result = await executor.ExecuteAsync(new Test(), Array.Empty<object>());
+        var result = await executor.ExecuteAsync(new Test(), []);
 
         result.Should().Be(null);
     }
@@ -130,7 +130,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task FSharpAsync()
     {
         var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_int32"));
-        var result = await executor.ExecuteAsync(new FSharpTests.Say(), Array.Empty<object>());
+        var result = await executor.ExecuteAsync(new FSharpTests.Say(), []);
 
         result.Should().Be(42);
     }
@@ -139,7 +139,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task FSharpAsync_Unit()
     {
         var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_dummyUnit"));
-        var result = await executor.ExecuteAsync(new FSharpTests.Say(), Array.Empty<object>());
+        var result = await executor.ExecuteAsync(new FSharpTests.Say(), []);
 
         result.Should().Be(null);
     }

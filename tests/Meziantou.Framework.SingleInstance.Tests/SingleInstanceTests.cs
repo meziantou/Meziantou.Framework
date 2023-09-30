@@ -32,8 +32,8 @@ public sealed class SingleInstanceTests
 
         events.Should().HaveCount(2);
         var orderedEvents = events.OrderBy(args => args.Arguments.Length).ToList();
-        orderedEvents[0].Arguments.Should().Equal(new[] { "123" });
-        orderedEvents[1].Arguments.Should().Equal(new[] { "a", "b", "c" });
+        orderedEvents[0].Arguments.Should().Equal(["123"]);
+        orderedEvents[1].Arguments.Should().Equal(["a", "b", "c"]);
 
         void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
         {

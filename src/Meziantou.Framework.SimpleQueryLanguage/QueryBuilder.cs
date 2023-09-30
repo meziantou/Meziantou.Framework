@@ -236,6 +236,7 @@ public sealed class QueryBuilder<T>
 
     private readonly record struct FilterKeyValue
     {
+        [SuppressMessage("Performance", "CA1862:Prefer the 'StringComparison' method overloads to perform case-insensitive string comparisons", Justification = "Validation")]
         public FilterKeyValue(string key, string? value)
         {
             ArgumentNullException.ThrowIfNull(key);

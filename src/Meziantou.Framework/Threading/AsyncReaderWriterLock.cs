@@ -67,10 +67,7 @@ public sealed class AsyncReaderWriterLock
             }
         }
 
-        if (toWake != null)
-        {
-            toWake.SetResult(new Releaser(this, writer: true));
-        }
+        toWake?.SetResult(new Releaser(this, writer: true));
     }
 
     private void WriterRelease()

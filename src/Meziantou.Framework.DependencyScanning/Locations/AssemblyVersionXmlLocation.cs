@@ -15,7 +15,7 @@ internal sealed class AssemblyVersionXmlLocation : XmlLocation
         {
             // Version may be a semantic version which is not valid as an assembly version
             // Remove the prerelease and metadata parts
-            var indexOfAny = newValue.IndexOfAny(new[] { '+', '-' });
+            var indexOfAny = newValue.IndexOfAny(['+', '-']);
             if (indexOfAny > 0)
             {
                 newValue = newValue[..indexOfAny];

@@ -106,13 +106,11 @@ internal static class Symlink
         internal static bool IsSymbolicLink(string path)
         {
             var findData = new Interop.Kernel32.WIN32_FIND_DATA();
-            using (var handle = Interop.Kernel32.FindFirstFile(path, ref findData))
+            using var handle = Interop.Kernel32.FindFirstFile(path, ref findData);
+            if (!handle.IsInvalid)
             {
-                if (!handle.IsInvalid)
-                {
-                    return ((FileAttributes)findData.dwFileAttributes & FileAttributes.ReparsePoint) != (FileAttributes)0 &&
-                        (findData.dwReserved0 & 0xA000000C) != 0;  // IO_REPARSE_TAG_SYMLINK
-                }
+                return ((FileAttributes)findData.dwFileAttributes & FileAttributes.ReparsePoint) != (FileAttributes)0 &&
+                    (findData.dwReserved0 & 0xA000000C) != 0;  // IO_REPARSE_TAG_SYMLINK
             }
 
             return false;

@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
-using System.Linq.Expressions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -175,7 +174,7 @@ internal static class FileEditor
                 newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
             if (!Changes.TryGetValue(context.FilePath, out var fileEdits))
             {
-                fileEdits = new List<FileEdit>();
+                fileEdits = [];
                 Changes.Add(context.FilePath, fileEdits);
             }
 
@@ -189,7 +188,7 @@ internal static class FileEditor
         if (invocationExpression.Expression != null)
         {
             var text = invocationExpression.Expression.GetText(Encoding.UTF8);
-            var lastLine = text.Lines[text.Lines.Count - 1];
+            var lastLine = text.Lines[^1];
             if (!lastLine.Span.IsEmpty)
             {
                 var lineText = lastLine.ToString();

@@ -3,7 +3,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
 using FluentAssertions;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -44,6 +43,7 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    [SuppressMessage("Performance", "CA1869:Cache and reuse 'JsonSerializerOptions' instances", Justification = "Only used once")]
     public void SystemTestJsonDoesNotRevealValue_Field()
     {
         using var data = SensitiveData.Create("foo");

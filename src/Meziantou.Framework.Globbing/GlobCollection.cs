@@ -19,7 +19,7 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     public Glob this[int index] => _globs[index];
 
     public bool IsMatch(string path) => IsMatch(path.AsSpan());
-    public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, ReadOnlySpan<char>.Empty);
+    public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, []);
     public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
     public bool IsMatch(ref FileSystemEntry entry) => IsMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
 
@@ -44,7 +44,7 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     }
 
     public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
-    public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, ReadOnlySpan<char>.Empty);
+    public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, []);
     public bool IsPartialMatch(ref FileSystemEntry entry) => IsPartialMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
     public bool IsPartialMatch(string folderPath, string filename) => IsPartialMatch(folderPath.AsSpan(), filename.AsSpan());
 

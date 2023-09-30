@@ -5,13 +5,13 @@ namespace Meziantou.Framework;
 
 public static class Slug
 {
-    [return: NotNullIfNotNull(parameterName: "text")]
+    [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text)
     {
         return Create(text, options: null);
     }
 
-    [return: NotNullIfNotNull(parameterName: "text")]
+    [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {
         if (text == null)

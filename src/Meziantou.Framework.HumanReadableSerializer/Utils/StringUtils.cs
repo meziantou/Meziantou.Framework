@@ -80,7 +80,7 @@ internal static class StringUtils
                 // We've reached EOF, but we still need to return 'true' for this final
                 // iteration so that the caller can query the Current property once more.
 
-                _current = new SpanLine(_remaining, ReadOnlySpan<char>.Empty);
+                _current = new SpanLine(_remaining, []);
                 _remaining = default;
                 _isEnumeratorActive = false;
             }

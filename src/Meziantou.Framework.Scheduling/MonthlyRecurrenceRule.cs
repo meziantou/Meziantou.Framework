@@ -85,25 +85,25 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
             if (!IsEmpty(ByMonths))
             {
                 sb.Append(";BYMONTH=");
-                sb.Append(string.Join(",", ByMonths.Cast<int>()));
+                sb.AppendJoin(',', ByMonths.Cast<int>());
             }
 
             if (!IsEmpty(ByMonthDays))
             {
                 sb.Append(";BYMONTHDAY=");
-                sb.Append(string.Join(",", ByMonthDays));
+                sb.AppendJoin(',', ByMonthDays);
             }
 
             if (!IsEmpty(ByWeekDays))
             {
                 sb.Append(";BYDAY=");
-                sb.Append(string.Join(",", ByWeekDays));
+                sb.AppendJoin(',', ByWeekDays);
             }
 
             if (!IsEmpty(BySetPositions))
             {
                 sb.Append(";BYSETPOS=");
-                sb.Append(string.Join(",", BySetPositions));
+                sb.AppendJoin(',', BySetPositions);
             }
 
             return sb.ToString();

@@ -50,7 +50,7 @@ public static class StreamExtensions
         {
             var length = stream.Length - stream.Position;
             if (length == 0)
-                return Array.Empty<byte>();
+                return [];
 
             var buffer = new byte[length];
             var actualLength = TryReadAll(stream, buffer, 0, buffer.Length);
@@ -69,7 +69,7 @@ public static class StreamExtensions
         {
             var length = stream.Length - stream.Position;
             if (length == 0)
-                return Array.Empty<byte>();
+                return [];
 
             var buffer = new byte[length];
             var actualLength = await TryReadAllAsync(stream, buffer, cancellationToken).ConfigureAwait(false);

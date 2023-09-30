@@ -18,7 +18,7 @@ internal ref struct PathReader
         if (path.IsEmpty)
         {
             CurrentText = filename;
-            _filename = ReadOnlySpan<char>.Empty;
+            _filename = [];
         }
         else
         {
@@ -86,7 +86,7 @@ internal ref struct PathReader
         if (CurrentText.IsEmpty)
         {
             CurrentText = _filename;
-            _filename = ReadOnlySpan<char>.Empty;
+            _filename = [];
             _currentSegmentLength = CurrentText.Length;
         }
         else
@@ -102,7 +102,7 @@ internal ref struct PathReader
         if (!_filename.IsEmpty)
         {
             CurrentText = _filename;
-            _filename = ReadOnlySpan<char>.Empty;
+            _filename = [];
         }
         else
         {
@@ -122,7 +122,7 @@ internal ref struct PathReader
         if (endSegmentIndex == -1)
         {
             CurrentText = _filename;
-            _filename = ReadOnlySpan<char>.Empty;
+            _filename = [];
             _currentSegmentLength = CurrentText.Length;
         }
         else
@@ -135,8 +135,8 @@ internal ref struct PathReader
 
     public void ConsumeToEnd()
     {
-        CurrentText = ReadOnlySpan<char>.Empty;
-        _filename = ReadOnlySpan<char>.Empty;
+        CurrentText = [];
+        _filename = [];
         _currentSegmentLength = 0;
     }
 

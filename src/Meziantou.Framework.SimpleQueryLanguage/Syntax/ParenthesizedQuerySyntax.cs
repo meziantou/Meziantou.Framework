@@ -25,6 +25,6 @@ public sealed class ParenthesizedQuerySyntax : QuerySyntax
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return new QueryNodeOrToken[] { OpenParenthesisToken, Query, CloseParenthesisToken };
+        return [OpenParenthesisToken, Query, CloseParenthesisToken];
     }
 }

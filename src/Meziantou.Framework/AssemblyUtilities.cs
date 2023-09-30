@@ -73,8 +73,7 @@ public static class AssemblyUtilities
 
             var headerPos = BitConverter.ToInt32(bytes, PeHeaderOffset);
             var secondsSince1970 = BitConverter.ToInt32(bytes, headerPos + LinkerTimestampOffset);
-            var dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            return dt.AddSeconds(secondsSince1970);
+            return DateTime.UnixEpoch.AddSeconds(secondsSince1970);
         }
         catch
         {

@@ -40,16 +40,16 @@ public sealed class AsyncEnumerableExtensionsTests
     [Fact]
     public async Task DistinctAsyncTest()
     {
-        (await CreateEnumerable<int>().DistinctAsync().ToListAsync()).Should().Equal(Array.Empty<int>());
-        (await CreateEnumerable(1, 2, 1, 1, 2).DistinctAsync().ToListAsync()).Should().Equal(new[] { 1, 2 });
-        (await CreateEnumerable("a", "A", "B", "b", "b").DistinctAsync(StringComparer.OrdinalIgnoreCase).ToListAsync()).Should().Equal(new[] { "a", "B" });
+        (await CreateEnumerable<int>().DistinctAsync().ToListAsync()).Should().Equal([]);
+        (await CreateEnumerable(1, 2, 1, 1, 2).DistinctAsync().ToListAsync()).Should().Equal([1, 2]);
+        (await CreateEnumerable("a", "A", "B", "b", "b").DistinctAsync(StringComparer.OrdinalIgnoreCase).ToListAsync()).Should().Equal(["a", "B"]);
     }
 
     [Fact]
     public async Task DistinctByAsyncTest()
     {
-        (await CreateEnumerable<Dummy>().DistinctByAsync(item => item.Value).ToListAsync()).Should().Equal(Array.Empty<Dummy>());
-        (await CreateEnumerable("a", "A", "B", "b", "b").SelectAsync(item => new Dummy(item)).DistinctByAsync(item => item.Value.ToUpperInvariant()).ToListAsync()).Should().Equal(new[] { new Dummy("a"), new Dummy("B") });
+        (await CreateEnumerable<Dummy>().DistinctByAsync(item => item.Value).ToListAsync()).Should().Equal([]);
+        (await CreateEnumerable("a", "A", "B", "b", "b").SelectAsync(item => new Dummy(item)).DistinctByAsync(item => item.Value.ToUpperInvariant()).ToListAsync()).Should().Equal([new Dummy("a"), new Dummy("B")]);
     }
 
     [Fact]
@@ -77,24 +77,24 @@ public sealed class AsyncEnumerableExtensionsTests
     [Fact]
     public async Task WhereAsyncTest()
     {
-        (await CreateEnumerable(1, 2, 3, 4).WhereAsync(item => item < 3).ToListAsync()).Should().Equal(new[] { 1, 2 });
-        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNull().ToListAsync()).Should().Equal(new[] { "a", "", " ", "A", "b" });
-        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNullOrEmpty().ToListAsync()).Should().Equal(new[] { "a", " ", "A", "b" });
-        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNullOrWhiteSpace().ToListAsync()).Should().Equal(new[] { "a", "A", "b" });
+        (await CreateEnumerable(1, 2, 3, 4).WhereAsync(item => item < 3).ToListAsync()).Should().Equal([1, 2]);
+        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNull().ToListAsync()).Should().Equal(["a", "", " ", "A", "b"]);
+        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNullOrEmpty().ToListAsync()).Should().Equal(["a", " ", "A", "b"]);
+        (await CreateEnumerable("a", null, "", " ", "A", "b").WhereNotNullOrWhiteSpace().ToListAsync()).Should().Equal(["a", "A", "b"]);
     }
 
     [Fact]
     public async Task SkipAsyncTest()
     {
-        (await CreateEnumerable(0, 1, 2, 3, 4).SkipAsync(2).ToListAsync()).Should().Equal(new[] { 2, 3, 4 });
-        (await CreateEnumerable(0, 1, 2, 3, 4).SkipWhileAsync(item => item < 2).ToListAsync()).Should().Equal(new[] { 2, 3, 4 });
+        (await CreateEnumerable(0, 1, 2, 3, 4).SkipAsync(2).ToListAsync()).Should().Equal([2, 3, 4]);
+        (await CreateEnumerable(0, 1, 2, 3, 4).SkipWhileAsync(item => item < 2).ToListAsync()).Should().Equal([2, 3, 4]);
     }
 
     [Fact]
     public async Task TakeAsyncTest()
     {
-        (await CreateEnumerable(0, 1, 2, 3, 4).TakeAsync(3).ToListAsync()).Should().Equal(new[] { 0, 1, 2 });
-        (await CreateEnumerable(0, 1, 2, 3, 4).TakeWhileAsync(item => item < 3).ToListAsync()).Should().Equal(new[] { 0, 1, 2 });
+        (await CreateEnumerable(0, 1, 2, 3, 4).TakeAsync(3).ToListAsync()).Should().Equal([0, 1, 2]);
+        (await CreateEnumerable(0, 1, 2, 3, 4).TakeWhileAsync(item => item < 3).ToListAsync()).Should().Equal([0, 1, 2]);
     }
 
     private sealed record Dummy(string Value);

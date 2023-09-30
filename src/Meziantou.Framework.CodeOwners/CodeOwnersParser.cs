@@ -17,7 +17,7 @@ public static class CodeOwnersParser
     {
         private static readonly ObjectPool<StringBuilder> StringBuilderPool = CreateStringBuilderPool();
 
-        private readonly List<CodeOwnersEntry> _entries;
+        private readonly List<CodeOwnersEntry> _entries = [];
         private readonly StringLexer _lexer;
         private CodeOwnersSection? _currentSection;
         private int _index;
@@ -30,9 +30,7 @@ public static class CodeOwnersParser
 
         public CodeOwnersParserContext(string content)
         {
-            _entries = new List<CodeOwnersEntry>();
             _lexer = new StringLexer(content);
-            _currentSection = null;
         }
 
         public List<CodeOwnersEntry> Parse()

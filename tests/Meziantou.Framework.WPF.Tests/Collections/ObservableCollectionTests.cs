@@ -39,7 +39,7 @@ public sealed partial class ObservableCollectionTests
         collection.Add(1);
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 1 });
+        collection.ToList().Should().Equal([1]);
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedAddItem(1);
     }
@@ -57,7 +57,7 @@ public sealed partial class ObservableCollectionTests
         collection.Remove(1);
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 2 });
+        collection.ToList().Should().Equal([2]);
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedRemoveItem(1);
     }
@@ -76,7 +76,7 @@ public sealed partial class ObservableCollectionTests
         collection.RemoveAt(0);
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 2, 3 });
+        collection.ToList().Should().Equal([2, 3]);
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedRemoveItem(1);
     }
@@ -92,7 +92,7 @@ public sealed partial class ObservableCollectionTests
         collection.Insert(index: 0, item: 1);
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 1 });
+        collection.ToList().Should().Equal([1]);
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedAddItem(1);
     }
@@ -128,7 +128,7 @@ public sealed partial class ObservableCollectionTests
         collection[0] = 2;
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 2 });
+        collection.ToList().Should().Equal([2]);
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReplace(oldValue: 1, newValue: 2);
     }
@@ -152,12 +152,12 @@ public sealed partial class ObservableCollectionTests
         collection.AddRange(3, 4, 5);
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
-        collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+        collection.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
+        collection.AsObservable.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
 
         if (supportRangeNotifications)
         {
-            eventAssert.AssertCollectionChangedAddItems(new object[] { 3, 4, 5 }, startIndex: 3);
+            eventAssert.AssertCollectionChangedAddItems([3, 4, 5], startIndex: 3);
         }
         else
         {
@@ -190,12 +190,12 @@ public sealed partial class ObservableCollectionTests
         collection.InsertRange(2, new[] { 2, 3, 4 });
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
-        collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2, 3, 4, 5 });
+        collection.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
+        collection.AsObservable.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
 
         if (supportRangeNotifications)
         {
-            eventAssert.AssertCollectionChangedAddItems(new object[] { 2, 3, 4 }, startIndex: 2);
+            eventAssert.AssertCollectionChangedAddItems([2, 3, 4], startIndex: 2);
         }
         else
         {
@@ -220,8 +220,8 @@ public sealed partial class ObservableCollectionTests
         collection.Sort();
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 0, 1, 2 });
-        collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2 });
+        collection.ToList().Should().Equal([0, 1, 2]);
+        collection.AsObservable.ToList().Should().Equal([0, 1, 2]);
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReset();
     }
@@ -237,8 +237,8 @@ public sealed partial class ObservableCollectionTests
         collection.StableSort();
 
         // Assert
-        collection.ToList().Should().Equal(new[] { 0, 1, 2 });
-        collection.AsObservable.ToList().Should().Equal(new[] { 0, 1, 2 });
+        collection.ToList().Should().Equal([0, 1, 2]);
+        collection.AsObservable.ToList().Should().Equal([0, 1, 2]);
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReset();
     }

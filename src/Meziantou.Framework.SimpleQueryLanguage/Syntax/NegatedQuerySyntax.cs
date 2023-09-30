@@ -21,6 +21,6 @@ public sealed class NegatedQuerySyntax : QuerySyntax
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return new QueryNodeOrToken[] { OperatorToken, Query };
+        return [OperatorToken, Query];
     }
 }

@@ -161,23 +161,21 @@ public sealed class SingleInstance : IDisposable
             client.Connect((int)ClientConnectionTimeout.TotalMilliseconds);
 
             // type, process id, arg length, arg1, arg2, ...
-            using (var ms = new MemoryStream())
+            using var ms = new MemoryStream();
+            using (var binaryWriter = new BinaryWriter(ms))
             {
-                using (var binaryWriter = new BinaryWriter(ms))
+                binaryWriter.Write(NotifyInstanceMessageType);
+                binaryWriter.Write(GetCurrentProcessId());
+                binaryWriter.Write(args.Length);
+                foreach (var arg in args)
                 {
-                    binaryWriter.Write(NotifyInstanceMessageType);
-                    binaryWriter.Write(GetCurrentProcessId());
-                    binaryWriter.Write(args.Length);
-                    foreach (var arg in args)
-                    {
-                        binaryWriter.Write(arg);
-                    }
+                    binaryWriter.Write(arg);
                 }
-
-                var buffer = ms.ToArray();
-                client.Write(buffer, 0, buffer.Length);
-                client.Flush();
             }
+
+            var buffer = ms.ToArray();
+            client.Write(buffer, 0, buffer.Length);
+            client.Flush();
 
             return true;
         }

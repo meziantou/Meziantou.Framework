@@ -10,7 +10,7 @@ public sealed class SortedListTests
     public void Test()
     {
         var list = new SortedList<int> { 1, 3, 2, 1 };
-        list.Should().Equal(new[] { 1, 1, 2, 3 });
+        list.Should().Equal([1, 1, 2, 3]);
 
         list.Contains(1).Should().BeTrue();
         list.Contains(42).Should().BeFalse();
@@ -23,10 +23,10 @@ public sealed class SortedListTests
         list.LastIndexOf(1).Should().Be(1);
 
         list.Remove(2);
-        list.Should().Equal(new[] { 1, 1, 3 });
+        list.Should().Equal([1, 1, 3]);
 
         list.Remove(1);
-        list.Should().Equal(new[] { 1, 3 });
+        list.Should().Equal([1, 3]);
 
         list.Remove(1);
         list.Remove(3);
@@ -58,7 +58,7 @@ public sealed class SortedListTests
     public void Clear()
     {
         var list = new SortedList<int> { 1, 3, 2, 1 };
-        list.Should().Equal(new[] { 1, 1, 2, 3 });
+        list.Should().Equal([1, 1, 2, 3]);
 
         list.Clear();
         list.Should().BeEmpty();
@@ -68,7 +68,7 @@ public sealed class SortedListTests
     public void Capacity()
     {
         var list = new SortedList<int> { 1, 3, 2, 1 };
-        list.Should().Equal(new[] { 1, 1, 2, 3 });
+        list.Should().Equal([1, 1, 2, 3]);
         list.Capacity.Should().Be(4);
         list.Add(5);
 

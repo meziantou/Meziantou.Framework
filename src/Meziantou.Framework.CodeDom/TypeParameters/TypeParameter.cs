@@ -4,7 +4,6 @@ public class TypeParameter : CodeObject
 {
     public TypeParameter()
     {
-        Constraints = new TypeParameterConstraintCollection();
     }
 
     public TypeParameter(string? name)
@@ -14,5 +13,5 @@ public class TypeParameter : CodeObject
     }
 
     public string? Name { get; set; }
-    public TypeParameterConstraintCollection Constraints { get; }
+    public TypeParameterConstraintCollection Constraints { get; } = [];
 }

@@ -199,7 +199,7 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_Deterministic_Pdb()
     {
-        var result = await ValidateAsync("Release_Deterministic_Pdb.1.0.0.nupkg", new int[] { 119 }, NuGetPackageValidationRules.Symbols);
+        var result = await ValidateAsync("Release_Deterministic_Pdb.1.0.0.nupkg", [119], NuGetPackageValidationRules.Symbols);
         AssertNoErrors(result);
     }
 
@@ -213,7 +213,7 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_Deterministic_Embedded_SourceLink()
     {
-        var result = await ValidateAsync("meziantou.framework.win32.credentialmanager.1.4.2.nupkg", new int[] { 119 }, NuGetPackageValidationRules.Symbols);
+        var result = await ValidateAsync("meziantou.framework.win32.credentialmanager.1.4.2.nupkg", [119], NuGetPackageValidationRules.Symbols);
         AssertNoErrors(result);
     }
 
@@ -256,7 +256,7 @@ public sealed class NuGetPackageValidatorTests
     public async Task Validate_WithSymbolsServer()
     {
         var path = await DownloadPackageAsync("Newtonsoft.Json", "13.0.2");
-        var result = await ValidateAsync(path, excludedRuleIds: new[] { ErrorCodes.FileHashIsNotValid }, rules: new[] { NuGetPackageValidationRules.Symbols });
+        var result = await ValidateAsync(path, excludedRuleIds: [ErrorCodes.FileHashIsNotValid], rules: [NuGetPackageValidationRules.Symbols]);
         AssertNoErrors(result);
     }
 }

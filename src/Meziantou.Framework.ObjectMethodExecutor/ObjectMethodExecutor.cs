@@ -14,14 +14,14 @@ public sealed class ObjectMethodExecutor
     private readonly MethodExecutor? _executor;
 
     private static readonly ConstructorInfo ObjectMethodExecutorAwaitableConstructor =
-        typeof(ObjectMethodExecutorAwaitable).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] {
+        typeof(ObjectMethodExecutorAwaitable).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [
             typeof(object),                 // customAwaitable
             typeof(Func<object, object>),   // getAwaiterMethod
             typeof(Func<object, bool>),     // isCompletedMethod
             typeof(Func<object, object>),   // getResultMethod
             typeof(Action<object, Action>), // onCompletedMethod
             typeof(Action<object, Action>), // unsafeOnCompletedMethod
-    })!;
+        ])!;
 
     private ObjectMethodExecutor(MethodInfo methodInfo, TypeInfo targetTypeInfo, object?[]? parameterDefaultValues)
     {

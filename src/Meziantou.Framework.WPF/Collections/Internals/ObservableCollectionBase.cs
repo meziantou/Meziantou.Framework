@@ -13,14 +13,14 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected ObservableCollectionBase()
     {
-        Items = new List<T>();
+        Items = [];
     }
 
     protected ObservableCollectionBase(IEnumerable<T> items)
     {
         if (items == null)
         {
-            Items = new List<T>();
+            Items = [];
         }
         else
         {

@@ -152,7 +152,13 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                 sb.Append(typeVisibility).AppendLine(" static partial class FastEnumToStringExtensions");
                 sb.AppendLine("{");
 
-                sb.Append("    ").AppendLine($"/// <summary>A memory-optimized alternative to regular ToString() method on <see cref=\"{enumeration.DocumentationId}\">{enumeration.FullCsharpName} enum</see>.</summary>");
+                sb.Append("    ")
+                  .Append("/// <summary>A memory-optimized alternative to regular ToString() method on <see cref=\"")
+                  .Append(enumeration.DocumentationId)
+                  .Append("\">")
+                  .Append(enumeration.FullCsharpName)
+                  .Append(" enum</see>.</summary>\"")
+                  .AppendLine();
                 sb.Append("    ").Append(methodVisibility).Append(" static string ToStringFast(this global::").Append(enumeration.FullCsharpName).AppendLine(" value)");
                 sb.AppendLine("    {");
                 sb.AppendLine("        return value switch");

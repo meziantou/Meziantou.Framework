@@ -36,7 +36,7 @@ public static class UrlSanitizer
     /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
     private static readonly Regex DataUrlPattern = new("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
-    private static readonly char[] Whitespaces = new[] { '\t', '\r', '\n', ' ', '\f' };
+    private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)

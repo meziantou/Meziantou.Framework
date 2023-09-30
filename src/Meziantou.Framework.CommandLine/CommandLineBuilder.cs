@@ -10,9 +10,9 @@ internal
 #endif
 static class CommandLineBuilder
 {
-    private static readonly char[] ReservedCharacters = { ' ', '\t', '\n', '\v', '"' };
-    private static readonly char[] CmdReservedCharacters = { '(', ')', '%', '!', '^', '"', '<', '>', '&', '|' };
-    private static readonly char[] AllReservedCharacters = ReservedCharacters.Concat(CmdReservedCharacters).ToArray();
+    private static readonly char[] ReservedCharacters = [' ', '\t', '\n', '\v', '"'];
+    private static readonly char[] CmdReservedCharacters = ['(', ')', '%', '!', '^', '"', '<', '>', '&', '|'];
+    private static readonly char[] AllReservedCharacters = [.. ReservedCharacters, .. CmdReservedCharacters];
 
     private static void EscapeArgument(string value, StringBuilder sb)
     {

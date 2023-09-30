@@ -92,7 +92,7 @@ public sealed class QueryStringService
         }
         else
         {
-            await _jsRuntime.InvokeVoidAsync("window.history.replaceState", cancellationToken, args: new object?[] { null, "", newUri });
+            await _jsRuntime.InvokeVoidAsync("window.history.replaceState", cancellationToken, args: [null, "", newUri]);
         }
     }
 

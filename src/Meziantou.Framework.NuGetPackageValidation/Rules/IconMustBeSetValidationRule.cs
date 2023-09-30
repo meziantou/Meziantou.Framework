@@ -27,11 +27,11 @@ internal sealed class IconMustBeSetValidationRule : NuGetPackageValidationRule
             var extension = Path.GetExtension(icon);
             if (extension is ".png")
             {
-                await ValidateMagicNumber(context, icon, new byte[] { 0x89, 0x50, 0x4E, 0x47 }, extension, "PNG").ConfigureAwait(false);
+                await ValidateMagicNumber(context, icon, [0x89, 0x50, 0x4E, 0x47], extension, "PNG").ConfigureAwait(false);
             }
             else if (extension is ".jpg" or ".jpeg")
             {
-                await ValidateMagicNumber(context, icon, new byte[] { 0xFF, 0xD8, 0xFF, 0xE0 }, extension, "JPEG").ConfigureAwait(false);
+                await ValidateMagicNumber(context, icon, [0xFF, 0xD8, 0xFF, 0xE0], extension, "JPEG").ConfigureAwait(false);
             }
             else
             {

@@ -1,5 +1,3 @@
-using System.Runtime.Serialization;
-
 namespace Meziantou.Framework.DependencyScanning;
 
 public class DependencyScannerException : Exception

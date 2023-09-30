@@ -67,8 +67,7 @@ public sealed class PromptContextTests
         Assert.Equal("Dummy.MyTest", name);
     }
 
-    [SuppressMessage("Globalization", "CA1307:Specify StringComparison for clarity", Justification = "Not compatible with net472")]
-    [SuppressMessage("Usage", "MA0074:Avoid implicit culture-sensitive methods", Justification = "Not compatible with net472")]
+    [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported in .NET Framework")]
     private async Task<string> GetTestName(string source, (string PackageName, string Version)[] packages)
     {
         await using var directory = TemporaryDirectory.Create();
@@ -96,7 +95,7 @@ public sealed class PromptContextTests
             // System.Diagnostics.Debugger.Launch();
             var name = Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies.PromptContext.Get("dummy.cs").TestName;
             System.IO.File.WriteAllText("""{{outputFilePath}}""", name);
-            """");
+            """", StringComparison.Ordinal);
 
         var mainPath = CreateTextFile("Program.cs", source);
 
@@ -113,7 +112,7 @@ public sealed class PromptContextTests
         process.ErrorDataReceived += (sender, e) => _testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
-        process!.WaitForExit();
+        await process!.WaitForExitAsync();
 
         var actual = File.ReadAllText(outputFilePath);
         Assert.Equal(0, process.ExitCode);

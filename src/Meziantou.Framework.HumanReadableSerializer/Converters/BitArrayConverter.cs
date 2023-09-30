@@ -12,7 +12,7 @@ internal sealed class BitArrayConverter : HumanReadableConverter<BitArray>
             str[i] = value[i] ? '1' : '0';
         }
 
-        str = str.Slice(0, value.Count);
+        str = str[..value.Count];
         writer.WriteValue(str);
     }
 }

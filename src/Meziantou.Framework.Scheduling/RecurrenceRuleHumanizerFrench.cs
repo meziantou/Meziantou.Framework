@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Scheduling;
 
 public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 {
-    private static readonly char[] PrecededByApostropheChars = { 'a', 'e', 'i', 'o', 'u', 'y', 'h' };
+    private static readonly char[] PrecededByApostropheChars = ['a', 'e', 'i', 'o', 'u', 'y', 'h'];
 
     protected override string GetText(DailyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {

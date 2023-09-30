@@ -309,7 +309,7 @@ public class GlobTests
 
         var glob = Glob.Parse("**/*.txt", options);
 
-        TestEvaluate(directory, glob, new[] { "d1/d2/f1.txt", "d1/d2/f2.txt", "d1/f3.txt" });
+        TestEvaluate(directory, glob, ["d1/d2/f1.txt", "d1/d2/f2.txt", "d1/f3.txt"]);
     }
 
     [Theory]
@@ -323,7 +323,7 @@ public class GlobTests
         directory.CreateEmptyFile("d1/f3.txt");
 
         var glob = Glob.Parse("d1/*.txt", options);
-        TestEvaluate(directory, glob, new[] { "d1/f3.txt" });
+        TestEvaluate(directory, glob, ["d1/f3.txt"]);
     }
 
     [Theory]
@@ -341,12 +341,12 @@ public class GlobTests
             Glob.Parse("**/*.txt", options),
             Glob.Parse("!d1/*.txt", options));
 
-        TestEvaluate(directory, glob, new[]
-        {
+        TestEvaluate(directory, glob,
+        [
             "d1/d2/f1.txt",
             "d1/d2/f2.txt",
             "d3/f4.txt",
-        });
+        ]);
     }
 
     [Theory]

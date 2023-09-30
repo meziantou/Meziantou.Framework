@@ -221,13 +221,13 @@ public sealed class AccessToken : IDisposable
         var tp = new NativeMethods.TOKEN_PRIVILEGES
         {
             PrivilegeCount = 1,
-            Privileges = new NativeMethods.LUID_AND_ATTRIBUTES[1]
-            {
+            Privileges =
+            [
                 new NativeMethods.LUID_AND_ATTRIBUTES
                 {
                     Luid = luid,
                 },
-            },
+            ],
         };
 
         switch (operation)

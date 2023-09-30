@@ -22,8 +22,8 @@ internal static class RangeSyntax
         var indexOfDotDot = text.IndexOf("..", StringComparison.Ordinal);
         if (indexOfDotDot > 0)
         {
-            var leftText = text.Substring(0, indexOfDotDot).Trim();
-            var rightText = text.Substring(indexOfDotDot + 2).Trim();
+            var leftText = text.AsSpan(0, indexOfDotDot).Trim().ToString();
+            var rightText = text.AsSpan(indexOfDotDot + 2).Trim().ToString();
             if (scalarParser(leftText, out var left) && scalarParser(rightText, out var right))
                 return new BinaryRangeSyntax<T>(left, lowerBoundIncluded: true, right, upperBoundIncluded: true);
         }

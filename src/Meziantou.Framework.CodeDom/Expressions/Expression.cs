@@ -31,7 +31,7 @@ public abstract class Expression : CodeObject, ICommentable
         }
     }
 
-    [return: NotNullIfNotNull("variableDeclarationStatement")]
+    [return: NotNullIfNotNull(nameof(variableDeclarationStatement))]
     public static implicit operator Expression?(VariableDeclarationStatement? variableDeclarationStatement)
     {
         if (variableDeclarationStatement is null)
@@ -40,7 +40,7 @@ public abstract class Expression : CodeObject, ICommentable
         return new VariableReferenceExpression(variableDeclarationStatement);
     }
 
-    [return: NotNullIfNotNull("argument")]
+    [return: NotNullIfNotNull(nameof(argument))]
     public static implicit operator Expression?(MethodArgumentDeclaration? argument)
     {
         if (argument is null)

@@ -19,7 +19,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Numerics;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
@@ -256,7 +255,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new int[][] { new[] { 1, 2, 3 }, new[] { 4, 5, 6 } },
+            Subject = new int[][] { [1, 2, 3], [4, 5, 6] },
             Expected = """
                 - - 1
                   - 2
@@ -514,7 +513,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = ImmutableArray.Create<int>().Add(1).Add(2),
+            Subject = ImmutableArray.Create(1, 2),
             Expected = """
                 - 1
                 - 2
@@ -1054,7 +1053,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void PropertyInfo_ValueTuple_Named_ReturnType() => AssertSerialization(typeof(Methods).GetProperty(nameof(Methods.NamedProperty)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.NamedProperty");
 
     [Fact]
-    public void MethodInfo_WithParameters() => AssertSerialization(typeof(Guid).GetMethod("Parse", new[] { typeof(string) }), "static System.Guid.Parse(System.String input)");
+    public void MethodInfo_WithParameters() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)]), "static System.Guid.Parse(System.String input)");
 
     [Fact]
     public void MethodInfo_Generic() => AssertSerialization(typeof(Methods).GetMethod(nameof(Methods.GenericMethod)), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+Methods.GenericMethod<TEnum>(System.String value)");
@@ -1078,13 +1077,13 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void PropertyInfo_Indexer() => AssertSerialization(typeof(string).GetProperty("Chars"), "System.String.Chars[System.Int32 index]");
 
     [Fact]
-    public void ConstructorInfo() => AssertSerialization(typeof(object).GetConstructor(Array.Empty<Type>()), "new System.Object()");
+    public void ConstructorInfo() => AssertSerialization(typeof(object).GetConstructor([]), "new System.Object()");
 
     [Fact]
     public void ConstructorInfo_Static() => AssertSerialization(typeof(ClassWithStaticCtor).GetConstructors(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)[0], "static Meziantou.Framework.HumanReadable.Tests.SerializerTests+ClassWithStaticCtor()");
 
     [Fact]
-    public void ParameterInfo() => AssertSerialization(typeof(Guid).GetMethod("Parse", new[] { typeof(string) }).GetParameters()[0], "System.String input");
+    public void ParameterInfo() => AssertSerialization(typeof(Guid).GetMethod("Parse", [typeof(string)]).GetParameters()[0], "System.String input");
 
     [Fact]
     public void DateTime_Utc() => AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Utc), "2123-04-05T06:07:08Z");
@@ -1447,7 +1446,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void HttpContent_ByteArrayContent()
     {
-        using var message = new ByteArrayContent(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 });
+        using var message = new ByteArrayContent([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         AssertSerialization(message, """
             AQIDBAUGBwgJ
             """);
@@ -1456,7 +1455,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void HttpContent_ByteArrayContent_WithHeaders()
     {
-        using var message = new ByteArrayContent(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 })
+        using var message = new ByteArrayContent([1, 2, 3, 4, 5, 6, 7, 8, 9])
         {
             Headers =
             {

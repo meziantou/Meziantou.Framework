@@ -4,6 +4,10 @@ using System.Net.Http.Headers;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Xunit;
 
+#if NET471 || NET472
+using System.Net.Http;
+#endif
+
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class SnapshotSerializerTests
 {
@@ -250,7 +254,7 @@ public sealed class SnapshotSerializerTests
             {
                 ETag = new EntityTagHeaderValue("\"dummy\""),
             },
-            Content = new ByteArrayContent(Array.Empty<byte>()),
+            Content = new ByteArrayContent([]),
         };
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(message), """
             StatusCode: 200 (OK)
@@ -296,8 +300,8 @@ public sealed class SnapshotSerializerTests
         public int Int32 { get; set; } = 42;
         public int? NullableInt32 { get; set; }
         public int? NullableInt32_NotNull { get; set; } = 42;
-        public int[] Int32Array { get; set; } = new int[] { 1, 2, 3, 4, 5 };
-        public int[] EmptyArray { get; set; } = Array.Empty<int>();
+        public int[] Int32Array { get; set; } = [1, 2, 3, 4, 5];
+        public int[] EmptyArray { get; set; } = [];
         public int[] NullArray { get; set; }
         public IEnumerable<int> IEnumerableInt32 { get; set; } = Enumerable.Range(0, 2);
         public IDictionary<int, int> IDictionary { get; set; } = new Dictionary<int, int>() { [1] = 2, [3] = 4 };

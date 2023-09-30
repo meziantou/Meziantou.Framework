@@ -523,7 +523,7 @@ public sealed class ScannerTests : IDisposable
         await ExecuteProcess("git", "commit -m commit-message", _directory.FullPath);
 
         // Add submodule
-        await ExecuteProcess2("git", new string[] { "-c", "protocol.file.allow=always", "submodule", "add", remote.FullPath, "submodule_path" }, _directory.FullPath);
+        await ExecuteProcess2("git", ["-c", "protocol.file.allow=always", "submodule", "add", remote.FullPath, "submodule_path"], _directory.FullPath);
 
         // List files
         var files = Directory.GetFiles(_directory.FullPath, "*", SearchOption.AllDirectories);
@@ -548,14 +548,14 @@ public sealed class ScannerTests : IDisposable
 
         async Task ExecuteProcess2(string process, string[] args, string workingDirectory)
         {
-            _testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(" ", args)} ({workingDirectory})");
+            _testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
             AssertProcessResult(await ProcessExtensions.RunAsTaskAsync(process, args, workingDirectory));
         }
 
         void AssertProcessResult(ProcessResult result)
         {
-            result.ExitCode.Should().Be(0, "git command should return 0. Logs:\n" + string.Join("\n", result.Output));
-            _testOutputHelper.WriteLine("git command succeeds\n" + string.Join("\n", result.Output));
+            result.ExitCode.Should().Be(0, "git command should return 0. Logs:\n" + string.Join('\n', result.Output));
+            _testOutputHelper.WriteLine("git command succeeds\n" + string.Join('\n', result.Output));
         }
     }
 
@@ -853,7 +853,7 @@ jobs:
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
                 (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation).LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn), $"\n'{expected}' should be detected. Dependencies ({dependencies.Count()}):\n{string.Join("\n", dependencies)}");
+                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn), $"\n'{expected}' should be detected. Dependencies ({dependencies.Count()}):\n{string.Join('\n', dependencies)}");
         }
     }
 

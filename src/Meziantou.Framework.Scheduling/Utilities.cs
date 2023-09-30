@@ -9,7 +9,8 @@ internal static class Utilities
 
     public static DateTime ParseDateTime(string str)
     {
-        string[] formats = {
+        string[] formats =
+        [
             // Basic formats
             "yyyyMMddTHHmmsszzz",
             "yyyyMMddTHHmmsszz",
@@ -34,7 +35,7 @@ internal static class Utilities
             "yyyy-MM-ddTHHZ",
             // Accuracy reduced to date
             "yyyyMMdd",
-            };
+        ];
 
         var dateTime = DateTime.ParseExact(str, formats, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
         return dateTime;

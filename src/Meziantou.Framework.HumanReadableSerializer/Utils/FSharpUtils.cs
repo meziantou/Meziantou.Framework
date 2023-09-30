@@ -70,7 +70,7 @@ internal sealed class FSharpUtils
         try
         {
             if (IsUnionMethod != null)
-                return IsUnionMethod.Invoke(obj: null, new object?[] { type, null }) is true;
+                return IsUnionMethod.Invoke(obj: null, [type, null]) is true;
         }
         catch
         {
@@ -85,7 +85,7 @@ internal sealed class FSharpUtils
         {
             if (GetUnionCasesMethod != null)
             {
-                var array = (object[])GetUnionCasesMethod.Invoke(obj: null, new object?[] { type, null })!;
+                var array = (object[])GetUnionCasesMethod.Invoke(obj: null, [type, null])!;
                 return array.Select(o => new UnionCaseInfo(this, o)).ToArray();
             }
 

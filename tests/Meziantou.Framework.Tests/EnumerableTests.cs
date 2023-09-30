@@ -39,7 +39,7 @@ public class EnumerableTests
         list.AddOrReplace(10, 5);
 
         // Assert
-        list.Should().Equal(new[] { 1, 2, 3, 5 });
+        list.Should().Equal([1, 2, 3, 5]);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class EnumerableTests
         list.AddOrReplace(null, "");
 
         // Assert
-        list.Should().Equal(new[] { "" });
+        list.Should().Equal([""]);
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class EnumerableTests
         list.AddOrReplace(2, 5);
 
         // Assert
-        list.Should().Equal(new[] { 1, 5, 3 });
+        list.Should().Equal([1, 5, 3]);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public class EnumerableTests
     public void EmptyIfNull_Null()
     {
         IEnumerable<string> items = null;
-        items.EmptyIfNull().Should().Equal(Array.Empty<string>());
+        items.EmptyIfNull().Should().Equal([]);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class EnumerableTests
         List<int> actual = list.WhereNotNull().ToList();
 
         // Assert
-        actual.Should().Equal(new[] { 0, 2 });
+        actual.Should().Equal([0, 2]);
     }
 #nullable disable
 
@@ -177,7 +177,7 @@ public class EnumerableTests
             items.Add(item);
         }
 
-        items.Should().Equal(new[] { 1, 2 });
+        items.Should().Equal([1, 2]);
 
         static IEnumerator<int> CustomEnumerator()
         {
@@ -195,7 +195,7 @@ public class EnumerableTests
             items.Add(item);
         }
 
-        items.Should().Equal(new[] { 1, 2 });
+        items.Should().Equal([1, 2]);
 
         static async IAsyncEnumerator<int> CustomEnumerator()
         {
@@ -233,7 +233,7 @@ public class EnumerableTests
     public async Task ToListAsync()
     {
         var data = await GetDataAsync().ToListAsync();
-        data.Should().Equal(new[] { "a", "b", "c" });
+        data.Should().Equal(["a", "b", "c"]);
 
         static async Task<IEnumerable<string>> GetDataAsync()
         {

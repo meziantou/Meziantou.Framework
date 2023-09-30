@@ -19,7 +19,7 @@ public static class TupleExtensions
         }
         else
         {
-            return Array.Empty<object?>();
+            return [];
         }
     }
 }

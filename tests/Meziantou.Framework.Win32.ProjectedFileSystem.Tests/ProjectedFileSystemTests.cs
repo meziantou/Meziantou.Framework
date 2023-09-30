@@ -5,7 +5,6 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 public sealed class ProjectedFileSystemTests
 {
     [ProjectedFileSystemFact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void Test()
     {
         var guid = Guid.NewGuid();
@@ -56,7 +55,7 @@ public sealed class ProjectedFileSystemTests
             new Func<object>(() => fi2.Length).Should().ThrowExactly<FileNotFoundException>();
 
             // Get file content
-            File.ReadAllBytes(Path.Combine(fullPath, "a")).Should().Equal(new byte[] { 1 });
+            File.ReadAllBytes(Path.Combine(fullPath, "a")).Should().Equal([1]);
             using var stream = File.OpenRead(Path.Combine(fullPath, "b"));
             stream.ReadByte().Should().Be(1);
             stream.ReadByte().Should().Be(2);

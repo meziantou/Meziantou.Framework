@@ -263,7 +263,7 @@ internal static class ValueConverter
 #endif
 
         // Try find TryParse(string, IFormatProvider, out TValue) method
-        var methodInfo = GetStaticMethodFromHierarchy(typeof(TValue), "TryParse", new[] { typeof(string), typeof(IFormatProvider), typeof(TValue).MakeByRefType() }, ValidateReturnType);
+        var methodInfo = GetStaticMethodFromHierarchy(typeof(TValue), "TryParse", [typeof(string), typeof(IFormatProvider), typeof(TValue).MakeByRefType()], ValidateReturnType);
         if (methodInfo != null)
         {
             var parameters = new object?[] { value, CultureInfo.InvariantCulture, null };
@@ -279,7 +279,7 @@ internal static class ValueConverter
         }
 
         // Try find TryParse(string, out TValue) method
-        methodInfo = GetStaticMethodFromHierarchy(typeof(TValue), "TryParse", new[] { typeof(string), typeof(TValue).MakeByRefType() }, ValidateReturnType);
+        methodInfo = GetStaticMethodFromHierarchy(typeof(TValue), "TryParse", [typeof(string), typeof(TValue).MakeByRefType()], ValidateReturnType);
         if (methodInfo != null)
         {
             var parameters = new object?[] { value, null };

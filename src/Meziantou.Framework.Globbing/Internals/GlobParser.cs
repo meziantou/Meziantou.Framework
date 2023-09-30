@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Globbing;
 
 internal static class GlobParser
 {
-    private static readonly char[] DirectorySeparator = { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+    private static readonly char[] DirectorySeparator = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
 
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
@@ -137,7 +137,7 @@ internal static class GlobParser
                         Debug.Assert(setSubsegment == null);
                         AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
                         parserContext = GlobParserContext.LiteralSet;
-                        setSubsegment = new List<string>();
+                        setSubsegment = [];
                         continue;
                     }
                     else if (c == '[') // Range
@@ -145,7 +145,7 @@ internal static class GlobParser
                         Debug.Assert(rangeSubsegment == null);
                         AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
                         parserContext = GlobParserContext.Range;
-                        rangeSubsegment = new List<CharacterRange>();
+                        rangeSubsegment = [];
                         rangeInverse = i + 1 < pattern.Length && pattern[i + 1] == '!';
                         if (rangeInverse)
                         {
@@ -168,7 +168,7 @@ internal static class GlobParser
                         setSubsegment.Add(currentLiteral.AsSpan().ToString());
                         currentLiteral.Clear();
 
-                        if (setSubsegment.Any(s => s.IndexOfAny(DirectorySeparator) >= 0))
+                        if (setSubsegment.Exists(s => s.IndexOfAny(DirectorySeparator) >= 0))
                         {
                             errorMessage = "set contains a path separator";
                             return false;
@@ -195,7 +195,7 @@ internal static class GlobParser
 
                         if (rangeSubsegment.Count > 0)
                         {
-                            if (rangeSubsegment.Any(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
+                            if (rangeSubsegment.Exists(s => s.IsInRange(Path.DirectorySeparatorChar) || s.IsInRange(Path.AltDirectorySeparatorChar)))
                             {
                                 errorMessage = "range contains a path separator";
                                 return false;

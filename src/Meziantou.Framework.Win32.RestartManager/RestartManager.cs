@@ -41,7 +41,7 @@ public sealed class RestartManager : IDisposable
         if (path is null)
             throw new ArgumentNullException(nameof(path));
 
-        string[] resources = { path };
+        string[] resources = [path];
         var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
         if (result != RmResult.ERROR_SUCCESS)
             throw new Win32Exception((int)result, $"RmRegisterResources failed ({result})");

@@ -6,7 +6,7 @@ public static class ExecutableFinder
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
         var separator = OperatingSystem.IsWindows() ? ';' : ':';
-        var extensions = OperatingSystem.IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : Array.Empty<string>();
+        var extensions = OperatingSystem.IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;

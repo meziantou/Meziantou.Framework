@@ -19,4 +19,8 @@
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFrameworkPreview)" />
   </Target>
 
+  <PropertyGroup>
+    <IsTrimmable Condition="$(IsTrimmable) == 'true' AND ($(TargetFramework) == 'net462' OR $(TargetFramework) == 'net471' OR $(TargetFramework) == 'net472' OR $(TargetFramework) == 'netstandard2.0')">false</IsTrimmable>
+  </PropertyGroup>
+  
 </Project>

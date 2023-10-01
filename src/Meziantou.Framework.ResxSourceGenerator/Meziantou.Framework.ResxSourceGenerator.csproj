@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <CompatibilityRange>true</CompatibilityRange>
     <Version>1.0.9</Version>
 
     <developmentDependency>true</developmentDependency>
@@ -13,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\..\$(Configuration)_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="build/**/*.props" Pack="true" PackagePath="build" />
     <None Include="buildMultiTargeting/**/*.props" Pack="true" PackagePath="buildMultiTargeting" />
   </ItemGroup>

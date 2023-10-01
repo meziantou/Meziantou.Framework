@@ -71,10 +71,10 @@ public class CommandLineBuilderTests
         var fileName = "ArgumentsPrinter.dll";
         var testedPaths = new List<FullPath>();
 
-        var configurations = new[] { "Debug", "Release" };
+        var configurations = new[] { "debug", "release" };
         foreach (var configuration in configurations)
         {
-            var path = FullPath.Combine(Environment.CurrentDirectory, "..", "..", "..", "..", "ArgumentsPrinter", "bin", configuration, "net7.0", fileName);
+            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net7.0" / fileName;
             if (File.Exists(path))
             {
                 _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");

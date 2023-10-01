@@ -5,7 +5,6 @@
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.11</Version>
-    <CompatibilityRange>true</CompatibilityRange>
     <Description>FullPath makes it easier to deal with paths</Description>
   </PropertyGroup>
 

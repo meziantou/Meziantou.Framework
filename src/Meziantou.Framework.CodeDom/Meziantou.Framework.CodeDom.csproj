@@ -4,7 +4,6 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>A replacement for CodeDom to generate C# files</Description>
     <Version>4.0.6</Version>
-    <CompatibilityRange>true</CompatibilityRange>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

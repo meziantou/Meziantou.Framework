@@ -3,8 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
-    <CompatibilityRecord>true</CompatibilityRecord>
-    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
   <ItemGroup>

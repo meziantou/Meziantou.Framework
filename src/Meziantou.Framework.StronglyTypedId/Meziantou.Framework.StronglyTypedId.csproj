@@ -1,8 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <CompatibilityRange>true</CompatibilityRange>
-    <CompatibilityRecord>true</CompatibilityRecord>
     <Version>1.0.34</Version>
 
     <developmentDependency>true</developmentDependency>
@@ -13,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(OutputPath)\netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\..\$(Configuration)_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

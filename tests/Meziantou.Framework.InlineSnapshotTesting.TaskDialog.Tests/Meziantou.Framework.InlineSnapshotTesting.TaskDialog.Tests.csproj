@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
-    <CompatibilityRecord>true</CompatibilityRecord>
-    <CompatibilityRange>true</CompatibilityRange>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 

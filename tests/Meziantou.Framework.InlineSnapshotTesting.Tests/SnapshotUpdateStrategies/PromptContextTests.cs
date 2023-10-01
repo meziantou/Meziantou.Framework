@@ -4,12 +4,8 @@ using System.Diagnostics;
 using Xunit.Abstractions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
-public sealed class PromptContextTests
+public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public PromptContextTests(ITestOutputHelper testOutputHelper) => _testOutputHelper = testOutputHelper;
-
     [Fact]
     public async Task TestNameFromXUnitFact()
     {
@@ -45,7 +41,7 @@ public sealed class PromptContextTests
             }
             """;
 
-        var name = await GetTestName(source, new[] { ("xunit", "2.4.2"), ("xunit.runner.visualstudio", "2.4.5") });
+        var name = await GetTestName(source, new[] { ("xunit", "2.5.1"), ("xunit.runner.visualstudio", "2.5.1") });
         Assert.Equal("MyTest", name);
     }
 
@@ -63,7 +59,7 @@ public sealed class PromptContextTests
             }
             """;
 
-        var name = await GetTestName(source, new[] { ("NUnit", "3.13.3"), ("NUnit3TestAdapter", "4.3.1") });
+        var name = await GetTestName(source, new[] { ("NUnit", "3.13.3"), ("NUnit3TestAdapter", "4.5.0") });
         Assert.Equal("Dummy.MyTest", name);
     }
 
@@ -82,7 +78,7 @@ public sealed class PromptContextTests
                 <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
               </ItemGroup>
               <ItemGroup>
-                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.3" />
+                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
                 {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
             </Project>            
@@ -108,8 +104,8 @@ public sealed class PromptContextTests
         };
 
         var process = Process.Start(psi);
-        process.OutputDataReceived += (sender, e) => _testOutputHelper.WriteLine(e.Data ?? "");
-        process.ErrorDataReceived += (sender, e) => _testOutputHelper.WriteLine(e.Data ?? "");
+        process.OutputDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
+        process.ErrorDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();

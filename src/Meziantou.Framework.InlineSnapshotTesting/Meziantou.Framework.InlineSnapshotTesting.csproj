@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <CompatibilityRecord>true</CompatibilityRecord>
-    <CompatibilityRange>true</CompatibilityRange>
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 

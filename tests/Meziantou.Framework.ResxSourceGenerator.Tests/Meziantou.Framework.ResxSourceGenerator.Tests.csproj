@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition=" '$(OS)' == 'Windows_NT' ">$(TargetFrameworks)</TargetFrameworks>
-    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
   <ItemGroup>

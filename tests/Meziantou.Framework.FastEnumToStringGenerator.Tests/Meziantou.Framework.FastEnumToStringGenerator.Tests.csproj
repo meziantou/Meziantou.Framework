@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <CompatibilityRange>true</CompatibilityRange>
   </PropertyGroup>
 
   <ItemGroup>

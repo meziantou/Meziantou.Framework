@@ -418,6 +418,9 @@ public sealed class InlineSnapshotTests
         psi.EnvironmentVariables.Remove("CI");
         foreach (var key in psi.EnvironmentVariables.Keys.Cast<string>().ToArray())
         {
+            if (key == "GITHUB_WORKSPACE")
+                continue;
+
             if (key.StartsWith("GITHUB", StringComparison.Ordinal))
             {
                 psi.EnvironmentVariables.Remove(key);

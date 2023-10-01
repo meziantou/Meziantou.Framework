@@ -66,7 +66,7 @@ internal sealed class TaskDialogPrompt : Prompt
         var process = Process.Start(psi) ?? throw new InvalidOperationException("Cannot start the process " + psi.FileName);
         process.WaitForExit();
         if (process.ExitCode != 0)
-            throw new InvalidOperationException("An exception occurred while running " + psi.FileName);
+            throw new InvalidOperationException("An exception occurred while running " + psi.FileName + ".\n" + process.StandardOutput.ReadToEnd());
 
         var json = process.StandardOutput.ReadToEnd();
         return JsonSerializer.Deserialize<PromptResult>(json) ?? Default;
@@ -88,12 +88,12 @@ internal sealed class TaskDialogPrompt : Prompt
             return exeLocation;
 
 #if DEBUG_TaskDialogPrompt
-        foreach (var configuration in new[] { "Release", "Debug" })
+        foreach (var configuration in new[] { "release", "debug" })
         {
-            var pathFromRoot = Path.Combine("src", Path.GetFileNameWithoutExtension(fileName), "bin", configuration, "net6.0-windows", fileName);
+            var pathFromRoot = Path.Combine("artifacts", "bin", Path.GetFileNameWithoutExtension(fileName), configuration, fileName);
             if (dllLocation != null)
             {
-                var root = FindParentDirectoryByName(Path.GetDirectoryName(exeLocation)!, "Meziantou.Framework");
+                var root = FindParentDirectoryByName(Path.GetDirectoryName(dllLocation)!, "Meziantou.Framework");
                 if (root != null)
                 {
                     exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
@@ -112,13 +112,31 @@ internal sealed class TaskDialogPrompt : Prompt
                 }
             }
 
+            {
+                var root = Environment.GetEnvironmentVariable("GITHUB_WORKSPACE");
+                if (!string.IsNullOrEmpty(root))
+                {
+                    exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
+                    if (File.Exists(exeLocation))
+                        return exeLocation;
+                }
+            }
+
             exeLocation = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, pathFromRoot));
             if (File.Exists(exeLocation))
                 return exeLocation;
         }
-#endif
 
+        throw new InvalidOperationException($"""
+            Cannot find the executable.
+            Current directory: {Environment.CurrentDirectory}
+            DLL location: {dllLocation}
+            EXE location: {exeLocation}
+            GITHUB_WORKSPACE: {Environment.GetEnvironmentVariable("GITHUB_WORKSPACE")}
+            """);
+#else
         return null;
+#endif
     }
 
     private static void StartNotificationTray()

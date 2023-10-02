@@ -15,15 +15,13 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
 
     public override string ToString()
     {
-        using (var stringWriter = new StringWriter())
+        using var stringWriter = new StringWriter();
+        using (var indentedTextWriter = new IndentedTextWriter(stringWriter))
         {
-            using (var indentedTextWriter = new IndentedTextWriter(stringWriter))
-            {
-                Walk(indentedTextWriter, this);
-            }
-
-            return stringWriter.ToString();
+            Walk(indentedTextWriter, this);
         }
+
+        return stringWriter.ToString();
 
         static void Walk(IndentedTextWriter writer, QuerySyntax node)
         {

@@ -11,6 +11,8 @@ namespace Meziantou.Framework.Globbing;
 
 public sealed class GlobCollection : IReadOnlyList<Glob>
 {
+    private static readonly EnumerationOptions DefaultEnumerationOptions = new() { RecurseSubdirectories = true };
+
     private readonly Glob[] _globs;
 
     public GlobCollection(params Glob[] globs) => _globs = globs;
@@ -66,7 +68,7 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     {
         if (options is null && _globs.Any(glob => glob.ShouldRecurseSubdirectories()))
         {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
+            options = DefaultEnumerationOptions;
         }
 
         using var enumerator = new GlobCollectionFileSystemEnumerator(this, directory, options);

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.ComponentModel;
 
 #if NET472
 using Microsoft.IO;
@@ -9,6 +10,7 @@ using System.IO.Enumeration;
 
 namespace Meziantou.Framework.Globbing;
 
+[System.Runtime.CompilerServices.CollectionBuilder(typeof(GlobCollection), nameof(Create))]
 public sealed class GlobCollection : IReadOnlyList<Glob>
 {
     private static readonly EnumerationOptions DefaultEnumerationOptions = new() { RecurseSubdirectories = true };
@@ -16,6 +18,9 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     private readonly Glob[] _globs;
 
     public GlobCollection(params Glob[] globs) => _globs = globs;
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public static GlobCollection Create(ReadOnlySpan<Glob> globs) => new GlobCollection(globs.ToArray());
 
     public int Count => _globs.Length;
     public Glob this[int index] => _globs[index];

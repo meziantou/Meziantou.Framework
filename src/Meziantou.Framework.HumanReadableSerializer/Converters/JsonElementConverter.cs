@@ -4,7 +4,7 @@ namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class JsonElementConverter : HumanReadableConverter<JsonElement>
 {
-    internal static readonly JsonSerializerOptions IndentedOptions = new JsonSerializerOptions
+    internal static readonly JsonSerializerOptions IndentedOptions = new()
     {
         WriteIndented = true,
     };

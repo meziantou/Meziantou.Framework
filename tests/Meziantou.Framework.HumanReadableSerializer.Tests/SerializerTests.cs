@@ -88,8 +88,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
         {
             Subject = new KeyValuePair<string, object>[]
             {
-                new KeyValuePair<string, object>("A", 10),
-                new KeyValuePair<string, object>("B", 20),
+                new("A", 10),
+                new("B", 20),
             },
             Expected = """
                 A: 10
@@ -105,8 +105,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
         {
             Subject = new KeyValuePair<string, object>[]
             {
-                new KeyValuePair<string, object>("B", 20),
-                new KeyValuePair<string, object>("A", 10),
+                new("B", 20),
+                new("A", 10),
             },
             Options = new HumanReadableSerializerOptions { DictionaryKeyOrder = StringComparer.Ordinal },
             Expected = """
@@ -186,8 +186,8 @@ public sealed partial class SerializerTests : SerializerTestsBase
         {
             Subject = new KeyValuePair<object, object>[]
             {
-                new KeyValuePair<object, object>("A", 10),
-                new KeyValuePair<object, object>("B", 20),
+                new("A", 10),
+                new("B", 20),
             },
             Expected = """
                 - Key: A

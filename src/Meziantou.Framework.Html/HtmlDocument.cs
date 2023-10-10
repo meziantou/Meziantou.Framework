@@ -679,10 +679,7 @@ sealed class HtmlDocument : HtmlNode
                     text.StreamOrder = htmlReader.Offset;
                     text.IsCData = htmlReader.State.FragmentType == HtmlFragmentType.CDataText;
                     text.Value = htmlReader.State.Value;
-                    if (current != null)
-                    {
-                        current.ChildNodes.Add(text);
-                    }
+                    current?.ChildNodes.Add(text);
                     break;
 
                 case HtmlFragmentType.TagOpen:

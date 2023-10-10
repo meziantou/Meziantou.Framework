@@ -2,39 +2,41 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
+using Microsoft.Win32.SafeHandles;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows5.1.2600")]
 public sealed class AccessToken : IDisposable
 {
-    private IntPtr _token;
+    private SafeFileHandle _token;
 
-    private AccessToken(IntPtr token)
+    private AccessToken(SafeFileHandle token)
     {
-        if (token == IntPtr.Zero)
-            throw new ArgumentNullException(nameof(token));
-
-        _token = token;
+        _token = token ?? throw new ArgumentNullException(nameof(token));
     }
 
     public bool IsRestricted()
     {
-        return NativeMethods.IsTokenRestricted(_token);
+        return PInvoke.IsTokenRestricted(_token);
     }
 
-    public TokenType GetTokenType()
+    public unsafe TokenType GetTokenType()
     {
-        if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenType, out TokenType result, IntPtr.Size, out _))
+        TokenType result;
+        if (!PInvoke.GetTokenInformation(_token, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)IntPtr.Size, out _))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
     }
 
-    public TokenElevationType GetElevationType()
+    public unsafe TokenElevationType GetElevationType()
     {
-        if (!NativeMethods.GetTokenInformation(_token, TokenInformationClass.TokenElevationType, out TokenElevationType result, IntPtr.Size, out _))
+        TokenElevationType result;
+        if (!PInvoke.GetTokenInformation(_token, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)IntPtr.Size, out _))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -42,43 +44,45 @@ public sealed class AccessToken : IDisposable
 
     public bool IsElevated()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_ELEVATION>(TokenInformationClass.TokenElevation).TokenIsElevated;
+        return GetTokenInformation<TOKEN_ELEVATION>(TOKEN_INFORMATION_CLASS.TokenElevation).TokenIsElevated != 0u;
     }
 
-    public AccessToken? GetLinkedToken() => GetTokenInformation<NativeMethods.TOKEN_LINKED_TOKEN, AccessToken?>(
-            TokenInformationClass.TokenLinkedToken,
+    public AccessToken? GetLinkedToken() => GetTokenInformation<TOKEN_LINKED_TOKEN, AccessToken?>(
+            TOKEN_INFORMATION_CLASS.TokenLinkedToken,
             linkedToken =>
             {
                 if (linkedToken.LinkedToken == IntPtr.Zero)
                     return null;
 
-                return new AccessToken(linkedToken.LinkedToken);
+                return new AccessToken(new SafeFileHandle(linkedToken.LinkedToken, ownsHandle: true));
             });
 
     public TokenEntry? GetMandatoryIntegrityLevel()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_MANDATORY_LABEL, TokenEntry>(
-            TokenInformationClass.TokenIntegrityLevel,
+        return GetTokenInformation<TOKEN_MANDATORY_LABEL, TokenEntry>(
+            TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
             mandatoryLabel => new TokenEntry(new SecurityIdentifier(mandatoryLabel.Label.Sid)));
     }
 
     public SecurityIdentifier? GetOwner()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_OWNER, SecurityIdentifier>(
-            TokenInformationClass.TokenOwner,
+        return GetTokenInformation<TOKEN_OWNER, SecurityIdentifier>(
+            TOKEN_INFORMATION_CLASS.TokenOwner,
             owner => new SecurityIdentifier(owner.Owner));
     }
 
     public IEnumerable<TokenGroupEntry>? EnumerateGroups()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TokenInformationClass.TokenGroups,
+        return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
+            TOKEN_INFORMATION_CLASS.TokenGroups,
             (handle, groups) =>
             {
-                var list = new List<TokenGroupEntry>(groups.GroupCount);
-                foreach (var group in ReadArray<NativeMethods.TOKEN_GROUPS, NativeMethods.SID_AND_ATTRIBUTES>(handle, nameof(NativeMethods.TOKEN_GROUPS.Groups), groups.GroupCount))
+                var list = new TokenGroupEntry[groups.GroupCount];
+                var index = 0;
+                foreach (var group in ReadArray<TOKEN_GROUPS, SID_AND_ATTRIBUTES>(handle, nameof(TOKEN_GROUPS.Groups), groups.GroupCount))
                 {
-                    list.Add(new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes));
+                    list[index] = new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes);
+                    index++;
                 }
 
                 return list;
@@ -87,14 +91,16 @@ public sealed class AccessToken : IDisposable
 
     public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
-            TokenInformationClass.TokenRestrictedSids,
+        return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(
+            TOKEN_INFORMATION_CLASS.TokenRestrictedSids,
             (handle, groups) =>
             {
-                var list = new List<TokenGroupEntry>(groups.GroupCount);
-                foreach (var group in ReadArray<NativeMethods.TOKEN_GROUPS, NativeMethods.SID_AND_ATTRIBUTES>(handle, nameof(NativeMethods.TOKEN_GROUPS.Groups), groups.GroupCount))
+                var list = new TokenGroupEntry[groups.GroupCount];
+                var index = 0;
+                foreach (var group in ReadArray<TOKEN_GROUPS, SID_AND_ATTRIBUTES>(handle, nameof(TOKEN_GROUPS.Groups), groups.GroupCount))
                 {
-                    list.Add(new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes));
+                    list[index] = new TokenGroupEntry(new SecurityIdentifier(group.Sid), (GroupSidAttributes)group.Attributes);
+                    index++;
                 }
 
                 return list;
@@ -103,23 +109,38 @@ public sealed class AccessToken : IDisposable
 
     public IEnumerable<TokenPrivilegeEntry>? EnumeratePrivileges()
     {
-        return GetTokenInformation<NativeMethods.TOKEN_PRIVILEGES, IReadOnlyList<TokenPrivilegeEntry>>(
-            TokenInformationClass.TokenPrivileges,
+        return GetTokenInformation<TOKEN_PRIVILEGES, IReadOnlyList<TokenPrivilegeEntry>>(
+            TOKEN_INFORMATION_CLASS.TokenPrivileges,
             (handle, privileges) =>
             {
-                var list = new List<TokenPrivilegeEntry>(privileges.PrivilegeCount);
-                foreach (var privilege in ReadArray<NativeMethods.TOKEN_PRIVILEGES, NativeMethods.LUID_AND_ATTRIBUTES>(handle, nameof(NativeMethods.TOKEN_PRIVILEGES.Privileges), privileges.PrivilegeCount))
+                var list = new TokenPrivilegeEntry[privileges.PrivilegeCount];
+                var index = 0;
+                foreach (var privilege in ReadArray<TOKEN_PRIVILEGES, LUID_AND_ATTRIBUTES>(handle, nameof(TOKEN_PRIVILEGES.Privileges), privileges.PrivilegeCount))
                 {
-                    var name = NativeMethods.LookupPrivilegeName(privilege.Luid);
-
-                    list.Add(new TokenPrivilegeEntry(name, (PrivilegeAttribute)privilege.Attributes));
+                    var name = LookupPrivilegeName(privilege.Luid);
+                    list[index] = new TokenPrivilegeEntry(name, (PrivilegeAttribute)privilege.Attributes);
+                    index++;
                 }
 
                 return list;
             });
     }
 
-    private static IEnumerable<TItem> ReadArray<TContainer, TItem>(IntPtr handle, string fieldName, int count)
+    private static unsafe string LookupPrivilegeName(LUID luid)
+    {
+        var luidNameLen = 0u;
+        PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, lpName: null, ref luidNameLen);
+
+        fixed (char* name = new char[luidNameLen])
+        {
+            if (PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, name, ref luidNameLen))
+                return new string(name);
+        }
+
+        throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    private static IEnumerable<TItem> ReadArray<TContainer, TItem>(IntPtr handle, string fieldName, uint count)
     {
         var offset = Marshal.OffsetOf<TContainer>(fieldName);
         var size = Marshal.SizeOf<TItem>();
@@ -130,34 +151,34 @@ public sealed class AccessToken : IDisposable
         }
     }
 
-    private T GetTokenInformation<T>(TokenInformationClass type) where T : struct
+    private T GetTokenInformation<T>(TOKEN_INFORMATION_CLASS type) where T : unmanaged
     {
         return GetTokenInformation<T, T>(type, Identity);
 
         static T Identity(T arg) => arg;
     }
 
-    private TResult? GetTokenInformation<T, TResult>(TokenInformationClass type, Func<T, TResult> func)
-        where T : struct
+    private TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<T, TResult> func)
+        where T : unmanaged
     {
         return GetTokenInformation<T, TResult>(type, (_, arg) => func(arg))!;
     }
 
-    private TResult? GetTokenInformation<T, TResult>(TokenInformationClass type, Func<IntPtr, T, TResult> func)
-        where T : struct
+    private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
+        where T : unmanaged
     {
-        if (!NativeMethods.GetTokenInformation(_token, type, IntPtr.Zero, 0, out var dwLength))
+        if (!PInvoke.GetTokenInformation(_token, type, null, 0u, out var dwLength))
         {
             var errorCode = Marshal.GetLastWin32Error();
             switch (errorCode)
             {
-                case NativeMethods.ERROR_BAD_LENGTH:
+                case (int)WIN32_ERROR.ERROR_BAD_LENGTH:
                 // special case for TokenSessionId. Falling through
-                case NativeMethods.ERROR_INSUFFICIENT_BUFFER:
+                case (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
                     var handle = Marshal.AllocHGlobal((int)dwLength);
                     try
                     {
-                        if (!NativeMethods.GetTokenInformation(_token, type, handle, dwLength, out _))
+                        if (!PInvoke.GetTokenInformation(_token, type, (void*)handle, dwLength, out _))
                             throw new Win32Exception(Marshal.GetLastWin32Error());
 
                         var s = Marshal.PtrToStructure<T>(handle);
@@ -171,7 +192,7 @@ public sealed class AccessToken : IDisposable
                         }
                     }
 
-                case NativeMethods.ERROR_INVALID_HANDLE:
+                case (int)WIN32_ERROR.ERROR_INVALID_HANDLE:
                     throw new Win32Exception(errorCode, "Invalid impersonation token");
 
                 default:
@@ -198,10 +219,10 @@ public sealed class AccessToken : IDisposable
         AdjustPrivilege(privilegeName, PrivilegeOperation.Disable);
     }
 
-    public void DisableAllPrivileges()
+    public unsafe void DisableAllPrivileges()
     {
         uint returnSize = 0;
-        if (!NativeMethods.AdjustTokenPrivileges(_token, disableAllPrivileges: true, IntPtr.Zero, 0, IntPtr.Zero, ref returnSize))
+        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
@@ -213,44 +234,38 @@ public sealed class AccessToken : IDisposable
         AdjustPrivilege(privilegeName, PrivilegeOperation.Remove);
     }
 
-    private void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
+    [SuppressMessage("Usage", "MA0099:Use Explicit enum value instead of 0", Justification = "The constant doesn't exist")]
+    private unsafe void AdjustPrivilege(string privilegeName, PrivilegeOperation operation)
     {
-        if (!NativeMethods.LookupPrivilegeValueW(lpSystemName: null, privilegeName, out var luid))
+        if (!PInvoke.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        var tp = new NativeMethods.TOKEN_PRIVILEGES
+        var tp = new TOKEN_PRIVILEGES
         {
             PrivilegeCount = 1,
-            Privileges =
+            Privileges = (ReadOnlySpan<LUID_AND_ATTRIBUTES>)
             [
-                new NativeMethods.LUID_AND_ATTRIBUTES
+                new LUID_AND_ATTRIBUTES
                 {
                     Luid = luid,
+                    Attributes = operation switch
+                    {
+                        PrivilegeOperation.Enable => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
+                        PrivilegeOperation.Remove => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
+                        _ => 0,
+                    },
                 },
             ],
         };
 
-        switch (operation)
-        {
-            case PrivilegeOperation.Enable:
-                tp.Privileges[0].Attributes = NativeMethods.SE_PRIVILEGE_ENABLED;
-                break;
-            case PrivilegeOperation.Disable:
-                tp.Privileges[0].Attributes = 0;
-                break;
-            case PrivilegeOperation.Remove:
-                tp.Privileges[0].Attributes = NativeMethods.SE_PRIVILEGE_REMOVED;
-                break;
-        }
-
         uint returnSize = 0;
-        if (!NativeMethods.AdjustTokenPrivileges(_token, disableAllPrivileges: false, ref tp, 0, IntPtr.Zero, ref returnSize))
+        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: false, tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
     public AccessToken Duplicate(SecurityImpersonationLevel impersonationLevel)
     {
-        if (!NativeMethods.DuplicateToken(_token, impersonationLevel, out var duplicateTokenHandle))
+        if (!PInvoke.DuplicateToken(_token, (SECURITY_IMPERSONATION_LEVEL)impersonationLevel, out var duplicateTokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return new AccessToken(duplicateTokenHandle);
@@ -258,16 +273,14 @@ public sealed class AccessToken : IDisposable
 
     public void Dispose()
     {
-        if (_token != IntPtr.Zero)
-        {
-            NativeMethods.CloseHandle(_token);
-            _token = IntPtr.Zero;
-        }
+        _token.Dispose();
+        _token = null;
     }
 
     public static AccessToken OpenCurrentProcessToken(TokenAccessLevels accessLevels)
     {
-        if (!NativeMethods.OpenProcessToken(NativeMethods.GetCurrentProcess(), accessLevels, out var tokenHandle))
+        using var currentProcess = PInvoke.GetCurrentProcess_SafeHandle();
+        if (!PInvoke.OpenProcessToken(currentProcess, (TOKEN_ACCESS_MASK)accessLevels, out var tokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return new AccessToken(tokenHandle);
@@ -278,7 +291,7 @@ public sealed class AccessToken : IDisposable
         if (process is null)
             throw new ArgumentNullException(nameof(process));
 
-        if (!NativeMethods.OpenProcessToken(process.Handle, accessLevels, out var tokenHandle))
+        if (!PInvoke.OpenProcessToken(process.SafeHandle, (TOKEN_ACCESS_MASK)accessLevels, out var tokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return new AccessToken(tokenHandle);

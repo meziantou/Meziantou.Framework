@@ -1,4 +1,4 @@
-using Meziantou.Framework.Win32.Natives;
+using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
@@ -6,8 +6,8 @@ namespace Meziantou.Framework.Win32;
 public enum PrivilegeAttribute : uint
 {
     Disabled,
-    Enabled = NativeMethods.SE_PRIVILEGE_ENABLED,
-    EnabledByDefault = NativeMethods.SE_PRIVILEGE_ENABLED_BY_DEFAULT,
-    Removed = NativeMethods.SE_PRIVILEGE_REMOVED,
-    UsedForAccess = NativeMethods.SE_PRIVILEGE_USED_FOR_ACCESS,
+    Enabled = TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
+    EnabledByDefault = TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED_BY_DEFAULT,
+    Removed = TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
+    UsedForAccess = TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_USED_FOR_ACCESS,
 }

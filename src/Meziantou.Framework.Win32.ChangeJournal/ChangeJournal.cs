@@ -32,7 +32,7 @@ public sealed class ChangeJournal : IDisposable
         var volume = VolumeHelper.GetValidVolumePath(driveInfo);
         var handle = PInvoke.CreateFile(
             volume,
-            FILE_ACCESS_FLAGS.FILE_GENERIC_READ,
+            (uint)FILE_ACCESS_RIGHTS.FILE_GENERIC_READ,
             FILE_SHARE_MODE.FILE_SHARE_READ | FILE_SHARE_MODE.FILE_SHARE_WRITE,
             lpSecurityAttributes: null,
             FILE_CREATION_DISPOSITION.OPEN_EXISTING,

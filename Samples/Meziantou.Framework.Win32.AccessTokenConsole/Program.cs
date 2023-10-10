@@ -1,6 +1,6 @@
 using System.Runtime.Versioning;
 
-[assembly: SupportedOSPlatform("windows")]
+[assembly: SupportedOSPlatform("windows5.1.2600")]
 
 namespace Meziantou.Framework.Win32.AccessTokenConsoleTests;
 

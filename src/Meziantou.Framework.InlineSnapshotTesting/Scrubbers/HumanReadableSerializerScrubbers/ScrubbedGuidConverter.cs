@@ -24,7 +24,11 @@ internal sealed class ScrubbedGuidConverter : HumanReadableConverter<Guid>
         data.AsSpan(12).Reverse();
 #else
         Span<byte> data = stackalloc byte[16];
+#if NET8_0_OR_GREATER
+        MemoryMarshal.Write(data.Slice(12), in index);
+#else
         MemoryMarshal.Write(data.Slice(12), ref index);
+#endif
         data.Slice(12).Reverse();
 #endif
         return new Guid(data).ToString();

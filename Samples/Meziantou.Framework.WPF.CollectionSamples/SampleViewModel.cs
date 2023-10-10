@@ -11,7 +11,7 @@ public sealed class SampleViewModel
         AddItems = DelegateCommand.Create(AddItemsImpl);
     }
 
-    public ConcurrentObservableCollection<string> Items { get; } = new ConcurrentObservableCollection<string>();
+    public ConcurrentObservableCollection<string> Items { get; } = [];
 
     public ICommand AddItems { get; }
 

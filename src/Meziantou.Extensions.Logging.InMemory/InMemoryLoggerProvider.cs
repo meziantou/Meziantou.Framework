@@ -26,7 +26,7 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
 
     public InMemoryLoggerProvider(InMemoryLogCollection? logs, IExternalScopeProvider? scopeProvider)
     {
-        _logs = logs ?? new InMemoryLogCollection();
+        _logs = logs ?? [];
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
     }
 

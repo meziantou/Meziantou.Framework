@@ -39,8 +39,6 @@ indent_size = 2
 insert_final_newline = true
 
 [*.cs]
-dotnet_diagnostic.CA1508.severity = none # TODO REMOVE after RC2
-
 dotnet_diagnostic.CA1008.severity = none
 dotnet_diagnostic.CA1308.severity = none
 dotnet_diagnostic.CA2208.severity = none

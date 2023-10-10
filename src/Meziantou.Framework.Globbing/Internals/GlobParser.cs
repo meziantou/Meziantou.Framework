@@ -284,7 +284,7 @@ internal static class GlobParser
 
         static void AddSubsegment(ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase, Segment? subSegment)
         {
-            subSegments ??= new List<Segment>();
+            subSegments ??= [];
             if (currentLiteral.Length > 0)
             {
                 subSegments.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
@@ -463,7 +463,7 @@ internal static class GlobParser
                     var next = parts[i + 1];
                     var nextCharacters = next switch
                     {
-                        LiteralSegment literal => new List<char> { literal.Value[0] },
+                        LiteralSegment literal => [literal.Value[0]],
                         CharacterSetSegment characterSet => characterSet.Set.ToList(),
                         CharacterRangeSegment characterRange when characterRange.Range.Length < 3 => characterRange.Range.EnumerateCharacters().ToList(),
                         LiteralSetSegment literalSet => literalSet.Values.Where(v => v.Length > 0).Select(v => v[0]).ToList(),

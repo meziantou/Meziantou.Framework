@@ -31,8 +31,8 @@ public sealed class ObjectGraphVisitorTests
 
     private sealed class TestObjectGraphVisitor : ObjectGraphVisitor
     {
-        public List<PropertyInfo> VisitedProperties { get; } = new();
-        public List<object> VisitedValues { get; } = new();
+        public List<PropertyInfo> VisitedProperties { get; } = [];
+        public List<object> VisitedValues { get; } = [];
 
         protected override void VisitProperty(object parentInstance, PropertyInfo property, object value)
         {

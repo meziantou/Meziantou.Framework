@@ -104,7 +104,7 @@ public class TypeReference
                 return _typeDeclarationParameters;
             }
 
-            return _parameters ??= new List<TypeReference>();
+            return _parameters ??= [];
         }
     }
 

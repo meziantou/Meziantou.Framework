@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Collections;
 
 public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
 {
-    private readonly List<T> _list = new();
+    private readonly List<T> _list = [];
 
     public int Count
     {

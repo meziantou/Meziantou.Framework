@@ -19,9 +19,9 @@ public class Template
     private string? _className;
     private string? _runMethodName;
     private string? _writerParameterName;
-    private readonly List<TemplateArgument> _arguments = new();
-    private readonly List<string> _usings = new();
-    private readonly List<string> _referencePaths = new();
+    private readonly List<TemplateArgument> _arguments = [];
+    private readonly List<string> _usings = [];
+    private readonly List<string> _referencePaths = [];
 
     [NotNull]
     private string? ClassName

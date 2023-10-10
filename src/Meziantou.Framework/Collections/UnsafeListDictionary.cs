@@ -11,7 +11,7 @@ public sealed class UnsafeListDictionary<TKey, TValue> : IDictionary<TKey, TValu
 {
     private readonly List<KeyValuePair<TKey, TValue>> _items;
 
-    public UnsafeListDictionary() => _items = new();
+    public UnsafeListDictionary() => _items = [];
     public UnsafeListDictionary(int capacity) => _items = new(capacity);
     public UnsafeListDictionary(IEnumerable<KeyValuePair<TKey, TValue>> items) => _items = new(items);
 

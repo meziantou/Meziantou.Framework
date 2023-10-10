@@ -11,7 +11,7 @@ public class PropertyAccessorDeclaration : CodeObject
 
     public PropertyAccessorDeclaration(StatementCollection? statements)
     {
-        Statements = statements ?? new StatementCollection();
+        Statements = statements ?? [];
         CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);
     }
 

@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WPF;
 
 internal static class EnumLocalizationUtilities
 {
-    private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = new();
-    private static readonly Dictionary<Expression, object> PropertiesCache = new();
+    private static readonly Dictionary<Type, LocalizedEnumValueCollection> EnumsCache = [];
+    private static readonly Dictionary<Expression, object> PropertiesCache = [];
 
     public static LocalizedEnumValueCollection GetEnumLocalization<T>()
         where T : struct

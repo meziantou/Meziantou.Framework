@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
 {
-    private readonly List<Expression> _expressions = new();
+    private readonly List<Expression> _expressions = [];
 
     public ExpressionCollectionStatement()
     {

@@ -6,7 +6,7 @@ namespace Meziantou.Framework;
 
 internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
 {
-    private readonly AppendOnlyCollection<T> _cache = new();
+    private readonly AppendOnlyCollection<T> _cache = [];
     private readonly IEnumerable<T> _enumerable;
     private IEnumerator<T>? _enumerator;
     private bool _enumerated;

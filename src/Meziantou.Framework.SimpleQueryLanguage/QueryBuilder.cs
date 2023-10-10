@@ -10,7 +10,7 @@ public sealed class QueryBuilder<T>
     private static readonly Predicate<T> AlwaysFalsePredicate = _ => false;
     private static readonly Predicate<T> AlwaysTruePredicate = _ => true;
 
-    private readonly Dictionary<FilterKeyValue, Func<T, KeyValueOperator, string, bool>> _filters = new();
+    private readonly Dictionary<FilterKeyValue, Func<T, KeyValueOperator, string, bool>> _filters = [];
     private Func<T, string, bool>? _freeTextFilter;
     private UnhandledPropertyDelegate<T>? _unhandledPropertyFilter;
 

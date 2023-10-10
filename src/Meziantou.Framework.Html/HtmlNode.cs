@@ -420,7 +420,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (error is null)
             throw new ArgumentNullException(nameof(error));
 
-        _errors ??= new Collection<HtmlError>();
+        _errors ??= [];
         _errors.Add(error);
     }
 
@@ -433,7 +433,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         _errors = null;
     }
 
-    public virtual IEnumerable<HtmlError> Errors => _errors ??= new Collection<HtmlError>();
+    public virtual IEnumerable<HtmlError> Errors => _errors ??= [];
 
     public virtual string OuterHtml
     {

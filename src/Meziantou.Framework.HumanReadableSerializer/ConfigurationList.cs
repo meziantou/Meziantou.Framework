@@ -7,7 +7,7 @@ internal abstract class ConfigurationList<TItem> : IList<TItem>
 
     protected ConfigurationList(IList<TItem>? source = null)
     {
-        List = source is null ? new List<TItem>() : new List<TItem>(source);
+        List = source is null ? [] : new List<TItem>(source);
     }
 
     protected abstract bool IsImmutable { get; }

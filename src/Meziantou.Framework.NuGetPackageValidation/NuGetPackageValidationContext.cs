@@ -6,7 +6,7 @@ namespace Meziantou.Framework.NuGetPackageValidation;
 
 public sealed class NuGetPackageValidationContext : IDisposable
 {
-    private readonly ConcurrentBag<NuGetPackageValidationError> _errors = new();
+    private readonly ConcurrentBag<NuGetPackageValidationError> _errors = [];
     private readonly NuGetPackageValidationOptions _options;
 
     internal NuGetPackageValidationContext(FullPath file, NuGetPackageValidationOptions options, CancellationToken cancellationToken)

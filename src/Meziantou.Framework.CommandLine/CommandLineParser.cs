@@ -7,7 +7,7 @@ public sealed class CommandLineParser
     private static readonly char[] ValueDelimiters = [':', '='];
 
     private readonly Dictionary<string, string> _namedArguments = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<int, string> _positionArguments = new();
+    private readonly Dictionary<int, string> _positionArguments = [];
 
     public static CommandLineParser Current { get; } = ParseCurrent();
 

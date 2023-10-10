@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> where T : CodeObject
 {
-    private readonly List<T> _list = new();
+    private readonly List<T> _list = [];
 
     public CodeObjectCollection()
     {

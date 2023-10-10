@@ -59,7 +59,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 if (label == null || !IsPrereleaseIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(prereleaseLabel));
 
-                labels ??= new();
+                labels ??= [];
                 labels.Add(label);
             }
 
@@ -78,7 +78,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 if (label == null || !IsMetadataIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
-                labels ??= new();
+                labels ??= [];
                 labels.Add(label);
             }
 
@@ -333,7 +333,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         {
             if (TryReadMetadataIdentifier(versionString, ref index, out var label))
             {
-                result ??= new List<string>();
+                result ??= [];
                 result.Add(label);
             }
 

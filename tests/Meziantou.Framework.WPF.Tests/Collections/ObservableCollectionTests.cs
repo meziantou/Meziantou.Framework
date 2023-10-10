@@ -292,8 +292,8 @@ public sealed partial class ObservableCollectionTests
     {
         private readonly object _observedInstance;
 
-        public List<NotifyCollectionChangedEventArgs> CollectionChangedArgs { get; } = new();
-        public List<PropertyChangedEventArgs> PropertyChangedArgs { get; } = new();
+        public List<NotifyCollectionChangedEventArgs> CollectionChangedArgs { get; } = [];
+        public List<PropertyChangedEventArgs> PropertyChangedArgs { get; } = [];
 
         public EventAssert(object obj)
         {

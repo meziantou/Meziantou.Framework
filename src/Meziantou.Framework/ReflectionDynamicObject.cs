@@ -319,15 +319,15 @@ public sealed class ReflectionDynamicObject : DynamicObject
         [DynamicallyAccessedMembers(CacheMembers)]
         public Type Type { get; }
 
-        public List<ConstructorInfo> Constructors { get; } = new List<ConstructorInfo>();
+        public List<ConstructorInfo> Constructors { get; } = [];
 
         public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
         public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
-        public List<PropertyInfo> InstanceIndexers { get; } = new List<PropertyInfo>();
+        public List<PropertyInfo> InstanceIndexers { get; } = [];
 
         public Dictionary<string, PropertyInfo> StaticProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
         public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
-        public List<PropertyInfo> StaticIndexers { get; } = new List<PropertyInfo>();
+        public List<PropertyInfo> StaticIndexers { get; } = [];
 
         public static TypeCache Create([DynamicallyAccessedMembers(CacheMembers)] Type type)
         {

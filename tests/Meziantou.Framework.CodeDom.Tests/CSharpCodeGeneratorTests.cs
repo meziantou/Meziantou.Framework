@@ -266,7 +266,7 @@ internal enum Sample : uint
         var loop = new WhileStatement
         {
             Condition = new LiteralExpression(value: true),
-            Body = new StatementCollection(),
+            Body = [],
         };
 
         AssertCsharp(loop, @"while (true)
@@ -429,10 +429,10 @@ else
         var statement = new TryCatchFinallyStatement
         {
             Try = new SnippetStatement("TrySnippet"),
-            Catch = new CatchClauseCollection
-            {
+            Catch =
+            [
                 new CatchClause() { Body = new SnippetStatement("Catch1") },
-            },
+            ],
         };
 
         AssertCsharp(statement, @"try
@@ -452,8 +452,8 @@ catch
         var statement = new TryCatchFinallyStatement
         {
             Try = new SnippetStatement("TrySnippet"),
-            Catch = new CatchClauseCollection
-            {
+            Catch =
+            [
                 new CatchClause()
                 {
                     ExceptionType = typeof(NotImplementedException),
@@ -466,7 +466,7 @@ catch
                     ExceptionVariableName = "ex",
                     Body = new ThrowStatement(),
                 },
-            },
+            ],
         };
 
         AssertCsharp(statement, @"try
@@ -553,7 +553,7 @@ finally
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute")),
@@ -572,7 +572,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute"))
@@ -597,7 +597,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute"))
@@ -623,7 +623,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute"))
@@ -648,7 +648,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute"))
@@ -674,7 +674,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute"))
@@ -701,7 +701,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             CustomAttributes =
             {
                 new CustomAttribute(new TypeReference("TestAttribute1")),
@@ -722,7 +722,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             Parameters =
             {
                 new TypeParameter("T"),
@@ -740,7 +740,7 @@ void Sample()
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
             Parameters =
             {
                 new TypeParameter("T") { Constraints = { new ClassTypeParameterConstraint() } },
@@ -790,7 +790,7 @@ void Sample()
         var method = new MethodDeclaration("A")
         {
             PrivateImplementationType = new TypeReference("Foo.IBar"),
-            Statements = new StatementCollection(),
+            Statements = [],
         };
 
         AssertCsharp(method, @"void global::Foo.IBar.A()
@@ -883,8 +883,8 @@ void Sample()
         var method = new EventFieldDeclaration("A", typeof(EventHandler))
         {
             PrivateImplementationType = new TypeReference("Foo.IBar"),
-            AddAccessor = new StatementCollection(),
-            RemoveAccessor = new StatementCollection(),
+            AddAccessor = [],
+            RemoveAccessor = [],
         };
 
         AssertCsharp(method, @"event global::System.EventHandler global::Foo.IBar.A
@@ -1204,7 +1204,7 @@ code");
     {
         var method = new MethodDeclaration("Sample")
         {
-            Statements = new StatementCollection(),
+            Statements = [],
         };
 
         method.XmlComments.AddSummary("Test");
@@ -1439,11 +1439,11 @@ void Sample()
     {
         var method = new MethodDeclaration("Test")
         {
-            Statements = new StatementCollection()
-            {
+            Statements =
+            [
                 new AssignStatement(new VariableReferenceExpression("a") , 0),
                 new AssignStatement(new VariableReferenceExpression("b") , 0),
-            },
+            ],
         };
 
         AssertCsharp(method, @"void Test()
@@ -1475,23 +1475,23 @@ void Sample()
     {
         var method = new MethodDeclaration("Test")
         {
-            Statements = new StatementCollection()
-            {
+            Statements =
+            [
                 new ConditionStatement()
                 {
                     Condition = new LiteralExpression(value: true),
-                    TrueStatements = new StatementCollection()
-                    {
+                    TrueStatements =
+                    [
                         new ConditionStatement()
                         {
                             Condition = new LiteralExpression(value: true),
-                            TrueStatements = new StatementCollection(),
+                            TrueStatements = [],
                         },
-                    },
+                    ],
                 },
                 new AssignStatement(new VariableReferenceExpression("a") , 0),
                 new AssignStatement(new VariableReferenceExpression("b") , 0),
-            },
+            ],
         };
 
         AssertCsharp(method, @"void Test()

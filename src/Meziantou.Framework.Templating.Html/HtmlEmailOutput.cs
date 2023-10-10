@@ -10,7 +10,7 @@ public class HtmlEmailOutput : Output
     private readonly UrlEncoder _urlEncoder;
 
     private readonly Dictionary<string, string> _sections = new(StringComparer.Ordinal);
-    private readonly List<HtmlEmailSection> _currentSections = new();
+    private readonly List<HtmlEmailSection> _currentSections = [];
 
     public IList<string> ContentIdentifiers { get; } = new List<string>();
 

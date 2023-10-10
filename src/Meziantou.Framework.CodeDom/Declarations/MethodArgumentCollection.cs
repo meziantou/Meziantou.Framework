@@ -4,7 +4,7 @@ namespace Meziantou.Framework.CodeDom;
 
 public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclaration>, IReadOnlyList<MethodArgumentDeclaration>
 {
-    private readonly List<MethodArgumentDeclaration> _list = new();
+    private readonly List<MethodArgumentDeclaration> _list = [];
 
     public MethodArgumentCollection()
     {

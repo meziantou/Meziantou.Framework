@@ -11,7 +11,7 @@ internal
 #endif
 sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IReadOnlyList<HtmlNode>
 {
-    private readonly List<HtmlNode> _list = new();
+    private readonly List<HtmlNode> _list = [];
     private readonly HtmlNode _parent;
 
     public event NotifyCollectionChangedEventHandler CollectionChanged;

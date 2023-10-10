@@ -11,7 +11,7 @@ internal
 #endif
 sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>, IList, IReadOnlyList<HtmlAttribute>
 {
-    private readonly List<HtmlAttribute> _attributes = new();
+    private readonly List<HtmlAttribute> _attributes = [];
 
     public event NotifyCollectionChangedEventHandler CollectionChanged;
 

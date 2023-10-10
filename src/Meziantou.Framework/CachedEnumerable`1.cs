@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 
 internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
 {
-    private readonly List<T> _cache = new();
+    private readonly List<T> _cache = [];
     private readonly IEnumerable<T> _enumerable;
     private IEnumerator<T>? _enumerator;
     private bool _enumerated;

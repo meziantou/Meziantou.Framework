@@ -230,7 +230,7 @@ public sealed class DependencyScannerTests
 
     private sealed class InMemoryFileSystem : IFileSystem
     {
-        private readonly List<(string Path, byte[] Content)> _files = new();
+        private readonly List<(string Path, byte[] Content)> _files = [];
 
         public void AddFile(string path, byte[] content)
         {

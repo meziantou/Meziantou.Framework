@@ -35,7 +35,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
         private Usn _currentUSN;
         private bool _eof;
 
-        private readonly List<JournalEntry> _entries = new();
+        private readonly List<JournalEntry> _entries = [];
         private int _currentIndex;
 
         public ChangeJournal ChangeJournal { get; }

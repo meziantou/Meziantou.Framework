@@ -64,7 +64,7 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
 
     private static void AppendEntry(PromptConfigurationFile configuration, PromptConfigurationFileEntry entry)
     {
-        configuration.Entries ??= new List<PromptConfigurationFileEntry>();
+        configuration.Entries ??= [];
         configuration.Entries.RemoveAll(entry => entry.IsExpired);
         if (configuration.Entries.Count > 100)
         {

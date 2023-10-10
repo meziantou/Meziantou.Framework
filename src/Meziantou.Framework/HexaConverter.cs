@@ -30,6 +30,7 @@ public static class HexaConverter
         };
     }
 
+    [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException")]
     public static byte[] ParseHexaString(string str)
     {
         ArgumentNullException.ThrowIfNull(str);

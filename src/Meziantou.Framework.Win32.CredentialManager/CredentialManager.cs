@@ -16,7 +16,7 @@ public static class CredentialManager
 {
     public static unsafe Credential? ReadCredential(string applicationName)
     {
-        var read = PInvoke.CredRead(applicationName, (uint)CRED_TYPE.CRED_TYPE_GENERIC, 0u, out var handle);
+        var read = PInvoke.CredRead(applicationName, CRED_TYPE.CRED_TYPE_GENERIC, out var handle);
         if (read)
         {
             try
@@ -119,7 +119,7 @@ public static class CredentialManager
         if (applicationName is null)
             throw new ArgumentNullException(nameof(applicationName));
 
-        var success = PInvoke.CredDelete(applicationName, (uint)CRED_TYPE.CRED_TYPE_GENERIC, Flags: 0);
+        var success = PInvoke.CredDelete(applicationName, CRED_TYPE.CRED_TYPE_GENERIC);
         if (!success)
         {
             var lastError = Marshal.GetLastWin32Error();

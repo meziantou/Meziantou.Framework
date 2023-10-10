@@ -1,3 +1,4 @@
 ﻿CloseHandle
 CreateFileW
 DeviceIoControl
+FILE_ACCESS_RIGHTS

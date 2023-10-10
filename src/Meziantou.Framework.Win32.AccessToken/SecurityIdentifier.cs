@@ -1,19 +1,21 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Meziantou.Framework.Win32.Natives;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
-[SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows5.1.2600")]
 public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
 {
     private const byte MaxSubAuthorities = 15;
     private const int MaxBinaryLength = 1 + 1 + 6 + (MaxSubAuthorities * 4); // 4 bytes for each subauth
 
-    internal SecurityIdentifier(IntPtr sid)
+    internal SecurityIdentifier(PSID sid)
     {
-        if (sid == IntPtr.Zero)
+        if (sid == default)
             throw new ArgumentNullException(nameof(sid));
 
         LookupName(sid, out var domain, out var name);
@@ -36,59 +38,60 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         return FullName;
     }
 
-    public static SecurityIdentifier FromWellKnown(WellKnownSidType type)
+    public static unsafe SecurityIdentifier FromWellKnown(WellKnownSidType type)
     {
         uint size = MaxBinaryLength * sizeof(byte);
-        var resultSid = Marshal.AllocHGlobal((int)size);
+        var resultSid = new PSID((void*)Marshal.AllocHGlobal((int)size));
 
         try
         {
-            if (!NativeMethods.CreateWellKnownSid((int)type, IntPtr.Zero, resultSid, ref size))
+            if (!PInvoke.CreateWellKnownSid((WELL_KNOWN_SID_TYPE)type, default, resultSid, ref size))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return new SecurityIdentifier(resultSid);
         }
         finally
         {
-            if (resultSid != IntPtr.Zero)
+            if (resultSid.Value != null)
             {
-                Marshal.FreeHGlobal(resultSid);
+                Marshal.FreeHGlobal((nint)resultSid.Value);
             }
         }
     }
 
-    private static string ConvertSidToStringSid(IntPtr sid)
+    private static string ConvertSidToStringSid(PSID sid)
     {
-        if (NativeMethods.ConvertSidToStringSidW(sid, out var result))
-            return result;
+        if (PInvoke.ConvertSidToStringSid(sid, out var result))
+            return result.ToString();
 
         throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
-    private static void LookupName(IntPtr sid, out string? domain, out string? name)
+    private static unsafe void LookupName(PSID sid, out string? domain, out string? name)
     {
-        var userNameLen = 256;
-        var domainNameLen = 256;
-        var bufUserName = new char[userNameLen];
-        var bufDomainName = new char[domainNameLen];
-        var sidNameUse = 0;
+        var userNameLen = 256u;
+        var domainNameLen = 256u;
 
-        if (NativeMethods.LookupAccountSidW(systemName: null, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
+        fixed (char* userName = new char[userNameLen])
+        fixed (char* domainName = new char[domainNameLen])
         {
-            domain = new string(bufDomainName.AsSpan(0, domainNameLen));
-            name = new string(bufUserName.AsSpan(0, userNameLen));
-            return;
-        }
+            if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, ref userNameLen, domainName, ref domainNameLen, out _) != 0)
+            {
+                domain = new string(userName, 0, (int)domainNameLen);
+                name = new string(domainName, 0, (int)userNameLen);
+                return;
+            }
 
-        var error = Marshal.GetLastWin32Error();
-        if (error == NativeMethods.ERROR_NONE_MAPPED)
-        {
-            domain = default;
-            name = default;
-            return;
-        }
+            var error = Marshal.GetLastWin32Error();
+            if (error == (int)WIN32_ERROR.ERROR_NONE_MAPPED)
+            {
+                domain = default;
+                name = default;
+                return;
+            }
 
-        throw new Win32Exception(error);
+            throw new Win32Exception(error);
+        }
     }
 
     public bool Equals(SecurityIdentifier? other)

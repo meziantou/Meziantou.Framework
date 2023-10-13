@@ -5,7 +5,7 @@
     <IsTrimmable>false</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Description>.NET wrapper for Windows Projected File System (ProjFS)</Description>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
   </PropertyGroup>
 
 </Project>

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Format a DateTime or DateTimeOffset using a relative format (e.g. 5 minutes ago)</Description>
   </PropertyGroup>

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net462</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
     <Description>Provide an OpenFolderDialog that uses Vista+ design</Description>
   </PropertyGroup>
 

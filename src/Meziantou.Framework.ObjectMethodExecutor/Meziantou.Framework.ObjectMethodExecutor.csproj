@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Provide helpers to execute a synchronous or asynchronous method using reflection</Description>
   </PropertyGroup>

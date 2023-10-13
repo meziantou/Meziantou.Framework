@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.0</Version>
+    <Version>2.1.1</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Provide optional interfaces for the Meziantou.Framework.StronglyTypedId source generator</Description>
   </PropertyGroup>
 

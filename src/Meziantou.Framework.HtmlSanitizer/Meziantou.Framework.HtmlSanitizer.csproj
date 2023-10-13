@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Sanitizers</RootNamespace>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Provide helpers to sanitize HTML fragment</Description>
   </PropertyGroup>

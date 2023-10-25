@@ -22,7 +22,7 @@ public class ProcessExtensionsTests
             return ProcessExtensions.RunAsTaskAsync("echo", "test", CancellationToken.None);
         }
 
-        var result = await CreateProcess().ConfigureAwait(false);
+        var result = await CreateProcess();
         result.ExitCode.Should().Be(0);
         result.Output.Should().ContainSingle();
         result.Output[0].Text.Should().Be("test");
@@ -50,7 +50,7 @@ public class ProcessExtensionsTests
             };
         }
 
-        var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None).ConfigureAwait(false);
+        var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None);
         result.ExitCode.Should().Be(0);
         result.Output.Should().ContainSingle();
         result.Output[0].Text.Should().Be("test");
@@ -78,7 +78,7 @@ public class ProcessExtensionsTests
             };
         }
 
-        var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None).ConfigureAwait(false);
+        var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None);
         result.ExitCode.Should().Be(0);
         result.Output.Should().BeEmpty();
     }
@@ -120,7 +120,7 @@ public class ProcessExtensionsTests
         }
 
         await cts.CancelAsync();
-        await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>().ConfigureAwait(false);
+        await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>();
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]

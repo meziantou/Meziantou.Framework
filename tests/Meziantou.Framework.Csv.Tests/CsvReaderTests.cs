@@ -20,9 +20,9 @@ public class CsvReaderTests
             HasHeaderRow = false,
         };
 
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
+        var row2 = await reader.ReadRowAsync();
+        var row3 = await reader.ReadRowAsync();
 
         using (new AssertionScope())
         {
@@ -51,9 +51,9 @@ public class CsvReaderTests
         {
             HasHeaderRow = true,
         };
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
+        var row2 = await reader.ReadRowAsync();
+        var row3 = await reader.ReadRowAsync();
 
         using (new AssertionScope())
         {
@@ -82,9 +82,9 @@ public class CsvReaderTests
         {
             HasHeaderRow = true,
         };
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row2 = await reader.ReadRowAsync().ConfigureAwait(false);
-        var row3 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
+        var row2 = await reader.ReadRowAsync();
+        var row3 = await reader.ReadRowAsync();
 
         using (new AssertionScope())
         {
@@ -108,7 +108,7 @@ public class CsvReaderTests
 
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
 
         row1[0].Should().Be("a\"c");
     }
@@ -121,7 +121,7 @@ public class CsvReaderTests
 
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
 
         row1[0].Should().Be("\"bc");
     }
@@ -134,7 +134,7 @@ public class CsvReaderTests
 
         using var sr = new StringReader(sb.ToString());
         var reader = new CsvReader(sr);
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
 
         row1[0].Should().Be("ab\"");
     }
@@ -151,7 +151,7 @@ public class CsvReaderTests
             Quote = '\'',
             Separator = '\t',
         };
-        var row1 = await reader.ReadRowAsync().ConfigureAwait(false);
+        var row1 = await reader.ReadRowAsync();
 
         row1[0].Should().Be("ab");
         row1[1].Should().Be("cd");

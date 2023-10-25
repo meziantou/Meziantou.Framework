@@ -11,7 +11,7 @@ public class AsyncLockTests
         var asyncLock = new AsyncLock();
         for (var i = 0; i < 2; i++)
         {
-            using (await asyncLock.LockAsync().ConfigureAwait(false))
+            using (await asyncLock.LockAsync())
             {
                 if (asyncLock.TryLock(out var lockObject))
                 {

@@ -27,15 +27,14 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="DiffEngine" Version="12.2.0" />
+    <PackageReference Include="DiffEngine" Version="12.4.0" />
     <PackageReference Include="DiffPlex" Version="1.7.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Text.Json" Version="7.0.2" />
   </ItemGroup>
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->

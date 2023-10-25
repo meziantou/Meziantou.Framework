@@ -20,7 +20,7 @@ public class AsyncReaderWriterLockTests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    using (await l.WriterLockAsync().ConfigureAwait(false))
+                    using (await l.WriterLockAsync())
                     {
                         count++;
                         count.Should().Be(1);
@@ -34,7 +34,7 @@ public class AsyncReaderWriterLockTests
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    using (await l.ReaderLockAsync().ConfigureAwait(false))
+                    using (await l.ReaderLockAsync())
                     {
                         count.Should().Be(0);
                         value.Should().BeLessOrEqualTo(128);
@@ -43,7 +43,7 @@ public class AsyncReaderWriterLockTests
             }
         }
 
-        await Task.WhenAll(tasks).ConfigureAwait(false);
+        await Task.WhenAll(tasks);
         value.Should().Be(64);
     }
 }

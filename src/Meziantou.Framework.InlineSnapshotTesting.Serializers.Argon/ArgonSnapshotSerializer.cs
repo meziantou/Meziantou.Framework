@@ -24,8 +24,6 @@ public sealed class ArgonSnapshotSerializer : SnapshotSerializer
             QuoteValue = false,
             EscapeHandling = EscapeHandling.None,
             Formatting = Formatting.Indented,
-            IndentChar = IndentationChar,
-            Indentation = IndentationCount,
         };
 
         Serializer.Serialize(writer, value);

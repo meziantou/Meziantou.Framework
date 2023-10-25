@@ -10,8 +10,8 @@ public class CsvWriterTests
     {
         using var sw = new StringWriter();
         var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "B").ConfigureAwait(false);
-        await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
+        await writer.WriteRowAsync("A", "B");
+        await writer.WriteRowAsync("C", "D");
 
         sw.ToString().Should().Be($"A,B{Environment.NewLine}C,D");
     }
@@ -21,8 +21,8 @@ public class CsvWriterTests
     {
         using var sw = new StringWriter();
         var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "B,").ConfigureAwait(false);
-        await writer.WriteRowAsync("C", "D").ConfigureAwait(false);
+        await writer.WriteRowAsync("A", "B,");
+        await writer.WriteRowAsync("C", "D");
 
         sw.ToString().Should().Be($@"A,""B,""{Environment.NewLine}C,D");
     }
@@ -32,7 +32,7 @@ public class CsvWriterTests
     {
         using var sw = new StringWriter();
         var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "\"B").ConfigureAwait(false);
+        await writer.WriteRowAsync("A", "\"B");
 
         sw.ToString().Should().Be("A,\"\"\"B\"");
     }
@@ -45,11 +45,11 @@ public class CsvWriterTests
         {
             EndOfLine = "\n",
         };
-        await writer.BeginRowAsync().ConfigureAwait(false);
-        await writer.WriteValuesAsync("A", "B").ConfigureAwait(false);
-        await writer.WriteValuesAsync("C", "D").ConfigureAwait(false);
-        await writer.BeginRowAsync().ConfigureAwait(false);
-        await writer.WriteValuesAsync("E").ConfigureAwait(false);
+        await writer.BeginRowAsync();
+        await writer.WriteValuesAsync("A", "B");
+        await writer.WriteValuesAsync("C", "D");
+        await writer.BeginRowAsync();
+        await writer.WriteValuesAsync("E");
 
         sw.ToString().Should().Be("A,B,C,D\nE");
     }
@@ -63,7 +63,7 @@ public class CsvWriterTests
             Quote = null,
         };
 
-        await writer.WriteRowAsync("A\"", "B").ConfigureAwait(false);
+        await writer.WriteRowAsync("A\"", "B");
 
         sw.ToString().Should().Be("A\",B");
     }
@@ -86,7 +86,7 @@ public class CsvWriterTests
         var writer = new CsvWriter(sw);
         foreach (var row in rows)
         {
-            await writer.WriteRowAsync(row).ConfigureAwait(false);
+            await writer.WriteRowAsync(row);
         }
 
         var csv = sw.ToString();
@@ -95,7 +95,7 @@ public class CsvWriterTests
 
         var rowIndex = -1;
         CsvRow csvRow;
-        while ((csvRow = await reader.ReadRowAsync().ConfigureAwait(false)) != null)
+        while ((csvRow = await reader.ReadRowAsync()) != null)
         {
             rowIndex++;
             csvRow.Values.ToList().Should().BeEquivalentTo(rows[rowIndex]);

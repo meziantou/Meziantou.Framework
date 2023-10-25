@@ -76,7 +76,7 @@ public class EnumerableTests
         {
             await Task.Yield();
             bag.Add(i);
-        }).ConfigureAwait(false);
+        });
 
         bag.Should().HaveCount(100);
     }
@@ -89,7 +89,7 @@ public class EnumerableTests
         {
             await Task.Yield();
             bag.Add(i);
-        }).ConfigureAwait(false);
+        });
 
         bag.Should().HaveCount(100);
     }

@@ -5,20 +5,19 @@ Syntax inspired from [KQL](https://docs.microsoft.com/en-us/sharepoint/dev/gener
 # Usage
 
 ````c#
-record Person(string FullName, DateTime DateOfBirth);
-
-var collection = new List<Person>(');
+var collection = new List<Person>();
 
 var queryBuilder = new QueryBuilder<Person>();
-
 queryBuilder.AddHandler<string>("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
-queryBuilder.AddRangeHandler<int>("age", (obj, value) => (DateTime.UtcNow - obj.DateOfBirth)..Contains(value, StringComparison.OrdinalIgnoreCase));
+queryBuilder.AddRangeHandler<int>("age", (obj, value) => value.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
 
 var query = queryBuilder.Build("name:sample query");
-query.Evaluate(new() { StringValue = "sample" })
+query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1)));
+
+record Person(string FullName, DateTime DateOfBirth);
 ````
 
-# Supported syntax
+# Syntax
 
 - Logical operators `NOT`, `AND`, `OR`
 - Priority using `(`, `)`
@@ -37,4 +36,3 @@ Examples:
 - `age>=21`
 - `is_open:true free form text`
 - `is_open:true AND NOT "free form text"`
-

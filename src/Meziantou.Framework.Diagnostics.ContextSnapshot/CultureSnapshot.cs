@@ -7,6 +7,11 @@ public sealed class CultureSnapshot
     internal CultureSnapshot()
     {
         GlobalizationInvariant = IsGlobalizationInvariant();
+        if (AppContext.TryGetSwitch("System.Globalization.PredefinedCulturesOnly", out var usePredefinedCulturesOnly))
+        {
+            UsePredefinedCulturesOnly = usePredefinedCulturesOnly;
+        }
+
         CurrentCulture = CultureInfoSnapshot.Get(CultureInfo.CurrentCulture);
         CurrentUICulture = CultureInfoSnapshot.Get(CultureInfo.CurrentUICulture);
         DefaultThreadCurrentCulture = CultureInfoSnapshot.Get(CultureInfo.DefaultThreadCurrentCulture);
@@ -14,6 +19,7 @@ public sealed class CultureSnapshot
     }
 
     public bool GlobalizationInvariant { get; }
+    public bool? UsePredefinedCulturesOnly { get; }
     public CultureInfoSnapshot? CurrentCulture { get; }
     public CultureInfoSnapshot? CurrentUICulture { get; }
     public CultureInfoSnapshot? DefaultThreadCurrentCulture { get; }

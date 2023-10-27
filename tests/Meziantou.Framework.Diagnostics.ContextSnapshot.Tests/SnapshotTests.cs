@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Tests;
 public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
-    public void Execute()
+    public void IsJsonSerializable()
     {
         var builder = new ContextSnapshotBuilder();
         builder.AddDefault();
@@ -24,6 +24,15 @@ public sealed class SnapshotTests(ITestOutputHelper testOutputHelper)
                 new JsonStringEnumConverter(),
             },
         }));
+    }
+
+    [Fact]
+    public void HasAppContextData()
+    {
+        var builder = new ContextSnapshotBuilder();
+        builder.AddAppContextData();
+        var snapshot = builder.BuildSnapshot();
+        Assert.NotEmpty(snapshot);
     }
 
     [Fact]

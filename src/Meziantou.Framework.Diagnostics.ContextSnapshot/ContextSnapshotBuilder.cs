@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
@@ -43,6 +44,7 @@ public sealed class ContextSnapshotBuilder
         AddCpu();
         AddCurrentProcess();
         AddAppContextData();
+        AddRuntimeFeatures();
         return this;
     }
 
@@ -66,6 +68,7 @@ public sealed class ContextSnapshotBuilder
     public ContextSnapshotBuilder AddAssemblyLoadContexts() => AddValue("AssemblyLoadContexts", AssemblyLoadContextSnapshot.Get());
     public ContextSnapshotBuilder AddThreadPool() => AddValue("ThreadPool", new ThreadPoolSnapshot());
     public ContextSnapshotBuilder AddCulture() => AddValue("Culture", new CultureSnapshot());
+    public ContextSnapshotBuilder AddRuntimeFeatures() => AddValue("RuntimeFeatures", new RuntimeFeaturesSnapshot());
 
     public ContextSnapshotBuilder AddCommonAppContext()
     {

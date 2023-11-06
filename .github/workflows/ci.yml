@@ -129,15 +129,6 @@ jobs:
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
 
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure()) &&  ${{ github.event.pull_request.head.repo.full_name == 'meziantou/Meziantou.Framework' }}
-        with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
-          path: ${{ env.TestResultsDirectory }}/**/*.trx
-          path-replace-backslashes: 'true'
-          reporter: dotnet-trx
-
   build_and_test_windows_x86:
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 30
@@ -197,14 +188,6 @@ jobs:
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure()) &&  ${{ github.event.pull_request.head.repo.full_name == 'meziantou/Meziantou.Framework' }}
-        with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
-          path: ${{ env.TestResultsDirectory }}/**/*.trx
-          path-replace-backslashes: 'true'
-          reporter: dotnet-trx
 
   test_trimming:
     runs-on: ubuntu-22.04

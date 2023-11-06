@@ -131,7 +131,7 @@ jobs:
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure()) && github.repository_owner == 'meziantou'
+        if: github.actor != 'dependabot[bot]' && (success() || failure()) &&  ${{ github.event.pull_request.head.repo.full_name == 'meziantou/Meziantou.Framework' }}
         with:
           name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           path: ${{ env.TestResultsDirectory }}/**/*.trx
@@ -199,7 +199,7 @@ jobs:
           path: ${{ env.TestResultsDirectory }}/**/*
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: github.actor != 'dependabot[bot]' && (success() || failure()) && github.repository_owner == 'meziantou'
+        if: github.actor != 'dependabot[bot]' && (success() || failure()) &&  ${{ github.event.pull_request.head.repo.full_name == 'meziantou/Meziantou.Framework' }}
         with:
           name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
           path: ${{ env.TestResultsDirectory }}/**/*.trx

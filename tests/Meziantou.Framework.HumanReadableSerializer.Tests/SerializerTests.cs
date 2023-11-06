@@ -1092,8 +1092,9 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void DateTime_Local()
     {
-        var currentUtcOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
-        AssertSerialization(new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Local), "2123-04-05T06:07:08" + (currentUtcOffset < TimeSpan.Zero ? "-" : "+") + currentUtcOffset.ToString(@"hh\:mm", CultureInfo.InvariantCulture));
+        var dateTime = new DateTime(2123, 4, 5, 6, 7, 8, DateTimeKind.Local);
+        var utcOffset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
+        AssertSerialization(dateTime, "2123-04-05T06:07:08" + (utcOffset < TimeSpan.Zero ? "-" : "+") + utcOffset.ToString(@"hh\:mm", CultureInfo.InvariantCulture));
     }
 
     [Fact]

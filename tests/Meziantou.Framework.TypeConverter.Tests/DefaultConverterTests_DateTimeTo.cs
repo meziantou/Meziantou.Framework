@@ -10,7 +10,7 @@ public class DefaultConverterTests_DateTimeTo
     public void TryConvert_DateTimeToDateTimeOffset()
     {
         var converter = new DefaultConverter();
-        var cultureInfo = CultureInfo.CurrentCulture;
+        var cultureInfo = new CultureInfo("en-US");
         var converted = converter.TryChangeType("6/12/2018 12:00:00 AM -05:00", cultureInfo, out DateTimeOffset value);
 
         converted.Should().BeTrue();

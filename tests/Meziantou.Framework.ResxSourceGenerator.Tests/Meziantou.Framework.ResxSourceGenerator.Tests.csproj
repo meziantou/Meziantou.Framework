@@ -11,6 +11,14 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.ResxSourceGenerator\Meziantou.Framework.ResxSourceGenerator.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.4.0" />
+    <PackageReference Include="Verify.Xunit" Version="22.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="**/*.received.cs" />
+    <Compile Remove="**/*.verified.cs" />
+    <None Include="**/*.received.cs" />
+    <None Include="**/*.verified.cs" />
   </ItemGroup>
 
 </Project>

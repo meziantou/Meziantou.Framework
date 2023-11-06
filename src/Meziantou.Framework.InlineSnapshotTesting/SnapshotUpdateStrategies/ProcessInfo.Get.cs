@@ -26,14 +26,13 @@ internal sealed partial record ProcessInfo
             if (contextProcess != null)
             {
                 var startTime = new DateTimeOffset(contextProcess.StartTime);
-                startTime = new DateTimeOffset(startTime.Ticks % TimeSpan.TicksPerMillisecond, startTime.Offset);
+                // Trim milliseconds to avoid some comparison issues
+                startTime = new DateTimeOffset(startTime.Ticks - startTime.Ticks % TimeSpan.TicksPerMillisecond, startTime.Offset);
 
                 return new ProcessInfo
                 {
                     ProcessId = contextProcess.Id,
                     ProcessName = contextProcess.ProcessName,
-
-                    // Trim milliseconds to avoid some comparison issues
                     ProcessStartedAt = startTime,
                 };
             }

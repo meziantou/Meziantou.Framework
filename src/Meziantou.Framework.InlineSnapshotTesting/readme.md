@@ -1,6 +1,6 @@
 ﻿# Meziantou.Framework.InlineSnapshotTesting
 
-`Meziantou.Framework.InlineSnapshotTesting` is a snapshot tool that simplifies the assertion of complex data models and documents. It is inspired on [Verify](https://github.com/VerifyTests/Verify).
+`Meziantou.Framework.InlineSnapshotTesting` is a snapshot testing library that simplifies the assertion of complex data models and documents. It is inspired by [Verify](https://github.com/VerifyTests/Verify).
 
 `InlineSnapshot` is called on the test result during the assertion phase. It serializes that result and update the expected value. On the next test execution, the result is again serialized and compared to the existing value. The test will fail if the two snapshots do not match: either the change is unexpected, or the reference snapshot needs to be updated to the new result.
 
@@ -8,7 +8,7 @@ On the development machine, a diff tool prompt to compare the expected snapshot 
 
 # How does it work
 
-First you can write a test with the following code:
+First, you can write a test with the following code:
 
 ````c#
 var data = new
@@ -19,7 +19,7 @@ var data = new
 };
 
 // No need to write the expected value
-InlineSnapshot.Validate(data, "");
+InlineSnapshot.Validate(data);
 ````
 
 Then, run the tests. It will show you a diff tool where you can compare the expected value and the new value.
@@ -32,6 +32,7 @@ var data = new
     LastName = "Barré",
     NickName = "meziantou",
 };
+
 InlineSnapshot.Validate(data, """
     FirstName: Gérald,
     LastName: Barré,
@@ -77,6 +78,7 @@ InlineSnapshot.CreateBuilder()
 ## Environment variables
 
 - `DiffEngine_Tool`: Set the default merge tool
+- `DiffEngine_Disabled`: Disable the diff tool even if set explicitly in the configuration
 
 ## Using helper methods
 

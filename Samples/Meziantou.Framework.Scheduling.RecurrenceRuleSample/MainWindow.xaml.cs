@@ -17,16 +17,16 @@ public sealed partial class MainWindow : Window
 
     private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
-        UpdateNextOccurences();
+        UpdateNextOccurrences();
     }
 
     [SuppressMessage("ApiDesign", "RS0030:Do not used banned APIs", Justification = "Use for UI")]
-    private void UpdateNextOccurences()
+    private void UpdateNextOccurrences()
     {
         if (RecurrenceRule.TryParse(TbxRecurrenceRule.Text, out var rule, out var error))
         {
-            var occurences = rule.GetNextOccurrences(DateTime.Now).Select(date => date.ToString("F", CultureInfo.CurrentCulture)).Take(50).ToList();
-            NextOccurences.ItemsSource = occurences;
+            var occurrences = rule.GetNextOccurrences(DateTime.Now).Select(date => date.ToString("F", CultureInfo.CurrentCulture)).Take(50).ToList();
+            NextOccurences.ItemsSource = occurrences;
         }
         else
         {

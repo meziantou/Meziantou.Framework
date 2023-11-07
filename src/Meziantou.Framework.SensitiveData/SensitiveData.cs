@@ -9,29 +9,36 @@ namespace Meziantou.Framework;
 // https://source.dot.net/#Microsoft.AspNetCore.DataProtection/Secret.cs,726e6ae00d63e382
 public static class SensitiveData
 {
+    /// <summary>
+    /// Create an instance of <see cref="SensitiveData{Char}" /> with the <paramref name="value"/>.
+    /// </summary>
+    /// <param name="value">The sensitive data</param>
+    /// <returns></returns>
     public static SensitiveData<char> Create(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return new(value);
     }
 
+    /// Create an instance of <see cref="SensitiveData{T}" /> with the <paramref name="buffer"/>.
     public static SensitiveData<T> Create<T>(T[] buffer) where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(buffer);
         return new(buffer);
     }
 
+    /// Create an instance of <see cref="SensitiveData{T}" /> with the <paramref name="buffer"/>.
     public static SensitiveData<T> Create<T>(ReadOnlySpan<T> buffer) where T : unmanaged => new(buffer);
 
     public static string RevealToString(this SensitiveData<char> secret)
     {
-        return string.Create(secret.GetLength(), secret, (span, buffer) => buffer.CopyTo(span));
+        return string.Create(secret.GetLength(), secret, (span, buffer) => buffer.RevealInto(span));
     }
 }
 
 /// <summary>
 /// Represent sensitive data which should be difficult to accidentally disclose, even accounting for some types of application bugs.
-/// For For example, we don't want accidental ArrayPool misuse to disclose the contents of shrouded buffers.But there's no effort to thwart *intentional* disclosure of these
+/// However, there's no effort to thwart <i>intentional</i> disclosure of these
 /// contents, such as through a debugger or memory dump utility.
 /// </summary>
 [TypeConverter(typeof(SensitiveDataTypeConverter))]
@@ -45,8 +52,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// </summary>
     /// <param name="contents">The contents to copy into the new instance.</param>
     /// <remarks>
-    /// The newly-returned <see cref="SensitiveData{T}"/> instance maintains its
-    /// own copy of the data separate from <paramref name="contents"/>.
+    /// The newly-returned <see cref="SensitiveData{T}"/> instance maintains its own copy of the data separate from <paramref name="contents"/>.
     /// </remarks>
     internal SensitiveData(ReadOnlySpan<T> contents)
     {
@@ -67,26 +73,11 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     }
 
     /// <summary>
-    /// Copies the contents of this <see cref="SensitiveData{T}"/> instance to
-    /// a destination buffer.
+    /// Copies the contents of this <see cref="SensitiveData{T}"/> instance to a destination buffer.
     /// </summary>
-    /// <param name="destination">
-    /// The destination buffer which should receive the contents.
-    /// This buffer must be at least <see cref="GetLength"/> elements in length.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="destination"/>'s length is smaller than <see cref="GetLength"/>.
-    /// </exception>
-    /// <exception cref="ObjectDisposedException">
-    /// This instance has already been disposed.
-    /// </exception>
-    public void CopyTo(Span<T> destination)
-    {
-        ThrowIfDisposed();
-        var span = _data.GetSpan();
-        span.CopyTo(destination);
-    }
-
+    /// <param name="destination">The destination buffer which should receive the contents. This buffer must be at least <see cref="GetLength"/> elements in length.</param>
+    /// <exception cref="ArgumentException"><paramref name="destination"/>'s length is smaller than <see cref="GetLength"/>.</exception>
+    /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public int RevealInto(Span<T> destination)
     {
         ThrowIfDisposed();
@@ -95,6 +86,10 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         return span.Length;
     }
 
+    /// <summary>
+    /// Copies the contents of this <see cref="SensitiveData{T}"/> instance to a new array.
+    /// </summary>
+    /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public T[] RevealToArray()
     {
         ThrowIfDisposed();

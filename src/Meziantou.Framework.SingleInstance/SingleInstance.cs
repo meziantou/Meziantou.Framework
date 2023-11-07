@@ -7,22 +7,15 @@ using System.Security.Principal;
 
 namespace Meziantou.Framework;
 
-public sealed class SingleInstance : IDisposable
+public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
-
-    private readonly Guid _applicationId;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    public SingleInstance(Guid applicationId)
-    {
-        _applicationId = applicationId;
-    }
-
-    private string PipeName => "Local\\Pipe" + _applicationId.ToString();
+    private string PipeName => "Local\\Pipe" + applicationId.ToString();
 
     public bool StartServer { get; set; } = true;
 
@@ -136,7 +129,7 @@ public sealed class SingleInstance : IDisposable
     {
         if (_mutex == null)
         {
-            var mutexName = "Local\\Mutex" + _applicationId.ToString();
+            var mutexName = "Local\\Mutex" + applicationId.ToString();
             _mutex = new Mutex(initiallyOwned: false, name: mutexName);
         }
 

@@ -281,7 +281,7 @@ public abstract class RecurrenceRule
         };
     }
 
-    protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int>? setPositions)
+    private protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int>? setPositions)
     {
         if (setPositions == null || !setPositions.Any())
             return source;
@@ -308,7 +308,7 @@ public abstract class RecurrenceRule
         return result;
     }
 
-    protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
+    private protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
     {
         return list == null || list.Count == 0;
     }

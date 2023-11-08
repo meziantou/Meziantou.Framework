@@ -7,9 +7,6 @@ public sealed class ArgonSnapshotSerializer : SnapshotSerializer
 {
     private static readonly JsonSerializer Serializer = new();
 
-    public char IndentationChar { get; set; } = ' ';
-    public int IndentationCount { get; set; } = 4;
-
     public override string Serialize(object? value)
     {
         var result = new StringBuilder();

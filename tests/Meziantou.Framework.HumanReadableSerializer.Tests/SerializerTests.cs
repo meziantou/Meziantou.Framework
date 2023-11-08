@@ -1009,7 +1009,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void Type_Covariant_Contravariant() => AssertSerialization(typeof(ICovariantContravariantInterface<,>), "Meziantou.Framework.HumanReadable.Tests.SerializerTests+ICovariantContravariantInterface<in T1, out T2>, Meziantou.Framework.HumanReadableSerializer.Tests");
 
-#if NET471
+#if NET472
     [Fact]
     public void Type_List_OpenGeneric() => AssertSerialization(typeof(List<>), "System.Collections.Generic.List<T>, mscorlib");
 #else
@@ -1017,7 +1017,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void Type_List_OpenGeneric() => AssertSerialization(typeof(List<>), "System.Collections.Generic.List<T>, System.Private.CoreLib");
 #endif
 
-#if NET471
+#if NET472
     [Fact]
     public void Type_List_Int32() => AssertSerialization(typeof(List<int>), "System.Collections.Generic.List<System.Int32>, mscorlib");
 #else

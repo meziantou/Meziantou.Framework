@@ -26,7 +26,7 @@ public sealed class HttpOptionsTests : SerializerTestsBase
             RequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.com/foo"),
         };
 
-#if NET471
+#if NET472
         AssertSerialization(httpContent, new HumanReadableHttpResponseMessageOptions { RequestMessageFormat = HttpRequestMessageFormat.Full }, """
             StatusCode: 200 (OK)
             Content:

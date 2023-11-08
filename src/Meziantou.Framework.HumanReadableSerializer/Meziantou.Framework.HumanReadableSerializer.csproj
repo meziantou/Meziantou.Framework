@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net471</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -15,7 +15,7 @@
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'net471'">
+  <ItemGroup Condition="$(TargetFramework) == 'net472'">
     <PackageReference Include="System.Memory" Version="4.5.5" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />

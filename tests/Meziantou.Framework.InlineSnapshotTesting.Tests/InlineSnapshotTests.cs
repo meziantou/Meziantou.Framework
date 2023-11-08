@@ -428,6 +428,7 @@ public sealed class InlineSnapshotTests
         }
 
         psi.EnvironmentVariables.Add("DiffEngine_Disabled", "true");
+        psi.EnvironmentVariables.Add("MF_CurrentDirectory", Environment.CurrentDirectory);
         if (environmentVariables != null)
         {
             foreach (var variable in environmentVariables)

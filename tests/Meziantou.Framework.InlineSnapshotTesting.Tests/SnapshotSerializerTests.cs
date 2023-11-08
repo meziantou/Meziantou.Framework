@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Xunit;
 
-#if NET471 || NET472
+#if NET472
 using System.Net.Http;
 #endif
 

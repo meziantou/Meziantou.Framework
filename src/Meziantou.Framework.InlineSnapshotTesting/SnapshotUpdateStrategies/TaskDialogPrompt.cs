@@ -88,6 +88,9 @@ internal sealed class TaskDialogPrompt : Prompt
             return exeLocation;
 
 #if DEBUG_TaskDialogPrompt
+        //Debugger.Launch();
+        //Debugger.Break();
+
         foreach (var configuration in new[] { "release", "debug" })
         {
             var pathFromRoot = Path.Combine("artifacts", "bin", Path.GetFileNameWithoutExtension(fileName), configuration, fileName);
@@ -119,6 +122,20 @@ internal sealed class TaskDialogPrompt : Prompt
                     exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
                     if (File.Exists(exeLocation))
                         return exeLocation;
+                }
+            }
+
+            {
+                var mfCurrentDirectory = Environment.GetEnvironmentVariable("MF_CurrentDirectory");
+                if (!string.IsNullOrEmpty(mfCurrentDirectory))
+                {
+                    var root = FindParentDirectoryByName(mfCurrentDirectory, "Meziantou.Framework");
+                    if (root != null)
+                    {
+                        exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
+                        if (File.Exists(exeLocation))
+                            return exeLocation;
+                    }
                 }
             }
 

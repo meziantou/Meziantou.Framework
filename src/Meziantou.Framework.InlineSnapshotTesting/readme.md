@@ -93,3 +93,16 @@ static void Helper(string expected, [CallerFilePath] string filePath = null, [Ca
     InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
 }
 ````
+
+# Examples
+
+- [Display invisible characters](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/DisplayInvisibleCharacters.cs)
+- [Configure allowed C# string formats](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ConfigureCSharpStringFormat.cs)
+- [Indent Json snapshot](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/HttpContent_format_json_response.cs)
+- [Reorder Json properties](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Json_reorder_properties.cs)
+- [Redact nonce in html response](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/HttpContent_redact_nonce.cs)
+- [Scrub guid](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_guid.cs)
+- [Scrub lines containing a specific substring](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_lines_containing_specific_text.cs)
+- [Scrub lines matching a predicate](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_lines_matching_a_predicate.cs)
+- [Scrub lines matching a regex](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Scrub_lines_matching_a_regex.cs)
+- [Scrub lines with rewriting](https://github.com/meziantou/Meziantou.Framework/blob/main/Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Srub_replace_line_content.cs)

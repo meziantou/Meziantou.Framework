@@ -91,7 +91,7 @@ public static partial class ProcessExtensions
                 try
                 {
                     p = entry.ToProcess();
-                    if (p == null || p.StartTime > process.StartTime)
+                    if (p is null || p.StartTime > process.StartTime)
                         continue;
                 }
                 catch (ArgumentException)
@@ -99,7 +99,7 @@ public static partial class ProcessExtensions
                     // process might have exited since the snapshot, ignore it
                 }
 
-                if (p != null)
+                if (p is not null)
                 {
                     yield return p;
                 }
@@ -159,7 +159,7 @@ public static partial class ProcessExtensions
                 using var stream = File.OpenRead("/proc/" + processId.ToStringInvariant() + "/status");
                 using var sr = new StreamReader(stream);
                 string? line;
-                while ((line = sr.ReadLine()) != null)
+                while ((line = sr.ReadLine()) is not null)
                 {
                     const string Prefix = "PPid:";
                     if (line.StartsWith(Prefix, StringComparison.Ordinal))
@@ -187,11 +187,11 @@ public static partial class ProcessExtensions
         ArgumentNullException.ThrowIfNull(process);
 
         var parentProcessId = GetParentProcessId(process);
-        if (parentProcessId == null)
+        if (parentProcessId is null)
             return null;
 
         var parentProcess = Process.GetProcessById(parentProcessId.Value);
-        if (parentProcess == null || parentProcess.StartTime > process.StartTime)
+        if (parentProcess is null || parentProcess.StartTime > process.StartTime)
             return null;
 
         return parentProcess;
@@ -241,7 +241,7 @@ public static partial class ProcessExtensions
                 try
                 {
                     var child = entry.ToProcess();
-                    if (child == null || child.StartTime < process.StartTime)
+                    if (child is null || child.StartTime < process.StartTime)
                         continue;
 
                     children.Add(child);

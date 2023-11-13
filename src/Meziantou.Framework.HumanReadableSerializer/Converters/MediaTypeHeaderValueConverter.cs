@@ -6,7 +6,7 @@ internal sealed class MediaTypeHeaderValueConverter : HumanReadableConverter<Med
 {
     protected override void WriteValue(HumanReadableTextWriter writer, MediaTypeHeaderValue? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         writer.WriteValue(value.ToString());
     }

@@ -29,7 +29,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
-        if (doc == null)
+        if (doc is null)
             return;
 
         IReadOnlyList<(string Path, XDocument Document)>? csprojs = null;
@@ -64,7 +64,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
     private static async Task<IReadOnlyList<(string Path, XDocument Document)>> LoadAssociatedCsprojAsync(ScanFileContext context)
     {
         var directory = Path.GetDirectoryName(context.FullPath);
-        if (directory == null)
+        if (directory is null)
             return Array.Empty<(string, XDocument)>();
 
         var files = context.FileSystem.GetFiles(directory, "*.csproj", SearchOption.TopDirectoryOnly);
@@ -75,7 +75,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             try
             {
                 var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(stream, context.CancellationToken).ConfigureAwait(false);
-                if (doc == null)
+                if (doc is null)
                     continue;
 
                 result.Add((file, doc));
@@ -131,7 +131,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
     private static bool FindDependencyInElementValue(ScanFileContext context, Dependency dependency, string file, XElement element)
     {
-        if (element == null)
+        if (element is null)
             return false;
 
         var value = element.Value;
@@ -147,7 +147,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
     private static void FindDependencyInAttributeValue(ScanFileContext context, Dependency dependency, string file, XAttribute? attribute)
     {
-        if (attribute == null)
+        if (attribute is null)
             return;
 
         var value = attribute.Value;
@@ -156,14 +156,14 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             return;
 
         var versionStartColumn = indexOf + (dependency.Name + '.').Length;
-        Debug.Assert(attribute.Parent != null);
+        Debug.Assert(attribute.Parent is not null);
         var versionLocation = new XmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: versionStartColumn, length: dependency.Version!.Length);
         context.ReportDependency(new Dependency(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
     }
 
     private static void FindDependencyInAssemblyName(ScanFileContext context, Dependency dependency, string file, XAttribute? attribute)
     {
-        if (attribute == null)
+        if (attribute is null)
             return;
 
         var value = attribute.Value;
@@ -173,7 +173,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             var version = match.Groups["Version"].Value;
             if (Version.TryParse(version, out var v) && v != VersionZero && v != VersionOne)
             {
-                Debug.Assert(attribute.Parent != null);
+                Debug.Assert(attribute.Parent is not null);
                 var versionLocation = new AssemblyVersionXmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: match.Index, length: match.Value.Length);
                 context.ReportDependency(new Dependency(dependency.Name, match.Value, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
             }

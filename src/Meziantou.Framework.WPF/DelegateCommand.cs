@@ -52,7 +52,7 @@ public static class DelegateCommand
 
     private static Func<object?, Task> WrapAction(Func<Task>? action)
     {
-        if (action == null)
+        if (action is null)
             return DefaultExecuteAsync;
 
         return _ => action();
@@ -60,7 +60,7 @@ public static class DelegateCommand
 
     private static Action<object?> WrapAction(Action? action)
     {
-        if (action == null)
+        if (action is null)
             return DefaultExecute;
 
         return _ => action();
@@ -68,7 +68,7 @@ public static class DelegateCommand
 
     private static Func<object?, bool> WrapAction(Func<bool>? action)
     {
-        if (action == null)
+        if (action is null)
             return CanExecuteTrue;
 
         return _ => action();

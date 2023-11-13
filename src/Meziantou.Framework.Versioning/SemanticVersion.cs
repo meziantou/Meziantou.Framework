@@ -31,7 +31,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     public SemanticVersion(int major, int minor, int patch, string? prereleaseLabel, string? metadata)
         : this(major, minor, patch)
     {
-        if (prereleaseLabel != null)
+        if (prereleaseLabel is not null)
         {
             var index = 0;
             PrereleaseLabels = ReadPrereleaseIdentifiers(prereleaseLabel.AsSpan(), ref index);
@@ -39,7 +39,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 throw new ArgumentException("Value is not valid", nameof(prereleaseLabel));
         }
 
-        if (metadata != null)
+        if (metadata is not null)
         {
             var index = 0;
             Metadata = TryReadMetadataIdentifiers(metadata.AsSpan(), ref index);
@@ -51,38 +51,38 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
     public SemanticVersion(int major, int minor, int patch, IEnumerable<string>? prereleaseLabel, IEnumerable<string>? metadata)
         : this(major, minor, patch)
     {
-        if (prereleaseLabel != null)
+        if (prereleaseLabel is not null)
         {
             ReadOnlyList<string>? labels = null;
             foreach (var label in prereleaseLabel)
             {
-                if (label == null || !IsPrereleaseIdentifier(label.AsSpan()))
+                if (label is null || !IsPrereleaseIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(prereleaseLabel));
 
                 labels ??= [];
                 labels.Add(label);
             }
 
-            if (labels != null)
+            if (labels is not null)
             {
                 labels.Freeze();
                 PrereleaseLabels = labels;
             }
         }
 
-        if (metadata != null)
+        if (metadata is not null)
         {
             ReadOnlyList<string>? labels = null;
             foreach (var label in metadata)
             {
-                if (label == null || !IsMetadataIdentifier(label.AsSpan()))
+                if (label is null || !IsMetadataIdentifier(label.AsSpan()))
                     throw new ArgumentException($"Label '{label}' is not valid", nameof(metadata));
 
                 labels ??= [];
                 labels.Add(label);
             }
 
-            if (labels != null)
+            if (labels is not null)
             {
                 labels.Freeze();
                 Metadata = labels;
@@ -341,7 +341,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 break;
         }
 
-        return result == null ? EmptyArray : ReadOnlyList.From(result);
+        return result is null ? EmptyArray : ReadOnlyList.From(result);
     }
 
     private static bool IsPrereleaseIdentifier(ReadOnlySpan<char> label)

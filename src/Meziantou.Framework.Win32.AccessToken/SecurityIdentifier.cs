@@ -32,7 +32,7 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
 
     public override string ToString()
     {
-        if (Name == null)
+        if (Name is null)
             return Sid;
 
         return FullName;
@@ -52,7 +52,7 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         }
         finally
         {
-            if (resultSid.Value != null)
+            if (resultSid.Value is not null)
             {
                 Marshal.FreeHGlobal((nint)resultSid.Value);
             }

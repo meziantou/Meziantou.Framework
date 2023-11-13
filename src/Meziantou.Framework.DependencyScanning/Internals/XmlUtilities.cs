@@ -41,7 +41,7 @@ internal static class XmlUtilities
     {
         var settings = new XmlWriterSettings
         {
-            OmitXmlDeclaration = document.Declaration == null,
+            OmitXmlDeclaration = document.Declaration is null,
             CloseOutput = false,
             Async = true,
             Indent = false,
@@ -67,7 +67,7 @@ internal static class XmlUtilities
             query = "/*[" + index.ToString(CultureInfo.InvariantCulture) + "]" + query;
             current = current.Parent;
         }
-        while (current != null);
+        while (current is not null);
 
         return query;
     }
@@ -75,7 +75,7 @@ internal static class XmlUtilities
     public static int GetElementIndex(XNode element)
     {
         var index = 0;
-        while (element.PreviousNode != null)
+        while (element.PreviousNode is not null)
         {
             if (element.PreviousNode.NodeType == XmlNodeType.Element)
             {

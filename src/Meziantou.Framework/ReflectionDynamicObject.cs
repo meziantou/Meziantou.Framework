@@ -70,7 +70,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
     {
-        if (_originalObject == null)
+        if (_originalObject is null)
         {
             foreach (var indexer in _typeCache.StaticIndexers)
             {
@@ -93,7 +93,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object? value)
     {
-        if (_originalObject == null)
+        if (_originalObject is null)
         {
             foreach (var indexer in _typeCache.StaticIndexers)
             {
@@ -116,7 +116,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
     {
         var type = _typeCache.Type;
-        var flags = _originalObject == null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
+        var flags = _originalObject is null ? StaticDefaultBindingFlags : InstanceDefaultBindingFlags;
         flags |= BindingFlags.InvokeMethod;
 
         while (type != null)
@@ -182,7 +182,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override string? ToString()
     {
-        if (_originalObject != null)
+        if (_originalObject is not null)
             return _originalObject.ToString();
 
         return null;
@@ -190,7 +190,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     private bool TryGetMemberValue(string name, out object? result)
     {
-        if (_originalObject == null)
+        if (_originalObject is null)
         {
             if (_typeCache.StaticProperties.TryGetValue(name, out var property))
             {
@@ -225,7 +225,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     private bool TrySetMemberValue(string name, object? value)
     {
-        if (_originalObject == null)
+        if (_originalObject is null)
         {
             if (_typeCache.StaticProperties.TryGetValue(name, out var property))
             {

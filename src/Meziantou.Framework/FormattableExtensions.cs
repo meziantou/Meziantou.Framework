@@ -11,7 +11,7 @@ public static class FormattableExtensions
 
     public static string ToStringInvariant<T>(this T value, string? format) where T : IFormattable
     {
-        if (value == null)
+        if (value is null)
             return "";
 
         return value.ToString(format, CultureInfo.InvariantCulture) ?? "";

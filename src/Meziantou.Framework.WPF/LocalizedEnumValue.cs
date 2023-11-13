@@ -28,7 +28,7 @@ public sealed class LocalizedEnumValue
     {
         get
         {
-            if (_displayAttribute != null)
+            if (_displayAttribute is not null)
                 return _displayAttribute.GetName();
 
             return _name!;

@@ -35,7 +35,7 @@ public sealed class QueryStringService
         {
             // Get the name of the parameter to read from the query string
             var parameterName = GetQueryStringParameterName(property);
-            if (parameterName == null)
+            if (parameterName is null)
                 continue; // The property is not decorated by [QueryStringParameterAttribute]
 
             if (queryString.TryGetValue(parameterName, out var value))
@@ -61,7 +61,7 @@ public sealed class QueryStringService
         foreach (var property in GetProperties<T>())
         {
             var parameterName = GetQueryStringParameterName(property);
-            if (parameterName == null)
+            if (parameterName is null)
                 continue;
 
             var value = property.GetValue(component);
@@ -127,10 +127,10 @@ public sealed class QueryStringService
         var attribute = property.GetCustomAttribute<QueryStringParameterAttribute>();
 #pragma warning restore CS0618
 
-        if (attribute != null)
+        if (attribute is not null)
             return attribute.Name ?? property.Name;
 
-        if (property.GetCustomAttribute<ParameterAttribute>() != null && property.GetCustomAttribute<SupplyParameterFromQueryAttribute>() is { } supplyAttribute)
+        if (property.GetCustomAttribute<ParameterAttribute>() is not null && property.GetCustomAttribute<SupplyParameterFromQueryAttribute>() is { } supplyAttribute)
             return supplyAttribute.Name ?? property.Name;
 
         return null;

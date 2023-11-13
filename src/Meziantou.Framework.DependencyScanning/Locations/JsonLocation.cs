@@ -45,7 +45,7 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
             var jobject = JObject.Parse(text);
             if (jobject.SelectToken(JsonPath) is JValue token)
             {
-                if (oldValue != null)
+                if (oldValue is not null)
                 {
                     if (token.Value is not string existingValue || existingValue != oldValue)
                         throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");

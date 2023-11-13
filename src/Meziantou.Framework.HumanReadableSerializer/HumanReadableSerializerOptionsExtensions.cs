@@ -13,7 +13,7 @@ public static class HumanReadableSerializerOptionsExtensions
             Condition = HumanReadableIgnoreCondition.Custom,
             CustomCondition = data =>
             {
-                if (data.Exception == null)
+                if (data.Exception is null)
                     return false;
 
                 return exceptionType.IsAssignableFrom(data.Exception.GetType());

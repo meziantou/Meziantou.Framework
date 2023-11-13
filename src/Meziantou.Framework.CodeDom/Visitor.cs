@@ -4,7 +4,7 @@ public class Visitor
 {
     public virtual void Visit(CodeObject? codeObject)
     {
-        if (codeObject == null)
+        if (codeObject is null)
             return;
 
         switch (codeObject)
@@ -446,7 +446,7 @@ public class Visitor
 
     private void VisitTypeReferenceIfNotNull(TypeReference? typeReference)
     {
-        if (typeReference != null)
+        if (typeReference is not null)
         {
             VisitTypeReference(typeReference);
         }
@@ -884,7 +884,7 @@ public class Visitor
 
     private void VisitCollection<T>(IEnumerable<T> items) where T : CodeObject
     {
-        if (items == null)
+        if (items is null)
             return;
 
         foreach (var item in items)
@@ -895,7 +895,7 @@ public class Visitor
 
     private void VisitTypeReferenceCollection(IEnumerable<TypeReference> items)
     {
-        if (items == null)
+        if (items is null)
             return;
 
         foreach (var item in items)

@@ -28,7 +28,7 @@ public abstract class InlineTagHelper : TagHelper
         entry.AddExpirationToken(changeToken);
 
         var file = fileProvider.GetFileInfo(path);
-        if (file == null || !file.Exists)
+        if (file is null || !file.Exists)
             return default;
 
         return await getContent(file);
@@ -36,7 +36,7 @@ public abstract class InlineTagHelper : TagHelper
 
     protected Task<string?> GetFileContentAsync(string? path)
     {
-        if (path == null)
+        if (path is null)
             return Task.FromResult<string?>(null);
 
         return _cache.GetOrCreateAsync(CacheKeyPrefix + path, entry =>
@@ -47,7 +47,7 @@ public abstract class InlineTagHelper : TagHelper
 
     protected Task<string?> GetFileContentBase64Async(string? path)
     {
-        if (path == null)
+        if (path is null)
             return Task.FromResult<string?>(null);
 
         return _cache.GetOrCreateAsync(CacheKeyPrefix + path, entry =>

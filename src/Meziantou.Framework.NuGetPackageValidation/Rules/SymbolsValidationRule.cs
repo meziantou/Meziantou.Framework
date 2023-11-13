@@ -78,7 +78,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     }
 
                     // load pdb next to the file if a portable pdb is expected
-                    if (metadataReaderProvider == null && codeViewEntry.DataSize != 0)
+                    if (metadataReaderProvider is null && codeViewEntry.DataSize != 0)
                     {
                         try
                         {
@@ -91,7 +91,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         }
 
                         // load pdb from the symbol package
-                        if (metadataReaderProvider == null && context.SymbolPackage != null)
+                        if (metadataReaderProvider is null && context.SymbolPackage is not null)
                         {
                             try
                             {
@@ -105,7 +105,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         }
 
                         // load pdb from the symbol server
-                        if (metadataReaderProvider == null)
+                        if (metadataReaderProvider is null)
                         {
                             // Portable PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PortablePDBFileKeyGenerator.cs#L84
                             // Windows PDBs, see: https://github.com/dotnet/symstore/blob/83032682c049a2b879790c615c27fbc785b254eb/src/Microsoft.SymbolStore/KeyGenerators/PDBFileKeyGenerator.cs#L52
@@ -149,16 +149,16 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                     }
                                 }
 
-                                if (metadataReaderProvider != null)
+                                if (metadataReaderProvider is not null)
                                     break;
                             }
                         }
 
                         // Ensure the pdb is valid for the dll
-                        if (metadataReaderProvider != null)
+                        if (metadataReaderProvider is not null)
                         {
                             var pdbHeader = metadataReaderProvider.GetMetadataReader().DebugMetadataHeader;
-                            if (pdbHeader == null)
+                            if (pdbHeader is null)
                             {
                                 metadataReaderProvider = null;
                             }
@@ -177,9 +177,9 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                         }
                     }
 
-                    if (metadataReaderProvider == null)
+                    if (metadataReaderProvider is null)
                     {
-                        if (PackageFileExists(context.Package, pdbPath) || (context.SymbolPackage != null && PackageFileExists(context.SymbolPackage, pdbPath)))
+                        if (PackageFileExists(context.Package, pdbPath) || (context.SymbolPackage is not null && PackageFileExists(context.SymbolPackage, pdbPath)))
                         {
                             context.ReportError(ErrorCodes.FullPdb, "Symbol file is not a portable PDB", fileName: item,
                                 helpText: "Update the csproj file with '<DebugType>Portable</DebugType>' or '<DebugType>embedded</DebugType>' (https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/compiler-options/code-generation?WT.mc_id=DT-MVP-5003978#debugtype)");
@@ -230,11 +230,11 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 
                         var isEmbeddedFile = IsEmbeddedDocument(reader, documentHandle);
                         var url = sourceLink?.GetUrl(name);
-                        if (!isEmbeddedFile && url == null)
+                        if (!isEmbeddedFile && url is null)
                         {
                             context.ReportError(ErrorCodes.SourceFileNotAccessible, $"Source file '{name}' is not accessible from the symbols", fileName: item);
                         }
-                        else if (!isEmbeddedFile && url != null)
+                        else if (!isEmbeddedFile && url is not null)
                         {
                             if (!context.IsRuleExcluded(ErrorCodes.UrlIsNotAccessible) && !context.IsRuleExcluded(ErrorCodes.FileHashIsNotValid))
                             {
@@ -301,15 +301,15 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 #pragma warning restore CA1508
 
                     metadataReaderProvider?.Dispose();
-                    if (pdbStreamSeekable != null)
+                    if (pdbStreamSeekable is not null)
                     {
                         await pdbStreamSeekable.DisposeAsync().ConfigureAwait(false);
                     }
-                    if (pdbStream != null)
+                    if (pdbStream is not null)
                     {
                         await pdbStream.DisposeAsync().ConfigureAwait(false);
                     }
-                    if (dllStream != null)
+                    if (dllStream is not null)
                     {
                         await dllStream.DisposeAsync().ConfigureAwait(false);
                     }
@@ -474,7 +474,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
 
         public string? GetUrl(string file)
         {
-            if (Documents == null)
+            if (Documents is null)
                 return null;
 
             foreach (var key in Documents.Keys)

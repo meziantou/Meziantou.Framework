@@ -56,7 +56,7 @@ public class InputDateTime<TValue> : InputDate<TValue>
 
         if (success)
         {
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             validationErrorMessage = null;
             return true;
         }

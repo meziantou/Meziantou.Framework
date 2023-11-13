@@ -10,7 +10,7 @@ internal static class SectionsHelper
     {
         var values = new Dictionary<string, string>(StringComparer.Ordinal);
         var list = content?.Split(Separators, StringSplitOptions.RemoveEmptyEntries);
-        if (list != null)
+        if (list is not null)
         {
             foreach (var line in list)
             {

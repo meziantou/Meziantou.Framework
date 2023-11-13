@@ -22,20 +22,20 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         var folder = Path.GetDirectoryName(path);
 
         using var configuration = PromptConfigurationFile.LoadFromPath(FilePath);
-        if (configuration.DefaultMode != null)
+        if (configuration.DefaultMode is not null)
             return GetStrategy(configuration.DefaultMode.Value);
 
-        if (configuration.Entries != null)
+        if (configuration.Entries is not null)
         {
             foreach (var entry in configuration.Entries)
             {
                 if (entry.IsExpired)
                     continue;
 
-                if (entry.File != null && entry.File != path)
+                if (entry.File is not null && entry.File != path)
                     continue;
 
-                if (entry.Folder != null && entry.Folder != folder)
+                if (entry.Folder is not null && entry.Folder != folder)
                     continue;
 
                 if (entry.Process != null && (context.ParentProcessInfo == null || entry.Process != context.ParentProcessInfo))

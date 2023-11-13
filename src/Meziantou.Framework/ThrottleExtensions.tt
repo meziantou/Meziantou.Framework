@@ -33,12 +33,12 @@ namespace Meziantou.Framework
 <# if (i > 0) { #>
                 args = ValueTuple.Create(<#= GetArgsString(i, "arg") #>);
 <# } #>
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>

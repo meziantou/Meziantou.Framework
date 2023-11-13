@@ -49,7 +49,7 @@ public sealed class TimeZoneService : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _cts.CancelAsync();
-        if (_module != null)
+        if (_module is not null)
         {
             try
             {

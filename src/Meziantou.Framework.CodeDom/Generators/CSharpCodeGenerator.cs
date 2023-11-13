@@ -213,7 +213,7 @@ public partial class CSharpCodeGenerator
         writer.Write("enum ");
         WriteIdentifier(writer, enumeration.Name);
 
-        if (enumeration.BaseType != null)
+        if (enumeration.BaseType is not null)
         {
             writer.Write(" : ");
             WriteTypeReference(writer, enumeration.BaseType);
@@ -240,7 +240,7 @@ public partial class CSharpCodeGenerator
     {
         WriteCustomAttributes(writer, member.CustomAttributes);
         WriteIdentifier(writer, member.Name);
-        if (member.Value != null)
+        if (member.Value is not null)
         {
             writer.Write(" = ");
             WriteExpression(writer, member.Value);
@@ -250,7 +250,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteDelegateDeclaration(IndentedTextWriter writer, DelegateDeclaration d)
     {
         writer.Write("delegate ");
-        if (d.ReturnType == null)
+        if (d.ReturnType is null)
         {
             writer.Write("void ");
         }
@@ -281,7 +281,7 @@ public partial class CSharpCodeGenerator
     {
         WriteCustomAttributes(writer, member.CustomAttributes);
         WriteModifiers(writer, member.Modifiers);
-        if (member.ReturnType == null)
+        if (member.ReturnType is null)
         {
             writer.Write("void ");
         }
@@ -291,7 +291,7 @@ public partial class CSharpCodeGenerator
             writer.Write(' ');
         }
 
-        if (member.PrivateImplementationType != null)
+        if (member.PrivateImplementationType is not null)
         {
             WriteTypeReference(writer, member.PrivateImplementationType);
             writer.Write('.');
@@ -302,13 +302,13 @@ public partial class CSharpCodeGenerator
         writer.Write("(");
         WriteMethodArguments(writer, member.Arguments);
         writer.Write(")");
-        if (member.Statements != null || member.HasConstraints())
+        if (member.Statements is not null || member.HasConstraints())
         {
             writer.WriteLine();
         }
 
         WriteGenericParameterConstraints(writer, member);
-        if (member.Statements == null)
+        if (member.Statements is null)
         {
             if (member.HasConstraints())
             {
@@ -337,14 +337,14 @@ public partial class CSharpCodeGenerator
         {
             writer.Write("operator ");
 
-            if (member.ReturnType != null)
+            if (member.ReturnType is not null)
             {
                 WriteTypeReference(writer, member.ReturnType);
             }
             else
             {
                 var declaringType = member.SelfOrAnscestorOfType<TypeDeclaration>();
-                if (declaringType != null)
+                if (declaringType is not null)
                 {
                     WriteIdentifier(writer, declaringType.Name);
                 }
@@ -352,7 +352,7 @@ public partial class CSharpCodeGenerator
         }
         else
         {
-            if (member.ReturnType != null)
+            if (member.ReturnType is not null)
             {
                 WriteTypeReference(writer, member.ReturnType);
                 writer.Write(' ');
@@ -387,7 +387,7 @@ public partial class CSharpCodeGenerator
         WriteTypeReference(writer, arg.Type);
         writer.Write(" ");
         WriteIdentifier(writer, arg.Name);
-        if (arg.DefaultValue != null)
+        if (arg.DefaultValue is not null)
         {
             writer.Write(" = ");
             WriteExpression(writer, arg.DefaultValue);
@@ -424,7 +424,7 @@ public partial class CSharpCodeGenerator
     {
         WriteCustomAttributes(writer, member.CustomAttributes);
         WriteModifiers(writer, member.Modifiers);
-        if (member.Type == null)
+        if (member.Type is null)
         {
             writer.Write("var ");
         }
@@ -436,7 +436,7 @@ public partial class CSharpCodeGenerator
 
         WriteIdentifier(writer, member.Name);
 
-        if (member.InitExpression != null)
+        if (member.InitExpression is not null)
         {
             writer.Write(" = ");
             WriteExpression(writer, member.InitExpression);
@@ -450,13 +450,13 @@ public partial class CSharpCodeGenerator
         WriteCustomAttributes(writer, member.CustomAttributes);
         WriteModifiers(writer, member.Modifiers);
         writer.Write("event ");
-        if (member.Type != null)
+        if (member.Type is not null)
         {
             WriteTypeReference(writer, member.Type);
             writer.Write(" ");
         }
 
-        if (member.PrivateImplementationType != null)
+        if (member.PrivateImplementationType is not null)
         {
             WriteTypeReference(writer, member.PrivateImplementationType);
             writer.Write('.');
@@ -464,7 +464,7 @@ public partial class CSharpCodeGenerator
 
         WriteIdentifier(writer, member.Name);
 
-        if (member.AddAccessor == null && member.RemoveAccessor == null)
+        if (member.AddAccessor is null && member.RemoveAccessor is null)
         {
             writer.WriteLine(";");
         }
@@ -474,13 +474,13 @@ public partial class CSharpCodeGenerator
             writer.WriteLine("{");
             writer.Indent++;
 
-            if (member.AddAccessor != null)
+            if (member.AddAccessor is not null)
             {
                 writer.WriteLine("add");
                 WriteStatements(writer, member.AddAccessor);
             }
 
-            if (member.RemoveAccessor != null)
+            if (member.RemoveAccessor is not null)
             {
                 writer.WriteLine("remove");
                 WriteStatements(writer, member.RemoveAccessor);
@@ -497,7 +497,7 @@ public partial class CSharpCodeGenerator
         WriteModifiers(writer, member.Modifiers);
 
         var name = member.ParentType?.Name ?? member.Name;
-        if (name != null)
+        if (name is not null)
         {
             WriteIdentifier(writer, name);
         }
@@ -505,7 +505,7 @@ public partial class CSharpCodeGenerator
         writer.Write("(");
         WriteMethodArguments(writer, member.Arguments);
         writer.Write(")");
-        if (member.Initializer != null)
+        if (member.Initializer is not null)
         {
             writer.WriteLine();
             writer.Indent++;
@@ -523,7 +523,7 @@ public partial class CSharpCodeGenerator
         WriteTypeReference(writer, member.Type);
         writer.Write(" ");
 
-        if (member.PrivateImplementationType != null)
+        if (member.PrivateImplementationType is not null)
         {
             WriteTypeReference(writer, member.PrivateImplementationType);
             writer.Write('.');
@@ -535,11 +535,11 @@ public partial class CSharpCodeGenerator
         writer.WriteLine("{");
         writer.Indent++;
 
-        if (member.Getter != null)
+        if (member.Getter is not null)
         {
             WriteCustomAttributes(writer, member.Getter.CustomAttributes);
             WriteModifiers(writer, member.Getter.Modifiers);
-            if (member.Getter.Statements != null)
+            if (member.Getter.Statements is not null)
             {
                 writer.WriteLine("get");
                 WriteStatements(writer, member.Getter.Statements);
@@ -550,11 +550,11 @@ public partial class CSharpCodeGenerator
             }
         }
 
-        if (member.Setter != null)
+        if (member.Setter is not null)
         {
             WriteCustomAttributes(writer, member.Setter.CustomAttributes);
             WriteModifiers(writer, member.Setter.Modifiers);
-            if (member.Setter.Statements != null)
+            if (member.Setter.Statements is not null)
             {
                 writer.WriteLine("set");
                 WriteStatements(writer, member.Setter.Statements);
@@ -798,7 +798,7 @@ public partial class CSharpCodeGenerator
 
         static int GetSortOrder(CustomAttributeArgument arg)
         {
-            if (arg.PropertyName == null)
+            if (arg.PropertyName is null)
                 return 0;
 
             return 1;
@@ -888,7 +888,7 @@ public partial class CSharpCodeGenerator
     {
         WriteBeforeComments(writer, catchClause);
         writer.Write("catch");
-        if (catchClause.ExceptionType != null)
+        if (catchClause.ExceptionType is not null)
         {
             writer.Write(" (");
             WriteTypeReference(writer, catchClause.ExceptionType);
@@ -1095,7 +1095,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteIdentifier(IndentedTextWriter writer, string? name)
     {
-        if (name == null)
+        if (name is null)
             return;
 
         if (Keywords.Contains(name, StringComparer.Ordinal))
@@ -1111,7 +1111,7 @@ public partial class CSharpCodeGenerator
         writer.WriteLine("{");
         writer.Indent++;
 
-        if (statements != null)
+        if (statements is not null)
         {
             var mustAddNewLine = false;
             foreach (var statement in statements)
@@ -1158,12 +1158,12 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteDocumentationComment(IndentedTextWriter writer, string? comment)
     {
-        if (comment == null)
+        if (comment is null)
             return;
 
         using var sr = new StringReader(comment);
         string? line;
-        while ((line = sr.ReadLine()) != null)
+        while ((line = sr.ReadLine()) is not null)
         {
             if (string.IsNullOrEmpty(line))
             {
@@ -1178,7 +1178,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteLineComment(IndentedTextWriter writer, string? comment)
     {
-        if (comment == null)
+        if (comment is null)
         {
             writer.WriteLine("//");
             return;
@@ -1186,7 +1186,7 @@ public partial class CSharpCodeGenerator
 
         using var sr = new StringReader(comment);
         string? line;
-        while ((line = sr.ReadLine()) != null)
+        while ((line = sr.ReadLine()) is not null)
         {
             if (string.IsNullOrEmpty(line))
             {
@@ -1201,7 +1201,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual bool TryWriteInlineComment(IndentedTextWriter writer, string? comment)
     {
-        if (comment == null)
+        if (comment is null)
         {
             writer.WriteLine("/* */");
             return true;
@@ -1308,7 +1308,7 @@ public partial class CSharpCodeGenerator
     private static List<TypeReference> GetBaseTypes(IInheritanceParameters c)
     {
         var list = new List<TypeReference>();
-        if (c.BaseType != null)
+        if (c.BaseType is not null)
         {
             list.Add(c.BaseType);
         }
@@ -1341,7 +1341,7 @@ public partial class CSharpCodeGenerator
         var first = true;
         foreach (var o in objects)
         {
-            if (!first && separator != null)
+            if (!first && separator is not null)
             {
                 writer.Write(separator);
             }
@@ -1379,7 +1379,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteTypeReference(IndentedTextWriter writer, TypeReference? type)
     {
-        if (type == null)
+        if (type is null)
             return;
 
         if (PredefinedTypes.TryGetValue(type.ClrFullTypeNameWithoutArray, out var keyword))
@@ -1389,7 +1389,7 @@ public partial class CSharpCodeGenerator
         else
         {
             writer.Write("global::");
-            if (type.TypeName != null)
+            if (type.TypeName is not null)
             {
                 writer.Write(type.TypeName.Replace('+', '.'));
             }
@@ -1419,7 +1419,7 @@ public partial class CSharpCodeGenerator
         var first = true;
         foreach (var type in types)
         {
-            if (type != null)
+            if (type is not null)
             {
                 if (!first)
                 {

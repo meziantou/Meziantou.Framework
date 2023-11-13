@@ -100,7 +100,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
                 for (var dt = startOfYear; dt.Year == startOfYear.Year; dt = dt.AddMonths(1))
                 {
                     var resultByWeekDaysInMonth = ResultByWeekDaysInMonth(dt, ByWeekDays);
-                    if (resultByWeekDaysInMonth != null)
+                    if (resultByWeekDaysInMonth is not null)
                     {
                         result.AddRange(resultByWeekDaysInMonth);
                     }

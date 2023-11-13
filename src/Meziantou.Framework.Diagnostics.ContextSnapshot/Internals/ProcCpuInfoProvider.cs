@@ -48,7 +48,7 @@ internal static class ProcCpuInfoProvider
         // CPU max MHz: 3200,0000
         // CPU min MHz: 800,0000
 
-        if (input == null)
+        if (input is null)
             return null;
 
         var output = new StringBuilder();

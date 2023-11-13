@@ -33,7 +33,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
     public static T ConvertTo<T>(object argument, T defaultValue)
     {
-        if (argument == null)
+        if (argument is null)
             return defaultValue;
 
         if (argument is T convertedValue)
@@ -66,7 +66,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
     public static string ConvertToString(object argument, bool outer, string separator)
     {
-        if (argument == null)
+        if (argument is null)
             return null;
 
         if (argument is string s)
@@ -80,9 +80,9 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             var sb = new StringBuilder();
             do
             {
-                if (it.Current is HtmlNodeNavigator n && n.CurrentNode != null)
+                if (it.Current is HtmlNodeNavigator n && n.CurrentNode is not null)
                 {
-                    if (sb.Length > 0 && separator != null)
+                    if (sb.Length > 0 && separator is not null)
                     {
                         sb.Append(separator);
                     }
@@ -108,13 +108,13 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             foreach (var arg in enumerable)
             {
                 sb ??= new StringBuilder();
-                if (sb.Length > 0 && separator != null)
+                if (sb.Length > 0 && separator is not null)
                 {
                     sb.Append(separator);
                 }
 
                 var s2 = ConvertToString(arg, outer, separator);
-                if (s2 != null)
+                if (s2 is not null)
                 {
                     sb.Append(s2);
                 }
@@ -128,7 +128,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
     internal static bool IsNull(object arg)
     {
-        if (arg == null || Convert.IsDBNull(arg))
+        if (arg is null || Convert.IsDBNull(arg))
             return true;
 
         if (arg is string)

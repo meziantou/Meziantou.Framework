@@ -34,7 +34,7 @@ internal sealed class FSharpValueOptionConverterFactory : HumanReadableConverter
         [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "False-positive")]
         protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (value.Equals(default(T)))
             {

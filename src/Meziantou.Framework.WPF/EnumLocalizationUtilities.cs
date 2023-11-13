@@ -26,13 +26,13 @@ internal static class EnumLocalizationUtilities
 
         foreach (Enum? enumValue in enumValues)
         {
-            Debug.Assert(enumValue != null);
+            Debug.Assert(enumValue is not null);
 
             var enumName = enumValue.ToString()!;
             var fieldInfo = type.GetField(enumName)!;
 
             var displayAttribute = fieldInfo.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 result.Add(new LocalizedEnumValue(enumValue, displayAttribute));
             }
@@ -53,7 +53,7 @@ internal static class EnumLocalizationUtilities
         {
             var memberExpression = (MemberExpression)exp.Body;
             var displayAttribute = memberExpression.Member.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute == null)
+            if (displayAttribute is null)
             {
                 value = memberExpression.Member.Name;
             }

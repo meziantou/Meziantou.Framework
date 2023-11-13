@@ -14,7 +14,7 @@ public static class Slug
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {
-        if (text == null)
+        if (text is null)
             return null;
 
         options ??= SlugOptions.Default;
@@ -28,7 +28,7 @@ public static class Slug
             {
                 sb.Append(options.Replace(rune));
             }
-            else if (unicodeCategory != UnicodeCategory.NonSpacingMark && options.Separator != null && !EndsWith(sb, options.Separator))
+            else if (unicodeCategory != UnicodeCategory.NonSpacingMark && options.Separator is not null && !EndsWith(sb, options.Separator))
             {
                 sb.Append(options.Separator);
             }
@@ -43,7 +43,7 @@ public static class Slug
             text = text[..options.MaximumLength];
         }
 
-        if (!options.CanEndWithSeparator && options.Separator != null && text.EndsWith(options.Separator, StringComparison.Ordinal))
+        if (!options.CanEndWithSeparator && options.Separator is not null && text.EndsWith(options.Separator, StringComparison.Ordinal))
         {
             text = text[..^options.Separator.Length];
         }

@@ -89,7 +89,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         get
         {
-            if (CurrentNode == null)
+            if (CurrentNode is null)
                 return null;
 
             return CurrentNode.OuterXml;
@@ -112,7 +112,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         if (other is not HtmlNodeNavigator nav)
             return false;
 
-        if (Document != null)
+        if (Document is not null)
             return Document == nav.Document && CurrentNode == nav.CurrentNode;
 
         return BaseNode == nav.BaseNode && CurrentNode == nav.CurrentNode;
@@ -122,7 +122,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         var nav = other as HtmlNodeNavigator;
         Trace("nav:" + nav);
-        if (nav == null || (Document != null && nav.Document != Document) || (BaseNode != nav.BaseNode))
+        if (nav is null || (Document is not null && nav.Document != Document) || (BaseNode != nav.BaseNode))
             return false;
 
         CurrentNode = nav.CurrentNode;
@@ -133,7 +133,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         var element = CurrentNode as HtmlElement;
         Trace("element:" + element);
-        if (element == null)
+        if (element is null)
             return false;
 
         Trace("element.HasAttributes:" + element.HasAttributes);
@@ -156,7 +156,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     private static HtmlAttribute MoveToFirstNamespaceLocal(HtmlAttributeList attributes)
     {
-        if (attributes == null)
+        if (attributes is null)
             return null;
 
         foreach (var att in attributes)
@@ -170,16 +170,16 @@ sealed class HtmlNodeNavigator : XPathNavigator
     private static HtmlAttribute MoveToFirstNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes)
     {
         var att = MoveToFirstNamespaceLocal(attributes);
-        if (att != null)
+        if (att is not null)
             return att;
 
-        if (rootNode != null && attributes != null && attributes.Parent == rootNode)
+        if (rootNode is not null && attributes is not null && attributes.Parent == rootNode)
             return null;
 
-        var element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
-        while (element != null)
+        var element = attributes is not null ? attributes.Parent.ParentNode as HtmlElement : null;
+        while (element is not null)
         {
-            if (rootNode != null && element.Equals(rootNode))
+            if (rootNode is not null && element.Equals(rootNode))
                 return null;
 
             if (element.HasAttributes)
@@ -187,7 +187,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 attributes = element.Attributes;
                 att = MoveToFirstNamespaceLocal(attributes);
             }
-            if (att != null)
+            if (att is not null)
                 return att;
 
             element = element.ParentNode as HtmlElement;
@@ -209,7 +209,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 {
                     att = MoveToFirstNamespaceLocal(element.Attributes);
                 }
-                if (att == null)
+                if (att is null)
                     return false;
 
                 CurrentNode = att;
@@ -221,13 +221,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     attributes = element.Attributes;
                     att = MoveToFirstNamespaceGlobal(_rootNode, ref attributes);
                 }
-                if (att == null)
+                if (att is null)
                     return false;
 
                 while (string.Equals(att.LocalName, HtmlNode.XmlPrefix, StringComparison.Ordinal))
                 {
                     att = MoveToNextNamespaceGlobal(_rootNode, ref attributes, att);
-                    if (att == null)
+                    if (att is null)
                         return false;
                 }
                 CurrentNode = att;
@@ -240,9 +240,9 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     attributes = element.Attributes;
                     att = MoveToFirstNamespaceGlobal(_rootNode, ref attributes);
                 }
-                if (att == null)
+                if (att is null)
                 {
-                    if (Document == null)
+                    if (Document is null)
                         return false;
 
                     CurrentNode = Document.NamespaceXml;
@@ -260,7 +260,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     private static HtmlAttribute MoveToNextNamespaceLocal(HtmlAttribute att)
     {
         att = att.NextSibling;
-        while (att != null)
+        while (att is not null)
         {
             if (att.IsNamespace)
                 return att;
@@ -274,23 +274,23 @@ sealed class HtmlNodeNavigator : XPathNavigator
     private static HtmlAttribute MoveToNextNamespaceGlobal(HtmlNode rootNode, ref HtmlAttributeList attributes, HtmlAttribute att)
     {
         var next = MoveToNextNamespaceLocal(att);
-        if (next != null)
+        if (next is not null)
             return next;
 
-        if (rootNode != null && attributes != null && attributes.Parent == rootNode)
+        if (rootNode is not null && attributes is not null && attributes.Parent == rootNode)
             return null;
 
-        var element = attributes != null ? attributes.Parent.ParentNode as HtmlElement : null;
-        while (element != null)
+        var element = attributes is not null ? attributes.Parent.ParentNode as HtmlElement : null;
+        while (element is not null)
         {
-            if (rootNode != null && element.Equals(rootNode))
+            if (rootNode is not null && element.Equals(rootNode))
                 return null;
 
             if (element.HasAttributes)
             {
                 attributes = element.Attributes;
                 next = MoveToFirstNamespaceLocal(attributes);
-                if (next != null)
+                if (next is not null)
                     return next;
             }
             element = element.ParentNode as HtmlElement;
@@ -309,7 +309,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         {
             case XPathNamespaceScope.Local:
                 att = MoveToNextNamespaceLocal(attribute);
-                if (att == null)
+                if (att is null)
                     return false;
 
                 CurrentNode = att;
@@ -320,7 +320,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 do
                 {
                     att = MoveToNextNamespaceGlobal(_rootNode, ref attributes, att);
-                    if (att == null)
+                    if (att is null)
                         return false;
                 }
                 while (string.Equals(att.LocalName, HtmlNode.XmlPrefix, StringComparison.Ordinal));
@@ -333,9 +333,9 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 do
                 {
                     att = MoveToNextNamespaceGlobal(_rootNode, ref attributes, att);
-                    if (att == null)
+                    if (att is null)
                     {
-                        if (Document == null)
+                        if (Document is null)
                             return false;
 
                         CurrentNode = Document.NamespaceXml;
@@ -353,7 +353,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         var node = CurrentNode.NextSibling;
         Trace("node:" + node);
-        if (node == null)
+        if (node is null)
             return false;
 
         CurrentNode = node;
@@ -364,12 +364,12 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         var att = CurrentNode as HtmlAttribute;
         Trace("att:" + att);
-        if (att == null)
+        if (att is null)
             return false;
 
         HtmlNode node = att.NextSibling;
         Trace("next att:" + node);
-        if (node == null)
+        if (node is null)
             return false;
 
         CurrentNode = node;
@@ -379,10 +379,10 @@ sealed class HtmlNodeNavigator : XPathNavigator
     public override bool MoveToParent()
     {
         Trace("ParentNode:" + CurrentNode.ParentNode);
-        if (CurrentNode.ParentNode == null)
+        if (CurrentNode.ParentNode is null)
             return false;
 
-        if (_rootNode != null && CurrentNode.ParentNode == _rootNode)
+        if (_rootNode is not null && CurrentNode.ParentNode == _rootNode)
         {
             Trace("ParentNode reached root");
             return false;
@@ -396,7 +396,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         var node = CurrentNode.PreviousSibling;
         Trace("PreviousSibling:" + node);
-        if (node == null)
+        if (node is null)
             return false;
 
         CurrentNode = node;
@@ -421,7 +421,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         {
             var name = CurrentNode.LocalName;
             Trace("=" + name);
-            if (name != null)
+            if (name is not null)
             {
                 if ((Options & HtmlNodeNavigatorOptions.UppercasedNames) == HtmlNodeNavigatorOptions.UppercasedNames)
                     return name.ToUpperInvariant();
@@ -441,7 +441,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         {
             var name = CurrentNode.Name;
             Trace("=" + name);
-            if (name != null)
+            if (name is not null)
             {
                 if ((Options & HtmlNodeNavigatorOptions.UppercasedNames) == HtmlNodeNavigatorOptions.UppercasedNames)
                     return name.ToUpperInvariant();
@@ -465,7 +465,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
             if (Document?.Options.EmptyNamespacesForXPath.Contains(ns) == true)
                 return string.Empty;
 
-            Debug.Assert(ns != null);
+            Debug.Assert(ns is not null);
             if ((Options & HtmlNodeNavigatorOptions.UppercasedNamespaceURIs) == HtmlNodeNavigatorOptions.UppercasedNamespaceURIs)
                 return ns.ToUpperInvariant();
 
@@ -500,7 +500,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
     {
         get
         {
-            Debug.Assert(CurrentNode.Prefix != null);
+            Debug.Assert(CurrentNode.Prefix is not null);
             var prefix = CurrentNode.Prefix;
             Trace("=" + prefix);
             if ((Options & HtmlNodeNavigatorOptions.UppercasedPrefixes) == HtmlNodeNavigatorOptions.UppercasedPrefixes)
@@ -531,7 +531,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
             }
 
             var value = CurrentNode.Value;
-            if (value != null)
+            if (value is not null)
             {
                 if ((Options & HtmlNodeNavigatorOptions.UppercasedValues) == HtmlNodeNavigatorOptions.UppercasedValues)
                     return value.ToUpperInvariant();

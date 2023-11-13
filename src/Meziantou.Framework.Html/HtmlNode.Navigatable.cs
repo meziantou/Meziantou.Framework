@@ -79,11 +79,11 @@ partial class HtmlNode : IXPathNavigable
     protected virtual IEnumerable<HtmlNode> DoSelectNodes(string xpath, XmlNamespaceManager nsmgr, HtmlNodeNavigatorOptions options)
     {
         var navigator = CreateNavigator(options);
-        if (navigator == null)
+        if (navigator is null)
             yield break;
 
         var expr = navigator.Compile(xpath);
-        if (nsmgr != null)
+        if (nsmgr is not null)
         {
             expr.SetContext(nsmgr);
         }
@@ -94,7 +94,7 @@ partial class HtmlNode : IXPathNavigable
             while (it.MoveNext())
             {
                 var n = it.Current as HtmlNodeNavigator;
-                if (n?.CurrentNode != null)
+                if ((n?.CurrentNode) is not null)
                     yield return n.CurrentNode;
             }
         }

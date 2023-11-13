@@ -43,7 +43,7 @@ public abstract class DependencyScanner
             FileSystem = new SingleFileInMemoryFileSystem(filePath, content),
         };
 
-        if (scanners != null)
+        if (scanners is not null)
         {
             options.Scanners = scanners;
         }

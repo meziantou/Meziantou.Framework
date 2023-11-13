@@ -7,7 +7,7 @@ internal sealed class RegexConverter : HumanReadableConverter<Regex>
 {
     protected override void WriteValue(HumanReadableTextWriter writer, Regex? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         writer.StartObject();
         writer.WritePropertyName("Pattern");

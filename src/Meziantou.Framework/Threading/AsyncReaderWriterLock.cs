@@ -95,7 +95,7 @@ public sealed class AsyncReaderWriterLock
             }
         }
 
-        if (toWake != null)
+        if (toWake is not null)
         {
             toWake.SetResult(new Releaser(this, toWakeIsWriter));
         }
@@ -116,7 +116,7 @@ public sealed class AsyncReaderWriterLock
 
         public void Dispose()
         {
-            if (_toRelease != null)
+            if (_toRelease is not null)
             {
                 if (_writer)
                 {

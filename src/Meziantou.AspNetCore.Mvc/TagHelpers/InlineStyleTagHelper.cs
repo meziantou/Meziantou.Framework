@@ -17,7 +17,7 @@ public sealed class InlineStyleTagHelper : InlineTagHelper
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         var fileContent = await GetFileContentAsync(Href);
-        if (fileContent == null)
+        if (fileContent is null)
         {
             output.SuppressOutput();
             return;

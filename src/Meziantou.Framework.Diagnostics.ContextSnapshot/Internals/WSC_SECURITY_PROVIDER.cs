@@ -26,5 +26,5 @@ internal enum WSC_SECURITY_PROVIDER : int
                                                             WSC_SECURITY_PROVIDER_ANTISPYWARE |
                                                             WSC_SECURITY_PROVIDER_INTERNET_SETTINGS |
                                                             WSC_SECURITY_PROVIDER_USER_ACCOUNT_CONTROL |
-                                                            WSC_SECURITY_PROVIDER_SERVICE
+                                                            WSC_SECURITY_PROVIDER_SERVICE,
 }

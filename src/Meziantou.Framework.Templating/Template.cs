@@ -65,7 +65,7 @@ public class Template
         if (type is null)
             throw new ArgumentNullException(nameof(type));
 
-        if (type.Assembly.Location == null)
+        if (type.Assembly.Location is null)
             throw new ArgumentException("Assembly has no location.", nameof(type));
 
         _referencePaths.Add(type.Assembly.Location);
@@ -107,7 +107,7 @@ public class Template
         }
         else
         {
-            if (type.Namespace != null)
+            if (type.Namespace is not null)
             {
                 _usings.Add(type.Namespace);
             }
@@ -141,7 +141,7 @@ public class Template
         }
         else
         {
-            if (type.FullName == null)
+            if (type.FullName is null)
                 throw new ArgumentException("type has no FullName", nameof(type));
 
             friendlyName = type.FullName;
@@ -292,7 +292,7 @@ public class Template
 
     public void Build(CancellationToken cancellationToken)
     {
-        if (Blocks == null)
+        if (Blocks is null)
             throw new InvalidOperationException("Template is not loaded.");
 
         if (IsBuilt)
@@ -329,7 +329,7 @@ public class Template
 
                 foreach (var argument in Arguments)
                 {
-                    if (argument == null)
+                    if (argument is null)
                         continue;
 
                     tw.Write(", ");
@@ -412,7 +412,7 @@ public class Template
             references.Add(reference);
         }
 
-        var result = references.Where(_ => _ != null).Distinct(StringComparer.Ordinal);
+        var result = references.Where(_ => _ is not null).Distinct(StringComparer.Ordinal);
         //var str = string.Join("\r\n", result);            
         return result.Select(path => MetadataReference.CreateFromFile(path)).ToArray();
     }

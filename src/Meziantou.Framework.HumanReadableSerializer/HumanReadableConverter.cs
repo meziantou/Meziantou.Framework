@@ -14,7 +14,7 @@ public abstract class HumanReadableConverter
     internal static HumanReadableConverter? CreateFromAttribute(HumanReadableConverterAttribute? converterAttribute, Type typeToConvert)
     {
         HumanReadableConverter? converter = null;
-        if (converterAttribute != null)
+        if (converterAttribute is not null)
         {
             converterAttribute.EnsureTypeIsValid();
 

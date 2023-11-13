@@ -17,7 +17,7 @@ public sealed class RegexScanner : DependencyScanner
 
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
-        if (RegexPattern == null)
+        if (RegexPattern is null)
             return;
 
         using var sr = new StreamReader(context.Content);
@@ -50,7 +50,7 @@ public sealed class RegexScanner : DependencyScanner
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        if (FilePatterns != null)
+        if (FilePatterns is not null)
             return FilePatterns.IsMatch(context.Directory, context.FileName);
 
         return true;

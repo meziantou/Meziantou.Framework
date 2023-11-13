@@ -76,7 +76,7 @@ public sealed partial class ChromiumTracingWriter : IAsyncDisposable
 
     public async Task WriteEventAsync(ChromiumTracingEvent tracingEvent, CancellationToken cancellationToken = default)
     {
-        if (tracingEvent == null)
+        if (tracingEvent is null)
             return;
 
         if (_hasItems)

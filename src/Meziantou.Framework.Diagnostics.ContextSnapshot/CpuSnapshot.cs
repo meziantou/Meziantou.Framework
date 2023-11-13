@@ -6,7 +6,7 @@ public sealed class CpuSnapshot
 {
     private CpuSnapshot(CpuInfo info)
     {
-        if (info != null)
+        if (info is not null)
         {
             ProcessorName = info.ProcessorName;
             PhysicalProcessorCount = info.PhysicalProcessorCount;

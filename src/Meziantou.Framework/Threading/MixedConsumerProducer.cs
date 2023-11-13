@@ -45,7 +45,7 @@ public static class MixedConsumerProducer
                             clone = tasks.ToArray();
                     }
 
-                    if (clone != null)
+                    if (clone is not null)
                         await Task.WhenAny(clone).ConfigureAwait(false);
                 }
 

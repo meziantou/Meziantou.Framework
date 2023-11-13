@@ -19,7 +19,7 @@ public sealed class PowerManagementSnapshot
             return null;
 
         var result = Windows.Win32.PInvoke.PowerGetActiveScheme(UserRootPowerKey: null, out var guid);
-        if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS || guid == null)
+        if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS || guid is null)
             return null;
 
         var currentPlan = *guid;

@@ -60,7 +60,7 @@ internal static partial class ProcessExtensions
                 try
                 {
                     p = entry.ToProcess();
-                    if (p == null || p.StartTime > process.StartTime)
+                    if (p is null || p.StartTime > process.StartTime)
                         continue;
                 }
                 catch (ArgumentException)
@@ -68,7 +68,7 @@ internal static partial class ProcessExtensions
                     // process might have exited since the snapshot, ignore it
                 }
 
-                if (p != null)
+                if (p is not null)
                     yield return p;
             }
 

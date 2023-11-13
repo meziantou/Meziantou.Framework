@@ -25,7 +25,7 @@ public class MethodInvokeExpression : Expression
         Arguments = new CodeObjectCollection<Expression>(this);
         Method = method;
         Arguments.AddRange(arguments);
-        if (parameters != null)
+        if (parameters is not null)
         {
             foreach (var parameter in parameters)
             {

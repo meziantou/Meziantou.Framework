@@ -46,9 +46,9 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
     public void RaiseCanExecuteChanged()
     {
         var canExecuteChanged = CanExecuteChanged;
-        if (canExecuteChanged != null)
+        if (canExecuteChanged is not null)
         {
-            if (_dispatcher != null)
+            if (_dispatcher is not null)
             {
                 _dispatcher.Invoke(() => canExecuteChanged.Invoke(this, EventArgs.Empty));
             }

@@ -190,7 +190,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result2);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -239,7 +239,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result3);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -299,7 +299,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result4);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -370,7 +370,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result5);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -452,7 +452,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result6);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -545,7 +545,7 @@ public static partial class TaskEx
             Unsafe.SkipInit(out result7);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -580,7 +580,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -621,7 +621,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -671,7 +671,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -730,7 +730,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -798,7 +798,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -875,7 +875,7 @@ public static partial class TaskEx
             observedExceptions.Add(ex);
         }
         
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }

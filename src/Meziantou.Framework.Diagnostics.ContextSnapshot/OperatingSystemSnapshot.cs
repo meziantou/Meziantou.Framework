@@ -42,7 +42,7 @@ public sealed class OperatingSystemSnapshot
                 using var baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
                 using var ndpKey = baseKey.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion");
 
-                if (ndpKey == null)
+                if (ndpKey is null)
                     return null;
 
                 return Convert.ToInt32(ndpKey.GetValue("UBR"), CultureInfo.InvariantCulture);
@@ -106,16 +106,16 @@ public sealed class OperatingSystemSnapshot
                 return name + " " + version;
 
             var prettyName = values.GetValueOrDefault("PRETTY_NAME");
-            if (prettyName != null)
+            if (prettyName is not null)
                 return prettyName;
 
-            if (name != null && version != null)
+            if (name is not null && version is not null)
                 return name + " " + version;
 
-            if (name != null)
+            if (name is not null)
                 return name;
 
-            if (id != null)
+            if (id is not null)
                 return id;
 
             return null;

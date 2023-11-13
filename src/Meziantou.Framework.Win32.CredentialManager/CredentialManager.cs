@@ -35,11 +35,11 @@ public static class CredentialManager
     private static unsafe Credential ReadCredential(CREDENTIALW* credential)
     {
         var applicationName = credential->TargetName.ToString();
-        Debug.Assert(applicationName != null);
+        Debug.Assert(applicationName is not null);
 
         var userName = credential->UserName.ToString();
         string? secret = null;
-        if (credential->CredentialBlob != null)
+        if (credential->CredentialBlob is not null)
         {
             secret = Marshal.PtrToStringUni((nint)credential->CredentialBlob, (int)(credential->CredentialBlobSize / UnicodeEncoding.CharSize));
         }
@@ -79,7 +79,7 @@ public static class CredentialManager
                 throw new ArgumentOutOfRangeException(nameof(secret), "The secret message has exceeded 2560 bytes.");
         }
 
-        if (comment != null)
+        if (comment is not null)
         {
             // CRED_MAX_STRING_LENGTH 256
             if (comment.Length > 255)
@@ -166,7 +166,7 @@ public static class CredentialManager
             }
             finally
             {
-                if (credentials != null)
+                if (credentials is not null)
                 {
                     PInvoke.CredFree(credentials);
                 }

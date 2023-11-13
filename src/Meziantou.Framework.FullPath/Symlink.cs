@@ -66,7 +66,7 @@ internal static class Symlink
             if (symbolicLinkInfo.IsSymbolicLink)
             {
                 var root = Path.GetDirectoryName(path);
-                if (root == null)
+                if (root is null)
                 {
                     target = symbolicLinkInfo.ContentsPath;
                 }
@@ -100,7 +100,7 @@ internal static class Symlink
                 target = GetSingleSymbolicLinkTarget(path);
             }
 
-            return target != null;
+            return target is not null;
         }
 
         internal static bool IsSymbolicLink(string path)
@@ -180,7 +180,7 @@ internal static class Symlink
                             if (PathInternal.IsExtended(path))
                             {
                                 var rootPath = Path.GetDirectoryName(path[4..]);
-                                if (rootPath != null)
+                                if (rootPath is not null)
                                 {
 #if NETSTANDARD2_0 || NET472
                                     target = path[..4] + Path.GetFullPath(Path.Combine(rootPath, target));
@@ -204,7 +204,7 @@ internal static class Symlink
                             else
                             {
                                 var rootPath = Path.GetDirectoryName(path);
-                                if (rootPath != null)
+                                if (rootPath is not null)
                                 {
                                     target = Path.GetFullPath(Path.Combine(rootPath, target));
                                 }

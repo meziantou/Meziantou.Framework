@@ -49,7 +49,7 @@ static class CommandLineBuilder
     [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsQuotedArgument(string? value)
     {
-        if (value == null)
+        if (value is null)
             return null;
 
         var sb = new StringBuilder();
@@ -71,7 +71,7 @@ static class CommandLineBuilder
     [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsCmdArgument(string? value)
     {
-        if (value == null)
+        if (value is null)
             return null;
 
         var sb = new StringBuilder();

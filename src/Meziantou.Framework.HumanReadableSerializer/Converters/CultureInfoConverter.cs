@@ -7,7 +7,7 @@ internal sealed class CultureInfoConverter : HumanReadableConverter<CultureInfo>
 {
     protected override void WriteValue(HumanReadableTextWriter writer, CultureInfo? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         if (value == CultureInfo.InvariantCulture)
         {

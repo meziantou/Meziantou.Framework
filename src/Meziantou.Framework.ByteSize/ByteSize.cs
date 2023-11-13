@@ -27,7 +27,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public int CompareTo(object? obj)
     {
-        if (obj == null)
+        if (obj is null)
             return 1;
 
         var fileLength = (ByteSize)obj;

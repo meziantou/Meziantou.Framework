@@ -18,8 +18,8 @@ public static class ExpressionExtensions
         var rightVisitor = new ReplaceExpressionVisitor(expr2.Parameters[0], parameter);
         var right = rightVisitor.Visit(expr2.Body);
 
-        Debug.Assert(left != null, "left is null");
-        Debug.Assert(right != null, "right is null");
+        Debug.Assert(left is not null, "left is null");
+        Debug.Assert(right is not null, "right is null");
         return Expression.Lambda<Func<T, bool>>(Expression.AndAlso(left, right), parameter);
     }
 
@@ -36,8 +36,8 @@ public static class ExpressionExtensions
         var rightVisitor = new ReplaceExpressionVisitor(expr2.Parameters[0], parameter);
         var right = rightVisitor.Visit(expr2.Body);
 
-        Debug.Assert(left != null, "left is null");
-        Debug.Assert(right != null, "right is null");
+        Debug.Assert(left is not null, "left is null");
+        Debug.Assert(right is not null, "right is null");
         return Expression.Lambda<Func<T, bool>>(Expression.OrElse(left, right), parameter);
     }
 

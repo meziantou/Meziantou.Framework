@@ -32,7 +32,7 @@ internal static class TypeUtils
                 GetHumanDisplayName(sb, type.DeclaringType);
                 sb.Append('+');
             }
-            else if (type.Namespace != null)
+            else if (type.Namespace is not null)
             {
                 sb.Append(type.Namespace);
                 sb.Append('.');
@@ -108,7 +108,7 @@ internal static class TypeUtils
             GetHumanDisplayName(sb, parameter.ParameterType);
         }
 
-        if (parameter.Name != null)
+        if (parameter.Name is not null)
         {
             sb.Append(' ');
             sb.Append(parameter.Name);
@@ -127,8 +127,8 @@ internal static class TypeUtils
             var index = 0;
             foreach (var genericType in type.GenericTypeArguments)
             {
-                var currentName = tupleNames != null && tupleNameIndex < tupleNames.Length ? tupleNames[tupleNameIndex] : null;
-                var isDynamic = dynamicFlags != null && dynamicFlagIndex < dynamicFlags.Count && dynamicFlags[dynamicFlagIndex];
+                var currentName = tupleNames is not null && tupleNameIndex < tupleNames.Length ? tupleNames[tupleNameIndex] : null;
+                var isDynamic = dynamicFlags is not null && dynamicFlagIndex < dynamicFlags.Count && dynamicFlags[dynamicFlagIndex];
 
                 dynamicFlagIndex += 1;
                 tupleNameIndex += 1;
@@ -154,7 +154,7 @@ internal static class TypeUtils
                     }
                 }
 
-                if (currentName != null)
+                if (currentName is not null)
                 {
                     sb.Append(' ');
                     sb.Append(currentName);

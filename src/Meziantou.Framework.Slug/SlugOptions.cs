@@ -49,11 +49,11 @@ public class SlugOptions
     {
         if (CasingTransformation == CasingTransformation.ToLowerCase)
         {
-            rune = Culture == null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture);
+            rune = Culture is null ? Rune.ToLowerInvariant(rune) : Rune.ToLower(rune, Culture);
         }
         else if (CasingTransformation == CasingTransformation.ToUpperCase)
         {
-            rune = Culture == null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture);
+            rune = Culture is null ? Rune.ToUpperInvariant(rune) : Rune.ToUpper(rune, Culture);
         }
 
         return rune.ToString();

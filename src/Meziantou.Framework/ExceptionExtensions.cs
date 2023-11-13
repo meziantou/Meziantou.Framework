@@ -13,7 +13,7 @@ public static class ExceptionExtensions
 
         var sb = new StringBuilder();
         var currentException = exception;
-        while (currentException != null)
+        while (currentException is not null)
         {
             sb.Append(currentException).AppendLine();
             currentException = currentException.InnerException;

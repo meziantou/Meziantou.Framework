@@ -96,7 +96,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
     public void RemoveAt(int index)
     {
         var item = this[index];
-        if (item == null)
+        if (item is null)
             return;
 
         _list.RemoveAt(index);
@@ -109,12 +109,12 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         get => _list[index];
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             var item = this[index];
             _list[index] = value;
-            if (item != null)
+            if (item is not null)
             {
                 item.Parent = null;
             }

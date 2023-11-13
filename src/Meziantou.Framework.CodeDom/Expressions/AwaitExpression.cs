@@ -21,7 +21,7 @@ public class AwaitExpression : Expression
 
     public AwaitExpression ConfigureAwait(bool continueOnCapturedContext)
     {
-        if (Expression == null)
+        if (Expression is null)
             return this;
 
         var awaitExpression = Expression;

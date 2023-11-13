@@ -87,7 +87,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
     public void RemoveAt(int index)
     {
         var item = _expressions[index];
-        if (item == null)
+        if (item is null)
             return;
 
         _expressions.RemoveAt(index);
@@ -100,7 +100,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         get => _expressions[index];
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             var item = _expressions[index];

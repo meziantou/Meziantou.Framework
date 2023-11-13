@@ -24,7 +24,7 @@ sealed class HtmlXPathResult : HtmlNode
     {
         get
         {
-            if (Result == null)
+            if (Result is null)
                 return null;
 
             return string.Format(CultureInfo.InvariantCulture, "{0}", Result);
@@ -36,7 +36,7 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer != null && Result != null)
+        if (writer is not null && Result is not null)
         {
             writer.Write(Result);
         }
@@ -44,7 +44,7 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteContentTo(TextWriter writer)
     {
-        if (writer != null && Result != null)
+        if (writer is not null && Result is not null)
         {
             writer.Write(Result);
         }
@@ -52,7 +52,7 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer != null && Result != null)
+        if (writer is not null && Result is not null)
         {
             writer.WriteValue(Result);
         }
@@ -60,7 +60,7 @@ sealed class HtmlXPathResult : HtmlNode
 
     public override void WriteContentTo(XmlWriter writer)
     {
-        if (writer != null && Result != null)
+        if (writer is not null && Result is not null)
         {
             writer.WriteValue(Result);
         }

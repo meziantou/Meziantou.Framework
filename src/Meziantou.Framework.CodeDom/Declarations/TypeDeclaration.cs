@@ -24,9 +24,9 @@ public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, I
         {
             string? result = null;
             var ns = this.SelfOrAnscestorOfType<NamespaceDeclaration>();
-            while (ns != null)
+            while (ns is not null)
             {
-                if (result != null)
+                if (result is not null)
                 {
                     result = '.' + result;
                 }

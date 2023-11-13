@@ -50,7 +50,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var compilationProvider = context.CompilationProvider.Select(static (compilation, cancellationToken) =>
-                    (compilation.AssemblyName, SupportNullableReferenceTypes: compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute") != null));
+                    (compilation.AssemblyName, SupportNullableReferenceTypes: compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute") is not null));
 
         var resxProvider = context.AdditionalTextsProvider.Where(text => text.Path.EndsWith(".resx", StringComparison.OrdinalIgnoreCase)).Collect();
 
@@ -84,12 +84,12 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
             var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroug.Key));
 
-            if (ns == null)
+            if (ns is null)
             {
                 context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroug.First().Path));
             }
 
-            if (resourceName == null)
+            if (resourceName is null)
             {
                 context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroug.First().Path));
             }
@@ -115,7 +115,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // ClassName: {className}
 ";
 
-            if (resourceName != null && entries != null)
+            if (resourceName is not null && entries is not null)
             {
                 content += GenerateCode(ns, className, resourceName, entries, supportNullableReferenceTypes);
             }
@@ -130,7 +130,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("#nullable enable");
 
-        if (ns != null)
+        if (ns is not null)
         {
             sb.AppendLine("namespace " + ns);
             sb.AppendLine("{");
@@ -323,7 +323,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
 ");
 
-                if (entry.Value != null)
+                if (entry.Value is not null)
                 {
                     var args = Regex.Matches(entry.Value, "\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
                         .Cast<Match>()
@@ -383,7 +383,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
         sb.AppendLine("    }");
 
-        if (ns != null)
+        if (ns is not null)
         {
             sb.AppendLine("}");
         }
@@ -438,7 +438,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         foreach (var entry in resxGroug.OrderBy(file => file.Path, StringComparer.Ordinal))
         {
             var content = entry.GetText(context.CancellationToken);
-            if (content == null)
+            if (content is null)
                 continue;
 
             try
@@ -452,7 +452,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
                     var value = element.Element("value")?.Value;
 
                     var existingEntry = entries.Find(e => e.Name == name);
-                    if (existingEntry != null)
+                    if (existingEntry is not null)
                     {
                         existingEntry.Comment ??= comment;
                     }
@@ -484,7 +484,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         {
             if (analyzerConfigOptionsProvider.GetOptions(file).TryGetValue("build_metadata.AdditionalFiles." + name, out var value))
             {
-                if (result != null && value != result)
+                if (result is not null && value != result)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(InconsistentProperties, location: null, name, file.Path));
                     return null;
@@ -497,7 +497,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
         if (!string.IsNullOrEmpty(result))
             return result;
 
-        if (globalName != null && analyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue) && !string.IsNullOrEmpty(globalValue))
+        if (globalName is not null && analyzerConfigOptionsProvider.GlobalOptions.TryGetValue("build_property." + globalName, out var globalValue) && !string.IsNullOrEmpty(globalValue))
             return globalValue;
 
         return null;
@@ -572,10 +572,10 @@ public sealed class ResxGenerator : IIncrementalGenerator
         {
             get
             {
-                if (Type == null)
+                if (Type is null)
                     return true;
 
-                if (Value != null)
+                if (Value is not null)
                 {
                     var parts = Value.Split(';');
                     if (parts.Length > 1)
@@ -597,7 +597,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
                 if (IsText)
                     return "string";
 
-                if (Value != null)
+                if (Value is not null)
                 {
                     var parts = Value.Split(';');
                     if (parts.Length > 1)
@@ -611,6 +611,6 @@ public sealed class ResxGenerator : IIncrementalGenerator
             }
         }
 
-        public bool IsFileRef => Type != null && Type.StartsWith("System.Resources.ResXFileRef,", StringComparison.Ordinal);
+        public bool IsFileRef => Type is not null && Type.StartsWith("System.Resources.ResXFileRef,", StringComparison.Ordinal);
     }
 }

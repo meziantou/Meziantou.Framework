@@ -12,7 +12,7 @@ public abstract class NuGetPackageValidationRule
         try
         {
             using var stream = package.GetStream(path);
-            return stream != null;
+            return stream is not null;
         }
         catch
         {

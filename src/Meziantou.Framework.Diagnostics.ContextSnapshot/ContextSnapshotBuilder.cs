@@ -216,7 +216,7 @@ public sealed class ContextSnapshotBuilder
         void AddContextData(string name)
         {
             var value = AppContext.GetData(name);
-            if (value != null)
+            if (value is not null)
             {
                 AddValue("AppContext." + name, value);
             }

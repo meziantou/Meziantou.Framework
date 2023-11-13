@@ -14,7 +14,7 @@ static partial class StringExtensions
     [Pure]
     public static string? Nullify(this string? str, bool trim)
     {
-        if (str == null)
+        if (str is null)
             return null;
 
         if (trim)
@@ -858,7 +858,7 @@ static partial class StringExtensions
     [return: NotNullIfNotNull(parameterName: nameof(str))]
     public static string? RemoveDiacritics(this string? str)
     {
-        if (str == null)
+        if (str is null)
             return null;
 
         var normalizedString = str.Normalize(NormalizationForm.FormD);

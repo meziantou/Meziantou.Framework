@@ -32,7 +32,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         for (var i = stackTrace.FrameCount - 1; i >= 0; i--)
         {
             var frame = stackTrace.GetFrame(i);
-            if (frame == null)
+            if (frame is null)
                 continue;
 
             var methodInfo = frame.GetMethod();
@@ -40,7 +40,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                 continue;
 
             var attribute = methodInfo.GetCustomAttribute<InlineSnapshotAssertionAttribute>();
-            if (attribute == null)
+            if (attribute is null)
                 continue;
 
             methodName = methodInfo.Name;
@@ -50,7 +50,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             }
 
             parameterName = attribute.ParameterName;
-            if (parameterName != null)
+            if (parameterName is not null)
             {
                 var parameters = methodInfo.GetParameters();
                 for (var j = 0; j < parameterName.Length; j++)
@@ -67,11 +67,11 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             break;
         }
 
-        if (callerFrame == null)
+        if (callerFrame is null)
             throw new InlineSnapshotException($"Cannot find the method to update in the call stack. Be sure at least one method from the stack is decorated with '{nameof(InlineSnapshotAssertionAttribute)}'.");
 
         var pdbFileName = callerFrame.GetFileName();
-        if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && pdbFileName != null && filePath != null && pdbFileName != filePath)
+        if (settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable && pdbFileName is not null && filePath is not null && pdbFileName != filePath)
         {
             throw new InlineSnapshotException($"""
                 The call stack doesn't match the file to update. This may happen when you build the project in Release configuration.
@@ -93,10 +93,10 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         filePath ??= pdbFileName;
         var column = callerFrame.GetFileColumnNumber();
 
-        if (filePath == null)
+        if (filePath is null)
             throw new InlineSnapshotException("Cannot find the file to update from the call stack. The PDB may be missing.");
 
-        if (methodName == null)
+        if (methodName is null)
             throw new InlineSnapshotException("Cannot find the method to update from the call stack. The code may be optimized (Release configuration).");
 
         string? assemblyLocation = null;
@@ -115,7 +115,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         {
             using var stream = File.OpenRead(AssemblyLocation);
             using var reader = new PEReader(stream);
-            if (!reader.TryOpenAssociatedPortablePdb(AssemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider == null)
+            if (!reader.TryOpenAssociatedPortablePdb(AssemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider is null)
                 return null;
 
             using (metadataReaderProvider)
@@ -164,7 +164,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
 
     public readonly CSharpStringFormats FilterFormats(CSharpStringFormats formats)
     {
-        if (AssemblyLocation == null || !formats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
+        if (AssemblyLocation is null || !formats.HasFlag(CSharpStringFormats.DetermineFeatureFromPdb))
             return formats;
 
         var languageVersion = LanguageVersionCache.GetOrAdd(AssemblyLocation, GetCSharpLanguageVersionFromAssemblyLocation);
@@ -182,7 +182,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         {
             using var stream = File.OpenRead(assemblyLocation);
             using var reader = new PEReader(stream);
-            if (!reader.TryOpenAssociatedPortablePdb(assemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider == null)
+            if (!reader.TryOpenAssociatedPortablePdb(assemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider is null)
                 return null;
 
             using (metadataReaderProvider)

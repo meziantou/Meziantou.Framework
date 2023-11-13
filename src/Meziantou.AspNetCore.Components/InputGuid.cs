@@ -51,7 +51,7 @@ public class InputGuid<TValue> : InputBase<TValue>
 
         if (success)
         {
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             validationErrorMessage = null;
             return true;
         }

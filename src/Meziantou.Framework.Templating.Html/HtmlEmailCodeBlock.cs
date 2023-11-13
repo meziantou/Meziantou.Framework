@@ -21,7 +21,7 @@ public class HtmlEmailCodeBlock : CodeBlock
     [return: NotNullIfNotNull(parameterName: nameof(html))]
     protected virtual string? HtmlDecode(string? html)
     {
-        if (html == null)
+        if (html is null)
             return null;
 
         return WebUtility.HtmlDecode(html);
@@ -77,7 +77,7 @@ public class HtmlEmailCodeBlock : CodeBlock
 
     private static string? Nullify(string? text)
     {
-        if (text == null)
+        if (text is null)
             return null;
 
         text = text.Trim();

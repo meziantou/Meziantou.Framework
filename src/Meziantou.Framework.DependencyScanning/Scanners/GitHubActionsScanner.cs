@@ -50,7 +50,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                             foreach (var step in steps.OfType<YamlMappingNode>())
                             {
                                 var uses = GetProperty(step, "uses", StringComparison.OrdinalIgnoreCase);
-                                if (uses is YamlScalarNode usesValue && usesValue.Value != null)
+                                if (uses is YamlScalarNode usesValue && usesValue.Value is not null)
                                 {
                                     var value = usesValue.Value;
 
@@ -96,7 +96,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                         if (containerNode is YamlMappingNode container)
                         {
                             var imageNode = GetProperty(container, "image", StringComparison.OrdinalIgnoreCase);
-                            if (imageNode is YamlScalarNode image && image.Value != null)
+                            if (imageNode is YamlScalarNode image && image.Value is not null)
                             {
                                 var value = image.Value;
                                 var index = value.LastIndexOf(':');
@@ -122,7 +122,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 if (serviceNameNode.Value is YamlMappingNode serviceNode)
                                 {
                                     var imageNode = GetProperty(serviceNode, "image", StringComparison.OrdinalIgnoreCase);
-                                    if (imageNode is YamlScalarNode image && image.Value != null)
+                                    if (imageNode is YamlScalarNode image && image.Value is not null)
                                     {
                                         var value = image.Value;
                                         var index = value.LastIndexOf(':');

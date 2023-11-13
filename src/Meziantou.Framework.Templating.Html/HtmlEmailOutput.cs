@@ -101,7 +101,7 @@ public class HtmlEmailOutput : Output
             section = _currentSections.LastOrDefault();
         }
 
-        if (section != null)
+        if (section is not null)
         {
             _sections[section.Name] = section.Writer.ToString();
             _currentSections.Remove(section);
@@ -120,7 +120,7 @@ public class HtmlEmailOutput : Output
 
     protected virtual string? HtmlDecode(string html)
     {
-        if (html == null)
+        if (html is null)
             return null;
 
         return WebUtility.HtmlDecode(html);

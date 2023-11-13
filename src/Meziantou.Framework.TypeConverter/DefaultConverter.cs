@@ -42,7 +42,7 @@ public class DefaultConverter : IConverter
 
     private static bool NormalizeHexString(ref string? s)
     {
-        if (s == null)
+        if (s is null)
             return false;
 
         if (s.Length > 0)
@@ -99,7 +99,7 @@ public class DefaultConverter : IConverter
 
     private static bool IsNullOrEmptyString(object? input)
     {
-        if (input == null)
+        if (input is null)
             return true;
 
         if (input is string s)
@@ -119,7 +119,7 @@ public class DefaultConverter : IConverter
 
     private static string ToHexa(byte[]? bytes)
     {
-        if (bytes == null)
+        if (bytes is null)
             return string.Empty;
 
         return ToHexa(bytes, 0, bytes.Length);
@@ -127,7 +127,7 @@ public class DefaultConverter : IConverter
 
     private static string ToHexa(byte[]? bytes, int offset, int count)
     {
-        if (bytes == null)
+        if (bytes is null)
             return string.Empty;
 
         if (offset < 0)
@@ -273,7 +273,7 @@ public class DefaultConverter : IConverter
 
     protected virtual bool TryConvert(string? text, IFormatProvider? provider, out byte[]? value)
     {
-        if (text == null)
+        if (text is null)
         {
             value = null;
             return true;
@@ -293,7 +293,7 @@ public class DefaultConverter : IConverter
         }
 
         var bytes = FromHexa(text);
-        if (bytes != null)
+        if (bytes is not null)
         {
             value = bytes;
             return true;
@@ -310,7 +310,7 @@ public class DefaultConverter : IConverter
 
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out CultureInfo? value)
     {
-        if (input == null)
+        if (input is null)
         {
             value = null;
             return true;
@@ -866,7 +866,7 @@ public class DefaultConverter : IConverter
         }
 
         var bools = Convert.ToString(input, provider);
-        if (bools == null)
+        if (bools is null)
             return false; // arguable...
 
         bools = bools.Trim().ToUpperInvariant();
@@ -896,7 +896,7 @@ public class DefaultConverter : IConverter
             return true;
         }
 
-        if (input == null || Convert.IsDBNull(input))
+        if (input is null || Convert.IsDBNull(input))
         {
             if (conversionType.IsNullableOfT())
             {
@@ -1072,7 +1072,7 @@ public class DefaultConverter : IConverter
                 }
 
                 var tc = TypeDescriptor.GetConverter(inputType);
-                if (tc != null && tc.CanConvertTo(typeof(string)))
+                if (tc is not null && tc.CanConvertTo(typeof(string)))
                 {
                     value = (string?)tc.ConvertTo(input, typeof(string));
                     return true;
@@ -1254,7 +1254,7 @@ public class DefaultConverter : IConverter
         try
         {
             ctConverter = TypeDescriptor.GetConverter(conversionType);
-            if (ctConverter != null && ctConverter.CanConvertFrom(inputType))
+            if (ctConverter is not null && ctConverter.CanConvertFrom(inputType))
             {
                 if (provider is CultureInfo cultureInfo)
                 {
@@ -1276,7 +1276,7 @@ public class DefaultConverter : IConverter
         try
         {
             var inputConverter = TypeDescriptor.GetConverter(inputType);
-            if (inputConverter != null && inputConverter.CanConvertTo(conversionType))
+            if (inputConverter is not null && inputConverter.CanConvertTo(conversionType))
             {
                 value = inputConverter.ConvertTo(context: null, provider as CultureInfo, input, conversionType);
                 return true;
@@ -1290,7 +1290,7 @@ public class DefaultConverter : IConverter
         var defaultValue = conversionType.IsValueType ? Activator.CreateInstance(conversionType) : null;
         try
         {
-            if (ctConverter != null && input is not string && ctConverter.CanConvertFrom(typeof(string)))
+            if (ctConverter is not null && input is not string && ctConverter.CanConvertFrom(typeof(string)))
             {
                 value = ctConverter.ConvertFrom(context: null, provider as CultureInfo, Convert.ToString(input, provider)!);
                 return true;

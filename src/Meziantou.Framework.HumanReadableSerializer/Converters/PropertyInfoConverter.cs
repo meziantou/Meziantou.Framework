@@ -35,7 +35,7 @@ internal sealed class PropertyInfoConverter : HumanReadableConverter<PropertyInf
                 }
 
                 TypeUtils.GetHumanDisplayName(sb, parameter.ParameterType);
-                if (parameter.Name != null)
+                if (parameter.Name is not null)
                 {
                     sb.Append(' ');
                     sb.Append(parameter.Name);

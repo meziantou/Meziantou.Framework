@@ -7,7 +7,7 @@ internal sealed class EnumConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         writer.WriteValue(value.ToString() ?? "");
     }

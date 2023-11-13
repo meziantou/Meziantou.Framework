@@ -29,13 +29,13 @@ internal sealed record PromptContext(string FilePath, string? TestName, ProcessI
                 if (currentContextProperty != null)
                 {
                     var context = currentContextProperty.GetValue(obj: null);
-                    if (context != null)
+                    if (context is not null)
                     {
                         var testProperty = currentContextProperty.PropertyType.GetProperty("Test", BindingFlags.Public | BindingFlags.Instance);
                         if (testProperty != null)
                         {
                             var test = testProperty.GetValue(context);
-                            if (test != null)
+                            if (test is not null)
                             {
                                 var nameProperty = testProperty.PropertyType.GetProperty("FullName", BindingFlags.Public | BindingFlags.Instance);
                                 if (nameProperty != null)
@@ -63,17 +63,17 @@ internal sealed record PromptContext(string FilePath, string? TestName, ProcessI
             for (var i = 0; i < stackTrace.FrameCount; i++)
             {
                 var frame = stackTrace.GetFrame(i);
-                if (frame == null)
+                if (frame is null)
                     continue;
 
                 var method = frame.GetMethod();
                 if (method == null)
                     continue;
 
-                if (factType != null && method.GetCustomAttribute(factType, inherit: true) != null)
+                if (factType != null && method.GetCustomAttribute(factType, inherit: true) is not null)
                     return method.Name;
 
-                if (theoryType != null && method.GetCustomAttribute(theoryType, inherit: true) != null)
+                if (theoryType != null && method.GetCustomAttribute(theoryType, inherit: true) is not null)
                     return method.Name;
             }
 

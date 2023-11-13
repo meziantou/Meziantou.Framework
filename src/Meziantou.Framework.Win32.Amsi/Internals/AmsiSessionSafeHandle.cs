@@ -12,11 +12,11 @@ internal sealed class AmsiSessionSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
     }
 
-    public override bool IsInvalid => Context == null || Context.IsInvalid || base.IsInvalid;
+    public override bool IsInvalid => Context is null || Context.IsInvalid || base.IsInvalid;
 
     protected override bool ReleaseHandle()
     {
-        Debug.Assert(Context != null);
+        Debug.Assert(Context is not null);
         Amsi.AmsiCloseSession(Context, handle);
         return true;
     }

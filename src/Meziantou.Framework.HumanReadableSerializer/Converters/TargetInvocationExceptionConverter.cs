@@ -6,7 +6,7 @@ internal sealed class TargetInvocationExceptionConverter : HumanReadableConverte
 {
     protected override void WriteValue(HumanReadableTextWriter writer, TargetInvocationException? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         HumanReadableSerializer.Serialize(writer, value.InnerException, options);
     }

@@ -18,7 +18,7 @@ public abstract class ConstructorInitializer : CodeObject, ICommentable
         CommentsAfter = new CommentCollection(this);
         Arguments = new CodeObjectCollection<Expression>(this);
 
-        if (codeExpressions != null)
+        if (codeExpressions is not null)
         {
             foreach (var codeExpression in codeExpressions)
             {

@@ -74,7 +74,7 @@ public static class CultureInfoUtilities
         ArgumentNullException.ThrowIfNull(action);
 
         var culture = GetCulture(cultureName);
-        if (culture == null)
+        if (culture is null)
             throw new ArgumentException($"Culture '{cultureName}' not found.", nameof(cultureName));
 
         return UseCulture(culture, action);
@@ -82,7 +82,7 @@ public static class CultureInfoUtilities
 
     public static CultureInfo? GetCulture(string? name)
     {
-        if (name == null)
+        if (name is null)
             return null;
 
         try
@@ -111,10 +111,10 @@ public static class CultureInfoUtilities
 
     public static bool NeutralEquals(this CultureInfo a, CultureInfo b)
     {
-        if (a == null && b == null)
+        if (a is null && b is null)
             return true;
 
-        if (a == null || b == null)
+        if (a is null || b is null)
             return false;
 
         return a.GetNeutralCulture().Equals(b.GetNeutralCulture());

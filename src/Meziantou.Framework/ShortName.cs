@@ -93,7 +93,7 @@ public static class ShortName
         var dict = new HashSet<string>(names, comparer);
         foreach (var name in names)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentException("The collection contains a null item", nameof(names));
 
             dict.Remove(name);

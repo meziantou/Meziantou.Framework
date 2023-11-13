@@ -68,7 +68,7 @@ internal static class GlobParser
                     }
                     else if (c == '.')
                     {
-                        if (subSegments == null && currentLiteral.Length == 0)
+                        if (subSegments is null && currentLiteral.Length == 0)
                         {
                             if (EndOfSegmentEqual(pattern[i..], ".."))
                             {
@@ -103,7 +103,7 @@ internal static class GlobParser
                     }
                     else if (c == '*')
                     {
-                        if (subSegments == null && currentLiteral.Length == 0)
+                        if (subSegments is null && currentLiteral.Length == 0)
                         {
                             if (EndOfSegmentEqual(pattern[i..], "**"))
                             {
@@ -126,7 +126,7 @@ internal static class GlobParser
                         }
 
                         // Merge 2 consecutive '*'
-                        if (currentLiteral.Length == 0 && subSegments != null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
+                        if (currentLiteral.Length == 0 && subSegments is not null && subSegments.Count > 0 && subSegments[^1] is MatchAllSubSegment)
                             continue;
 
                         AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, MatchAllSubSegment.Instance);
@@ -134,7 +134,7 @@ internal static class GlobParser
                     }
                     else if (c == '{') // Start LiteralSet
                     {
-                        Debug.Assert(setSubsegment == null);
+                        Debug.Assert(setSubsegment is null);
                         AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
                         parserContext = GlobParserContext.LiteralSet;
                         setSubsegment = [];
@@ -142,7 +142,7 @@ internal static class GlobParser
                     }
                     else if (c == '[') // Range
                     {
-                        Debug.Assert(rangeSubsegment == null);
+                        Debug.Assert(rangeSubsegment is null);
                         AddSubsegment(ref subSegments, ref currentLiteral, ignoreCase, subSegment: null);
                         parserContext = GlobParserContext.Range;
                         rangeSubsegment = [];
@@ -156,7 +156,7 @@ internal static class GlobParser
                 }
                 else if (parserContext == GlobParserContext.LiteralSet)
                 {
-                    Debug.Assert(setSubsegment != null);
+                    Debug.Assert(setSubsegment is not null);
                     if (c == ',') // end of current value
                     {
                         setSubsegment.Add(currentLiteral.AsSpan().ToString());
@@ -182,7 +182,7 @@ internal static class GlobParser
                 }
                 else if (parserContext == GlobParserContext.Range)
                 {
-                    Debug.Assert(rangeSubsegment != null);
+                    Debug.Assert(rangeSubsegment is not null);
                     if (c == ']') // end of literal set, except if empty []] or [!]]
                     {
                         // [a-] => '-' is considered as a character
@@ -291,7 +291,7 @@ internal static class GlobParser
                 currentLiteral.Clear();
             }
 
-            if (subSegment != null)
+            if (subSegment is not null)
             {
                 subSegments.Add(subSegment);
             }
@@ -299,7 +299,7 @@ internal static class GlobParser
 
         static void FinishSegment(List<Segment> segments, ref List<Segment>? subSegments, ref ValueStringBuilder currentLiteral, bool ignoreCase)
         {
-            if (subSegments != null)
+            if (subSegments is not null)
             {
                 if (currentLiteral.Length > 0)
                 {
@@ -470,7 +470,7 @@ internal static class GlobParser
                         _ => null,
                     };
 
-                    if (nextCharacters != null)
+                    if (nextCharacters is not null)
                     {
                         nextCharacters.Add(Path.DirectorySeparatorChar);
                         if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)

@@ -91,7 +91,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 {
                     foreach (var attribute in attributeList.Attributes)
                     {
-                        if (attribute.ArgumentList != null && attribute.ArgumentList.Arguments.Count > 0)
+                        if (attribute.ArgumentList is not null && attribute.ArgumentList.Arguments.Count > 0)
                             return true;
                     }
                 }
@@ -273,7 +273,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             writer.Write(context.Keyword);
             writer.Write(' ');
             writer.Write(context.Name);
-            if (baseTypes != null)
+            if (baseTypes is not null)
             {
                 writer.Write(" : ");
                 writer.Write(baseTypes);
@@ -291,7 +291,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
             writer.WriteLine();
         }
 
-        if (xmlDocumentation != null)
+        if (xmlDocumentation is not null)
         {
             writer.WriteXmlComment(xmlDocumentation);
         }
@@ -453,33 +453,33 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
                 }
             }
 
-            SupportReadOnlySpanChar = readOnlySpanCharSymbol != null;
-            SupportIStronglyTyped = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") != null;
-            SupportIStronglyTypedOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") != null;
-            SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") != null;
-            SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") != null;
-            SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") != null;
-            SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") != null;
-            SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") != null;
-            SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") != null;
-            SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") != null;
+            SupportReadOnlySpanChar = readOnlySpanCharSymbol is not null;
+            SupportIStronglyTyped = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") is not null;
+            SupportIStronglyTypedOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
+            SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") is not null;
+            SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") is not null;
+            SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") is not null;
+            SupportSystemTextJsonConverter = compilation.GetTypeByMetadataName("System.Text.Json.Serialization.JsonConverter`1") is not null;
+            SupportNewtonsoftJsonConverter = compilation.GetTypeByMetadataName("Newtonsoft.Json.JsonConverter") is not null;
+            SupportMongoDbConverter = compilation.GetTypeByMetadataName("MongoDB.Bson.Serialization.Serializers.SerializerBase`1") is not null;
+            SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is not null;
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
 
             var icomparableSymbol = compilation.GetTypeByMetadataName("System.IComparable");
             var icomparableCompareToMember = icomparableSymbol?.GetMembers("CompareTo").FirstOrDefault();
-            if (icomparableSymbol != null && icomparableCompareToMember != null)
+            if (icomparableSymbol is not null && icomparableCompareToMember is not null)
             {
                 ImplementsIComparable = Implements(typeSymbol, icomparableSymbol);
-                ImplementsIComparable_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableCompareToMember) != null;
+                ImplementsIComparable_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableCompareToMember) is not null;
             }
 
             var icomparableOfTSymbol = compilation.GetTypeByMetadataName("System.IComparable`1");
             var icomparableOfTypeSymbol = icomparableOfTSymbol?.Construct(typeSymbol);
             var icomparableOfTCompareToMember = icomparableOfTypeSymbol?.GetMembers("CompareTo").FirstOrDefault();
-            if (icomparableOfTSymbol != null && icomparableOfTCompareToMember != null)
+            if (icomparableOfTSymbol is not null && icomparableOfTCompareToMember is not null)
             {
                 ImplementsIComparableOfT = Implements(typeSymbol, icomparableOfTypeSymbol);
-                ImplementsIComparableOfT_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableOfTCompareToMember) != null;
+                ImplementsIComparableOfT_CompareTo = typeSymbol.FindImplementationForInterfaceMember(icomparableOfTCompareToMember) is not null;
             }
 
             CSharpNullableTypeName = IsReferenceType ? (TypeName + "?") : TypeName;
@@ -489,7 +489,7 @@ internal sealed class StronglyTypedIdAttribute : System.Attribute
 
             static bool Implements(ITypeSymbol symbol, ITypeSymbol? interfaceSymbol)
             {
-                if (interfaceSymbol == null)
+                if (interfaceSymbol is null)
                     return false;
 
                 foreach (var iface in symbol.AllInterfaces)

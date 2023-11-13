@@ -19,7 +19,7 @@ internal sealed class NullableConverterFactory : HumanReadableConverterFactory
     {
         protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
             }

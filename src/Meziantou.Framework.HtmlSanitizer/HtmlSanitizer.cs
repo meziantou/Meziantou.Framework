@@ -141,7 +141,7 @@ public sealed class HtmlSanitizer
         var parser = new HtmlParser();
         var document = parser.ParseDocument($"<div id='{uniqueId}'>{content}</div>");
         var element = document.GetElementById(uniqueId);
-        Debug.Assert(element != null);
+        Debug.Assert(element is not null);
         return element;
     }
 }

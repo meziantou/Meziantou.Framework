@@ -11,7 +11,7 @@ internal abstract class LineScrubber : Scrubber
         foreach (var (line, eol) in StringUtils.EnumerateLines(text))
         {
             var newLine = ScrubLine(line);
-            if (newLine != null)
+            if (newLine is not null)
             {
                 sb.Append(newLine);
                 sb.Append(eol);

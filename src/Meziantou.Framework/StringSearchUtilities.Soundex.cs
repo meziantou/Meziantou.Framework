@@ -318,7 +318,7 @@ public static partial class StringSearchUtilities
             return string.Empty;
 
         // Replace characters
-        if (replace != null)
+        if (replace is not null)
         {
             foreach (var pair in replace)
             {

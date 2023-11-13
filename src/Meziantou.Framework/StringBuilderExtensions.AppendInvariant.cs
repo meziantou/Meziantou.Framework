@@ -12,7 +12,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, byte? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -25,7 +25,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, sbyte? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -38,7 +38,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, short? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -51,7 +51,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, ushort? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -64,7 +64,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, int? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -77,7 +77,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, uint? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -90,7 +90,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, long? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -103,7 +103,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, ulong? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -131,7 +131,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, float? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -144,7 +144,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, double? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -157,7 +157,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, decimal? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -165,7 +165,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, FormattableString? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.ToString(CultureInfo.InvariantCulture));
 
         return sb;
@@ -175,7 +175,7 @@ public static partial class StringBuilderExtensions
     public static StringBuilder AppendInvariant<T>(this StringBuilder sb, T? value)
         where T : IFormattable
     {
-        if (value != null)
+        if (value is not null)
             return sb.Append(value.ToString(format: null, CultureInfo.InvariantCulture));
 
         return sb;
@@ -183,7 +183,7 @@ public static partial class StringBuilderExtensions
 
     public static StringBuilder AppendInvariant(this StringBuilder sb, object? value)
     {
-        if (value != null)
+        if (value is not null)
             return sb.AppendFormat(CultureInfo.InvariantCulture, "{0}", value);
 
         return sb;

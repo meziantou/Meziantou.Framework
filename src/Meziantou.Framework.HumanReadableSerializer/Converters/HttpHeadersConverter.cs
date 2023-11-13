@@ -18,7 +18,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
 
     public HttpHeadersConverter(IEnumerable<string>? excludedHeaderNames, IEnumerable<HttpHeaderValueFormatter> headerFormatters)
     {
-        if (excludedHeaderNames != null)
+        if (excludedHeaderNames is not null)
             _excludedHeaderNames = new HashSet<string>(excludedHeaderNames, StringComparer.OrdinalIgnoreCase);
 
         _headerFormatters = headerFormatters?.ToArray() ?? [];
@@ -26,7 +26,7 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
 
     protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
         var hasValue = false;
 
 #if NETSTANDARD2_0 || NETFRAMEWORK
@@ -35,14 +35,14 @@ internal class HttpHeadersConverter<T> : HumanReadableConverter<T> where T : Htt
         IEnumerable<KeyValuePair<string, HeaderStringValues>> values = value.NonValidated;
 #endif
 
-        if (options.PropertyOrder != null)
+        if (options.PropertyOrder is not null)
         {
             values = values.OrderBy(o => o.Key, options.PropertyOrder);
         }
 
         foreach (var header in values)
         {
-            if (_excludedHeaderNames != null && _excludedHeaderNames.Contains(header.Key))
+            if (_excludedHeaderNames is not null && _excludedHeaderNames.Contains(header.Key))
                 continue;
 
             if (!hasValue)

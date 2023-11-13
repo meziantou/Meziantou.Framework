@@ -53,7 +53,7 @@ public abstract class RecurrenceRuleHumanizer
             }
         }
 
-        if (humanizer != null)
+        if (humanizer is not null)
         {
             if (rrule is DailyRecurrenceRule dailyRecurrenceRule)
                 return humanizer.GetText(dailyRecurrenceRule, cultureInfo);
@@ -78,7 +78,7 @@ public abstract class RecurrenceRuleHumanizer
 
     protected static void ListToHumanText<T>(StringBuilder sb, CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)
     {
-        if (list == null)
+        if (list is null)
             return;
 
         for (var i = 0; i < list.Count; i++)

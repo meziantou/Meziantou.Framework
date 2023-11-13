@@ -49,7 +49,7 @@ public class CsvReader
     {
         var endOfStream = false;
         var rowValues = new List<string>();
-        if (BaseReader != null)
+        if (BaseReader is not null)
         {
             var inQuote = false;
             var value = new StringBuilder();
@@ -165,7 +165,7 @@ public class CsvReader
             return null;
 
         var columns = _columns;
-        if (HasHeaderRow && columns == null)
+        if (HasHeaderRow && columns is null)
         {
             columns = rowValues.Select(CreateColumn).ToArray();
             _columns = columns;

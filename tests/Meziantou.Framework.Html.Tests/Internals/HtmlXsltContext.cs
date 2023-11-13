@@ -27,7 +27,7 @@ internal sealed class HtmlXsltContext : XsltContext
     private IXsltContextFunction CreateHtmlXsltFunction(string prefix, string name, XPathResultType[] argTypes)
     {
         var fn = HtmlXsltFunction.GetBuiltIn(this, prefix, name, argTypes);
-        if (fn == null)
+        if (fn is null)
             throw new ArgumentException("XPATH function '" + name + "' is unknown.", nameof(name));
 
         return fn;
@@ -46,7 +46,7 @@ internal sealed class HtmlXsltContext : XsltContext
     public override string LookupNamespace(string prefix)
     {
         var ns = base.LookupNamespace(prefix);
-        if (ns == null && Resolver != null)
+        if (ns is null && Resolver is not null)
         {
             ns = Resolver.LookupNamespace(prefix);
         }
@@ -56,7 +56,7 @@ internal sealed class HtmlXsltContext : XsltContext
     public override string LookupPrefix(string uri)
     {
         var prefix = base.LookupPrefix(uri);
-        if (prefix == null && Resolver != null)
+        if (prefix is null && Resolver is not null)
         {
             prefix = Resolver.LookupPrefix(prefix);
         }

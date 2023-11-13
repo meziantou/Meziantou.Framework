@@ -253,7 +253,7 @@ public sealed record HumanReadableSerializerOptions
             if (converter is HumanReadableConverterFactory factory)
             {
                 var factoryConverter = factory.CreateConverter(type, options);
-                if (factoryConverter == null)
+                if (factoryConverter is null)
                     return null;
 
                 return WrapConverter(factoryConverter);
@@ -266,17 +266,17 @@ public sealed record HumanReadableSerializerOptions
         {
             // Priority 1: Attempt to get custom converter from the Converters list
             var converter = TryGetFromList(type, converters, this);
-            if (converter != null)
+            if (converter is not null)
                 return converter;
 
             // Priority 2: Attempt to get converter from [HumanReadableConverterAttribute] on the type being converted.
             var converterAttribute = GetCustomAttribute<HumanReadableConverterAttribute>(type);
-            if (converterAttribute != null)
+            if (converterAttribute is not null)
                 return HumanReadableConverter.CreateFromAttribute(converterAttribute, type);
 
             // Priority 3: Query the built-in converters.
             converter = TryGetFromList(type, ConverterList.DefaultConverters, this);
-            if (converter != null)
+            if (converter is not null)
                 return converter;
 
             throw new InvalidOperationException($"No converter for type '{type}'");
@@ -285,13 +285,13 @@ public sealed record HumanReadableSerializerOptions
             {
                 foreach (var converter in converters)
                 {
-                    if (converter == null)
+                    if (converter is null)
                         continue;
 
                     if (converter.CanConvert(type))
                     {
                         var result = TryGetConverter(converter, type, options);
-                        if (result != null)
+                        if (result is not null)
                             return result;
                     }
                 }
@@ -314,14 +314,14 @@ public sealed record HumanReadableSerializerOptions
     {
         MakeReadOnly();
 
-        if (format != null && value != null)
+        if (format is not null && value is not null)
         {
             if (_valueFormatters.TryGetValue(format, out var formatter))
                 return formatter.Format(value);
 
             // Normalize the format
             format = GetFormat(format);
-            if (format != null && _valueFormatters.TryGetValue(format, out formatter))
+            if (format is not null && _valueFormatters.TryGetValue(format, out formatter))
                 return formatter.Format(value);
         }
 

@@ -54,7 +54,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     protected HtmlNode(string prefix, string localName, string namespaceURI, HtmlDocument ownerDocument)
     {
-        if (ownerDocument == null && this is not HtmlDocument)
+        if (ownerDocument is null && this is not HtmlDocument)
             throw new ArgumentNullException(nameof(ownerDocument));
 
         _prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
@@ -137,7 +137,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasChildNodes)
+            if (ParentNode is null || !ParentNode.HasChildNodes)
                 yield break;
 
             var index = ParentIndex;
@@ -155,7 +155,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasChildNodes)
+            if (ParentNode is null || !ParentNode.HasChildNodes)
                 return null;
 
             var index = ParentIndex;
@@ -170,7 +170,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasChildNodes)
+            if (ParentNode is null || !ParentNode.HasChildNodes)
                 yield break;
 
             var index = ParentIndex;
@@ -188,7 +188,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasChildNodes)
+            if (ParentNode is null || !ParentNode.HasChildNodes)
                 return null;
 
             var index = ParentIndex;
@@ -207,14 +207,14 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     public virtual int StreamOrder { get; set; }
     public abstract HtmlNodeType NodeType { get; }
 
-    public int Depth => ParentNode != null ? ParentNode.Depth + 1 : 0;
+    public int Depth => ParentNode is not null ? ParentNode.Depth + 1 : 0;
 
     public string Prefix
     {
         get => _prefix;
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (string.Equals(_prefix, value, StringComparison.Ordinal))
@@ -228,7 +228,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     protected virtual void ParseName(string name, out string prefix, out string localName)
     {
-        if (name == null)
+        if (name is null)
         {
             prefix = null;
             localName = null;
@@ -245,7 +245,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
         prefix = Utilities.Nullify(name[..pos], trim: true);
         localName = Utilities.Nullify(name[(pos + 1)..], trim: true);
-        if (prefix == null || localName == null)
+        if (prefix is null || localName is null)
         {
             prefix = string.Empty;
             localName = name;
@@ -290,7 +290,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         get => _localName;
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             ClearCaches();
@@ -317,7 +317,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         get => GetNamespaceOfPrefix(Prefix);
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (!string.Equals(DeclaredNamespaceURI, value, StringComparison.Ordinal))
@@ -361,7 +361,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         }
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             SetName(value);
@@ -380,7 +380,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         {
             if (_parentNode != value)
             {
-                if (value == null)
+                if (value is null)
                 {
                     // when detached, copy namespaces if it was computed
                     var nss = _parentNode.GetAllNamespaces();
@@ -403,7 +403,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            for (var node = ParentNode; node != null; node = node.ParentNode)
+            for (var node = ParentNode; node is not null; node = node.ParentNode)
             {
                 if (node is HtmlElement parentElement)
                     return parentElement;
@@ -426,7 +426,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     protected internal virtual void ClearErrors()
     {
-        if (_errors == null)
+        if (_errors is null)
             return;
 
         _errors.Clear();
@@ -439,7 +439,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (_outerHtml == null)
+            if (_outerHtml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
                 WriteTo(w);
@@ -453,7 +453,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (_innerText == null)
+            if (_innerText is null)
             {
                 var sb = new StringBuilder();
                 AppendChildText(sb);
@@ -467,13 +467,13 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             {
                 ClearCaches();
                 var firstChild = FirstChild;
-                if (firstChild != null && firstChild.NextSibling == null && firstChild.NodeType == HtmlNodeType.Text)
+                if (firstChild is not null && firstChild.NextSibling is null && firstChild.NodeType == HtmlNodeType.Text)
                 {
                     firstChild.Value = value;
                 }
                 else
                 {
-                    if (OwnerDocument == null)
+                    if (OwnerDocument is null)
                         throw new ArgumentException("The node is not owned by a document", nameof(value));
 
                     RemoveAll();
@@ -508,7 +508,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (_innerHtml == null)
+            if (_innerHtml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
                 WriteContentTo(w);
@@ -523,7 +523,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (_outerXml == null)
+            if (_outerXml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
                 using (var writer = XmlWriter.Create(w))
@@ -540,7 +540,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (_innerXml == null)
+            if (_innerXml is null)
             {
                 using var w = new StringWriter(CultureInfo.InvariantCulture);
                 using (var writer = XmlWriter.Create(w))
@@ -595,7 +595,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             throw new ArgumentNullException(nameof(namespaceURI));
 
         var att = Attributes[localName, namespaceURI];
-        if (att == null)
+        if (att is null)
         {
             att = Attributes.Add(prefix, localName, namespaceURI, value);
         }
@@ -611,7 +611,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return false;
 
         return Attributes.Remove(name);
@@ -626,7 +626,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (namespaceURI is null)
             throw new ArgumentNullException(nameof(namespaceURI));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return false;
 
         return Attributes.Remove(localName, namespaceURI);
@@ -640,7 +640,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (localName is null)
             throw new ArgumentNullException(nameof(localName));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return false;
 
         return Attributes.RemoveByPrefix(prefix, localName);
@@ -652,7 +652,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             throw new ArgumentNullException(nameof(name));
 
         var att = Attributes[name];
-        if (att == null)
+        if (att is null)
         {
             att = Attributes.Add(name, value);
         }
@@ -676,10 +676,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (namespaceURI is null)
             throw new ArgumentNullException(nameof(namespaceURI));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return false;
 
-        return Attributes[localName, namespaceURI] != null;
+        return Attributes[localName, namespaceURI] is not null;
     }
 
     public bool HasNonNullNorWhitespaceAttribute(string name)
@@ -687,7 +687,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        return GetNullifiedAttributeValue(name) != null;
+        return GetNullifiedAttributeValue(name) is not null;
     }
 
     public bool HasAttribute(string name)
@@ -695,10 +695,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return false;
 
-        return Attributes[name] != null;
+        return Attributes[name] is not null;
     }
 
     public string GetAttributeValue(string name)
@@ -706,11 +706,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return null;
 
         var att = Attributes[name];
-        if (att == null)
+        if (att is null)
             return null;
 
         return att.Value;
@@ -721,11 +721,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return defaultValue;
 
         var att = Attributes[name];
-        if (att == null)
+        if (att is null)
             return defaultValue;
 
         return att.Value;
@@ -739,11 +739,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (localName is null)
             throw new ArgumentNullException(nameof(localName));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return defaultValue;
 
         var att = Attributes.FirstOrDefault(a => string.Equals(a.Prefix, prefix, StringComparison.Ordinal) && a.LocalName.EqualsIgnoreCase(localName));
-        if (att == null)
+        if (att is null)
             return defaultValue;
 
         return att.Value;
@@ -754,11 +754,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return null;
 
         var att = Attributes[name];
-        if (att == null)
+        if (att is null)
             return null;
 
         return Utilities.Nullify(att.Value, trim: true);
@@ -773,11 +773,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (namespaceURI is null)
             throw new ArgumentNullException(nameof(namespaceURI));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return null;
 
         var att = Attributes[localName, namespaceURI];
-        if (att == null)
+        if (att is null)
             return null;
 
         return Utilities.Nullify(att.Value, trim: true);
@@ -792,11 +792,11 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (namespaceURI is null)
             throw new ArgumentNullException(nameof(namespaceURI));
 
-        if (_attributes == null)
+        if (_attributes is null)
             return defaultValue;
 
         var att = Attributes[localName, namespaceURI];
-        if (att == null)
+        if (att is null)
             return defaultValue;
 
         return att.Value;
@@ -824,10 +824,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (newChild.NodeType == HtmlNodeType.Document)
             throw new ArgumentException(message: null, nameof(newChild));
 
-        if (OwnerDocument == null)
+        if (OwnerDocument is null)
             throw new InvalidOperationException();
 
-        if (refChild == null)
+        if (refChild is null)
         {
             PrependChild(newChild);
             return;
@@ -861,7 +861,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (node is null)
             throw new ArgumentNullException(nameof(node));
 
-        for (var n = ParentNode; (n != null) && (n != this); n = n.ParentNode)
+        for (var n = ParentNode; (n is not null) && (n != this); n = n.ParentNode)
         {
             if (n == node)
                 return true;
@@ -883,7 +883,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (newChild.NodeType == HtmlNodeType.Document)
             throw new ArgumentException(message: null, nameof(newChild));
 
-        if (refChild == null)
+        if (refChild is null)
         {
             AppendChild(newChild);
             return;
@@ -927,7 +927,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     public virtual bool Remove(bool keepChildren)
     {
-        if (ParentNode != null)
+        if (ParentNode is not null)
             return ParentNode.RemoveChild(this, keepChildren);
 
         return false;
@@ -935,7 +935,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     public virtual void RemoveAll()
     {
-        if (_childNodes == null)
+        if (_childNodes is null)
             return;
 
         ChildNodes.RemoveAll();
@@ -956,7 +956,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             return RemoveAttribute(att.LocalName, att.NamespaceURI);
         }
 
-        if (_childNodes == null)
+        if (_childNodes is null)
             return false;
 
         var index = ChildNodes.IndexOf(oldChild);
@@ -993,7 +993,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (prefix is null)
             throw new ArgumentNullException(nameof(prefix));
 
-        if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI != null)
+        if (prefix.EqualsIgnoreCase(Prefix) && DeclaredNamespaceURI is not null)
             return DeclaredNamespaceURI;
 
         foreach (var att in Attributes)
@@ -1002,10 +1002,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.Value;
         }
 
-        if (ParentNode != null && ParentNode != this)
+        if (ParentNode is not null && ParentNode != this)
             return ParentNode.GetNamespaceOfPrefix(prefix);
 
-        if (OwnerDocument != null && OwnerDocument != this)
+        if (OwnerDocument is not null && OwnerDocument != this)
             return OwnerDocument.GetNamespaceOfPrefix(prefix);
 
         return string.Empty;
@@ -1026,10 +1026,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 return att.LocalName;
         }
 
-        if (ParentNode != null && ParentNode != this)
+        if (ParentNode is not null && ParentNode != this)
             return ParentNode.GetPrefixOfNamespace(namespaceURI);
 
-        if (OwnerDocument != null && OwnerDocument != this)
+        if (OwnerDocument is not null && OwnerDocument != this)
             return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
 
         return string.Empty;
@@ -1040,7 +1040,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (func is null)
             throw new ArgumentNullException(nameof(func));
 
-        if (ParentNode == null)
+        if (ParentNode is null)
             return null;
 
         if (func(ParentNode))
@@ -1182,7 +1182,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
     public virtual HtmlNode CreateNew()
     {
-        if (OwnerDocument == null)
+        if (OwnerDocument is null)
             throw new InvalidOperationException();
 
         switch (NodeType)
@@ -1220,13 +1220,13 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
 
         if (!string.IsNullOrWhiteSpace(NamespaceURI))
         {
-            if (Prefix != null && (scope != XmlNamespaceScope.ExcludeXml || !string.Equals(NamespaceURI, XmlnsNamespaceURI, StringComparison.Ordinal)))
+            if (Prefix is not null && (scope != XmlNamespaceScope.ExcludeXml || !string.Equals(NamespaceURI, XmlnsNamespaceURI, StringComparison.Ordinal)))
             {
                 dictionary[Prefix] = NamespaceURI;
             }
         }
 
-        if (ParentNode != null && scope != XmlNamespaceScope.Local)
+        if (ParentNode is not null && scope != XmlNamespaceScope.Local)
         {
             ParentNode.AddNamespacesInScope(scope, dictionary);
         }
@@ -1236,10 +1236,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     {
         get
         {
-            if (OwnerDocument != null)
+            if (OwnerDocument is not null)
                 return OwnerDocument;
 
-            if (ParentNode != null)
+            if (ParentNode is not null)
                 return ParentNode.ParentNamespaceResolver;
 
             return this;

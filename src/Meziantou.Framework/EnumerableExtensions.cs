@@ -33,7 +33,7 @@ public static partial class EnumerableExtensions
         if (collection is null)
             throw new ArgumentNullException(nameof(collection));
 
-        if (items != null)
+        if (items is not null)
         {
             foreach (var item in items)
             {
@@ -86,7 +86,7 @@ public static partial class EnumerableExtensions
         if (source is null)
             throw new ArgumentNullException(nameof(source));
 
-        return source.Where(item => item != null)!;
+        return source.Where(item => item is not null)!;
     }
 
     public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
@@ -249,7 +249,7 @@ public static partial class EnumerableExtensions
 
     public static IEnumerable<T> EmptyIfNull<T>(this IEnumerable<T>? items)
     {
-        if (items == null)
+        if (items is null)
             return Enumerable.Empty<T>();
 
         return items;

@@ -86,7 +86,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     private void Listen(IAsyncResult ar)
     {
         var server = _server;
-        if (server == null)
+        if (server is null)
             return;
 
         try
@@ -127,7 +127,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     private bool TryAcquireMutex()
     {
-        if (_mutex == null)
+        if (_mutex is null)
         {
             var mutexName = "Local\\Mutex" + applicationId.ToString();
             _mutex = new Mutex(initiallyOwned: false, name: mutexName);

@@ -20,7 +20,7 @@ public sealed class BooleanToValueConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
-        if (value == null)
+        if (value is null)
             return NullValue ?? FalseValue;
 
         if (value is bool b)

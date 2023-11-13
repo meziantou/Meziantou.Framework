@@ -88,7 +88,7 @@ public static class HexaConverter
 
     public static bool TryParseHexaString(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
     {
-        if (str == null)
+        if (str is null)
         {
             result = default;
             return false;
@@ -147,7 +147,7 @@ public static class HexaConverter
 
     public static bool TryParseHexaString(string? str, Span<byte> bytes, out int writtenBytes)
     {
-        if (str == null || str.Length % 2 != 0)
+        if (str is null || str.Length % 2 != 0)
         {
             writtenBytes = 0;
             return false;

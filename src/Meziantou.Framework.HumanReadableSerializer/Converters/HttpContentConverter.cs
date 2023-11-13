@@ -17,7 +17,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
 
     protected override void WriteValue(HumanReadableTextWriter writer, HttpContent? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         writer.StartObject();
 
@@ -43,7 +43,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
                 var str = value.ReadAsStringAsync().Result;
 
                 var mediaType = value.Headers.ContentType?.MediaType;
-                if (mediaType != null)
+                if (mediaType is not null)
                 {
                     str = options.FormatValue(mediaType, str);
                 }
@@ -74,7 +74,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
             return true;
 
         var mimeType = content.Headers.ContentType?.MediaType;
-        if (mimeType != null)
+        if (mimeType is not null)
         {
             // https://www.iana.org/assignments/media-types/media-types.xhtml
             if (mimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))

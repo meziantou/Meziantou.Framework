@@ -29,12 +29,12 @@ namespace Meziantou.Framework
             return () =>
             {
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -61,12 +61,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -93,12 +93,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -125,12 +125,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -157,12 +157,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -189,12 +189,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -221,12 +221,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -253,12 +253,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -285,12 +285,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -317,12 +317,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>
@@ -349,12 +349,12 @@ namespace Meziantou.Framework
 
                 args = ValueTuple.Create(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
-                if (task != null)
+                if (task is not null)
                     return;
 
                 lock (l)
                 {
-                    if (task != null)
+                    if (task is not null)
                         return;
                     
                     task = Task.Delay(interval).ContinueWith(t =>

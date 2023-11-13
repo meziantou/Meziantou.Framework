@@ -35,7 +35,7 @@ public abstract class RecurrenceRule
     {
         recurrenceRule = null;
         error = null;
-        if (rrule == null)
+        if (rrule is null)
             return false;
 
         try
@@ -119,7 +119,7 @@ public abstract class RecurrenceRule
             recurrenceRule.Interval = values.GetValue("INTERVAL", 1);
             recurrenceRule.Occurrences = values.GetValue("COUNT", (int?)null);
             var until = values.GetValue("UNTIL", (string?)null);
-            if (until != null)
+            if (until is not null)
             {
                 recurrenceRule.EndDate = Utilities.ParseDateTime(until);
             }
@@ -283,7 +283,7 @@ public abstract class RecurrenceRule
 
     private protected static IEnumerable<T> FilterBySetPosition<T>(IList<T> source, IList<int>? setPositions)
     {
-        if (setPositions == null || !setPositions.Any())
+        if (setPositions is null || !setPositions.Any())
             return source;
 
         var result = new List<T>();
@@ -310,7 +310,7 @@ public abstract class RecurrenceRule
 
     private protected static bool IsEmpty<T>([NotNullWhen(false)] IList<T>? list)
     {
-        return list == null || list.Count == 0;
+        return list is null || list.Count == 0;
     }
 
     private protected static IEnumerable<T> Intersect<T>(params IEnumerable<T>?[] enumerables)
@@ -318,10 +318,10 @@ public abstract class RecurrenceRule
         IEnumerable<T>? result = null;
         foreach (var enumerable in enumerables)
         {
-            if (enumerable == null)
+            if (enumerable is null)
                 continue;
 
-            if (result == null)
+            if (result is null)
             {
                 result = enumerable;
             }
@@ -418,7 +418,7 @@ public abstract class RecurrenceRule
 
     private static IEnumerable<string> SplitToList(string? text)
     {
-        if (text == null)
+        if (text is null)
             yield break;
 
         foreach (var str in text.Split(','))

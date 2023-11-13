@@ -429,7 +429,7 @@ public sealed class InlineSnapshotTests
 
         psi.EnvironmentVariables.Add("DiffEngine_Disabled", "true");
         psi.EnvironmentVariables.Add("MF_CurrentDirectory", Environment.CurrentDirectory);
-        if (environmentVariables != null)
+        if (environmentVariables is not null)
         {
             foreach (var variable in environmentVariables)
             {
@@ -483,9 +483,9 @@ public sealed class InlineSnapshotTests
             var doc = XDocument.Load(stream);
             var items = doc.Root.Descendants("PackageReference");
 
-            var packages = items.Where(item => item.Parent.Attribute("Condition") == null).ToList();
+            var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
 #if NET472
-            packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") != null));
+            packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
 #endif
 
             return string.Join("\n", packages.Select(item => item.ToString()));

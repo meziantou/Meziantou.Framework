@@ -43,7 +43,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         if (localName is null)
             throw new ArgumentNullException(nameof(localName));
 
-        if (Parent == null || Parent.OwnerDocument == null)
+        if (Parent is null || Parent.OwnerDocument is null)
             throw new InvalidOperationException();
 
         if (string.IsNullOrWhiteSpace(prefix) && !string.IsNullOrWhiteSpace(namespaceURI))
@@ -62,7 +62,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         if (name is null)
             throw new ArgumentNullException(nameof(name));
 
-        if (Parent == null || Parent.OwnerDocument == null)
+        if (Parent is null || Parent.OwnerDocument is null)
             throw new InvalidOperationException();
 
         var att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
@@ -81,11 +81,11 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         if (attribute is null)
             throw new ArgumentNullException(nameof(attribute));
 
-        if (attribute.ParentNode != null)
+        if (attribute.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(attribute));
 
         var att = this[attribute.LocalName, attribute.NamespaceURI];
-        if (att != null)
+        if (att is not null)
         {
             if (!replace)
                 throw new ArgumentException("The same attribute (" + att.NamespaceURI + ":" + att.LocalName + ") has has already been added.", nameof(attribute));
@@ -143,7 +143,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         if (item is null)
             throw new ArgumentNullException(nameof(item));
 
-        if (item.ParentNode != null)
+        if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
 
         _attributes.Insert(index, item);
@@ -171,7 +171,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public int IndexOf(string name)
     {
-        if (name == null)
+        if (name is null)
             return -1;
 
         return _attributes.FindIndex(a => name.EqualsIgnoreCase(a.Name));
@@ -180,12 +180,12 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public int IndexOf(string localName, string namespaceURI)
     {
-        if (localName == null || namespaceURI == null)
+        if (localName is null || namespaceURI is null)
             return -1;
 
         return _attributes.FindIndex(a =>
             localName.EqualsIgnoreCase(a.LocalName) &&
-            a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
+            a.NamespaceURI is not null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
     }
 
     public bool RemoveAt(int index)
@@ -205,7 +205,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public void RemoveRange(IEnumerable<HtmlAttribute> attributes)
     {
-        if (attributes == null)
+        if (attributes is null)
             return;
 
         foreach (var att in attributes)
@@ -222,7 +222,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
             throw new ArgumentNullException(nameof(localName));
 
         var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
-        if (att == null)
+        if (att is null)
             return false;
 
         return Remove(att);
@@ -238,7 +238,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
             throw new ArgumentNullException(nameof(namespaceURI));
 
         var att = this[localName, namespaceURI];
-        if (att == null)
+        if (att is null)
             return false;
 
         return Remove(att);
@@ -250,7 +250,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
             throw new ArgumentNullException(nameof(name));
 
         var att = this[name];
-        if (att == null)
+        if (att is null)
             return false;
 
         return Remove(att);
@@ -276,17 +276,17 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     {
         get
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return _attributes.Find(a => name.EqualsIgnoreCase(a.Name));
         }
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (value.ParentNode != null)
+            if (value.ParentNode is not null)
                 throw new ArgumentException(message: null, nameof(value));
 
             var index = IndexOf(name);
@@ -306,22 +306,22 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     {
         get
         {
-            if (localName == null)
+            if (localName is null)
                 throw new ArgumentNullException(nameof(localName));
 
-            if (namespaceURI == null)
+            if (namespaceURI is null)
                 throw new ArgumentNullException(nameof(namespaceURI));
 
             return _attributes.Find(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
-                a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
+                a.NamespaceURI is not null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
         }
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (value.ParentNode != null)
+            if (value.ParentNode is not null)
                 throw new ArgumentException(message: null, nameof(value));
 
             var index = IndexOf(localName, namespaceURI);
@@ -390,7 +390,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         get => this[index];
         set
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             this[index] = (HtmlAttribute)value;

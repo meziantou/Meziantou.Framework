@@ -31,7 +31,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     {
         get
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return _list.Find(n => n.Name.EqualsIgnoreCase(name));
@@ -43,15 +43,15 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     {
         get
         {
-            if (localName == null)
+            if (localName is null)
                 throw new ArgumentNullException(nameof(localName));
 
-            if (namespaceURI == null)
+            if (namespaceURI is null)
                 throw new ArgumentNullException(nameof(namespaceURI));
 
             return _list.Find(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
-                a.NamespaceURI != null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
+                a.NamespaceURI is not null && string.Equals(namespaceURI, a.NamespaceURI, StringComparison.Ordinal));
         }
     }
 
@@ -77,7 +77,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
         if (oldChild is null)
             throw new ArgumentNullException(nameof(oldChild));
 
-        if (newChild.ParentNode != null)
+        if (newChild.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(newChild));
 
         var index = _list.IndexOf(oldChild);
@@ -124,7 +124,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
         if (item is null)
             throw new ArgumentNullException(nameof(item));
 
-        if (item.ParentNode != null)
+        if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
 
         HtmlDocument.RemoveIntrinsicElement(item.OwnerDocument, item as HtmlElement);
@@ -135,7 +135,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     public void AddRange(IEnumerable<HtmlNode> nodes)
     {
-        if (nodes == null)
+        if (nodes is null)
             return;
 
         foreach (var node in nodes)
@@ -156,7 +156,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
         if (item is null)
             throw new ArgumentNullException(nameof(item));
 
-        if (item.ParentNode != null)
+        if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
 
         AddNoCheck(item);

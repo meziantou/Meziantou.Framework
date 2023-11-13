@@ -10,7 +10,7 @@ public static class HumanReadableHttpExtensions
     {
         if (httpOptions.RequestMessageOptions is { } requestOptions)
         {
-            if (requestOptions.ExcludedHeaderNames != null || requestOptions.HeaderValueTransformer != null)
+            if (requestOptions.ExcludedHeaderNames is not null || requestOptions.HeaderValueTransformer is not null)
                 options.Converters.Add(new HttpHeadersConverter<HttpRequestHeaders>(requestOptions.ExcludedHeaderNames, requestOptions.HeaderValueTransformer));
         }
 
@@ -22,7 +22,7 @@ public static class HumanReadableHttpExtensions
                 headerFormatters = headerFormatters.Prepend(new ContentSecurityPolicyFormatter());
             }
 
-            if (responseOptions.ExcludedHeaderNames != null || headerFormatters.Any())
+            if (responseOptions.ExcludedHeaderNames is not null || headerFormatters.Any())
             {
                 options.Converters.Add(new HttpHeadersConverter<HttpResponseHeaders>(responseOptions.ExcludedHeaderNames, headerFormatters));
             }
@@ -119,7 +119,7 @@ public static class HumanReadableHttpExtensions
         {
             foreach (var header in headers)
             {
-                if (excludedHeaders == null || !excludedHeaders.Contains(header.Key))
+                if (excludedHeaders is null || !excludedHeaders.Contains(header.Key))
                     return false;
             }
         }
@@ -132,7 +132,7 @@ public static class HumanReadableHttpExtensions
     {
         protected override void WriteValue(HumanReadableTextWriter writer, HttpRequestMessage? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             writer.WriteValue(value.Method + " " + value.RequestUri);
         }
     }

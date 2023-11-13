@@ -102,11 +102,11 @@ internal sealed class FSharpUtils
         try
         {
             var unionCases = GetUnionCases(type);
-            if(unionCases == null)
+            if(unionCases is null)
                 return null;
 
             var tag = value.GetType().GetProperty("Tag")?.GetValue(value);
-            if (tag == null)
+            if (tag is null)
                 return null;
 
             foreach (var unionCase in unionCases)

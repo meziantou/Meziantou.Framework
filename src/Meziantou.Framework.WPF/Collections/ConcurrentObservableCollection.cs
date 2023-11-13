@@ -41,7 +41,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     {
         get
         {
-            if (_observableCollection == null)
+            if (_observableCollection is null)
             {
                 lock (_lock)
                 {
@@ -116,7 +116,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             }
             else
             {
-                if (_observableCollection != null)
+                if (_observableCollection is not null)
                 {
                     for (var i = count; i < _items.Count; i++)
                     {
@@ -140,7 +140,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
             }
             else
             {
-                if (_observableCollection != null)
+                if (_observableCollection is not null)
                 {
                     for (var i = index; i < index + addedItemsCount; i++)
                     {

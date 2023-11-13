@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 

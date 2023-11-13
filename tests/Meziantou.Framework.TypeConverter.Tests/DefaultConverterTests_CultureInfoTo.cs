@@ -10,7 +10,7 @@ public class DefaultConverterTests_CultureInfoTo
     public void TryConvert_CultureInfoToString_UsingInvariantCulture()
     {
         var converter = new DefaultConverter();
-        var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
+        var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
 
         value.Should().Be("en");
     }
@@ -19,7 +19,7 @@ public class DefaultConverterTests_CultureInfoTo
     public void TryConvert_CultureInfoToString_UsingSpecificCulture()
     {
         var converter = new DefaultConverter();
-        var value = converter.ChangeType<string>(new CultureInfo("en"), defaultValue: null, new CultureInfo("en-US"));
+        var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.GetCultureInfo("en-US"));
 
         value.Should().Be("en");
     }

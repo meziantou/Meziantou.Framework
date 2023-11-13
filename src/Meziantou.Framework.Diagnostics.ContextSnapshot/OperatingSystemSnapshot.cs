@@ -90,7 +90,7 @@ public sealed class OperatingSystemSnapshot
                         ((value.StartsWith('"') && value.EndsWith('"')) ||
                          (value.StartsWith('\'') && value.EndsWith('\''))))
                     {
-                        value = value.Substring(1, value.Length - 2);
+                        value = value[1..^1];
                     }
 
                     values[key] = value;

@@ -95,7 +95,7 @@ public class CommandLineBuilderTests
         }
 
         existingFiles.Sort(StringComparer.Ordinal);
-        throw new XunitException($"File not found:\n{string.Join("\n", testedPaths)}\n. List of existing files:\n{string.Join('\n', existingFiles)}\nHave you built the ArgumentsPrinter project?");
+        throw new XunitException($"File not found:\n{string.Join('\n', testedPaths)}\n. List of existing files:\n{string.Join('\n', existingFiles)}\nHave you built the ArgumentsPrinter project?");
     }
 
     private void ValidateArguments(string fileName, string arguments, string[] expectedArguments)

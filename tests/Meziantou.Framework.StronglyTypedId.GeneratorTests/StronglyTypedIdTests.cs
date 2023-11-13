@@ -144,7 +144,7 @@ public sealed partial class StronglyTypedIdTests
     public void IParsable_Int32()
     {
         Parse<IdInt32>("test");
-        void Parse<T>(string _) where T : IParsable<IdInt32>
+        static void Parse<T>(string _) where T : IParsable<IdInt32>
         { }
     }
 
@@ -152,7 +152,7 @@ public sealed partial class StronglyTypedIdTests
     public void ISpanParsable_Int32()
     {
         Parse<IdInt32>("test");
-        void Parse<T>(string _) where T : ISpanParsable<IdInt32>
+        static void Parse<T>(string _) where T : ISpanParsable<IdInt32>
         { }
     }
 #endif

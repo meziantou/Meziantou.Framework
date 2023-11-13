@@ -116,7 +116,10 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             using var stream = File.OpenRead(AssemblyLocation);
             using var reader = new PEReader(stream);
             if (!reader.TryOpenAssociatedPortablePdb(AssemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider is null)
+            {
+                metadataReaderProvider?.Dispose();
                 return null;
+            }
 
             using (metadataReaderProvider)
             {
@@ -183,7 +186,10 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             using var stream = File.OpenRead(assemblyLocation);
             using var reader = new PEReader(stream);
             if (!reader.TryOpenAssociatedPortablePdb(assemblyLocation, File.OpenRead, out var metadataReaderProvider, out _) || metadataReaderProvider is null)
+            {
+                metadataReaderProvider?.Dispose();
                 return null;
+            }
 
             using (metadataReaderProvider)
             {

@@ -25,7 +25,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteStatement(IndentedTextWriter writer, Statement? statement, WriteStatementOptions options)
     {
-        if (statement == null)
+        if (statement is null)
             return;
 
         if (options is null)
@@ -124,12 +124,12 @@ public partial class CSharpCodeGenerator
         writer.WriteLine("try");
         WriteStatements(writer, statement.Try);
 
-        if (statement.Catch != null)
+        if (statement.Catch is not null)
         {
             WriteCatchClauseCollection(writer, statement.Catch);
         }
 
-        if (statement.Finally != null)
+        if (statement.Finally is not null)
         {
             writer.WriteLine("finally");
             WriteStatements(writer, statement.Finally);
@@ -154,7 +154,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteReturnStatement(IndentedTextWriter writer, ReturnStatement statement, WriteStatementOptions options)
     {
         writer.Write("return");
-        if (statement.Expression != null)
+        if (statement.Expression is not null)
         {
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
@@ -165,7 +165,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteYieldReturnStatement(IndentedTextWriter writer, YieldReturnStatement statement, WriteStatementOptions options)
     {
         writer.Write("yield return");
-        if (statement.Expression != null)
+        if (statement.Expression is not null)
         {
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
@@ -184,7 +184,7 @@ public partial class CSharpCodeGenerator
         WriteExpression(writer, statement.Condition);
         writer.WriteLine(")");
         WriteStatements(writer, statement.TrueStatements);
-        if (statement.FalseStatements != null)
+        if (statement.FalseStatements is not null)
         {
             writer.WriteLine("else");
             WriteStatements(writer, statement.FalseStatements);
@@ -208,7 +208,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteThrowStatement(IndentedTextWriter writer, ThrowStatement statement, WriteStatementOptions options)
     {
         writer.Write("throw");
-        if (statement.Expression != null)
+        if (statement.Expression is not null)
         {
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
@@ -227,7 +227,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteVariableDeclarationStatement(IndentedTextWriter writer, VariableDeclarationStatement statement, WriteStatementOptions options)
     {
-        if (statement.Type != null)
+        if (statement.Type is not null)
         {
             WriteTypeReference(writer, statement.Type);
             writer.Write(" ");
@@ -238,7 +238,7 @@ public partial class CSharpCodeGenerator
         }
 
         WriteIdentifier(writer, statement.Name);
-        if (statement.InitExpression != null)
+        if (statement.InitExpression is not null)
         {
             writer.Write(" = ");
             WriteExpression(writer, statement.InitExpression);
@@ -260,17 +260,17 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteIterationStatement(IndentedTextWriter writer, IterationStatement statement, WriteStatementOptions options)
     {
         writer.Write("for (");
-        if (statement.Initialization != null)
+        if (statement.Initialization is not null)
         {
             WriteStatement(writer, statement.Initialization, _inlineStatementWriteStatementOptions);
         }
         writer.Write("; ");
-        if (statement.Condition != null)
+        if (statement.Condition is not null)
         {
             WriteExpression(writer, statement.Condition);
         }
         writer.Write("; ");
-        if (statement.IncrementStatement != null)
+        if (statement.IncrementStatement is not null)
         {
             WriteStatement(writer, statement.IncrementStatement, _inlineStatementWriteStatementOptions);
         }
@@ -281,14 +281,14 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteAddEventHandlerStatement(IndentedTextWriter writer, AddEventHandlerStatement statement, WriteStatementOptions options)
     {
-        if (statement.LeftExpression != null)
+        if (statement.LeftExpression is not null)
         {
             WriteExpression(writer, statement.LeftExpression);
         }
 
         writer.Write(" += ");
 
-        if (statement.RightExpression != null)
+        if (statement.RightExpression is not null)
         {
             WriteExpression(writer, statement.RightExpression);
         }
@@ -298,14 +298,14 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteRemoveEventHandlerStatement(IndentedTextWriter writer, RemoveEventHandlerStatement statement, WriteStatementOptions options)
     {
-        if (statement.LeftExpression != null)
+        if (statement.LeftExpression is not null)
         {
             WriteExpression(writer, statement.LeftExpression);
         }
 
         writer.Write(" -= ");
 
-        if (statement.RightExpression != null)
+        if (statement.RightExpression is not null)
         {
             WriteExpression(writer, statement.RightExpression);
         }

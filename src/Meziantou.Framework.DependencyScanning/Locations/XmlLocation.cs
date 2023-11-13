@@ -55,10 +55,10 @@ internal class XmlLocation : Location, ILocationLineInfo
         {
             var doc = await XmlUtilities.LoadDocumentWithoutClosingStreamAsync(stream, LoadOptions.PreserveWhitespace, cancellationToken).ConfigureAwait(false);
             var element = doc.XPathSelectElement(XPath);
-            if (element == null)
+            if (element is null)
                 throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-            if (AttributeName != null)
+            if (AttributeName is not null)
             {
                 var attributeName = XName.Get(AttributeName);
                 var value = UpdateTextValue(element.Attribute(attributeName)?.Value, oldValue, newValue);
@@ -81,7 +81,7 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     public override string ToString()
     {
-        if (AttributeName == null)
+        if (AttributeName is null)
         {
             return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{XPath}:{_lineInfo}");
         }
@@ -93,13 +93,13 @@ internal class XmlLocation : Location, ILocationLineInfo
     {
         if (StartPosition < 0)
         {
-            if (oldValue != null && currentValue != oldValue)
+            if (oldValue is not null && currentValue != oldValue)
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
 
             return newValue;
         }
 
-        if (oldValue != null)
+        if (oldValue is not null)
         {
             var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
             if(!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))

@@ -12,7 +12,7 @@ internal sealed class DirectoryEnumerationSession : IDisposable
 
     public ProjectedFileSystemEntry? GetNextEntry()
     {
-        if (_current != null)
+        if (_current is not null)
         {
             var current = _current;
             _current = null;
@@ -30,7 +30,7 @@ internal sealed class DirectoryEnumerationSession : IDisposable
 
     public void Reenqueue()
     {
-        if (_enumerator == null)
+        if (_enumerator is null)
             throw new InvalidOperationException("No item dequeued");
 
         _current = _enumerator.Current;

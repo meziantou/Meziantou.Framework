@@ -113,7 +113,7 @@ sealed class HtmlAttribute : HtmlNode
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasAttributes)
+            if (ParentNode is null || !ParentNode.HasAttributes)
                 return null;
 
             var index = ParentIndex;
@@ -128,7 +128,7 @@ sealed class HtmlAttribute : HtmlNode
     {
         get
         {
-            if (ParentNode == null || !ParentNode.HasAttributes)
+            if (ParentNode is null || !ParentNode.HasAttributes)
                 return null;
 
             var index = ParentIndex;
@@ -144,7 +144,7 @@ sealed class HtmlAttribute : HtmlNode
         get => InnerText;
         set
         {
-            IsValueDefined = value != null;
+            IsValueDefined = value is not null;
             InnerText = value;
         }
     }
@@ -175,7 +175,7 @@ sealed class HtmlAttribute : HtmlNode
             writer.Write(NameQuoteChar);
         }
 
-        if (Value != null && IsValueDefined)
+        if (Value is not null && IsValueDefined)
         {
             writer.Write('=');
 
@@ -232,7 +232,7 @@ sealed class HtmlAttribute : HtmlNode
 
     internal static string UnescapeText(string text, char quoteChar)
     {
-        if (text == null)
+        if (text is null)
             return null;
 
         if (quoteChar == '"')
@@ -258,7 +258,7 @@ sealed class HtmlAttribute : HtmlNode
 
         var eqc = EscapeQuoteChar;
         var s = GetValue();
-        if (s != null)
+        if (s is not null)
         {
             if (eqc)
             {

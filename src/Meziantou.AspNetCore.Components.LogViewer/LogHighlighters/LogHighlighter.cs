@@ -8,10 +8,10 @@ internal static class LogHighlighter
 {
     public static MarkupString Highlight(string? text, IEnumerable<ILogHighlighter> highlighters, string? attributeName)
     {
-        if (text == null)
+        if (text is null)
             return new MarkupString();
 
-        if (highlighters != null)
+        if (highlighters is not null)
         {
             var allMatches = highlighters
                 .SelectMany(highlighter => highlighter.Process(text))
@@ -53,7 +53,7 @@ internal static class LogHighlighter
                     lastIndex = match.Index + match.Length;
                     var matchedText = text[match.Index..lastIndex];
 
-                    if (match.Link != null)
+                    if (match.Link is not null)
                     {
                         sb.Append("<a ").Append(attributeName).Append(" class='log-message-match-link' target='_blank' href='");
                         sb.Append(HtmlEncoder.Default.Encode(match.Link));
@@ -64,7 +64,7 @@ internal static class LogHighlighter
                         sb.Append("<span ").Append(attributeName).Append(" class='log-message-match'");
                     }
 
-                    if (match.Title != null)
+                    if (match.Title is not null)
                     {
                         sb.Append(" title='")
                           .Append(HtmlEncoder.Default.Encode(match.Title))
@@ -75,7 +75,7 @@ internal static class LogHighlighter
 
                     sb.Append(HtmlEncoder.Default.Encode(match.ReplacementText ?? matchedText));
 
-                    if (match.Link != null)
+                    if (match.Link is not null)
                     {
                         sb.Append("</a>");
                     }

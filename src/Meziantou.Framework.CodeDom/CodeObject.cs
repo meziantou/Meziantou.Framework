@@ -22,14 +22,14 @@ public abstract class CodeObject
         if (parent is null)
             throw new ArgumentNullException(nameof(parent));
 
-        if (field != null)
+        if (field is not null)
         {
             field.Parent = null; // Detach previous value
         }
 
-        if (value != null)
+        if (value is not null)
         {
-            if (value.Parent != null && value.Parent != parent)
+            if (value.Parent is not null && value.Parent != parent)
                 throw new ArgumentException("Object already has a parent.", nameof(value));
 
             value.Parent = parent;
@@ -45,7 +45,7 @@ public abstract class CodeObject
 
     protected static T SetParent<T>(CodeObject parent, T? value) where T : CodeObject
     {
-        if (parent == null)
+        if (parent is null)
             throw new ArgumentNullException(nameof(parent));
 
         if (value?.Parent != parent)

@@ -67,7 +67,7 @@ sealed class HtmlReader
         if (!IsRestartable)
             throw new InvalidOperationException();
 
-        if (TextReader is not StreamReader sr || sr.BaseStream == null || !sr.BaseStream.CanSeek)
+        if (TextReader is not StreamReader sr || sr.BaseStream is null || !sr.BaseStream.CanSeek)
             return false;
 
         return sr.BaseStream.Seek(0, SeekOrigin.Begin) == 0;
@@ -139,11 +139,11 @@ sealed class HtmlReader
     {
         if (state.ParserState == HtmlParserState.AttName)
         {
-            _attIsScriptType = state.Value != null && _currentElement != null &&
+            _attIsScriptType = state.Value is not null && _currentElement is not null &&
                 state.Value.Equals("type", StringComparison.OrdinalIgnoreCase) &&
                 _currentElement.Equals("script", StringComparison.OrdinalIgnoreCase);
         }
-        else if (_attIsScriptType && state.ParserState == HtmlParserState.AttValue && state.Value != null)
+        else if (_attIsScriptType && state.ParserState == HtmlParserState.AttValue && state.Value is not null)
         {
             _typeAttribute = state.Value;
         }

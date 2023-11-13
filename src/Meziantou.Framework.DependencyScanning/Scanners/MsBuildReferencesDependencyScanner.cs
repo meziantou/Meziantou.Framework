@@ -23,7 +23,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(context.Content, context.CancellationToken).ConfigureAwait(false);
-        if (doc == null || doc.Root == null)
+        if (doc is null || doc.Root is null)
             return;
 
         var ns = doc.Root.GetDefaultNamespace();

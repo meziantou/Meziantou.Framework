@@ -23,7 +23,7 @@ internal sealed class HtmlFormatter : ValueFormatter
                 OrderAttributes(doc);
             }
 
-            if (_options.AttributeQuote != null)
+            if (_options.AttributeQuote is not null)
             {
                 NormalizeQuotes(doc, _options.AttributeQuote.Value);
             }

@@ -50,7 +50,7 @@ public class XUnitLogger : ILogger
     {
         var sb = new StringBuilder();
 
-        if (_options.TimestampFormat != null)
+        if (_options.TimestampFormat is not null)
         {
             var now = _options.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
             var timestamp = now.ToString(_options.TimestampFormat);
@@ -69,7 +69,7 @@ public class XUnitLogger : ILogger
 
         sb.Append(formatter(state, exception));
 
-        if (exception != null)
+        if (exception is not null)
         {
             sb.Append('\n').Append(exception);
         }

@@ -33,7 +33,7 @@ public static class LsaPrivateData
             secretName.Length = (ushort)(key.Length * 2);
 
             LSA_UNICODE_STRING? lusSecretData = null;
-            if (value != null)
+            if (value is not null)
             {
                 lusSecretData = new LSA_UNICODE_STRING()
                 {
@@ -78,7 +78,7 @@ public static class LsaPrivateData
             if (winErrorCode != 0)
                 throw new Win32Exception((int)winErrorCode, "LsaRetrievePrivateData failed: " + winErrorCode.ToString(CultureInfo.InvariantCulture));
 
-            if (privateData == null)
+            if (privateData is null)
                 return null;
 
             var value = new string(privateData->Buffer.Value, 0, privateData->Length / 2);

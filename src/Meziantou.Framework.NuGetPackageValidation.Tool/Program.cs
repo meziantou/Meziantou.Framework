@@ -38,7 +38,7 @@ internal static partial class Program
             var options = new NuGetPackageValidationOptions();
 
             var includedRules = context.ParseResult.GetValueForOption(rulesOptions);
-            if (includedRules == null || includedRules.Length == 0)
+            if (includedRules is null || includedRules.Length == 0)
             {
                 foreach (var rule in NuGetPackageValidationRules.Default)
                 {
@@ -47,7 +47,7 @@ internal static partial class Program
             }
 
             var excludedRules = context.ParseResult.GetValueForOption(excludedRulesOptions);
-            if (excludedRules != null && excludedRules.Length > 0)
+            if (excludedRules is not null && excludedRules.Length > 0)
             {
                 foreach (var excludedRule in excludedRules)
                 {
@@ -56,7 +56,7 @@ internal static partial class Program
             }
 
             var excludedRuleIds = context.ParseResult.GetValueForOption(excludedRuleIdsOptions);
-            if (excludedRuleIds != null && excludedRuleIds.Length > 0)
+            if (excludedRuleIds is not null && excludedRuleIds.Length > 0)
             {
                 foreach (var excludedRuleId in excludedRuleIds)
                 {
@@ -70,7 +70,7 @@ internal static partial class Program
                 options.ConfigureRequest = request =>
                 {
                     var host = request.RequestUri?.Host;
-                    if (host == null)
+                    if (host is null)
                         return;
 
                     if (host.EndsWith("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
@@ -128,7 +128,7 @@ internal static partial class Program
                 }
 
                 var members = typeof(NuGetPackageValidationRules).GetMember(ruleName, BindingFlags.Public | BindingFlags.Static);
-                if (members == null || members.Length != 1)
+                if (members is null || members.Length != 1)
                 {
                     result.ErrorMessage = $"Invalid rule '{ruleName}'";
                     return null;

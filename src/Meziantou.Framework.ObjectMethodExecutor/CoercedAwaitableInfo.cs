@@ -7,7 +7,7 @@ internal readonly struct CoercedAwaitableInfo
     public AwaitableInfo AwaitableInfo { get; }
     public Expression? CoercerExpression { get; }
     public Type? CoercerResultType { get; }
-    public bool RequiresCoercion => CoercerExpression != null;
+    public bool RequiresCoercion => CoercerExpression is not null;
 
     public CoercedAwaitableInfo(AwaitableInfo awaitableInfo)
     {

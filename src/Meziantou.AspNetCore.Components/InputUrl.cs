@@ -57,7 +57,7 @@ public class InputUrl<TValue> : InputBase<TValue>
 
         if (success)
         {
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             validationErrorMessage = null;
             return true;
         }
@@ -70,7 +70,7 @@ public class InputUrl<TValue> : InputBase<TValue>
 
     private static bool TryParseString(string? value, out TValue? result)
     {
-        if (value != null)
+        if (value is not null)
         {
             result = (TValue)(object)value;
             return true;

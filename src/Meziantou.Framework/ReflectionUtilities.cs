@@ -34,7 +34,7 @@ static class ReflectionUtilities
     [RequiresUnreferencedCode("Use reflection to find static methods")]
     public static MethodInfo? GetImplicitConversion(object? value, Type targetType)
     {
-        if (value == null)
+        if (value is null)
             return null;
 
         var valueType = value.GetType();

@@ -11,7 +11,7 @@ public class ProcessSnapshot
         ProcessName = process.ProcessName;
         StartTime = process.StartTime;
 
-        MainModule = process.MainModule == null ? null : new ProcessModuleSnapshot(process.MainModule);
+        MainModule = process.MainModule is null ? null : new ProcessModuleSnapshot(process.MainModule);
         Modules = process.Modules.Cast<ProcessModule>().Select(module => new ProcessModuleSnapshot(module)).ToImmutableArray();
 
         UserProcessorTime = process.UserProcessorTime;

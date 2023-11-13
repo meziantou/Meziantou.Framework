@@ -114,7 +114,7 @@ public static class CodeOwnersParser
             while (!_lexer.EndOfFile)
             {
                 var c = _lexer.Peek();
-                if (c == null || c == '\r' || c == '\n')
+                if (c is null || c == '\r' || c == '\n')
                     return StringBuilderPool.ToStringAndReturn(sb);
 
                 c = _lexer.Consume();
@@ -123,7 +123,7 @@ public static class CodeOwnersParser
                     // The next character is escaped
                     case '\\':
                         c = _lexer.Consume();
-                        if (c == null) // end of file
+                        if (c is null) // end of file
                             return StringBuilderPool.ToStringAndReturn(sb);
 
                         sb.Append(c);
@@ -195,7 +195,7 @@ public static class CodeOwnersParser
 
         private readonly void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
         {
-            if (name == null)
+            if (name is null)
             {
                 _entries.Add(CodeOwnersEntry.FromNone(patternIndex, pattern, _currentSection));
             }
@@ -225,7 +225,7 @@ public static class CodeOwnersParser
         public bool TryConsumeEndOfLineOrEndOfFile()
         {
             var c = Peek();
-            if (c == null)
+            if (c is null)
             {
                 Consume();
                 return true;

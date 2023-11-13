@@ -6,7 +6,7 @@ internal sealed class StringWriterConverter : HumanReadableConverter<StringWrite
 {
     protected override void WriteValue(HumanReadableTextWriter writer, StringWriter? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
         writer.WriteValue(value.ToString());
     }
 }

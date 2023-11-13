@@ -58,11 +58,11 @@ internal static partial class InlineSnapshotDiffRunner
               ([NotNullWhen(true)] out ResolvedTool? tool) =>
               {
                   var env = GetDiffToolFromEnvironment();
-                  if (env != null)
+                  if (env is not null)
                       return DiffTools.TryFindByName(env.Value, out tool);
 
                   var processTool = GetDiffToolFromCurrentProcess();
-                  if(processTool != null)
+                  if(processTool is not null)
                       return DiffTools.TryFindByName(processTool.Value, out tool);
 
                   var extension = FileExtensions.GetExtension(tempFile);
@@ -121,7 +121,7 @@ internal static partial class InlineSnapshotDiffRunner
         try
         {
             process = Process.Start(startInfo);
-            if (process != null)
+            if (process is not null)
                 return process;
 
             throw new InlineSnapshotException($"Failed to launch diff tool: {tool.ExePath} {arguments}");

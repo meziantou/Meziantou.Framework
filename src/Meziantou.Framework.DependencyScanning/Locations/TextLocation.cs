@@ -71,7 +71,7 @@ internal sealed class TextLocation : Location, ILocationLineInfo
                 if (currentIndex + column + Length > (endOfLine == -1 ? content.Length : endOfLine))
                     throw new DependencyScannerException("Dependency not found. File was probably modified since last scan.");
 
-                if(oldValue != null)
+                if(oldValue is not null)
                 {
                     if (content.Substring(currentIndex + column, Length) != oldValue)
                         throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");

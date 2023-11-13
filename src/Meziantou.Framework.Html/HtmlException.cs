@@ -27,7 +27,7 @@ sealed class HtmlException : Exception
 
     public static int GetCode(string? message)
     {
-        if (message == null)
+        if (message is null)
             return -1;
 
         const string Prefix = "HTML";

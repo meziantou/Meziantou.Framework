@@ -161,7 +161,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     void ICollection.CopyTo(Array array, int arrayIndex)
     {
-        if (array != null && array.Rank != 1)
+        if (array is not null && array.Rank != 1)
             throw new ArgumentException("Only single dimensional arrays are supported for the requested action.", nameof(array));
 
         try

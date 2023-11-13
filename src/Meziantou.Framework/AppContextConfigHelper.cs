@@ -10,7 +10,7 @@ internal static class AppContextConfigHelper
         if (!AppContext.TryGetSwitch(switchName, out var ret))
         {
             var switchValue = Environment.GetEnvironmentVariable(envVariable);
-            ret = switchValue != null ? (IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1", StringComparison.Ordinal)) : defaultValue;
+            ret = switchValue is not null ? (IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1", StringComparison.Ordinal)) : defaultValue;
         }
 
         return ret;

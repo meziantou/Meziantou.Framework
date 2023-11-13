@@ -68,12 +68,12 @@ public sealed class Calendar
                 writer.WriteLine("UID:" + @event.Id);
 
             writer.WriteLine("STATUS:" + Utilities.StatusToString(@event.Status));
-            if (@event.Organizer?.Address != null)
+            if ((@event.Organizer?.Address) is not null)
                 writer.WriteLine("ORGANIZER:" + @event.Organizer.Address);
 
             foreach (var attendee in @event.Attendees)
             {
-                if (attendee == null)
+                if (attendee is null)
                     continue;
 
                 writer.WriteLine("ATTENDEE:" + attendee.Address);
@@ -84,7 +84,7 @@ public sealed class Calendar
             writer.WriteLine("DTSTAMP:" + Utilities.DateTimeToString(@event.DateTimeStamp));
             writer.WriteLine("DTSTART:" + Utilities.DateTimeToString(@event.Start));
             writer.WriteLine("DTEND:" + Utilities.DateTimeToString(@event.End));
-            if (@event.RecurrenceRule != null)
+            if (@event.RecurrenceRule is not null)
                 writer.WriteLine("RRULE:" + @event.RecurrenceRule.Text);
 
             if (!string.IsNullOrEmpty(@event.Summary))

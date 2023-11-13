@@ -107,7 +107,7 @@ public sealed class ObjectMethodExecutor
     /// <returns>The method return value.</returns>
     public object? Execute(object target, object?[]? parameters)
     {
-        Debug.Assert(_executor != null, "Sync execution is not supported.");
+        Debug.Assert(_executor is not null, "Sync execution is not supported.");
         return _executor(target, parameters);
     }
 
@@ -132,13 +132,13 @@ public sealed class ObjectMethodExecutor
     /// <returns>An object that you can "await" to get the method return value.</returns>
     public ObjectMethodExecutorAwaitable ExecuteAsync(object target, object?[]? parameters)
     {
-        Debug.Assert(_executorAsync != null, "Async execution is not supported.");
+        Debug.Assert(_executorAsync is not null, "Async execution is not supported.");
         return _executorAsync(target, parameters);
     }
 
     private object? GetDefaultValueForParameter(int index)
     {
-        if (_parameterDefaultValues == null)
+        if (_parameterDefaultValues is null)
         {
             throw new InvalidOperationException($"Cannot call {nameof(GetDefaultValueForParameter)}, because no parameter default values were supplied.");
         }

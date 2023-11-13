@@ -44,7 +44,7 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             var task = WriteValue(writer, value, options);
             if (task.IsCompleted)
@@ -58,7 +58,7 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
 
             static async ValueTask WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>> value, HumanReadableSerializerOptions options)
             {
-                if (options.DictionaryKeyOrder != null)
+                if (options.DictionaryKeyOrder is not null)
                 {
                     var list = await ToListAsync(value).ConfigureAwait(false);
                     HumanReadableSerializer.Serialize(writer, list, options);

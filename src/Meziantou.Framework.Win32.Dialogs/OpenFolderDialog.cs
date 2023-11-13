@@ -47,7 +47,7 @@ public sealed class OpenFolderDialog
             switch (result)
             {
                 case NativeMethods.S_OK:
-                    if (item != null)
+                    if (item is not null)
                     {
                         dialog.SetFolder(item);
                     }
@@ -59,12 +59,12 @@ public sealed class OpenFolderDialog
             }
         }
 
-        if (Title != null)
+        if (Title is not null)
         {
             dialog.SetTitle(Title);
         }
 
-        if (OkButtonLabel != null)
+        if (OkButtonLabel is not null)
         {
             dialog.SetOkButtonLabel(OkButtonLabel);
         }

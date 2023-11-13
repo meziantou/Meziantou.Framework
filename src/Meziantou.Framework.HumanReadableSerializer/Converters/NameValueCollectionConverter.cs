@@ -7,9 +7,9 @@ internal sealed class NameValueCollectionConverter : HumanReadableConverter<Name
 {
     protected override void WriteValue(HumanReadableTextWriter writer, NameValueCollection? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
-        if (options.DictionaryKeyOrder != null)
+        if (options.DictionaryKeyOrder is not null)
         {
             var dict = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (string item in value.Keys)

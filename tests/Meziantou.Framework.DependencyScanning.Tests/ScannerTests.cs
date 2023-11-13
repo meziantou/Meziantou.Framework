@@ -773,12 +773,12 @@ jobs:
         // Validate dependencies
         foreach (var dep in dependencies)
         {
-            if (dep.Name != null)
+            if (dep.Name is not null)
             {
                 dep.NameLocation.Should().NotBeNull();
             }
 
-            if (dep.Version != null)
+            if (dep.Version is not null)
             {
                 dep.VersionLocation.Should().NotBeNull();
             }
@@ -800,7 +800,7 @@ jobs:
     private static async Task UpdateDependencies(IEnumerable<Dependency> dependencies, string newName, string newVersion)
     {
         // dep name often have unique names (json, yaml, etc.)
-        var i = dependencies.Count(d => d.NameLocation != null && d.NameLocation.IsUpdatable);
+        var i = dependencies.Count(d => d.NameLocation is not null && d.NameLocation.IsUpdatable);
 
         var allLocations = dependencies
             .SelectMany(d => new DetectedDependency[]
@@ -808,7 +808,7 @@ jobs:
                 new(d, d.NameLocation, () => d.UpdateNameAsync(newName + i--.ToStringInvariant())),
                 new(d, d.VersionLocation, () => d.UpdateVersionAsync(newVersion)),
             })
-            .Where(item => item.Location != null);
+            .Where(item => item.Location is not null);
 
         // Group by file location and order by position desc
         foreach (var locationsByFile in allLocations.Where(item => item.Location.IsUpdatable).GroupBy(item => item.Location.FilePath, StringComparer.Ordinal))

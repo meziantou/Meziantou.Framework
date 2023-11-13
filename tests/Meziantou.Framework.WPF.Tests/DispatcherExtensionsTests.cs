@@ -20,7 +20,7 @@ public sealed class DispatcherExtensionsTests
         };
         t.Start();
 
-        while ((dispatcher = Volatile.Read(ref dispatcher)) == null)
+        while ((dispatcher = Volatile.Read(ref dispatcher)) is null)
         {
             await Task.Delay(1);
         }

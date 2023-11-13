@@ -6,7 +6,7 @@ public partial class CSharpCodeGenerator
 {
     protected virtual void WriteExpression(IndentedTextWriter writer, Expression? expression)
     {
-        if (expression == null)
+        if (expression is null)
             return;
 
         WriteBeforeComments(writer, expression);
@@ -164,7 +164,7 @@ public partial class CSharpCodeGenerator
 
     protected virtual void WriteMemberReferenceExpression(IndentedTextWriter writer, MemberReferenceExpression expression)
     {
-        if (expression.TargetObject != null)
+        if (expression.TargetObject is not null)
         {
             WriteExpression(writer, expression.TargetObject);
             writer.Write(".");
@@ -450,7 +450,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteDefaultValueExpression(IndentedTextWriter writer, DefaultValueExpression expression)
     {
         writer.Write("default");
-        if (expression.Type != null)
+        if (expression.Type is not null)
         {
             writer.Write("(");
             WriteTypeReference(writer, expression.Type);
@@ -527,7 +527,7 @@ public partial class CSharpCodeGenerator
     protected virtual void WriteAwaitExpression(IndentedTextWriter writer, AwaitExpression expression)
     {
         writer.Write("await ");
-        if (expression.Expression != null)
+        if (expression.Expression is not null)
         {
             WriteExpression(writer, expression.Expression);
         }

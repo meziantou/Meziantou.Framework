@@ -18,7 +18,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
     {
         lock (_lock)
         {
-            if (_lastSegment == null)
+            if (_lastSegment is null)
             {
                 _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(16);
             }
@@ -44,7 +44,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            Debug.Assert(_firstSegment != null);
+            Debug.Assert(_firstSegment is not null);
             var segment = _firstSegment;
             while (true)
             {
@@ -53,7 +53,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
 
                 index -= segment.Count;
 
-                Debug.Assert(segment.Next != null);
+                Debug.Assert(segment.Next is not null);
                 segment = segment.Next;
             }
         }
@@ -65,13 +65,13 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
 
     public bool Contains(Func<T, bool> predicate)
     {
-        return Find(predicate) != null;
+        return Find(predicate) is not null;
     }
 
     public T? Find(Func<T, bool> predicate)
     {
         var segment = _firstSegment;
-        while (segment != null)
+        while (segment is not null)
         {
             for (var i = 0; i < segment.Count; i++)
             {
@@ -100,7 +100,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
         {
             get
             {
-                Debug.Assert(_segment != null);
+                Debug.Assert(_segment is not null);
                 return _segment.Items[_index];
             }
         }
@@ -109,7 +109,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
 
         public bool MoveNext()
         {
-            if (_segment == null)
+            if (_segment is null)
                 return false;
 
             _index++;
@@ -117,7 +117,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
             {
                 _segment = _segment.Next;
                 _index = 0;
-                return _segment != null;
+                return _segment is not null;
             }
 
             return true;

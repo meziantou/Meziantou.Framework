@@ -25,7 +25,7 @@ public static class DataBinder
             throw new ArgumentException("expression is empty or whitespaces", nameof(expression));
         }
 
-        if (container == null)
+        if (container is null)
         {
             return null;
         }
@@ -40,7 +40,7 @@ public static class DataBinder
         object? prop;
         int i;
 
-        for (prop = container, i = 0; (i < expressionParts.Length) && (prop != null); i++)
+        for (prop = container, i = 0; (i < expressionParts.Length) && (prop is not null); i++)
         {
             var expr = expressionParts[i];
             var indexedExpr = expr.IndexOfAny(IndexExprStartChars) >= 0;
@@ -63,7 +63,7 @@ public static class DataBinder
     {
         var value = Eval(container, expression);
 
-        if ((value == null) || (value == DBNull.Value))
+        if ((value is null) || (value == DBNull.Value))
         {
             return string.Empty;
         }
@@ -107,7 +107,7 @@ public static class DataBinder
             throw new ArgumentNullException(nameof(propertyName));
 
         var pd = GetPropertiesFromCache(container).Find(propertyName, ignoreCase: true);
-        if (pd != null)
+        if (pd is not null)
         {
             return pd.GetValue(container);
         }
@@ -121,7 +121,7 @@ public static class DataBinder
     public static string GetPropertyValue(object container, string propertyName, string format)
     {
         var value = GetPropertyValue(container, propertyName);
-        if (value == null || value == DBNull.Value)
+        if (value is null || value == DBNull.Value)
         {
             return string.Empty;
         }
@@ -193,11 +193,11 @@ public static class DataBinder
             }
         }
 
-        if (indexValue == null)
+        if (indexValue is null)
             throw new ArgumentException($"Databinding: '{expression}' is not a valid indexed expression.", nameof(expression));
 
         object? collectionProp;
-        if ((propName != null) && (propName.Length != 0))
+        if ((propName is not null) && (propName.Length != 0))
         {
             collectionProp = GetPropertyValue(container, propName);
         }
@@ -206,7 +206,7 @@ public static class DataBinder
             collectionProp = container;
         }
 
-        if (collectionProp != null)
+        if (collectionProp is not null)
         {
             if (collectionProp is Array arrayProp && intIndex)
             {
@@ -233,7 +233,7 @@ public static class DataBinder
     public static string? GetIndexedPropertyValue(object container, string propertyName, string format)
     {
         var value = GetIndexedPropertyValue(container, propertyName);
-        if (value == null || Convert.IsDBNull(value))
+        if (value is null || Convert.IsDBNull(value))
         {
             return string.Empty;
         }

@@ -123,7 +123,7 @@ internal static class FileEditor
             }
 
             SyntaxNode newRoot;
-            if (argumentExpression != null)
+            if (argumentExpression is not null)
             {
                 newArgumentExpression = newArgumentExpression
                         .WithLeadingTrivia(argumentExpression.GetLeadingTrivia())
@@ -185,7 +185,7 @@ internal static class FileEditor
 
     private static int GetStartPosition(InvocationExpressionSyntax invocationExpression)
     {
-        if (invocationExpression.Expression != null)
+        if (invocationExpression.Expression is not null)
         {
             var text = invocationExpression.Expression.GetText(Encoding.UTF8);
             var lastLine = text.Lines[^1];
@@ -204,7 +204,7 @@ internal static class FileEditor
     {
         // Try find by name
         ExpressionSyntax? argumentExpression = null;
-        if (context.ParameterName != null)
+        if (context.ParameterName is not null)
         {
             foreach (var argument in arguments)
             {
@@ -217,14 +217,14 @@ internal static class FileEditor
         }
 
         // Try find by index
-        if (argumentExpression == null && context.ParameterIndex >= 0 && context.ParameterIndex < arguments.Count)
+        if (argumentExpression is null && context.ParameterIndex >= 0 && context.ParameterIndex < arguments.Count)
         {
             argumentExpression = arguments[context.ParameterIndex].Expression;
         }
 
         // Try find by value
         argumentExpression ??= FindSingleArgumentMatchingValue(arguments, existingValue);
-        if (argumentExpression == null)
+        if (argumentExpression is null)
         {
             if (arguments.Count == 1)
                 return null;
@@ -251,7 +251,7 @@ internal static class FileEditor
 
     private static bool ExpressionSyntaxMatchesValue(ExpressionSyntax? expression, string? value, out string? actualValue)
     {
-        if (expression != null)
+        if (expression is not null)
         {
             if (expression.IsKind(SyntaxKind.NullLiteralExpression))
             {

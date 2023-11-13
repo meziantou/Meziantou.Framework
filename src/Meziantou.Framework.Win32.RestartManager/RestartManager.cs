@@ -88,7 +88,7 @@ public sealed class RestartManager : IDisposable
                     try
                     {
                         var process = Process.GetProcessById(array[i].Process.ProcessId);
-                        if (process != null)
+                        if (process is not null)
                             processes.Add(process);
                     }
                     catch

@@ -120,7 +120,7 @@ public sealed class Perceived
         ArgumentNullException.ThrowIfNull(fileName);
 
         var extension = Path.GetExtension(fileName);
-        if (extension == null)
+        if (extension is null)
             throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
 
         extension = extension.ToUpperInvariant();

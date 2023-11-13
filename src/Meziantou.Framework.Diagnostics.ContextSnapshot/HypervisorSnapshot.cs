@@ -15,7 +15,7 @@ public sealed class HypervisorSnapshot
     internal static HypervisorSnapshot? Get()
     {
         var hypervisor = Utils.SafeGet(FindHypervisor);
-        if (hypervisor == null)
+        if (hypervisor is null)
             return null;
 
         return new(hypervisor);
@@ -44,7 +44,7 @@ public sealed class HypervisorSnapshot
                 if (ContainsIgnoreCase(model, "vmware"))
                     return "VMWare";
 
-                static bool ContainsIgnoreCase(string? value, string substring) => value != null && value.Contains(substring, StringComparison.OrdinalIgnoreCase);
+                static bool ContainsIgnoreCase(string? value, string substring) => value is not null && value.Contains(substring, StringComparison.OrdinalIgnoreCase);
             }
         }
         catch

@@ -80,7 +80,7 @@ internal sealed class CSharpGeneratedFileWriter
     {
         var initialIndentation = Indentation;
         var ns = GetNamespace(type.ContainingNamespace);
-        if (ns != null)
+        if (ns is not null)
         {
             WriteLine("namespace " + ns);
             BeginBlock();
@@ -93,7 +93,7 @@ internal sealed class CSharpGeneratedFileWriter
 
         void WriteContainingTypes(ITypeSymbol? containingType)
         {
-            if (containingType == null)
+            if (containingType is null)
                 return;
 
             WriteContainingTypes(containingType.ContainingType);
@@ -111,7 +111,7 @@ internal sealed class CSharpGeneratedFileWriter
             };
 
             Write(text);
-            if (baseTypes != null)
+            if (baseTypes is not null)
             {
                 Write(" : ");
                 Write(baseTypes);
@@ -124,9 +124,9 @@ internal sealed class CSharpGeneratedFileWriter
         static string? GetNamespace(INamespaceSymbol ns)
         {
             string? str = null;
-            while (ns != null && !ns.IsGlobalNamespace)
+            while (ns is not null && !ns.IsGlobalNamespace)
             {
-                if (str != null)
+                if (str is not null)
                 {
                     str = '.' + str;
                 }

@@ -7,7 +7,7 @@ internal sealed class UnixDomainSocketEndPointConverter : HumanReadableConverter
 {
     protected override void WriteValue(HumanReadableTextWriter writer, UnixDomainSocketEndPoint? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
         writer.WriteValue(value.ToString());
     }
 }

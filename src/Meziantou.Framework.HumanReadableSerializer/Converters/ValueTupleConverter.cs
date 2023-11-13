@@ -10,7 +10,7 @@ internal sealed class ValueTupleConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         var tuple = (System.Runtime.CompilerServices.ITuple)value;
         if (tuple.Length == 0)

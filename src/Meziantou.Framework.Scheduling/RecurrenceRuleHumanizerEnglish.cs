@@ -148,7 +148,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             sb.Append(" weeks");
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
             sb.Append(" on ");
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.None));
@@ -180,7 +180,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             sb.Append(" months");
         }
 
-        if (rrule.ByMonthDays != null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
         {
             if (rrule.ByMonthDays.Any(day => day < 0))
             {
@@ -193,10 +193,10 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             ListToHumanText(sb, EnglishCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayHumanText).ToList(), ", ", " and ");
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
             sb.Append(" on ");
-            if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
             {
                 sb.Append("the ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
@@ -231,14 +231,14 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             sb.Append(" years");
         }
 
-        if (rrule.ByMonthDays != null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
         {
             if (rrule.ByMonthDays.Any(day => day < 0))
             {
                 sb.Append(" on the ");
                 ListToHumanText(sb, EnglishCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayHumanText).ToList(), ", ", " and ");
 
-                if (rrule.ByMonths != null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     sb.Append(" of ");
                     sb.Append(rrule.ByMonths[0]);
@@ -246,7 +246,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             }
             else
             {
-                if (rrule.ByMonths != null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     sb.Append(" on ");
                     sb.Append(rrule.ByMonths[0]);
@@ -257,10 +257,10 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             }
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
             sb.Append(" on ");
-            if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
             {
                 sb.Append("the ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
@@ -268,7 +268,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             }
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
 
-            if (rrule.ByMonths != null && rrule.ByMonths.Any())
+            if (rrule.ByMonths is not null && rrule.ByMonths.Any())
             {
                 sb.Append(" of ");
                 sb.Append(rrule.ByMonths[0]);

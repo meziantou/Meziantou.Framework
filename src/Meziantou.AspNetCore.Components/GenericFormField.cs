@@ -52,7 +52,7 @@ public sealed class GenericFormField<TModel>
         get
         {
             var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 var displayName = displayAttribute.GetName();
                 if (!string.IsNullOrEmpty(displayName))
@@ -60,7 +60,7 @@ public sealed class GenericFormField<TModel>
             }
 
             var displayNameAttribute = Property.GetCustomAttribute<DisplayNameAttribute>();
-            if (displayNameAttribute != null)
+            if (displayNameAttribute is not null)
             {
                 var displayName = displayNameAttribute.DisplayName;
                 if (!string.IsNullOrEmpty(displayName))
@@ -76,10 +76,10 @@ public sealed class GenericFormField<TModel>
         get
         {
             var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 var displayOrder = displayAttribute.GetOrder();
-                if (displayOrder != null)
+                if (displayOrder is not null)
                     return (int)displayOrder;
             }
 
@@ -96,7 +96,7 @@ public sealed class GenericFormField<TModel>
         get
         {
             var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 var description = displayAttribute.GetDescription();
                 if (!string.IsNullOrEmpty(description))
@@ -104,7 +104,7 @@ public sealed class GenericFormField<TModel>
             }
 
             var descriptionAttribute = Property.GetCustomAttribute<DescriptionAttribute>();
-            if (descriptionAttribute != null)
+            if (descriptionAttribute is not null)
             {
                 var description = descriptionAttribute.Description;
                 if (!string.IsNullOrEmpty(description))
@@ -120,7 +120,7 @@ public sealed class GenericFormField<TModel>
         get
         {
             var displayAttribute = Property.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 var prompt = displayAttribute.GetPrompt();
                 if (!string.IsNullOrEmpty(prompt))
@@ -150,7 +150,7 @@ public sealed class GenericFormField<TModel>
     {
         get
         {
-            if (_editorTemplate != null)
+            if (_editorTemplate is not null)
                 return _editorTemplate;
 
             // () => Owner.Property
@@ -227,7 +227,7 @@ public sealed class GenericFormField<TModel>
         if (property.PropertyType == typeof(string))
         {
             var dataType = property.GetCustomAttribute<DataTypeAttribute>();
-            if (dataType != null)
+            if (dataType is not null)
             {
                 if (dataType.DataType == DataType.Date)
                     return (typeof(InputText), new[] { KeyValuePair.Create<string, object>("type", "date") });
@@ -280,7 +280,7 @@ public sealed class GenericFormField<TModel>
         if (underlyingType == typeof(DateTime))
         {
             var dataType = property.GetCustomAttribute<DataTypeAttribute>();
-            if (dataType != null && dataType.DataType == DataType.Date)
+            if (dataType is not null && dataType.DataType == DataType.Date)
                 return (typeof(InputDate<>).MakeGenericType(property.PropertyType), null);
 
             return (typeof(InputDateTime<>).MakeGenericType(property.PropertyType), null);
@@ -289,7 +289,7 @@ public sealed class GenericFormField<TModel>
         if (underlyingType == typeof(DateTimeOffset))
         {
             var dataType = property.GetCustomAttribute<DataTypeAttribute>();
-            if (dataType != null && dataType.DataType == DataType.Date)
+            if (dataType is not null && dataType.DataType == DataType.Date)
                 return (typeof(InputDate<>).MakeGenericType(property.PropertyType), null);
 
             return (typeof(InputDateTime<>).MakeGenericType(property.PropertyType), null);

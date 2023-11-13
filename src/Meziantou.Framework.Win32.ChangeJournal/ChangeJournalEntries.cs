@@ -71,7 +71,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
                 return false;
 
             _currentIndex++;
-            if (_entries == null || _currentIndex >= _entries.Count)
+            if (_entries is null || _currentIndex >= _entries.Count)
             {
                 return Read();
             }
@@ -134,7 +134,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
             var nativeEntry = Marshal.PtrToStructure<USN_RECORD_V2>(entryPointer);
             var filenamePointer = bufferPointer + offset + nativeEntry.FileNameOffset;
             var name = Marshal.PtrToStringAuto(filenamePointer);
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             return new JournalEntry(nativeEntry, name);
         }
     }

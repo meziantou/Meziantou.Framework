@@ -97,7 +97,7 @@ public class IndentedTextWriter : TextWriter
         }
 
         InnerWriter.Write(value);
-        if (value != null && value.EndsWith(NewLine, StringComparison.Ordinal))
+        if (value is not null && value.EndsWith(NewLine, StringComparison.Ordinal))
         {
             _tabsPending = true;
         }
@@ -182,7 +182,7 @@ public class IndentedTextWriter : TextWriter
 
     public override void WriteLine(string? value)
     {
-        if (value == null)
+        if (value is null)
         {
             WriteLine();
             return;

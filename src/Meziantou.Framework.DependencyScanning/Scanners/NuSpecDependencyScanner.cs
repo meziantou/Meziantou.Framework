@@ -19,7 +19,7 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         var doc = await XmlUtilities.TryLoadDocumentWithoutClosingStream(context.Content, context.CancellationToken).ConfigureAwait(false);
-        if (doc == null || doc.Root == null)
+        if (doc is null || doc.Root is null)
             return;
 
         foreach (var dependency in doc.Descendants(DependencyXName))

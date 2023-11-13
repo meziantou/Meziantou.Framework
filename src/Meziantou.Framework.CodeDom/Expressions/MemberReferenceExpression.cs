@@ -30,7 +30,7 @@ public class MemberReferenceExpression : Expression
 
     public MemberReferenceExpression(TypeReference? type, string? memberName)
     {
-        TargetObject = type != null ? new TypeReferenceExpression(type) : null;
+        TargetObject = type is not null ? new TypeReferenceExpression(type) : null;
         Name = memberName;
     }
 
@@ -38,7 +38,7 @@ public class MemberReferenceExpression : Expression
     {
         get
         {
-            if (_memberDeclaration != null)
+            if (_memberDeclaration is not null)
                 return _memberDeclaration.Name;
 
             return _name;

@@ -137,7 +137,7 @@ internal static class Program
 
             // If this item is no longer in the checked state or if its
             // parent has not yet been initialized, do nothing.
-            if (!Checked || Parent == null)
+            if (!Checked || Parent is null)
                 return;
 
             // Clear the checked state for all siblings.

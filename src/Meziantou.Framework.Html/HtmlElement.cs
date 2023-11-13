@@ -87,9 +87,9 @@ sealed class HtmlElement : HtmlNode
             if (!string.Equals(value, base.InnerHtml, StringComparison.Ordinal))
             {
                 RemoveAll();
-                if (value != null)
+                if (value is not null)
                 {
-                    var doc = OwnerDocument != null ? OwnerDocument.CreateDocument() : new HtmlDocument();
+                    var doc = OwnerDocument is not null ? OwnerDocument.CreateDocument() : new HtmlDocument();
                     doc.LoadHtml(value);
                     if (doc.HasChildNodes)
                     {
@@ -171,7 +171,7 @@ sealed class HtmlElement : HtmlNode
             if (_noChild.HasValue)
                 return _noChild.Value;
 
-            if (OwnerDocument == null)
+            if (OwnerDocument is null)
                 return false;
 
             return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.NoChild) == HtmlElementWriteOptions.NoChild;
@@ -186,7 +186,7 @@ sealed class HtmlElement : HtmlNode
             if (_alwaysClose.HasValue)
                 return _alwaysClose.Value;
 
-            if (OwnerDocument == null)
+            if (OwnerDocument is null)
                 return false;
 
             return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.AlwaysClose) == HtmlElementWriteOptions.AlwaysClose;
@@ -201,7 +201,7 @@ sealed class HtmlElement : HtmlNode
             if (_dontCloseIfEmpty.HasValue)
                 return _dontCloseIfEmpty.Value;
 
-            if (OwnerDocument == null)
+            if (OwnerDocument is null)
                 return false;
 
             return (OwnerDocument.Options.GetElementWriteOptions(Name) & HtmlElementWriteOptions.DontCloseIfEmpty) == HtmlElementWriteOptions.DontCloseIfEmpty;

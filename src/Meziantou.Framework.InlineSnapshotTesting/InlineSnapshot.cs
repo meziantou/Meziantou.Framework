@@ -8,7 +8,7 @@ public static class InlineSnapshot
     public static InlineSnapshotBuilder WithSettings(InlineSnapshotSettings? settings) => new(settings);
     public static InlineSnapshotBuilder WithSettings(Action<InlineSnapshotSettings>? configure)
     {
-        if (configure == null)
+        if (configure is null)
             return new(settings: null);
 
         var settings = InlineSnapshotSettings.Default with { };
@@ -28,7 +28,7 @@ public static class InlineSnapshot
     internal static void ShouldMatchInlineSnapshot(object? subject, CallerContext context, InlineSnapshotSettings settings, string? expected)
     {
         var actual = settings.SnapshotSerializer.Serialize(subject);
-        if (actual != null)
+        if (actual is not null)
         {
             foreach (var scrubber in settings.Scrubbers)
             {
@@ -43,7 +43,7 @@ public static class InlineSnapshot
             var isOnCI = settings.AutoDetectContinuousEnvironment && (BuildServerDetector.Detected || ContinuousTestingDetector.Detected);
             if (!isOnCI && settings.SnapshotUpdateStrategy.CanUpdateSnapshot(settings, context.FilePath, expected, actual))
             {
-                if (context.FilePath == null)
+                if (context.FilePath is null)
                     throw new InlineSnapshotException("Cannot update source file as the path is null");
 
                 FileEditor.UpdateFile(context, settings, expected, actual);
@@ -60,7 +60,7 @@ public static class InlineSnapshot
         }
         else if (settings.ForceUpdateSnapshots)
         {
-            if (context.FilePath == null)
+            if (context.FilePath is null)
                 throw new InlineSnapshotException("Cannot update source file as the path is null");
 
             FileEditor.UpdateFile(context, settings, expected, actual);

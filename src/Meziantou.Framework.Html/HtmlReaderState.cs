@@ -36,7 +36,7 @@ sealed class HtmlReaderState
     {
         get
         {
-            if (RawParserState == HtmlParserState.TagOpen && RawValue != null && RawValue.StartsWith('/'))
+            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/'))
                 return HtmlParserState.TagClose;
 
             return RawParserState;
@@ -47,10 +47,10 @@ sealed class HtmlReaderState
     {
         get
         {
-            if (RawParserState == HtmlParserState.TagOpen && RawValue != null && RawValue.StartsWith('/'))
+            if (RawParserState == HtmlParserState.TagOpen && RawValue is not null && RawValue.StartsWith('/'))
                 return RawValue[1..];
 
-            if (RawValue != null && (RawParserState == HtmlParserState.AttValue || RawParserState == HtmlParserState.AttName) &&
+            if (RawValue is not null && (RawParserState == HtmlParserState.AttValue || RawParserState == HtmlParserState.AttName) &&
                 ((RawValue.StartsWith('\'') && RawValue.EndsWith('\'')) ||
                 (RawValue.StartsWith('"') && RawValue.EndsWith('"'))))
             {

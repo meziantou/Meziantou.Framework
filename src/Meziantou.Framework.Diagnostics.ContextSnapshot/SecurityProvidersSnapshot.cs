@@ -27,7 +27,7 @@ public sealed class SecurityProvidersSnapshot
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
         var wscProductList = Utils.SafeGet(() => Activator.CreateInstance(wscProductListType));
-        if (wscProductList == null)
+        if (wscProductList is null)
             return ImmutableArray<SecurityProviderSnapshot>.Empty;
 
         var pWSCProductList = (IWSCProductList)wscProductList;

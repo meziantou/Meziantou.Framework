@@ -18,7 +18,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
 
     protected ObservableCollectionBase(IEnumerable<T> items)
     {
-        if (items == null)
+        if (items is null)
         {
             Items = [];
         }

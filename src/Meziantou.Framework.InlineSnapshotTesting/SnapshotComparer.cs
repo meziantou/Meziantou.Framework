@@ -15,7 +15,7 @@ public abstract class SnapshotComparer
     {
         public override string? NormalizeValue(string? value)
         {
-            if (value == null)
+            if (value is null)
                 return null;
 
             var sb = new StringBuilder(value.Length);

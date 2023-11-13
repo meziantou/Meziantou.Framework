@@ -9,7 +9,7 @@ public static class NavigationManagerExtensions
     public static string? GetQueryStringParameterValue(this NavigationManager navigationManager, string parameterName)
     {
         var values = GetQueryStringParameterValues(navigationManager, parameterName);
-        if (values == null || values.Count == 0)
+        if (values is null || values.Count == 0)
             return null;
 
         return values[0];
@@ -20,7 +20,7 @@ public static class NavigationManagerExtensions
         if (Uri.TryCreate(navigationManager.Uri, UriKind.RelativeOrAbsolute, out var uri))
         {
             var parameters = QueryHelpers.ParseNullableQuery(uri.Query);
-            if (parameters != null && parameters.TryGetValue(parameterName, out var values))
+            if (parameters is not null && parameters.TryGetValue(parameterName, out var values))
             {
                 return values.ToArray()!;
             }
@@ -35,7 +35,7 @@ public static class NavigationManagerExtensions
         foreach (var property in GetProperties(component.GetType()))
         {
             var parameterName = GetQueryStringParameterName(property);
-            if (parameterName == null)
+            if (parameterName is null)
                 continue;
 
             var value = property.GetValue(component);

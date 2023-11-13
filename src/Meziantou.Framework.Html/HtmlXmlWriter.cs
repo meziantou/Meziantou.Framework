@@ -17,7 +17,7 @@ sealed class HtmlXmlWriter : XmlWriter
     {
         Parent = parent ?? new HtmlDocument();
 
-        if (Parent.OwnerDocument == null)
+        if (Parent.OwnerDocument is null)
             throw new ArgumentException(message: null, nameof(parent));
 
         Current = Parent;
@@ -47,7 +47,7 @@ sealed class HtmlXmlWriter : XmlWriter
 
     public override void WriteCData(string text)
     {
-        if (text == null)
+        if (text is null)
             return;
 
         if (Current is HtmlAttribute att)
@@ -73,7 +73,7 @@ sealed class HtmlXmlWriter : XmlWriter
 
     public override void WriteComment(string text)
     {
-        if (text == null)
+        if (text is null)
             return;
 
         var node = Parent.OwnerDocument.CreateComment();
@@ -84,15 +84,15 @@ sealed class HtmlXmlWriter : XmlWriter
     public override void WriteDocType(string name, string pubid, string sysid, string subset)
     {
         var text = "<!DOCTYPE " + name;
-        if (pubid != null)
+        if (pubid is not null)
         {
             text += " PUBLIC \"" + pubid + "\" \"" + sysid + "\"";
         }
-        else if (sysid != null)
+        else if (sysid is not null)
         {
             text += " SYSTEM \"" + sysid + "\"";
         }
-        if (subset != null)
+        if (subset is not null)
         {
             text += "[" + subset + "]";
         }

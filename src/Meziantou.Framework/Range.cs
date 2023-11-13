@@ -25,10 +25,10 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool IsInRangeInclusive(T value)
     {
-        if (From != null && From.CompareTo(value) > 0)
+        if (From is not null && From.CompareTo(value) > 0)
             return false;
 
-        if (To != null && To.CompareTo(value) < 0)
+        if (To is not null && To.CompareTo(value) < 0)
             return false;
 
         return true;
@@ -36,10 +36,10 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool IsInRangeExclusive(T value)
     {
-        if (From != null && From.CompareTo(value) >= 0)
+        if (From is not null && From.CompareTo(value) >= 0)
             return false;
 
-        if (To != null && To.CompareTo(value) <= 0)
+        if (To is not null && To.CompareTo(value) <= 0)
             return false;
 
         return true;
@@ -47,10 +47,10 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool IsInRangeLowerInclusive(T value)
     {
-        if (From != null && From.CompareTo(value) > 0)
+        if (From is not null && From.CompareTo(value) > 0)
             return false;
 
-        if (To != null && To.CompareTo(value) <= 0)
+        if (To is not null && To.CompareTo(value) <= 0)
             return false;
 
         return true;
@@ -58,10 +58,10 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool IsInRangeUpperInclusive(T value)
     {
-        if (From != null && From.CompareTo(value) >= 0)
+        if (From is not null && From.CompareTo(value) >= 0)
             return false;
 
-        if (To != null && To.CompareTo(value) < 0)
+        if (To is not null && To.CompareTo(value) < 0)
             return false;
 
         return true;
@@ -89,21 +89,21 @@ public readonly struct Range<T> : IEquatable<Range<T>>
 
     public bool Equals(Range<T> other)
     {
-        if (From != null)
+        if (From is not null)
         {
             if (From.CompareTo(other.From) != 0)
                 return false;
 
-            if (other.From != null && other.From.CompareTo(From) != 0)
+            if (other.From is not null && other.From.CompareTo(From) != 0)
                 return false;
         }
 
-        if (To != null)
+        if (To is not null)
         {
             if (To.CompareTo(other.To) != 0)
                 return false;
 
-            if (other.To != null && other.To.CompareTo(To) != 0)
+            if (other.To is not null && other.To.CompareTo(To) != 0)
                 return false;
         }
 

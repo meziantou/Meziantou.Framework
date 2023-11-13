@@ -14,7 +14,7 @@ public static class RegexExtensions
 
         foreach (Match? match in regex.Matches(input))
         {
-            Debug.Assert(match != null);
+            Debug.Assert(match is not null);
 
             var replacement = await replacementFn(match).ConfigureAwait(false);
             sb.Append(input, lastIndex, match.Index - lastIndex)

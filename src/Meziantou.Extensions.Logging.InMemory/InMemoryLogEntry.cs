@@ -30,7 +30,7 @@ public sealed class InMemoryLogEntry
     public override string ToString()
     {
         var sb = new StringBuilder();
-        if (Category != null)
+        if (Category is not null)
         {
             sb.Append('[').Append(Category).Append("] ");
         }
@@ -47,12 +47,12 @@ public sealed class InMemoryLogEntry
 
         sb.Append(": ");
         sb.Append(Message);
-        if (Exception != null)
+        if (Exception is not null)
         {
             sb.Append('\n').Append(Exception);
         }
 
-        if (State != null)
+        if (State is not null)
         {
             sb.Append("\n  => ").Append(JsonSerializer.Serialize(State));
         }

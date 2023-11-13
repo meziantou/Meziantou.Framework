@@ -94,7 +94,7 @@ public class TypeReference
         {
             if (_typeDeclaration is IParametrableType typeParameter)
             {
-                if (_typeDeclarationParameters == null)
+                if (_typeDeclarationParameters is null)
                 {
                     var collection = new List<TypeReference>();
                     collection.AddRange(typeParameter.Parameters.Select(p => new TypeReference(p.Name ?? throw new InvalidOperationException("TypeReference has no name"))));
@@ -112,22 +112,22 @@ public class TypeReference
     {
         get
         {
-            if (_typeParameter != null)
+            if (_typeParameter is not null)
                 return _typeParameter.Name;
 
-            if (_typeDeclaration != null)
+            if (_typeDeclaration is not null)
             {
                 var result = _typeDeclaration.Name;
                 var type = _typeDeclaration;
                 var parentType = type.AnscestorOfType<TypeDeclaration>();
-                while (parentType != null)
+                while (parentType is not null)
                 {
                     result = parentType.Name + '+' + result;
                     parentType = parentType.AnscestorOfType<TypeDeclaration>();
                 }
 
                 var ns = _typeDeclaration.Namespace;
-                if (ns != null)
+                if (ns is not null)
                 {
                     result = ns + '.' + result;
                 }
@@ -216,7 +216,7 @@ public class TypeReference
             Nullable = Nullable,
         };
 
-        if (_parameters != null)
+        if (_parameters is not null)
         {
             clone._parameters = [.. _parameters];
         }

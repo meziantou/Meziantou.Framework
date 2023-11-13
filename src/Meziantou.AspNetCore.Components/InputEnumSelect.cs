@@ -64,16 +64,16 @@ public sealed class InputEnumSelect<TEnum> : InputBase<TEnum>
     // - Fallback on Humanizer to decamelize the enum member name
     private static string? GetDisplayName(object? value)
     {
-        if (value == null)
+        if (value is null)
             return null;
 
         // Read the Display attribute name
         var valueAsString = value.ToString();
-        if (valueAsString != null)
+        if (valueAsString is not null)
         {
             var member = value.GetType().GetMember(valueAsString)[0];
             var displayAttribute = member.GetCustomAttribute<DisplayAttribute>();
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
                 return displayAttribute.GetName();
         }
 

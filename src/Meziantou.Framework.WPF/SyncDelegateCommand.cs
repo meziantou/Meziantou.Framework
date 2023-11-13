@@ -29,7 +29,7 @@ internal sealed class SyncDelegateCommand : IDelegateCommand
 
     public void RaiseCanExecuteChanged()
     {
-        if (_dispatcher != null)
+        if (_dispatcher is not null)
         {
             _dispatcher.Invoke(() => CanExecuteChanged?.Invoke(this, EventArgs.Empty));
         }

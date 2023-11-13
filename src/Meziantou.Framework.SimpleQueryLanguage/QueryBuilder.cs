@@ -101,13 +101,13 @@ public sealed class QueryBuilder<T>
         if (op == KeyValueOperator.EqualTo)
         {
             var range = RangeSyntax.TryParse(value, tryParseValue);
-            if (range != null)
+            if (range is not null)
                 return predicate(obj, range);
         }
         else if (op == KeyValueOperator.NotEqualTo)
         {
             var range = RangeSyntax.TryParse(value, tryParseValue);
-            if (range != null)
+            if (range is not null)
                 return !predicate(obj, range);
         }
         else
@@ -202,7 +202,7 @@ public sealed class QueryBuilder<T>
 
     private Predicate<T> CreatePredicate(BoundTextQuery node)
     {
-        if (_freeTextFilter == null)
+        if (_freeTextFilter is null)
             return AlwaysFalsePredicate;
 
         return node.IsNegated
@@ -226,7 +226,7 @@ public sealed class QueryBuilder<T>
                     : v => predicateHandler(v, op, node.Value);
         }
 
-        if (_unhandledPropertyFilter != null)
+        if (_unhandledPropertyFilter is not null)
         {
             return v => _unhandledPropertyFilter(v, node.Key, op, node.Value);
         }

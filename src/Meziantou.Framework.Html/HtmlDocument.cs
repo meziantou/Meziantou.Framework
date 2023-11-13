@@ -42,7 +42,7 @@ sealed class HtmlDocument : HtmlNode
 
     internal static void RemoveIntrinsicElement(HtmlDocument doc, HtmlElement element)
     {
-        if (doc == null || element == null)
+        if (doc is null || element is null)
             return;
 
         if (element == doc.HtmlElement)
@@ -378,26 +378,26 @@ sealed class HtmlDocument : HtmlNode
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public void AddNamespace(string prefix, string uri)
     {
-        if (prefix == null)
+        if (prefix is null)
         {
             _declaredPrefixes?.Remove(prefix);
         }
         else
         {
-            if (uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(nameof(uri));
 
             _declaredPrefixes ??= new Dictionary<string, string>(StringComparer.Ordinal);
             _declaredPrefixes[prefix] = uri;
         }
 
-        if (uri == null)
+        if (uri is null)
         {
             _declaredNamespaces?.Remove(uri);
         }
         else
         {
-            if (prefix == null)
+            if (prefix is null)
                 throw new ArgumentNullException(nameof(prefix));
 
             _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.Ordinal);
@@ -407,7 +407,7 @@ sealed class HtmlDocument : HtmlNode
 
     public override string GetNamespaceOfPrefix(string prefix)
     {
-        if (_declaredPrefixes == null)
+        if (_declaredPrefixes is null)
             return string.Empty;
 
         if (_declaredPrefixes.TryGetValue(prefix, out var namespaceURI))
@@ -418,7 +418,7 @@ sealed class HtmlDocument : HtmlNode
 
     public override string GetPrefixOfNamespace(string namespaceURI)
     {
-        if (_declaredNamespaces == null)
+        if (_declaredNamespaces is null)
             return string.Empty;
 
         if (_declaredNamespaces.TryGetValue(namespaceURI, out var prefix))
@@ -430,7 +430,7 @@ sealed class HtmlDocument : HtmlNode
     protected override void GetNamespaceAttributes(IDictionary<string, string> namespaces)
     {
         base.GetNamespaceAttributes(namespaces);
-        if (_declaredPrefixes != null)
+        if (_declaredPrefixes is not null)
         {
             foreach (var kv in _declaredPrefixes)
             {
@@ -438,7 +438,7 @@ sealed class HtmlDocument : HtmlNode
             }
         }
 
-        if (_declaredNamespaces != null)
+        if (_declaredNamespaces is not null)
         {
             foreach (var kv in _declaredNamespaces)
             {
@@ -549,11 +549,11 @@ sealed class HtmlDocument : HtmlNode
     private static string GetEncodingName(HtmlElement meta)
     {
         var name = Utilities.Nullify(meta.GetAttributeValue("charset"), trim: true);
-        if (name != null)
+        if (name is not null)
             return name;
 
         var ct = meta.GetAttributeValue("http-equiv");
-        if (ct == null || !ct.EqualsIgnoreCase("content-type"))
+        if (ct is null || !ct.EqualsIgnoreCase("content-type"))
             return null;
 
         return Utilities.GetAttributeFromHeader(Utilities.Nullify(meta.GetAttributeValue("content"), trim: true), "charset");
@@ -561,14 +561,14 @@ sealed class HtmlDocument : HtmlNode
 
     private bool DetectEncoding(HtmlReader reader, HtmlElement element, bool firstPass)
     {
-        if (DetectedEncoding != null)
+        if (DetectedEncoding is not null)
             return true;
 
-        if (element == null || !element.Name.EqualsIgnoreCase("meta"))
+        if (element is null || !element.Name.EqualsIgnoreCase("meta"))
             return true;
 
         var encodingName = GetEncodingName(element);
-        if (encodingName == null)
+        if (encodingName is null)
             return true;
 
         if (Options.ReaderThrowsOnUnknownDetectedEncoding)
@@ -593,7 +593,7 @@ sealed class HtmlDocument : HtmlNode
             StreamEncoding = sr.CurrentEncoding;
         }
 
-        if (DetectedEncoding != null && StreamEncoding != null && !string.Equals(DetectedEncoding.EncodingName, StreamEncoding.EncodingName, StringComparison.Ordinal))
+        if (DetectedEncoding is not null && StreamEncoding is not null && !string.Equals(DetectedEncoding.EncodingName, StreamEncoding.EncodingName, StringComparison.Ordinal))
         {
             if (firstPass && Options.ReaderRestartsOnEncodingDetected && reader.IsRestartable)
             {
@@ -699,7 +699,7 @@ sealed class HtmlDocument : HtmlNode
                     element = CreateElement(elementName);
                     element.StreamOrder = htmlReader.Offset;
 
-                    if (DocumentType == null && element.IsDocumentType)
+                    if (DocumentType is null && element.IsDocumentType)
                     {
                         DocumentType = element;
                     }
@@ -729,24 +729,24 @@ sealed class HtmlDocument : HtmlNode
                     if (!DetectEncoding(htmlReader, element, firstPass))
                         return false;
 
-                    if (element != null && (element.Name.StartsWith('!') || element.IsProcessingInstruction))
+                    if (element is not null && (element.Name.StartsWith('!') || element.IsProcessingInstruction))
                     {
                         element.IsEmpty = true;
-                        if (current?.ParentNode != null)
+                        if ((current?.ParentNode) is not null)
                         {
                             current = current.ParentNode;
                         }
                     }
                     else
                     {
-                        if (element != null)
+                        if (element is not null)
                         {
                             var canHaveChild = (htmlReader.Options.GetElementReadOptions(element.Name) & HtmlElementReadOptions.NoChild) != HtmlElementReadOptions.NoChild;
                             if (canHaveChild)
                             {
                                 current = element;
                             }
-                            else if (current.ParentNode != null)
+                            else if (current.ParentNode is not null)
                             {
                                 current = current.ParentNode;
                             }
@@ -760,7 +760,7 @@ sealed class HtmlDocument : HtmlNode
                     if (!DetectEncoding(htmlReader, element, firstPass))
                         return false;
 
-                    if (element != null)
+                    if (element is not null)
                     {
                         if (htmlReader.State.FragmentType == HtmlFragmentType.TagClose)
                         {
@@ -768,10 +768,10 @@ sealed class HtmlDocument : HtmlNode
                         }
 
                         var parent = element.GetParentToClose(0, htmlReader.State.Value);
-                        if (parent != null)
+                        if (parent is not null)
                         {
                             parent.IsClosed = true;
-                            if (parent.ParentNode != null)
+                            if (parent.ParentNode is not null)
                             {
                                 current = parent.ParentNode;
                             }
@@ -819,7 +819,7 @@ sealed class HtmlDocument : HtmlNode
                     att.NameQuoteChar = htmlReader.State.QuoteChar;
 
                     var existingAtt = current?.Attributes[att.Name];
-                    if (existingAtt != null)
+                    if (existingAtt is not null)
                     {
                         error = new HtmlError(htmlReader.State, HtmlErrorType.DuplicateAttribute);
                         AddError(error);
@@ -830,7 +830,7 @@ sealed class HtmlDocument : HtmlNode
                     break;
 
                 case HtmlFragmentType.AttValue:
-                    if (currentAtt == null)
+                    if (currentAtt is null)
                         break;
 
                     currentAtt.Value = HtmlAttribute.UnescapeText(htmlReader.State.Value, htmlReader.State.QuoteChar);
@@ -839,7 +839,7 @@ sealed class HtmlDocument : HtmlNode
                     if (currentAtt.Name.EqualsIgnoreCase(XmlnsPrefix))
                     {
                         element = current as HtmlElement;
-                        if (element != null && !Options.EmptyNamespaces.Contains(currentAtt.Value, StringComparer.Ordinal))
+                        if (element is not null && !Options.EmptyNamespaces.Contains(currentAtt.Value, StringComparer.Ordinal))
                         {
                             element.NamespaceURI = currentAtt.Value;
                         }
@@ -861,7 +861,7 @@ sealed class HtmlDocument : HtmlNode
         if (htmlReader.FirstEncodingErrorOffset >= 0)
         {
             AddError(new HtmlError(htmlReader.State.Line, htmlReader.State.Column, htmlReader.State.Offset, HtmlErrorType.EncodingError));
-            if (DetectedEncoding == null)
+            if (DetectedEncoding is null)
             {
                 if (htmlReader.Options.ReaderThrowsOnEncodingMismatch)
                     throw new HtmlException(string.Format(CultureInfo.CurrentCulture, "HTML0003: Html text encoding error. There seems to be a mismatch between the encoding '{0}', used to read the input Html text, or to open the input Html file, and the real detected text encoding, which cannot be determined at that time. If you do not want to see this exception thrown, please configure the ThrowOnEncodingError HtmlReader option. Offset of the first detected text encoding mismatch is {1}.", StreamEncoding.EncodingName, htmlReader.FirstEncodingErrorOffset));
@@ -878,7 +878,7 @@ sealed class HtmlDocument : HtmlNode
             if (!string.Equals(value, base.InnerHtml, StringComparison.Ordinal))
             {
                 RemoveAll();
-                if (value != null)
+                if (value is not null)
                 {
                     var doc = CreateDocument();
                     doc.LoadHtml(value);
@@ -908,7 +908,7 @@ sealed class HtmlDocument : HtmlNode
     {
         get
         {
-            if (_baseElement == null && !_baseElementSearched)
+            if (_baseElement is null && !_baseElementSearched)
             {
                 _baseElement = SelectSingleNode("//base") as HtmlElement;
                 _baseElementSearched = true;
@@ -957,7 +957,7 @@ sealed class HtmlDocument : HtmlNode
             return;
         }
 
-        if (StreamEncoding != null)
+        if (StreamEncoding is not null)
         {
             using var writer = Utilities.OpenWriter(filePath, append: false, StreamEncoding);
             Save(writer);
@@ -1001,7 +1001,7 @@ sealed class HtmlDocument : HtmlNode
         if (outStream is null)
             throw new ArgumentNullException(nameof(outStream));
 
-        if (StreamEncoding != null)
+        if (StreamEncoding is not null)
         {
             using var writer = new StreamWriter(outStream, StreamEncoding);
             Save(writer);
@@ -1054,19 +1054,19 @@ sealed class HtmlDocument : HtmlNode
         if (writer is null)
             throw new ArgumentNullException(nameof(writer));
 
-        if (DocumentType == null)
+        if (DocumentType is null)
             return;
 
         var name = DocumentType.Attributes.Count > 0 ? DocumentType.Attributes[0].Name : "html";
         string pubid = null;
         var att = DocumentType.Attributes["public"];
-        if (att?.NextSibling != null)
+        if ((att?.NextSibling) is not null)
         {
             pubid = att.NextSibling.Name;
         }
 
         string sysid = null;
-        if (att?.NextSibling != null && att.NextSibling.NextSibling != null)
+        if ((att?.NextSibling) is not null && att.NextSibling.NextSibling is not null)
         {
             sysid = att.NextSibling.NextSibling.Name;
         }
@@ -1080,7 +1080,7 @@ sealed class HtmlDocument : HtmlNode
             if (_xhtml.HasValue)
                 return _xhtml.Value;
 
-            return HtmlElement?.Attributes.GetNamespacePrefixIfDefined(XhtmlNamespaceURI) != null;
+            return (HtmlElement?.Attributes.GetNamespacePrefixIfDefined(XhtmlNamespaceURI)) is not null;
         }
         set => _xhtml = value;
     }
@@ -1169,7 +1169,7 @@ sealed class HtmlDocument : HtmlNode
     {
         get
         {
-            if (_namespaceXml == null)
+            if (_namespaceXml is null)
             {
                 _namespaceXml = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
                 _namespaceXml.Value = XmlNamespaceURI;
@@ -1199,7 +1199,7 @@ sealed class HtmlDocument : HtmlNode
 
         if (scope != XmlNamespaceScope.Local)
         {
-            if (_declaredNamespaces != null)
+            if (_declaredNamespaces is not null)
             {
                 foreach (var kv in _declaredNamespaces)
                 {
@@ -1207,7 +1207,7 @@ sealed class HtmlDocument : HtmlNode
                 }
             }
 
-            if (_declaredPrefixes != null)
+            if (_declaredPrefixes is not null)
             {
                 foreach (var kv in _declaredPrefixes)
                 {
@@ -1238,10 +1238,10 @@ sealed class HtmlDocument : HtmlNode
 
         var baseAddress = BaseAddress;
         var baseElement = BaseElement;
-        if (baseElement != null)
+        if (baseElement is not null)
         {
             var href = Utilities.Nullify(baseElement.GetAttributeValue("href"), trim: true);
-            if (href != null)
+            if (href is not null)
             {
                 var address = new Uri(href, UriKind.RelativeOrAbsolute);
                 if (address.IsAbsoluteUri)

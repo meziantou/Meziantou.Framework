@@ -95,7 +95,7 @@ public class CsvWriterTests
 
         var rowIndex = -1;
         CsvRow csvRow;
-        while ((csvRow = await reader.ReadRowAsync()) != null)
+        while ((csvRow = await reader.ReadRowAsync()) is not null)
         {
             rowIndex++;
             csvRow.Values.ToList().Should().BeEquivalentTo(rows[rowIndex]);

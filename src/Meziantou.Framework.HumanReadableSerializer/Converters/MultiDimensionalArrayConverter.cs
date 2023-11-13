@@ -9,7 +9,7 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         var array = (Array)value;
         var index = 0L;

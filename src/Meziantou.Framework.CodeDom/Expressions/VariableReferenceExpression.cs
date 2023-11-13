@@ -23,7 +23,7 @@ public class VariableReferenceExpression : Expression
     {
         get
         {
-            if (_variableDeclarationStatement != null)
+            if (_variableDeclarationStatement is not null)
                 return _variableDeclarationStatement.Name;
 
             return _name;

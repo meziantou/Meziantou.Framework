@@ -22,7 +22,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
         private static TypeConverter? GetTypeConverter()
         {
             var typeConverter = TypeDescriptor.GetConverter(typeof(T));
-            if (typeConverter != null && typeConverter.GetType() != typeof(TypeConverter) && typeConverter.CanConvertTo(typeof(string)))
+            if (typeConverter is not null && typeConverter.GetType() != typeof(TypeConverter) && typeConverter.CanConvertTo(typeof(string)))
                 return typeConverter;
 
             return null;
@@ -30,13 +30,13 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
 
         protected override void WriteValue(HumanReadableTextWriter writer, T? value, HumanReadableSerializerOptions options)
         {
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
                 return;
             }
 
-            if (TypeConverter != null)
+            if (TypeConverter is not null)
             {
                 var stringValue = TypeConverter.ConvertToInvariantString(context: null, value);
                 writer.WriteValue(stringValue ?? "");
@@ -77,7 +77,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
 
                     writer.WritePropertyName(member.Name);
 
-                    if (member.Converter != null)
+                    if (member.Converter is not null)
                     {
                         member.Converter.WriteValue(writer, memberValue, options);
                     }
@@ -86,7 +86,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
                         var actualType = memberValue?.GetType() ?? member.MemberType;
                         if (actualType == typeof(object))
                         {
-                            if (memberValue == null)
+                            if (memberValue is null)
                             {
                                 writer.WriteNullValue();
                             }

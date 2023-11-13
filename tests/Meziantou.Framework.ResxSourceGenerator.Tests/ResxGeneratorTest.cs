@@ -202,7 +202,7 @@ public class ResxGeneratorTest
                 switch (key)
                 {
                     case "RootNamespace":
-                        if (_optionProvider.RootNamespace != null)
+                        if (_optionProvider.RootNamespace is not null)
                         {
                             value = _optionProvider.RootNamespace;
                             return true;
@@ -210,7 +210,7 @@ public class ResxGeneratorTest
                         break;
 
                     case "ProjectDir":
-                        if (_optionProvider.ProjectDir != null)
+                        if (_optionProvider.ProjectDir is not null)
                         {
                             value = _optionProvider.ProjectDir;
                             return true;
@@ -218,7 +218,7 @@ public class ResxGeneratorTest
                         break;
 
                     case "Namespace":
-                        if (_optionProvider.Namespace != null)
+                        if (_optionProvider.Namespace is not null)
                         {
                             value = _optionProvider.Namespace;
                             return true;
@@ -226,7 +226,7 @@ public class ResxGeneratorTest
                         break;
 
                     case "ResourceName":
-                        if (_optionProvider.ResourceName != null)
+                        if (_optionProvider.ResourceName is not null)
                         {
                             value = _optionProvider.ResourceName;
                             return true;
@@ -234,7 +234,7 @@ public class ResxGeneratorTest
                         break;
 
                     case "ClassName":
-                        if (_optionProvider.ClassName != null)
+                        if (_optionProvider.ClassName is not null)
                         {
                             value = _optionProvider.ClassName;
                             return true;

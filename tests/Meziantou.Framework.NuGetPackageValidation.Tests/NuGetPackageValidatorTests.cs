@@ -17,7 +17,7 @@ public sealed class NuGetPackageValidatorTests
         var options = new NuGetPackageValidationOptions();
         options.Rules.AddRange(rules);
 
-        if (excludedRuleIds != null)
+        if (excludedRuleIds is not null)
         {
             options.ExcludedRuleIds.AddRange(excludedRuleIds);
         }

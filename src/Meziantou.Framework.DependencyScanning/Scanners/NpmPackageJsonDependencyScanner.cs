@@ -60,17 +60,17 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
             string? version = null;
             if (dep.Value.Type == JTokenType.String)
             {
-                if (dep.Value != null)
+                if (dep.Value is not null)
                 {
                     version = dep.Value.Value<string>();
                 }
             }
             else if (dep.Value.Type == JTokenType.Object)
             {
-                if (dep.Value != null)
+                if (dep.Value is not null)
                 {
                     var token = dep.Value.SelectToken("$.version");
-                    if (token != null)
+                    if (token is not null)
                     {
                         version = token.Value<string>();
                     }
@@ -84,7 +84,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
             if (version is null)
                 continue;
 
-            if (dep.Value != null)
+            if (dep.Value is not null)
             {
                 var dependency = new Dependency(packageName, version, DependencyType.Npm,
                     nameLocation: new NonUpdatableLocation(context),

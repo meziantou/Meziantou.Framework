@@ -44,7 +44,7 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
             return true;
         }
 
-        if (_enumerator == null && !_enumerated)
+        if (_enumerator is null && !_enumerated)
         {
             _enumerator = _enumerable.GetEnumerator();
         }
@@ -57,7 +57,7 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
         }
 
         // Get the next item and store it to the cache
-        Debug.Assert(_enumerator != null);
+        Debug.Assert(_enumerator is not null);
         if (_enumerator.MoveNext())
         {
             result = _enumerator.Current;
@@ -77,7 +77,7 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
 
     public void Dispose()
     {
-        if (_enumerator != null)
+        if (_enumerator is not null)
         {
             _enumerator.Dispose();
             _enumerator = null;

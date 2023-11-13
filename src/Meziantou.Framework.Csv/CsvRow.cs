@@ -31,14 +31,14 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (columnName == null)
+            if (columnName is null)
                 throw new ArgumentNullException(nameof(columnName));
 
-            if (Columns == null)
+            if (Columns is null)
                 throw new InvalidOperationException("Columns are not parsed");
 
             var column = Columns.FirstOrDefault(c => string.Equals(c.Name, columnName, StringComparison.Ordinal));
-            if (column == null)
+            if (column is null)
                 return null;
 
             return this[column];
@@ -49,14 +49,14 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (column == null)
+            if (column is null)
                 throw new ArgumentNullException(nameof(column));
 
             return this[column.Index];
         }
     }
 
-    IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => Columns == null ? Enumerable.Empty<string>() : Columns.Where(c => c.Name != null).Select(c => c.Name!);
+    IEnumerable<string> IReadOnlyDictionary<string, string?>.Keys => Columns is null ? Enumerable.Empty<string>() : Columns.Where(c => c.Name is not null).Select(c => c.Name!);
 
     IEnumerable<string> IReadOnlyDictionary<string, string?>.Values => Values;
 
@@ -66,7 +66,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
 
     bool IReadOnlyDictionary<string, string?>.ContainsKey(string key)
     {
-        if (Columns == null)
+        if (Columns is null)
             return false;
 
         return Columns.Any(c => string.Equals(c.Name, key, StringComparison.Ordinal));
@@ -75,7 +75,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     bool IReadOnlyDictionary<string, string?>.TryGetValue(string key, out string? value)
     {
         var v = this[key];
-        if (v != null)
+        if (v is not null)
         {
             value = v;
             return true;
@@ -87,7 +87,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
 
     IEnumerator<KeyValuePair<string, string?>> IEnumerable<KeyValuePair<string, string?>>.GetEnumerator()
     {
-        if (Columns == null)
+        if (Columns is null)
             return Values.Select(v => new KeyValuePair<string, string?>(key: "", v)).GetEnumerator();
 
         return Columns.Select(c => new KeyValuePair<string, string?>(c.Name ?? "", this[c])).GetEnumerator();

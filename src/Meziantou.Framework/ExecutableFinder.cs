@@ -10,7 +10,7 @@ public static class ExecutableFinder
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;
-        if (workingDirectory != null)
+        if (workingDirectory is not null)
         {
             searchPaths = path.Prepend(workingDirectory);
         }
@@ -18,7 +18,7 @@ public static class ExecutableFinder
         foreach (var searchPath in searchPaths)
         {
             var result = TryFindInDirectory(executableName, searchPath, extensions);
-            if (result != null)
+            if (result is not null)
                 return Path.GetFullPath(result);
         }
 

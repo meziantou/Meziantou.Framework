@@ -80,7 +80,7 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
 
             var i = 0;
             var node = _list.First;
-            while (node != null)
+            while (node is not null)
             {
                 if (i == index)
                 {
@@ -138,7 +138,7 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
 
         var node = _list.First;
         var i = 0;
-        while (node != null)
+        while (node is not null)
         {
             if (i == index)
             {

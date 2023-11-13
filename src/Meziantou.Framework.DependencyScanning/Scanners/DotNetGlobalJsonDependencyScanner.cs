@@ -36,7 +36,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
             foreach (var sdk in sdks.Properties())
             {
                 var sdkVersion = sdk.Value.Value<string>();
-                if (sdkVersion != null)
+                if (sdkVersion is not null)
                 {
                     context.ReportDependency(new Dependency(sdk.Name, sdkVersion, DependencyType.NuGet,
                         nameLocation: new NonUpdatableLocation(context),

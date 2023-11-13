@@ -14,7 +14,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
     {
         // The checks are already performed in the static methods
         // No need to check if the path is null or absolute here
-        Debug.Assert(path != null);
+        Debug.Assert(path is not null);
 #if NETCOREAPP3_1_OR_GREATER
         Debug.Assert(Path.IsPathFullyQualified(path));
 #elif NETSTANDARD2_0 || NET472
@@ -157,7 +157,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
             return;
 
         var parent = Path.GetDirectoryName(Value);
-        if (parent != null)
+        if (parent is not null)
         {
             Directory.CreateDirectory(parent);
         }
@@ -252,7 +252,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 
     public static FullPath FromFileSystemInfo(FileSystemInfo? fsi)
     {
-        if (fsi == null)
+        if (fsi is null)
             return Empty;
 
         return FromPath(fsi.FullName);

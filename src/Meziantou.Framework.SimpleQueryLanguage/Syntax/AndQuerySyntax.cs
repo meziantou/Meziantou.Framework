@@ -22,11 +22,11 @@ public sealed class AndQuerySyntax : QuerySyntax
 
     public QuerySyntax Right { get; }
 
-    public bool IsImplicit => Operator == null;
+    public bool IsImplicit => Operator is null;
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        if (Operator != null)
+        if (Operator is not null)
             return [Left, Operator, Right];
 
         return [Left, Right];

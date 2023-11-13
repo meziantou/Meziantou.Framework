@@ -13,7 +13,7 @@ internal sealed class FSharpDiscriminatedUnionConverter : HumanReadableConverter
 
     public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
     {
-        Debug.Assert(value != null);
+        Debug.Assert(value is not null);
 
         var type = value.GetType();
         var info = FSharpUtils.Get(type)!;

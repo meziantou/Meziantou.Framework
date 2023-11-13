@@ -33,7 +33,7 @@ internal sealed class EnumerableConverterFactory : HumanReadableConverterFactory
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IEnumerable<T>? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             var hasItem = false;
 

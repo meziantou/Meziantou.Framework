@@ -33,7 +33,7 @@ internal sealed class AsyncEnumerableConverterFactory : HumanReadableConverterFa
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<T>? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             var task = WriteValue(writer, value, options);
             if (task.IsCompleted)

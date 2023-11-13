@@ -64,7 +64,7 @@ public static partial class TaskEx
         }
         <# } #>
 
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }
@@ -94,7 +94,7 @@ public static partial class TaskEx
         }
         <# } #>
 
-        if (observedExceptions != null)
+        if (observedExceptions is not null)
         {
             throw new AggregateException(observedExceptions);
         }

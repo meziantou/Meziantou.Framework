@@ -39,7 +39,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     public void Start(ProjectedFileSystemStartOptions? options)
     {
-        if (_instanceHandle != null)
+        if (_instanceHandle is not null)
             return;
 
         try
@@ -69,7 +69,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         var notificationMappingsPtr = IntPtr.Zero;
         try
         {
-            if (options != null)
+            if (options is not null)
             {
                 opt.Flags = options.UseNegativePathCache ? NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_USE_NEGATIVE_PATH_CACHE : NativeMethods.PRJ_STARTVIRTUALIZING_FLAGS.PRJ_FLAG_NONE;
 
@@ -113,7 +113,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     protected void ClearNegativePathCache()
     {
-        if (_instanceHandle == null)
+        if (_instanceHandle is null)
             throw new InvalidOperationException("The service is not started");
 
         var result = NativeMethods.PrjClearNegativePathCache(_instanceHandle, out _);
@@ -122,7 +122,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
-        if (_instanceHandle == null)
+        if (_instanceHandle is null)
             throw new InvalidOperationException("The service is not started");
 
         var hr = NativeMethods.PrjDeleteFile(_instanceHandle, relativePath, updateFlags, out failureReason);
@@ -135,7 +135,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     public void Stop()
     {
-        if (_instanceHandle == null)
+        if (_instanceHandle is null)
             return;
 
         _callbacks = default;
@@ -229,7 +229,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
 
         ProjectedFileSystemEntry? entry;
-        while ((entry = session.GetNextEntry()) != null)
+        while ((entry = session.GetNextEntry()) is not null)
         {
             var info = new NativeMethods.PRJ_FILE_BASIC_INFO
             {
@@ -273,7 +273,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
     private HResult GetFileDataCallback(in NativeMethods.PrjCallbackData callbackData, ulong byteOffset, uint length)
     {
         using var stream = OpenRead(callbackData.FilePathName);
-        if (stream == null)
+        if (stream is null)
             return HResult.E_FILENOTFOUND;
 
         ulong writeStartOffset;

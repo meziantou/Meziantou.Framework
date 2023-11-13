@@ -72,7 +72,7 @@ public class HtmlEmailTemplate : Template
     private static HtmlEmailMetadata? GetMetadata(object?[] parameters)
     {
         var htmlEmailOutput = parameters.OfType<HtmlEmailOutput>().FirstOrDefault();
-        if (htmlEmailOutput != null)
+        if (htmlEmailOutput is not null)
         {
             return new HtmlEmailMetadata
             {

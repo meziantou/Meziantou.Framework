@@ -37,7 +37,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 
     public void Dispose()
     {
-        if (_stop != null)
+        if (_stop is not null)
         {
             _stop.Set();
             _stop.Dispose();
@@ -50,7 +50,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
             Dequeue();
         }
 
-        if (Thread != null && Thread.IsAlive)
+        if (Thread is not null && Thread.IsAlive)
         {
             Thread.Join(DisposeThreadJoinTimeout);
         }

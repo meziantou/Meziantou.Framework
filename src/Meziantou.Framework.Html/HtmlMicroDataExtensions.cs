@@ -32,20 +32,20 @@ static class HtmlMicroDataExtensions
     public static string GetItemScopePath(this HtmlNode node, string separator, Func<string, string> typeParser)
     {
         var path = GetItemProp(node);
-        if (path == null)
+        if (path is null)
             return null;
 
         var current = node;
         while (true)
         {
             var scope = GetItemScope(current);
-            if (scope == null)
+            if (scope is null)
                 break;
 
             var type = GetItemType(scope);
-            if (type != null)
+            if (type is not null)
             {
-                if (typeParser != null)
+                if (typeParser is not null)
                 {
                     type = typeParser(type);
                 }
@@ -68,7 +68,7 @@ static class HtmlMicroDataExtensions
 
     public static HtmlNode GetItemScope(this HtmlNode node)
     {
-        if (node == null)
+        if (node is null)
             return null;
 
         if (IsItemScope(node))
@@ -79,7 +79,7 @@ static class HtmlMicroDataExtensions
 
     public static bool IsItemScope(this HtmlNode node)
     {
-        if (node == null)
+        if (node is null)
             return false;
 
         return node.HasAttribute("itemscope");
@@ -109,7 +109,7 @@ static class HtmlMicroDataExtensions
     [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Better readability")]
     public static string GetItemValue(this HtmlNode node)
     {
-        if (node == null)
+        if (node is null)
             return string.Empty;
 
         string value;

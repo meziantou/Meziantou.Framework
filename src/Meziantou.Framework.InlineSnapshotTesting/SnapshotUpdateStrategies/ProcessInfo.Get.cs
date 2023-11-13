@@ -23,7 +23,7 @@ internal sealed partial record ProcessInfo
             var contextProcess = Process.GetCurrentProcess().GetAncestorProcesses()
                 .FirstOrDefault(p => IdeProcessNames.Contains(p.ProcessName));
 
-            if (contextProcess != null)
+            if (contextProcess is not null)
             {
                 var startTime = new DateTimeOffset(contextProcess.StartTime);
                 // Trim milliseconds to avoid some comparison issues

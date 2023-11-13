@@ -7,7 +7,7 @@ internal sealed class LicenseMustBeSetValidationRule : NuGetPackageValidationRul
     public override Task ExecuteAsync(NuGetPackageValidationContext context)
     {
         var metadata = context.Package.NuspecReader.GetLicenseMetadata();
-        if (metadata != null)
+        if (metadata is not null)
         {
             if (metadata.Type == LicenseType.Expression)
                 return Task.CompletedTask;

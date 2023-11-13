@@ -15,7 +15,7 @@ internal static class Utilities
     [Pure]
     public static string? Nullify(string? str, bool trim)
     {
-        if (str == null)
+        if (str is null)
             return null;
 
         if (trim)
@@ -115,7 +115,7 @@ internal static class Utilities
             throw new ArgumentNullException(nameof(name));
 
         int index;
-        if (header == null)
+        if (header is null)
             return null;
 
         var startIndex = 1;
@@ -182,7 +182,7 @@ internal static class Utilities
 
     public static string GetValidXmlName(string text)
     {
-        if ((text == null) || (text.Trim().Length == 0))
+        if ((text is null) || (text.Trim().Length == 0))
             throw new ArgumentNullException(nameof(text));
 
         var sb = new StringBuilder(text.Length);
@@ -314,7 +314,7 @@ internal static class Utilities
 
     public static bool IsRooted(string? path)
     {
-        if (path == null)
+        if (path is null)
             return false;
 
         if (path.StartsWith(Prefix, StringComparison.Ordinal))
@@ -323,7 +323,7 @@ internal static class Utilities
         }
 
         var spath = GetServerPath(path);
-        if (spath != null)
+        if (spath is not null)
             return true;
 
         if (path.Length >= 1 && path[0] == Path.DirectorySeparatorChar)

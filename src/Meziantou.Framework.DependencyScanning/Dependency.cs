@@ -19,7 +19,7 @@ public sealed class Dependency
 
     public Task UpdateNameAsync(string newValue, CancellationToken cancellationToken = default)
     {
-        if (NameLocation == null)
+        if (NameLocation is null)
             throw new InvalidOperationException("Name is not updatable");
 
         return NameLocation.UpdateAsync(Name, newValue, cancellationToken);
@@ -27,7 +27,7 @@ public sealed class Dependency
 
     public Task UpdateVersionAsync(string newValue, CancellationToken cancellationToken = default)
     {
-        if (VersionLocation == null)
+        if (VersionLocation is null)
             throw new InvalidOperationException("Version is not updatable");
 
         return VersionLocation.UpdateAsync(Version, newValue, cancellationToken);

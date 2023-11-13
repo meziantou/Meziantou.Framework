@@ -93,7 +93,7 @@ internal ref partial struct ValueStringBuilder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Append(string? s)
     {
-        if (s == null)
+        if (s is null)
         {
             return;
         }
@@ -177,7 +177,7 @@ internal ref partial struct ValueStringBuilder
 
         var toReturn = _arrayToReturnToPool;
         RawChars = _arrayToReturnToPool = poolArray;
-        if (toReturn != null)
+        if (toReturn is not null)
         {
             ArrayPool<char>.Shared.Return(toReturn);
         }
@@ -188,7 +188,7 @@ internal ref partial struct ValueStringBuilder
     {
         var toReturn = _arrayToReturnToPool;
         this = default; // for safety, to avoid using pooled array if this instance is erroneously appended to again
-        if (toReturn != null)
+        if (toReturn is not null)
         {
             ArrayPool<char>.Shared.Return(toReturn);
         }

@@ -161,7 +161,7 @@ sealed class HtmlOptions
 
     internal bool ParseScriptType(string type)
     {
-        if (type == null)
+        if (type is null)
             return false;
 
         return ParsedScriptTypes.Contains(type);

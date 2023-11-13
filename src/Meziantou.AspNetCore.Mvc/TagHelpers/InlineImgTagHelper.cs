@@ -20,13 +20,13 @@ public sealed class InlineImgTagHelper : InlineTagHelper
     public override async Task ProcessAsync(TagHelperContext context, TagHelperOutput output)
     {
         var fileContent = await GetFileContentBase64Async(Src);
-        if (fileContent == null)
+        if (fileContent is null)
         {
             output.SuppressOutput();
             return;
         }
 
-        System.Diagnostics.Debug.Assert(Src != null);
+        System.Diagnostics.Debug.Assert(Src is not null);
         if (!ContentTypeProvider.TryGetContentType(Src, out var contentType))
         {
             contentType = "application/octet-stream";

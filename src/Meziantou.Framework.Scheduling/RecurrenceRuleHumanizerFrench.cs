@@ -47,7 +47,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" semaines");
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
             sb.Append(" le ");
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.None));
@@ -74,16 +74,16 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" mois");
         }
 
-        if (rrule.ByMonthDays != null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
         {
             sb.Append(" le ");
             ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
             sb.Append(" jour");
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
-            if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
             {
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
@@ -114,14 +114,14 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             sb.Append(" ans");
         }
 
-        if (rrule.ByMonthDays != null && rrule.ByMonthDays.Any())
+        if (rrule.ByMonthDays is not null && rrule.ByMonthDays.Any())
         {
             if (rrule.ByMonthDays.Any(day => day < 0))
             {
                 sb.Append(" le ");
                 ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayOrdinalHumanText).ToList(), ", ", " et ");
                 sb.Append(" jour");
-                if (rrule.ByMonths != null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                     if (MustPrecedeByApostrophe(monthsList))
@@ -139,7 +139,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             {
                 sb.Append(" le ");
                 ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonthDays.Select(md => md.ToString(cultureInfo)).ToList(), ", ", " et ");
-                if (rrule.ByMonths != null && rrule.ByMonths.Any())
+                if (rrule.ByMonths is not null && rrule.ByMonths.Any())
                 {
                     sb.Append(' ');
                     ListToHumanText(sb, FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
@@ -147,16 +147,16 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
             }
         }
 
-        if (rrule.ByWeekDays != null && rrule.ByWeekDays.Any())
+        if (rrule.ByWeekDays is not null && rrule.ByWeekDays.Any())
         {
-            if (rrule.BySetPositions != null && rrule.BySetPositions.Any())
+            if (rrule.BySetPositions is not null && rrule.BySetPositions.Any())
             {
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
             }
             sb.Append(' ');
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
-            if (rrule.ByMonths != null && rrule.ByMonths.Any())
+            if (rrule.ByMonths is not null && rrule.ByMonths.Any())
             {
                 var monthsList = ListToHumanText(FrenchCultureInfo, rrule.ByMonths.Select(MonthToString).ToList(), ", ", " et ");
                 if (MustPrecedeByApostrophe(monthsList))

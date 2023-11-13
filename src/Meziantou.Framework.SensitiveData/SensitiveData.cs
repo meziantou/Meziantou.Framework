@@ -117,7 +117,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (_data != null)
+        if (_data is not null)
         {
             _data.Dispose();
             _data = null;
@@ -128,9 +128,9 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     private void ThrowIfDisposed()
     {
 #if NET7_0_OR_GREATER
-        ObjectDisposedException.ThrowIf(_data == null, this);
+        ObjectDisposedException.ThrowIf(_data is null, this);
 #else
-        if (_data == null)
+        if (_data is null)
             throw new ObjectDisposedException(GetType().FullName);
 #endif
     }

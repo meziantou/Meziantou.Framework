@@ -51,7 +51,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         {
             var compilation = ctx.SemanticModel.Compilation;
             var fastEnumToStringAttributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
-            if (fastEnumToStringAttributeSymbol == null)
+            if (fastEnumToStringAttributeSymbol is null)
                 return null;
 
             var attributeSyntax = (AttributeSyntax)ctx.Node;
@@ -67,7 +67,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
                     continue;
 
                 var arg = attr.ConstructorArguments[0];
-                if (arg.Value == null)
+                if (arg.Value is null)
                     continue;
 
                 var enumType = (ITypeSymbol)arg.Value;
@@ -185,7 +185,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
 
     private static bool IsVisibleOutsideOfAssembly([NotNullWhen(true)] ISymbol? symbol)
     {
-        if (symbol == null)
+        if (symbol is null)
             return false;
 
         if (symbol.DeclaredAccessibility != Accessibility.Public &&
@@ -195,7 +195,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
             return false;
         }
 
-        if (symbol.ContainingType == null)
+        if (symbol.ContainingType is null)
             return true;
 
         return IsVisibleOutsideOfAssembly(symbol.ContainingType);
@@ -211,9 +211,9 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         {
             string? result = null;
             var ns = symbol.ContainingNamespace;
-            while (ns != null && !ns.IsGlobalNamespace)
+            while (ns is not null && !ns.IsGlobalNamespace)
             {
-                if (result != null)
+                if (result is not null)
                 {
                     result = ns.Name + "." + result;
                 }

@@ -62,7 +62,7 @@ internal sealed class AssembliesMustBeOptimizedMustBeSetValidationRule : NuGetPa
             var type = reader.GetTypeReference((TypeReferenceHandle)handle);
             var name = reader.GetString(type.Name);
             var ns = type.Namespace.IsNil ? null : reader.GetString(type.Namespace);
-            if (ns == null)
+            if (ns is null)
                 return name;
 
             return ns + "." + name;

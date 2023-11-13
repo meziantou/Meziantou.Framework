@@ -12,7 +12,7 @@ public static class HumanReadableSerializer
 
     public static string Serialize(object? value, Type type, HumanReadableSerializerOptions? options = null)
     {
-        if (value != null && !type.IsAssignableFrom(value.GetType()))
+        if (value is not null && !type.IsAssignableFrom(value.GetType()))
             throw new ArgumentException($"The provided value cannot be assigned to type '{type.AssemblyQualifiedName}'", nameof(value));
 
         options ??= new HumanReadableSerializerOptions();

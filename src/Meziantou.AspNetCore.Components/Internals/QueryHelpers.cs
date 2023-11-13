@@ -90,7 +90,7 @@ internal static class QueryHelpers
         sb.Append(uriToBeAppended);
         foreach (var parameter in queryString)
         {
-            if (parameter.Value == null)
+            if (parameter.Value is null)
             {
                 continue;
             }
@@ -115,7 +115,7 @@ internal static class QueryHelpers
     {
         var result = ParseNullableQuery(queryString);
 
-        if (result == null)
+        if (result is null)
         {
             return new Dictionary<string, StringValues>(StringComparer.Ordinal);
         }

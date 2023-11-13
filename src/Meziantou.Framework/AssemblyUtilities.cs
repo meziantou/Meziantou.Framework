@@ -14,7 +14,7 @@ public static class AssemblyUtilities
         ArgumentNullException.ThrowIfNull(assembly);
 
         var attr = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-        if (attr != null)
+        if (attr is not null)
         {
             return attr.InformationalVersion;
         }

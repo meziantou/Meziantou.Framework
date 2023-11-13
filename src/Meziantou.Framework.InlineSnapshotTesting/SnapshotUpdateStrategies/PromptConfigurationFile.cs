@@ -16,7 +16,7 @@ internal sealed class PromptConfigurationFile : IDisposable
 
     public void Save()
     {
-        if (_fileStream == null)
+        if (_fileStream is null)
             throw new InvalidOperationException();
 
         _fileStream.Seek(0, SeekOrigin.Begin);

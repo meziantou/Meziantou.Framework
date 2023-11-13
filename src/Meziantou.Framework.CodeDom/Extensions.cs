@@ -4,7 +4,7 @@ public static class Extensions
 {
     public static T? SelfOrAnscestorOfType<T>(this CodeObject? codeObject) where T : CodeObject
     {
-        while (codeObject != null)
+        while (codeObject is not null)
         {
             if (codeObject is T o)
             {
@@ -19,11 +19,11 @@ public static class Extensions
 
     public static T? AnscestorOfType<T>(this CodeObject? codeObject) where T : CodeObject
     {
-        if (codeObject == null)
+        if (codeObject is null)
             return null;
 
         codeObject = codeObject.Parent;
-        while (codeObject != null)
+        while (codeObject is not null)
         {
             if (codeObject is T o)
             {

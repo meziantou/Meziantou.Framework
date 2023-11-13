@@ -17,7 +17,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     {
         lock (_lock)
         {
-            if (_lastChunk == null)
+            if (_lastChunk is null)
             {
                 _firstChunk = _lastChunk = new Chunk<InMemoryLogEntry>(16);
             }
@@ -38,7 +38,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     {
         var sb = new StringBuilder();
         var chunk = _firstChunk;
-        while (chunk != null)
+        while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
             {
@@ -64,13 +64,13 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 
     public bool Contains(Func<InMemoryLogEntry, bool> predicate)
     {
-        return Find(predicate) != null;
+        return Find(predicate) is not null;
     }
 
     public InMemoryLogEntry? Find(Func<InMemoryLogEntry, bool> predicate)
     {
         var chunk = _firstChunk;
-        while (chunk != null)
+        while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
             {
@@ -88,7 +88,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     private IEnumerable<InMemoryLogEntry> GetByLogLevel(LogLevel logLevel)
     {
         var chunk = _firstChunk;
-        while (chunk != null)
+        while (chunk is not null)
         {
             for (var i = 0; i < chunk.Count; i++)
             {
@@ -115,7 +115,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
         {
             get
             {
-                Debug.Assert(_chunk != null);
+                Debug.Assert(_chunk is not null);
                 return _chunk.Items[_index];
             }
         }
@@ -124,7 +124,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 
         public bool MoveNext()
         {
-            if (_chunk == null)
+            if (_chunk is null)
                 return false;
 
             _index++;
@@ -132,7 +132,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
             {
                 _chunk = _chunk.Next;
                 _index = 0;
-                return _chunk != null;
+                return _chunk is not null;
             }
 
             return true;

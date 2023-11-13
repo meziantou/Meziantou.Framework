@@ -15,5 +15,5 @@ public sealed class CredentialResult
     public string? Domain { get; }
     public CredentialSaveOption CredentialSaved { get; }
 
-    public override string ToString() => $"Domain: {Domain}; Username: {UserName}; Password: {(Password == null ? "" : "******")}; Saved: {CredentialSaved}";
+    public override string ToString() => $"Domain: {Domain}; Username: {UserName}; Password: {(Password is null ? "" : "******")}; Saved: {CredentialSaved}";
 }

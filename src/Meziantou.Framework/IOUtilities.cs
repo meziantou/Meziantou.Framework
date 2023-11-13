@@ -32,7 +32,7 @@ static partial class IOUtilities
         }
 
         var dir = Path.GetDirectoryName(filePath);
-        if (dir == null)
+        if (dir is null)
             return;
 
         Directory.CreateDirectory(dir);

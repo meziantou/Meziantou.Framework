@@ -20,7 +20,7 @@ public static class ConvertUtilities
         var b = converter.TryChangeType(input, typeof(T), provider, out var v);
         if (!b)
         {
-            if (v == null)
+            if (v is null)
             {
                 if (typeof(T).IsValueType)
                 {
@@ -127,7 +127,7 @@ public static class ConvertUtilities
         if (conversionType is null)
             throw new ArgumentNullException(nameof(conversionType));
 
-        if (defaultValue == null && conversionType.IsValueType)
+        if (defaultValue is null && conversionType.IsValueType)
         {
             defaultValue = Activator.CreateInstance(conversionType);
         }

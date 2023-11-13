@@ -23,7 +23,7 @@ internal sealed class TaskDialogPrompt : Prompt
     [SupportedOSPlatformGuard("windows")]
     public static bool IsSupported()
     {
-        return IsWindowsVistaOrAbove() && GetExePath(PromptExeFileNameWithoutExtension) != null;
+        return IsWindowsVistaOrAbove() && GetExePath(PromptExeFileNameWithoutExtension) is not null;
 
         static bool IsWindowsVistaOrAbove()
         {
@@ -76,7 +76,7 @@ internal sealed class TaskDialogPrompt : Prompt
     {
         string? exeLocation;
         var dllLocation = typeof(TaskDialogPrompt).Assembly.Location;
-        if (dllLocation != null)
+        if (dllLocation is not null)
         {
             exeLocation = Path.Combine(dllLocation, fileName);
             if (File.Exists(exeLocation))
@@ -94,10 +94,10 @@ internal sealed class TaskDialogPrompt : Prompt
         foreach (var configuration in new[] { "release", "debug" })
         {
             var pathFromRoot = Path.Combine("artifacts", "bin", Path.GetFileNameWithoutExtension(fileName), configuration, fileName);
-            if (dllLocation != null)
+            if (dllLocation is not null)
             {
                 var root = FindParentDirectoryByName(Path.GetDirectoryName(dllLocation)!, "Meziantou.Framework");
-                if (root != null)
+                if (root is not null)
                 {
                     exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
                     if (File.Exists(exeLocation))
@@ -107,7 +107,7 @@ internal sealed class TaskDialogPrompt : Prompt
 
             {
                 var root = FindParentDirectoryByName(Environment.CurrentDirectory, "Meziantou.Framework");
-                if (root != null)
+                if (root is not null)
                 {
                     exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
                     if (File.Exists(exeLocation))
@@ -130,7 +130,7 @@ internal sealed class TaskDialogPrompt : Prompt
                 if (!string.IsNullOrEmpty(mfCurrentDirectory))
                 {
                     var root = FindParentDirectoryByName(mfCurrentDirectory, "Meziantou.Framework");
-                    if (root != null)
+                    if (root is not null)
                     {
                         exeLocation = Path.GetFullPath(Path.Combine(root, pathFromRoot));
                         if (File.Exists(exeLocation))
@@ -159,7 +159,7 @@ internal sealed class TaskDialogPrompt : Prompt
     private static void StartNotificationTray()
     {
         var path = GetExePath(NotificationTrayExeFileNameWithoutExtension);
-        if (path != null)
+        if (path is not null)
         {
             var psi = new ProcessStartInfo
             {

@@ -33,7 +33,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
                     else if (dep.Value.Type == JTokenType.Object)
                     {
                         var token = dep.Value.SelectToken("$.version");
-                        if (token == null)
+                        if (token is null)
                             continue;
 
                         version = token.Value<string>();
@@ -44,7 +44,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
                         continue;
                     }
 
-                    if (version != null)
+                    if (version is not null)
                     {
                         context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet,
                             nameLocation: new NonUpdatableLocation(context),

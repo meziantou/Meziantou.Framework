@@ -23,7 +23,7 @@ public class ArgumentReferenceExpression : Expression
     {
         get
         {
-            if (_argumentDeclaration != null)
+            if (_argumentDeclaration is not null)
                 return _argumentDeclaration.Name;
 
             return _name;

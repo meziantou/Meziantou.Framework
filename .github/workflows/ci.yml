@@ -120,7 +120,7 @@ jobs:
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
       - name: Run tests
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
+        run: dotnet test eng/build.proj --parallel --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v3
         if: always()
@@ -177,7 +177,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Run tests"
-          dotnet test eng/build.proj --configuration "${{ matrix.configuration }}" --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
+          dotnet test eng/build.proj --parallel --configuration "${{ matrix.configuration }}" --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }

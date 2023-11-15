@@ -46,7 +46,7 @@ public class CommandLineBuilderTests
         var args = CommandLineBuilder.WindowsQuotedArgument(value);
         var path = GetArgumentPrinterPath();
 
-        ValidateArguments("dotnet", "\"" + path + "\" " + args, new[] { expected });
+        ValidateArguments("dotnet", "\"" + path + "\" " + args, [expected]);
     }
 
     [RunIfTheory(FactOperatingSystem.Windows)]
@@ -63,7 +63,7 @@ public class CommandLineBuilderTests
         var cmdArguments = "/Q /C \"" + batPath + "\"";
 
         _testOutputHelper.WriteLine($"Executing 'cmd.exe' '{cmdArguments}' with batch content:\n{fileContent}");
-        ValidateArguments("cmd.exe", cmdArguments, new[] { expected });
+        ValidateArguments("cmd.exe", cmdArguments, [expected]);
     }
 
     private FullPath GetArgumentPrinterPath()

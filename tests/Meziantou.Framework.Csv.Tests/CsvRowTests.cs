@@ -9,7 +9,7 @@ public class CsvRowTests
     public void GetValueExtensionIsAvailable()
     {
         // Arrange
-        var columns = new List<CsvColumn> { new CsvColumn("test", 0) };
+        var columns = new List<CsvColumn> { new("test", 0) };
         var values = new List<string> { "42" };
         var row = new CsvRow(columns, values);
 

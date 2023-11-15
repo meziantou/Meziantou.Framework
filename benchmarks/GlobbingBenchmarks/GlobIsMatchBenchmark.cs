@@ -13,22 +13,22 @@ public class GlobIsMatchBenchmark
     private GlobExpressions.Glob _globExpressionsCompiled;
     private DotNet.Globbing.Glob _dotnetGlob;
 
-    [Params(new object[]{
+    [Params([
         "*.txt",
         "**/*.txt",
         "file*.txt",
         "**/file*.txt",
         "folder[0-1]/**/f{ab,il}[aei]*.{txt,png,ico}",
-    })]
+    ])]
     public string Pattern { get; set; }
 
-    [Params(new object[]
-    {
+    [Params(
+    [
         "test.txt",
         "file0001.txt",
         "file00000000000001.txt",
         "test01/test02/test03/test04/file0001.txt",
-    })]
+    ])]
     public string Path { get; set; }
 
     [GlobalSetup]

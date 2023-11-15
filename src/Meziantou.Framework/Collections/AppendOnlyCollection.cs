@@ -91,7 +91,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
         private AppendOnlyCollectionSegment<T>? _segment;
         private int _index = -1;
 
-        public Enumerator(AppendOnlyCollection<T> collection)
+        internal Enumerator(AppendOnlyCollection<T> collection)
         {
             _segment = collection._firstSegment;
         }

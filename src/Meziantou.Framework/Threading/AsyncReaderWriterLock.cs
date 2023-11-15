@@ -95,10 +95,7 @@ public sealed class AsyncReaderWriterLock
             }
         }
 
-        if (toWake is not null)
-        {
-            toWake.SetResult(new Releaser(this, toWakeIsWriter));
-        }
+        toWake?.SetResult(new Releaser(this, toWakeIsWriter));
     }
 
     [StructLayout(LayoutKind.Auto)]

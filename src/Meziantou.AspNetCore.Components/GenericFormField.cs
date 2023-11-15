@@ -164,7 +164,7 @@ public sealed class GenericFormField<TModel>
             var changeHandlerParameter = Expression.Parameter(PropertyType);
             var body = Expression.Assign(Expression.Property(Expression.Constant(this), nameof(Value)), Expression.Convert(changeHandlerParameter, typeof(object)));
             var changeHandlerLambda = Expression.Lambda(typeof(Action<>).MakeGenericType(PropertyType), body, changeHandlerParameter);
-            var changeHandler = method.Invoke(EventCallback.Factory, new object[] { this, changeHandlerLambda.Compile() });
+            var changeHandler = method.Invoke(EventCallback.Factory, [this, changeHandlerLambda.Compile()]);
 
             return _editorTemplate ??= builder =>
             {

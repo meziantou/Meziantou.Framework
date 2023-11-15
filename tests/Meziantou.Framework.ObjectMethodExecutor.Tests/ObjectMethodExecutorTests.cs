@@ -11,7 +11,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticSyncVoid"));
-        var result = executor.Execute(target: null, new object[] { validator });
+        var result = executor.Execute(target: null, [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
@@ -22,7 +22,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
-        var result = executor.Execute(new Test(), new object[] { validator });
+        var result = executor.Execute(new Test(), [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
@@ -41,7 +41,7 @@ public sealed class ObjectMethodExecutorTests
     public void SyncInt32WithParamTest()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncInt32WithParam"));
-        var result = executor.Execute(new Test(), new object[] { 12 });
+        var result = executor.Execute(new Test(), [12]);
 
         result.Should().Be(12);
     }
@@ -51,7 +51,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticAsyncTask"));
-        var result = await executor.ExecuteAsync(null, new object[] { validator });
+        var result = await executor.ExecuteAsync(null, [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
@@ -62,7 +62,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTask"));
-        var result = await executor.ExecuteAsync(new Test(), new object[] { validator });
+        var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
@@ -90,7 +90,7 @@ public sealed class ObjectMethodExecutorTests
     public async Task AsyncTaskInt32WithParamTests()
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTaskInt32WithParam"));
-        var result = await executor.ExecuteAsync(new Test(), new object[] { 12 });
+        var result = await executor.ExecuteAsync(new Test(), [12]);
 
         result.Should().Be(12);
     }
@@ -109,7 +109,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncValueTask"));
-        var result = await executor.ExecuteAsync(new Test(), new object[] { validator });
+        var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
@@ -120,7 +120,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var validator = new Validator();
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
-        var result = await executor.ExecuteAsync(new Test(), new object[] { validator });
+        var result = await executor.ExecuteAsync(new Test(), [validator]);
 
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();

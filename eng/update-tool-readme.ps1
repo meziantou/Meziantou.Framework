@@ -11,7 +11,7 @@ foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
     if ($csprojContent.Project.PropertyGroup.PackAsTool -ieq "true") {
         $toolReadme = Join-Path $csproj.DirectoryName "readme.md"
         if (Test-Path -LiteralPath $toolReadme) {
-            $helpText = dotnet run --project $csproj --framework net7.0 -- --help
+            $helpText = dotnet run --project $csproj --framework net8.0 -- --help
             $helpText = $($helpText -join "`n").TrimEnd(@(" ", "`t", "`r", "`n"))
 
             [string]$toolReadmeContent = Get-Content -LiteralPath $toolReadme -Raw -Encoding utf8

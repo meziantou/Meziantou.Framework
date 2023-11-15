@@ -42,7 +42,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         ]);
         var generator = InstantiateGenerator();
 
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: new ISourceGenerator[] { generator });
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -91,7 +91,7 @@ namespace A
             {
                 var type = a.GetType("A.B.C+Test");
                 var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                var instance = from.Invoke(null, new object[] { 10 });
+                var instance = from.Invoke(null, [10]);
                 var json = System.Text.Json.JsonSerializer.Serialize(instance);
                 var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                 var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
@@ -132,7 +132,7 @@ namespace A
             {
                 var type = a.GetType("A.B.Test");
                 var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                var instance = from.Invoke(null, new object[] { 10 });
+                var instance = from.Invoke(null, [10]);
                 var json = System.Text.Json.JsonSerializer.Serialize(instance);
                 var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                 var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
@@ -212,8 +212,8 @@ public partial struct Test {}
                 var type = a.GetType("Test");
                 var from = (MethodInfo)type.GetMember("FromGuid").Single();
                 var newMethod = (MethodInfo)type.GetMember("New").Single();
-                var emptyInstance = from.Invoke(null, new object[] { Guid.Empty });
-                var instance = from.Invoke(null, new object[] { guid });
+                var emptyInstance = from.Invoke(null, [Guid.Empty]);
+                var instance = from.Invoke(null, [guid]);
                 var newInstance = newMethod.Invoke(null, null);
                 newInstance.Should().NotBe(instance);
                 newInstance.Should().NotBe(emptyInstance);
@@ -270,7 +270,7 @@ public partial struct Test {}
                 {
                     var type = a.GetType("Test");
                     var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                    var instance = from.Invoke(null, new object[] { -42 });
+                    var instance = from.Invoke(null, [-42]);
                     var str = instance.ToString();
 
                     str.Should().Be("Test { Value = -42 }");

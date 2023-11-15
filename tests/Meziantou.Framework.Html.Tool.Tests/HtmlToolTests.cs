@@ -25,7 +25,7 @@ public class HtmlToolTests
     public async Task Help()
     {
         var console = new StringBuilderConsole();
-        var result = await Program.MainImpl(new[] { "--help" }, console);
+        var result = await Program.MainImpl(["--help"], console);
         result.Should().Be(0);
         console.Output.Should().Contain("meziantou.html");
     }
@@ -37,7 +37,7 @@ public class HtmlToolTests
         var htmlPath = await temp.CreateTextFileAsync("test.html", "<link href='sample.css' />");
         await temp.CreateTextFileAsync("sample.css", "html { }");
 
-        var result = await Program.MainImpl(new[] { "append-version", "--single-file=" + htmlPath }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["append-version", "--single-file=" + htmlPath], new XunitConsole(_testOutputHelper));
         result.Should().Be(0);
         await ContentEquals(htmlPath, "<link href='sample.css?v=77a968' />");
     }
@@ -49,7 +49,7 @@ public class HtmlToolTests
         var htmlPath = await temp.CreateTextFileAsync("test.html", "<link href='sample.css' />");
         await temp.CreateTextFileAsync("sample.css", "html { }");
 
-        var result = await Program.MainImpl(new[] { "append-version", "--file-pattern=**/*.html", "--root-directory=" + temp.FullPath }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["append-version", "--file-pattern=**/*.html", "--root-directory=" + temp.FullPath], new XunitConsole(_testOutputHelper));
         result.Should().Be(0);
         await ContentEquals(htmlPath, "<link href='sample.css?v=77a968' />");
     }
@@ -60,7 +60,7 @@ public class HtmlToolTests
         await using var temp = TemporaryDirectory.Create();
         var htmlPath = await temp.CreateTextFileAsync("test.html", "<head><link href='sample.css' /></head>");
 
-        var result = await Program.MainImpl(new[] { "replace-value", "--file-pattern=**/*.html", "--root-directory=" + temp.FullPath, "--xpath=//head/link/@href", "--new-value=test" }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["replace-value", "--file-pattern=**/*.html", "--root-directory=" + temp.FullPath, "--xpath=//head/link/@href", "--new-value=test"], new XunitConsole(_testOutputHelper));
         result.Should().Be(0);
         await ContentEquals(htmlPath, "<head><link href='test' /></head>");
     }
@@ -71,7 +71,7 @@ public class HtmlToolTests
         await using var temp = TemporaryDirectory.Create();
         var htmlPath = await temp.CreateTextFileAsync("test.html", "<head><link href='sample.css' /></head>");
 
-        var result = await Program.MainImpl(new[] { "replace-value", "--single-file=" + htmlPath, "--xpath=//head/link/@href", "--new-value=test" }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["replace-value", "--single-file=" + htmlPath, "--xpath=//head/link/@href", "--new-value=test"], new XunitConsole(_testOutputHelper));
         result.Should().Be(0);
         await ContentEquals(htmlPath, "<head><link href='test' /></head>");
     }
@@ -82,7 +82,7 @@ public class HtmlToolTests
         await using var temp = TemporaryDirectory.Create();
         var htmlPath = await temp.CreateTextFileAsync("test.html", "<span>test</span>");
 
-        var result = await Program.MainImpl(new[] { "replace-value", "--single-file=" + htmlPath, "--xpath=//span/text()", "--new-value=replaced" }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["replace-value", "--single-file=" + htmlPath, "--xpath=//span/text()", "--new-value=replaced"], new XunitConsole(_testOutputHelper));
         result.Should().Be(0);
         await ContentEquals(htmlPath, "<span>replaced</span>");
     }
@@ -103,7 +103,7 @@ public class HtmlToolTests
         await temp.CreateTextFileAsync("script.js", "b");
         await temp.CreateTextFileAsync("img.png", "c");
 
-        var result = await Program.MainImpl(new[] { "inline-resources", "--single-file=" + htmlPath, "--resource-patterns=.(png|js|css)$" }, new XunitConsole(_testOutputHelper));
+        var result = await Program.MainImpl(["inline-resources", "--single-file=" + htmlPath, "--resource-patterns=.(png|js|css)$"], new XunitConsole(_testOutputHelper));
         using (new AssertionScope())
         {
             result.Should().Be(0);

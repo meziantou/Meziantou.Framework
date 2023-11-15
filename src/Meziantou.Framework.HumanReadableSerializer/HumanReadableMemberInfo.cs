@@ -89,7 +89,7 @@ internal sealed class HumanReadableMemberInfo
 
         if (ignoreAttributes.Length == 0)
         {
-            ignoreAttributes = new[] { new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition } };
+            ignoreAttributes = [new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition }];
         }
 
         var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;
@@ -126,7 +126,7 @@ internal sealed class HumanReadableMemberInfo
 
         if (ignoreAttributes.Length == 0)
         {
-            ignoreAttributes = new[] { new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition } };
+            ignoreAttributes = [new HumanReadableIgnoreAttribute() { Condition = options.DefaultIgnoreCondition }];
         }
 
         var propertyName = options.GetCustomAttribute<HumanReadablePropertyNameAttribute>(member)?.Name ?? member.Name;

@@ -220,7 +220,7 @@ public static class DataBinder
             {
                 var propInfo = collectionProp.GetType().GetProperty("Item", BindingFlags.Public | BindingFlags.Instance, binder: null, returnType: null, [indexValue.GetType()], modifiers: null);
                 if (propInfo != null)
-                    return propInfo.GetValue(collectionProp, new object[] { indexValue });
+                    return propInfo.GetValue(collectionProp, [indexValue]);
 
                 throw new ArgumentException($"Databinding: '{collectionProp.GetType().FullName}' does not allow indexed access.", nameof(expression));
             }

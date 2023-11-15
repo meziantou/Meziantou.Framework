@@ -28,7 +28,7 @@ public sealed class EnumToStringSourceGeneratorTests
         var generator = new EnumToStringSourceGenerator().AsSourceGenerator();
 
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { generator });
+            generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -78,8 +78,8 @@ namespace A
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
         var method = type.GetMethod("Sample", BindingFlags.Public | BindingFlags.Static);
-        method.Invoke(null, new object[] { 1 }).Should().Be("Value2");
-        method.Invoke(null, new object[] { 999 }).Should().Be("999");
+        method.Invoke(null, [1]).Should().Be("Value2");
+        method.Invoke(null, [999]).Should().Be("999");
 
     }
 

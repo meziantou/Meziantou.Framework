@@ -6,15 +6,9 @@ namespace Meziantou.Framework.Tests;
 
 public sealed class CachedEnumerableTests
 {
-    private sealed class SingleEnumerable<T> : IEnumerable<T>
+    private sealed class SingleEnumerable<T>(IEnumerable<T> enumerable) : IEnumerable<T>
     {
-        private readonly IEnumerable<T> _enumerable;
         private bool _enumerated;
-
-        public SingleEnumerable(IEnumerable<T> enumerable)
-        {
-            _enumerable = enumerable;
-        }
 
         public IEnumerator<T> GetEnumerator()
         {
@@ -23,7 +17,7 @@ public sealed class CachedEnumerableTests
 
             _enumerated = true;
 
-            return _enumerable.GetEnumerator();
+            return enumerable.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

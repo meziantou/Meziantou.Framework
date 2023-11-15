@@ -79,46 +79,36 @@ public sealed class StreamExtensionsTests
         copy.ToArray().Should().Equal([1, 2, 3, 4]);
     }
 
-    private sealed class CustomStream : Stream
+    private sealed class CustomStream(Stream stream, bool canSeek) : Stream
     {
-        [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "Stream is owned by the caller")]
-        private readonly Stream _stream;
-        private readonly bool _canSeek;
-
-        public CustomStream(Stream stream, bool canSeek)
-        {
-            _stream = stream;
-            _canSeek = canSeek;
-        }
-
-        public override bool CanRead => _stream.CanRead;
-        public override bool CanSeek => _canSeek && _stream.CanSeek;
+        public override bool CanRead => stream.CanRead;
+        public override bool CanSeek => canSeek && stream.CanSeek;
         public override bool CanWrite => throw new NotSupportedException();
-        public override long Length => _stream.Length;
-        public override long Position { get => _stream.Position; set => throw new NotSupportedException(); }
+        public override long Length => stream.Length;
+        public override long Position { get => stream.Position; set => throw new NotSupportedException(); }
         public override void Flush() => throw new NotSupportedException();
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return _stream.Read(buffer, offset, 1);
+            return stream.Read(buffer, offset, 1);
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            return _stream.ReadAsync(buffer, offset, 1, cancellationToken);
+            return stream.ReadAsync(buffer, offset, 1, cancellationToken);
         }
 
         public override int Read(Span<byte> buffer)
         {
-            return _stream.Read(buffer[0..1]);
+            return stream.Read(buffer[0..1]);
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            return _stream.ReadAsync(buffer[0..1], cancellationToken);
+            return stream.ReadAsync(buffer[0..1], cancellationToken);
         }
 
-        public override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
+        public override long Seek(long offset, SeekOrigin origin) => stream.Seek(offset, origin);
 
         public override void SetLength(long value) => throw new NotSupportedException();
 

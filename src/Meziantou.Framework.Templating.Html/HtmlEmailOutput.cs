@@ -3,22 +3,16 @@ using System.Text.Encodings.Web;
 
 namespace Meziantou.Framework.Templating;
 
-public class HtmlEmailOutput : Output
+public class HtmlEmailOutput(Template template, TextWriter writer) : Output(template, writer)
 {
     public const string TitleSectionName = "title";
-    private readonly HtmlEncoder _htmlEncoder;
-    private readonly UrlEncoder _urlEncoder;
+    private readonly HtmlEncoder _htmlEncoder = HtmlEncoder.Default;
+    private readonly UrlEncoder _urlEncoder = UrlEncoder.Default;
 
     private readonly Dictionary<string, string> _sections = new(StringComparer.Ordinal);
     private readonly List<HtmlEmailSection> _currentSections = [];
 
     public IList<string> ContentIdentifiers { get; } = new List<string>();
-
-    public HtmlEmailOutput(Template template, TextWriter writer) : base(template, writer)
-    {
-        _htmlEncoder = HtmlEncoder.Default;
-        _urlEncoder = UrlEncoder.Default;
-    }
 
     public override void Write(string format, params object?[] args)
     {

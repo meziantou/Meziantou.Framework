@@ -21,9 +21,9 @@ public sealed class SingleInstanceTests
         var events = new List<SingleInstanceEventArgs>();
         singleInstance.NewInstance += SingleInstance_NewInstance;
 
-        singleInstance.NotifyFirstInstance(new[] { "a", "b", "c" }).Should().BeTrue("it should notify first instance (1)");
+        singleInstance.NotifyFirstInstance(["a", "b", "c"]).Should().BeTrue("it should notify first instance (1)");
         await Task.Delay(50);
-        singleInstance.NotifyFirstInstance(new[] { "123" }).Should().BeTrue("it should notify the first instance (2)");
+        singleInstance.NotifyFirstInstance(["123"]).Should().BeTrue("it should notify the first instance (2)");
 
         while (!cts.Token.IsCancellationRequested && events.Count < 2)
         {

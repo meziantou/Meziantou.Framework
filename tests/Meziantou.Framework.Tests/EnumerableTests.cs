@@ -147,7 +147,7 @@ public class EnumerableTests
         List<string> actual = list.WhereNotNull().ToList();
 
         // Assert
-        actual.Should().Equal(new[] { "", "a" });
+        actual.Should().Equal(["", "a"]);
     }
 #nullable disable
 

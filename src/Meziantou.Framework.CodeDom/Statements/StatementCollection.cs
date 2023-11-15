@@ -23,7 +23,7 @@ public class StatementCollection : CodeObjectCollection<Statement>
         return expression;
     }
 
-    public static implicit operator StatementCollection(Statement codeStatement) => new() { codeStatement };
+    public static implicit operator StatementCollection(Statement codeStatement) => [codeStatement];
 
-    public static implicit operator StatementCollection(Expression codeExpression) => new() { new ExpressionStatement(codeExpression) };
+    public static implicit operator StatementCollection(Expression codeExpression) => [new ExpressionStatement(codeExpression)];
 }

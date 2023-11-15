@@ -110,5 +110,5 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         }
     }
 
-    public static implicit operator ExpressionCollectionStatement(Expression expression) => new() { expression };
+    public static implicit operator ExpressionCollectionStatement(Expression expression) => [expression];
 }

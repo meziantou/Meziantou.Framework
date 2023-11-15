@@ -129,51 +129,49 @@ public class ByteArrayExtensionsTests
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_Span_UpperCase()
     {
         var options = HexaOptions.UpperCase;
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options).Should().Be("00");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options).Should().Be("01");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options).Should().Be("02");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options).Should().Be("03");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options).Should().Be("04");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options).Should().Be("05");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options).Should().Be("06");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options).Should().Be("07");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options).Should().Be("08");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options).Should().Be("09");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options).Should().Be("0A");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options).Should().Be("0B");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options).Should().Be("0C");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options).Should().Be("0D");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options).Should().Be("0E");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options).Should().Be("0F");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options).Should().Be("102F");
+        HexaConverter.ToHexaString([0x00], options).Should().Be("00");
+        HexaConverter.ToHexaString([0x01], options).Should().Be("01");
+        HexaConverter.ToHexaString([0x02], options).Should().Be("02");
+        HexaConverter.ToHexaString([0x03], options).Should().Be("03");
+        HexaConverter.ToHexaString([0x04], options).Should().Be("04");
+        HexaConverter.ToHexaString([0x05], options).Should().Be("05");
+        HexaConverter.ToHexaString([0x06], options).Should().Be("06");
+        HexaConverter.ToHexaString([0x07], options).Should().Be("07");
+        HexaConverter.ToHexaString([0x08], options).Should().Be("08");
+        HexaConverter.ToHexaString([0x09], options).Should().Be("09");
+        HexaConverter.ToHexaString([0x0A], options).Should().Be("0A");
+        HexaConverter.ToHexaString([0x0B], options).Should().Be("0B");
+        HexaConverter.ToHexaString([0x0C], options).Should().Be("0C");
+        HexaConverter.ToHexaString([0x0D], options).Should().Be("0D");
+        HexaConverter.ToHexaString([0x0E], options).Should().Be("0E");
+        HexaConverter.ToHexaString([0x0F], options).Should().Be("0F");
+        HexaConverter.ToHexaString([0x10, 0x2F], options).Should().Be("102F");
     }
 
     [Fact]
-    [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_Span_LowerCase()
     {
         var options = HexaOptions.LowerCase;
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x00 }, options).Should().Be("00");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x01 }, options).Should().Be("01");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x02 }, options).Should().Be("02");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x03 }, options).Should().Be("03");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x04 }, options).Should().Be("04");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x05 }, options).Should().Be("05");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x06 }, options).Should().Be("06");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x07 }, options).Should().Be("07");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x08 }, options).Should().Be("08");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x09 }, options).Should().Be("09");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0A }, options).Should().Be("0a");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0B }, options).Should().Be("0b");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0C }, options).Should().Be("0c");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0D }, options).Should().Be("0d");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0E }, options).Should().Be("0e");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x0F }, options).Should().Be("0f");
-        HexaConverter.ToHexaString((ReadOnlySpan<byte>)new byte[] { 0x10, 0x2F }, options).Should().Be("102f");
+        HexaConverter.ToHexaString([0x00], options).Should().Be("00");
+        HexaConverter.ToHexaString([0x01], options).Should().Be("01");
+        HexaConverter.ToHexaString([0x02], options).Should().Be("02");
+        HexaConverter.ToHexaString([0x03], options).Should().Be("03");
+        HexaConverter.ToHexaString([0x04], options).Should().Be("04");
+        HexaConverter.ToHexaString([0x05], options).Should().Be("05");
+        HexaConverter.ToHexaString([0x06], options).Should().Be("06");
+        HexaConverter.ToHexaString([0x07], options).Should().Be("07");
+        HexaConverter.ToHexaString([0x08], options).Should().Be("08");
+        HexaConverter.ToHexaString([0x09], options).Should().Be("09");
+        HexaConverter.ToHexaString([0x0A], options).Should().Be("0a");
+        HexaConverter.ToHexaString([0x0B], options).Should().Be("0b");
+        HexaConverter.ToHexaString([0x0C], options).Should().Be("0c");
+        HexaConverter.ToHexaString([0x0D], options).Should().Be("0d");
+        HexaConverter.ToHexaString([0x0E], options).Should().Be("0e");
+        HexaConverter.ToHexaString([0x0F], options).Should().Be("0f");
+        HexaConverter.ToHexaString([0x10, 0x2F], options).Should().Be("102f");
     }
 
     [Fact]

@@ -119,9 +119,7 @@ public sealed class Perceived
     {
         ArgumentNullException.ThrowIfNull(fileName);
 
-        var extension = Path.GetExtension(fileName);
-        if (extension is null)
-            throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
+        var extension = Path.GetExtension(fileName) ?? throw new ArgumentException("The extension cannot be determined from the file name", nameof(fileName));
 
         extension = extension.ToUpperInvariant();
         if (PerceivedTypes.TryGetValue(extension, out var ptype))

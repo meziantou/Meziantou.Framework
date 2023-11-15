@@ -170,7 +170,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Build"
-          dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+          dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /p:BuildInParallel=false /bl ${{ matrix.additionalArguments }}
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }

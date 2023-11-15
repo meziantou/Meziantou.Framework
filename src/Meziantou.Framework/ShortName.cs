@@ -97,9 +97,7 @@ public static class ShortName
                 throw new ArgumentException("The collection contains a null item", nameof(names));
 
             dict.Remove(name);
-            var shortName = Create(dict, maxLength, name);
-            if (shortName is null)
-                throw new ArgumentException($"Cannot compute a unique short name with a maximum length of {maxLength.ToStringInvariant()} characters", nameof(names));
+            var shortName = Create(dict, maxLength, name) ?? throw new ArgumentException($"Cannot compute a unique short name with a maximum length of {maxLength.ToStringInvariant()} characters", nameof(names));
 
             dict.Add(shortName);
             shortNames.Add(name, shortName);

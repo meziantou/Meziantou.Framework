@@ -74,7 +74,7 @@ public sealed partial class StronglyTypedIdTests
     public void ValidateType(Type type, string fromMethodName, object value)
     {
         var from = (MethodInfo)type.GetMember(fromMethodName).Single();
-        var instance = from.Invoke(null, new object[] { value });
+        var instance = from.Invoke(null, [value]);
 
         // System.Text.Json
         {
@@ -115,7 +115,7 @@ public sealed partial class StronglyTypedIdTests
         }
 
         var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
-        var defaultInstance = from.Invoke(null, new object?[] { defaultValue });
+        var defaultInstance = from.Invoke(null, [defaultValue]);
         defaultInstance.Should().NotBe(instance);
     }
 

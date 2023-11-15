@@ -73,9 +73,7 @@ public static class CultureInfoUtilities
         ArgumentNullException.ThrowIfNull(cultureName);
         ArgumentNullException.ThrowIfNull(action);
 
-        var culture = GetCulture(cultureName);
-        if (culture is null)
-            throw new ArgumentException($"Culture '{cultureName}' not found.", nameof(cultureName));
+        var culture = GetCulture(cultureName) ?? throw new ArgumentException($"Culture '{cultureName}' not found.", nameof(cultureName));
 
         return UseCulture(culture, action);
     }

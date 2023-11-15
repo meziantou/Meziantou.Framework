@@ -1,12 +1,9 @@
 namespace Meziantou.Framework.Templating;
 
-public class CodeBlock : ParsedBlock
+public class CodeBlock(Template template, string text, int index)
+    : ParsedBlock(template, text, index)
 {
     protected string EvalPrefixString { get; set; } = "=";
-
-    public CodeBlock(Template template, string text, int index) : base(template, text, index)
-    {
-    }
 
     public override string BuildCode()
     {

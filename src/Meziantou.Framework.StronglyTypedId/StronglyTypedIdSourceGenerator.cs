@@ -27,15 +27,23 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var types = context.SyntaxProvider
+        var nonGenericTypes = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 "Meziantou.Framework.Annotations.StronglyTypedIdAttribute",
                 predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
-                transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
+                transform: static (ctx, cancellationToken) => GetNonGenericSemanticTargetForGeneration(ctx, cancellationToken))
+            .Where(static m => m is not null)
+            .WithTrackingName("Syntax");
+        var genericTypes = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                "Meziantou.Framework.Annotations.StronglyTypedIdAttribute`1",
+                predicate: static (syntax, _) => IsSyntaxTargetForGeneration(syntax),
+                transform: static (ctx, cancellationToken) => GetGenericSemanticTargetForGeneration(ctx, cancellationToken))
             .Where(static m => m is not null)
             .WithTrackingName("Syntax");
 
-        context.RegisterSourceOutput(types, (context, attribute) => Execute(context, attribute!));
+        context.RegisterSourceOutput(nonGenericTypes, (context, attribute) => Execute(context, attribute!));
+        context.RegisterSourceOutput(genericTypes, (context, attribute) => Execute(context, attribute!));
 
         static bool IsSyntaxTargetForGeneration(SyntaxNode syntax)
         {
@@ -52,7 +60,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 {
                     foreach (var attribute in attributeList.Attributes)
                     {
-                        if (attribute.ArgumentList is not null && attribute.ArgumentList.Arguments.Count > 0)
+                        if (attribute.ArgumentList is { Arguments.Count: > 0 } || attribute.Name.Arity == 1)
                             return true;
                     }
                 }
@@ -61,27 +69,47 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
         }
 
-        static object? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+        static object? GetGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
         {
-            var semanticModel = ctx.SemanticModel;
-            var compilation = semanticModel.Compilation;
-            var typeDeclaration = (TypeDeclarationSyntax)ctx.TargetNode;
+            foreach (var attribute in ctx.Attributes)
+            {
+                var arguments = attribute.ConstructorArguments;
+                if (arguments.Length != 5 || attribute.AttributeClass.Arity != 1)
+                    continue;
 
+                var type = attribute.AttributeClass.TypeArguments.Single();
+                return GetSemanticTargetForGeneration(ctx, type, attribute.ConstructorArguments.AsSpan(), cancellationToken);
+            }
+
+            return null;
+        }
+
+        static object? GetNonGenericSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, CancellationToken cancellationToken)
+        {
             foreach (var attribute in ctx.Attributes)
             {
                 var arguments = attribute.ConstructorArguments;
                 if (arguments.Length != 6)
                     continue;
 
-                var idTypeArgument = arguments[0];
-                if (idTypeArgument.Value is not ITypeSymbol type)
-                    continue;
+                if (arguments[0].Value is ITypeSymbol type)
+                    return GetSemanticTargetForGeneration(ctx, type, arguments.AsSpan()[1..], cancellationToken);
+            }
 
+            return null;
+        }
+
+        static object? GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext ctx, ITypeSymbol type, ReadOnlySpan<TypedConstant> arguments, CancellationToken cancellationToken)
+        {
+            var semanticModel = ctx.SemanticModel;
+
+            foreach (var attribute in ctx.Attributes)
+            {
                 var converters = StronglyTypedIdConverters.None;
-                AddConverter(arguments[1], StronglyTypedIdConverters.System_Text_Json);
-                AddConverter(arguments[2], StronglyTypedIdConverters.Newtonsoft_Json);
-                AddConverter(arguments[3], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
-                AddConverter(arguments[4], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
+                AddConverter(arguments[0], StronglyTypedIdConverters.System_Text_Json);
+                AddConverter(arguments[1], StronglyTypedIdConverters.Newtonsoft_Json);
+                AddConverter(arguments[2], StronglyTypedIdConverters.System_ComponentModel_TypeConverter);
+                AddConverter(arguments[3], StronglyTypedIdConverters.MongoDB_Bson_Serialization);
                 void AddConverter(TypedConstant value, StronglyTypedIdConverters converterValue)
                 {
                     if (value.Value is bool argumentValue && argumentValue)
@@ -91,7 +119,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 }
 
                 var addCodeGeneratedAttribute = false;
-                if (arguments[5].Value is bool addCodeGeneratedAttributeValue)
+                if (arguments[4].Value is bool addCodeGeneratedAttributeValue)
                 {
                     addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
                 }

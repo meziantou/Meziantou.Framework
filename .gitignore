@@ -37,6 +37,9 @@ bld/
 *.VisualState.xml
 TestResult.xml
 
+# Verify
+*.received.*
+
 # Build Results of an ATL Project
 [Dd]ebugPS/
 [Rr]eleasePS/

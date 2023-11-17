@@ -6,10 +6,10 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests;
 
+[UsesVerify]
 public class ResxGeneratorTest
 {
     private static async Task<(GeneratorDriverRunResult Result, byte[] Assembly)> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
@@ -66,12 +66,7 @@ public class ResxGeneratorTest
         result.GeneratedTrees.Should().ContainSingle();
         Path.GetFileName(result.GeneratedTrees[0].FilePath).Should().Be("test.resx.g.cs");
         var fileContent = (await result.GeneratedTrees[0].GetRootAsync()).ToFullString();
-        fileContent.Should().Contain("Sample");
-        fileContent.Should().NotContain("FormatSample");
-
-        fileContent.Should().Contain("HelloWorld\n");
-        fileContent.Should().Contain("FormatHelloWorld(object? arg0)");
-        fileContent.Should().Contain("public static global::System.Drawing.Bitmap? @Image1");
+        await Verify(fileContent, "cs");
     }
 
     [Fact]
@@ -107,19 +102,17 @@ public class ResxGeneratorTest
                 RootNamespace = "Test",
             });
 
-        result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).Should().SatisfyRespectively(tree =>
-            {
-                var fileContent = tree.GetRoot().ToFullString();
-                Path.GetFileName(tree.FilePath).Should().Be("test.NewResource.resx.g.cs");
-                fileContent.Should().Contain("BBB");
-            }, tree =>
-            {
-                var fileContent = tree.GetRoot().ToFullString();
-                Path.GetFileName(tree.FilePath).Should().Be("test.resx.g.cs");
-                fileContent.Should().Contain("Sample");
-                fileContent.Should().Contain("HelloWorld");
-                fileContent.Should().Contain("AAA");
-            });
+        var trees = result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).ToList();
+
+        Path.GetFileName(trees[0].FilePath).Should().Be("test.NewResource.resx.g.cs");
+        Path.GetFileName(trees[1].FilePath).Should().Be("test.resx.g.cs");
+
+        var sourceCode0 = (await trees[0].GetRootAsync()).ToFullString();
+        var sourceCode1 = (await trees[1].GetRootAsync()).ToFullString();
+
+        var verify0 = Verify(sourceCode0, "cs").UseFileName("ResxGeneratorTest.GeneratePropertiesFromMultipleResx.test.NewResource");
+        var verify1 = Verify(sourceCode1, "cs").UseFileName("ResxGeneratorTest.GeneratePropertiesFromMultipleResx.test");
+        await Task.WhenAll(verify0, verify1);
     }
 
     [Fact]

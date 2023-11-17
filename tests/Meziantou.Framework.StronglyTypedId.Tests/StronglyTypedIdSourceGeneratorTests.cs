@@ -17,7 +17,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 {
     public sealed record NuGetReference(string Name, string Version, string ReferencePath);
 
-    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences)
+    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences, CSharpParseOptions? parseOptions = null)
     {
         var dlls = new List<string>();
         foreach (var nuGetReference in nuGetReferences)
@@ -30,23 +30,23 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             .. dlls.Select(loc => MetadataReference.CreateFromFile(loc))];
 
         return CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText(sourceText) },
+            new[] { CSharpSyntaxTree.ParseText(sourceText, parseOptions) },
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, warningLevel: 9999, generalDiagnosticOption: ReportDiagnostic.Error, nullableContextOptions: NullableContextOptions.Enable));
     }
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true, CSharpParseOptions? parseOptions = null)
     {
         var compilation = await CreateCompilation(sourceText,
         [
             new NuGetReference("Microsoft.NETCore.App.Ref", "6.0.12", "ref/"),
             new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
-        ]);
+        ], parseOptions);
         var generator = InstantiateGenerator();
 
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator]);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator], parseOptions: parseOptions);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -195,6 +195,20 @@ namespace A
     }
 
     [Fact]
+    public async Task GenericAttribute()
+    {
+        var sourceCode = """
+        [StronglyTypedIdAttribute<System.Guid>]
+        public partial struct Test { }
+        """;
+        var options = new CSharpParseOptions(preprocessorSymbols: [ "MEZIANTOU_GENERIC_ATTRIBUTES" ]);
+        var result = await GenerateFiles(sourceCode, parseOptions: options);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+    }
+
+    [Fact]
     public async Task GenerateStruct_Guid_New()
     {
         var sourceCode = @"
@@ -238,7 +252,7 @@ public partial struct Test : System.IEquatable<Test>
 {
     public override string? ToString() => null;
     public override bool Equals(object? a) => true;
-    public override int GetHashCode() => 0;    
+    public override int GetHashCode() => 0;
     public bool Equals(Test? a) => true;
     public static bool operator ==(Test a, Test b) => true;
     public static bool operator !=(Test a, Test b) => true;

@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>1.0.1</Version>
     <Description>Find dependencies in source files. Support multiple package managers such as NuGet, npm, Docker, PyPi, and so on</Description>
   </PropertyGroup>

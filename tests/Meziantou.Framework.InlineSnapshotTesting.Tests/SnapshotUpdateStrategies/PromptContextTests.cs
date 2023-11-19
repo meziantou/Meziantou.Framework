@@ -78,7 +78,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
                 <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
               </ItemGroup>
               <ItemGroup>
-                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+                <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
                 {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
             </Project>            

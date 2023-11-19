@@ -1,14 +1,23 @@
 $TestsRootPath = Join-Path $PSScriptRoot ".." "tests" -Resolve
 $Projs = Get-ChildItem $TestsRootPath -Filter *.csproj -Recurse
 
-$UtilsPath = Join-Path $TestsRootPath "TestUtilities/TestUtilities.csproj" -Resolve
-$ErrorCount = 0
+$Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
 
-foreach ($Proj in $Projs) {
+    $UtilsPath = Join-Path $using:TestsRootPath "TestUtilities/TestUtilities.csproj" -Resolve
+
+    function SimplifyTfm($Tfm) {
+        if ($Tfm.Contains('-')) {
+            return $Tfm.Substring(0, $Tfm.IndexOf(('-')))
+        }
+
+        return $Tfm
+    }
+
+
+    $Proj = $PSItem
+    $TestProjectTfms = $(dotnet build --getProperty:TargetFrameworks $Proj.FullName).Split(";") | ForEach-Object { SimplifyTfm($_) }
+
     [xml]$ProjXml = Get-Content -LiteralPath $Proj.FullName
-    $tfms = @()
-    Select-Xml -Xml $ProjXml -XPath "/Project/PropertyGroup/TargetFrameworks" | ForEach-Object { $tfms += $_.Node.InnerText -split ";" }
-
     # Reference
     $References = Select-Xml -Xml $ProjXml -XPath "/Project/ItemGroup/ProjectReference/@Include"
     foreach ($Reference in $References) {
@@ -19,14 +28,13 @@ foreach ($Proj in $Projs) {
         }
 
         # Only consider the main referenced project
-        if(-Not [System.IO.Path]::GetFileNameWithoutExtension($Proj).StartsWith([System.IO.Path]::GetFileNameWithoutExtension($RefProj))) {
+        if (-Not [System.IO.Path]::GetFileNameWithoutExtension($Proj).StartsWith([System.IO.Path]::GetFileNameWithoutExtension($RefProj))) {
             continue;
         }
 
-        [xml]$RefProjXml = Get-Content -LiteralPath $RefProj
-        $RefTfms = @()
-        Select-Xml -Xml $RefProjXml -XPath "/Project/PropertyGroup/TargetFrameworks" | ForEach-Object { $RefTfms += $_.Node.InnerText -split ";" }
+        $RefTfms = $(dotnet build --getProperty:TargetFrameworks $RefProj).Split(";")
         foreach ($RefTfm in $RefTfms) {
+            $RefTfm = SimplifyTfm($RefTfm)
             if ($RefTfm -eq "netstandard2.0") {
                 continue;
             }
@@ -35,18 +43,17 @@ foreach ($Proj in $Projs) {
                 continue;
             }
 
-            if (-not $tfms.Contains($RefTfm)) {
-                if($RefTfm -eq '$(LatestTargetFrameworks)' -and $tfms.Contains('$(LatestTargetFrameworksWindows)')) {
-                    continue;
-                }
-
-                Write-Error "Project $($Proj.FullName) does not target $RefTfm, but it references $RefProj which does."
-                $ErrorCount++
+            if (-not $TestProjectTfms.Contains($RefTfm)) {
+                Write-Error "Project $($Proj.FullName) does not target $RefTfm, but it references $RefProj which does. ($TestProjectTfms) != ($RefTfms)"
+                return 1
             }
         }
     }
+
+    return 0
 }
 
-if ($ErrorCount -gt 0) {
+# Check if any errors were found
+if (($Errors | Measure-Object -Sum | Select-Object -ExpandProperty Sum) -gt 0) {
     exit 1
 }

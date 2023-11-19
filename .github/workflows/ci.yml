@@ -35,9 +35,11 @@ jobs:
         run: .\eng\update-tool-readme.ps1
 
   validate_test_projects:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     steps:
       - uses: actions/checkout@v3
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v3
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 
@@ -67,7 +69,7 @@ jobs:
           path: '**/*.binlog'
 
   validate_nuget:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     needs: [ create_nuget ]
     steps:
       - uses: actions/checkout@v3
@@ -77,21 +79,10 @@ jobs:
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
-      - name: Run dotnet validate
-        run: |
-          dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global --no-cache --add-source "${{ env.NuGetDirectory }}"
-          $files = Get-ChildItem "${{ env.NuGetDirectory }}/*" -Include *.nupkg
-          $Errors = $false
-          foreach ($file in $files) {
-              & meziantou.validate-nuget-package "$file" --excluded-rules "ReadmeMustBeSet,TagsMustBeSet" --github-token=${{ secrets.GITHUB_TOKEN }}
-              if ($LASTEXITCODE -ne 0) {
-                $Errors = $true
-              }
-          }
-
-          if ($Errors) {
-            exit 1
-          }
+      - name: Validate NuGet packages
+        run: .\eng\validate-nuget.ps1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_and_test_x64:
     runs-on: ${{ matrix.runs-on }}
@@ -155,10 +146,10 @@ jobs:
 
           echo "Downloading dotnet-install.ps1 script"
           Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-          
+
           echo "Installing .NET 6.0"
           ./dotnet-install.ps1 -Channel 6.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
-          
+
           echo "Installing .NET 7.0"
           ./dotnet-install.ps1 -Channel 7.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
 

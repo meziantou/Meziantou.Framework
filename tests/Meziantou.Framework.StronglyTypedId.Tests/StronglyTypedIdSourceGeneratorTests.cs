@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using FluentAssertions;
+using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using TestUtilities;
@@ -24,7 +25,10 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             dlls.AddRange(await NuGetHelpers.GetNuGetReferences(nuGetReference.Name, nuGetReference.Version, nuGetReference.ReferencePath));
         }
 
-        var references = dlls.Select(loc => MetadataReference.CreateFromFile(loc)).ToArray();
+        MetadataReference[] references = [
+            MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
+            .. dlls.Select(loc => MetadataReference.CreateFromFile(loc))];
+
         return CSharpCompilation.Create("compilation",
             new[] { CSharpSyntaxTree.ParseText(sourceText) },
             references,
@@ -73,7 +77,7 @@ namespace A
     {
         partial class C
         {
-            [StronglyTypedId(typeof(int))]
+            [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
             public partial struct Test {}
         }
     }
@@ -81,7 +85,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -115,14 +119,14 @@ namespace A
 {
     namespace B
     {
-        [StronglyTypedIdAttribute(typeof(int))]
+        [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
         public partial struct Test {}
     }
 }";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -158,7 +162,7 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        result.GeneratorResult.GeneratedTrees.Should().BeEmpty();
     }
 
     [Fact]
@@ -166,20 +170,20 @@ namespace A
     {
         var sourceCode = """
         [System.Obsolete]
-        [StronglyTypedIdAttribute(typeof(System.Guid))]
+        [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task AttributeAlias()
     {
         var sourceCode = """
-        using Dummy = StronglyTypedIdAttribute;
+        using Dummy = Meziantou.Framework.Annotations.StronglyTypedIdAttribute;
 
         [Dummy(typeof(System.Guid))]
         public partial struct Test { }
@@ -187,20 +191,20 @@ namespace A
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task GenerateStruct_Guid_New()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(System.Guid))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -229,7 +233,7 @@ public partial struct Test {}
     public async Task Generate_ExistingOperators()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(int))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
 public partial struct Test : System.IEquatable<Test>
 {
     public override string? ToString() => null;
@@ -243,7 +247,7 @@ public partial struct Test : System.IEquatable<Test>
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         result.Assembly.Should().NotBeNull();
     }
@@ -252,13 +256,13 @@ public partial struct Test : System.IEquatable<Test>
     public async Task GenerateStruct_ToString()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(int))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -287,13 +291,13 @@ public partial struct Test {}
     public async Task GenerateStruct_Parse_ReadOnlySpan()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(int))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -316,13 +320,13 @@ public partial struct Test {}
     public async Task GenerateStruct_Parse_ReadOnlySpan_String()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(string))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -345,7 +349,7 @@ public partial struct Test {}
     public async Task Generate_IStronglyTypedId()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(string))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
 public partial struct Test {}
 
 namespace Meziantou.Framework
@@ -357,7 +361,7 @@ interface IStronglyTypedId<T> {}
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -382,52 +386,52 @@ interface IStronglyTypedId<T> {}
     public async Task Generate_IComparable_Struct_ReferenceType()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(string))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
 public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task Generate_IComparable_Struct_ValueType()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(int))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
 public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task Generate_IComparable_Class_ReferenceType()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(string))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
 public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task Generate_IComparable_Class_ValueType()
     {
         var sourceCode = @"
-[StronglyTypedIdAttribute(typeof(int))]
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
 public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
     [Fact]
@@ -439,7 +443,7 @@ public partial class Test : System.IComparable<Test> {}
             driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
 
         // Run the generator once
-        var sourceCode = "[StronglyTypedId(typeof(int))] public partial struct Test { }";
+        var sourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";
         var compilation = await CreateCompilation(sourceCode,
         [
             new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
@@ -453,7 +457,7 @@ public partial class Test : System.IComparable<Test> {}
         AssertOutputIsCached(result);
 
         // Replace struct with record struct
-        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[StronglyTypedId(typeof(int))] public partial record struct Test { }"));
+        compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial record struct Test { }"));
         result = RunGenerator(validate: (_, symbol) => (symbol.IsRecord, symbol.IsValueType).Should().Be((true, true)));
         AssertSyntaxStepIsNotCached(result);
         AssertOutputIsNotCached(result);
@@ -559,7 +563,7 @@ public partial class Test : System.IComparable<Test> {}
             {
                 foreach (var declaration in declarations)
                 {
-                    foreach (var netFrameworkVersion in new[] { "462", "472", "481" })
+                    foreach (var netFrameworkVersion in new[] { "472", "481" })
                     {
                         yield return new BuildMatrixArguments(type, declaration,
                         [
@@ -567,7 +571,7 @@ public partial class Test : System.IComparable<Test> {}
                         ]);
                     }
 
-                    foreach (var netcoreVersion in new[] { "5.0.0", "6.0.12", "7.0.1" })
+                    foreach (var netcoreVersion in new[] { "6.0.12", "7.0.1", "8.0.0" })
                     {
                         yield return new BuildMatrixArguments(type, declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/")]);
                     }
@@ -622,7 +626,7 @@ public partial class Test : System.IComparable<Test> {}
             driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
 
         // Run the generator once
-        var sourceCode = $"[StronglyTypedId(typeof({arg.IdType}))] {arg.TypeDeclaration}";
+        var sourceCode = $"[Meziantou.Framework.Annotations.StronglyTypedId(typeof({arg.IdType}))] {arg.TypeDeclaration}";
         var compilation = await CreateCompilation(sourceCode, arg.NuGetReferences);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -634,7 +638,7 @@ public partial class Test : System.IComparable<Test> {}
         var compilationOutput = outputCompilation.Emit(ms);
 
         var diags = string.Join('\n', compilationOutput.Diagnostics);
-        var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
+        var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
         compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
         compilationOutput.Diagnostics.Should().BeEmpty();
     }

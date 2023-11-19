@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <Version>1.0.35</Version>
-
-    <developmentDependency>true</developmentDependency>
+    <Version>2.0.0</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>
@@ -11,11 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Meziantou.Framework.StronglyTypedId.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)\..\$(Configuration)_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration)_netstandard2.0\*" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration)_net6.0\*" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration)_net7.0\*" Pack="true" PackagePath="lib/net7.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.StronglyTypedId.Annotations\$(Configuration)_net8.0\*" Pack="true" PackagePath="lib/net8.0" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.3.1" PrivateAssets="all" />
   </ItemGroup>
-  
+
 </Project>

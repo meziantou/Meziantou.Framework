@@ -41,6 +41,7 @@ Options:
   --excluded-rules <excluded-rules>        Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
   --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude from analysis
   --github-token <github-token>            GitHub token to authenticate requests
+  --only-report-errors                     Only report errors on the output
   --version                                Show version information
   -?, -h, --help                           Show help and usage information
 ```

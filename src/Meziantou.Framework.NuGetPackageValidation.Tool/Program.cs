@@ -27,14 +27,17 @@ internal static partial class Program
         var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude from analysis", parseArgument: ParseIntValues);
         var githubTokenOptions = new Option<string?>("--github-token", description: "GitHub token to authenticate requests");
+        var onlyReportErrorsOptions = new Option<bool>("--only-report-errors", description: "Only report errors on the output");
         rootCommand.AddArgument(pathsArgument);
         rootCommand.AddOption(rulesOptions);
         rootCommand.AddOption(excludedRulesOptions);
         rootCommand.AddOption(excludedRuleIdsOptions);
         rootCommand.AddOption(githubTokenOptions);
+        rootCommand.AddOption(onlyReportErrorsOptions);
         rootCommand.SetHandler(async context =>
         {
             var paths = context.ParseResult.GetValueForArgument(pathsArgument);
+            var onlyReportErrors = context.ParseResult.GetValueForOption(onlyReportErrorsOptions);
             var options = new NuGetPackageValidationOptions();
 
             var includedRules = context.ParseResult.GetValueForOption(rulesOptions);
@@ -88,7 +91,9 @@ internal static partial class Program
                     continue;
 
                 var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
-                packageResults.Add(packagePath, packageResult);
+
+                if (!packageResult.IsValid || !onlyReportErrors)
+                    packageResults.Add(packagePath, packageResult);
             }
 
             var result = new Result(packageResults);

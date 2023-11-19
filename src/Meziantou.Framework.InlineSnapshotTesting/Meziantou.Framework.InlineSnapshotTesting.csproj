@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DiffEngine" Version="12.4.1" />
+    <PackageReference Include="DiffEngine" Version="13.0.0" />
     <PackageReference Include="DiffPlex" Version="1.7.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
   </ItemGroup>
@@ -37,7 +37,7 @@
     <PackageReference Include="System.Memory" Version="4.5.5" />
 
     <!-- This is required to generate csproj in the tests -->
-    <PackageReference Include="System.Text.Json" Version="7.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0" />
   </ItemGroup>
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->

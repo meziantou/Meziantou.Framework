@@ -289,6 +289,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.R
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.Win32.RecentDocumentsConsole", "Samples\Meziantou.Framework.Win32.RecentDocumentsConsole\Meziantou.Framework.Win32.RecentDocumentsConsole.csproj", "{C35AE5A4-3BD7-43F2-940D-5B0E90BF0FBF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Meziantou.Framework.StronglyTypedId.Annotations", "src\Meziantou.Framework.StronglyTypedId.Annotations\Meziantou.Framework.StronglyTypedId.Annotations.csproj", "{25742DFB-FFA4-419A-85B3-F821D607A17C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -795,6 +797,10 @@ Global
 		{C35AE5A4-3BD7-43F2-940D-5B0E90BF0FBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C35AE5A4-3BD7-43F2-940D-5B0E90BF0FBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C35AE5A4-3BD7-43F2-940D-5B0E90BF0FBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25742DFB-FFA4-419A-85B3-F821D607A17C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25742DFB-FFA4-419A-85B3-F821D607A17C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25742DFB-FFA4-419A-85B3-F821D607A17C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25742DFB-FFA4-419A-85B3-F821D607A17C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -926,6 +932,7 @@ Global
 		{7A9F224E-CBA3-4272-97C0-0190B7125AC7} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
 		{F2313EFC-F1BD-49EC-9CC2-0DE2CF0A1CAD} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 		{C35AE5A4-3BD7-43F2-940D-5B0E90BF0FBF} = {DB679A70-C2CB-4CD1-9530-D31627343FC5}
+		{25742DFB-FFA4-419A-85B3-F821D607A17C} = {70A3E965-3866-4D23-9626-8D70E0E8729C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AA866021-BF24-4172-A655-F0E8316C38BA}

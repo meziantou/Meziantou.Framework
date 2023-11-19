@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <MeziantouImplicitUsings Condition="'$(MeziantouImplicitUsings)' == ''">$(ImplicitUsings)</MeziantouImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(MeziantouImplicitUsings) == 'enable'">
+    <!-- For source compatibility between v1 and v2 -->
+    <Using Include="Meziantou.Framework.Annotations"/>
+  </ItemGroup>
+</Project>

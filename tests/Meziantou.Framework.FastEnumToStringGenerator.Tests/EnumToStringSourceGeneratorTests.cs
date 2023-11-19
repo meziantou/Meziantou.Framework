@@ -2,6 +2,7 @@
 using System.Reflection;
 using FluentAssertions;
 using FluentAssertions.Execution;
+using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using TestUtilities;
@@ -13,10 +14,11 @@ public sealed class EnumToStringSourceGeneratorTests
 {
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "5.0.0", "ref/net5.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "6.0.0", "ref/net6.0/");
         assemblyLocations ??= [];
         var references = assemblyLocations
             .Concat(netcoreRef)
+            .Append(typeof(FastEnumToStringAttribute).Assembly.Location)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();
 
@@ -41,7 +43,7 @@ public sealed class EnumToStringSourceGeneratorTests
         if (mustCompile)
         {
             var diags = string.Join('\n', result.Diagnostics);
-            var generated = (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString();
+            var generated = (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString();
             result.Success.Should().BeTrue("Project should build build:\n" + diags + "\n\n\n" + generated);
             result.Diagnostics.Should().BeEmpty();
         }
@@ -52,28 +54,29 @@ public sealed class EnumToStringSourceGeneratorTests
     [Fact]
     public async Task GenerateStructInNamespaceAndClass()
     {
-        var sourceCode = @"
-[assembly: FastEnumToStringAttribute(typeof(A.B.C.D))]
-namespace A
-{
-    namespace B
-    {
-        class C
-        {
-            public static string Sample(D value) => value.ToStringFast();
-
-            public enum D
+        var sourceCode = """
+            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(A.B.C.D))]
+            namespace A
             {
-                Value1,
-                Value2,
+                namespace B
+                {
+                    class C
+                    {
+                        public static string Sample(D value) => value.ToStringFast();
+
+                        public enum D
+                        {
+                            Value1,
+                            Value2,
+                        }
+                    }
+                }
             }
-        }
-    }
-}";
+            """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
 
         generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(2);
+        generatorResult.GeneratedTrees.Length.Should().Be(1);
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
@@ -86,33 +89,34 @@ namespace A
     [Fact]
     public async Task GeneratePublicType()
     {
-        var sourceCode = @"
-using SampleNs1;
+        var sourceCode = """
+            using SampleNs1;
 
-[assembly: FastEnumToStringAttribute(typeof(A.B.D), IsPublic = true, ExtensionMethodNamespace = ""SampleNs1"")]
-[assembly: FastEnumToStringAttribute(typeof(A.B.E), IsPublic = false, ExtensionMethodNamespace = ""SampleNs1"")]
-[assembly: FastEnumToStringAttribute(typeof(A.B.F), ExtensionMethodNamespace = ""SampleNs3"")]
-[assembly: FastEnumToStringAttribute(typeof(A.B.G), ExtensionMethodNamespace = ""SampleNs4"")]
+            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(A.B.D), IsPublic = true, ExtensionMethodNamespace = "SampleNs1")]
+            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(A.B.E), IsPublic = false, ExtensionMethodNamespace = "SampleNs1")]
+            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(A.B.F), ExtensionMethodNamespace = "SampleNs3")]
+            [assembly: Meziantou.Framework.Annotations.FastEnumToStringAttribute(typeof(A.B.G), ExtensionMethodNamespace = "SampleNs4")]
 
-namespace A
-{
-    namespace B
-    {
-        public class C
-        {
-            public static string Sample(D value) => value.ToStringFast();
-        }
+            namespace A
+            {
+                namespace B
+                {
+                    public class C
+                    {
+                        public static string Sample(D value) => value.ToStringFast();
+                    }
 
-        public enum D { Value1 }
-        public enum E { Value1 }
-        internal enum F { Value1 }
-        public enum G { Value1 }
-    }
-}";
+                    public enum D { Value1 }
+                    public enum E { Value1 }
+                    internal enum F { Value1 }
+                    public enum G { Value1 }
+                }
+            }
+            """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
 
         generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(2);
+        generatorResult.GeneratedTrees.Length.Should().Be(1);
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");

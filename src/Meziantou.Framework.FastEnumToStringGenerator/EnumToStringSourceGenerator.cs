@@ -10,25 +10,8 @@ namespace Meziantou.Framework.FastEnumToStringGenerator;
 [Generator]
 public sealed partial class EnumToStringSourceGenerator : IIncrementalGenerator
 {
-    [SuppressMessage("Usage", "MA0101:String contains an implicit end of line character", Justification = "Not important")]
-    private const string AttributeText = @"
-#nullable enable
-[System.Diagnostics.Conditional(""FastEnumToString_Attributes"")]
-[System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
-internal sealed class FastEnumToStringAttribute : System.Attribute
-{
-    public FastEnumToStringAttribute(System.Type enumType)
-    {
-    }
-
-    public bool IsPublic { get; set; } = true;
-    public string? ExtensionMethodNamespace { get; set; }
-}
-";
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterPostInitializationOutput(ctx => ctx.AddSource("FastEnumToStringAttribute.g.cs", SourceText.From(AttributeText, Encoding.UTF8)));
         var enums = context.SyntaxProvider.CreateSyntaxProvider(
             predicate: static (syntax, cancellationToken) => IsSyntaxTargetForGeneration(syntax),
             transform: static (ctx, cancellationToken) => GetSemanticTargetForGeneration(ctx, cancellationToken))
@@ -50,7 +33,7 @@ internal sealed class FastEnumToStringAttribute : System.Attribute
         static EnumToProcess? GetSemanticTargetForGeneration(GeneratorSyntaxContext ctx, CancellationToken cancellationToken)
         {
             var compilation = ctx.SemanticModel.Compilation;
-            var fastEnumToStringAttributeSymbol = compilation.GetTypeByMetadataName("FastEnumToStringAttribute");
+            var fastEnumToStringAttributeSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Annotations.FastEnumToStringAttribute");
             if (fastEnumToStringAttributeSymbol is null)
                 return null;
 

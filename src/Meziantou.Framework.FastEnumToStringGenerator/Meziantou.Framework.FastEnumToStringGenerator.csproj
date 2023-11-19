@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>1.0.8</Version>
+    <Version>2.0.0</Version>
     <Description>Generate a faster ToString method for enumerations</Description>
 
     <developmentDependency>true</developmentDependency>
@@ -12,7 +12,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Meziantou.Framework.FastEnumToStringGenerator.targets" Pack="true" PackagePath="build/" />
     <None Include="$(OutputPath)\..\$(Configuration)_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration)_netstandard2.0\*" Pack="true" PackagePath="lib/netstandard2.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration)_net6.0\*" Pack="true" PackagePath="lib/net6.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration)_net7.0\*" Pack="true" PackagePath="lib/net7.0" Visible="false" />
+    <None Include="$(OutputPath)\..\..\Meziantou.Framework.FastEnumToStringGenerator.Annotations\$(Configuration)_net8.0\*" Pack="true" PackagePath="lib/net8.0" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

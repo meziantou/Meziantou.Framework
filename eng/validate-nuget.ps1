@@ -1,22 +1,30 @@
 pwsh --version
 
 # $env:NuGetDirectory= Join-Path $PSScriptRoot "../artifacts/package/debug" -Resolve
-$PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "Meziantou.Framework.StronglyTypedId.[0-9.]+.nupkg").FullName
-$AnnotationPath = Join-Path $PSScriptRoot ".." "src" "Meziantou.Framework.StronglyTypedId.Annotations" -Resolve
+$Generators = @("Meziantou.Framework.StronglyTypedId", "Meziantou.Framework.FastEnumToStringGenerator")
+foreach ($Generator in $Generators) {
+    Write-Host "Checking $Generator"
 
-$Tfms = $(dotnet build --getProperty:TargetFrameworks $AnnotationPath).Split(";")
+    $PackagePath = (Get-ChildItem $env:NuGetDirectory | Where-Object FullName -Match "$Generator.[0-9.-]+.nupkg").FullName
+    $AnnotationPath = Join-Path $PSScriptRoot ".." "src" "$Generator.Annotations" -Resolve
 
-[Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.FileSystem')
-$Entries = [IO.Compression.ZipFile]::OpenRead($PackagePath).Entries.FullName
-foreach ($Tfm in $Tfms) {
-    # Check if there is an entry with a path that starts with "lib/$Tfm/"
-    $Entry = $Entries | Where-Object { $_.StartsWith("lib/$Tfm/") }
-    if (-not $Entry) {
-        Write-Error "Package does not contain a lib/$Tfm/ entry"
-        exit 1
+    $Tfms = $(dotnet build --getProperty:TargetFrameworks $AnnotationPath).Split(";")
+
+    [Reflection.Assembly]::LoadWithPartialName('System.IO.Compression.FileSystem')
+    $ZipFile = [IO.Compression.ZipFile]::OpenRead($PackagePath)
+    $Entries = $ZipFile.Entries.FullName
+    $ZipFile.Dispose()
+    foreach ($Tfm in $Tfms) {
+        # Check if there is an entry with a path that starts with "lib/$Tfm/"
+        $Entry = $Entries | Where-Object { $_.StartsWith("lib/$Tfm/") }
+        if (-not $Entry) {
+            Write-Error "Package does not contain a lib/$Tfm/ entry"
+            exit 1
+        }
     }
 }
 
+Write-Host "Validating NuGet packages"
 dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global --no-cache --add-source $env:NuGetDirectory
 $files = Get-ChildItem "$env:NuGetDirectory/*" -Include *.nupkg
 

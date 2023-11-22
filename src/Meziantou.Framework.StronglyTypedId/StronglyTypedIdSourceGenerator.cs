@@ -60,12 +60,18 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 {
                     foreach (var attribute in attributeList.Attributes)
                     {
-                        if (attribute.ArgumentList is { Arguments.Count: > 0 } || attribute.Name.Arity == 1)
+                        if (attribute.ArgumentList is { Arguments.Count: > 0 } || IsGenericAttribute(attribute))
                             return true;
                     }
                 }
 
                 return false;
+            }
+
+            static bool IsGenericAttribute(AttributeSyntax attribute)
+            {
+                return attribute.Name.Arity == 1
+                       || attribute.Name is QualifiedNameSyntax { Right: GenericNameSyntax { Arity: 1 } };
             }
         }
 

@@ -15,9 +15,18 @@ namespace Meziantou.Framework.StronglyTypedId.Tests;
 
 public sealed class StronglyTypedIdSourceGeneratorTests
 {
+    private const string NetCoreVersion =
+#if NET7_0
+        "7.0.14"
+#elif NET8_0
+        "8.0.0"
+#else
+        "6.0.12"
+#endif
+        ;
     public sealed record NuGetReference(string Name, string Version, string ReferencePath);
 
-    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences, CSharpParseOptions? parseOptions = null)
+    private static async Task<Compilation> CreateCompilation(string sourceText, NuGetReference[] nuGetReferences)
     {
         var dlls = new List<string>();
         foreach (var nuGetReference in nuGetReferences)
@@ -30,23 +39,23 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             .. dlls.Select(loc => MetadataReference.CreateFromFile(loc))];
 
         return CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText(sourceText, parseOptions) },
+            new[] { CSharpSyntaxTree.ParseText(sourceText) },
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, warningLevel: 9999, generalDiagnosticOption: ReportDiagnostic.Error, nullableContextOptions: NullableContextOptions.Enable));
     }
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true, CSharpParseOptions? parseOptions = null)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
-            new NuGetReference("Microsoft.NETCore.App.Ref", "6.0.12", "ref/"),
+            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
             new NuGetReference("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/"),
-        ], parseOptions);
+        ]);
         var generator = InstantiateGenerator();
 
-        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator], parseOptions: parseOptions);
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();
@@ -194,19 +203,34 @@ namespace A
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
+#if NET7_0_OR_GREATER
     [Fact]
     public async Task GenericAttribute()
     {
         var sourceCode = """
+        [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<System.Guid>]
+        public partial struct Test { }
+        """;
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GenericAttribute_Using_Namespace()
+    {
+        var sourceCode = """
+        using Meziantou.Framework.Annotations;
         [StronglyTypedIdAttribute<System.Guid>]
         public partial struct Test { }
         """;
-        var options = new CSharpParseOptions(preprocessorSymbols: [ "MEZIANTOU_GENERIC_ATTRIBUTES" ]);
-        var result = await GenerateFiles(sourceCode, parseOptions: options);
+        var result = await GenerateFiles(sourceCode);
 
         result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(2);
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
+#endif
 
     [Fact]
     public async Task GenerateStruct_Guid_New()
@@ -460,7 +484,7 @@ public partial class Test : System.IComparable<Test> {}
         var sourceCode = "[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial struct Test { }";
         var compilation = await CreateCompilation(sourceCode,
         [
-            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
         ]);
         var result = RunGenerator();
 
@@ -585,16 +609,13 @@ public partial class Test : System.IComparable<Test> {}
                         ]);
                     }
 
-                    foreach (var netcoreVersion in new[] { "6.0.12", "7.0.1", "8.0.0" })
-                    {
-                        yield return new BuildMatrixArguments(type, declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", netcoreVersion, "ref/")]);
-                    }
+                    yield return new BuildMatrixArguments(type, declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
 
                     foreach (var newtonsoftJson in new[] { "12.0.3" })
                     {
                         yield return new BuildMatrixArguments(type, declaration,
                         [
-                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
                             new NuGetReference("Newtonsoft.Json", newtonsoftJson, "lib/netstandard2.0/"),
                         ]);
                     }
@@ -603,30 +624,31 @@ public partial class Test : System.IComparable<Test> {}
                     {
                         yield return new BuildMatrixArguments(type, declaration,
                         [
-                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
                             new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
                         ]);
                     }
                 }
             }
-
+#if NET7_0_OR_GREATER
             // Add specific test cases
             foreach (var declaration in declarations)
             {
-                yield return new BuildMatrixArguments("System.Half", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
-                yield return new BuildMatrixArguments("System.Int128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
-                yield return new BuildMatrixArguments("System.UInt128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
-                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/")]);
+                yield return new BuildMatrixArguments("System.Half", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("System.Int128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("System.UInt128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
 
                 foreach (var mongodb in new[] { "2.18.0" })
                 {
                     yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration,
                     [
-                            new NuGetReference("Microsoft.NETCore.App.Ref", "7.0.1", "ref/"),
+                            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
                             new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
                         ]);
                 }
             }
+#endif
         }
     }
 

@@ -26,6 +26,7 @@
 | Meziantou.Framework.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html/) |
 | Meziantou.Framework.Html.Tool | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Html.Tool.svg)](https://www.nuget.org/packages/Meziantou.Framework.Html.Tool/) |
 | Meziantou.Framework.HtmlSanitizer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HtmlSanitizer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HtmlSanitizer/) |
+| Meziantou.Framework.HttpClientMock | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HttpClientMock.svg)](https://www.nuget.org/packages/Meziantou.Framework.HttpClientMock/) |
 | Meziantou.Framework.HumanReadableSerializer | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.HumanReadableSerializer.svg)](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer/) |
 | Meziantou.Framework.InlineSnapshotTesting | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.InlineSnapshotTesting.svg)](https://www.nuget.org/packages/Meziantou.Framework.InlineSnapshotTesting/) |
 | Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.svg)](https://www.nuget.org/packages/Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon/) |

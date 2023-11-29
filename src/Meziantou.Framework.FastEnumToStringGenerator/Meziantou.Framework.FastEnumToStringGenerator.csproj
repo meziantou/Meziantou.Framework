@@ -2,10 +2,9 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <CompatibilityRecord>true</CompatibilityRecord>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Description>Generate a faster ToString method for enumerations</Description>
 
-    <developmentDependency>true</developmentDependency>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoPackageAnalysis>true</NoPackageAnalysis>

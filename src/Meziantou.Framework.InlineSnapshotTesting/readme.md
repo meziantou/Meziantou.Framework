@@ -6,6 +6,8 @@
 
 On the development machine, a diff tool prompt to compare the expected snapshot with the current snapshot. So, you can accept the new value or cancel. So, you can quickly iterate on your code and update snapshots.
 
+Blog post: [Inline Snapshot testing in .NET](https://www.meziantou.net/inline-snapshot-testing-in-dotnet.htm)
+
 # How does it work
 
 First, you can write a test with the following code:

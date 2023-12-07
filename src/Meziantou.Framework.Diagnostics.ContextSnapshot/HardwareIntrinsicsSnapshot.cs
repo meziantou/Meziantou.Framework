@@ -14,19 +14,19 @@ public sealed class HardwareIntrinsicsSnapshot
     public int VectorLength => Vector<byte>.Count * 8;
 
 #if NET7_0_OR_GREATER
-    public bool IsVector64HardwareAccelerated =>
-        System.Runtime.Intrinsics.Vector64.IsHardwareAccelerated;
-
-    public bool IsVector128HardwareAccelerated =>
-        System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated;
-
-    public bool IsVector256HardwareAccelerated =>
-        System.Runtime.Intrinsics.Vector256.IsHardwareAccelerated;
+    public bool IsVector64HardwareAccelerated => System.Runtime.Intrinsics.Vector64.IsHardwareAccelerated;
+    public bool IsVector128HardwareAccelerated => System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated;
+    public bool IsVector256HardwareAccelerated => System.Runtime.Intrinsics.Vector256.IsHardwareAccelerated;
 #endif
 
 #if NET8_0_OR_GREATER
-    public bool IsVector512HardwareAccelerated =>
-        System.Runtime.Intrinsics.Vector512.IsHardwareAccelerated;
+    public bool IsVector512HardwareAccelerated => System.Runtime.Intrinsics.Vector512.IsHardwareAccelerated;
+    public bool IsX86Avx512FSupported => Avx512F.IsSupported;
+    public bool IsX86Avx512FVLSupported => Avx512F.VL.IsSupported;
+    public bool IsX86Avx512BWSupported => Avx512BW.IsSupported;
+    public bool IsX86Avx512CDSupported => Avx512CD.IsSupported;
+    public bool IsX86Avx512DQSupported => Avx512DQ.IsSupported;
+    public bool IsX86Avx512VbmiSupported => Avx512Vbmi.IsSupported;
 #endif
 
     public bool IsWasmBaseSupported =>

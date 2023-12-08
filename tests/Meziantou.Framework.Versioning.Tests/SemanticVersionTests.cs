@@ -58,6 +58,19 @@ public class SemanticVersionTests
         new Func<object>(() => SemanticVersion.Parse((string)null)).Should().ThrowExactly<ArgumentNullException>();
     }
 
+    [Fact]
+    public void PropertiesAreSet()
+    {
+        var version = SemanticVersion.Parse("1.2.3-beta.1+label");
+        version.Major.Should().Be(1);
+        version.Minor.Should().Be(2);
+        version.Patch.Should().Be(3);
+        version.IsPrerelease.Should().BeTrue();
+        Assert.Equal(["beta", "1"], version.PrereleaseLabels);
+        version.HasMetadata.Should().BeTrue();
+        Assert.Equal(["label"], version.Metadata);
+    }
+
     [Theory]
     [MemberData(nameof(Operator_Data))]
     public void Operator_DifferentValues(SemanticVersion left, SemanticVersion right)

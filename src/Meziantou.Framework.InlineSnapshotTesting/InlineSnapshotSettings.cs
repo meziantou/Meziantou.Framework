@@ -1,11 +1,20 @@
-﻿using System.Text;
-using DiffEngine;
+﻿using System.Collections.Immutable;
+using System.Text;
+using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public sealed record InlineSnapshotSettings
 {
+    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create<MergeTool>(
+        MergeTool.DiffToolFromEnvironmentVariable,
+        MergeTool.GitMergeTool,
+        MergeTool.GitDiffTool,
+        MergeTool.VisualStudioCodeIfCurrentProcess,
+        MergeTool.RiderIfCurrentProcess,
+        new AutoDiffEngineTool());
+
     public static InlineSnapshotSettings Default { get; set; } = new();
 
     public string? Indentation { get; set; }
@@ -22,15 +31,15 @@ public sealed record InlineSnapshotSettings
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
-    /// Set the tool to diff snapshots.
-    /// If null, the diff tool is determined by
+    /// Set the ordered list of tools to diff snapshots.
+    /// If null or empty, the diff tool is determined by
     /// <list type="bullet">
     ///   <item>The <c>DiffEngine_Tool</c> environment variable</item>
     ///   <item>The current IDE (Visual Studio, Visual Studio Code, Rider)</item>
     /// </list>
     /// </summary>
     /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
-    public DiffTool? MergeTool { get; set; }
+    public IEnumerable<MergeTool>? MergeTools { get; set; } = DefaultMergeTools;
 
     /// <summary>
     /// Before editing a file, use the PDB to validate the file path containing the snapshot.
@@ -74,7 +83,7 @@ public sealed record InlineSnapshotSettings
             ErrorMessageFormatter = options.ErrorMessageFormatter;
             AssertionExceptionCreator = options.AssertionExceptionCreator;
             AllowedStringFormats = options.AllowedStringFormats;
-            MergeTool = options.MergeTool;
+            MergeTools = options.MergeTools is null ? null : [.. options.MergeTools];
             ValidateSourceFilePathUsingPdbInfoWhenAvailable = options.ValidateSourceFilePathUsingPdbInfoWhenAvailable;
             ValidateLineNumberUsingPdbInfoWhenAvailable = options.ValidateLineNumberUsingPdbInfoWhenAvailable;
             ForceUpdateSnapshots = options.ForceUpdateSnapshots;

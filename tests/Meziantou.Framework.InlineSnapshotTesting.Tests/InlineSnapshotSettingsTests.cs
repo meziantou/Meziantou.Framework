@@ -37,7 +37,7 @@ public sealed class InlineSnapshotSettingsTests
             ValidateLineNumberUsingPdbInfoWhenAvailable = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
             SnapshotSerializer = new HumanReadableSnapshotSerializer(),
-            MergeTool = DiffEngine.DiffTool.Meld,
+            MergeTools = [MergeTool.VisualStudioCode],
         };
 
         settings.ScrubLinesContaining(StringComparison.Ordinal, "test");
@@ -54,7 +54,7 @@ public sealed class InlineSnapshotSettingsTests
         Assert.Equal(settings.ValidateSourceFilePathUsingPdbInfoWhenAvailable, clone.ValidateSourceFilePathUsingPdbInfoWhenAvailable);
         Assert.Equal(settings.ForceUpdateSnapshots, clone.ForceUpdateSnapshots);
         Assert.Equal(settings.ValidateLineNumberUsingPdbInfoWhenAvailable, clone.ValidateLineNumberUsingPdbInfoWhenAvailable);
-        Assert.Equal(settings.MergeTool, clone.MergeTool);
+        Assert.Equal(settings.MergeTools, clone.MergeTools);
 
         Assert.Equal(settings.Scrubbers, clone.Scrubbers);
         Assert.NotSame(settings.Scrubbers, clone.Scrubbers);

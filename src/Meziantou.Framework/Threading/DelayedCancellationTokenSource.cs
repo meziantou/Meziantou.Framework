@@ -6,10 +6,11 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
     private readonly CancellationTokenRegistration _cancelRegistration;
 
     [SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "")]
-    [SuppressMessage("Usage", "VSTHRD101:Avoid unsupported async delegates", Justification = "By design")]
     public DelayedCancellationTokenSource(CancellationToken cancellationToken, TimeSpan delay)
     {
         _cts = new CancellationTokenSource();
+
+#pragma warning disable MA0147 // Avoid async void method for delegate
         _cancelRegistration = cancellationToken.Register(async () =>
         {
             try
@@ -24,6 +25,7 @@ public sealed class DelayedCancellationTokenSource : IDisposable, IAsyncDisposab
             {
             }
         });
+#pragma warning restore MA0147
     }
 
     public CancellationToken Token => _cts.Token;

@@ -53,3 +53,6 @@ dotnet_diagnostic.CA1512.severity = silent
 
 [Samples/**/*.cs]
 dotnet_diagnostic.CA1852.severity = none
+
+[tests/**/*.cs]
+dotnet_diagnostic.MA0144.severity = none

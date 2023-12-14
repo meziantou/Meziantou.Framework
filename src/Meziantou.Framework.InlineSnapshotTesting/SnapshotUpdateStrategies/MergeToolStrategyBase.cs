@@ -1,21 +1,13 @@
-﻿using System.Diagnostics;
-using Meziantou.Framework.InlineSnapshotTesting.Utils;
-
-namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+﻿namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 internal abstract class MergeToolStrategyBase : SnapshotUpdateStrategy
 {
-    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectSnapshot, string actualSnapshot) => true;
+    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot) => true;
     public override bool MustReportError(InlineSnapshotSettings settings, string path) => true;
 
-    protected static Process LaunchMergeTool(InlineSnapshotSettings settings, string targetFile, string tempFile)
+    protected static MergeToolResult LaunchMergeTool(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        var process = settings.MergeTool switch
-        {
-            null => InlineSnapshotDiffRunner.Launch(tempFile, targetFile),
-            _ => InlineSnapshotDiffRunner.Launch(settings.MergeTool.GetValueOrDefault(), tempFile, targetFile),
-        };
-
+        var process = InlineSnapshotTesting.MergeTool.Launch(settings.MergeTools, currentFilePath, newFilePath);
         return process ?? throw new InlineSnapshotException("Cannot start the merge tool");
     }
 }

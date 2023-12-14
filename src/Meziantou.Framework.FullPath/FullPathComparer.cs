@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework;
 
@@ -13,9 +13,9 @@ public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<Fu
         Default = GetDefaultComparer();
     }
 
-    // You can configure case-sensitivity per forlder or system-wide on Windows, so the comparer is not the perfect way to compare path.
+    // You can configure case-sensitivity per folder or system-wide on Windows, so the comparer is not the perfect way to compare path.
     // However, this is an edge case so this class won't support it at the moment.
-    private static FullPathComparer GetDefaultComparer() => GetComparer(ignoreCase: RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+    private static FullPathComparer GetDefaultComparer() => GetComparer(ignoreCase: IsWindows());
 
     internal static FullPathComparer GetComparer(bool ignoreCase) => ignoreCase ? CaseInsensitive : CaseSensitive;
 
@@ -39,5 +39,19 @@ public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<Fu
             return 0;
 
         return _stringComparer.GetHashCode(obj._value);
+    }
+
+    [SupportedOSPlatformGuard("windows")]
+    private static bool IsWindows()
+    {
+#if NET5_0_OR_GREATER
+        return OperatingSystem.IsWindows();
+#elif NETCOREAPP3_1 || NETSTANDARD2_0
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#elif NET472
+        return Environment.OSVersion.Platform == PlatformID.Win32NT;
+#else
+#error Platform notsupported
+#endif
     }
 }

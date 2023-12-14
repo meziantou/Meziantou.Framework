@@ -12,7 +12,11 @@ internal sealed partial record ProcessInfo
         "code.exe", "code",
     };
 
-    internal static ProcessInfo? GetContextProcess()
+    private static readonly Lazy<ProcessInfo> CurrentProcessInfo = new Lazy<ProcessInfo>(() => GetContextProcessImpl());
+
+    internal static ProcessInfo? GetContextProcess() => CurrentProcessInfo.Value;
+
+    private static ProcessInfo? GetContextProcessImpl()
     {
 #if NETSTANDARD2_0
         if (Environment.OSVersion.Platform == PlatformID.Win32NT)

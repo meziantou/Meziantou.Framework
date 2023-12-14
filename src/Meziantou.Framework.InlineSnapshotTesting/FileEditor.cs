@@ -59,9 +59,9 @@ internal static class FileEditor
         }
     }
 
-    public static void UpdateFile(CallerContext context, InlineSnapshotSettings settings, string? existingValue, string? newValue)
+    public static void UpdateFile(CallerContext context, InlineSnapshotSettings settings, string? existingValue, string? newValue, CancellationToken cancellationToken = default)
     {
-        var lockObject = FileLocks.GetOrAdd(context.FilePath, _ => new object());
+        var lockObject = FileLocks.GetOrAdd(context.FilePath, _ => new());
         lock (lockObject)
         {
             if (Errors.Contains(context.FilePath))
@@ -70,10 +70,11 @@ internal static class FileEditor
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs"));
             var preprocessorSymbols = context.GetCompilationDefines();
 
-            var options = new CSharpParseOptions();
-            var sourceText = GetSourceText(settings, File.Exists(tempPath) ? tempPath : context.FilePath);
-            var tree = CSharpSyntaxTree.ParseText(sourceText, new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols));
-            var root = tree.GetRoot();
+            var options = new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols);
+            var filePath = File.Exists(tempPath) ? tempPath : context.FilePath;
+            var sourceText = GetSourceText(settings, filePath);
+            var tree = CSharpSyntaxTree.ParseText(sourceText, options, filePath, cancellationToken);
+            var root = tree.GetRoot(cancellationToken);
 
             var actualLine = GetActualLine(context.FilePath, context.LineNumber);
             var span = sourceText.Lines[actualLine - 1].Span;
@@ -153,9 +154,9 @@ internal static class FileEditor
             // Track the changes
             // note: Diff tools allow partial merge or custom edits => we need to reload the document to find the new expression
             // note: Diff tools allow to remove the temp path
-            var mergedSourceText = GetSourceText(settings, File.Exists(tempPath) ? tempPath : context.FilePath);
-            var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText);
-            var mergedRoot = mergedTree.GetRoot();
+            var mergedSourceText = GetSourceText(settings, filePath);
+            var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText, options, filePath, cancellationToken);
+            var mergedRoot = mergedTree.GetRoot(cancellationToken);
 
             var textSpan = new TextSpan(invocationExpression.SpanStart, 1);
             var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();

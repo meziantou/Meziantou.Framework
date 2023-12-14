@@ -2,12 +2,13 @@
 
 internal sealed class BlockingDiffToolStrategy : MergeToolStrategyBase
 {
-    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectSnapshot, string actualSnapshot) => true;
+    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot) => true;
     public override bool MustReportError(InlineSnapshotSettings settings, string path) => true;
-    public override void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile)
+
+    public override void UpdateFile(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        using var process = LaunchMergeTool(settings, tempFile, targetFile);
+        var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
         process.WaitForExit();
-        File.Delete(tempFile);
+        File.Delete(newFilePath);
     }
 }

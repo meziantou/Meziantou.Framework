@@ -10,13 +10,13 @@ public abstract class SnapshotUpdateStrategy
     public static SnapshotUpdateStrategy Disallow { get; } = new DisallowStrategy();
 
     /// <summary>
-    /// Open a merge tool to update the snapshots. You can specify the merge tool to use using <see cref="InlineSnapshotSettings.MergeTool" />.
+    /// Open a merge tool to update the snapshots. You can specify the merge tools to use using <see cref="InlineSnapshotSettings.MergeTools" />.
     /// The test fails if the snapshots are different.
     /// </summary>
     public static SnapshotUpdateStrategy MergeTool { get; } = new MergeToolStrategy();
 
     /// <summary>
-    /// Open a merge tool to update the snapshots and wait for it to close before continuing the test execution. You can specify the merge tool to use using <see cref="InlineSnapshotSettings.MergeTool" />.
+    /// Open a merge tool to update the snapshots and wait for it to close before continuing the test execution. You can specify the merge tools to use using <see cref="InlineSnapshotSettings.MergeTools" />.
     /// The test fails if the snapshots are different.
     /// </summary>
     public static SnapshotUpdateStrategy MergeToolSync { get; } = new BlockingDiffToolStrategy();
@@ -45,7 +45,7 @@ public abstract class SnapshotUpdateStrategy
     /// <summary>
     /// Indicates if an an inline snapshot must be updated
     /// </summary>
-    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectSnapshot, string actualSnapshot);
+    public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot);
 
     public abstract void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile);
 

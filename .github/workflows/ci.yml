@@ -26,9 +26,9 @@ jobs:
   validate_readme:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - name: Validate Readme
         run: .\eng\update-readme.ps1
       - name: Validate Tool Readme
@@ -37,30 +37,30 @@ jobs:
   validate_test_projects:
     runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 
   create_nuget:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - run: dotnet build eng/build.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release /p:IsOfficialBuild=true /bl:publish-taskdialog.binlog
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release /p:IsOfficialBuild=true /bl:publish-notificationtray.binlog
       - run: dotnet pack eng/build.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl:pack.binlog
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nuget
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.NuGetDirectory }}/**/*
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: binlog
@@ -72,10 +72,10 @@ jobs:
     runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
-      - uses: actions/download-artifact@v3
+        uses: actions/setup-dotnet@v4
+      - uses: actions/download-artifact@v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
@@ -97,12 +97,17 @@ jobs:
         architecture: [ x64 ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - id: compute-artifact-name
+        name: Compute artifact name
+        run: |
+          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: |
             7.0.x
@@ -113,10 +118,10 @@ jobs:
       - name: Run tests
         run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"XPlat Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
@@ -138,7 +143,12 @@ jobs:
           architecture: x86
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - id: compute-artifact-name
+        name: Compute artifact name
+        run: |
+          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
+      - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always
       - name: Build and Run Tests
         run: |
@@ -173,10 +183,10 @@ jobs:
             exit $LASTEXITCODE
           }
           echo "::endgroup::"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.TestResultsDirectory }}/**/*
@@ -190,9 +200,9 @@ jobs:
         runtime: [ "win-x64", "win-x86", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -203,21 +213,21 @@ jobs:
         runtime: [ "win-x64", "win-x86" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   deploy:
     runs-on: ubuntu-22.04
     needs: [ validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

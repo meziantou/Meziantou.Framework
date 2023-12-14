@@ -13,7 +13,7 @@ public static partial class ProcessExtensions
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         var children = new List<Process>();
@@ -26,7 +26,7 @@ public static partial class ProcessExtensions
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         var children = new List<Process>();
@@ -39,7 +39,7 @@ public static partial class ProcessExtensions
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         return GetAncestorProcessIdsIterator();
@@ -82,7 +82,7 @@ public static partial class ProcessExtensions
 
         IEnumerable<Process> GetAncestorProcesses()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!OperatingSystem.IsWindows())
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             foreach (var entry in GetAncestorProcessIdsIterator())
@@ -140,7 +140,7 @@ public static partial class ProcessExtensions
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             var processId = process.Id;
             foreach (var entry in GetProcesses())
@@ -200,7 +200,7 @@ public static partial class ProcessExtensions
     [SupportedOSPlatform("windows")]
     public static IEnumerable<ProcessEntry> GetProcesses()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);

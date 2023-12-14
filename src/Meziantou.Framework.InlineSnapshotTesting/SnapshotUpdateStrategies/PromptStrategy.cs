@@ -105,12 +105,12 @@ internal sealed class PromptStrategy : SnapshotUpdateStrategy
         };
     }
 
-    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectSnapshot, string actualSnapshot)
-        => GetEffectiveStrategy(path).CanUpdateSnapshot(settings, path, expectSnapshot, actualSnapshot);
+    public override bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot)
+        => GetEffectiveStrategy(path).CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
 
     public override bool MustReportError(InlineSnapshotSettings settings, string path)
         => GetEffectiveStrategy(path).MustReportError(settings, path);
 
-    public override void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile)
-        => GetEffectiveStrategy(targetFile).UpdateFile(settings, targetFile, tempFile);
+    public override void UpdateFile(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
+        => GetEffectiveStrategy(currentFilePath).UpdateFile(settings, currentFilePath, newFilePath);
 }

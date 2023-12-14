@@ -7,10 +7,19 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 internal static partial class ProcessExtensions
 {
+    private static bool IsWindows()
+    {
+#if NET5_0_OR_GREATER
+        return OperatingSystem.IsWindows();
+#else
+        return Environment.OSVersion.Platform is PlatformID.Win32NT;
+#endif
+    }
+
     [SupportedOSPlatform("windows")]
     public static IEnumerable<int> GetAncestorProcessIds(this Process process)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         return GetAncestorProcessIdsIterator();
@@ -51,7 +60,7 @@ internal static partial class ProcessExtensions
 
         IEnumerable<Process> GetAncestorProcesses()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!IsWindows())
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
             foreach (var entry in GetAncestorProcessIdsIterator())
@@ -104,7 +113,7 @@ internal static partial class ProcessExtensions
     [SupportedOSPlatform("windows")]
     public static IEnumerable<ProcessEntry> GetProcesses()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
         using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);

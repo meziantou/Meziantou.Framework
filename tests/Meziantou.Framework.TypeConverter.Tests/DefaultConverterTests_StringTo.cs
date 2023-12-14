@@ -133,7 +133,7 @@ public class DefaultConverterTests_StringTo
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("1033", cultureInfo, out CultureInfo value);
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             converted.Should().BeTrue();
             value.Name.Should().Be("en-US");

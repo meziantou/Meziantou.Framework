@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Runtime.Versioning;
 
 #if NET461 || NET462
 using System.Security.AccessControl;
@@ -32,13 +33,29 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         return false;
     }
 
+#if NETCOREAPP2_1_OR_GREATER
+    [SupportedOSPlatformGuard("windows")]
+    private static bool IsWindows()
+    {
+#if NET5_0_OR_GREATER
+        return OperatingSystem.IsWindows();
+#elif NETCOREAPP3_1 || NETSTANDARD2_0
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#elif NET462 || NET472
+        return Environment.OSVersion.Platform == PlatformID.Win32NT;
+#else
+#error Platform notsupported
+#endif
+    }
+#endif
+
     private void StartNamedPipeServer()
     {
         if (!StartServer)
             return;
 
 #if NETCOREAPP2_1_OR_GREATER
-        if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        if (!IsWindows())
             throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
         _server = new NamedPipeServerStream(

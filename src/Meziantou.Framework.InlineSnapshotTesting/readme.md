@@ -57,7 +57,7 @@ static class AssemblyInitializer
         InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
         {
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.MergeTool,
-            MergeTool = DiffTool.VisualStudioCode,
+            MergeTools = [MergeTool.VisualStudioCode],
         };
     }
 }

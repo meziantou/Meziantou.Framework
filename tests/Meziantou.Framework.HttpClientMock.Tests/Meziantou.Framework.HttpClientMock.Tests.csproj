@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Extensions.Logging.InMemory\Meziantou.Extensions.Logging.InMemory.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HttpClientMock\Meziantou.Framework.HttpClientMock.csproj" />
   </ItemGroup>
 

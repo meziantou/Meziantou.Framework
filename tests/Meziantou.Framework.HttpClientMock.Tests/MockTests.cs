@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Meziantou.Extensions.Logging.InMemory;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -10,10 +12,12 @@ public sealed class MockTests
     [SuppressMessage("Usage", "ASP0022:Route conflict detected between route handlers", Justification = "false-positive")]
     public async Task Test()
     {
-        await using var mock1 = new HttpClientMock();
+        using var logger1 = new InMemoryLoggerProvider();
+        using var logger2 = new InMemoryLoggerProvider();
+        await using var mock1 = new HttpClientMock(logger1);
         mock1.Application.MapGet("/", () => Results.Ok("test1"));
 
-        await using var mock2 = new HttpClientMock();
+        await using var mock2 = new HttpClientMock(builder => builder.AddProvider(logger2));
         mock2.Application.MapGet("/", () => Results.Ok("test2"));
 
         var services = new ServiceCollection().AddHttpClient();
@@ -29,6 +33,9 @@ public sealed class MockTests
 
         var sampleClient = serviceProvider.GetRequiredService<SampleClient>();
         Assert.Equal("\"test2\"", await sampleClient.GetStringAsync("https://example.com/"));
+
+        Assert.NotEmpty(logger1.Logs);
+        Assert.NotEmpty(logger2.Logs);
     }
 
     private sealed class SampleClient(HttpClient httpClient)

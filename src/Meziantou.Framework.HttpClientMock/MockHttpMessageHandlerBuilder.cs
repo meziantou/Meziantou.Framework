@@ -12,6 +12,13 @@ internal sealed class MockHttpMessageHandlerBuilder : HttpMessageHandlerBuilder,
         _handlers[""] = mock.CreateHttpMessageHandler();
     }
 
+    public void AddMock(string name, HttpClientMock mock)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        _handlers[name] = mock.CreateHttpMessageHandler();
+    }
+
     public void AddMock<T>(HttpClientMock mock)
     {
         _handlers[typeof(T).Name] = mock.CreateHttpMessageHandler();

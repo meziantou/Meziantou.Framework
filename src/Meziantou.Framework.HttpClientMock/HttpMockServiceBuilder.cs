@@ -10,6 +10,12 @@ public sealed class HttpMockServiceBuilder
         return this;
     }
 
+    public HttpMockServiceBuilder AddHttpClientMock(string name, HttpClientMock mock)
+    {
+        Builder.AddMock(name, mock);
+        return this;
+    }
+
     public HttpMockServiceBuilder AddHttpClientMock<T>(HttpClientMock mock)
     {
         Builder.AddMock<T>(mock);

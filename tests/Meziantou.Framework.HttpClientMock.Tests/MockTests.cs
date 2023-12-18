@@ -38,6 +38,28 @@ public sealed class MockTests
         Assert.NotEmpty(logger2.Logs);
     }
 
+    [Fact]
+    public async Task Test_Logger()
+    {
+        using var loggerProvider = new InMemoryLoggerProvider();
+        var logger = loggerProvider.CreateLogger("dummy");
+        await using var mock = new HttpClientMock(logger);
+        mock.Application.MapGet("/", () => Results.Ok("test1"));
+
+        var services = new ServiceCollection().AddHttpClient();
+        services.AddHttpClient<SampleClient>();
+
+        services.AddHttpClientMock(builder => builder
+            .AddHttpClientMock(mock)
+            .AddHttpClientMock<SampleClient>(mock));
+
+        await using var serviceProvider = services.BuildServiceProvider();
+        var httpClient = serviceProvider.GetRequiredService<HttpClient>();
+        Assert.Equal("\"test1\"", await httpClient.GetStringAsync("https://example.com/"));
+
+        Assert.NotEmpty(loggerProvider.Logs);
+    }
+
     private sealed class SampleClient(HttpClient httpClient)
     {
         public Task<string> GetStringAsync(string url) => httpClient.GetStringAsync(url);

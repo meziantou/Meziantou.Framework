@@ -20,6 +20,11 @@ public sealed class HttpClientMock : IAsyncDisposable
     {
     }
 
+    public HttpClientMock(ILogger? logger)
+        : this(logger is null ? null : builder => builder.AddProvider(new SingletonLogger(logger)))
+    {
+    }
+
     public HttpClientMock(Action<ILoggingBuilder>? configureLogging)
     {
         var builder = WebApplication.CreateBuilder();
@@ -54,4 +59,10 @@ public sealed class HttpClientMock : IAsyncDisposable
     }
 
     public ValueTask DisposeAsync() => Application.DisposeAsync();
+
+    private sealed class SingletonLogger(ILogger logger) : ILoggerProvider
+    {
+        public ILogger CreateLogger(string categoryName) => logger;
+        public void Dispose() { }
+    }
 }

@@ -10,16 +10,9 @@ using Xunit.Abstractions;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
-public sealed class ScannerTests : IDisposable
+public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposable
 {
-    private readonly TemporaryDirectory _directory;
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public ScannerTests(ITestOutputHelper testOutputHelper)
-    {
-        _directory = TemporaryDirectory.Create();
-        _testOutputHelper = testOutputHelper;
-    }
+    private readonly TemporaryDirectory _directory = TemporaryDirectory.Create();
 
     [Fact]
     public async Task NpmPackageJsonDependencies()
@@ -62,12 +55,18 @@ public sealed class ScannerTests : IDisposable
         AssertFileContentEqual("package.json", Expected, ignoreNewLines: true);
     }
 
-    [Fact]
-    public async Task NuSpecDependencies()
+    [Theory]
+    [InlineData("http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd")]
+    [InlineData("http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd")]
+    [InlineData("http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd")]
+    [InlineData("http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd")]
+    [InlineData("http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd")]
+    [InlineData("http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd")]
+    public async Task NuSpecDependencies(string xmlns)
     {
-        const string Original = """
+        var original = $"""
             <?xml version="1.0" encoding="utf-8"?>
-            <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+            <package xmlns="{xmlns}">
                 <metadata>
                     <id>sample</id>
                     <version>1.0.0</version>
@@ -80,9 +79,9 @@ public sealed class ScannerTests : IDisposable
             </package>
             """;
 
-        const string Expected = """
+        var expected = $"""
             <?xml version="1.0" encoding="utf-8"?>
-            <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+            <package xmlns="{xmlns}">
                 <metadata>
                     <id>sample</id>
                     <version>1.0.0</version>
@@ -95,14 +94,14 @@ public sealed class ScannerTests : IDisposable
             </package>
             """;
 
-        AddFile("test.nuspec", Original);
+        AddFile("test.nuspec", original);
         var result = await GetDependencies(new NuSpecDependencyScanner());
         AssertContainDependency(result,
             (DependencyType.NuGet, "another-package", "3.0.0", 8, 46),
             (DependencyType.NuGet, "yet-another-package", "1.0.0", 9, 50));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
-        AssertFileContentEqual("test.nuspec", Expected, ignoreNewLines: true);
+        AssertFileContentEqual("test.nuspec", expected, ignoreNewLines: true);
     }
 
     [Fact]
@@ -510,7 +509,7 @@ public sealed class ScannerTests : IDisposable
         using (var repository = new Repository(remote.FullPath))
         {
             head = repository.Head.Tip.Sha;
-            _testOutputHelper.WriteLine("Head: " + head);
+            testOutputHelper.WriteLine("Head: " + head);
         }
 
         // Initialize current directory
@@ -527,11 +526,11 @@ public sealed class ScannerTests : IDisposable
 
         // List files
         var files = Directory.GetFiles(_directory.FullPath, "*", SearchOption.AllDirectories);
-        _testOutputHelper.WriteLine("Content of " + _directory.FullPath);
+        testOutputHelper.WriteLine("Content of " + _directory.FullPath);
         foreach (var file in files)
         {
             var attr = File.GetAttributes(file);
-            _testOutputHelper.WriteLine($"{file} ({attr})");
+            testOutputHelper.WriteLine($"{file} ({attr})");
         }
 
         // Assert
@@ -542,20 +541,20 @@ public sealed class ScannerTests : IDisposable
 
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
-            _testOutputHelper.WriteLine($"Executing: '{process}' {args} ({workingDirectory})");
+            testOutputHelper.WriteLine($"Executing: '{process}' {args} ({workingDirectory})");
             AssertProcessResult(await ProcessExtensions.RunAsTaskAsync(process, args, workingDirectory));
         }
 
         async Task ExecuteProcess2(string process, string[] args, string workingDirectory)
         {
-            _testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
+            testOutputHelper.WriteLine($"Executing: '{process}' {string.Join(' ', args)} ({workingDirectory})");
             AssertProcessResult(await ProcessExtensions.RunAsTaskAsync(process, args, workingDirectory));
         }
 
         void AssertProcessResult(ProcessResult result)
         {
             result.ExitCode.Should().Be(0, "git command should return 0. Logs:\n" + string.Join('\n', result.Output));
-            _testOutputHelper.WriteLine("git command succeeds\n" + string.Join('\n', result.Output));
+            testOutputHelper.WriteLine("git command succeeds\n" + string.Join('\n', result.Output));
         }
     }
 

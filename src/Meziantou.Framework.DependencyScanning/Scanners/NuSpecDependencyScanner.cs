@@ -6,8 +6,24 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 // https://docs.microsoft.com/en-us/nuget/reference/nuspec
 public sealed class NuSpecDependencyScanner : DependencyScanner
 {
-    private static readonly XNamespace NuspecXmlns = XNamespace.Get("http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd");
-    private static readonly XName DependencyXName = NuspecXmlns + "dependency";
+    // https://github.com/NuGet/NuGet.Client/blob/cabdb9886f3bc99c7a342ccc1661d393b14a0d1d/src/NuGet.Core/NuGet.Packaging/PackageCreation/Authoring/ManifestSchemaUtility.cs#L23
+    private static readonly XNamespace SchemaVersionV1 = "http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd";
+    private static readonly XNamespace SchemaVersionV2 = "http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd";
+    private static readonly XNamespace SchemaVersionV3 = "http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd";
+    private static readonly XNamespace SchemaVersionV4 = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
+    private static readonly XNamespace SchemaVersionV5 = "http://schemas.microsoft.com/packaging/2013/01/nuspec.xsd";
+    private static readonly XNamespace SchemaVersionV6 = "http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd";
+
+    private static readonly XNamespace[] Namespaces =
+    [
+        SchemaVersionV1,
+        SchemaVersionV2,
+        SchemaVersionV3,
+        SchemaVersionV4,
+        SchemaVersionV5,
+        SchemaVersionV6,
+    ];
+
     private static readonly XName IdXName = XName.Get("id");
     private static readonly XName VersionXName = XName.Get("version");
 
@@ -22,7 +38,7 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
         if (doc is null || doc.Root is null)
             return;
 
-        foreach (var dependency in doc.Descendants(DependencyXName))
+        foreach (var dependency in doc.Descendants().Where(element => element.Name.LocalName is "dependency" && Namespaces.Contains(element.Name.Namespace)))
         {
             var idAttribute = dependency.Attribute(IdXName);
             var id = idAttribute?.Value;

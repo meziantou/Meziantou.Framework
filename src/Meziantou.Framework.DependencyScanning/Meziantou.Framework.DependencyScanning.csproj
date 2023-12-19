@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Find dependencies in source files. Support multiple package managers such as NuGet, npm, Docker, PyPi, and so on</Description>
   </PropertyGroup>
 

@@ -1654,6 +1654,18 @@ public sealed partial class SerializerTests : SerializerTestsBase
             """);
     }
 
+#if NET8_0_OR_GREATER
+    [Fact]
+    public void IPNetwork()
+    {
+        AssertSerialization(new Validation
+        {
+            Subject = System.Net.IPNetwork.Parse("192.168.1.0/24"),
+            Expected = "192.168.1.0/24",
+        });
+    }
+#endif
+    
 #if NET6_0_OR_GREATER
     [Fact]
     public void HttpRequestMessage()

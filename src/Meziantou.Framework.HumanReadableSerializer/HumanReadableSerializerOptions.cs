@@ -92,7 +92,7 @@ public sealed record HumanReadableSerializerOptions
             _propertyOrder = value;
         }
     }
-    
+
     public IComparer<string>? DictionaryKeyOrder
     {
         get => _dictionaryKeyOrder;
@@ -410,6 +410,9 @@ public sealed record HumanReadableSerializerOptions
 #endif
             new IntPtrConverter(),
             new IPAddressConverter(),
+#if NET8_0_OR_GREATER
+            new IPNetworkConverter(),
+#endif
             new FieldInfoConverter(),
             new GuidConverter(),
             new MediaTypeHeaderValueConverter(),

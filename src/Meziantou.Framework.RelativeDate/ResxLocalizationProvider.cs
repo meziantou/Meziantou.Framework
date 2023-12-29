@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 
 internal sealed class ResxLocalizationProvider : ILocalizationProvider
 {
-    private static readonly ResourceManager ResourceManager = new ResourceManager("Meziantou.Framework.RelativeDates", typeof(RelativeDates).Assembly);
+    private static readonly ResourceManager ResourceManager = new("Meziantou.Framework.RelativeDates", typeof(RelativeDates).Assembly);
 
     public static ILocalizationProvider Instance { get; } = new ResxLocalizationProvider();
 

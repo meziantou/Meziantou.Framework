@@ -2,14 +2,10 @@
 
 internal sealed class FrequencyUnit
 {
-    public static readonly FrequencyUnit Hz = new FrequencyUnit("Hz", "Hertz", 1L);
-
-    public static readonly FrequencyUnit KHz = new FrequencyUnit("KHz", "Kilohertz", 1000L);
-
-    public static readonly FrequencyUnit MHz = new FrequencyUnit("MHz", "Megahertz", 1000000L);
-
-    public static readonly FrequencyUnit GHz = new FrequencyUnit("GHz", "Gigahertz", 1000000000L);
-
+    public static readonly FrequencyUnit Hz = new("Hz", "Hertz", 1L);
+    public static readonly FrequencyUnit KHz = new("KHz", "Kilohertz", 1000L);
+    public static readonly FrequencyUnit MHz = new("MHz", "Megahertz", 1000000L);
+    public static readonly FrequencyUnit GHz = new("GHz", "Gigahertz", 1000000000L);
     public static readonly FrequencyUnit[] All = [Hz, KHz, MHz, GHz];
 
     public string Name { get; }

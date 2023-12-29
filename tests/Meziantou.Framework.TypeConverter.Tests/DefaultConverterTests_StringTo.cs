@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Runtime.InteropServices;
 using FluentAssertions;
 using TestUtilities;
 using Xunit;

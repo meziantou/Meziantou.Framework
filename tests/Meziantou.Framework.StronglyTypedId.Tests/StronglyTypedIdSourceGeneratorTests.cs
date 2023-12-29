@@ -34,9 +34,11 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             dlls.AddRange(await NuGetHelpers.GetNuGetReferences(nuGetReference.Name, nuGetReference.Version, nuGetReference.ReferencePath));
         }
 
-        MetadataReference[] references = [
-            MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
-            .. dlls.Select(loc => MetadataReference.CreateFromFile(loc))];
+        MetadataReference[] references =
+            [
+                MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
+                .. dlls.Select(loc => MetadataReference.CreateFromFile(loc)),
+            ];
 
         return CSharpCompilation.Create("compilation",
             new[] { CSharpSyntaxTree.ParseText(sourceText) },

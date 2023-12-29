@@ -12,7 +12,7 @@ internal sealed partial record ProcessInfo
         "code.exe", "code",
     };
 
-    private static readonly Lazy<ProcessInfo> CurrentProcessInfo = new Lazy<ProcessInfo>(() => GetContextProcessImpl());
+    private static readonly Lazy<ProcessInfo> CurrentProcessInfo = new(GetContextProcessImpl);
 
     internal static ProcessInfo? GetContextProcess() => CurrentProcessInfo.Value;
 

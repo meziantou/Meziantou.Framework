@@ -20,7 +20,7 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     public GlobCollection(params Glob[] globs) => _globs = globs;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static GlobCollection Create(ReadOnlySpan<Glob> globs) => new GlobCollection(globs.ToArray());
+    public static GlobCollection Create(ReadOnlySpan<Glob> globs) => new(globs.ToArray());
 
     public int Count => _globs.Length;
     public Glob this[int index] => _globs[index];

@@ -27,6 +27,7 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    [SuppressMessage("Design", "MA0150:Do not call the default object.ToString explicitly")]
     public void ToStringDoesNotRevealValue()
     {
         using var data = SensitiveData.Create("foo");

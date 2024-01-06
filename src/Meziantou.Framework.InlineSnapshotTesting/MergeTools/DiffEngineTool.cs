@@ -15,7 +15,7 @@ internal sealed class DiffEngineTool(DiffTool tool) : MergeTool
 
     internal static MergeToolResult? Start(ResolvedTool resolvedTool, string currentFilePath, string newFilePath)
     {
-        var arguments = resolvedTool.GetArguments(currentFilePath, newFilePath);
+        var arguments = resolvedTool.GetArguments(newFilePath, currentFilePath);
         var startInfo = new ProcessStartInfo(resolvedTool.ExePath, arguments)
         {
             UseShellExecute = true,

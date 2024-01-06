@@ -18,7 +18,7 @@ internal sealed class ScrubbedGuidConverter : HumanReadableConverter<Guid>
 
     private static string GetScrubbedValue(int index)
     {
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NET472 || NET48
         var data = new byte[16];
         MemoryMarshal.Write(data.AsSpan(12), ref index);
         data.AsSpan(12).Reverse();

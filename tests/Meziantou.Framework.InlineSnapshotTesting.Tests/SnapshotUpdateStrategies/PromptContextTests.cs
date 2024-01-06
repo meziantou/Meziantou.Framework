@@ -125,6 +125,8 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
         {
 #if NET472
             return "net472";
+#elif NET48
+            return "net48";
 #elif NET6_0
             return "net6.0";
 #elif NET7_0

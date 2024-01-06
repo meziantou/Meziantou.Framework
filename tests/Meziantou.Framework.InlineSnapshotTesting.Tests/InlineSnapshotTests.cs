@@ -390,7 +390,7 @@ public sealed class InlineSnapshotTests
             }
             """");
 
-#if NET472
+#if NET472 || NET48
         CreateTextFile("ModuleInitializerAttribute.cs", $$""""
             namespace System.Runtime.CompilerServices
             {
@@ -467,6 +467,8 @@ public sealed class InlineSnapshotTests
         {
 #if NET472
             return "net472";
+#elif NET48
+            return "net48";
 #elif NET6_0
             return "net6.0";
 #elif NET7_0
@@ -484,7 +486,7 @@ public sealed class InlineSnapshotTests
             var items = doc.Root.Descendants("PackageReference");
 
             var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
-#if NET472
+#if NET472 || NET48
             packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
 #endif
 

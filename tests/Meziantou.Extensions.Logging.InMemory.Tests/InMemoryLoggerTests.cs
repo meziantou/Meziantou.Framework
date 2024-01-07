@@ -72,7 +72,7 @@ public sealed partial class InMemoryLoggerTests
 
         log.TryGetParameterValue("Number", out var number).Should().BeTrue();
         number.Should().Be(1);
-        
+
         log.TryGetParameterValue("Age", out var age).Should().BeTrue();
         age.Should().Be(52);
 
@@ -91,4 +91,22 @@ public sealed partial class InMemoryLoggerTests
 
         provider.Logs.Should().HaveCount(100_000);
     }
+
+#if NET8_0_OR_GREATER
+    [Fact]
+    public void WithTimeProvider()
+    {
+        using var provider = new InMemoryLoggerProvider(new CustomTimeProvider());
+        var logger = provider.CreateLogger("my_category");
+        Log(logger, 1);
+
+        var log = provider.Logs.Informations.Single();
+        log.CreatedAt.Should().Be(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero));
+    }
+
+    private sealed class CustomTimeProvider : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+#endif
 }

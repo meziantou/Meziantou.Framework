@@ -6,7 +6,7 @@ namespace Meziantou.Extensions.Logging.InMemory;
 
 public sealed class InMemoryLogEntry
 {
-    internal InMemoryLogEntry(string? category, LogLevel logLevel, EventId eventId, IReadOnlyList<object?> scopes, object? state, Exception? exception, string message)
+    internal InMemoryLogEntry(DateTimeOffset createdAt, string? category, LogLevel logLevel, EventId eventId, IReadOnlyList<object?> scopes, object? state, Exception? exception, string message)
     {
         Category = category;
         LogLevel = logLevel;
@@ -15,7 +15,7 @@ public sealed class InMemoryLogEntry
         State = state;
         Exception = exception;
         Message = message;
-        CreatedAt = DateTimeOffset.UtcNow;
+        CreatedAt = createdAt;
     }
 
     public DateTimeOffset CreatedAt { get; }

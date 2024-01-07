@@ -42,6 +42,22 @@ public static partial class EnumerableExtensions
         }
     }
 
+    public static void RemoveAll<T>(this ICollection<T> collection, Predicate<T> match)
+    {
+        if (collection is List<T> list)
+        {
+            list.RemoveAll(match);
+        }
+        else
+        {
+            var itemsToRemove = collection.Where(item => match(item)).ToArray();
+            foreach (var item in itemsToRemove)
+            {
+                collection.Remove(item);
+            }
+        }
+    }
+
     public static void Replace<T>(this IList<T> list, T oldItem, T newItem)
     {
         if (list is null)

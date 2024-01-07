@@ -64,4 +64,62 @@ public sealed class InMemoryLogEntry
 
         return sb.ToString();
     }
+
+    public bool TryGetParameterValue(string name, out object? value)
+    {
+        if (TryGetValue(State, name, out value))
+            return true;
+
+        foreach (var scope in Scopes)
+        {
+            if (TryGetValue(scope, name, out value))
+                return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    public IEnumerable<object?> GetAllParameterValues(string name)
+    {
+        if (TryGetValue(State, name, out var value))
+            yield return value;
+
+        foreach (var scope in Scopes)
+        {
+            if (TryGetValue(scope, name, out value))
+                yield return value;
+        }
+    }
+
+    private static bool TryGetValue(object? owner, string name, out object? result)
+    {
+        if (owner is null)
+        {
+            result = null;
+            return false;
+        }
+
+        if (owner is IReadOnlyCollection<KeyValuePair<string, object?>> stateDictionary)
+        {
+            foreach (var item in stateDictionary)
+            {
+                if (string.Equals(name, item.Key, StringComparison.Ordinal))
+                {
+                    result = item.Value;
+                    return true;
+                }
+            }
+        }
+
+        var property = owner.GetType().GetProperty(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+        if (property is not null)
+        {
+            result = property.GetValue(owner);
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
 }

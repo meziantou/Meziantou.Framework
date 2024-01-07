@@ -63,6 +63,20 @@ public sealed partial class InMemoryLoggerTests
         log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
 
         log.ToString().Should().Be("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}");
+
+        log.TryGetParameterValue("{OriginalFormat}", out var format).Should().BeTrue();
+        format.Should().Be("Test {Number}");
+
+        log.TryGetParameterValue("Name", out var name).Should().BeTrue();
+        name.Should().Be("test");
+
+        log.TryGetParameterValue("Number", out var number).Should().BeTrue();
+        number.Should().Be(1);
+        
+        log.TryGetParameterValue("Age", out var age).Should().BeTrue();
+        age.Should().Be(52);
+
+        log.GetAllParameterValues("Name").Should().Equal(["test", "John"]);
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]

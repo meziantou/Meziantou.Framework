@@ -23,5 +23,12 @@ internal static class Program
             //userName: "Meziantou",
             saveCredential: CredentialSaveOption.Unselected);
         Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
+
+        creds = CredentialManager.PromptForCredentials(
+            captionText: "https://www.meziantou.net/dummy",
+            messageText: "This will allow SampleApp to authenticate to Meziantou's blog with prefilled username",
+            userName: "Meziantou",
+            saveCredential: CredentialSaveOption.Unselected);
+        Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
     }
 }

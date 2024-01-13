@@ -232,7 +232,13 @@ public static class CredentialManager
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, CredentialSaveOption saveCredential)
+    {
+        return PromptForCredentials(owner, messageText, captionText, userName, password: null, saveCredential);
+    }
+
+    [SupportedOSPlatform("windows6.0.6000")]
+    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
     {
         fixed (char* messageTextPtr = messageText)
         fixed (char* captionTextPtr = captionText)
@@ -258,7 +264,7 @@ public static class CredentialManager
             }
 
             // Prefill username
-            GetInputBuffer(userName, out var inCredBuffer, out var inCredSize);
+            GetInputBuffer(userName, password, out var inCredBuffer, out var inCredSize);
 
             // Setup the flags and variables
             uint authPackage = 0;
@@ -277,9 +283,9 @@ public static class CredentialManager
 
             FreeCoTaskMem((nint)inCredBuffer);
 
-            if (result == 0 && GetCredentialsFromOutputBuffer(outCredBuffer, outCredBufferSize, out userName, out var password, out var domain))
+            if (result == 0 && GetCredentialsFromOutputBuffer(outCredBuffer, outCredBufferSize, out userName, out password, out var domain))
             {
-                var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
+                var credentialSaved = saveCredential is CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
                 return new CredentialResult(userName, password, domain, credentialSaved);
             }
 
@@ -288,12 +294,12 @@ public static class CredentialManager
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    private static unsafe void GetInputBuffer(string? user, out byte* inCredBuffer, out uint inCredSize)
+    private static unsafe void GetInputBuffer(string? user, string? password, out byte* inCredBuffer, out uint inCredSize)
     {
         if (!string.IsNullOrEmpty(user))
         {
             fixed (char* userPtr = user)
-            fixed (char* passwordPtr = "")
+            fixed (char* passwordPtr = (password ?? ""))
             {
                 inCredSize = 1024;
                 inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);

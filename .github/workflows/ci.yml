@@ -91,7 +91,7 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        runs-on: [ windows-2019, windows-2022, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12, macos-13 ]
+        runs-on: [ windows-2019, windows-2022, ubuntu-20.04, ubuntu-22.04, macos-11, macos-12, macos-13, macos-14 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
         architecture: [ x64 ]

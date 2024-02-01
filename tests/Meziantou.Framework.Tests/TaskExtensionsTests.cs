@@ -57,14 +57,7 @@ public sealed class TaskExtensionsTests
     [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
     public async Task WhenAll_ValueTask_Exception()
     {
-        try
-        {
-            await (ValueTask.FromResult(0), ValueTask.FromException<string>(new InvalidOperationException("test")));
-            false.Should().BeTrue("Should not reach this line");
-        }
-        catch (AggregateException ex)
-        {
-            ex.Message.Should().Be("One or more errors occurred. (test)");
-        }
+        var exception = await Assert.ThrowsAsync<AggregateException>(async () => await (ValueTask.FromResult(0), ValueTask.FromException<string>(new InvalidOperationException("test"))));
+        exception.Message.Should().Be("One or more errors occurred. (test)");
     }
 }

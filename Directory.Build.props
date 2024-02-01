@@ -58,11 +58,11 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.108">
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.111">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.31">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.33">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "schedule": ["before 5am on monday"],
+  "ignorePaths": [],
+  "packageRules": [
+    {
+      "matchPackageNames": [ "Microsoft.CodeAnalysis" ],
+      "matchFileNames": [
+        "src/Meziantou.Framework.FastEnumToStringGenerator/Meziantou.Framework.FastEnumToStringGenerator.csproj",
+        "src/Meziantou.Framework.ResxSourceGenerator/Meziantou.Framework.ResxSourceGenerator.csproj",
+        "src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj"
+      ],
+      "groupName": "roslyn-analyzers",
+      "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "Microsoft.AspNetCore.Components",
+        "Microsoft.AspNetCore.Components.Web",
+        "Microsoft.AspNetCore.Components.WebAssembly",
+        "Microsoft.AspNetCore.Mvc.Testing",
+        "Microsoft.AspNetCore.TestHost"
+      ],
+      "matchFileNames": [
+        "src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj",
+        "src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj",
+        "src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj",
+        "src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj",
+        "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj"
+      ],
+      "matchUpdateTypes": [ "major", "minor" ], // Only allow patch updates
+      "groupName": "all dependencies",
+      "enabled": false
+    },
+    {
+      "matchPackagePatterns": [".*"],
+      "groupName": "all dependencies"
+    }
+  ]
+}

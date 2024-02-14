@@ -152,6 +152,54 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void CredentialManager_CredentialType_Windows()
+    {
+        var credType = CredentialType.DomainPassword;
+
+        CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, credType);
+
+        var cred = CredentialManager.ReadCredential(_credentialName1, credType);
+        cred.Should().NotBeNull();
+        cred.ApplicationName.Should().Be(_credentialName1);
+        cred.UserName.Should().Be("John");
+        cred.Password.Should().BeNull(); // Domain Passwords can not be read back using CredRead API
+        cred.Comment.Should().Be("Test");
+        cred.CredentialType.Should().Be(credType);
+
+        CredentialManager.DeleteCredential(_credentialName1, credType);
+        cred = CredentialManager.ReadCredential(_credentialName1, credType);
+        cred.Should().BeNull();
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void CredentialManager_CredentialType_Windows_Enumerate()
+    {
+        var credType = CredentialType.DomainPassword;
+
+        CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, credType);
+        CredentialManager.WriteCredential(_credentialName2, "John", "Doe", "Test", CredentialPersistence.Session, credType);
+        try
+        {
+            var creds = CredentialManager.EnumerateCredentials(_prefix + "*");
+            creds.Count.Should().Be(2);
+            creds.All(cred => cred.CredentialType == credType).Should().BeTrue();
+        }
+        finally
+        {
+            CredentialManager.DeleteCredential(_credentialName1, credType);
+            CredentialManager.DeleteCredential(_credentialName2, credType);
+        }
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void CredentialManager_CredentialType_Invalid()
+    {
+        var act = () => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate);
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("Only CredentialType.Generic and CredentialType.DomainPassword is supported*");
+    }
+
     public void Dispose()
     {
         _mutex?.Dispose();

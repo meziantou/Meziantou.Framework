@@ -2,21 +2,33 @@ namespace Meziantou.Framework;
 
 public static class HexaConverter
 {
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
+#endif
     public static string ToHexaString(this byte[] bytes)
     {
         return ToHexaString(bytes, default);
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
+#endif
     public static string ToHexaString(this byte[] bytes, HexaOptions options)
     {
         return ToHexaString(bytes.AsSpan(), options);
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
+#endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes)
     {
         return ToHexaString(bytes, default);
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
+#endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
     {
         if (bytes.Length == 0)
@@ -30,6 +42,9 @@ public static class HexaConverter
         };
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
+#endif
     [SuppressMessage("Usage", "MA0015:Specify the parameter name in ArgumentException")]
     public static byte[] ParseHexaString(string str)
     {
@@ -86,6 +101,9 @@ public static class HexaConverter
         }
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
+#endif
     public static bool TryParseHexaString(string? str, [NotNullWhen(returnValue: true)] out byte[]? result)
     {
         if (str is null)
@@ -97,6 +115,9 @@ public static class HexaConverter
         return TryParseHexaString(str.AsSpan(), out result);
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
+#endif
     public static bool TryParseHexaString(ReadOnlySpan<char> str, [NotNullWhen(returnValue: true)] out byte[]? result)
     {
         if (str.Length % 2 != 0)
@@ -145,6 +166,9 @@ public static class HexaConverter
         }
     }
 
+#if NET9_0_OR_GREATER
+    [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
+#endif
     public static bool TryParseHexaString(string? str, Span<byte> bytes, out int writtenBytes)
     {
         if (str is null || str.Length % 2 != 0)

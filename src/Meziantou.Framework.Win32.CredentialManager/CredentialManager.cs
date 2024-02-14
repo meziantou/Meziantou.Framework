@@ -48,12 +48,12 @@ public static class CredentialManager
         return new Credential((CredentialType)credential->Type, applicationName, userName, secret, comment);
     }
 
-    public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence)
+    public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence, CredentialType type = CredentialType.Generic)
     {
-        WriteCredential(applicationName, userName, secret, comment: null, persistence);
+        WriteCredential(applicationName, userName, secret, comment: null, persistence, type);
     }
 
-    public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
+    public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type = CredentialType.Generic)
     {
         if (applicationName is null)
             throw new ArgumentNullException(nameof(applicationName));
@@ -86,6 +86,11 @@ public static class CredentialManager
                 throw new ArgumentOutOfRangeException(nameof(comment), "The comment message has exceeded 256 characters.");
         }
 
+        if (type is not (CredentialType.Generic or CredentialType.DomainPassword))
+        {
+            throw new ArgumentOutOfRangeException(nameof(type), "Only CredentialType.Generic and CredentialType.DomainPassword is supported");
+        }
+
         fixed (char* applicationNamePtr = applicationName)
         fixed (char* userNamePtr = userName)
         fixed (char* commentPtr = comment)
@@ -97,7 +102,7 @@ public static class CredentialManager
                 Attributes = null,
                 Comment = commentPtr,
                 TargetAlias = default,
-                Type = CRED_TYPE.CRED_TYPE_GENERIC,
+                Type = (CRED_TYPE)type,
                 Persist = (CRED_PERSIST)persistence,
                 CredentialBlobSize = (uint)secretLength,
                 TargetName = applicationNamePtr,

@@ -153,7 +153,7 @@ public sealed class CredentialManagerTests : IDisposable
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]
-    public void CredentialManager_CredentialType_Windows()
+    public void CredentialManager_CredentialType_DomainPassword()
     {
         var credType = CredentialType.DomainPassword;
 
@@ -173,7 +173,7 @@ public sealed class CredentialManagerTests : IDisposable
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]
-    public void CredentialManager_CredentialType_Windows_Enumerate()
+    public void CredentialManager_CredentialType_DomainPassword_Enumerate()
     {
         var credType = CredentialType.DomainPassword;
 

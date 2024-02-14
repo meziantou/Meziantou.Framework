@@ -14,9 +14,9 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public static class CredentialManager
 {
-    public static unsafe Credential? ReadCredential(string applicationName)
+    public static unsafe Credential? ReadCredential(string applicationName, CredentialType type = CredentialType.Generic)
     {
-        var read = PInvoke.CredRead(applicationName, CRED_TYPE.CRED_TYPE_GENERIC, out var handle);
+        var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
         if (read)
         {
             try
@@ -119,12 +119,12 @@ public static class CredentialManager
         }
     }
 
-    public static void DeleteCredential(string applicationName)
+    public static void DeleteCredential(string applicationName, CredentialType type = CredentialType.Generic)
     {
         if (applicationName is null)
             throw new ArgumentNullException(nameof(applicationName));
 
-        var success = PInvoke.CredDelete(applicationName, CRED_TYPE.CRED_TYPE_GENERIC);
+        var success = PInvoke.CredDelete(applicationName, (CRED_TYPE)type);
         if (!success)
         {
             var lastError = Marshal.GetLastWin32Error();

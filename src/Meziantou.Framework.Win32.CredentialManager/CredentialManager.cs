@@ -14,7 +14,12 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows5.1.2600")]
 public static class CredentialManager
 {
-    public static unsafe Credential? ReadCredential(string applicationName, CredentialType type = CredentialType.Generic)
+    public static Credential? ReadCredential(string applicationName)
+    {
+        return ReadCredential(applicationName, CredentialType.Generic);
+    }
+
+    public static unsafe Credential? ReadCredential(string applicationName, CredentialType type)
     {
         var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
         if (read)
@@ -48,12 +53,22 @@ public static class CredentialManager
         return new Credential((CredentialType)credential->Type, applicationName, userName, secret, comment);
     }
 
-    public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence, CredentialType type = CredentialType.Generic)
+    public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence)
+    {
+        WriteCredential(applicationName, userName, secret, comment: null, persistence, CredentialType.Generic);
+    }
+
+    public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence, CredentialType type)
     {
         WriteCredential(applicationName, userName, secret, comment: null, persistence, type);
     }
 
-    public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type = CredentialType.Generic)
+    public static void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
+    {
+        WriteCredential(applicationName, userName, secret, comment, persistence, CredentialType.Generic);
+    }
+
+    public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
         if (applicationName is null)
             throw new ArgumentNullException(nameof(applicationName));
@@ -119,7 +134,12 @@ public static class CredentialManager
         }
     }
 
-    public static void DeleteCredential(string applicationName, CredentialType type = CredentialType.Generic)
+    public static void DeleteCredential(string applicationName)
+    {
+        DeleteCredential(applicationName, CredentialType.Generic);
+    }
+
+    public static void DeleteCredential(string applicationName, CredentialType type)
     {
         if (applicationName is null)
             throw new ArgumentNullException(nameof(applicationName));

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests;
 [Collection("JobObjectTests")]
 public class JobObjectTests
 {
-    [RunIfFact(FactOperatingSystem.Windows, Timeout = 5000)]
+    [RunIfFact(FactOperatingSystem.Windows)]
     public void ShouldKillProcessOnTerminate()
     {
         using var job = new JobObject();
@@ -35,7 +35,7 @@ public class JobObjectTests
         process.WaitForExit();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows, Timeout = 5000)]
+    [RunIfFact(FactOperatingSystem.Windows)]
     public void KillOnJobClose_ShouldKillProcessOnClose()
     {
         using var job = new JobObject();

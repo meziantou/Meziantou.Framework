@@ -645,9 +645,9 @@ public partial class Test : System.IComparable<Test> {}
                 {
                     yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration,
                     [
-                            new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
-                            new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
-                        ]);
+                        new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
+                        new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
+                    ]);
                 }
             }
 #endif

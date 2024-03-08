@@ -242,8 +242,8 @@ jobs:
           if-no-files-found: error
           retention-days: 3
           path: |
-            test-results/test-result.coverage
-            test-results/test-result.cobertura.xml
+            test-result.coverage
+            test-result.cobertura.xml
 
   deploy:
     runs-on: ubuntu-22.04

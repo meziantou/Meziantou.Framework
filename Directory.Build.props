@@ -3,7 +3,7 @@
   <!-- Build options -->
   <PropertyGroup>
     <LatestTargetFramework>net8.0</LatestTargetFramework>
-    
+
     <LatestTargetFrameworks>net6.0;net7.0;net8.0</LatestTargetFrameworks>
     <LatestTargetFrameworksWindows>net6.0-windows;net7.0-windows;net8.0-windows</LatestTargetFrameworksWindows>
 
@@ -62,7 +62,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.36">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.34">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

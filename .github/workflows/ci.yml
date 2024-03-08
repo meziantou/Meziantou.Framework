@@ -218,6 +218,32 @@ jobs:
         uses: actions/setup-dotnet@v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
+  merge_coverage:
+    runs-on: ubuntu-22.04
+    needs: [build_and_test_x64, build_and_test_windows_x86]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v4
+      - name: Install dotnet-coverage
+        run: dotnet tool update --global dotnet-coverage
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: test-results
+      - name: Merge coverages
+        run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
+        run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            test-results/test-result.coverage
+            test-results/test-result.cobertura.xml
+
   deploy:
     runs-on: ubuntu-22.04
     needs: [ validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]

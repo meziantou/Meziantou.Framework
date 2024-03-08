@@ -232,8 +232,9 @@ jobs:
         with:
           pattern: test-results-*
           path: test-results
-      - name: Merge coverages
+      - name: Merge coverage files (format coverage)
         run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
+      - name: Merge coverage files (format cobertura)
         run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - uses: actions/upload-artifact@v4
         with:

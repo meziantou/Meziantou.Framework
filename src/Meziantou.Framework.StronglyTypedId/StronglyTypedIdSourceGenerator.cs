@@ -367,6 +367,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
             PartialTypeContext = GetContext(typeSymbol);
+            SupportDisallowNullAttribute = compilation.GetBestTypeByMetadataName("System.Diagnostics.CodeAnalysis.DisallowNullAttribute") is not null;
 
             var readOnlySpanSymbol = compilation.GetTypeByMetadataName("System.ReadOnlySpan`1");
             var readOnlySpanCharSymbol = readOnlySpanSymbol?.Construct(compilation.GetSpecialType(SpecialType.System_Char));
@@ -577,6 +578,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool SupportIStronglyTyped { get; }
         public bool SupportIStronglyTypedOfT { get; }
 
+        public bool SupportDisallowNullAttribute { get; }
+
         public string TypeConverterTypeName => TypeName + "TypeConverter";
         public string SystemTextJsonConverterTypeName => TypeName + "JsonConverter";
         public string NewtonsoftJsonConverterTypeName => TypeName + "NewtonsoftJsonConverter";
@@ -635,7 +638,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && ImplementsIComparable == other.ImplementsIComparable
                 && ImplementsIComparable_CompareTo == other.ImplementsIComparable_CompareTo
                 && ImplementsIComparableOfT == other.ImplementsIComparableOfT
-                && ImplementsIComparableOfT_CompareTo == other.ImplementsIComparableOfT_CompareTo;
+                && ImplementsIComparableOfT_CompareTo == other.ImplementsIComparableOfT_CompareTo
+                && SupportDisallowNullAttribute == other.SupportDisallowNullAttribute;
         }
 
         public override int GetHashCode()
@@ -681,6 +685,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hash = (hash * 397) ^ ImplementsIComparable_CompareTo.GetHashCode();
             hash = (hash * 397) ^ ImplementsIComparableOfT.GetHashCode();
             hash = (hash * 397) ^ ImplementsIComparableOfT_CompareTo.GetHashCode();
+            hash = (hash * 397) ^ SupportDisallowNullAttribute.GetHashCode();
             return hash;
         }
 
@@ -776,7 +781,6 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 _ => throw new ArgumentException($"Type '{type}' not supported", nameof(type)),
             };
         }
-
     }
 
     [Flags]

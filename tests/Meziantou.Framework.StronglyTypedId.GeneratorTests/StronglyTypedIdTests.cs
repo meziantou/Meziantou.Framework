@@ -321,6 +321,14 @@ public sealed partial class StronglyTypedIdTests
         var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("42");
         value!.Value.Value.Should().Be(UInt128.Parse("42", CultureInfo.InvariantCulture));
     }
+
+    [Fact]
+    public void SystemTextJson_UInt128_AsDictionaryKey()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(new Dictionary<IdUInt128, object?> { [IdUInt128.Parse("1")] = null });
+        var value = System.Text.Json.JsonSerializer.Deserialize<Dictionary<IdUInt128, object?>>(json);
+        value!.Single().Key.Value.Should().Be(UInt128.Parse("1", CultureInfo.InvariantCulture));
+    }
 #endif
 
     [Fact]
@@ -400,7 +408,7 @@ public sealed partial class StronglyTypedIdTests
         var clone = BsonClone(instance);
         Assert.Null(clone);
     }
-    
+
     [Fact]
     public void Bson_Guid_Class_Empty()
     {
@@ -594,7 +602,7 @@ public sealed partial class StronglyTypedIdTests
     private partial class IdInt32Base
     {
     }
-    
+
     [StronglyTypedId(typeof(MongoDB.Bson.ObjectId))]
     private sealed partial class BsonObjectId
     {

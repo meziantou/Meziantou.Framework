@@ -11,8 +11,22 @@ public partial class StronglyTypedIdSourceGenerator
 
         using (writer.BeginBlock($"partial class {context.SystemTextJsonConverterTypeName} : global::System.Text.Json.Serialization.JsonConverter<{context.TypeName}>"))
         {
-            // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
+            // public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] Sample value, JsonSerializerOptions options)
             WriteNewMember(writer, context, addNewLine: false, InheritDocComment);
+            using (writer.BeginBlock($"public override void WriteAsPropertyName(global::System.Text.Json.Utf8JsonWriter writer, {(context.SupportDisallowNullAttribute ? "[global::System.Diagnostics.CodeAnalysis.DisallowNullAttribute]" : "")}{context.TypeName} value, global::System.Text.Json.JsonSerializerOptions options)"))
+            {
+                writer.WriteLine("writer.WritePropertyName(value.ValueAsString);");
+            }
+
+            // public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
+            using (writer.BeginBlock($"public override {context.TypeName} ReadAsPropertyName(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)"))
+            {
+                writer.WriteLine($"return {context.TypeName}.Parse(reader.GetString()!);");
+            }
+
+            // public abstract void Write (System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
+            WriteNewMember(writer, context, addNewLine: true, InheritDocComment);
             using (writer.BeginBlock($"public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {context.TypeName} value, global::System.Text.Json.JsonSerializerOptions options)"))
             {
                 if (context.IsReferenceType)

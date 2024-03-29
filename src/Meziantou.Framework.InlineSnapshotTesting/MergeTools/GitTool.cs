@@ -45,6 +45,7 @@ internal abstract class GitTool : MergeTool
             RedirectStandardOutput = true,
             WorkingDirectory = workingDirectory,
             CreateNoWindow = true,
+            UseShellExecute = false,
         };
 
         using var process = Process.Start(psi);

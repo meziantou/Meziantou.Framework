@@ -33,43 +33,7 @@ internal sealed class AsyncEnumerableConverterFactory : HumanReadableConverterFa
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<T>? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value is not null);
-
-            var task = WriteValue(writer, value, options);
-            if (task.IsCompleted)
-            {
-                task.GetAwaiter().GetResult();
-            }
-            else
-            {
-                task.AsTask().Wait();
-            }
-
-            static async ValueTask WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<T> value, HumanReadableSerializerOptions options)
-            {
-                var hasItem = false;
-                await foreach (var item in value.ConfigureAwait(false))
-                {
-                    if (!hasItem)
-                    {
-                        writer.StartArray();
-                        hasItem = true;
-                    }
-
-                    writer.StartArrayItem();
-                    HumanReadableSerializer.Serialize(writer, item, options);
-                    writer.EndArrayItem();
-                }
-
-                if (hasItem)
-                {
-                    writer.EndArray();
-                }
-                else
-                {
-                    writer.WriteEmptyArray();
-                }
-            }
+            EnumerableConverter<T>.WriteValueCore(writer, value.ToBlockingEnumerable(), options);
         }
     }
 }

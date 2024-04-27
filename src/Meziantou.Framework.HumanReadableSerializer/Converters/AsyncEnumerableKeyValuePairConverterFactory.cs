@@ -15,7 +15,7 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
 
     private static Type? GetValueType(Type type)
     {
-        // IEnumerable<KeyValuePair<string, T>>
+        // IAsyncEnumerable<KeyValuePair<string, T>>
         foreach (var iface in type.GetAllInterfaces())
         {
             if (!iface.IsGenericType)
@@ -44,61 +44,7 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
     {
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
-            Debug.Assert(value is not null);
-
-            var task = WriteValue(writer, value, options);
-            if (task.IsCompleted)
-            {
-                task.GetAwaiter().GetResult();
-            }
-            else
-            {
-                task.AsTask().Wait();
-            }
-
-            static async ValueTask WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>> value, HumanReadableSerializerOptions options)
-            {
-                if (options.DictionaryKeyOrder is not null)
-                {
-                    var list = await ToListAsync(value).ConfigureAwait(false);
-                    HumanReadableSerializer.Serialize(writer, list, options);
-                }
-                else
-                {
-                    var hasItem = false;
-                    await foreach (var prop in value.ConfigureAwait(false))
-                    {
-                        if (!hasItem)
-                        {
-                            writer.StartObject();
-                            hasItem = true;
-                        }
-
-                        writer.WritePropertyName(prop.Key);
-                        HumanReadableSerializer.Serialize(writer, prop.Value, options);
-                    }
-
-                    if (hasItem)
-                    {
-                        writer.EndObject();
-                    }
-                    else
-                    {
-                        writer.WriteEmptyObject();
-                    }
-                }
-            }
-
-            static async Task<List<KeyValuePair<string, T>>> ToListAsync(IAsyncEnumerable<KeyValuePair<string, T>> asyncEnumerable)
-            {
-                var result = new List<KeyValuePair<string, T>>();
-                await foreach (var item in asyncEnumerable.ConfigureAwait(false))
-                {
-                    result.Add(item);
-                }
-
-                return result;
-            }
+            EnumerableKeyValuePairConverter<T>.WriteValueCore(writer, value.ToBlockingEnumerable(), options);
         }
     }
 }

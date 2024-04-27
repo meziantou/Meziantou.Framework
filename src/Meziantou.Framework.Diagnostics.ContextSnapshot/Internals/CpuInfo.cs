@@ -10,11 +10,6 @@ internal sealed class CpuInfo
     public Frequency? MinFrequency { get; }
     public Frequency? MaxFrequency { get; }
 
-    internal CpuInfo(string? processorName, Frequency? nominalFrequency)
-        : this(processorName, physicalProcessorCount: null, physicalCoreCount: null, logicalCoreCount: null, nominalFrequency, minFrequency: null, maxFrequency: null)
-    {
-    }
-
     public CpuInfo(string? processorName,
                    int? physicalProcessorCount,
                    int? physicalCoreCount,

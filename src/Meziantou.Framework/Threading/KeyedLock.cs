@@ -3,7 +3,17 @@
 namespace Meziantou.Framework.Threading;
 public sealed class KeyedLock<TKey> where TKey : notnull
 {
-    private readonly ConcurrentDictionary<TKey, object> _locks = new();
+    private readonly ConcurrentDictionary<TKey, object> _locks;
+
+    public KeyedLock()
+        : this(comparer: null)
+    {
+    }
+
+    public KeyedLock(IEqualityComparer<TKey>? comparer)
+    {
+        _locks = new ConcurrentDictionary<TKey, object>(comparer);
+    }
 
     public IDisposable Lock(TKey key)
     {

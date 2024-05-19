@@ -10,19 +10,19 @@
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
     <PackageReference Include="Microsoft.AspNetCore.TestHost">
-      <Version>8.0.3</Version>
+      <Version>8.0.5</Version>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
     <PackageReference Include="Microsoft.AspNetCore.TestHost">
-      <Version>7.0.17</Version>
+      <Version>7.0.19</Version>
     </PackageReference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
     <PackageReference Include="Microsoft.AspNetCore.TestHost">
-      <Version>6.0.28</Version>
+      <Version>6.0.30</Version>
     </PackageReference>
   </ItemGroup>
 

@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <!-- Ensure the latest framework is a target of the project -->
-  <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
+  <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(MSBuildProjectFile) != 'packages.proj'  AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />
   </Target>
 

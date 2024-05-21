@@ -95,8 +95,8 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         var si = -1;
         for (i = 0; (i <= path1.Length) && (i < path2.Length); ++i)
         {
-            char c1 = i == path1.Length ? directorySeparator : path1[i];
-            char c2 = path2[i];
+            var c1 = i == path1.Length ? directorySeparator : path1[i];
+            var c2 = path2[i];
 
             if ((c1 != c2) && (compareCase || (char.ToUpperInvariant(c1) != char.ToUpperInvariant(c2))))
                 break;
@@ -117,7 +117,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         // Walk down several dirs
         for (; i <= path1.Length; ++i)
         {
-            char c = i == path1.Length ? directorySeparator : path1[i];
+            var c = i == path1.Length ? directorySeparator : path1[i];
             if (c == directorySeparator)
             {
                 relPath.Append("..");

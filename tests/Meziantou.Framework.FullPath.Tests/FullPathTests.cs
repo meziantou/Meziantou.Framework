@@ -281,6 +281,33 @@ public sealed class FullPathTests
         actual.Should().Be(expected);
     }
 
+    [Fact]
+    public async Task TryFindFirstAncestorOrSelf()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var fileName = Guid.NewGuid().ToString("N");
+        var filePath = tempDir.CreateEmptyFile(fileName);
+
+        Assert.False(tempDir.FullPath.TryFindFirstAncestorOrSelf(p => false, out _));
+
+        Assert.True(tempDir.FullPath.TryFindFirstAncestorOrSelf(p => File.Exists(p / fileName), out var result));
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    public async Task TryFindFirstAncestorOrSelf_Depth()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+        var fileName = Guid.NewGuid().ToString("N");
+        var filePath = tempDir.CreateEmptyFile(fileName);
+        var subDir =  tempDir.CreateDirectory("a/b/c/d/e");
+
+        Assert.False(subDir.TryFindFirstAncestorOrSelf(p => false, out _));
+
+        Assert.True(subDir.TryFindFirstAncestorOrSelf(p => File.Exists(p / fileName), out var result));
+        Assert.Equal(tempDir.FullPath, result);
+    }
+
     private static bool IsWindows()
     {
         return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);

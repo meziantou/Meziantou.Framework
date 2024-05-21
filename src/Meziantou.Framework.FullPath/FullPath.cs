@@ -266,6 +266,29 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         return Symlink.IsSymbolicLink(_value);
     }
 
+    public bool TryFindFirstAncestorOrSelf(Func<FullPath, bool> predicate, out FullPath result)
+    {
+        var current = this;
+        while (!current.IsEmpty)
+        {
+            if (predicate(current))
+            {
+                result = current;
+                return true;
+            }
+
+            current = current.Parent;
+        }
+
+        result = default;
+        return false;
+    }
+
+    public bool TryFindFirstAncestor(Func<FullPath, bool> predicate, out FullPath result)
+    {
+        return Parent.TryFindFirstAncestorOrSelf(predicate, out result);
+    }
+
     public bool TryGetSymbolicLinkTarget([NotNullWhen(true)] out FullPath? result)
     {
         return TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out result);

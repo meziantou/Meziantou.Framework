@@ -48,7 +48,7 @@ public static class ShortName
     /// <param name="shortNames">The list of existing short names.</param>
     /// <param name="maxLength">Maximum length of computed short name.</param>
     /// <param name="name">The shorten name.</param>
-    /// <returns>A string representing the short name; <c>null</c> if the short name cannot be created</returns>
+    /// <returns>A string representing the short name; <see langword="null"/> if the short name cannot be created</returns>
     public static string? Create(IEnumerable<string> shortNames, int maxLength, string name)
     {
         ArgumentNullException.ThrowIfNull(shortNames);
@@ -61,7 +61,7 @@ public static class ShortName
         }
         else
         {
-            dict = new HashSet<string>(shortNames, StringComparer.CurrentCultureIgnoreCase);
+            dict = new HashSet<string>(shortNames, StringComparer.OrdinalIgnoreCase);
         }
 
         return Create(dict, maxLength, name);

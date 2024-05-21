@@ -12,7 +12,7 @@ static partial class IOUtilities
     /// </summary>
     /// <param name="exception">The exception. May not be null.</param>
     /// <returns>
-    /// 	<c>true</c> if the specified exception is a sharing violation exception; otherwise, <c>false</c>.
+    /// <see langword="true"/> if the specified exception is a sharing violation exception; otherwise, <see langword="false"/>.
     /// </returns>
     public static bool IsSharingViolation(IOException exception)
     {

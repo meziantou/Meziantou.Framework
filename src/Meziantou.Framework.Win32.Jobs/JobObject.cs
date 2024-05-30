@@ -196,20 +196,52 @@ public sealed class JobObject : IDisposable
     }
 
     /// <summary>
+    /// Get the job's CPU rate limit enabled status and value.
+    /// </summary>
+    /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
+    public unsafe (bool, int) GetCpuRateHardCap()
+    {
+        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
+
+        if (!Windows.Win32.PInvoke.QueryInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>(), null))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+
+        var cpuRateEnabled = restriction.ControlFlags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE);
+        return (cpuRateEnabled, (int)restriction.Anonymous.CpuRate);
+    }
+
+    /// <summary>
+    /// Disables the job's CPU rate limit.
+    /// </summary>
+    public unsafe void DisableCpuRateHardCap()
+    {
+        var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
+
+        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+    }
+
+    /// <summary>
     /// Set the job's CPU rate is calculated based on its relative weight to the weight of other jobs.
     /// </summary>
-    /// <param name="weigth">
+    /// <param name="weight">
     /// Specifies the scheduling weight of the job object, which determines the share of processor time given to the job relative to other workloads on the processor.
     /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
     /// </param>
-    public unsafe void SetCpuRateWeight(int weigth)
+    public unsafe void SetCpuRateWeight(int weight)
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION
         {
             ControlFlags = JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_WEIGHT_BASED,
             Anonymous = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION._Anonymous_e__Union
             {
-                Weight = (uint)weigth,
+                Weight = (uint)weight,
             },
         };
 

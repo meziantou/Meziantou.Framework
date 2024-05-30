@@ -87,6 +87,25 @@ public class JobObjectTests
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]
+    public void CpuHardRateCap()
+    {
+        using var job = new JobObject();
+        bool enabled;
+
+        (enabled, _) = job.GetCpuRateHardCap();
+        enabled.Should().BeFalse();
+
+        job.SetCpuRateHardCap(7654);
+        (enabled, var cap) = job.GetCpuRateHardCap();
+        enabled.Should().BeTrue();
+        cap.Should().Be(7654);
+
+        job.DisableCpuRateHardCap();
+        (enabled, _) = job.GetCpuRateHardCap();
+        enabled.Should().BeFalse();
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();

@@ -90,19 +90,19 @@ public class JobObjectTests
     public void CpuHardRateCap()
     {
         using var job = new JobObject();
-        bool enabled;
+        JobObjectCpuHardCap cap;
 
-        (enabled, _) = job.GetCpuRateHardCap();
-        enabled.Should().BeFalse();
+        cap = job.GetCpuRateHardCap();
+        cap.Enabled.Should().BeFalse();
 
         job.SetCpuRateHardCap(7654);
-        (enabled, var cap) = job.GetCpuRateHardCap();
-        enabled.Should().BeTrue();
-        cap.Should().Be(7654);
+        cap = job.GetCpuRateHardCap();
+        cap.Enabled.Should().BeTrue();
+        cap.Rate.Should().Be(7654);
 
         job.DisableCpuRateHardCap();
-        (enabled, _) = job.GetCpuRateHardCap();
-        enabled.Should().BeFalse();
+        cap = job.GetCpuRateHardCap();
+        cap.Enabled.Should().BeFalse();
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]

@@ -199,7 +199,7 @@ public sealed class JobObject : IDisposable
     /// Get the job's CPU rate limit enabled status and value.
     /// </summary>
     /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
-    public unsafe (bool, int) GetCpuRateHardCap()
+    public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
 
@@ -210,7 +210,12 @@ public sealed class JobObject : IDisposable
         }
 
         var cpuRateEnabled = restriction.ControlFlags.HasFlag(JOB_OBJECT_CPU_RATE_CONTROL.JOB_OBJECT_CPU_RATE_CONTROL_ENABLE);
-        return (cpuRateEnabled, (int)restriction.Anonymous.CpuRate);
+
+        return new JobObjectCpuHardCap
+        {
+            Enabled = cpuRateEnabled,
+            Rate = (int)restriction.Anonymous.CpuRate,
+        };
     }
 
     /// <summary>

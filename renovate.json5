@@ -1,10 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "github>meziantou/renovate-config"
   ],
-  "schedule": ["before 5am on monday"],
-  "ignorePaths": [],
   "packageRules": [
     {
       "matchPackageNames": [ "Microsoft.CodeAnalysis" ],
@@ -34,10 +32,6 @@
       "matchUpdateTypes": [ "major", "minor" ], // Only allow patch updates
       "groupName": "all dependencies",
       "enabled": false
-    },
-    {
-      "matchPackagePatterns": [".*"],
-      "groupName": "all updatable dependencies"
     }
   ]
 }

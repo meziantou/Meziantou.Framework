@@ -75,9 +75,6 @@ public sealed class JobObject : IDisposable
         return new JobObject(handle);
     }
 
-    // Win32 error code
-    private const int ERROR_FILE_NOT_FOUND = 2;
-
     public static bool TryOpen(JobObjectAccessRights desiredAccess, bool inherited, string name, out JobObject jobObject)
     {
         var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
@@ -85,7 +82,7 @@ public sealed class JobObject : IDisposable
         {
             handle.Dispose();
             var lastError = Marshal.GetLastWin32Error();
-            if (lastError == ERROR_FILE_NOT_FOUND)
+            if (lastError == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_FILE_NOT_FOUND)
             {
                 jobObject = null;
                 return false;

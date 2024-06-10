@@ -75,6 +75,28 @@ public sealed class JobObject : IDisposable
         return new JobObject(handle);
     }
 
+    // Win32 error code
+    private const int ERROR_FILE_NOT_FOUND = 2;
+
+    public static bool TryOpen(JobObjectAccessRights desiredAccess, bool inherited, string name, out JobObject jobObject)
+    {
+        var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
+        if (handle.IsInvalid)
+        {
+            handle.Dispose();
+            var lastError = Marshal.GetLastWin32Error();
+            if (lastError == ERROR_FILE_NOT_FOUND)
+            {
+                jobObject = null;
+                return false;
+            }
+            throw new Win32Exception(lastError);
+        }
+
+        jobObject = new JobObject(handle);
+        return true;
+    }
+
     public void Dispose() => _jobHandle.Dispose();
 
     /// <summary>

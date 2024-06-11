@@ -87,6 +87,27 @@ public class JobObjectTests
     }
 
     [RunIfFact(FactOperatingSystem.Windows)]
+    public void TryOpen()
+    {
+        FluentActions.Invoking(() => JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests")).Should().Throw<Win32Exception>();
+
+        JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? testObject).Should().BeFalse();
+        testObject.Should().BeNull();
+        testObject?.Dispose();
+
+        using (new JobObject("JobObjectTests"))
+        {
+            JobObject job = JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests");
+            job.Should().NotBeNull();
+            job.Dispose();
+
+            JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out job).Should().BeTrue();
+            job.Should().NotBeNull();
+            job.Dispose();
+        }
+    }
+
+    [RunIfFact(FactOperatingSystem.Windows)]
     public void CpuHardRateCap()
     {
         using var job = new JobObject();

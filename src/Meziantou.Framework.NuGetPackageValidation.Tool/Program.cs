@@ -19,6 +19,7 @@ internal static partial class Program
         return MainImpl(args, console: null);
     }
 
+    [SuppressMessage("Performance", "CA1869:Cache and reuse 'JsonSerializerOptions' instances", Justification = "Used only once")]
     internal static Task<int> MainImpl(string[] args, IConsole? console)
     {
         var rootCommand = new RootCommand("Validate a NuGet package") { Name = "meziantou.validate-nuget-package" }; // Name must match <ToolCommandName> in csproj
@@ -34,7 +35,7 @@ internal static partial class Program
         rootCommand.AddOption(excludedRuleIdsOptions);
         rootCommand.AddOption(githubTokenOptions);
         rootCommand.AddOption(onlyReportErrorsOptions);
-        rootCommand.SetHandler(async context =>
+        rootCommand.SetHandler((Func<System.CommandLine.Invocation.InvocationContext, Task>)(async context =>
         {
             var paths = context.ParseResult.GetValueForArgument(pathsArgument);
             var onlyReportErrors = context.ParseResult.GetValueForOption(onlyReportErrorsOptions);
@@ -97,13 +98,21 @@ internal static partial class Program
             }
 
             var result = new Result(packageResults);
-            var json = JsonSerializer.Serialize(result, ResultContext.Default.Result);
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+#if NET8_0_OR_GREATER
+                TypeInfoResolver = ResultContext.Default,
+#endif
+            };
+            var json = JsonSerializer.Serialize(result, jsonOptions);
             context.Console.WriteLine(json);
             if (!result.IsValid)
             {
                 context.ExitCode = 1;
             }
-        });
+        }));
 
         return rootCommand.InvokeAsync(args, console);
     }

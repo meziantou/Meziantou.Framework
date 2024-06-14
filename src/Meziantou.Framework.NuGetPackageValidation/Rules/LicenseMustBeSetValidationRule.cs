@@ -23,7 +23,7 @@ internal sealed class LicenseMustBeSetValidationRule : NuGetPackageValidationRul
         }
         else
         {
-            context.ReportError(ErrorCodes.LicenseNotSet, "License if not set");
+            context.ReportError(ErrorCodes.LicenseNotSet, "License is not set");
         }
 
         return Task.CompletedTask;

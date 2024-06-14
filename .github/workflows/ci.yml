@@ -26,7 +26,7 @@ jobs:
   validate_readme:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - name: Validate Readme
@@ -37,7 +37,7 @@ jobs:
   validate_test_projects:
     runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - name: Validate
@@ -46,7 +46,7 @@ jobs:
   create_nuget:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
@@ -72,7 +72,7 @@ jobs:
     runs-on: windows-2022 # Use windows to evaluate TFMs in MSBuild
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
@@ -102,7 +102,7 @@ jobs:
         run: |
           $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - run: git config --global protocol.file.allow always
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
@@ -148,7 +148,7 @@ jobs:
         run: |
           $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - run: git config --global protocol.file.allow always
       - name: Build and Run Tests
         run: |
@@ -200,7 +200,7 @@ jobs:
         runtime: [ "win-x64", "win-x86", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
@@ -213,7 +213,7 @@ jobs:
         runtime: [ "win-x64", "win-x86" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -222,7 +222,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [build_and_test_x64, build_and_test_windows_x86]
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
       - name: Install dotnet-coverage

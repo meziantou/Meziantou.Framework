@@ -102,9 +102,7 @@ internal static partial class Program
             var jsonOptions = new JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-#if NET8_0_OR_GREATER
                 TypeInfoResolver = ResultContext.Default,
-#endif
             };
             var json = JsonSerializer.Serialize(result, jsonOptions);
             context.Console.WriteLine(json);
@@ -184,17 +182,15 @@ internal static partial class Program
         return resultValue.ToArray();
     }
 
-    private sealed class Result
+    private sealed class Result(Dictionary<string, NuGetPackageValidationResult> packages)
     {
-        public Result(Dictionary<string, NuGetPackageValidationResult> packages) => Packages = packages ?? throw new ArgumentNullException(nameof(packages));
-
         public bool IsValid => Packages.All(p => p.Value.IsValid);
 
-        public Dictionary<string, NuGetPackageValidationResult> Packages { get; }
+        public Dictionary<string, NuGetPackageValidationResult> Packages { get; } = packages ?? throw new ArgumentNullException(nameof(packages));
     }
 
     [JsonSourceGenerationOptions(
-       GenerationMode = JsonSourceGenerationMode.Serialization,
+       GenerationMode = JsonSourceGenerationMode.Serialization | JsonSourceGenerationMode.Metadata,
        WriteIndented = true,
        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
     [JsonSerializable(typeof(Result))]

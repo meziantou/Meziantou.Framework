@@ -27,7 +27,21 @@ public sealed class ObjectGraphVisitorTests
         visitor.VisitedValues.Should().Contain(new object[] { "a", "b" });
     }
 
+    [Fact]
+    public void VisitIndexer()
+    {
+        var visitor = new TestObjectGraphVisitor();
+        visitor.Visit(new Indexer());
+
+        visitor.VisitedProperties.Should().BeEmpty();
+    }
+
     private sealed record Recursive(object Value, Recursive Parent);
+
+    private sealed class Indexer
+    {
+        public int this[int index] => index;
+    }
 
     private sealed class TestObjectGraphVisitor : ObjectGraphVisitor
     {

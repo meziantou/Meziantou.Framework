@@ -26,10 +26,7 @@ public abstract class ObjectGraphVisitor
 
         VisitValue(obj);
 
-        if (obj is string) // string is IEnumerable, and we don't want to visit it
-            return;
-
-        if (obj is IEnumerable enumerable)
+        if (obj is not string and IEnumerable enumerable)
         {
             foreach (var item in enumerable)
             {
@@ -42,6 +39,9 @@ public abstract class ObjectGraphVisitor
             foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
                 if (!prop.CanRead)
+                    continue;
+
+                if(prop.GetIndexParameters().Length > 0)
                     continue;
 
                 var propValue = prop.GetValue(obj);

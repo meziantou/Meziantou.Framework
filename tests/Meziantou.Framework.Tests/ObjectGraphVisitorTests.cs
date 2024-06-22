@@ -12,7 +12,8 @@ public sealed class ObjectGraphVisitorTests
         var visitor = new TestObjectGraphVisitor();
         visitor.Visit(new { A = 0, B = new object[] { "abc", 1u } });
 
-        visitor.VisitedValues.Should().Contain(new object[] { 0, "abc", 1u });
+        visitor.VisitedValues.Should().Contain([0, "abc", 1u]);
+        visitor.VisitedProperties.Select(p => p.Name).Should().Contain(["Length"]);
     }
 
     [Fact]

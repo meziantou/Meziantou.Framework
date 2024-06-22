@@ -26,27 +26,25 @@ public abstract class ObjectGraphVisitor
 
         VisitValue(obj);
 
+        var type = obj.GetType();
+        foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+        {
+            if (!prop.CanRead)
+                continue;
+
+            if (prop.GetIndexParameters().Length > 0)
+                continue;
+
+            var propValue = prop.GetValue(obj);
+            VisitProperty(obj, prop, propValue);
+            Visit(visitedObjects, propValue);
+        }
+
         if (obj is not string and IEnumerable enumerable)
         {
             foreach (var item in enumerable)
             {
                 Visit(visitedObjects, item);
-            }
-        }
-        else
-        {
-            var type = obj.GetType();
-            foreach (var prop in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-            {
-                if (!prop.CanRead)
-                    continue;
-
-                if(prop.GetIndexParameters().Length > 0)
-                    continue;
-
-                var propValue = prop.GetValue(obj);
-                VisitProperty(obj, prop, propValue);
-                Visit(visitedObjects, propValue);
             }
         }
     }

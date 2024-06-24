@@ -127,11 +127,59 @@ public sealed class InlineSnapshotTests
             }
             """", $$""""
             Helper("{}");
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
                 {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task SupportAsyncHelperMethods()
+    {
+        await AssertSnapshot($$""""
+            await Helper("");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+            """", $$""""
+            await Helper("{}");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+            """");
+    }
+
+    [Fact]
+    public async Task SupportAsyncGenericHelperMethods()
+    {
+        await AssertSnapshot($$""""
+            await Helper<int>("");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper<T>(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
+            }
+            """", $$""""
+            await Helper<int>("{}");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static System.Threading.Tasks.Task Helper<T>(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                return System.Threading.Tasks.Task.CompletedTask;
             }
             """");
     }
@@ -155,13 +203,13 @@ public sealed class InlineSnapshotTests
             }
             """", $$""""
             Helper("{}");
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
                 Helper2(expected, filePath, lineNumber);
             }
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
@@ -364,7 +412,7 @@ public sealed class InlineSnapshotTests
               <ItemGroup>
                 {{GetPackageReferences()}}
               </ItemGroup>
-            </Project>            
+            </Project>
             """);
 
         CreateTextFile("globals.cs", """
@@ -380,7 +428,7 @@ public sealed class InlineSnapshotTests
                 public static void Initialize()
                 {
                     {{(launchDebugger ? "System.Diagnostics.Debugger.Launch();" : "")}}
-                    InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with 
+                    InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
                     {
                         {{nameof(InlineSnapshotSettings.AutoDetectContinuousEnvironment)}} = {{(autoDetectCI ? "true" : "false")}},
                         {{nameof(InlineSnapshotSettings.SnapshotUpdateStrategy)}} = {{nameof(SnapshotUpdateStrategy)}}.{{nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure)}},

@@ -83,12 +83,14 @@ internal static class FileEditor
                 span = new TextSpan(span.Start + context.ColumnNumber, 1);
             }
 
-            var nodes = root.DescendantNodesAndSelf(span)
-                .OfType<InvocationExpressionSyntax>()
-                .Where(invocation =>
+            var nodes = FindInvocations(root, span).Where(invocation =>
                 {
                     // Dummy.MethodName()
                     if (invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: string memberName } && memberName == context.MethodName)
+                        return true;
+
+                    // Dummy.MethodName<T>()
+                    if (invocation.Expression is GenericNameSyntax { Identifier.Text: string memberName2 } && memberName2 == context.MethodName)
                         return true;
 
                     // MethodName()
@@ -181,6 +183,30 @@ internal static class FileEditor
 
             fileEdits.Add(fileEdit);
             fileEdits.Sort((a, b) => a.StartLine - b.StartLine);
+        }
+    }
+
+    private static HashSet<InvocationExpressionSyntax> FindInvocations(SyntaxNode root, TextSpan span)
+    {
+        var result = new HashSet<InvocationExpressionSyntax>();
+        var nodes = root.DescendantNodesAndSelf(span);
+        foreach (var node in nodes)
+        {
+            FindInvocation(node, result);
+        }
+
+        return result;
+
+        static void FindInvocation(SyntaxNode node, HashSet<InvocationExpressionSyntax> nodes)
+        {
+            if (node is InvocationExpressionSyntax invocation)
+            {
+                nodes.Add(invocation);
+            }
+            else if (node is AwaitExpressionSyntax awaitExpression)
+            {
+                FindInvocation(awaitExpression.Expression, nodes);
+            }
         }
     }
 

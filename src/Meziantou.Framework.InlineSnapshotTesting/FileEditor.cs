@@ -212,19 +212,9 @@ internal static class FileEditor
 
     private static int GetStartPosition(InvocationExpressionSyntax invocationExpression)
     {
-        if (invocationExpression.Expression is not null)
-        {
-            var text = invocationExpression.Expression.GetText(Encoding.UTF8);
-            var lastLine = text.Lines[^1];
-            if (!lastLine.Span.IsEmpty)
-            {
-                var lineText = lastLine.ToString();
-                var count = lineText.Length - lineText.AsSpan().TrimStart().Length;
-                return count;
-            }
-        }
-
-        return invocationExpression.GetLocation().GetLineSpan().StartLinePosition.Character;
+        var line = invocationExpression.Expression.GetLocation().GetLineSpan().EndLinePosition.Line;
+        var lineText = invocationExpression.SyntaxTree.GetText().Lines[line].ToString();
+        return lineText.Length - lineText.AsSpan().TrimStart().Length;
     }
 
     private static ExpressionSyntax? FindArgumentExpression(CallerContext context, SeparatedSyntaxList<ArgumentSyntax> arguments, string? existingValue)

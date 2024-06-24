@@ -90,6 +90,34 @@ public sealed class InlineSnapshotTests
     }
 
     [Fact]
+    public async Task UpdateSnapshotUsingRawString_Indentation()
+    {
+        await AssertSnapshot($$""""
+            var data = new
+            {
+                FirstName = "Gérald",
+                LastName = "Barré",
+                NickName = "meziantou",
+            };
+            {{nameof(InlineSnapshot)}}.
+                {{nameof(InlineSnapshot.Validate)}}(data, "");
+            """", $$""""
+            var data = new
+            {
+                FirstName = "Gérald",
+                LastName = "Barré",
+                NickName = "meziantou",
+            };
+            {{nameof(InlineSnapshot)}}.
+                {{nameof(InlineSnapshot.Validate)}}(data, """
+                    FirstName: Gérald
+                    LastName: Barré
+                    NickName: meziantou
+                    """);
+            """");
+    }
+
+    [Fact]
     public async Task UpdateSnapshotUsingVerbatimWhenCSharpLanguageIs10()
     {
         await AssertSnapshot($$""""
@@ -145,16 +173,32 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static System.Threading.Tasks.Task Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
             """", $$""""
-            await Helper("{}");
+            await Helper("""
+                FirstName: Gérald
+                LastName: Barré
+                NickName: meziantou
+                """);
 
             [InlineSnapshotAssertion(nameof(expected))]
             static System.Threading.Tasks.Task Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
             """");

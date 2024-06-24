@@ -1,12 +1,17 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Globalization;
 using Meziantou.Framework.HumanReadable;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Scrubbers.HumanReadableSerializerScrubbers;
+
 internal sealed class ScrubbedGuidConverter : HumanReadableConverter<Guid>
 {
-    protected override void WriteValue(HumanReadableTextWriter writer, Guid value, HumanReadableSerializerOptions options)
+    private const string Prefix = "00000000-0000-0000-0000-";
+
+    protected override void WriteValue(HumanReadableTextWriter writer, Guid value,
+        HumanReadableSerializerOptions options)
     {
-        var dict = options.GetOrSetSerializationData(nameof(ScrubbedGuidConverter), () => new Dictionary<Guid, string>());
+        var dict = options.GetOrSetSerializationData(nameof(ScrubbedGuidConverter),
+            () => new Dictionary<Guid, string>());
         if (!dict.TryGetValue(value, out var guid))
         {
             guid = GetScrubbedValue(dict.Count + 1);
@@ -18,19 +23,13 @@ internal sealed class ScrubbedGuidConverter : HumanReadableConverter<Guid>
 
     private static string GetScrubbedValue(int index)
     {
-#if NETSTANDARD2_0 || NET472 || NET48
-        var data = new byte[16];
-        MemoryMarshal.Write(data.AsSpan(12), ref index);
-        data.AsSpan(12).Reverse();
+#if NET6_0_OR_GREATER
+        Span<char> data = stackalloc char[36];
+        Prefix.AsSpan().CopyTo(data);
+        _ = index.TryFormat(data[Prefix.Length..], out _, "000000000000", CultureInfo.InvariantCulture);
+        return data.ToString();
 #else
-        Span<byte> data = stackalloc byte[16];
-#if NET8_0_OR_GREATER
-        MemoryMarshal.Write(data.Slice(12), in index);
-#else
-        MemoryMarshal.Write(data.Slice(12), ref index);
+        return Prefix + index.ToString("000000000000", CultureInfo.InvariantCulture);
 #endif
-        data.Slice(12).Reverse();
-#endif
-        return new Guid(data).ToString();
     }
 }

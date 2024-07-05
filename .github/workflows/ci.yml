@@ -75,7 +75,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
@@ -228,7 +228,7 @@ jobs:
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
-        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
           pattern: test-results-*
           path: test-results
@@ -249,7 +249,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [ validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}

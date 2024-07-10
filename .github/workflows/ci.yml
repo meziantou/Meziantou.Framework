@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - name: Validate Readme
         run: .\eng\update-readme.ps1
       - name: Validate Tool Readme
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release /p:IsOfficialBuild=true /bl:publish-taskdialog.binlog
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release /p:IsOfficialBuild=true /bl:publish-notificationtray.binlog
@@ -74,7 +74,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4
         with:
           name: nuget
@@ -105,9 +105,9 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - run: git config --global protocol.file.allow always
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
         with:
           dotnet-version: |
             7.0.x
@@ -202,7 +202,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -215,7 +215,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
@@ -224,7 +224,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
@@ -254,7 +254,7 @@ jobs:
           name: nuget
           path: ${{ env.NuGetDirectory }}
       - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4
+        uses: actions/setup-dotnet@6bd8b7f7774af54e05809fcc5431931b3eb1ddee # v4
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

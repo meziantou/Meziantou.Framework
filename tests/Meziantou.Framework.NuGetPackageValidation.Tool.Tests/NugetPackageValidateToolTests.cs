@@ -25,6 +25,8 @@ public sealed class NugetPackageValidateToolTests
         var console = new StringBuilderConsole();
         var exitCode = await Program.MainImpl(arguments, console);
 
+        Assert.True(console.Output.Count(c => c == '\n') > 2); // Check if output is written indented
+
         ValidationResult deserializedResult = null;
         try
         {

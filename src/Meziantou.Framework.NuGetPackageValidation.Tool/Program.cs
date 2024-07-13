@@ -35,7 +35,7 @@ internal static partial class Program
         rootCommand.AddOption(excludedRuleIdsOptions);
         rootCommand.AddOption(githubTokenOptions);
         rootCommand.AddOption(onlyReportErrorsOptions);
-        rootCommand.SetHandler((Func<System.CommandLine.Invocation.InvocationContext, Task>)(async context =>
+        rootCommand.SetHandler(async context =>
         {
             var paths = context.ParseResult.GetValueForArgument(pathsArgument);
             var onlyReportErrors = context.ParseResult.GetValueForOption(onlyReportErrorsOptions);
@@ -103,6 +103,7 @@ internal static partial class Program
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 TypeInfoResolver = ResultContext.Default,
+                WriteIndented = true,
             };
             var json = JsonSerializer.Serialize(result, jsonOptions);
             context.Console.WriteLine(json);
@@ -110,7 +111,7 @@ internal static partial class Program
             {
                 context.ExitCode = 1;
             }
-        }));
+        });
 
         return rootCommand.InvokeAsync(args, console);
     }

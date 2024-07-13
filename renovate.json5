@@ -32,6 +32,11 @@
       "matchUpdateTypes": [ "major", "minor" ], // Only allow patch updates
       "groupName": "all dependencies",
       "enabled": false
+    },
+    {
+      "matchPackageNames": [ "Microsoft.Windows.CsWin32" ],
+      "groupName": "cswin32",
+      "enabled": true
     }
   ]
 }

@@ -39,6 +39,7 @@ public sealed partial class StronglyTypedIdTests
             { typeof(IdSByte), "FromSByte", (sbyte)42 },
             { typeof(IdSingle), "FromSingle", 42f },
             { typeof(IdString), "FromString", "test" },
+            { typeof(IdStringOrdinalIgnoreCase), "FromString", "test" },
             { typeof(IdUInt16), "FromUInt16", (ushort) 42 },
             { typeof(IdUInt32), "FromUInt32", (uint) 42 },
             { typeof(IdUInt64), "FromUInt64", (ulong) 42 },
@@ -402,6 +403,28 @@ public sealed partial class StronglyTypedIdTests
     }
 
     [Fact]
+    public void StringComparison_Equality()
+    {
+        Assert.Equal(IdString.FromString("test"), IdString.FromString("test"));
+        Assert.Equal(IdString.FromString("test").GetHashCode(), IdString.FromString("test").GetHashCode());
+        Assert.NotEqual(IdString.FromString("test"), IdString.FromString("TEST"));
+
+        Assert.Equal(IdStringOrdinalIgnoreCase.FromString("test"), IdStringOrdinalIgnoreCase.FromString("test"));
+        Assert.Equal(IdStringOrdinalIgnoreCase.FromString("test").GetHashCode(), IdStringOrdinalIgnoreCase.FromString("test").GetHashCode());
+        Assert.True(IdStringOrdinalIgnoreCase.FromString("test") == IdStringOrdinalIgnoreCase.FromString("TEST"));
+        Assert.Equal(IdStringOrdinalIgnoreCase.FromString("test"), IdStringOrdinalIgnoreCase.FromString("TEST"));
+        Assert.Equal(IdStringOrdinalIgnoreCase.FromString("test").GetHashCode(), IdStringOrdinalIgnoreCase.FromString("TEST").GetHashCode());
+    }
+
+    [Fact]
+    public void ToStringRaw()
+    {
+        Assert.Equal("IdString { Value = test }", IdString.FromString("test").ToString());
+        Assert.Equal("test", IdString_RawToString.FromString("test").ToString());
+        Assert.Equal("", IdString_RawToString.FromString(null).ToString());
+    }
+
+    [Fact]
     public void Bson_Guid_Class_Null()
     {
         IdClassGuid instance = null;
@@ -485,6 +508,12 @@ public sealed partial class StronglyTypedIdTests
 
     [StronglyTypedId(typeof(string))]
     private partial struct IdString { }
+
+    [StronglyTypedId(typeof(string), GenerateToStringAsRecord = false)]
+    private partial struct IdString_RawToString { }
+
+    [StronglyTypedId(typeof(string), StringComparison = StringComparison.OrdinalIgnoreCase)]
+    private partial struct IdStringOrdinalIgnoreCase { }
 
     [StronglyTypedId(typeof(ushort))]
     private partial struct IdUInt16 { }

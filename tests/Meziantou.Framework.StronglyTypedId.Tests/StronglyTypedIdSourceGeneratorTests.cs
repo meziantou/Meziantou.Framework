@@ -35,20 +35,24 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         }
 
         MetadataReference[] references =
-            [
-                MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
-                .. dlls.Select(loc => MetadataReference.CreateFromFile(loc)),
-            ];
+        [
+            MetadataReference.CreateFromFile(typeof(StronglyTypedIdAttribute).Assembly.Location),
+            .. dlls.Select(loc => MetadataReference.CreateFromFile(loc)),
+        ];
 
         return CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText(sourceText) },
+            [CSharpSyntaxTree.ParseText(sourceText)],
             references,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, warningLevel: 9999, generalDiagnosticOption: ReportDiagnostic.Error, nullableContextOptions: NullableContextOptions.Enable));
+            new CSharpCompilationOptions(
+                OutputKind.DynamicallyLinkedLibrary,
+                warningLevel: 9999,
+                generalDiagnosticOption: ReportDiagnostic.Error,
+                nullableContextOptions: NullableContextOptions.Enable));
     }
 
     private static ISourceGenerator InstantiateGenerator() => new StronglyTypedIdSourceGenerator().AsSourceGenerator();
 
-    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string sourceText, bool mustCompile = true)
+    private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly, byte[] Symbols)> GenerateFiles(string sourceText, bool mustCompile = true)
     {
         var compilation = await CreateCompilation(sourceText,
         [
@@ -64,18 +68,21 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 
         var runResult = driver.GetRunResult();
 
+        var sources = outputCompilation.SyntaxTrees.Where(tree => !string.IsNullOrEmpty(tree.FilePath)).Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText())).ToArray();
+
         // Validate the output project compiles
-        using var ms = new MemoryStream();
-        var result = outputCompilation.Emit(ms);
+        using var outputStream = new MemoryStream();
+        using var pdbStream = new MemoryStream();
+        var result = outputCompilation.Emit(outputStream, pdbStream, embeddedTexts: sources);
         if (mustCompile)
         {
             var diags = string.Join('\n', result.Diagnostics);
-            var generated = runResult.GeneratedTrees.Length > 1 ? (await runResult.GeneratedTrees[1].GetRootAsync()).ToFullString() : "<no file generated>";
+            var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
             result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
             result.Diagnostics.Should().BeEmpty();
         }
 
-        return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
+        return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
     }
 
     [Fact]
@@ -290,6 +297,38 @@ public partial struct Test : System.IEquatable<Test>
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         result.Assembly.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Generate_StringComparison()
+    {
+        var sourceCode = @"
+[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string), StringComparison = System.StringComparison.OrdinalIgnoreCase)]
+public partial struct Test {}
+";
+        var result = await GenerateFiles(sourceCode);
+
+        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
+            foreach (var a in alc.Assemblies)
+            {
+                var type = a.GetType("Test");
+                var from = (MethodInfo)type.GetMember("FromString").Single();
+                var instance1 = from.Invoke(null, ["test"]);
+                var instance2 = from.Invoke(null, ["TEST"]);
+
+                instance1.Should().Be(instance2);
+            }
+        }
+        finally
+        {
+            alc.Unload();
+        }
     }
 
     [Fact]

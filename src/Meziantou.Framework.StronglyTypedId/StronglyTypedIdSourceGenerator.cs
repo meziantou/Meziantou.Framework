@@ -130,20 +130,51 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                     addCodeGeneratedAttribute = addCodeGeneratedAttributeValue;
                 }
 
+                T GetNamedProperty<T>(string name, T defaultValue)
+                {
+                    foreach (var arg in attribute.NamedArguments)
+                    {
+                        if (arg.Key == name)
+                        {
+                            if (arg.Value.Value is T result)
+                                return result;
+
+                            if (typeof(T).IsEnum && arg.Value.Value is int i && Enum.IsDefined(typeof(T), i))
+                                return (T)Enum.ToObject(typeof(T), i);
+
+                            break;
+                        }
+                    }
+
+                    return defaultValue;
+                }
+
+                var stringComparison = GetNamedProperty("StringComparison", defaultValue: StringComparison.Ordinal);
+                var generateToStringAsRecord = GetNamedProperty("GenerateToStringAsRecord", defaultValue: true);
+
                 var attributeSyntax = attribute.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
                 var idType = GetIdType(semanticModel.Compilation, type);
 
-                if (idType == IdType.Unknown)
+                if (idType is IdType.Unknown)
                 {
                     return new DiagnosticInfo()
                     {
                         Descriptor = UnsupportedType,
                         Location = attributeSyntax.GetLocation(),
-                        MessageArgs = new[] { type.ToDisplayString() },
+                        MessageArgs = [type.ToDisplayString()],
                     };
                 }
 
-                return new AttributeInfo(semanticModel.Compilation, attributeSyntax, (INamedTypeSymbol)ctx.TargetSymbol, idType, type, converters, addCodeGeneratedAttribute);
+                return new AttributeInfo(
+                    semanticModel.Compilation,
+                    attributeSyntax,
+                    (INamedTypeSymbol)ctx.TargetSymbol,
+                    idType,
+                    type,
+                    converters,
+                    addCodeGeneratedAttribute,
+                    stringComparison,
+                    generateToStringAsRecord);
             }
 
             return null;
@@ -165,6 +196,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         // Write debug info
         writer.WriteLine("// Id Type: " + attribute.IdType);
         writer.WriteLine("// TypeName: " + attribute.TypeName);
+
+        if (attribute.IdType is IdType.System_String)
+        {
+            writer.WriteLine("// StringComparison: " + attribute.StringComparison);
+        }
 
         writer.WriteLine("#nullable enable");
 
@@ -355,7 +391,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     private sealed class AttributeInfo : IEquatable<AttributeInfo>
     {
-        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute)
+        public AttributeInfo(Compilation compilation, SyntaxNode attributeSyntax, INamedTypeSymbol typeSymbol, IdType idType, ITypeSymbol idTypeSymbol, StronglyTypedIdConverters converters, bool addCodeGeneratedAttribute, StringComparison stringComparison, bool generateToStringAsRecord)
         {
             Debug.Assert(idType != IdType.Unknown);
 
@@ -363,6 +399,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             IdType = idType;
             Converters = converters;
             AddCodeGeneratedAttribute = addCodeGeneratedAttribute;
+            StringComparison = stringComparison;
+            GenerateToStringAsRecord = generateToStringAsRecord;
             TypeName = typeSymbol.Name;
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
@@ -538,6 +576,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public IdType IdType { get; }
         public StronglyTypedIdConverters Converters { get; }
         public bool AddCodeGeneratedAttribute { get; }
+        public StringComparison StringComparison { get; }
+        public bool GenerateToStringAsRecord { get; }
 
         // Computed info
         public string TypeName { get; }
@@ -603,6 +643,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && PartialTypeContext == other.PartialTypeContext
                 && IdType == other.IdType
                 && TypeName == other.TypeName
+                && StringComparison == other.StringComparison
+                && GenerateToStringAsRecord == other.GenerateToStringAsRecord
                 && Converters == other.Converters
                 && AddCodeGeneratedAttribute == other.AddCodeGeneratedAttribute
                 && IsSealed == other.IsSealed
@@ -650,6 +692,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hash = (hash * 397) ^ IdType.GetHashCode();
             hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(TypeName);
             hash = (hash * 397) ^ Converters.GetHashCode();
+            hash = (hash * 397) ^ StringComparison.GetHashCode();
+            hash = (hash * 397) ^ GenerateToStringAsRecord.GetHashCode();
             hash = (hash * 397) ^ AddCodeGeneratedAttribute.GetHashCode();
             hash = (hash * 397) ^ IsSealed.GetHashCode();
             hash = (hash * 397) ^ IsCtorDefined.GetHashCode();

@@ -89,20 +89,27 @@ public partial class StronglyTypedIdSourceGenerator
             WriteNewMember(InheritDocComment);
             using (writer.BeginBlock("public override string ToString()"))
             {
-                if (context.IsValueTypeNullable)
+                if (context.GenerateToStringAsRecord)
                 {
-                    using (writer.BeginBlock($"if ({PropertyName} == null)"))
+                    if (context.IsValueTypeNullable)
                     {
-                        writer.WriteLine($$"""return "{{context.TypeName}} { Value = <null> }";""");
+                        using (writer.BeginBlock($"if ({PropertyName} == null)"))
+                        {
+                            writer.WriteLine($$"""return "{{context.TypeName}} { Value = <null> }";""");
+                        }
+                        using (writer.BeginBlock("else"))
+                        {
+                            writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                        }
                     }
-                    using (writer.BeginBlock("else"))
+                    else
                     {
                         writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
                     }
                 }
                 else
                 {
-                    writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                    writer.WriteLine($"return {PropertyAsStringName} ?? \"\";");
                 }
             }
         }
@@ -120,7 +127,11 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsGetHashcodeDefined)
         {
             WriteNewMember(InheritDocComment);
-            if (context.IsValueTypeNullable)
+            if (context.StringComparison != StringComparison.Ordinal && context.IdType == IdType.System_String)
+            {
+                writer.WriteLine($"public override int GetHashCode() => {PropertyName} == null ? 0 : {GetStringComparer(context.StringComparison)}.GetHashCode({PropertyName});");
+            }
+            else if (context.IsValueTypeNullable)
             {
                 writer.WriteLine($"public override int GetHashCode() => {PropertyName} == null ? 0 : {PropertyName}.GetHashCode();");
             }
@@ -134,7 +145,18 @@ public partial class StronglyTypedIdSourceGenerator
         if (!context.IsIEquatableEqualsDefined)
         {
             WriteNewMember(InheritDocComment);
-            if (context.IsReferenceType)
+            if (context is { StringComparison: not StringComparison.Ordinal, IdType: IdType.System_String })
+            {
+                if (context.IsReferenceType)
+                {
+                    writer.WriteLine($"public bool Equals({context.TypeName}? other) => other != null && {GetStringComparer(context.StringComparison)}.Equals({PropertyName}, other.{PropertyName});");
+                }
+                else
+                {
+                    writer.WriteLine($"public bool Equals({context.TypeName} other) => {GetStringComparer(context.StringComparison)}.Equals({PropertyName}, other.{PropertyName});");
+                }
+            }
+            else if (context.IsReferenceType)
             {
                 writer.WriteLine($"public bool Equals({context.TypeName}? other) => other != null && {PropertyName} == other.{PropertyName};");
             }
@@ -459,6 +481,21 @@ public partial class StronglyTypedIdSourceGenerator
                     }
                 }
             }
+        }
+
+        [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
+        static string GetStringComparer(StringComparison stringComparison)
+        {
+            return stringComparison switch
+            {
+                StringComparison.CurrentCulture => "global::System.StringComparer.CurrentCulture",
+                StringComparison.CurrentCultureIgnoreCase => "global::System.StringComparer.CurrentCultureIgnoreCase",
+                StringComparison.InvariantCulture => "global::System.StringComparer.InvariantCulture",
+                StringComparison.InvariantCultureIgnoreCase => "global::System.StringComparer.InvariantCultureIgnoreCase",
+                StringComparison.Ordinal => "global::System.StringComparer.Ordinal",
+                StringComparison.OrdinalIgnoreCase => "global::System.StringComparer.OrdinalIgnoreCase",
+                _ => throw new ArgumentOutOfRangeException(nameof(stringComparison)),
+            };
         }
     }
 }

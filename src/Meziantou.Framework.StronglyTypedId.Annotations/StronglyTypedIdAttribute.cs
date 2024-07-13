@@ -34,6 +34,8 @@ public sealed class StronglyTypedIdAttribute : System.Attribute
     public bool GenerateSystemComponentModelTypeConverter { get; }
     public bool GenerateMongoDBBsonSerialization { get; }
     public bool AddCodeGeneratedAttribute { get; }
+    public StringComparison StringComparison { get; set; }
+    public bool GenerateToStringAsRecord { get; set; }
 }
 
 #if NET7_0_OR_GREATER
@@ -70,5 +72,7 @@ public sealed class StronglyTypedIdAttribute<T> : System.Attribute
     public bool GenerateSystemComponentModelTypeConverter { get; }
     public bool GenerateMongoDBBsonSerialization { get; }
     public bool AddCodeGeneratedAttribute { get; }
+    public StringComparison StringComparison { get; set; }
+    public bool GenerateToStringAsRecord { get; set; }
 }
 #endif

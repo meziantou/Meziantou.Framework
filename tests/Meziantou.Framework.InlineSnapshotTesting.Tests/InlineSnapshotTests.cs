@@ -243,7 +243,7 @@ public sealed class InlineSnapshotTests
                 };
                 {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
             }
-            """", launchDebugger: true);
+            """");
     }
 
     [Fact]

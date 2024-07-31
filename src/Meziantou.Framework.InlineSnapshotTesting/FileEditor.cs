@@ -83,7 +83,12 @@ internal static class FileEditor
                 span = new TextSpan(span.Start + context.ColumnNumber, 1);
             }
 
-            var nodes = FindInvocations(root, span).Where(invocation =>
+            // It can be hard to find the method name from the call stack (compiler state machine from async/await, iterators, async iterators, etc.)
+            // If there is only one invocation, let's use it
+            var nodes = FindInvocations(root, span).ToArray();
+            if (nodes.Length > 1)
+            {
+                nodes = FindInvocations(root, span).Where(invocation =>
                 {
                     // Dummy.MethodName()
                     if (invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: string memberName } && memberName == context.MethodName)
@@ -100,6 +105,7 @@ internal static class FileEditor
                     return false;
                 })
                 .ToArray();
+            }
 
             if (nodes.Length == 0)
                 throw new InlineSnapshotException("Cannot find the SyntaxNode to update");

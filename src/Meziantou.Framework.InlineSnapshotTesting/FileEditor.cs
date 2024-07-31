@@ -88,7 +88,7 @@ internal static class FileEditor
             var nodes = FindInvocations(root, span).ToArray();
             if (nodes.Length > 1)
             {
-                var nodes = FindInvocations(root, span).Where(invocation =>
+                nodes = FindInvocations(root, span).Where(invocation =>
                 {
                     // Dummy.MethodName()
                     if (invocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.Text: string memberName } && memberName == context.MethodName)

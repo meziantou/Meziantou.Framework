@@ -35,15 +35,17 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             if (frame is null)
                 continue;
 
-            var methodInfo = frame.GetMethod();
-            if (methodInfo == null)
+            var method = frame.GetMethod();
+            if (method == null)
                 continue;
 
-            var attribute = methodInfo.GetCustomAttribute<InlineSnapshotAssertionAttribute>();
+            method = GetActualMethod(method);
+
+            var attribute = method.GetCustomAttribute<InlineSnapshotAssertionAttribute>();
             if (attribute is null)
                 continue;
 
-            methodName = methodInfo.Name;
+            methodName = method.Name;
             if (ParseLocalFunctionName(methodName, out var localFunctionName))
             {
                 methodName = localFunctionName;
@@ -52,7 +54,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
             parameterName = attribute.ParameterName;
             if (parameterName is not null)
             {
-                var parameters = methodInfo.GetParameters();
+                var parameters = method.GetParameters();
                 for (var j = 0; j < parameterName.Length; j++)
                 {
                     if (parameters[j].Name == parameterName)
@@ -177,6 +179,53 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
         }
 
         return formats;
+    }
+
+    private static MethodBase GetActualMethod(MethodBase method)
+    {
+        if (method.DeclaringType.IsAssignableTo(typeof(IAsyncStateMachine)))
+        {
+            var parentType = method.DeclaringType.DeclaringType;
+            if (parentType is not null)
+            {
+                static MethodInfo[] GetDeclaredMethods(Type type) => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                var methods = GetDeclaredMethods(parentType);
+                if (methods is not null)
+                {
+                    foreach (var candidateMethod in methods)
+                    {
+                        var attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
+                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse - Taken from CoreFX
+                        if (attributes is null)
+                        {
+                            continue;
+                        }
+
+                        bool foundAttribute = false, foundIteratorAttribute = false;
+                        foreach (var asma in attributes)
+                        {
+                            if (asma.StateMachineType == method.DeclaringType)
+                            {
+                                foundAttribute = true;
+                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute
+                                    || typeof(System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute) != null
+                                    && typeof(System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma);
+                            }
+                        }
+
+                        if (foundAttribute)
+                        {
+                            // If this is an iterator (sync or async), mark the iterator as changed, so it gets the + annotation
+                            // of the original method. Non-iterator async state machines resolve directly to their builder methods
+                            // so aren't marked as changed.
+                            return candidateMethod;
+                        }
+                    }
+                }
+            }
+        }
+
+        return method;
     }
 
     private static Version? GetCSharpLanguageVersionFromAssemblyLocation(string assemblyLocation)

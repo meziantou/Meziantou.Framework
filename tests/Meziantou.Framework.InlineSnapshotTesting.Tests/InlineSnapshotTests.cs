@@ -247,6 +247,128 @@ public sealed class InlineSnapshotTests
     }
 
     [Fact]
+    public async Task SupportAsyncHelperMethods_WithAsyncCodeAndMultipleInvocation()
+    {
+        await AssertSnapshot(
+            $$""""
+            await Helper("", GetValue());
+
+            string GetValue() => "";
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper(string expected, string dummy, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+            """",
+            $$""""
+            await Helper("""
+                FirstName: Gérald
+                LastName: Barré
+                NickName: meziantou
+                """, GetValue());
+            
+            string GetValue() => "";
+            
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper(string expected, string dummy, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+            """");
+    }
+    
+    [Fact]
+    public async Task SupportMultipleAsyncHelperMethods_WithAsyncCode()
+    {
+        await AssertSnapshot(
+            $$""""
+            await Helper1("");
+
+            await Helper2("");
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper1(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+            """",
+            $$""""
+            await Helper1("""
+                FirstName: Gérald
+                LastName: Barré
+                NickName: meziantou
+                """);
+
+            await Helper2("""
+                FirstName: Gérald
+                LastName: Barré
+                NickName: meziantou
+                """);
+            
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper1(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+            
+            [InlineSnapshotAssertion(nameof(expected))]
+            static async System.Threading.Tasks.Task Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+            {
+                await System.Threading.Tasks.Task.Yield();
+                var data = new
+                {
+                    FirstName = "Gérald",
+                    LastName = "Barré",
+                    NickName = "meziantou",
+                };
+                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+            }
+            """");
+    }
+
+    [Fact]
     public async Task SupportAsyncGenericHelperMethods()
     {
         await AssertSnapshot($$""""

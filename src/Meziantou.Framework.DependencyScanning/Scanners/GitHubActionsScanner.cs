@@ -60,14 +60,14 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                         var index = value.AsSpan()[DockerPrefix.Length..].LastIndexOf(':');
                                         if (index > 0)
                                         {
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length, index);
-                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length + index + 1, value.Length - DockerPrefix.Length - index - 1);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column + DockerPrefix.Length, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column + DockerPrefix.Length + index + 1, value.Length - DockerPrefix.Length - index - 1);
                                             context.ReportDependency(new Dependency(value[DockerPrefix.Length..(DockerPrefix.Length + index)], value[(DockerPrefix.Length + index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
                                         }
                                         else
                                         {
                                             // no version
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + DockerPrefix.Length, value.Length - DockerPrefix.Length);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column + DockerPrefix.Length, value.Length - DockerPrefix.Length);
                                             context.ReportDependency(new Dependency(value[DockerPrefix.Length..], version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
 
                                         }
@@ -78,13 +78,13 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                         var index = value.IndexOf('@', StringComparison.Ordinal);
                                         if (index > 0)
                                         {
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column, index);
-                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column + index + 1, value.Length - index - 1);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column + index + 1, value.Length - index - 1);
                                             context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.GitHubActions, nameLocation, versionLocation));
                                         }
                                         else if (!value.StartsWith("./", StringComparison.Ordinal))
                                         {
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, usesValue.Start.Line, usesValue.Start.Column, value.Length);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)usesValue.Start.Line, (int)usesValue.Start.Column, value.Length);
                                             context.ReportDependency(new Dependency(value, version: null, DependencyType.GitHubActions, nameLocation, versionLocation: null));
                                         }
                                     }
@@ -102,13 +102,13 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 var index = value.LastIndexOf(':');
                                 if (index > 0)
                                 {
-                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, index);
-                                    var versionLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
+                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column, index);
+                                    var versionLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column + index + 1, value.Length - index - 1);
                                     context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
                                 }
                                 else
                                 {
-                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, value.Length);
+                                    var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column, value.Length);
                                     context.ReportDependency(new Dependency(value, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
                                 }
                             }
@@ -128,13 +128,13 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                         var index = value.LastIndexOf(':');
                                         if (index > 0)
                                         {
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, index);
-                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column + index + 1, value.Length - index - 1);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column, index);
+                                            var versionLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column + index + 1, value.Length - index - 1);
                                             context.ReportDependency(new Dependency(value[0..index], value[(index + 1)..], DependencyType.DockerImage, nameLocation, versionLocation));
                                         }
                                         else
                                         {
-                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, image.Start.Line, image.Start.Column, value.Length);
+                                            var nameLocation = new TextLocation(context.FileSystem, context.FullPath, (int)image.Start.Line, (int)image.Start.Column, value.Length);
                                             context.ReportDependency(new Dependency(value, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
                                         }
                                     }

@@ -35,7 +35,7 @@ jobs:
         run: .\eng\update-tool-readme.ps1
 
   validate_test_projects:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)

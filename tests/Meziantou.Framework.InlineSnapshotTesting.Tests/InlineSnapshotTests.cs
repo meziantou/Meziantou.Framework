@@ -8,32 +8,29 @@ using Xunit.Abstractions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
-public sealed class InlineSnapshotTests
+public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public InlineSnapshotTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
-
     [Fact]
     public async Task UpdateSnapshotUsingQuotedString()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "");
-            """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
+        await AssertSnapshot(
+            """
+            InlineSnapshot.Validate(new object(), "");
+            """,
+            """
+            InlineSnapshot.Validate(new object(), "{}");
             """);
     }
 
     [Fact]
     public async Task UpdateSnapshotPreserveComments()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "" /* after */);
-            """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "{}" /* after */);
+        await AssertSnapshot(
+            """
+            InlineSnapshot.Validate(new object(), /*start*/expected: /* middle */ "" /* after */);
+            """,
+            """
+            InlineSnapshot.Validate(new object(), /*start*/expected: /* middle */ "{}" /* after */);
             """);
     }
 
@@ -41,14 +38,14 @@ public sealed class InlineSnapshotTests
     public async Task UpdateSnapshotSupportIfDirective()
     {
         await AssertSnapshot(preprocessorSymbols: ["SampleDirective"],
-            source: $$"""
+            source: """
             #if SampleDirective
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "" /* after */);
+            InlineSnapshot.Validate(new object(), /*start*/expected: /* middle */ "" /* after */);
             #endif
             """,
-            expected: $$"""
+            expected: """
             #if SampleDirective
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), /*start*/expected: /* middle */ "{}" /* after */);
+            InlineSnapshot.Validate(new object(), /*start*/expected: /* middle */ "{}" /* after */);
             #endif
             """);
     }
@@ -56,32 +53,36 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshotWhenExpectedIsNull()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected: null);
-            """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected: "{}");
+        await AssertSnapshot(
+            """
+            InlineSnapshot.Validate(new object(), expected: null);
+            """,
+            """
+            InlineSnapshot.Validate(new object(), expected: "{}");
             """);
     }
 
     [Fact]
     public async Task UpdateSnapshotUsingRawString()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, "");
-            """", $$""""
+            InlineSnapshot.Validate(data, "");
+            """",
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, """
+            InlineSnapshot.Validate(data, """
                 FirstName: Gérald
                 LastName: Barré
                 NickName: meziantou
@@ -92,24 +93,26 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshotUsingRawString_Indentation()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.
-                {{nameof(InlineSnapshot.Validate)}}(data, "");
-            """", $$""""
+            InlineSnapshot.
+                Validate(data, "");
+            """",
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.
-                {{nameof(InlineSnapshot.Validate)}}(data, """
+            InlineSnapshot.
+                Validate(data, """
                     FirstName: Gérald
                     LastName: Barré
                     NickName: meziantou
@@ -120,22 +123,24 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshotUsingVerbatimWhenCSharpLanguageIs10()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, "");
-            """", $$""""
+            InlineSnapshot.Validate(data, "");
+            """",
+            """"
             var data = new
             {
                 FirstName = "Gérald",
                 LastName = "Barré",
                 NickName = "meziantou",
             };
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, @"FirstName: Gérald
+            InlineSnapshot.Validate(data, @"FirstName: Gérald
             LastName: Barré
             NickName: meziantou");
             """",
@@ -145,21 +150,23 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task SupportHelperMethods()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             Helper("");
 
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
             }
-            """", $$""""
+            """",
+            """"
             Helper("{}");
 
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
             }
             """");
     }
@@ -167,7 +174,8 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task SupportAsyncHelperMethods()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             await Helper("");
 
             [InlineSnapshotAssertion(nameof(expected))]
@@ -179,10 +187,11 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
-            """", $$""""
+            """",
+            """"
             await Helper("""
                 FirstName: Gérald
                 LastName: Barré
@@ -198,7 +207,7 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
             """");
@@ -208,7 +217,7 @@ public sealed class InlineSnapshotTests
     public async Task SupportAsyncHelperMethods_WithAsyncCode()
     {
         await AssertSnapshot(
-            $$""""
+            """"
             await Helper("");
 
             [InlineSnapshotAssertion(nameof(expected))]
@@ -221,10 +230,10 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """",
-            $$""""
+            """"
             await Helper("""
                 FirstName: Gérald
                 LastName: Barré
@@ -241,7 +250,7 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """");
     }
@@ -250,7 +259,7 @@ public sealed class InlineSnapshotTests
     public async Task SupportAsyncHelperMethods_WithAsyncCodeAndMultipleInvocation()
     {
         await AssertSnapshot(
-            $$""""
+            """"
             await Helper("", GetValue());
 
             string GetValue() => "";
@@ -265,10 +274,10 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """",
-            $$""""
+            """"
             await Helper("""
                 FirstName: Gérald
                 LastName: Barré
@@ -287,16 +296,16 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """");
     }
-    
+
     [Fact]
     public async Task SupportMultipleAsyncHelperMethods_WithAsyncCode()
     {
         await AssertSnapshot(
-            $$""""
+            """"
             await Helper1("");
 
             await Helper2("");
@@ -311,7 +320,7 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
 
             [InlineSnapshotAssertion(nameof(expected))]
@@ -324,10 +333,10 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """",
-            $$""""
+            """"
             await Helper1("""
                 FirstName: Gérald
                 LastName: Barré
@@ -350,7 +359,7 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             
             [InlineSnapshotAssertion(nameof(expected))]
@@ -363,7 +372,7 @@ public sealed class InlineSnapshotTests
                     LastName = "Barré",
                     NickName = "meziantou",
                 };
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(data, expected, filePath, lineNumber);
+                InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
             """");
     }
@@ -371,22 +380,24 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task SupportAsyncGenericHelperMethods()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             await Helper<int>("");
 
             [InlineSnapshotAssertion(nameof(expected))]
             static System.Threading.Tasks.Task Helper<T>(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
-            """", $$""""
+            """",
+            """"
             await Helper<int>("{}");
 
             [InlineSnapshotAssertion(nameof(expected))]
             static System.Threading.Tasks.Task Helper<T>(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
                 return System.Threading.Tasks.Task.CompletedTask;
             }
             """");
@@ -395,7 +406,8 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task SupportMultiLevelsHelperMethods()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             Helper("");
 
             [InlineSnapshotAssertion(nameof(expected))]
@@ -407,9 +419,10 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
             }
-            """", $$""""
+            """",
+            """"
             Helper("{}");
 
             [InlineSnapshotAssertion(nameof(expected))]
@@ -421,7 +434,7 @@ public sealed class InlineSnapshotTests
             [InlineSnapshotAssertion(nameof(expected))]
             static void Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
-                {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), expected, filePath, lineNumber);
+                InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
             }
             """");
     }
@@ -429,19 +442,45 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateMultipleSnapshots()
     {
-        await AssertSnapshot($$""""
+        await AssertSnapshot(
+            """"
             Console.WriteLine("first");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 1, B = 2 }, "");
+            InlineSnapshot.Validate(new { A = 1, B = 2 }, "");
             Console.WriteLine("Second");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 3, B = 4 }, "");
-            """", $$""""
+            InlineSnapshot.Validate(new { A = 3, B = 4 }, "");
+            """",
+            """"
             Console.WriteLine("first");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 1, B = 2 }, """
+            InlineSnapshot.Validate(new { A = 1, B = 2 }, """
                 A: 1
                 B: 2
                 """);
             Console.WriteLine("Second");
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new { A = 3, B = 4 }, """
+            InlineSnapshot.Validate(new { A = 3, B = 4 }, """
+                A: 3
+                B: 4
+                """);
+            """");
+    }
+    
+    [Fact]
+    public async Task UpdateMultipleSnapshots_NonLinearOrder()
+    {
+        await AssertSnapshot(
+            """"
+            B(); A();
+
+            void A() => InlineSnapshot.Validate(new { A = 1, B = 2 }, "");
+            void B() => InlineSnapshot.Validate(new { A = 3, B = 4 }, "");
+            """",
+            """"
+            B(); A();
+
+            void A() => InlineSnapshot.Validate(new { A = 1, B = 2 }, """
+                A: 1
+                B: 2
+                """);
+            void B() => InlineSnapshot.Validate(new { A = 3, B = 4 }, """
                 A: 3
                 B: 4
                 """);
@@ -451,20 +490,23 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshotWhenForceUpdateSnapshotsIsEnabled()
     {
-        await AssertSnapshot(forceUpdateSnapshots: true, source: $$""""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), """
+        await AssertSnapshot(forceUpdateSnapshots: true,
+            source: """"
+            InlineSnapshot.Validate(new object(), """
                 {}
                 """);
-            """", expected: $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "{}");
+            """",
+            expected: """
+            InlineSnapshot.Validate(new object(), "{}");
             """);
     }
 
     [Fact]
     public async Task DoNotUpdateSnapshotWhenForceUpdateSnapshotsIsDisableAndTheValueIsOk()
     {
-        await AssertSnapshot(forceUpdateSnapshots: false, source: $$""""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), """
+        await AssertSnapshot(forceUpdateSnapshots: false,
+            source: """"
+            InlineSnapshot.Validate(new object(), """
                 {}
                 """);
             """");
@@ -473,34 +515,40 @@ public sealed class InlineSnapshotTests
     [Fact]
     public async Task UpdateSnapshot_AddParameter()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}("");
-            """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}("", "");
+        await AssertSnapshot(
+            """
+            InlineSnapshot.Validate("");
+            """,
+            """
+            InlineSnapshot.Validate("", "");
             """, launchDebugger: false);
     }
 
     [Fact]
     public async Task UpdateSnapshot_MultiLine_AddParameter()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}
-                .{{nameof(InlineSnapshot.Validate)}}("");
-            """, $$"""
-            {{nameof(InlineSnapshot)}}
-                .{{nameof(InlineSnapshot.Validate)}}("", "");
+        await AssertSnapshot(
+            """
+            InlineSnapshot
+                .Validate("");
+            """,
+            """
+            InlineSnapshot
+                .Validate("", "");
             """);
     }
 
     [Fact]
     public async Task UpdateSnapshot_Builder_MultiLine_AddParameter()
     {
-        await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.WithSettings)}}(default(InlineSnapshotSettings))
-                .{{nameof(InlineSnapshot.Validate)}}("");
-            """, $$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.WithSettings)}}(default(InlineSnapshotSettings))
-                .{{nameof(InlineSnapshot.Validate)}}("", "");
+        await AssertSnapshot(
+            """
+            InlineSnapshot.WithSettings(default(InlineSnapshotSettings))
+                .Validate("");
+            """,
+            """
+            InlineSnapshot.WithSettings(default(InlineSnapshotSettings))
+                .Validate("", "");
             """);
     }
 
@@ -592,7 +640,7 @@ public sealed class InlineSnapshotTests
     public async Task DoNotUpdateOnCI(string key, string value)
     {
         await AssertSnapshot($$"""
-            {{nameof(InlineSnapshot)}}.{{nameof(InlineSnapshot.Validate)}}(new object(), "");
+            InlineSnapshot.Validate(new object(), "");
             """,
             autoDetectCI: true,
             environmentVariables: new[] { new KeyValuePair<string, string>(key, value) });
@@ -600,7 +648,7 @@ public sealed class InlineSnapshotTests
 
     [SuppressMessage("Design", "MA0042:Do not use blocking calls in an async method", Justification = "Not supported on .NET Framework")]
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
-    private async Task AssertSnapshot(string source, string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
+    private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
     {
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
@@ -697,10 +745,10 @@ public sealed class InlineSnapshotTests
         await process!.WaitForExitAsync();
 
         var stdout = await process.StandardOutput.ReadToEndAsync();
-        _testOutputHelper.WriteLine(stdout);
+        testOutputHelper.WriteLine(stdout);
 
         var stderr = await process.StandardError.ReadToEndAsync();
-        _testOutputHelper.WriteLine(stderr);
+        testOutputHelper.WriteLine(stderr);
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

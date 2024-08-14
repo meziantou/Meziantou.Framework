@@ -9,11 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.8" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.32" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.33" />
   </ItemGroup>
 
 </Project>

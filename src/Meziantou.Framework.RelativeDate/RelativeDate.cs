@@ -11,7 +11,7 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
     public RelativeDate(DateTime dateTime)
     {
         if (dateTime.Kind == DateTimeKind.Unspecified)
-            throw new ArgumentException("Cannot determine is the argument is a local datetime or UTC datetime", nameof(dateTime));
+            throw new ArgumentException("Cannot determine if the argument is a local datetime or UTC datetime", nameof(dateTime));
 
         DateTime = dateTime;
     }

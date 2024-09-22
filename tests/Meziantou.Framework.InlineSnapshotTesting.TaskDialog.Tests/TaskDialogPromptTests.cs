@@ -1,13 +1,11 @@
 ﻿using System.Windows.Automation;
 using FluentAssertions;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
-using Meziantou.Xunit;
 using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.SnapshotUpdateStrategies;
 
-[DisableParallelization]
 public sealed class TaskDialogPromptTests
 {
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)

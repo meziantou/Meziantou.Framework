@@ -7,6 +7,7 @@ public sealed class ScannerOptions
 {
     private static readonly ReadOnlyCollection<DependencyScanner> DefaultScanners = new(new DependencyScanner[]
     {
+        new AzureDevOpsScanner(),
         new DockerfileDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
         new DotNetToolManifestDependencyScanner(),

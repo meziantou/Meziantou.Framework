@@ -7,8 +7,11 @@ public enum DependencyType
     Npm,
     PyPi,
     DockerImage,
+    GitReference,
     GitSubmodule,
     DotNetSdk,
     DotNetTargetFramework,
     GitHubActions,
+    AzureDevOpsVMPool,
+    AzureDevOpsTask,
 }

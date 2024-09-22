@@ -572,7 +572,7 @@ jobs:
             - uses: actions/checkout@v2
             - uses: actions/setup-node@v1
             - uses: docker://test/setup:v3
-            - uses: docker://image/without/version
+            - uses: "docker://image/without/version"
             - run: npm install -g bats
             - run: bats -v
         container:
@@ -595,7 +595,7 @@ jobs:
             - uses: dummy1@v3.0.0
             - uses: dummy2@v3.0.0
             - uses: docker://dummy3:v3.0.0
-            - uses: docker://dummy4
+            - uses: "docker://dummy4"
             - run: npm install -g bats
             - run: bats -v
         container:
@@ -761,12 +761,260 @@ jobs:
         AssertFileContentEqual("dotnet-tools.json", Expected, ignoreNewLines: true);
     }
 
+    [Fact]
+    public async Task AzureDevOpsContainerDependencies()
+    {
+        AddFile("sample.yml", """
+            container: 'image:1.2.3'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            container: 'dummy1:2.3.4'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsContainerWithoutVersionDependencies()
+    {
+        AddFile("sample.yml", """
+            container: 'image'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            container: 'dummy1'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsJobContainerDependencies()
+    {
+        AddFile("sample.yml", """
+            jobs:
+            - job: dummy
+              container: 'image:1.2.3'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "image", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            jobs:
+            - job: dummy
+              container: 'image1:2.3.4'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsDeploymentContainerDependencies()
+    {
+        AddFile("sample.yml", """
+            jobs:
+            - deployment: dummy
+              container: 'image:1.2.3'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            jobs:
+            - deployment: dummy
+              container: 'dummy1:2.3.4'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsContainerExpandedDependencies()
+    {
+        AddFile("sample.yml", """
+            container:
+                image: 'image:1.2.3'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            container:
+                image: 'dummy1:2.3.4'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsVmImageDependencies()
+    {
+        AddFile("sample.yml", """
+            pool:
+              vmImage: 'ubuntu-18.04'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "", "windows-latest");
+        AssertFileContentEqual("sample.yml", """
+            pool:
+              vmImage: 'windows-latest'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsJobsVmImageDependencies()
+    {
+        AddFile("sample.yml", """
+            jobs:
+            - job: dummy
+              pool:
+                vmImage: 'ubuntu-18.04'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "", "windows-latest");
+        AssertFileContentEqual("sample.yml", """
+            jobs:
+            - job: dummy
+              pool:
+                vmImage: 'windows-latest'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsStageVmImageDependencies()
+    {
+        AddFile("sample.yml", """
+            stages:
+            - stage: dummy
+              pool:
+                vmImage: 'ubuntu-18.04'
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "", "windows-latest");
+        AssertFileContentEqual("sample.yml", """
+            stages:
+            - stage: dummy
+              pool:
+                vmImage: 'windows-latest'
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsResourcesContainerDependencies()
+    {
+        AddFile("sample.yml", """
+            resources:
+              containers:
+              - container: dummy
+                image: image:1.2.3
+                registry: 'registry'
+                type: ACR
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2.3.4");
+        AssertFileContentEqual("sample.yml", """
+            resources:
+              containers:
+              - container: dummy
+                image: dummy1:2.3.4
+                registry: 'registry'
+                type: ACR
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsResourcesRepositoryDependencies()
+    {
+        AddFile("sample.yml", """
+            resources:
+              repositories:
+              - repository: dummy
+                name: repo
+                ref: 'main'
+                type: git
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "1.2.3");
+        AssertFileContentEqual("sample.yml", """
+            resources:
+              repositories:
+              - repository: dummy
+                name: dummy1
+                ref: '1.2.3'
+                type: git
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsResourcesStepsTask()
+    {
+        AddFile("sample.yml", """
+            pool:
+                vmImage: 'ubuntu-18.04'
+            steps:
+            - task: UseDotNet@2
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2");
+        AssertFileContentEqual("sample.yml", """
+            pool:
+                vmImage: '2'
+            steps:
+            - task: dummy1@2
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsResourcesJobsStepsTask()
+    {
+        AddFile("sample.yml", """
+            pool:
+                vmImage: 'ubuntu-18.04'
+            jobs:
+            - job: B
+              steps:
+              - task: UseDotNet@2
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2");
+        AssertFileContentEqual("sample.yml", """
+            pool:
+                vmImage: '2'
+            jobs:
+            - job: B
+              steps:
+              - task: dummy1@2
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
+    public async Task AzureDevOpsResourcesStagesJobsStepsTask()
+    {
+        AddFile("sample.yml", """
+            pool:
+                vmImage: 'ubuntu-18.04'
+            stages:
+            - stage: A
+              jobs:
+              - job: B
+                steps:
+                - task: UseDotNet@2
+            """);
+        var result = await GetDependencies(new AzureDevOpsScanner());
+        await UpdateDependencies(result, "dummy", "2");
+        AssertFileContentEqual("sample.yml", """
+            pool:
+                vmImage: '2'
+            stages:
+            - stage: A
+              jobs:
+              - job: B
+                steps:
+                - task: dummy1@2
+            """, ignoreNewLines: true);
+    }
+
     private async Task<List<Dependency>> GetDependencies(DependencyScanner scanner)
     {
         var dependencies = new List<Dependency>();
         foreach (var dep in await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, new ScannerOptions { DegreeOfParallelism = 1, Scanners = new[] { scanner } }))
         {
             dependencies.Add(dep);
+        }
+
+        foreach (var dep in dependencies)
+        {
+            testOutputHelper.WriteLine($"- {dep}");
         }
 
         // Validate dependencies
@@ -821,7 +1069,7 @@ jobs:
 
             foreach (var item in locationsWithLineInfo)
             {
-                
+
                 await item.UpdateText().ConfigureAwait(false);
             }
 

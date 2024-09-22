@@ -8,7 +8,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumToStringGenerator.Annotations\Meziantou.Framework.FastEnumToStringGenerator.Annotations.csproj" AdditionalProperties="TargetFramework=netstandard2.0" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FastEnumToStringGenerator\Meziantou.Framework.FastEnumToStringGenerator.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.9.2" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.11.0" />
   </ItemGroup>
 
 </Project>

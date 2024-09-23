@@ -129,36 +129,36 @@ public sealed class SnapshotSerializerTests
     {
         InlineSnapshot.WithSettings(Settings).Validate(HumanReadableSnapshotSerializer.DefaultInstance.Serialize(new Sample()), """
             Int32: 42
-            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
-            DateTimeOffset_NonZero: 2000-01-01T01:01:01+02:00
-            DateTimeOffset_Zero: 2000-01-01T01:01:01+00:00
-            DateTime_Unspecified: 2000-01-01T01:01:01
-            DateTime_Utc: 2000-01-01T01:01:01Z
-            FlagsEnum_NotDefined: 35
-            FlagsEnum: ReadWrite, Delete
-            Enum_NotDefined: 100
-            Enum: Tuesday
-            IReadOnlyDictionary:
-              - Key: 1
-                Value: 2
-              - Key: 3
-                Value: 4
-            IDictionary:
-              - Key: 1
-                Value: 2
-              - Key: 3
-                Value: 4
-            IEnumerableInt32:
-              - 0
-              - 1
-            EmptyArray: []
+            NullableInt32_NotNull: 42
             Int32Array:
               - 1
               - 2
               - 3
               - 4
               - 5
-            NullableInt32_NotNull: 42
+            EmptyArray: []
+            IEnumerableInt32:
+              - 0
+              - 1
+            IDictionary:
+              - Key: 1
+                Value: 2
+              - Key: 3
+                Value: 4
+            IReadOnlyDictionary:
+              - Key: 1
+                Value: 2
+              - Key: 3
+                Value: 4
+            Enum: Tuesday
+            Enum_NotDefined: 100
+            FlagsEnum: ReadWrite, Delete
+            FlagsEnum_NotDefined: 35
+            DateTime_Utc: 2000-01-01T01:01:01Z
+            DateTime_Unspecified: 2000-01-01T01:01:01
+            DateTimeOffset_Zero: 2000-01-01T01:01:01+00:00
+            DateTimeOffset_NonZero: 2000-01-01T01:01:01+02:00
+            NullableDateTimeOffset_NotNull: 2000-01-01T01:01:01+00:00
             Guid: 4871547b-835b-4c06-ab0e-10931af0cd8d
             NestedObject:
               StringValueStartingWithExclamationMark: !1

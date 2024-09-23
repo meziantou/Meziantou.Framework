@@ -38,9 +38,9 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
                 var sdkVersion = sdk.Value.Value<string>();
                 if (sdkVersion is not null)
                 {
-                    context.ReportDependency(new Dependency(sdk.Name, sdkVersion, DependencyType.NuGet,
+                    context.ReportDependency<DotNetGlobalJsonDependencyScanner>(sdk.Name, sdkVersion, DependencyType.NuGet,
                         nameLocation: new NonUpdatableLocation(context),
-                        versionLocation: new JsonLocation(context, sdk.Value)));
+                        versionLocation: new JsonLocation(context, sdk.Value));
                 }
             }
         }
@@ -51,9 +51,9 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         var token = doc.SelectToken("$.sdk.version");
         if (token?.Value<string>() is string version)
         {
-            context.ReportDependency(new Dependency(name: null, version, DependencyType.DotNetSdk,
+            context.ReportDependency<DotNetGlobalJsonDependencyScanner>(name: null, version, DependencyType.DotNetSdk,
                 nameLocation: null,
-                versionLocation: new JsonLocation(context, token)));
+                versionLocation: new JsonLocation(context, token));
         }
     }
 }

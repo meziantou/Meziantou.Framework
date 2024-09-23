@@ -47,7 +47,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
 
                     if (version is not null)
                     {
-                        context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement)));
+                        context.ReportDependency<ProjectJsonDependencyScanner>(packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement));
                     }
                 }
             }

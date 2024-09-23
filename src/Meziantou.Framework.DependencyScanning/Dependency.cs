@@ -16,6 +16,7 @@ public sealed class Dependency
     public DependencyType Type { get; }
     public Location? NameLocation { get; }
     public Location? VersionLocation { get; }
+    public ISet<string> Tags { get; } = new HashSet<string>(StringComparer.Ordinal);
 
     public Task UpdateNameAsync(string newValue, CancellationToken cancellationToken = default)
     {

@@ -86,10 +86,9 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 
             if (dep.Value is not null)
             {
-                var dependency = new Dependency(packageName, version, DependencyType.Npm,
+                context.ReportDependency<NpmPackageJsonDependencyScanner>(packageName, version, DependencyType.Npm,
                     nameLocation: new NonUpdatableLocation(context),
                     versionLocation: new JsonLocation(context, dep.Value));
-                context.ReportDependency(dependency);
             }
         }
 

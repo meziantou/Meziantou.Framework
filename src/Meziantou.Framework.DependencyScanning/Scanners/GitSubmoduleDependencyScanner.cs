@@ -17,9 +17,9 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
             using var repository = new Repository(Path.GetDirectoryName(context.FullPath));
             foreach (var module in repository.Submodules)
             {
-                context.ReportDependency(new Dependency(module.Url, module.WorkDirCommitId.Sha, DependencyType.GitSubmodule,
+                context.ReportDependency<GitSubmoduleDependencyScanner>(module.Url, module.WorkDirCommitId.Sha, DependencyType.GitSubmodule,
                     nameLocation: new NonUpdatableLocation(context),
-                    versionLocation: new NonUpdatableLocation(context)));
+                    versionLocation: new NonUpdatableLocation(context));
             }
         }
         catch (LibGit2SharpException)

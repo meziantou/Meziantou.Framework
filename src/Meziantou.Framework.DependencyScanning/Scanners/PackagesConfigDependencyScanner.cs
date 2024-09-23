@@ -43,19 +43,20 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             if (string.IsNullOrEmpty(packageName) || string.IsNullOrEmpty(version))
                 continue;
 
-            var dependency = new Dependency(packageName, version, DependencyType.NuGet,
+            context.ReportDependency<PackagesConfigDependencyScanner>(packageName, version, DependencyType.NuGet,
                 nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, packageNameAttribute),
                 versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute));
-            context.ReportDependency(dependency);
 
             if (SearchForReferencesInAssociatedCsprojFiles)
             {
+                var rootDependency = new DependencyRoot(packageName, version, DependencyType.NuGet);
                 csprojs ??= await LoadAssociatedCsprojAsync(context).ConfigureAwait(false);
                 foreach (var (file, csproj) in csprojs)
                 {
-                    FindInReferences(context, dependency, file, csproj);
-                    FindInImports(context, dependency, file, csproj);
-                    FindInErrors(context, dependency, file, csproj);
+
+                    FindInReferences(context, rootDependency, file, csproj);
+                    FindInImports(context, rootDependency, file, csproj);
+                    FindInErrors(context, rootDependency, file, csproj);
                 }
             }
         }
@@ -89,7 +90,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         return result;
     }
 
-    private static void FindInReferences(ScanFileContext context, Dependency dependency, string csprojPath, XDocument csproj)
+    private static void FindInReferences(ScanFileContext context, DependencyRoot dependency, string csprojPath, XDocument csproj)
     {
         var hints = csproj.Descendants()
             .Where(element => element.Name.LocalName == "Reference")
@@ -105,7 +106,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         }
     }
 
-    private static void FindInImports(ScanFileContext context, Dependency dependency, string file, XDocument doc)
+    private static void FindInImports(ScanFileContext context, DependencyRoot dependency, string file, XDocument doc)
     {
         var imports = doc.Descendants().Where(element => element.Name.LocalName == "Import");
         foreach (var import in imports)
@@ -115,7 +116,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         }
     }
 
-    private static void FindInErrors(ScanFileContext context, Dependency dependency, string file, XDocument doc)
+    private static void FindInErrors(ScanFileContext context, DependencyRoot dependency, string file, XDocument doc)
     {
         var errors = doc.Descendants()
             .Where(element => element.Name.LocalName == "Target")
@@ -129,7 +130,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         }
     }
 
-    private static bool FindDependencyInElementValue(ScanFileContext context, Dependency dependency, string file, XElement element)
+    private static bool FindDependencyInElementValue(ScanFileContext context, DependencyRoot dependency, string file, XElement element)
     {
         if (element is null)
             return false;
@@ -141,11 +142,11 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
 
         var versionStartColumn = indexOf + (dependency.Name + '.').Length;
         var versionLocation = new XmlLocation(context.FileSystem, file, element, column: versionStartColumn, length: dependency.Version!.Length);
-        context.ReportDependency(new Dependency(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
+        context.ReportDependency<PackagesConfigDependencyScanner>(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
         return true;
     }
 
-    private static void FindDependencyInAttributeValue(ScanFileContext context, Dependency dependency, string file, XAttribute? attribute)
+    private static void FindDependencyInAttributeValue(ScanFileContext context, DependencyRoot dependency, string file, XAttribute? attribute)
     {
         if (attribute is null)
             return;
@@ -158,10 +159,10 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
         var versionStartColumn = indexOf + (dependency.Name + '.').Length;
         Debug.Assert(attribute.Parent is not null);
         var versionLocation = new XmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: versionStartColumn, length: dependency.Version!.Length);
-        context.ReportDependency(new Dependency(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
+        context.ReportDependency<PackagesConfigDependencyScanner>(dependency.Name, dependency.Version, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
     }
 
-    private static void FindDependencyInAssemblyName(ScanFileContext context, Dependency dependency, string file, XAttribute? attribute)
+    private static void FindDependencyInAssemblyName(ScanFileContext context, DependencyRoot dependency, string file, XAttribute? attribute)
     {
         if (attribute is null)
             return;
@@ -175,8 +176,10 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             {
                 Debug.Assert(attribute.Parent is not null);
                 var versionLocation = new AssemblyVersionXmlLocation(context.FileSystem, file, attribute.Parent, attribute, column: match.Index, length: match.Value.Length);
-                context.ReportDependency(new Dependency(dependency.Name, match.Value, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation));
+                context.ReportDependency<PackagesConfigDependencyScanner>(dependency.Name, match.Value, dependency.Type, nameLocation: new NonUpdatableLocation(context), versionLocation);
             }
         }
     }
+
+    private record struct DependencyRoot(string Name, string Version, DependencyType Type);
 }

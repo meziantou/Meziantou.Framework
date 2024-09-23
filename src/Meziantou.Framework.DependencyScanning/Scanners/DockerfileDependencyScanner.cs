@@ -23,9 +23,9 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
             var packageName = packageNameGroup.Value;
             var versionGroup = match.Groups["Version"];
             var version = versionGroup.Value;
-            context.ReportDependency(new Dependency(packageName, version, DependencyType.DockerImage,
+            context.ReportDependency<DockerfileDependencyScanner>(packageName, version, DependencyType.DockerImage,
                 nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
-                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length)));
+                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length));
         }
     }
 

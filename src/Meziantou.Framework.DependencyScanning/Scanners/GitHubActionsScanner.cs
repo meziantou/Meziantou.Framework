@@ -31,7 +31,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
     {
         try
         {
-            using var textReader = new StreamReader(context.Content);
+            using var textReader = new StreamReader(context.Content, leaveOpen: true);
             var reader = new MergingParser(new Parser(textReader));
             var yaml = new YamlStream();
             yaml.Load(reader);
@@ -70,7 +70,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                                 var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
                                                 var versionLocation = GetLocation(context, usesValue, start: DockerPrefix.Length + index + 1, length: version.Length);
 
-                                                context.ReportDependency(new Dependency(name, version, DependencyType.DockerImage, nameLocation, versionLocation));
+                                                context.ReportDependency<GitHubActionsScanner>(name, version, DependencyType.DockerImage, nameLocation, versionLocation);
                                             }
                                             else
                                             {
@@ -78,7 +78,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                                 var name = value[DockerPrefix.Length..];
                                                 var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
 
-                                                context.ReportDependency(new Dependency(name, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null));
+                                                context.ReportDependency<GitHubActionsScanner>(name, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null);
 
                                             }
                                         }
@@ -142,16 +142,16 @@ public sealed class GitHubActionsScanner : DependencyScanner
         var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
         if (index < 0)
         {
-            context.ReportDependency(new Dependency(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null));
+            context.ReportDependency<GitHubActionsScanner>(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
         }
         else
         {
-            context.ReportDependency(new Dependency(
+            context.ReportDependency<GitHubActionsScanner>(
                 name: value[..index],
                 version: value[(index + 1)..],
                 dependencyType,
                 nameLocation: GetLocation(context, node, start: 0, length: index),
-                versionLocation: GetLocation(context, node, start: index + 1, length: value.Length - index - 1)));
+                versionLocation: GetLocation(context, node, start: index + 1, length: value.Length - index - 1));
         }
     }
 

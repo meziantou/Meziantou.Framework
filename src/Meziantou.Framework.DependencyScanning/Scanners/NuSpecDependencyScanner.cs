@@ -46,9 +46,9 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
             var version = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(version))
             {
-                context.ReportDependency(new Dependency(id, version, DependencyType.NuGet,
+                context.ReportDependency<NuSpecDependencyScanner>(id, version, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, idAttribute),
-                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute)));
+                    versionLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute));
             }
         }
     }

@@ -31,9 +31,9 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
             var versionGroup = match.Groups["VERSION"];
             var version = versionGroup.Value;
 
-            context.ReportDependency(new Dependency(packageName, version, DependencyType.PyPi,
+            context.ReportDependency<PythonRequirementsDependencyScanner>(packageName, version, DependencyType.PyPi,
                 nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
-                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length)));
+                versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length));
         }
     }
 }

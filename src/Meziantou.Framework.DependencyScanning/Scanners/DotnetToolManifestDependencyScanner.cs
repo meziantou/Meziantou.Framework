@@ -46,9 +46,9 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 
                     if (version is not null)
                     {
-                        context.ReportDependency(new Dependency(packageName, version, DependencyType.NuGet,
+                        context.ReportDependency<DotNetToolManifestDependencyScanner>(packageName, version, DependencyType.NuGet,
                             nameLocation: new NonUpdatableLocation(context),
-                            versionLocation: new JsonLocation(context, valueElement)));
+                            versionLocation: new JsonLocation(context, valueElement));
                     }
                 }
             }

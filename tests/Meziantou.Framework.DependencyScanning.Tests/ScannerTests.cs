@@ -46,7 +46,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 """;
 
         AddFile("package.json", Original);
-        var result = await GetDependencies(new NpmPackageJsonDependencyScanner());
+        var result = await GetDependencies<NpmPackageJsonDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.Npm, "a", "1.0.0", 5, 11),
             (DependencyType.Npm, "b", "1.2.3", 8, 11));
@@ -95,7 +95,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         AddFile("test.nuspec", original);
-        var result = await GetDependencies(new NuSpecDependencyScanner());
+        var result = await GetDependencies<NuSpecDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "another-package", "3.0.0", 8, 46),
             (DependencyType.NuGet, "yet-another-package", "1.0.0", 9, 50));
@@ -114,7 +114,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     <RootNamespace>Sample</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>                
+  <ItemGroup>
       <PackageVersion Include="PackageA" Version="1.0.0" />
   </ItemGroup>
 
@@ -135,7 +135,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     <RootNamespace>Sample</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>                
+  <ItemGroup>
       <PackageVersion Include="dummy1" Version="2.0.0" />
   </ItemGroup>
 
@@ -151,7 +151,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 """;
 
         AddFile("test.csproj", Original);
-        var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "PackageA", "1.0.0", 8, 42),
             (DependencyType.NuGet, "PackageA", "1.2.1", 14, 42),
@@ -178,7 +178,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 ";
 
         AddFile("test.csproj", Original);
-        var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "MSBuild.Sdk.Extras", "2.0.54", 1, 29),
             (DependencyType.NuGet, "My.Custom.Sdk1", "1.0.0", 2, 32),
@@ -227,7 +227,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         AddFile("test.csproj", Original);
-        var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
         AssertContainDependency(result, (DependencyType.NuGet, "TestPackage", "4.2.1", 11, 45));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
@@ -259,7 +259,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 """;
 
         AddFile("test.csproj", Original);
-        var result = await GetDependencies(new MsBuildReferencesDependencyScanner());
+        var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
         await UpdateDependencies(result, "dummy", "net0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
     }
@@ -304,7 +304,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 """;
 
         AddFile("project.json", Original);
-        var result = await GetDependencies(new ProjectJsonDependencyScanner());
+        var result = await GetDependencies<ProjectJsonDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "a", "1.0.1", 4, 19),
             (DependencyType.NuGet, "c", "1.0.2", 10, 11),
@@ -321,7 +321,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         const string Expected = "dummy1==2.0.0\ndummy2==2.0.0\r\ndummy3==2.0.0";
 
         AddFile("requirements.txt", Original);
-        var result = await GetDependencies(new PythonRequirementsDependencyScanner());
+        var result = await GetDependencies<PythonRequirementsDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.PyPi, "A", "1.1.0", 1, 4),
             (DependencyType.PyPi, "B", "1.2.0", 2, 4),
@@ -349,7 +349,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         AddFile("packages.config", Original);
-        var result = await GetDependencies(new PackagesConfigDependencyScanner());
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
         AssertContainDependency(result, (DependencyType.NuGet, "A", "4.2.1", 3, 19));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
@@ -416,7 +416,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
         AddFile("packages.config", Original);
         AddFile("file.csproj", OriginalCsproj);
-        var result = await GetDependencies(new PackagesConfigDependencyScanner());
+        var result = await GetDependencies<PackagesConfigDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "NUnit", "3.11.0", 3, 90),
             (DependencyType.NuGet, "NUnit", "3.11.0", 7, 26),
@@ -443,7 +443,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             """;
 
         AddFile("Dockerfile", Original);
-        var result = await GetDependencies(new DockerfileDependencyScanner());
+        var result = await GetDependencies<DockerfileDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.DockerImage, "a.com/b", "1.2.2", 1, 14),
             (DependencyType.DockerImage, "a.com/c", "1.2.3", 2, 14));
@@ -481,7 +481,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 """;
 
         AddFile("global.json", Original);
-        var result = await GetDependencies(new DotNetGlobalJsonDependencyScanner());
+        var result = await GetDependencies<DotNetGlobalJsonDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.DotNetSdk, Name: null, "3.1.100", 3, 17),
             (DependencyType.NuGet, "My.Custom.Sdk", "5.0.0", 7, 24),
@@ -534,7 +534,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         }
 
         // Assert
-        var result = await GetDependencies(new GitSubmoduleDependencyScanner());
+        var result = await GetDependencies<GitSubmoduleDependencyScanner>();
         AssertContainDependency(result, (DependencyType.GitSubmodule, remote.FullPath, head, 0, 0));
 
         result.Should().OnlyContain(item => !item.VersionLocation.IsUpdatable);
@@ -610,8 +610,7 @@ jobs:
 """;
 
         AddFile(Path, Original);
-        var scanner = new GitHubActionsScanner();
-        var result = await GetDependencies(scanner);
+        var result = await GetDependencies<GitHubActionsScanner>();
         AssertContainDependency(result,
             (DependencyType.GitHubActions, "actions/checkout", "v2", 7, 38),
             (DependencyType.GitHubActions, "actions/setup-node", "v1", 8, 40),
@@ -641,8 +640,7 @@ jobs:
             - uses: actions/setup-node@v1
 """;
         AddFile(Path, Original);
-        var scanner = new GitHubActionsScanner();
-        var result = await GetDependencies(scanner);
+        var result = await GetDependencies<GitHubActionsScanner>();
         result.Should().BeEmpty();
     }
 
@@ -663,12 +661,12 @@ jobs:
             """;
 
         AddFile("custom/sample.yml", Original);
-        var result = await GetDependencies(new RegexScanner()
+        var result = await GetDependencies<RegexScanner>([new RegexScanner()
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
             RegexPattern = "image: (?<name>[a-z]+):(?<version>[0-9]+)",
-        });
+        }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", "10", 2, 15));
 
@@ -693,12 +691,12 @@ jobs:
             """;
 
         AddFile("custom/sample.yml", Original);
-        var result = await GetDependencies(new RegexScanner()
+        var result = await GetDependencies<RegexScanner>([new RegexScanner()
         {
             FilePatterns = new GlobCollection(Glob.Parse("**/*", GlobOptions.None)),
             DependencyType = DependencyType.DockerImage,
             RegexPattern = "image: (?<name>[a-z]+)(:(?<version>[0-9]+))?",
-        });
+        }]);
         AssertContainDependency(result,
             (DependencyType.DockerImage, "node", null, 0, 0));
 
@@ -752,7 +750,7 @@ jobs:
 """;
 
         AddFile("dotnet-tools.json", Original);
-        var result = await GetDependencies(new DotNetToolManifestDependencyScanner());
+        var result = await GetDependencies<DotNetToolManifestDependencyScanner>();
         AssertContainDependency(result,
             (DependencyType.NuGet, "dotnet-validate", "0.0.1-preview.130", 6, 19),
             (DependencyType.NuGet, "dotnet-format", "5.0.211103", 12, 19));
@@ -767,7 +765,7 @@ jobs:
         AddFile("sample.yml", """
             container: 'image:1.2.3'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             container: 'dummy1:2.3.4'
@@ -780,7 +778,7 @@ jobs:
         AddFile("sample.yml", """
             container: 'image'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             container: 'dummy1'
@@ -795,7 +793,7 @@ jobs:
             - job: dummy
               container: 'image:1.2.3'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "image", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             jobs:
@@ -812,7 +810,7 @@ jobs:
             - deployment: dummy
               container: 'image:1.2.3'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             jobs:
@@ -828,7 +826,7 @@ jobs:
             container:
                 image: 'image:1.2.3'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             container:
@@ -843,7 +841,7 @@ jobs:
             pool:
               vmImage: 'ubuntu-18.04'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "", "windows-latest");
         AssertFileContentEqual("sample.yml", """
             pool:
@@ -860,7 +858,7 @@ jobs:
               pool:
                 vmImage: 'ubuntu-18.04'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "", "windows-latest");
         AssertFileContentEqual("sample.yml", """
             jobs:
@@ -879,7 +877,7 @@ jobs:
               pool:
                 vmImage: 'ubuntu-18.04'
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "", "windows-latest");
         AssertFileContentEqual("sample.yml", """
             stages:
@@ -900,7 +898,7 @@ jobs:
                 registry: 'registry'
                 type: ACR
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2.3.4");
         AssertFileContentEqual("sample.yml", """
             resources:
@@ -923,7 +921,7 @@ jobs:
                 ref: 'main'
                 type: git
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "1.2.3");
         AssertFileContentEqual("sample.yml", """
             resources:
@@ -944,7 +942,7 @@ jobs:
             steps:
             - task: UseDotNet@2
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2");
         AssertFileContentEqual("sample.yml", """
             pool:
@@ -965,7 +963,7 @@ jobs:
               steps:
               - task: UseDotNet@2
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2");
         AssertFileContentEqual("sample.yml", """
             pool:
@@ -990,7 +988,7 @@ jobs:
                 steps:
                 - task: UseDotNet@2
             """);
-        var result = await GetDependencies(new AzureDevOpsScanner());
+        var result = await GetDependencies<AzureDevOpsScanner>();
         await UpdateDependencies(result, "dummy", "2");
         AssertFileContentEqual("sample.yml", """
             pool:
@@ -1004,14 +1002,15 @@ jobs:
             """, ignoreNewLines: true);
     }
 
-    private async Task<List<Dependency>> GetDependencies(DependencyScanner scanner)
+    private async Task<Dependency[]> GetDependencies<T>(DependencyScanner[]? scanners = null) where T : DependencyScanner
     {
-        var dependencies = new List<Dependency>();
-        foreach (var dep in await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, new ScannerOptions { DegreeOfParallelism = 1, Scanners = new[] { scanner } }))
+        var options = new ScannerOptions { DegreeOfParallelism = 1 };
+        if (scanners is not null)
         {
-            dependencies.Add(dep);
+            options.Scanners = scanners;
         }
 
+        var dependencies = await Scan(options);
         foreach (var dep in dependencies)
         {
             testOutputHelper.WriteLine($"- {dep}");
@@ -1032,14 +1031,16 @@ jobs:
         }
 
         // Ensure getting scanning in parallel gives the same result
-        var dependencies2 = new List<Dependency>();
-        foreach (var dep in await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, new ScannerOptions { DegreeOfParallelism = 16, Scanners = new[] { scanner } }))
-        {
-            dependencies2.Add(dep);
-        }
-
-        dependencies2.Should().HaveCount(dependencies.Count);
+        options.DegreeOfParallelism = 16;
+        var dependencies2 = await Scan(options);
+        dependencies2.Should().HaveCount(dependencies.Length);
         return dependencies;
+
+        async Task<Dependency[]> Scan(ScannerOptions options)
+        {
+             var items = await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, options);
+            return items.Where(d => d.Tags.Contains(typeof(T).FullName)).ToArray();
+        }
     }
 
     private sealed record DetectedDependency(Dependency Dependency, Location Location, Func<Task> UpdateText);
@@ -1091,9 +1092,9 @@ jobs:
         File.WriteAllBytes(fullPath, content);
     }
 
-    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string Name, string Version, int VersionLine, int VersionColumn)[] expectedDepedencies)
+    private static void AssertContainDependency(IEnumerable<Dependency> dependencies, params (DependencyType Type, string Name, string Version, int VersionLine, int VersionColumn)[] expectedDependencies)
     {
-        foreach (var expected in expectedDepedencies)
+        foreach (var expected in expectedDependencies)
         {
             dependencies.Should().Contain(d =>
                 d.Type == expected.Type &&

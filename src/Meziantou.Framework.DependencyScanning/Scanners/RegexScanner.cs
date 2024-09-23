@@ -37,13 +37,13 @@ public sealed class RegexScanner : DependencyScanner
                     var version = versionGroup.Value;
                     var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
                     var versionLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, versionGroup.Index, versionGroup.Length);
-                    context.ReportDependency(new Dependency(name, version, DependencyType, nameLocation, versionLocation));
+                    context.ReportDependency<RegexScanner>(name, version, DependencyType, nameLocation, versionLocation);
                 }
                 else
                 {
                     var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
-                    context.ReportDependency(new Dependency(name, version: null, DependencyType, nameLocation, versionLocation: null));
-                }                
+                    context.ReportDependency<RegexScanner>(name, version: null, DependencyType, nameLocation, versionLocation: null);
+                }
             }
         }
     }

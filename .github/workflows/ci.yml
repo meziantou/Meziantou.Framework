@@ -91,16 +91,15 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        runs-on: [ windows-2022, ubuntu-22.04, macos-13, macos-14 ]
+        runs-on: [ windows-2022, ubuntu-22.04, macos-14 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        architecture: [ x64 ]
       fail-fast: false
     steps:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-x64-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always

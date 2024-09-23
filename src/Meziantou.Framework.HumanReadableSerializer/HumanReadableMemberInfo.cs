@@ -53,14 +53,8 @@ internal sealed class HumanReadableMemberInfo
                 members.Add(data);
         }
 
-        members.Sort((a, b) => (a.Order, b.Order) switch
-        {
-            (not null, null) => -1,
-            (null, not null) => 1,
-            ({ } order1, { } order2) => order1.CompareTo(order2),
-            _ => options.PropertyOrder is null ? 0 : options.PropertyOrder.Compare(a.Name, b.Name),
-        });
-        return members.ToArray();
+        var result = members.Order(new MemberComparer(options)).ToArray();
+        return result;
     }
 
     public static HumanReadableMemberInfo? Get(PropertyInfo member, HumanReadableSerializerOptions options)
@@ -219,5 +213,34 @@ internal sealed class HumanReadableMemberInfo
     private static class DefaultProvider<T>
     {
         public static T? Value => default;
+    }
+
+    private sealed class MemberComparer(HumanReadableSerializerOptions options) : IComparer<HumanReadableMemberInfo>
+    {
+        public int Compare(HumanReadableMemberInfo? x, HumanReadableMemberInfo? y)
+        {
+            if (x is null && y is null)
+                return 0;
+            if (x is null)
+                return -1;
+            if (y is null)
+                return 1;
+
+            if (x.Order is not null && y.Order is null)
+                return -1;
+
+            if (x.Order is null && y.Order is not null)
+                return 1;
+
+            if (x.Order is not null && y.Order is not null)
+                return x.Order.Value.CompareTo(y.Order.Value);
+
+            if (options.PropertyOrder is not null)
+            {
+                return options.PropertyOrder.Compare(x.Name, y.Name);
+            }
+
+            return 0;
+        }
     }
 }

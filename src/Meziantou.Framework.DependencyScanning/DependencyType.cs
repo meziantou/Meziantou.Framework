@@ -14,4 +14,5 @@ public enum DependencyType
     GitHubActions,
     AzureDevOpsVMPool,
     AzureDevOpsTask,
+    AzureDevOpsTemplate,
 }

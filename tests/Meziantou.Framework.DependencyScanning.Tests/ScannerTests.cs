@@ -573,6 +573,7 @@ jobs:
             - uses: actions/setup-node@v1
             - uses: docker://test/setup:v3
             - uses: "docker://image/without/version"
+            - uses: "sample-org/project/.github/workflows/test@main"
             - run: npm install -g bats
             - run: bats -v
         container:
@@ -596,17 +597,18 @@ jobs:
             - uses: dummy2@v3.0.0
             - uses: docker://dummy3:v3.0.0
             - uses: "docker://dummy4"
+            - uses: "dummy5@v3.0.0"
             - run: npm install -g bats
             - run: bats -v
         container:
-            image: dummy5:v3.0.0
+            image: dummy6:v3.0.0
         services:
             nginx:
-                image: dummy6:v3.0.0
-            redis:
                 image: dummy7:v3.0.0
+            redis:
+                image: dummy8:v3.0.0
             service3:
-                image: dummy8
+                image: dummy9
 """;
 
         AddFile(Path, Original);
@@ -616,9 +618,10 @@ jobs:
             (DependencyType.GitHubActions, "actions/setup-node", "v1", 8, 40),
             (DependencyType.DockerImage, "test/setup", "v3", 9, 41),
             (DependencyType.DockerImage, "image/without/version", null, 0, 0),
-            (DependencyType.DockerImage, "node", "10.16-jessie", 14, 25),
-            (DependencyType.DockerImage, "nginx", "latest", 17, 30),
-            (DependencyType.DockerImage, "redis", "1.0", 19, 30),
+            (DependencyType.GitHubActions, "sample-org/project/.github/workflows/test", "main", 11, 64),
+            (DependencyType.DockerImage, "node", "10.16-jessie", 15, 25),
+            (DependencyType.DockerImage, "nginx", "latest", 18, 30),
+            (DependencyType.DockerImage, "redis", "1.0", 20, 30),
             (DependencyType.DockerImage, "alpine", null, 0, 0));
 
         await UpdateDependencies(result, "dummy", "v3.0.0");
@@ -999,6 +1002,25 @@ jobs:
               - job: B
                 steps:
                 - task: dummy1@2
+            """, ignoreNewLines: true);
+    }
+    
+    [Fact]
+    public async Task AzureDevOpsTemplateInSteps()
+    {
+        AddFile("sample.yml", """
+            pool:
+                vmImage: 'ubuntu-18.04'
+            steps:
+              - template: file.yml@templates
+            """);
+        var result = await GetDependencies<AzureDevOpsScanner>();
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("sample.yml", """
+            pool:
+                vmImage: '2.0.0'
+            steps:
+              - template: dummy1@2.0.0
             """, ignoreNewLines: true);
     }
 

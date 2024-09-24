@@ -88,6 +88,9 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     {
         var taskNode = GetProperty(node, "task", StringComparison.Ordinal);
         ReportDependency(context, taskNode, DependencyType.AzureDevOpsTask, '@');
+
+        var templateNode = GetProperty(node, "template", StringComparison.Ordinal);
+        ReportDependency(context, templateNode, DependencyType.AzureDevOpsTemplate, '@');
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/stages?view=azure-pipelines&WT.mc_id=DT-MVP-5003978

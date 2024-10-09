@@ -13,6 +13,7 @@ public sealed class ScannerOptions
         new DotNetToolManifestDependencyScanner(),
         new GitHubActionsScanner(),
         new GitSubmoduleDependencyScanner(),
+        new HelmChartDependencyScanner(),
         new MsBuildReferencesDependencyScanner(),
         new NpmPackageJsonDependencyScanner(),
         new NuSpecDependencyScanner(),

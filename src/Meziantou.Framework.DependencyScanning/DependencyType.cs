@@ -15,4 +15,5 @@ public enum DependencyType
     AzureDevOpsVMPool,
     AzureDevOpsTask,
     AzureDevOpsTemplate,
+    HelmChart,
 }

@@ -1024,6 +1024,31 @@ jobs:
             """, ignoreNewLines: true);
     }
 
+    [Fact]
+    public async Task HelmChartsDependencies()
+    {
+        AddFile("Chart.yaml", """
+            dependencies:
+            - name: nginx
+              version: "1.2.3"
+              repository: "https://example.com/charts"
+            - name: memcached
+              version: "3.2.1"
+              repository: https://another.example.com/charts
+            """);
+        var result = await GetDependencies<HelmChartDependencyScanner>();
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual("Chart.yaml", """
+            dependencies:
+            - name: nginx
+              version: "2.0.0"
+              repository: "dummy1"
+            - name: memcached
+              version: "2.0.0"
+              repository: dummy2
+            """, ignoreNewLines: true);
+    }
+
     private async Task<Dependency[]> GetDependencies<T>(DependencyScanner[]? scanners = null) where T : DependencyScanner
     {
         var options = new ScannerOptions { DegreeOfParallelism = 1 };

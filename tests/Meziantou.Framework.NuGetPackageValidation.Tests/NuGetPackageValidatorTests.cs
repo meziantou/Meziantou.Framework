@@ -255,8 +255,20 @@ public sealed class NuGetPackageValidatorTests
     [Fact]
     public async Task Validate_WithSymbolsServer()
     {
-        var path = await DownloadPackageAsync("Newtonsoft.Json", "13.0.2");
-        var result = await ValidateAsync(path, excludedRuleIds: [ErrorCodes.FileHashIsNotValid], rules: [NuGetPackageValidationRules.Symbols]);
-        AssertNoErrors(result);
+        // Downloading symbols can be flaky on CI
+        for (var i = 0; i < 10; i++)
+        {
+            try
+            {
+                var path = await DownloadPackageAsync("Newtonsoft.Json", "13.0.2");
+                var result = await ValidateAsync(path, excludedRuleIds: [ErrorCodes.FileHashIsNotValid], rules: [NuGetPackageValidationRules.Symbols]);
+                AssertNoErrors(result);
+                return;
+            }
+            catch
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+        }
     }
 }

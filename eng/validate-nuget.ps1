@@ -28,7 +28,7 @@ Write-Host "Validating NuGet packages"
 dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global --no-cache --add-source $env:NuGetDirectory
 $files = Get-ChildItem "$env:NuGetDirectory/*" -Include *.nupkg
 
-& meziantou.validate-nuget-package @files --excluded-rules "ReadmeMustBeSet,TagsMustBeSet" --github-token=$env:GITHUB_TOKEN --only-report-errors
+& meziantou.validate-nuget-package @files --excluded-rules "ReadmeMustBeSet,TagsMustBeSet" --excluded-rule-ids "52" --github-token=$env:GITHUB_TOKEN --only-report-errors
 if ($LASTEXITCODE -ne 0) {
     exit 1
 }

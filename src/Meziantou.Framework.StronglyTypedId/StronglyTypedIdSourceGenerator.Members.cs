@@ -331,7 +331,7 @@ public partial class StronglyTypedIdSourceGenerator
                     }
 
                     WriteNewMember(InheritDocComment);
-                    using (writer.BeginBlock($"static bool System.ISpanParsable<{context.TypeName}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
+                    using (writer.BeginBlock($"static bool global::System.ISpanParsable<{context.TypeName}>.TryParse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider, {returnType} result)"))
                     {
                         writer.WriteLine("return TryParse(value, out result);");
                     }
@@ -340,7 +340,7 @@ public partial class StronglyTypedIdSourceGenerator
                 // Parse
                 {
                     WriteNewMember(InheritDocComment);
-                    using (writer.BeginBlock($"static {context.TypeName} System.ISpanParsable<{context.TypeName}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
+                    using (writer.BeginBlock($"static {context.TypeName} global::System.ISpanParsable<{context.TypeName}>.Parse(global::System.ReadOnlySpan<char> value, global::System.IFormatProvider? provider)"))
                     {
                         writer.WriteLine("return Parse(value);");
                     }
@@ -358,14 +358,14 @@ public partial class StronglyTypedIdSourceGenerator
                 }
 
                 WriteNewMember(InheritDocComment);
-                using (writer.BeginBlock($"static bool System.IParsable<{context.TypeName}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
+                using (writer.BeginBlock($"static bool global::System.IParsable<{context.TypeName}>.TryParse(string? value, global::System.IFormatProvider? provider, {returnType} result)"))
                 {
                     writer.WriteLine("return TryParse(value, out result);");
                 }
 
                 // Parse
                 WriteNewMember(InheritDocComment);
-                using (writer.BeginBlock($"static {context.TypeName} System.IParsable< {context.TypeName}>.Parse(string value, global::System.IFormatProvider? provider)"))
+                using (writer.BeginBlock($"static {context.TypeName} global::System.IParsable<{context.TypeName}>.Parse(string value, global::System.IFormatProvider? provider)"))
                 {
                     writer.WriteLine("return Parse(value);");
                 }
@@ -463,7 +463,7 @@ public partial class StronglyTypedIdSourceGenerator
                                 break;
 
                             case IdType.MongoDB_Bson_ObjectId:
-                                writer.WriteLine($"if (MongoDB.Bson.ObjectId.TryParse(value, out var parsedValue))");
+                                writer.WriteLine($"if (global::MongoDB.Bson.ObjectId.TryParse(value, out var parsedValue))");
                                 break;
 
                             default:

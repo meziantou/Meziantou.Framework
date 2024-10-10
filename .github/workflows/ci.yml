@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   validate_readme:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
@@ -44,7 +44,7 @@ jobs:
         run: .\eng\validate-testprojects-configuration.ps1
 
   create_nuget:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
@@ -69,7 +69,7 @@ jobs:
           path: '**/*.binlog'
 
   validate_nuget:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ create_nuget ]
     steps:
       - uses: actions/checkout@v4
@@ -185,7 +185,7 @@ jobs:
           path: ${{ env.TestResultsDirectory }}/**/*
 
   test_trimming:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     strategy:
       matrix:
@@ -212,7 +212,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [build_and_test_x64, build_and_test_windows_x86]
     steps:
       - uses: actions/checkout@v4
@@ -239,7 +239,7 @@ jobs:
             test-result.cobertura.xml
 
   deploy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
       - uses: actions/download-artifact@v4

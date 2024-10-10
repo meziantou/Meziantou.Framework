@@ -600,30 +600,30 @@ public partial class Test : System.IComparable<Test> {}
 
     public sealed record BuildMatrixArguments(string IdType, string TypeDeclaration, NuGetReference[] NuGetReferences);
 
-    public static IEnumerable<object[]> BuildMatrixTestCases()
+    public static TheoryData<BuildMatrixArguments> BuildMatrixTestCases()
     {
-        return BuildMatrixTestCases().Select(data => new object[] { data });
+        return new TheoryData<BuildMatrixArguments>(BuildMatrixTestCases());
 
         static IEnumerable<BuildMatrixArguments> BuildMatrixTestCases()
         {
             var types = new[]
             {
-                "System.Boolean",
-                "System.Byte",
-                "System.DateTime",
-                "System.DateTimeOffset",
-                "System.Decimal",
-                "System.Double",
-                "System.Guid",
-                "System.Int16",
-                "System.Int32",
-                "System.Int64",
-                "System.SByte",
-                "System.Single",
-                "System.String",
-                "System.UInt16",
-                "System.UInt32",
-                "System.UInt64",
+                "global::System.Boolean",
+                "global::System.Byte",
+                "global::System.DateTime",
+                "global::System.DateTimeOffset",
+                "global::System.Decimal",
+                "global::System.Double",
+                "global::System.Guid",
+                "global::System.Int16",
+                "global::System.Int32",
+                "global::System.Int64",
+                "global::System.SByte",
+                "global::System.Single",
+                "global::System.String",
+                "global::System.UInt16",
+                "global::System.UInt32",
+                "global::System.UInt64",
             };
 
             var declarations = new[]
@@ -675,14 +675,14 @@ public partial class Test : System.IComparable<Test> {}
             // Add specific test cases
             foreach (var declaration in declarations)
             {
-                yield return new BuildMatrixArguments("System.Half", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
-                yield return new BuildMatrixArguments("System.Int128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
-                yield return new BuildMatrixArguments("System.UInt128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
-                yield return new BuildMatrixArguments("System.Numerics.BigInteger", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("global::System.Half", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("global::System.Int128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("global::System.UInt128", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
+                yield return new BuildMatrixArguments("global::System.Numerics.BigInteger", declaration, [new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/")]);
 
-                foreach (var mongodb in new[] { "2.18.0" })
+                foreach (var mongodb in new[] { "2.29.0" })
                 {
-                    yield return new BuildMatrixArguments("MongoDB.Bson.ObjectId", declaration,
+                    yield return new BuildMatrixArguments("global::MongoDB.Bson.ObjectId", declaration,
                     [
                         new NuGetReference("Microsoft.NETCore.App.Ref", NetCoreVersion, "ref/"),
                         new NuGetReference("MongoDB.Bson", mongodb, "lib/netstandard2.1/"),
@@ -699,11 +699,19 @@ public partial class Test : System.IComparable<Test> {}
     {
         var generator = InstantiateGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { generator },
+            generators: [generator],
             driverOptions: new GeneratorDriverOptions(default, trackIncrementalGeneratorSteps: true));
 
         // Run the generator once
-        var sourceCode = $"[Meziantou.Framework.Annotations.StronglyTypedId(typeof({arg.IdType}))] {arg.TypeDeclaration}";
+        var sourceCode = $$"""
+            namespace Dummy.System { }
+            namespace Dummy.Newtonsoft { }
+            namespace Dummy.MongoDB { }
+            namespace Dummy
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof({{arg.IdType}}))] {{arg.TypeDeclaration}}
+            }
+            """;
         var compilation = await CreateCompilation(sourceCode, arg.NuGetReferences);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
         diagnostics.Should().BeEmpty();

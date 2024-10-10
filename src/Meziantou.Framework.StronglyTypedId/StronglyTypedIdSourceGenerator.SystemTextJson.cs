@@ -120,7 +120,7 @@ public partial class StronglyTypedIdSourceGenerator
 
                     writer.WriteLine("bool valueRead = false;");
                     writer.WriteLine("reader.Read();");
-                    using (writer.BeginBlock("while (reader.TokenType != System.Text.Json.JsonTokenType.EndObject)"))
+                    using (writer.BeginBlock("while (reader.TokenType != global::System.Text.Json.JsonTokenType.EndObject)"))
                     {
                         using (writer.BeginBlock("if (!valueRead && reader.TokenType == global::System.Text.Json.JsonTokenType.PropertyName && reader.ValueTextEquals(\"Value\"))"))
                         {

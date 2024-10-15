@@ -16,5 +16,5 @@ public enum DependencyType
     AzureDevOpsTask,
     AzureDevOpsTemplate,
     HelmChart,
-    Ruby,
+    RubyGem,
 }

@@ -576,6 +576,8 @@ jobs:
                 image: redis:1.0
             service3:
                 image: alpine
+    job_template:
+        uses: sample/template.yml@v1
 """;
         const string Expected = """
 name: demo
@@ -600,6 +602,8 @@ jobs:
                 image: dummy8:v3.0.0
             service3:
                 image: dummy9
+    job_template:
+        uses: dummy10@v3.0.0
 """;
 
         AddFile(Path, Original);

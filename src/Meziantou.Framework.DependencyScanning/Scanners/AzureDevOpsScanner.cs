@@ -1,5 +1,6 @@
 using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
+using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
@@ -26,52 +27,6 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         return null;
     }
 
-    private static void ReportDependency(ScanFileContext context, YamlNode node, DependencyType dependencyType, char versionSeparator)
-    {
-        var value = GetScalarValue(node);
-        if (value is null)
-            return;
-
-        var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
-        if (index < 0)
-        {
-            context.ReportDependency<AzureDevOpsScanner>(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
-        }
-        else
-        {
-            context.ReportDependency<AzureDevOpsScanner>(
-                name: value[..index],
-                version: value[(index + 1)..],
-                dependencyType,
-                nameLocation: GetLocation(context, node, start: 0, length: index),
-                versionLocation: GetLocation(context, node, start: index + 1, length: value.Length - index - 1));
-        }
-    }
-
-    private static TextLocation GetLocation(ScanFileContext context, YamlNode node, int? start = null, int? length = null)
-    {
-        var line = (int)node.Start.Line;
-        var column = (int)node.Start.Column + (start ?? 0);
-        if (node is YamlScalarNode { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted })
-        {
-            column += 1;
-        }
-
-        if (length is null)
-        {
-            if (node is YamlScalarNode scalarNode)
-            {
-                length = scalarNode.Value.Length;
-            }
-            else
-            {
-                length = (int)(node.End.Column - node.Start.Column);
-            }
-        }
-
-        return new TextLocation(context.FileSystem, context.FullPath, line, column, length.Value);
-    }
-
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/pool?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
     private static void ScanPool(ScanFileContext context, YamlNode node)
     {
@@ -87,10 +42,10 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     private static void ScanStep(ScanFileContext context, YamlNode node)
     {
         var taskNode = GetProperty(node, "task", StringComparison.Ordinal);
-        ReportDependency(context, taskNode, DependencyType.AzureDevOpsTask, '@');
+        ReportDependencyWithSeparator<AzureDevOpsScanner>(context, taskNode, DependencyType.AzureDevOpsTask, '@');
 
         var templateNode = GetProperty(node, "template", StringComparison.Ordinal);
-        ReportDependency(context, templateNode, DependencyType.AzureDevOpsTemplate, '@');
+        ReportDependencyWithSeparator<AzureDevOpsScanner>(context, templateNode, DependencyType.AzureDevOpsTemplate, '@');
     }
 
     // https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/stages?view=azure-pipelines&WT.mc_id=DT-MVP-5003978
@@ -141,7 +96,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
             containerNode = GetProperty(container, "image", StringComparison.Ordinal);
         }
 
-        ReportDependency(context, containerNode, DependencyType.DockerImage, ':');
+        ReportDependencyWithSeparator<AzureDevOpsScanner>(context, containerNode, DependencyType.DockerImage, ':');
     }
 
     private static void ScanResources(ScanFileContext context, YamlNode node)
@@ -153,7 +108,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
                 foreach (var container in containers)
                 {
                     var imageNode = GetProperty(container, "image", StringComparison.Ordinal);
-                    ReportDependency(context, imageNode, DependencyType.DockerImage, ':');
+                    ReportDependencyWithSeparator<AzureDevOpsScanner>(context, imageNode, DependencyType.DockerImage, ':');
                 }
             }
 
@@ -180,11 +135,7 @@ public sealed class AzureDevOpsScanner : DependencyScanner
     {
         try
         {
-            using var textReader = new StreamReader(context.Content, leaveOpen: true);
-            var reader = new MergingParser(new Parser(textReader));
-            var yaml = new YamlStream();
-            yaml.Load(reader);
-
+            var yaml = LoadYamlDocument(context.Content);
             foreach (var document in yaml.Documents)
             {
                 if (document.RootNode is not YamlMappingNode rootNode)
@@ -203,30 +154,5 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         }
 
         return ValueTask.CompletedTask;
-    }
-
-    private static YamlNode? GetProperty(YamlMappingNode node, string propertyName, StringComparison stringComparison)
-    {
-        foreach (var child in node.Children)
-        {
-            if (child.Key is YamlScalarNode scalar && string.Equals(scalar.Value, propertyName, stringComparison))
-                return child.Value;
-        }
-
-        return null;
-    }
-
-    private static YamlNode? GetProperty(YamlNode? node, string propertyName, StringComparison stringComparison)
-    {
-        if (node is not YamlMappingNode mappingNode)
-            return null;
-
-        foreach (var child in mappingNode.Children)
-        {
-            if (child.Key is YamlScalarNode scalar && string.Equals(scalar.Value, propertyName, stringComparison))
-                return child.Value;
-        }
-
-        return null;
     }
 }

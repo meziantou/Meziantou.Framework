@@ -20,6 +20,7 @@ public sealed class ScannerOptions
         new PackagesConfigDependencyScanner(),
         new ProjectJsonDependencyScanner(),
         new PythonRequirementsDependencyScanner(),
+        new RenovateExtendsDependencyScanner(),
     });
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();

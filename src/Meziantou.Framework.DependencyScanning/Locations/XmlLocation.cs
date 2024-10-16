@@ -46,7 +46,7 @@ internal class XmlLocation : Location, ILocationLineInfo
 
     public override bool IsUpdatable => true;
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
-    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
+    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition + Math.Clamp(StartPosition, 0, int.MaxValue);
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
@@ -102,14 +102,12 @@ internal class XmlLocation : Location, ILocationLineInfo
         if (oldValue is not null)
         {
             var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
-            if(!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
+            if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
                 throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue.ToString()}'. The file was probably modified since last scan.");
         }
 
         return currentValue
             .Remove(StartPosition, Length)
             .Insert(StartPosition, newValue);
-
-
     }
 }

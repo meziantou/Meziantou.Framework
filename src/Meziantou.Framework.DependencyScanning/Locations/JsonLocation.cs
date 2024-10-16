@@ -10,23 +10,32 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
     private readonly LineInfo _lineInfo;
 
     internal JsonLocation(ScanFileContext context, JToken token)
-        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path)
+        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, -1, -1)
+    {
+    }
+
+    internal JsonLocation(ScanFileContext context, JToken token, int column, int length)
+        : this(context.FileSystem, context.FullPath, LineInfo.FromJToken(token), token.Path, column, length)
     {
 
     }
 
-    internal JsonLocation(IFileSystem fileSystem, string filePath, LineInfo lineInfo, string jsonPath)
+    internal JsonLocation(IFileSystem fileSystem, string filePath, LineInfo lineInfo, string jsonPath, int column, int length)
         : base(fileSystem, filePath)
     {
         _lineInfo = lineInfo;
         JsonPath = jsonPath;
+        StartPosition = column;
+        Length = length;
     }
 
     public string JsonPath { get; }
+    public int StartPosition { get; set; }
+    public int Length { get; }
 
     public override bool IsUpdatable => true;
     int ILocationLineInfo.LineNumber => _lineInfo.LineNumber;
-    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition;
+    int ILocationLineInfo.LinePosition => _lineInfo.LinePosition + Math.Clamp(StartPosition, 0, int.MaxValue);
 
     protected internal override async Task UpdateCoreAsync(string? oldValue, string newValue, CancellationToken cancellationToken)
     {
@@ -45,13 +54,10 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
             var jobject = JObject.Parse(text);
             if (jobject.SelectToken(JsonPath) is JValue token)
             {
-                if (oldValue is not null)
-                {
-                    if (token.Value is not string existingValue || existingValue != oldValue)
-                        throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
-                }
+                if (token.Value is not string tokenValue)
+                    throw new DependencyScannerException("Expected value not found at the location. File was probably modified since last scan.");
 
-                token.Value = newValue;
+                token.Value = UpdateTextValue(tokenValue, oldValue, newValue);
 
                 stream.SetLength(0);
 
@@ -85,5 +91,27 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
     public override string ToString()
     {
         return string.Create(CultureInfo.InvariantCulture, $"{FilePath}:{JsonPath}:{_lineInfo}");
+    }
+
+    private string UpdateTextValue(string? currentValue, string? oldValue, string newValue)
+    {
+        if (StartPosition < 0)
+        {
+            if (oldValue is not null && currentValue != oldValue)
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{currentValue}'. The file was probably modified since last scan.");
+
+            return newValue;
+        }
+
+        if (oldValue is not null)
+        {
+            var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
+            if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue.ToString()}'. The file was probably modified since last scan.");
+        }
+
+        return currentValue
+            .Remove(StartPosition, Length)
+            .Insert(StartPosition, newValue);
     }
 }

@@ -17,4 +17,5 @@ public enum DependencyType
     AzureDevOpsTemplate,
     HelmChart,
     RubyGem,
+    RenovateConfiguration,
 }

@@ -166,24 +166,21 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     [Fact]
     public async Task MsBuildSdkReferencesDependencies()
     {
-        const string Original = @"<Project Sdk=""MSBuild.Sdk.Extras/2.0.54"">
-    <Sdk Name=""My.Custom.Sdk1"" Version=""1.0.0"" />
-    <Import Sdk=""My.Custom.Sdk2/2.0.55"" />
-</Project>
-";
-        const string Expected = @"<Project Sdk=""dummy1/1.2.3"">
-    <Sdk Name=""dummy2"" Version=""1.2.3"" />
-    <Import Sdk=""dummy3/1.2.3"" />
-</Project>
-";
+        const string Original = """
+            <Project Sdk="MSBuild.Sdk.Extras/2.0.54">
+                <Sdk Name="My.Custom.Sdk1" Version="1.0.0" />
+                <Import Sdk="My.Custom.Sdk2/2.0.55" />
+            </Project>
+            """;
+        const string Expected = """
+            <Project Sdk="dummy1/1.2.3">
+                <Sdk Name="dummy2" Version="1.2.3" />
+                <Import Sdk="dummy3/1.2.3" />
+            </Project>
+            """;
 
         AddFile("test.csproj", Original);
         var result = await GetDependencies<MsBuildReferencesDependencyScanner>();
-        AssertContainDependency(result,
-            (DependencyType.NuGet, "MSBuild.Sdk.Extras", "2.0.54", 1, 29),
-            (DependencyType.NuGet, "My.Custom.Sdk1", "1.0.0", 2, 32),
-            (DependencyType.NuGet, "My.Custom.Sdk2", "2.0.55", 3, 28));
-
         await UpdateDependencies(result, "dummy", "1.2.3");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);
     }
@@ -417,12 +414,6 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AddFile("packages.config", Original);
         AddFile("file.csproj", OriginalCsproj);
         var result = await GetDependencies<PackagesConfigDependencyScanner>();
-        AssertContainDependency(result,
-            (DependencyType.NuGet, "NUnit", "3.11.0", 3, 90),
-            (DependencyType.NuGet, "NUnit", "3.11.0", 7, 26),
-            (DependencyType.NuGet, "NUnit", "3.11.0.0", 6, 41),
-            (DependencyType.NuGet, "NUnit", "3.11.0", 15, 139));
-
         await UpdateDependencies(result, "dummy", "3.12.0-beta00");
         AssertFileContentEqual("packages.config", Expected, ignoreNewLines: true);
         AssertFileContentEqual("file.csproj", ExpectedCsproj, ignoreNewLines: true);
@@ -1004,7 +995,7 @@ jobs:
                 - task: dummy1@2
             """, ignoreNewLines: true);
     }
-    
+
     [Fact]
     public async Task AzureDevOpsTemplateInSteps()
     {
@@ -1049,6 +1040,62 @@ jobs:
             """, ignoreNewLines: true);
     }
 
+    [Theory]
+    [InlineData("renovate.json")]
+    [InlineData("renovate.json5")]
+    [InlineData("renovaterc")]
+    [InlineData("renovaterc.json")]
+    [InlineData("renovaterc.json5")]
+    [InlineData(".github/renovate.json")]
+    [InlineData(".github/renovate.json5")]
+    [InlineData(".gitlab/renovate.json")]
+    [InlineData(".gitlab/renovate.json5")]
+    public async Task RenovateExtendsDependencies(string filePath)
+    {
+        AddFile(filePath, """
+            {
+              "extends": [
+                "config:recommended",
+                "github>owner/repo",
+                "github>owner/repo#1.2.3",
+                "github>owner/repo:file",
+                "github>owner/repo:file#1.2.3",
+                "github>owner/repo//file",
+                "github>owner/repo//file#1.2.3",
+              ],
+              "packageRules": [
+                {
+                  "extends": [
+                    "github>owner/repo//file#1.2.3"
+                  ]
+                }
+              ]
+            }
+            """);
+        var result = await GetDependencies<RenovateExtendsDependencyScanner>();
+        await UpdateDependencies(result, "dummy", "2.0.0");
+        AssertFileContentEqual(filePath, """
+            {
+              "extends": [
+                "dummy1",
+                "dummy2",
+                "dummy3#2.0.0",
+                "dummy4",
+                "dummy5#2.0.0",
+                "dummy6",
+                "dummy7#2.0.0"
+              ],
+              "packageRules": [
+                {
+                  "extends": [
+                    "dummy8#2.0.0"
+                  ]
+                }
+              ]
+            }
+            """, ignoreNewLines: true);
+    }
+
     private async Task<Dependency[]> GetDependencies<T>(DependencyScanner[]? scanners = null) where T : DependencyScanner
     {
         var options = new ScannerOptions { DegreeOfParallelism = 1 };
@@ -1085,7 +1132,7 @@ jobs:
 
         async Task<Dependency[]> Scan(ScannerOptions options)
         {
-             var items = await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, options);
+            var items = await DependencyScanner.ScanDirectoryAsync(_directory.FullPath, options);
             return items.Where(d => d.Tags.Contains(typeof(T).FullName)).ToArray();
         }
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.ObjectPool;
@@ -95,11 +96,11 @@ public static class CodeOwnersParser
                 c = _lexer.Peek();
                 if (c == '[')
                 {
-                    _lexer.Consume();
-                    var sb = StringBuilderPool.Get();
-                    _lexer.ConsumeUntil(']', sb);
-                    _lexer.ConsumeUntil('\n');
-                    section = new CodeOwnersSection(StringBuilderPool.ToStringAndReturn(sb), isOptional);
+                    var name = ParseSectionName();
+                    var requiredReviewerCount = ParseSectionRequiredReviewerCount();
+                    var defaultOwners = ParseSectionDefaultOwners();
+
+                    section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
                     return true;
                 }
             }
@@ -190,7 +191,20 @@ public static class CodeOwnersParser
             }
 
             if (!foundMember)
-                AddEntry(isMember: false, name: null, pattern, patternIndex);
+            {
+                if (_currentSection.HasValue && _currentSection.Value.HasDefaultOwners)
+                {
+                    foreach (var defaultOwner in _currentSection.Value.DefaultOwners)
+                    {
+                        var isMember = defaultOwner[0] == '@';
+                        AddEntry(isMember, isMember ? defaultOwner[1..] : defaultOwner, pattern, patternIndex);
+                    }
+                }
+                else
+                {
+                    AddEntry(isMember: false, name: null, pattern, patternIndex);
+                }
+            }
         }
 
         private readonly void AddEntry(bool isMember, string? name, string pattern, int patternIndex)
@@ -207,6 +221,55 @@ public static class CodeOwnersParser
             {
                 _entries.Add(CodeOwnersEntry.FromEmailAddress(patternIndex, pattern, name, _currentSection));
             }
+        }
+
+        private readonly string ParseSectionName()
+        {
+            _lexer.Consume();
+            var sb = StringBuilderPool.Get();
+            _lexer.ConsumeUntil(']', sb);
+
+            return StringBuilderPool.ToStringAndReturn(sb);
+        }
+
+        private readonly int ParseSectionRequiredReviewerCount()
+        {
+            var sb = StringBuilderPool.Get();
+
+            var c = _lexer.Peek();
+            if (c == '[')
+            {
+                _lexer.Consume();
+                _lexer.ConsumeUntil(']', sb);
+            }
+            else
+            {
+                // If no count is specified in section headers, only one reviewer is required by default.
+                return 1;
+            }
+
+            var requiredReviewerCountString = StringBuilderPool.ToStringAndReturn(sb);
+            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out int requiredReviewerCount);
+            return isParseValid ? requiredReviewerCount : 1;
+        }
+
+        private readonly List<string> ParseSectionDefaultOwners()
+        {
+            var sb = StringBuilderPool.Get();
+            _lexer.ConsumeUntil('\n', sb);
+            var defaultOwnersString = StringBuilderPool.ToStringAndReturn(sb).Trim();
+
+            var defaultOwners = new List<string>();
+            if (!string.IsNullOrEmpty(defaultOwnersString))
+            {
+                var splits = defaultOwnersString.Split(' ');
+                foreach (var split in splits)
+                {
+                    defaultOwners.Add(split);
+                }
+            }
+
+            return defaultOwners;
         }
     }
 

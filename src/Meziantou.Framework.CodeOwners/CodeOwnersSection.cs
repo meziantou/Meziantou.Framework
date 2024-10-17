@@ -5,14 +5,21 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
 {
-    public CodeOwnersSection(string name, bool isOptional)
+    public CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyCollection<string> defaultOwners = null)
     {
         Name = name;
-        IsOptional = isOptional;
+        RequiredReviewerCount = requiredReviewerCount;
+        DefaultOwners = defaultOwners ?? new List<string>();
     }
 
     public string Name { get; }
-    public bool IsOptional { get; }
+
+    public int RequiredReviewerCount { get; }
+    public bool IsOptional => RequiredReviewerCount == 0;
+    public bool IsMandatory => !IsOptional;
+
+    public IReadOnlyCollection<string> DefaultOwners { get; }
+    public bool HasDefaultOwners => DefaultOwners is not null && DefaultOwners.Count > 0;
 
     public override bool Equals(object? obj)
     {
@@ -22,14 +29,16 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     public bool Equals(CodeOwnersSection other)
     {
         return Name == other.Name &&
-               IsOptional == other.IsOptional;
+               RequiredReviewerCount == other.RequiredReviewerCount &&
+               DefaultOwners.SequenceEqual(other.DefaultOwners, StringComparer.Ordinal);
     }
 
     public override int GetHashCode()
     {
         var hashCode = 1707150943;
-        hashCode = hashCode * -1521134295 + IsOptional.GetHashCode();
         hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Name);
+        hashCode = hashCode * -1521134295 + RequiredReviewerCount.GetHashCode();
+        hashCode = hashCode * -1521134295 + DefaultOwners.GetHashCode();
         return hashCode;
     }
 

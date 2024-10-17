@@ -31,10 +31,10 @@ public readonly struct ScanFileContext : IAsyncDisposable
     public void ReportDependency<TScanner>(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)
         where TScanner : DependencyScanner
     {
-        ReportDependency<TScanner>(name, version, type, nameLocation, versionLocation, []);
+        ReportDependency<TScanner>(name, version, type, nameLocation, versionLocation, [], []);
     }
 
-    public void ReportDependency<TScanner>(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags)
+    public void ReportDependency<TScanner>(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
         where TScanner : DependencyScanner
     {
         var dep = new Dependency(name, version, type, nameLocation, versionLocation);
@@ -42,6 +42,11 @@ public readonly struct ScanFileContext : IAsyncDisposable
         foreach (var tag in tags)
         {
             dep.Tags.Add(tag);
+        }
+
+        foreach (var (key, value) in metadata)
+        {
+            dep.Metadata[key] = value;
         }
 
         ReportDependency(dep);

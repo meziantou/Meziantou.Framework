@@ -17,6 +17,7 @@ public sealed class Dependency
     public Location? NameLocation { get; }
     public Location? VersionLocation { get; }
     public ISet<string> Tags { get; } = new HashSet<string>(StringComparer.Ordinal);
+    public IDictionary<string, object?> Metadata{ get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     public Task UpdateNameAsync(string newValue, CancellationToken cancellationToken = default)
     {

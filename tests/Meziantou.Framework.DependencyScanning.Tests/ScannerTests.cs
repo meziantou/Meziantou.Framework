@@ -782,6 +782,16 @@ jobs:
             container: 'dummy1'
             """, ignoreNewLines: true);
     }
+    
+    [Fact]
+    public async Task AzureDevOpsInvalidYaml()
+    {
+        AddFile("sample.yml", """
+            dummy
+            """);
+        var result = await GetDependencies<AzureDevOpsScanner>();
+        Assert.Empty(result);
+    }
 
     [Fact]
     public async Task AzureDevOpsJobContainerDependencies()

@@ -1,4 +1,3 @@
-using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
@@ -148,17 +147,20 @@ public sealed class AzureDevOpsScanner : DependencyScanner
         try
         {
             var yaml = LoadYamlDocument(context.Content);
-            foreach (var document in yaml.Documents)
+            if (yaml is not null)
             {
-                if (document.RootNode is not YamlMappingNode rootNode)
-                    continue;
+                foreach (var document in yaml.Documents)
+                {
+                    if (document.RootNode is not YamlMappingNode rootNode)
+                        continue;
 
-                ScanPool(context, rootNode);
-                ScanStages(context, rootNode);
-                ScanJobs(context, rootNode);
-                ScanSteps(context, rootNode);
-                ScanJobContainers(context, rootNode);
-                ScanResources(context, rootNode);
+                    ScanPool(context, rootNode);
+                    ScanStages(context, rootNode);
+                    ScanJobs(context, rootNode);
+                    ScanSteps(context, rootNode);
+                    ScanJobContainers(context, rootNode);
+                    ScanResources(context, rootNode);
+                }
             }
         }
         catch

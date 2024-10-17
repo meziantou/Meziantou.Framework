@@ -240,11 +240,24 @@ public sealed class CodeOwnersParserTests
     [Fact]
     public void ParseSectionWithCRLFLineEndings()
     {
-        var actual = CodeOwnersParser.Parse("[Section]\r\n* @owner1\r\n").ToArray();
+        const string Content = "\r\n" +
+                               "[Test1]\r\n" +
+                               "* @user1\r\n" +
+                               "\r\n" +
+                               "[Test2][2]\r\n" +
+                               "* @user2\r\n" +
+                               "\r\n" +
+                               "[Test3] @defaultOwner\r\n" +
+                               "* @user3\r\n" +
+                               " ";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
 
         var expected = new CodeOwnersEntry[]
         {
-            CodeOwnersEntry.FromUsername(0, "*", "owner1", section: new CodeOwnersSection("Section")),
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test1")),
+            CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Test2", 2)),
+            CodeOwnersEntry.FromUsername(2, "*", "user3", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner"])),
         };
 
         actual.Should().Equal(expected);

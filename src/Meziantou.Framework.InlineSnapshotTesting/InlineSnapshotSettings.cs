@@ -11,6 +11,7 @@ public sealed record InlineSnapshotSettings
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
         MergeTool.GitDiffTool,
+        MergeTool.VisualStudioMergeIfCurrentProcess,
         MergeTool.VisualStudioCodeIfCurrentProcess,
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
@@ -64,13 +65,13 @@ public sealed record InlineSnapshotSettings
 
     public InlineSnapshotSettings()
     {
-        Scrubbers = new List<Scrubber>();
+        Scrubbers = [];
     }
 
     [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private InlineSnapshotSettings(InlineSnapshotSettings? options)
     {
-        Scrubbers = new List<Scrubber>();
+        Scrubbers = [];
         if (options != null)
         {
             Indentation = options.Indentation;

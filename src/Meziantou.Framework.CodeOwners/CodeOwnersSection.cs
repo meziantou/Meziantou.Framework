@@ -5,7 +5,7 @@ namespace Meziantou.Framework.CodeOwners;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
 {
-    public CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyCollection<string> defaultOwners = null)
+    internal CodeOwnersSection(string name, int requiredReviewerCount = 1, IReadOnlyCollection<string> defaultOwners = null)
     {
         Name = name;
         RequiredReviewerCount = requiredReviewerCount;

@@ -183,7 +183,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
 
     private static MethodBase GetActualMethod(MethodBase method)
     {
-        if (method.DeclaringType.IsAssignableTo(typeof(IAsyncStateMachine)))
+        if (method.DeclaringType is not null && method.DeclaringType.IsAssignableTo(typeof(IAsyncStateMachine)))
         {
             var parentType = method.DeclaringType.DeclaringType;
             if (parentType is not null)
@@ -195,7 +195,6 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                     foreach (var candidateMethod in methods)
                     {
                         var attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
-                        // ReSharper disable once ConditionIsAlwaysTrueOrFalse - Taken from CoreFX
                         if (attributes is null)
                         {
                             continue;

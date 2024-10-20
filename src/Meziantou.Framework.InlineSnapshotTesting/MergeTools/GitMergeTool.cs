@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
@@ -25,7 +26,9 @@ internal sealed class GitMergeTool : GitTool
                 {
                     try
                     {
-                        File.Delete(originalCopy);
+                        var fi = new FileInfo(originalCopy);
+                        fi.TrySetReadOnly(false);
+                        fi.Delete();
                     }
                     catch
                     {

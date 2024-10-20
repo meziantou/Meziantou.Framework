@@ -85,6 +85,7 @@ internal static class CSharpStringLiteral
                     break;
             }
         }
+
         sb.Append('"');
         return sb.ToString();
     }
@@ -106,6 +107,7 @@ internal static class CSharpStringLiteral
                     break;
             }
         }
+
         sb.Append('"');
         return sb.ToString();
     }

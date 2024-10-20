@@ -31,7 +31,7 @@ internal sealed partial record ProcessInfo
             {
                 var startTime = new DateTimeOffset(contextProcess.StartTime);
                 // Trim milliseconds to avoid some comparison issues
-                startTime = new DateTimeOffset(startTime.Ticks - startTime.Ticks % TimeSpan.TicksPerMillisecond, startTime.Offset);
+                startTime = new DateTimeOffset(startTime.Ticks - (startTime.Ticks % TimeSpan.TicksPerMillisecond), startTime.Offset);
 
                 return new ProcessInfo
                 {

@@ -1,4 +1,5 @@
 ﻿using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -42,6 +43,8 @@ public abstract class SnapshotUpdateStrategy
         }
     }
 
+    public virtual bool ReuseTemporaryFile => true;
+
     /// <summary>
     /// Indicates if an an inline snapshot must be updated
     /// </summary>
@@ -59,11 +62,30 @@ public abstract class SnapshotUpdateStrategy
         if (source == destination)
             return;
 
+        var fi = new FileInfo(source);
+        fi.TrySetReadOnly(false);
+
 #if NETCOREAPP3_0_OR_GREATER
         File.Move(source, destination, overwrite: true);
 #else
         File.Copy(source, destination, overwrite: true);
-        File.Delete(source);
+        TryDeleteFile(source);
 #endif
+    }
+
+    private protected static void TryDeleteFile(string path)
+    {
+        try
+        {
+            var fi = new FileInfo(path);
+            if (fi.Exists)
+            {
+                fi.TrySetReadOnly(false);
+                fi.Delete();
+            }
+        }
+        catch
+        {
+        }
     }
 }

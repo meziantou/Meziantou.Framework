@@ -70,8 +70,9 @@ internal static class FileEditor
             var tempPath = TempFiles.GetOrAdd(context.FilePath, _ => Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".cs"));
             var preprocessorSymbols = context.GetCompilationDefines();
 
+            // Find node to update
             var options = new CSharpParseOptions(preprocessorSymbols: preprocessorSymbols);
-            var filePath = File.Exists(tempPath) ? tempPath : context.FilePath;
+            var filePath = settings.SnapshotUpdateStrategy.ReuseTemporaryFile && File.Exists(tempPath) ? tempPath : context.FilePath;
             var sourceText = GetSourceText(settings, filePath);
             var tree = CSharpSyntaxTree.ParseText(sourceText, options, filePath, cancellationToken);
             var root = tree.GetRoot(cancellationToken);
@@ -110,6 +111,7 @@ internal static class FileEditor
             var invocationExpression = nodes[0];
             var argumentExpression = FindArgumentExpression(context, invocationExpression.ArgumentList.Arguments, existingValue);
 
+            // Update node
             var indentation = settings.Indentation ?? DetectIndentation(sourceText);
             var eol = settings.EndOfLine ?? DetectEndOfLine(sourceText);
             var startPosition = GetStartPosition(invocationExpression);
@@ -133,11 +135,21 @@ internal static class FileEditor
                         .WithTrailingTrivia(argumentExpression.GetTrailingTrivia());
 
                 newRoot = root.ReplaceNode(argumentExpression, newArgumentExpression);
+
+                if (settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
+                {
+                    AddFileEdit(context, argumentExpression, newArgumentExpression);
+                }
             }
             else
             {
                 var newInvocation = invocationExpression.AddArgumentListArguments(SyntaxFactory.Argument(newArgumentExpression).WithLeadingTrivia(SyntaxFactory.Space));
                 newRoot = root.ReplaceNode(invocationExpression, newInvocation);
+
+                if (settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
+                {
+                    AddFileEdit(context, invocationExpression, newInvocation);
+                }
             }
 
             // Save the file
@@ -145,45 +157,60 @@ internal static class FileEditor
             var encoding = settings.FileEncoding ?? sourceText.Encoding ?? DetectEncoding(context) ?? Encoding.UTF8;
 
             Directory.CreateDirectory(Path.GetDirectoryName(tempPath)!);
+            var tempFileInfo = new FileInfo(tempPath);
+            if (tempFileInfo.Exists)
+            {
+                tempFileInfo.TrySetReadOnly(false);
+            }
+
             using (var outputStream = File.OpenWrite(tempPath))
             using (var textWriter = new StreamWriter(outputStream, encoding))
             {
                 newRoot.WriteTo(textWriter);
             }
 
+            tempFileInfo.TrySetReadOnly(true);
+
             settings.SnapshotUpdateStrategy.UpdateFile(settings, context.FilePath, tempPath);
 
             // Track the changes
             // note: Diff tools allow partial merge or custom edits => we need to reload the document to find the new expression
-            // note: Diff tools allow to remove the temp path
-            var mergedSourceText = GetSourceText(settings, filePath);
-            var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText, options, filePath, cancellationToken);
-            var mergedRoot = mergedTree.GetRoot(cancellationToken);
-
-            var textSpan = new TextSpan(invocationExpression.SpanStart, 1);
-            var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();
-            if (potentialMergedExpressions.Length == 0)
+            if (!settings.SnapshotUpdateStrategy.ReuseTemporaryFile)
             {
-                Errors.Add(context.FilePath);
-                return;
+                var mergedSourceText = GetSourceText(settings, filePath);
+                var mergedTree = CSharpSyntaxTree.ParseText(mergedSourceText, options, filePath, cancellationToken);
+                var mergedRoot = mergedTree.GetRoot(cancellationToken);
+
+                var textSpan = new TextSpan(invocationExpression.SpanStart, 1);
+                var potentialMergedExpressions = mergedRoot.DescendantNodesAndSelf(textSpan).OfType<InvocationExpressionSyntax>().ToArray();
+                if (potentialMergedExpressions.Length == 0)
+                {
+                    Errors.Add(context.FilePath);
+                    return;
+                }
+
+                AddFileEdit(context, invocationExpression, potentialMergedExpressions.MaxBy(e => e.Span.Length));
             }
-
-            var invocationSpan = invocationExpression.GetLocation().GetMappedLineSpan();
-            var newInvocationSpan = potentialMergedExpressions.MaxBy(e => e.Span.Length).GetLocation().GetMappedLineSpan();
-
-            var fileEdit = new FileEdit(
-                context.LineNumber,
-                invocationSpan.EndLinePosition.Line - invocationSpan.StartLinePosition.Line,
-                newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
-            if (!Changes.TryGetValue(context.FilePath, out var fileEdits))
-            {
-                fileEdits = [];
-                Changes.Add(context.FilePath, fileEdits);
-            }
-
-            fileEdits.Add(fileEdit);
-            fileEdits.Sort((a, b) => a.StartLine - b.StartLine);
         }
+    }
+
+    private static void AddFileEdit(CallerContext context, SyntaxNode oldNode, SyntaxNode newNode)
+    {
+        var invocationSpan = oldNode.GetLocation().GetMappedLineSpan();
+        var newInvocationSpan = newNode.GetLocation().GetMappedLineSpan();
+
+        var fileEdit = new FileEdit(
+            context.LineNumber,
+            invocationSpan.EndLinePosition.Line - invocationSpan.StartLinePosition.Line,
+            newInvocationSpan.EndLinePosition.Line - newInvocationSpan.StartLinePosition.Line);
+        if (!Changes.TryGetValue(context.FilePath, out var fileEdits))
+        {
+            fileEdits = [];
+            Changes.Add(context.FilePath, fileEdits);
+        }
+
+        fileEdits.Add(fileEdit);
+        fileEdits.Sort((a, b) => a.StartLine - b.StartLine);
     }
 
     private static HashSet<InvocationExpressionSyntax> FindInvocations(SyntaxNode root, TextSpan span)

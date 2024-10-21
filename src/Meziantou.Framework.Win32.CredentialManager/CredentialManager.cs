@@ -259,17 +259,17 @@ public static class CredentialManager
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, CredentialSaveOption saveCredential)
     {
-        return PromptForCredentials(owner, messageText, captionText, CredentialErrorCode.None, userName, password: null, saveCredential);
+        return PromptForCredentials(owner, messageText, captionText, userName, password: null, saveCredential, CredentialErrorCode.None);
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, string? password, CredentialSaveOption saveCredential)
     {
-        return PromptForCredentials(owner, messageText, captionText, CredentialErrorCode.None, userName, password, saveCredential);
+        return PromptForCredentials(owner, messageText, captionText, userName, password, saveCredential, CredentialErrorCode.None);
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, CredentialErrorCode error = CredentialErrorCode.None, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected, CredentialErrorCode error = CredentialErrorCode.None)
     {
         fixed (char* messageTextPtr = messageText)
         fixed (char* captionTextPtr = captionText)

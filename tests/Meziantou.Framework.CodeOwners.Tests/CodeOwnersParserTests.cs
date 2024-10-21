@@ -313,7 +313,8 @@ public sealed class CodeOwnersParserTests
 
         var expected = new CodeOwnersEntry[]
         {
-            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 1, ["@defaultOwner1", "defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner1", section: new CodeOwnersSection("Test", 1, ["@defaultOwner1", "defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner2", section: new CodeOwnersSection("Test", 1, ["@defaultOwner1", "defaultOwner2"])),
         };
 
         actual.Should().Equal(expected);
@@ -326,7 +327,8 @@ public sealed class CodeOwnersParserTests
 
         var expected = new CodeOwnersEntry[]
         {
-            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 2, ["@defaultOwner1, defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner1", section: new CodeOwnersSection("Test", 2, ["@defaultOwner1, defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner2", section: new CodeOwnersSection("Test", 2, ["@defaultOwner1, defaultOwner2"])),
         };
 
         actual.Should().Equal(expected);

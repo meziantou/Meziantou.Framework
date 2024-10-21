@@ -238,6 +238,101 @@ public sealed class CodeOwnersParserTests
     }
 
     [Fact]
+    public void OptionalOverridesRequiredReviewerCount()
+    {
+        var actual = CodeOwnersParser.Parse("^[Test][2]\n* @user").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test", 0)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void RequiredRewiewerCountIgnoredIfSpaceBefore()
+    {
+        var actual = CodeOwnersParser.Parse("[Test] [2]\n* @user").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test", 1)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void RequiredRewiewerCountIgnoredIfHashTagBefore()
+    {
+        var actual = CodeOwnersParser.Parse("[Test]#[2]\n* @user").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test", 1)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void DefaultOwnersIgnoredIfJuxtaposedToSectionName()
+    {
+        var actual = CodeOwnersParser.Parse("[Test]@defaultOwner\n*").ToArray();
+
+        var expected = Array.Empty<CodeOwnersEntry>();
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void DefaultOwnersIgnoredIfJuxtaposedToRequiredReviewerCount()
+    {
+        var actual = CodeOwnersParser.Parse("[Test][2]@defaultOwner\n*").ToArray();
+
+        var expected = Array.Empty<CodeOwnersEntry>();
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void RequiredReviewerCountAndDefaultOwnerIgnoredIfSpaceBefore()
+    {
+        var actual = CodeOwnersParser.Parse("[Test] [2] @defaultOwner\n*").ToArray();
+
+        var expected = Array.Empty<CodeOwnersEntry>();
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void DefaultOwnersIgnoresExtraSpaces()
+    {
+        var actual = CodeOwnersParser.Parse("[Test]  @defaultOwner1    @defaultOwner2\n*").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 1, ["@defaultOwner1", "defaultOwner2"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void DefaultOwnersIgnoresExtraSpacesWithRequiredReviewerCount()
+    {
+        var actual = CodeOwnersParser.Parse("[Test][2]  @defaultOwner1    @defaultOwner2\n*").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 2, ["@defaultOwner1, defaultOwner2"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
     public void ParseSectionWithCRLFLineEndings()
     {
         const string Content = "\r\n" +

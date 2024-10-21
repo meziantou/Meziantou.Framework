@@ -259,11 +259,17 @@ public static class CredentialManager
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, CredentialSaveOption saveCredential)
     {
-        return PromptForCredentials(owner, messageText, captionText, userName, password: null, saveCredential);
+        return PromptForCredentials(owner, messageText, captionText, CredentialErrorCode.None, userName, password: null, saveCredential);
     }
 
     [SupportedOSPlatform("windows6.0.6000")]
-    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
+    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, string? password, CredentialSaveOption saveCredential)
+    {
+        return PromptForCredentials(owner, messageText, captionText, CredentialErrorCode.None, userName, password, saveCredential);
+    }
+
+    [SupportedOSPlatform("windows6.0.6000")]
+    public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, CredentialErrorCode error = CredentialErrorCode.None, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
     {
         fixed (char* messageTextPtr = messageText)
         fixed (char* captionTextPtr = captionText)
@@ -280,7 +286,11 @@ public static class CredentialManager
             BOOL save = saveCredential == CredentialSaveOption.Selected;
 
             // Setup the flags and variables
-            var errorcode = 0u;
+            uint errorcode = error switch
+            {
+                CredentialErrorCode.LogonFailure => (uint)WIN32_ERROR.ERROR_LOGON_FAILURE,
+                _ => 0u
+            };
 
             var flags = CREDUIWIN_FLAGS.CREDUIWIN_GENERIC | CREDUIWIN_FLAGS.CREDUIWIN_ENUMERATE_CURRENT_USER;
             if (saveCredential != CredentialSaveOption.Hidden)

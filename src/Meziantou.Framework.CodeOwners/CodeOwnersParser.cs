@@ -97,8 +97,22 @@ public static class CodeOwnersParser
                 if (c == '[')
                 {
                     var name = ParseSectionName();
-                    var requiredReviewerCount = ParseSectionRequiredReviewerCount();
-                    var defaultOwners = ParseSectionDefaultOwners();
+
+                    var requiredReviewerCount = 1;
+                    if (_lexer.Peek() == '[')
+                    {
+                        requiredReviewerCount = ParseSectionRequiredReviewerCount();
+                    }
+
+                    var defaultOwners = new List<string>();
+                    if (_lexer.Peek() == ' ')
+                    {
+                        defaultOwners = ParseSectionDefaultOwners();
+                    }
+                    else
+                    {
+                        _lexer.ConsumeUntilEndOfLineOrEndOfFile();
+                    }
 
                     section = new CodeOwnersSection(name, isOptional ? 0 : requiredReviewerCount, defaultOwners);
                     return true;
@@ -262,9 +276,17 @@ public static class CodeOwnersParser
             var defaultOwners = new List<string>();
             if (!string.IsNullOrEmpty(defaultOwnersString))
             {
-                var splits = defaultOwnersString.Split(' ');
+                var splits = defaultOwnersString
+                    .Replace('\t', ' ')
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
                 foreach (var split in splits)
                 {
+                    // GitLab stops parsing default owners when encountering an unexpected token
+                    // but keeps the default owners already parsed as valid.
+                    if (split.StartsWith("[", StringComparison.Ordinal) || split.StartsWith("#", StringComparison.Ordinal))
+                        break;
+
                     defaultOwners.Add(split);
                 }
             }
@@ -360,6 +382,14 @@ public static class CodeOwnersParser
 
                 sb.Append(next);
                 _currentIndex++;
+            }
+        }
+
+        public void ConsumeUntilEndOfLineOrEndOfFile()
+        {
+            while (!TryConsumeEndOfLineOrEndOfFile())
+            {
+                Consume();
             }
         }
 

@@ -33,8 +33,8 @@ public sealed class CodeOwnersParserTests
 
         var expected = new CodeOwnersEntry[]
         {
-            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test", isOptional: false)),
-            CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test", isOptional: false)),
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test")),
+            CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test")),
         };
 
         actual.Should().Equal(expected);
@@ -146,10 +146,10 @@ public sealed class CodeOwnersParserTests
         var expected = new CodeOwnersEntry[]
         {
             CodeOwnersEntry.FromUsername(0, "doc/", "user4", section: null),
-            CodeOwnersEntry.FromUsername(1, "*", "user1", section: new CodeOwnersSection("Section", isOptional: false)),
-            CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Section", isOptional: false)),
-            CodeOwnersEntry.FromUsername(2, "*.js", "user2", section: new CodeOwnersSection("Optional Section", isOptional: true)),
-            CodeOwnersEntry.FromUsername(2, "*.js", "user3", section: new CodeOwnersSection("Optional Section", isOptional: true)),
+            CodeOwnersEntry.FromUsername(1, "*", "user1", section: new CodeOwnersSection("Section")),
+            CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Section")),
+            CodeOwnersEntry.FromUsername(2, "*.js", "user2", section: new CodeOwnersSection("Optional Section", 0)),
+            CodeOwnersEntry.FromUsername(2, "*.js", "user3", section: new CodeOwnersSection("Optional Section", 0)),
         };
 
         actual.Should().Equal(expected);
@@ -176,6 +176,198 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(3, "doc/", "user2", null),
             CodeOwnersEntry.FromNone(4, "*.md", null),
             CodeOwnersEntry.FromNone(5, "app/", null),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseCodeOwnersWithRequiredReviewerCount()
+    {
+        var actual = CodeOwnersParser.Parse("[Test][2]\n* @user1 @user2").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test", 2)),
+            CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test", 2)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseCodeOwnersWithDefaultOwners()
+    {
+        var actual = CodeOwnersParser.Parse("[Test] @defaultOwner default.owner@example.com\n*").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
+            CodeOwnersEntry.FromEmailAddress(0, "*", "default.owner@example.com", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseCodeOwnersWithDefaultOwnersOverriden()
+    {
+        var actual = CodeOwnersParser.Parse("[Test] @defaultOwner default.owner@example.com\n* @user1 @user2").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
+            CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseCodeOwnersWithRequiredReviewerCountAndDefaultOwners()
+    {
+        var actual = CodeOwnersParser.Parse("[Test][2] @defaultOwner default.owner@example.com\n*").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 2, ["@defaultOwner", "default.owner@example.com"])),
+            CodeOwnersEntry.FromEmailAddress(0, "*", "default.owner@example.com", section: new CodeOwnersSection("Test", 2, ["@defaultOwner", "default.owner@example.com"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void SectionHeadingEdgeCase_OptionalOverridesRequiredReviewerCount()
+    {
+        var actual = CodeOwnersParser.Parse("^[Test][2]\n* @user").ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test", 0)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void SectionHeadingEdgeCase_ExtraSpaceBeforeRequiredReviewerCountShouldDiscardRestOfLine()
+    {
+        const string Content = "[Test1] [2]\n" +
+                               "* @user\n" +
+                               "\n" +
+                               "[Test2] [2] @defaultOwner1\n" +
+                               "*\n" +
+                               "[Test3] @defaultOwner2 [2] @defaultOwner3\n" +
+                               "*\n";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test1", 1)),
+            CodeOwnersEntry.FromNone(1, "*", section: new CodeOwnersSection("Test2", 1)),
+            CodeOwnersEntry.FromUsername(2, "*", "defaultOwner2", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner2"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void SectionHeadingEdgeCase_HashTagBeforeRequiredRewiewerCountShouldDiscardRestOfLine()
+    {
+        const string Content = "[Test1]#[2]\n" +
+                               "* @user1\n" +
+                               "[Test2] # [2]\n" +
+                               "* @user2\n" +
+                               "[Test3]#[2] @defaultOwner1\n" +
+                               "*\n" +
+                               "[Test4] # [2] @defaultOwner2\n" +
+                               "*\n";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test1", 1)),
+            CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Test2", 1)),
+            CodeOwnersEntry.FromNone(2, "*", section: new CodeOwnersSection("Test3", 1)),
+            CodeOwnersEntry.FromNone(3, "*", section: new CodeOwnersSection("Test4", 1)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void SectionHeadingEdgeCase_DefaultOwnersShouldBePrecededBySpace()
+    {
+        const string Content = "[Test1]@defaultOwner1\n" +
+                               "*\n" +
+                               "[Test2][2]@defaultOwner2\n" +
+                               "*\n";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromNone(0, "*", section: new CodeOwnersSection("Test1", 1)),
+            CodeOwnersEntry.FromNone(1, "*", section: new CodeOwnersSection("Test2", 2)),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void SectionHeadingEdgeCase_IgnoreExtraSpacesBetweenDefaultOwners()
+    {
+        const string Content = "[Test1]  @defaultOwner1    @defaultOwner2\n" +
+                               "*\n" +
+                               "[Test2][2]  @defaultOwner3    @defaultOwner4\n" +
+                               "*\n" +
+                               "[Test3] \t @defaultOwner5  \t\t  @defaultOwner6\n" +
+                               "*\n" +
+                               "[Test4][2] \t @defaultOwner7  \t\t  @defaultOwner8\n" +
+                               "*\n";
+
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner1", section: new CodeOwnersSection("Test1", 1, ["@defaultOwner1", "@defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(0, "*", "defaultOwner2", section: new CodeOwnersSection("Test1", 1, ["@defaultOwner1", "@defaultOwner2"])),
+            CodeOwnersEntry.FromUsername(1, "*", "defaultOwner3", section: new CodeOwnersSection("Test2", 2, ["@defaultOwner3", "@defaultOwner4"])),
+            CodeOwnersEntry.FromUsername(1, "*", "defaultOwner4", section: new CodeOwnersSection("Test2", 2, ["@defaultOwner3", "@defaultOwner4"])),
+            CodeOwnersEntry.FromUsername(2, "*", "defaultOwner5", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner5", "@defaultOwner6"])),
+            CodeOwnersEntry.FromUsername(2, "*", "defaultOwner6", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner5", "@defaultOwner6"])),
+            CodeOwnersEntry.FromUsername(3, "*", "defaultOwner7", section: new CodeOwnersSection("Test4", 2, ["@defaultOwner7", "@defaultOwner8"])),
+            CodeOwnersEntry.FromUsername(3, "*", "defaultOwner8", section: new CodeOwnersSection("Test4", 2, ["@defaultOwner7", "@defaultOwner8"])),
+        };
+
+        actual.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void ParseSectionWithCRLFLineEndings()
+    {
+        const string Content = "\r\n" +
+                               "[Test1]\r\n" +
+                               "* @user1\r\n" +
+                               "\r\n" +
+                               "[Test2][2]\r\n" +
+                               "* @user2\r\n" +
+                               "\r\n" +
+                               "[Test3] @defaultOwner\r\n" +
+                               "* @user3\r\n" +
+                               " ";
+
+        var actual = CodeOwnersParser.Parse(Content).ToArray();
+
+        var expected = new CodeOwnersEntry[]
+        {
+            CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test1")),
+            CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Test2", 2)),
+            CodeOwnersEntry.FromUsername(2, "*", "user3", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner"])),
         };
 
         actual.Should().Equal(expected);

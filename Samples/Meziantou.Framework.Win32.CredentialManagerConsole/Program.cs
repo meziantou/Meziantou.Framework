@@ -23,6 +23,14 @@ internal static class Program
             //userName: "Meziantou",
             saveCredential: CredentialSaveOption.Unselected);
         Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
+        
+        creds = CredentialManager.PromptForCredentials(
+            captionText: "https://www.meziantou.net",
+            messageText: "Display Logon Failure message",
+            //userName: "Meziantou",
+            saveCredential: CredentialSaveOption.Unselected,
+            error: CredentialErrorCode.LogonFailure);
+        Console.WriteLine($"User: {creds?.UserName}, Password: {creds?.Password}, Domain: {creds?.Domain}");
 
         creds = CredentialManager.PromptForCredentials(
             captionText: "https://www.meziantou.net/dummy",

@@ -1,11 +1,14 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+﻿using System.Linq.Expressions;
+using System.Reflection;
+
+namespace Meziantou.Framework.HumanReadable;
 public static class HumanReadableSerializerOptionsExtensions
 {
     public static void IgnoreMembersThatThrow<T>(this HumanReadableSerializerOptions options)
     {
         IgnoreMembersThatThrow(options, typeof(T));
     }
-    
+
     public static void IgnoreMembersThatThrow(this HumanReadableSerializerOptions options, Type exceptionType)
     {
         options.AddPropertyAttribute(type => true, new HumanReadableIgnoreAttribute()
@@ -21,6 +24,61 @@ public static class HumanReadableSerializerOptionsExtensions
         });
     }
 
+    public static void IgnoreMember<T>(this HumanReadableSerializerOptions options, Expression<Func<T, object>> member)
+    {
+        var body = UnwrapConversion(member.Body);
+
+        if (body is MemberExpression memberExpression)
+        {
+            if (memberExpression.Member is PropertyInfo propertyInfo)
+            {
+                IgnoreMember(options, propertyInfo);
+                return;
+            }
+
+            if (memberExpression.Member is FieldInfo fieldInfo)
+            {
+                IgnoreMember(options, fieldInfo);
+                return;
+            }
+        }
+
+        if(body is NewExpression newExpression)
+        {
+            foreach (var argument in newExpression.Arguments)
+            {
+                if (argument is MemberExpression argumentMemberExpression)
+                {
+                    if (argumentMemberExpression.Member is PropertyInfo propertyInfo)
+                    {
+                        IgnoreMember(options, propertyInfo);
+                        continue;
+                    }
+
+                    if (argumentMemberExpression.Member is FieldInfo fieldInfo)
+                    {
+                        IgnoreMember(options, fieldInfo);
+                        continue;
+                    }
+                }
+
+                throw new ArgumentException($"Expression '{argument}' does not refer to a field or a property.", nameof(member));
+            }
+
+            return;
+        }
+
+        throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
+
+        static Expression UnwrapConversion(Expression expression)
+        {
+            if (expression is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
+                return unaryExpression.Operand;
+
+            return expression;
+        }
+    }
+
     public static void IgnoreMember<T>(this HumanReadableSerializerOptions options, string memberName)
     {
         IgnoreMember(options, typeof(T), memberName);
@@ -29,6 +87,16 @@ public static class HumanReadableSerializerOptionsExtensions
     public static void IgnoreMember(this HumanReadableSerializerOptions options, Type type, string memberName)
     {
         options.AddAttribute(type, memberName, new HumanReadableIgnoreAttribute());
+    }
+
+    public static void IgnoreMember(this HumanReadableSerializerOptions options, PropertyInfo propertyInfo)
+    {
+        options.AddAttribute(propertyInfo, new HumanReadableIgnoreAttribute());
+    }
+
+    public static void IgnoreMember(this HumanReadableSerializerOptions options, FieldInfo fieldInfo)
+    {
+        options.AddAttribute(fieldInfo, new HumanReadableIgnoreAttribute());
     }
 
     public static void IgnoreMember<T>(this HumanReadableSerializerOptions options, params string[] memberNames)

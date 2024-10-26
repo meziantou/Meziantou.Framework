@@ -43,4 +43,7 @@ var options = new HumanReadableSerializerOptions();
 
 // Add the HumanReadableIgnoreAttribute to the User.DisplayName property
 options.AddAttribute(typeof(User), "DisplayName", new HumanReadableIgnoreAttribute());
+
+options.IgnoreMember<User>(x => x.DisplayName);
+options.IgnoreMember<User>(x => new { x.DisplayName, x.CreatedAt });
 ````

@@ -1665,7 +1665,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
         });
     }
 #endif
-    
+
 #if NET6_0_OR_GREATER
     [Fact]
     public void HttpRequestMessage()
@@ -2135,6 +2135,50 @@ public sealed partial class SerializerTests : SerializerTestsBase
                 B: 1
                 """,
         }));
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_SingleMember()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<Exception>(exception => exception.TargetSite);
+
+        AssertSerialization(new Validation
+        {
+            Subject = new Exception("test"),
+            Options = options,
+            Expected = """
+                Data: []
+                HResult: -2146233088
+                HelpLink: <null>
+                InnerException: <null>
+                Message: test
+                Source: <null>
+                StackTrace: <null>
+                """,
+        });
+    }
+
+    [Fact]
+    public void IgnoreMember_Expression_MultipleMember()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<Exception>(exception => new { exception.TargetSite, exception.Source, exception.StackTrace });
+
+        AssertSerialization(new Validation
+        {
+            Subject = new Exception("test"),
+            Options = options,
+            Expected = """
+                Data: []
+                HResult: -2146233088
+                HelpLink: <null>
+                InnerException: <null>
+                Message: test
+                """,
+        });
     }
 
     [Fact]

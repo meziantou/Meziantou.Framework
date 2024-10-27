@@ -12,6 +12,46 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
+    public async Task WithSerializer()
+    {
+        await AssertSnapshot(
+            """"
+            InlineSnapshot
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, "");
+            """",
+            """"
+            InlineSnapshot
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, """
+                    A: 2
+                    B: 1
+                    """);
+            """");
+    }
+    
+    [Fact]
+    public async Task WithSettings_WithSerializer()
+    {
+        await AssertSnapshot(
+            """"
+            InlineSnapshot
+                .WithSettings(InlineSnapshotSettings.Default)
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, "");
+            """",
+            """"
+            InlineSnapshot
+                .WithSettings(InlineSnapshotSettings.Default)
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, """
+                    A: 2
+                    B: 1
+                    """);
+            """");
+    }
+
+    [Fact]
     public async Task UpdateSnapshotUsingQuotedString()
     {
         await AssertSnapshot(
@@ -522,7 +562,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             """,
             """
             InlineSnapshot.Validate("", "");
-            """, launchDebugger: false);
+            """);
     }
 
     [Fact]
@@ -712,7 +752,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                   - 2
                 """);
     }
-    
+
     [Fact]
     public void Scrub_Value_2()
     {

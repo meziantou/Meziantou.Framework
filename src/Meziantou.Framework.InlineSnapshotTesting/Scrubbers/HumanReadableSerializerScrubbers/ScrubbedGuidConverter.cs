@@ -7,11 +7,9 @@ internal sealed class ScrubbedGuidConverter : HumanReadableConverter<Guid>
 {
     private const string Prefix = "00000000-0000-0000-0000-";
 
-    protected override void WriteValue(HumanReadableTextWriter writer, Guid value,
-        HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, Guid value, HumanReadableSerializerOptions options)
     {
-        var dict = options.GetOrSetSerializationData(nameof(ScrubbedGuidConverter),
-            () => new Dictionary<Guid, string>());
+        var dict = options.GetOrSetSerializationData(nameof(ScrubbedGuidConverter), () => new Dictionary<Guid, string>());
         if (!dict.TryGetValue(value, out var guid))
         {
             guid = GetScrubbedValue(dict.Count + 1);

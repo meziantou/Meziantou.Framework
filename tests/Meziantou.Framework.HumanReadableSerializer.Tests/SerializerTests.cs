@@ -2161,6 +2161,29 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void IgnoreMember_Expression_SingleMember_Nested()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.IgnoreMember<Exception>(exception => exception.TargetSite);
+        options.IgnoreMember<Exception>(exception => exception.InnerException.Message); // Detect Exception.Message
+
+        AssertSerialization(new Validation
+        {
+            Subject = new Exception("test"),
+            Options = options,
+            Expected = """
+                Data: []
+                HResult: -2146233088
+                HelpLink: <null>
+                InnerException: <null>
+                Source: <null>
+                StackTrace: <null>
+                """,
+        });
+    }
+
+    [Fact]
     public void IgnoreMember_Expression_MultipleMember()
     {
         var options = new HumanReadableSerializerOptions();
@@ -2378,7 +2401,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     private sealed class DummyConverter : HumanReadableConverter
     {
         public override bool CanConvert(Type type) => throw new NotSupportedException();
-        public override void WriteValue(HumanReadableTextWriter writer, object value, HumanReadableSerializerOptions options) => throw new NotSupportedException();
+        public override void WriteValue(HumanReadableTextWriter writer, object value, Type valueType, HumanReadableSerializerOptions options) => throw new NotSupportedException();
     }
 
     private sealed class CustomStringComparer : IEqualityComparer<string>

@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
@@ -462,7 +463,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 """);
             """");
     }
-    
+
     [Fact]
     public async Task UpdateMultipleSnapshots_NonLinearOrder()
     {
@@ -619,7 +620,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             new Guid("6ff5182f-7644-4bc1-a3a4-38092cb3663a"),
         };
 
-        // Validate parallelism to be sure Guids are not shared between compilation
+        // Use parallelism to be sure Guids are not shared between serializations
         Parallel.For(1, 1000, _ =>
         {
             InlineSnapshot
@@ -630,6 +631,102 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                     - 00000000-0000-0000-0000-000000000002
                     """);
         });
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeTimeSpan()
+    {
+        var start = TimeSpan.FromSeconds(1);
+        var values = new[]
+        {
+            TimeSpan.FromSeconds(0),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeTimeSpan(start)))
+            .Validate(values, """
+                - -00:00:01
+                - 00:00:00
+                - 00:00:01
+                """);
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeDateTime()
+    {
+        var start = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var values = new[]
+        {
+            start,
+            start.AddSeconds(1),
+            start.AddSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeDateTime(start)))
+            .Validate(values, """
+                - 00:00:00
+                - 00:00:01
+                - 00:00:02
+                """);
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeDateTimeOffset()
+    {
+        var start = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var values = new[]
+        {
+            start,
+            start.AddSeconds(1),
+            start.AddSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeDateTimeOffset(start)))
+            .Validate(values, """
+                - 00:00:00
+                - 00:00:01
+                - 00:00:02
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Value()
+    {
+        var value = new
+        {
+            ints = new int[] { 1, 2 },
+            longs = new long[] { 1, 2 },
+        };
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<int>(i => (i + 1).ToString(CultureInfo.InvariantCulture))))
+            .Validate(value, """
+                ints:
+                  - 2
+                  - 3
+                longs:
+                  - 1
+                  - 2
+                """);
+    }
+    
+    [Fact]
+    public void Scrub_Value_2()
+    {
+        var value = new
+        {
+            ints = new string[] { "a", "b" },
+        };
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<string>((value, index) => "prefix-" + index.ToString(CultureInfo.InvariantCulture))))
+            .Validate(value, """
+                ints:
+                  - prefix-0
+                  - prefix-1
+                """);
     }
 
     [Theory]

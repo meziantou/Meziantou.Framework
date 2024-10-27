@@ -8,7 +8,7 @@ public abstract class HumanReadableConverter
 
     public abstract bool CanConvert(Type type);
 
-    public abstract void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options);
+    public abstract void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options);
 
     [return: NotNullIfNotNull(nameof(converterAttribute))]
     internal static HumanReadableConverter? CreateFromAttribute(HumanReadableConverterAttribute? converterAttribute, Type typeToConvert)

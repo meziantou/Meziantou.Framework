@@ -7,7 +7,7 @@ internal sealed class EnumerableConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => typeof(IEnumerable).IsAssignableFrom(type);
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
 

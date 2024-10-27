@@ -9,7 +9,7 @@ internal sealed class NullConverterWrapper : HumanReadableConverter
 
     public override bool CanConvert(Type type) => _converter.CanConvert(type);
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         if (value is null)
         {
@@ -17,7 +17,7 @@ internal sealed class NullConverterWrapper : HumanReadableConverter
         }
         else
         {
-            _converter.WriteValue(writer, value, options);
+            _converter.WriteValue(writer, value, valueType, options);
         }
     }
 }

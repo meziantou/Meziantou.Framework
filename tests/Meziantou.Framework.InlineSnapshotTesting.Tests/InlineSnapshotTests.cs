@@ -758,14 +758,35 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     {
         var value = new
         {
-            ints = new string[] { "a", "b" },
+            strs = new string[] { "a", "b" },
         };
         InlineSnapshot
             .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<string>((value, index) => "prefix-" + index.ToString(CultureInfo.InvariantCulture))))
             .Validate(value, """
-                ints:
+                strs:
                   - prefix-0
-                  - prefix-1
+                  - prefix-0
+                """);
+    }
+    
+    [Fact]
+    public void Scrub_Value_Incremental_MultipleTypes()
+    {
+        var value = new
+        {
+            a = new string[] { "a", "b" },
+            b = new int[] { 1, 2 },
+        };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture)))
+            .WithSerializer(options => options.ScrubValue<int>((value, index) => "int-" + index.ToString(CultureInfo.InvariantCulture)))
+            .Validate(value, """
+                a:
+                  - a
+                  - b
+                b:
+                  - int-0
+                  - int-0
                 """);
     }
 

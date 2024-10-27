@@ -1,12 +1,25 @@
 ﻿using System.Globalization;
 using Meziantou.Framework.HumanReadable;
-using Meziantou.Framework.InlineSnapshotTesting.Scrubbers.HumanReadableSerializerScrubbers;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public static class HumanReadableSerializerScrubExtensions
 {
-    public static void ScrubGuid(this HumanReadableSerializerOptions options) => options.Converters.Add(new ScrubbedGuidConverter());
+    public static void ScrubGuid(this HumanReadableSerializerOptions options) => ScrubValue<Guid>(options, (value, index) =>
+    {
+        index += 1;
+
+        const string Prefix = "00000000-0000-0000-0000-";
+#if NET6_0_OR_GREATER
+        Span<char> data = stackalloc char[36];
+        Prefix.AsSpan().CopyTo(data);
+        _ = index.TryFormat(data[Prefix.Length..], out _, "000000000000", CultureInfo.InvariantCulture);
+        return data.ToString();
+#else
+        return Prefix + index.ToString("000000000000", CultureInfo.InvariantCulture);
+#endif
+    });
+
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, string> scrubber) => options.Converters.Add(new ValueScrubberConverter<T>(scrubber));
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber) => ScrubValue<T>(options, scrubber, comparer: null);
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber, IEqualityComparer<T>? comparer)
@@ -57,9 +70,11 @@ public static class HumanReadableSerializerScrubExtensions
 
     private sealed class ScrubValueIncrementalConverter<T>(Func<T, int, string> formatValue, IEqualityComparer<T> comparer) : HumanReadableConverter<T>
     {
+        private readonly string _uniqueName = Guid.NewGuid().ToString();
+
         protected override void WriteValue(HumanReadableTextWriter writer, T value, HumanReadableSerializerOptions options)
         {
-            var dict = options.GetOrSetSerializationData(nameof(ScrubbedGuidConverter), () => new Dictionary<T, string>(comparer));
+            var dict = options.GetOrSetSerializationData(_uniqueName, () => new Dictionary<T, string>(comparer));
             if (!dict.TryGetValue(value, out var scrubbedValue))
             {
                 scrubbedValue = formatValue(value, dict.Count);

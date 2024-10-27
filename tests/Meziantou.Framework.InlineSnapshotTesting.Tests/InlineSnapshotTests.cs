@@ -736,6 +736,26 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void Scrub_Value_Default()
+    {
+        var value = new
+        {
+            ints = new int[] { 1, 2 },
+            longs = new long[] { 1, 2 },
+        };
+        InlineSnapshot
+            .WithSerializer(options => options.ScrubValue<int>())
+            .Validate(value, """
+                ints:
+                  - Int32_0
+                  - Int32_1
+                longs:
+                  - 1
+                  - 2
+                """);
+    }
+
+    [Fact]
     public void Scrub_Value()
     {
         var value = new

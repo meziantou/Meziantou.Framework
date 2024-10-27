@@ -25,7 +25,7 @@ InlineSnapshot.Validate(data);
 ````
 
 Then, run the tests. It will show you a diff tool where you can compare the expected value and the new value.
-Once you accept the change, the test is updated:
+Once you accept the change, the source code is updated:
 
 ````c#
 var data = new
@@ -63,7 +63,7 @@ static class AssemblyInitializer
 }
 ````
 
-You can also set the configuration per assert.
+You can also set the configuration per assert:
 
 ````c#
 // InlineSnapshotSettings is a record, so you can use the "with" keyword to create a new instance
@@ -74,6 +74,14 @@ var settings = InlineSnapshotSettings.Default with
 
 InlineSnapshot.CreateBuilder()
     .WithSettings(settings)
+    .Validate(data, "");
+````
+
+If you prefer, you can use the alternative syntax:
+
+````c#
+InlineSnapshot.CreateBuilder()
+    .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Overwrite)
     .Validate(data, "");
 ````
 

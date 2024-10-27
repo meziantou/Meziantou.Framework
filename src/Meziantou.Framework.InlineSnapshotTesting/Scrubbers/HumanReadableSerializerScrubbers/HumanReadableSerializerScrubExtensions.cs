@@ -7,7 +7,10 @@ public static class HumanReadableSerializerScrubExtensions
 {
     public static void ScrubGuid(this HumanReadableSerializerOptions options) => ScrubValue<Guid>(options, (value, index) =>
     {
-        index += 1;
+        if (value == Guid.Empty)
+            return "00000000-0000-0000-0000-000000000000";
+
+        index += 1; // Distinct from Guid.Empty
 
         const string Prefix = "00000000-0000-0000-0000-";
 #if NET6_0_OR_GREATER

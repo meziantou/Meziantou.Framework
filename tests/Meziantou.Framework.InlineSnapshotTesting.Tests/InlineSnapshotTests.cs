@@ -658,6 +658,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
             new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
             new Guid("6ff5182f-7644-4bc1-a3a4-38092cb3663a"),
+            Guid.Empty,
         };
 
         // Use parallelism to be sure Guids are not shared between serializations
@@ -669,6 +670,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                     - 00000000-0000-0000-0000-000000000001
                     - 00000000-0000-0000-0000-000000000001
                     - 00000000-0000-0000-0000-000000000002
+                    - 00000000-0000-0000-0000-000000000000
                     """);
         });
     }

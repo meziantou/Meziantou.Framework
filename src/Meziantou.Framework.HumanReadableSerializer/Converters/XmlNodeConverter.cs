@@ -1,14 +1,13 @@
-﻿using System.Xml;
+﻿using System.Diagnostics;
+using System.Xml;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
-internal sealed class XmlNodeConverter : HumanReadableConverter
+internal sealed class XmlNodeConverter : HumanReadableConverter<XmlNode>
 {
-    public override bool CanConvert(Type type) => typeof(XmlNode).IsAssignableFrom(type);
-
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    protected override void WriteValue(HumanReadableTextWriter writer, XmlNode? value, HumanReadableSerializerOptions options)
     {
-        var xml = (XmlNode)value!;
-        writer.WriteValue(options.FormatValue("application/xml", xml.OuterXml));
+        Debug.Assert(value is not null);
+        writer.WriteValue(options.FormatValue("application/xml", value.OuterXml));
     }
 }

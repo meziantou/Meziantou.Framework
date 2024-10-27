@@ -8,7 +8,7 @@ internal sealed class ValueTupleConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => typeof(System.Runtime.CompilerServices.ITuple).IsAssignableFrom(type);
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
 

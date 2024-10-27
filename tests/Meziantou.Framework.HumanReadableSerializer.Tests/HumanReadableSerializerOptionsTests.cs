@@ -23,6 +23,6 @@ public sealed class HumanReadableSerializerOptionsTests
     private sealed class DummyConverter : HumanReadableConverter
     {
         public override bool CanConvert(Type type) => false;
-        public override void WriteValue(HumanReadableTextWriter writer, object value, HumanReadableSerializerOptions options) { }
+        public override void WriteValue(HumanReadableTextWriter writer, object value, Type valueType, HumanReadableSerializerOptions options) { }
     }
 }

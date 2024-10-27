@@ -7,7 +7,7 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => type.IsArray && type.GetArrayRank() > 1;
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
 

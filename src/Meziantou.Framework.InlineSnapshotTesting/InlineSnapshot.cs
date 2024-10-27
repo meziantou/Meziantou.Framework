@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using DiffEngine;
+using Meziantou.Framework.HumanReadable;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -13,6 +14,26 @@ public static class InlineSnapshot
 
         var settings = InlineSnapshotSettings.Default with { };
         configure.Invoke(settings);
+        return new InlineSnapshotBuilder(settings);
+    }
+
+    public static InlineSnapshotBuilder WithSerializer(HumanReadableSerializerOptions? options)
+    {
+        if (options is null)
+            return new(settings: null);
+
+        var settings = InlineSnapshotSettings.Default with { };
+        settings.UseHumanReadableSerializer(options);
+        return new InlineSnapshotBuilder(settings);
+    }
+
+    public static InlineSnapshotBuilder WithSerializer(Action<HumanReadableSerializerOptions>? configure)
+    {
+        if (configure is null)
+            return new(settings: null);
+
+        var settings = InlineSnapshotSettings.Default with { };
+        settings.UseHumanReadableSerializer(configure);
         return new InlineSnapshotBuilder(settings);
     }
 

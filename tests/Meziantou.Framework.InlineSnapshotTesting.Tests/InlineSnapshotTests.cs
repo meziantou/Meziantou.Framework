@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using FluentAssertions;
@@ -10,6 +11,46 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
 public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 {
+    [Fact]
+    public async Task WithSerializer()
+    {
+        await AssertSnapshot(
+            """"
+            InlineSnapshot
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, "");
+            """",
+            """"
+            InlineSnapshot
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, """
+                    A: 2
+                    B: 1
+                    """);
+            """");
+    }
+
+    [Fact]
+    public async Task WithSettings_WithSerializer()
+    {
+        await AssertSnapshot(
+            """"
+            InlineSnapshot
+                .WithSettings(InlineSnapshotSettings.Default)
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, "");
+            """",
+            """"
+            InlineSnapshot
+                .WithSettings(InlineSnapshotSettings.Default)
+                .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+                .Validate(new { B = 1, A = 2 }, """
+                    A: 2
+                    B: 1
+                    """);
+            """");
+    }
+
     [Fact]
     public async Task UpdateSnapshotUsingQuotedString()
     {
@@ -462,7 +503,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 """);
             """");
     }
-    
+
     [Fact]
     public async Task UpdateMultipleSnapshots_NonLinearOrder()
     {
@@ -521,7 +562,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             """,
             """
             InlineSnapshot.Validate("", "");
-            """, launchDebugger: false);
+            """);
     }
 
     [Fact]
@@ -617,9 +658,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
             new Guid("43164674-b264-42b8-a7e5-6565667360b0"),
             new Guid("6ff5182f-7644-4bc1-a3a4-38092cb3663a"),
+            Guid.Empty,
         };
 
-        // Validate parallelism to be sure Guids are not shared between compilation
+        // Use parallelism to be sure Guids are not shared between serializations
         Parallel.For(1, 1000, _ =>
         {
             InlineSnapshot
@@ -628,8 +670,130 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                     - 00000000-0000-0000-0000-000000000001
                     - 00000000-0000-0000-0000-000000000001
                     - 00000000-0000-0000-0000-000000000002
+                    - 00000000-0000-0000-0000-000000000000
                     """);
         });
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeTimeSpan()
+    {
+        var start = TimeSpan.FromSeconds(1);
+        var values = new[]
+        {
+            TimeSpan.FromSeconds(0),
+            TimeSpan.FromSeconds(1),
+            TimeSpan.FromSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeTimeSpan(start)))
+            .Validate(values, """
+                - -00:00:01
+                - 00:00:00
+                - 00:00:01
+                """);
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeDateTime()
+    {
+        var start = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var values = new[]
+        {
+            start,
+            start.AddSeconds(1),
+            start.AddSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeDateTime(start)))
+            .Validate(values, """
+                - 00:00:00
+                - 00:00:01
+                - 00:00:02
+                """);
+    }
+
+    [Fact]
+    public void Scrub_UseRelativeDateTimeOffset()
+    {
+        var start = new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var values = new[]
+        {
+            start,
+            start.AddSeconds(1),
+            start.AddSeconds(2),
+        };
+
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.UseRelativeDateTimeOffset(start)))
+            .Validate(values, """
+                - 00:00:00
+                - 00:00:01
+                - 00:00:02
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Value()
+    {
+        var value = new
+        {
+            ints = new int[] { 1, 2 },
+            longs = new long[] { 1, 2 },
+        };
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<int>(i => (i + 1).ToString(CultureInfo.InvariantCulture))))
+            .Validate(value, """
+                ints:
+                  - 2
+                  - 3
+                longs:
+                  - 1
+                  - 2
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Value_2()
+    {
+        var value = new
+        {
+            strs = new string[] { "a", "b" },
+        };
+        InlineSnapshot
+            .WithSettings(settings => settings.UseHumanReadableSerializer(options => options.ScrubValue<string>((value, index) => "prefix-" + index.ToString(CultureInfo.InvariantCulture))))
+            .Validate(value, """
+                strs:
+                  - prefix-0
+                  - prefix-1
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Value_Incremental_MultipleTypes()
+    {
+        var value = new
+        {
+            a = new string[] { "a", "b" },
+            b = new int[] { 1, 2, 2 },
+        };
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture));
+                options.ScrubValue<int>((value, index) => "int-" + index.ToString(CultureInfo.InvariantCulture));
+            })
+            .Validate(value, """
+                a:
+                  - str-0
+                  - str-1
+                b:
+                  - int-0
+                  - int-1
+                  - int-1
+                """);
     }
 
     [Theory]

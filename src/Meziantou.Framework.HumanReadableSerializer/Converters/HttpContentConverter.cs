@@ -34,7 +34,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
 
         if (value is IEnumerable<HttpContent> collection)
         {
-            options.GetConverter(typeof(IEnumerable<HttpContent>)).WriteValue(writer, collection, options);
+            options.GetConverter(typeof(IEnumerable<HttpContent>)).WriteValue(writer, collection, typeof(IEnumerable<HttpContent>), options);
         }
         else
         {
@@ -53,7 +53,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
             else
             {
                 var bytes = value.ReadAsByteArrayAsync().Result;
-                options.GetConverter(typeof(byte[])).WriteValue(writer, bytes, options);
+                options.GetConverter(typeof(byte[])).WriteValue(writer, bytes, typeof(byte[]), options);
             }
         }
         writer.EndObject();

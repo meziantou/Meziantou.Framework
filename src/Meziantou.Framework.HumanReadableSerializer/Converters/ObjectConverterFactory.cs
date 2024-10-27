@@ -79,7 +79,7 @@ internal sealed class ObjectConverterFactory : HumanReadableConverterFactory
 
                     if (member.Converter is not null)
                     {
-                        member.Converter.WriteValue(writer, memberValue, options);
+                        member.Converter.WriteValue(writer, memberValue, member.MemberType, options);
                     }
                     else
                     {

@@ -26,7 +26,7 @@ public static class HumanReadableSerializer
         using (options.BeginScope())
         {
             var converter = options.GetConverter(type);
-            converter.WriteValue(writer, value, options);
+            converter.WriteValue(writer, value, type, options);
         }
     }
 

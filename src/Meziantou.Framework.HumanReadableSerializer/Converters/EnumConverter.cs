@@ -5,7 +5,7 @@ internal sealed class EnumConverter : HumanReadableConverter
 {
     public override bool CanConvert(Type type) => type.IsEnum;
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
 

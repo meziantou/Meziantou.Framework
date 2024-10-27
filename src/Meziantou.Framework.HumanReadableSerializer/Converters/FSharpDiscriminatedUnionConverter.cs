@@ -11,7 +11,7 @@ internal sealed class FSharpDiscriminatedUnionConverter : HumanReadableConverter
         return utils?.IsUnionType(type) is true;
     }
 
-    public override void WriteValue(HumanReadableTextWriter writer, object? value, HumanReadableSerializerOptions options)
+    public override void WriteValue(HumanReadableTextWriter writer, object? value, Type valueType, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
 

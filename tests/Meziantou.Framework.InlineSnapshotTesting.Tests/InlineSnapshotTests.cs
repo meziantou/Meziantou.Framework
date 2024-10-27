@@ -29,7 +29,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                     """);
             """");
     }
-    
+
     [Fact]
     public async Task WithSettings_WithSerializer()
     {
@@ -767,28 +767,32 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             .Validate(value, """
                 strs:
                   - prefix-0
-                  - prefix-0
+                  - prefix-1
                 """);
     }
-    
+
     [Fact]
     public void Scrub_Value_Incremental_MultipleTypes()
     {
         var value = new
         {
             a = new string[] { "a", "b" },
-            b = new int[] { 1, 2 },
+            b = new int[] { 1, 2, 2 },
         };
         InlineSnapshot
-            .WithSerializer(options => options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture)))
-            .WithSerializer(options => options.ScrubValue<int>((value, index) => "int-" + index.ToString(CultureInfo.InvariantCulture)))
+            .WithSerializer(options =>
+            {
+                options.ScrubValue<string>((value, index) => "str-" + index.ToString(CultureInfo.InvariantCulture));
+                options.ScrubValue<int>((value, index) => "int-" + index.ToString(CultureInfo.InvariantCulture));
+            })
             .Validate(value, """
                 a:
-                  - a
-                  - b
+                  - str-0
+                  - str-1
                 b:
                   - int-0
-                  - int-0
+                  - int-1
+                  - int-1
                 """);
     }
 

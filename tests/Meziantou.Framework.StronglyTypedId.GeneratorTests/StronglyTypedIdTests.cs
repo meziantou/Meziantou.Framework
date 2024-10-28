@@ -7,6 +7,7 @@ using Meziantou.Framework.Annotations;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -14,6 +15,11 @@ namespace Meziantou.Framework.StronglyTypedId.GeneratorTests;
 
 public sealed partial class StronglyTypedIdTests
 {
+    static StronglyTypedIdTests()
+    {
+        BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
+    }
+
     public static TheoryData<Type, string, object> GetData()
     {
         var now = DateTime.UtcNow;

@@ -24,22 +24,22 @@ internal sealed class JsonFormatter : ValueFormatter
         _options = options;
     }
 
-    public override string Format(string? value)
+    public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
         try
         {
             var node = JsonSerializer.Deserialize<JsonNode>(value);
             if (_options.OrderProperties)
+            {
                 OrderNode(node);
+            }
 
-
-            return JsonSerializer.Serialize(node, _options.WriteIndented ? IndentedOptions : NonIndentedOptions);
+            writer.WriteValue(JsonSerializer.Serialize(node, _options.WriteIndented ? IndentedOptions : NonIndentedOptions));
         }
         catch
         {
+            writer.WriteValue(value);
         }
-
-        return value;
     }
 
     private static void OrderNode(JsonNode node)

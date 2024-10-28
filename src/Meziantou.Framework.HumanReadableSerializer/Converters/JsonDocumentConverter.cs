@@ -7,6 +7,6 @@ internal sealed class JsonDocumentConverter : HumanReadableConverter<JsonDocumen
     protected override void WriteValue(HumanReadableTextWriter writer, JsonDocument? value, HumanReadableSerializerOptions options)
     {
         var str = JsonSerializer.Serialize(value, JsonElementConverter.IndentedOptions);
-        writer.WriteValue(options.FormatValue("application/json", str));
+        writer.WriteFormattedValue("application/json", str);
     }
 }

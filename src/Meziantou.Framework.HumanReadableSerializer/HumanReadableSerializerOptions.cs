@@ -310,23 +310,21 @@ public sealed record HumanReadableSerializerOptions
 #endif
     }
 
-    internal string FormatValue(string? format, string? value)
+    public ValueFormatter? GetFormatter(string mediaType)
     {
-        MakeReadOnly();
-
-        if (format is not null && value is not null)
+        if (mediaType is not null)
         {
-            if (_valueFormatters.TryGetValue(format, out var formatter))
-                return formatter.Format(value);
+            // Exact match
+            if (_valueFormatters.TryGetValue(mediaType, out var formatter))
+                return formatter;
 
             // Normalize the format
-            format = GetFormat(format);
-            if (format is not null && _valueFormatters.TryGetValue(format, out formatter))
-                return formatter.Format(value);
+            mediaType = GetFormat(mediaType);
+            if (mediaType is not null && _valueFormatters.TryGetValue(mediaType, out formatter))
+                return formatter;
         }
 
-
-        return value ?? "";
+        return null;
 
         static string? GetFormat(string mediaType)
         {
@@ -361,7 +359,6 @@ public sealed record HumanReadableSerializerOptions
                 || string.Equals(mediaType, "text/xml", StringComparison.OrdinalIgnoreCase)
                 || mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase);
         }
-
     }
 
     internal void VerifyMutable()

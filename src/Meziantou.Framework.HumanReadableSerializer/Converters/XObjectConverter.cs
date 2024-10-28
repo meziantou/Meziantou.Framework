@@ -8,6 +8,6 @@ internal sealed class XObjectConverter : HumanReadableConverter<XObject>
     protected override void WriteValue(HumanReadableTextWriter writer, XObject? value, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
-        writer.WriteValue(options.FormatValue("application/xml", value.ToString() ?? ""));
+        writer.WriteFormattedValue("application/xml", value.ToString() ?? "");
     }
 }

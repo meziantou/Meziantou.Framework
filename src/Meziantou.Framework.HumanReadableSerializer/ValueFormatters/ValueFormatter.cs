@@ -1,6 +1,8 @@
-﻿namespace Meziantou.Framework.HumanReadable.ValueFormatters;
+﻿using System.Xml.Linq;
+
+namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
 public abstract class ValueFormatter
 {
-    public abstract string Format(string? value);
+    public abstract void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options);
 }

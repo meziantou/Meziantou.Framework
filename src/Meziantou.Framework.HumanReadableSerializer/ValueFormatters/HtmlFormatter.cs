@@ -11,7 +11,7 @@ internal sealed class HtmlFormatter : ValueFormatter
         _options = options;
     }
 
-    public override string Format(string value)
+    public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
         try
         {
@@ -35,13 +35,12 @@ internal sealed class HtmlFormatter : ValueFormatter
 
             using var stringWriter = new StringWriter();
             doc.WriteTo(stringWriter);
-            return stringWriter.ToString();
+            writer.WriteValue(stringWriter.ToString());
         }
         catch
         {
+            writer.WriteValue(value);
         }
-
-        return value;
     }
 
     private static void OrderAttributes(HtmlDocument document)
@@ -96,7 +95,7 @@ internal sealed class HtmlFormatter : ValueFormatter
         var quoteChar = quote switch
         {
             HtmlAttributeQuote.SimpleQuote => '\'',
-            _ => '"'
+            _ => '"',
         };
 
         var queue = new Queue<HtmlNode>();

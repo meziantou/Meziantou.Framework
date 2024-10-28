@@ -8,7 +8,7 @@ On the development machine, a diff tool prompt to compare the expected snapshot 
 
 Blog post: [Inline Snapshot testing in .NET](https://www.meziantou.net/inline-snapshot-testing-in-dotnet.htm)
 
-# How does it work
+# Getting Started
 
 First, you can write a test with the following code:
 
@@ -42,7 +42,7 @@ InlineSnapshot.Validate(data, """
     """);
 ````
 
-# Other features
+# Documentation
 
 ## Configuration
 
@@ -85,23 +85,310 @@ InlineSnapshot.CreateBuilder()
     .Validate(data, "");
 ````
 
-## Environment variables
+## Serializer
 
-- `DiffEngine_Tool`: Set the default merge tool
-- `DiffEngine_Disabled`: Disable the diff tool even if set explicitly in the configuration
+By default, `InlineSnapshot` uses the [`HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer) to serialize the object. This is the recommended serializer for most cases. However, you can provide your own serializer if needed.
+
+````c#
+// Configure the HumanReadableSerializer
+InlineSnapshot.CreateBuilder()
+    .WithSerializer(options => options.PropertyOrder = StringComparer.Ordinal)
+    .Validate(data);
+````
+
+````c#
+// Use System.Text.Json
+InlineSnapshot.CreateBuilder()
+    .WithSerializer(new JsonSnapshotSerializer())
+    .Validate(data);
+````
+
+If you use Verify and want to use the same serializer, you can use the `Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon` package.
+
+````c#
+InlineSnapshot.CreateBuilder()
+    .WithSerializer(new ArgonSnapshotSerializer())
+    .Validate(data);
+````
+
+### HumanReadableSerializer
+
+The HumanReadableSerializer has many options to make the snapshot deterministic and easy to read. You can scrub values, scrub lines, show invisible characters, and more.
+
+- Ordering properties: Recent versions of .NET have a deterministic order of properties. However, .NET Framework does not have a deterministic order. You can use the `PropertyOrder` option to order the properties alphabetically:
+
+    ````c#
+    InlineSnapshot
+        .WithSerializer(options =>
+        {
+            options.PropertyOrder = StringComparer.Ordinal;
+            options.DictionaryKeyOrder = StringComparer.Ordinal;
+        })
+        .Validate(...);
+    ````
+
+- Formatting content
+
+    ````c#
+    InlineSnapshot
+        .WithSerializer(options =>
+        {
+            options.AddJsonFormatter(new JsonFormatterOptions
+            {
+                OrderProperties = true,
+                WriteIndented = true,
+            });
+
+            options.AddXmlFormatter(new XmlFormatterOptions
+            {
+                OrderAttributes = true,
+                WriteIndented = true,
+            });
+
+            options.AddHtmlFormatter(new HtmlFormatterOptions
+            {
+                OrderAttributes = true,
+                AttributeQuote = HtmlAttributeQuote.DoubleQuote,
+                RedactContentSecurityPolicyNonce = true,
+            });
+
+            options.AddUrlEncodedFormFormatter(new UrlEncodedFormFormatterOptions
+            {
+                OrderProperties = true,
+                UnescapeValues = true,
+                PrettyFormat = true,
+
+            });
+        })
+        .Validate(...);
+    ````
+
+- Ignore members
+
+    ````c#
+    InlineSnapshot
+        .WithSerializer(options =>
+        {
+            options.IgnoreMember<TestClass>(x => x.Property);
+            options.IgnoreMember<TestClass>(x => new { x.Property1, x.Property2 });
+            options.IgnoreMembersWithType<int>(); // ignore all properties of type int
+
+            // ignore properties that throw an exception when accessed
+            options.IgnoreMembersThatThrow();
+            options.IgnoreMembersThatThrow<NotImplementedException>();
+        })
+        .Validate(...);
+    ````
+
+- Ignoring null/default values
+
+    ````c#
+    InlineSnapshot
+        .WithSerializer(options => options.DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingDefault)
+        .Validate(...);
+    ````
+
+## Diff tool
+
+When a snapshot is updated, a diff tool is used to compare the expected value and the new value. By default, it uses one of the following tools
+- The diff tool configured by the `DiffEngine_Tool` environment variable
+- The merge tool from the local git configuration
+- The diff tool from the local git configuration
+- The diff tool from the current IDE (support VS Code, VS, Rider)
+- The first available diff tool (rely on [DiffEngine](https://github.com/VerifyTests/DiffEngine?tab=readme-ov-file#supported-tools))
+
+You can disable the diff tool by setting the `DiffEngine_Disabled` environment variable.
 
 ## Using helper methods
 
-If you want to use helper methods before calling `Validate()`, you need to decorate the methods with `[InlineSnapshotAssertion]` and use `[CallerFilePath]` and `[CallerLineNumber]`.
+If you want to use helper methods before calling `Validate()`, you need to decorate the methods with `[InlineSnapshotAssertion]` and use the `[CallerFilePath]` and `[CallerLineNumber]` attribute.
 
 ````c#
-Helper(""); // This string will be updated
-            
-[InlineSnapshotAssertion(nameof(expected))]
-static void Helper(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
+var instance = new { FirstName = "Gérald", LastName = "Barré" };
+Helper(instance, ""); // This string will be updated
+
+[InlineSnapshotAssertion(nameof(expected))] // name of the parameter that contains the snapshot
+static void Helper(object data, string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
 {
-    InlineSnapshot.Validate(new object(), expected, filePath, lineNumber);
+    InlineSnapshot
+        .WithSerializer(options => options.ScrubValue<string>())
+        .Validate(data, expected, filePath, lineNumber);
 }
+````
+
+## Scrubbing
+
+Some data are not deterministic and should not be part of the snapshot. You can scrub the data at two locations. First, you can scrub the data during serialization. You have access to the actual values which can be useful. Second, you can scrub the data after serialization.
+
+````c#
+var data = new string[] { "a", "a", "b" };
+InlineSnapshot
+    .WithSerializer(options => options.ScrubValue<string>())
+    .Validate(data, """
+        - String_0
+        - String_0
+        - String_1
+    """);
+````
+
+````c#
+var data = new string[] { "a", "A", "b" };
+InlineSnapshot
+    .WithSerializer(options => options.ScrubValue<string>(StringComparer.OrdinalIgnoreCase))
+    .Validate(data, """
+        - String_0
+        - String_0
+        - String_1
+    """);
+````
+
+````c#
+var data = new string[] { "a", "A", "b" };
+InlineSnapshot
+    .WithSerializer(options => options.ScrubValue<string>((value, index) => $"{value}_{index}", StringComparer.OrdinalIgnoreCase))
+    .Validate(data, """
+        - a_0
+        - a_0
+        - b_1
+    """);
+````
+
+````c#
+var data = new Guid[] { Guid.NewGuid(), Guid.NewGuid(), Guid.Empty };
+InlineSnapshot
+    .WithSerializer(options => options.ScrubGuid())
+    .Validate(data, """
+        - 00000000-0000-0000-0000-000000000001
+        - 00000000-0000-0000-0000-000000000002
+        - 00000000-0000-0000-0000-000000000000
+    """);
+````
+
+````c#
+var now = DateTime.UtcNow;
+var data = now.AddSeconds(10);
+InlineSnapshot
+    .WithSerializer(options => options.UseRelativeDateTime(now))
+    .Validate(data, "00:00:10"); // TimeSpan relative to the now variable
+````
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubLines(line => line.Contains("dummy")))
+    .Validate("abc\ndummy", "abc");
+````
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubLinesContaining("dummy"))
+    .Validate("abc\ndummy", "abc");
+````
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubLinesMatching("d.*y"))
+    .Validate("abc\ndummy", "abc");
+````
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.Replace("abc", "123")))
+    .Validate("abcdef", "123def");
+````
+
+## Invisible characters
+
+If spaces or new lines are important, you can display them as visible characters.
+
+````c#
+InlineSnapshot
+    .WithSerializer(options => options.ShowInvisibleCharactersInValues = true)
+    .Validate("line 1\r\nline\t2", """
+        line␠1␍␊
+        line␉2
+        """);
+````
+
+## String formats
+
+By default, the snapshot can use string, verbatim string, or raw string. It uses the information from the PDB file to determine which C# features are available. You can override the default behavior by setting the `CSharpStringFormat` property.
+
+````c#
+InlineSnapshot
+    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim | CSharpStringFormats.Raw)
+    .Validate(...);
+````
+
+You can also change the indentation of raw strings:
+- `CSharpStringFormats.Raw`: Same indentation as the calling method
+- `CSharpStringFormats.LeftAlignedRaw`: Align the raw string to the left (first column)
+
+````c#
+InlineSnapshot
+    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.Raw)
+    .Validate(new object(), """
+        {}
+        """);
+````
+
+````c#
+InlineSnapshot
+    .WithSerializer(options => options.AllowedStringFormats = CSharpStringFormats.LeftAlignedRaw)
+    .Validate(new object(), """
+{}
+""");
+````
+
+You can also change the indentation, end of line, and the encoding of the file if the default behavior does not suit your needs.
+
+````c#
+InlineSnapshot
+    .WithSerializer(options => options.CSharpStringFormat = new CSharpStringFormat
+    {
+        Indentation = "    ",
+        EndOfLine = "\r\n",
+        FileEncoding = Encoding.UTF8,
+    })
+    .Validate(...);
+````
+
+## CI environment
+
+When running in a CI environment, the snapshot is never updated. To detect CI environment, the library uses the environment variables created by the major CI tools (GitHub Actions, Azure Pipelines, TeamCity etc.).
+You can disable this behavior by setting `AutoDetectContinuousEnvironment` to `false`.
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.AutoDetectContinuousEnvironment = false)
+    .Validate(...);
+````
+
+You can also set the strategy to `SnapshotUpdateStrategy.Disallow` to disable updating snapshots.
+
+````c#
+InlineSnapshot
+    .WithSettings(settings => settings.SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow)
+    .Validate(...);
+````
+
+## Snapshot update strategies
+
+- `SnapshotUpdateStrategy.Overwrite`: Overwrite the snapshot with the new value
+- `SnapshotUpdateStrategy.OverwriteWithoutFailure`: Overwrite the snapshot with the new value without failing the test
+- `SnapshotUpdateStrategy.MergeTool`: Use a merge tool to compare the snapshot with the new value
+- `SnapshotUpdateStrategy.MergeToolSync`: Use a merge tool to compare the snapshot with the new value and wait for the merge tool to close
+- `SnapshotUpdateStrategy.Disallow`: Do not update the snapshot
+
+## Recreate the snapshots
+
+You can force the update of all snapshots by setting the `InlineSnapshotSettings.ForceUpdateSnapshots` property to `true` and setting the update strategy to `OverwriteWithoutFailure`.
+
+````c#
+InlineSnapshotSettings.Default = InlineSnapshotSettings.Default with
+{
+    ForceUpdateSnapshots = true, // Override the snapshot even if the value matches the expected value
+    SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+};
 ````
 
 # Examples

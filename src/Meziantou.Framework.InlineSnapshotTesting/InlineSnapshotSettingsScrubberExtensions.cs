@@ -16,9 +16,14 @@ public static class InlineSnapshotSettingsScrubberExtensions
 
     public static void ScrubLinesMatching(this InlineSnapshotSettings settings, Regex regex) => settings.Scrubbers.Add(new LineFilterScrubber(regex.IsMatch));
 
-    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout")]
-    public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options = RegexOptions.None)
-        => settings.Scrubbers.Add(new LineFilterScrubber(line => Regex.IsMatch(line, pattern, options)));
+    public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
+        => ScrubLinesMatching(settings, pattern, RegexOptions.None, Timeout.InfiniteTimeSpan);
+    
+    public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options)
+        => ScrubLinesMatching(settings, pattern, options, Timeout.InfiniteTimeSpan);
+
+    public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options, TimeSpan matchTimeout)
+        => settings.Scrubbers.Add(new LineFilterScrubber(line => Regex.IsMatch(line, pattern, options, matchTimeout)));
 
     public static void ScrubLinesWithReplace(this InlineSnapshotSettings settings, Func<string, string?> replaceLine) => settings.Scrubbers.Add(new LineReplaceScrubber(replaceLine));
 

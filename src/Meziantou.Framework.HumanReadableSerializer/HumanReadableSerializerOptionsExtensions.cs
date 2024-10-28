@@ -4,6 +4,11 @@ using System.Reflection;
 namespace Meziantou.Framework.HumanReadable;
 public static class HumanReadableSerializerOptionsExtensions
 {
+    public static void IgnoreMembersThatThrow(this HumanReadableSerializerOptions options)
+    {
+        IgnoreMembersThatThrow(options, typeof(Exception));
+    }
+
     public static void IgnoreMembersThatThrow<T>(this HumanReadableSerializerOptions options)
     {
         IgnoreMembersThatThrow(options, typeof(T));
@@ -43,7 +48,7 @@ public static class HumanReadableSerializerOptionsExtensions
             }
         }
 
-        if(body is NewExpression newExpression)
+        if (body is NewExpression newExpression)
         {
             foreach (var argument in newExpression.Arguments)
             {

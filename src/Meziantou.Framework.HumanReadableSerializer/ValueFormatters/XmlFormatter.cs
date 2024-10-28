@@ -13,7 +13,7 @@ internal sealed class XmlFormatter : ValueFormatter
         _options = options;
     }
 
-    public override string Format(string value)
+    public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
     {
         try
         {
@@ -45,17 +45,16 @@ internal sealed class XmlFormatter : ValueFormatter
                 OmitXmlDeclaration = true,
             };
 
-            using (var writer = XmlWriter.Create(sb, settings))
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
             {
-                document.WriteTo(writer);
+                document.WriteTo(xmlWriter);
             }
 
-            return sb.ToString();
+            writer.WriteValue(sb.ToString());
         }
         catch
         {
+            writer.WriteValue(value);
         }
-
-        return value;
     }
 }

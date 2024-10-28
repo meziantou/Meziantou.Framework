@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public readonly struct InlineSnapshotBuilder
@@ -18,6 +19,13 @@ public readonly struct InlineSnapshotBuilder
 
         var settings = _settings with { };
         configure(settings);
+        return new InlineSnapshotBuilder(settings);
+    }
+
+    public InlineSnapshotBuilder WithSerializer(SnapshotSerializer serializer)
+    {
+        var settings = _settings with { };
+        settings.SnapshotSerializer = serializer;
         return new InlineSnapshotBuilder(settings);
     }
 

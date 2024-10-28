@@ -45,10 +45,12 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
                 var mediaType = value.Headers.ContentType?.MediaType;
                 if (mediaType is not null)
                 {
-                    str = options.FormatValue(mediaType, str);
+                    writer.WriteFormattedValue(mediaType, str);
                 }
-
-                writer.WriteValue(str);
+                else
+                {
+                    writer.WriteValue(str);
+                }
             }
             else
             {

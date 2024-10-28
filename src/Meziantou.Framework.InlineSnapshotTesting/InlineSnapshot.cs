@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using DiffEngine;
 using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
@@ -14,6 +15,13 @@ public static class InlineSnapshot
 
         var settings = InlineSnapshotSettings.Default with { };
         configure.Invoke(settings);
+        return new InlineSnapshotBuilder(settings);
+    }
+
+    public static InlineSnapshotBuilder WithSerializer(SnapshotSerializer serializer)
+    {
+        var settings = InlineSnapshotSettings.Default with { };
+        settings.SnapshotSerializer = serializer;
         return new InlineSnapshotBuilder(settings);
     }
 
@@ -53,7 +61,10 @@ public static class InlineSnapshot
         {
             foreach (var scrubber in settings.Scrubbers)
             {
-                actual = scrubber.Scrub(actual);
+                if (scrubber is not null)
+                {
+                    actual = scrubber.Scrub(actual);
+                }
             }
         }
 

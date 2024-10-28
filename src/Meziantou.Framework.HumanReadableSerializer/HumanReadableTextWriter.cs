@@ -164,6 +164,18 @@ public sealed class HumanReadableTextWriter
         WriteValue(value.AsSpan());
     }
 
+    public void WriteFormattedValue(string format, string value)
+    {
+        var formatter = _options.GetFormatter(format);
+        if (formatter is null)
+        {
+            WriteValue(value);
+            return;
+        }
+
+        formatter.Format(this, value, _options);
+    }
+
     public void WriteNullValue()
     {
         Write("<null>");

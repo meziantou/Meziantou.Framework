@@ -16,6 +16,12 @@ public sealed record InlineSnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
+    private SnapshotUpdateStrategy _snapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
+    private SnapshotSerializer _snapshotSerializer = HumanReadableSnapshotSerializer.DefaultInstance;
+    private SnapshotComparer _snapshotComparer = SnapshotComparer.Default;
+    private AssertionMessageFormatter _errorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
+    private AssertionExceptionBuilder _assertionExceptionCreator = AssertionExceptionBuilder.Default;
+
     public static InlineSnapshotSettings Default { get; set; } = new();
 
     public string? Indentation { get; set; }
@@ -23,12 +29,68 @@ public sealed record InlineSnapshotSettings
     public Encoding? FileEncoding { get; set; }
 
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
-    public SnapshotUpdateStrategy SnapshotUpdateStrategy { get; set; } = SnapshotUpdateStrategy.Default;
-    public SnapshotSerializer SnapshotSerializer { get; set; } = HumanReadableSnapshotSerializer.DefaultInstance;
-    public SnapshotComparer SnapshotComparer { get; set; } = SnapshotComparer.Default;
-    public AssertionMessageFormatter ErrorMessageFormatter { get; set; } = InlineDiffAssertionMessageFormatter.Instance;
-    public AssertionExceptionBuilder AssertionExceptionCreator { get; set; } = AssertionExceptionBuilder.Default;
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
+
+    public SnapshotUpdateStrategy SnapshotUpdateStrategy
+    {
+        get => _snapshotUpdateStrategy;
+        set
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            _snapshotUpdateStrategy = value;
+        }
+    }
+
+    public SnapshotSerializer SnapshotSerializer
+    {
+        get => _snapshotSerializer;
+        set
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            _snapshotSerializer = value;
+        }
+    }
+
+    public SnapshotComparer SnapshotComparer
+    {
+        get => _snapshotComparer;
+        set
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            _snapshotComparer = value;
+        }
+    }
+
+    public AssertionMessageFormatter ErrorMessageFormatter
+    {
+        get => _errorMessageFormatter;
+        set
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            _errorMessageFormatter = value;
+        }
+    }
+
+    public AssertionExceptionBuilder AssertionExceptionCreator
+    {
+        get => _assertionExceptionCreator;
+        set
+        {
+            if (value is null)
+                throw new ArgumentNullException(nameof(value));
+
+            _assertionExceptionCreator = value;
+        }
+    }
+
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>

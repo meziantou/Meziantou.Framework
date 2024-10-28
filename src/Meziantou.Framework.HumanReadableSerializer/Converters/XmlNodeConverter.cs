@@ -8,6 +8,6 @@ internal sealed class XmlNodeConverter : HumanReadableConverter<XmlNode>
     protected override void WriteValue(HumanReadableTextWriter writer, XmlNode? value, HumanReadableSerializerOptions options)
     {
         Debug.Assert(value is not null);
-        writer.WriteValue(options.FormatValue("application/xml", value.OuterXml));
+        writer.WriteFormattedValue("application/xml", value.OuterXml);
     }
 }

@@ -80,6 +80,7 @@ public sealed class MockTests
 
         await ExpectString(mock, "/", "a");
         await ExpectString(mock, "https://dummy.com/", "a");
+        await ExpectString(mock, "HTTPS://dummy.com/", "a");
         await ExpectString(mock, "https://dummy.com/?a=b", "b");
         await ExpectString(mock, "https://dummy.com/?a=c", "c");
         await ExpectString(mock, "https://dummy.com/?a=d", "d");

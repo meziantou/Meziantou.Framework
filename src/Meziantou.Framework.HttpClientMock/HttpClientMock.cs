@@ -132,7 +132,7 @@ public sealed partial class HttpClientMock : IAsyncDisposable
             if (path.Contains('#', StringComparison.Ordinal))
                 throw new ArgumentException("Fragment ('#') is not supported", nameof(path));
 
-            if (Uri.TryCreate(path, UriKind.Absolute, out var uri))
+            if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && IsHttpScheme(uri.Scheme))
             {
                 var index = uri.PathAndQuery.IndexOf('?', StringComparison.Ordinal);
                 if (index >= 0)
@@ -157,6 +157,8 @@ public sealed partial class HttpClientMock : IAsyncDisposable
 
             return (null, null, path, null);
         }
+
+        static bool IsHttpScheme(string scheme) => scheme == Uri.UriSchemeHttp || scheme == Uri.UriSchemeHttps;
     }
 
     private sealed class SingletonLogger(ILogger logger) : ILoggerProvider

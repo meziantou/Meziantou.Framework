@@ -61,7 +61,7 @@ public class ChangeJournalTests
         });
     }
 
-    private void Retry(Action action)
+    private static void Retry(Action action)
     {
         for (var i = 5; i >= 0; i--)
         {

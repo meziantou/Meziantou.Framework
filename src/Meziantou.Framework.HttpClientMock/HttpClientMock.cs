@@ -165,24 +165,3 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         public void Dispose() { }
     }
 }
-
-#if NET6_0
-internal static class A
-{
-    public static TBuilder WithOrder<TBuilder>(this TBuilder builder, int order) where TBuilder : IEndpointConventionBuilder
-    {
-        builder.Add(builder =>
-        {
-            if (builder is RouteEndpointBuilder routeEndpointBuilder)
-            {
-                routeEndpointBuilder.Order = order;
-            }
-            else
-            {
-                throw new InvalidOperationException("This endpoint does not support Order.");
-            }
-        });
-        return builder;
-    }
-}
-#endif

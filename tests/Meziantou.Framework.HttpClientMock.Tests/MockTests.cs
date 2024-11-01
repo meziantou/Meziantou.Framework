@@ -21,6 +21,7 @@ public sealed class MockTests
         var value = await client.GetStringAsync("https://example.com/");
         Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
     }
+
     [Fact]
     public async Task ForwardUnknownRequestsToUpstream()
     {
@@ -92,7 +93,7 @@ public sealed class MockTests
     {
         await using var mock = new HttpClientMock();
         mock.MapGet("http://dummy.com/", () => "a");
-        mock.MapGet("http://dummy.com/?a=b&c=d", () => "b");
+        mock.MapGet("HTTP://dummy.com/?a=b&c=d", () => "b");
 
         await ExpectString(mock, "http://dummy.com/", "a");
         await ExpectString(mock, "http://dummy.com/?a=b", "a");

@@ -15,7 +15,11 @@ internal sealed class ForwardResult(HttpClient? httpClient) : IResult
         var localHttpClient = httpClient ?? context.RequestServices.GetRequiredService<HttpClient>();
         var request = context.Request;
 
+#if NET8_0_OR_GREATER
         var method = HttpMethod.Parse(context.Request.Method);
+#else
+        var method = new HttpMethod(context.Request.Method);
+#endif
         var url = $"{request.Scheme}://{request.Host}{request.PathBase}{request.Path}{request.QueryString}";
         using var requestMessage = new HttpRequestMessage(method, url)
         {

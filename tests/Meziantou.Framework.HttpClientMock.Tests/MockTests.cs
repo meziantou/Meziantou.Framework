@@ -1,20 +1,25 @@
-﻿using System.Collections.Specialized;
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using Meziantou.Extensions.Logging.InMemory;
+using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Meziantou.Framework.Tests;
-public sealed class MockTests
+public sealed class MockTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
     public async Task Results_ForwardToUpstream()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
+        {
+            services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
+        });
+
         mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());
 
         using var client = mock.CreateHttpClient();
@@ -25,7 +30,10 @@ public sealed class MockTests
     [Fact]
     public async Task ForwardUnknownRequestsToUpstream()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
+        {
+            services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
+        });
         mock.MapGet("https://example.com/dummy", () => "dummy");
         mock.MapGet("https://example.com/not_found", () => Results.NotFound("not_found"));
         mock.ForwardUnknownRequestsToUpstream();
@@ -50,7 +58,7 @@ public sealed class MockTests
     [Fact]
     public async Task RequestCounter()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("/current", (RequestCounter counter) => counter.Get());
         mock.MapGet("/total", (RequestCounter counter) => counter.TotalCount);
 
@@ -74,7 +82,7 @@ public sealed class MockTests
     [Fact]
     public async Task MapGet_RelativeUrl_WithQueryString()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("/", (string? a = "a") => a);
         mock.MapGet("/?a=b", () => "b");
         mock.MapGet("/?a=c", () => "c");
@@ -91,7 +99,7 @@ public sealed class MockTests
     [Fact]
     public async Task MapGet_AbsoluteUrl_WithQueryString_Unordered()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("http://dummy.com/", () => "a");
         mock.MapGet("HTTP://dummy.com/?a=b&c=d", () => "b");
 
@@ -106,7 +114,7 @@ public sealed class MockTests
     [Fact]
     public async Task MapGet_AbsoluteUrl_WithQueryString()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("http://dummy.com/", () => "a");
         mock.MapGet("http://dummy.com/?a=b", () => "b");
         mock.MapGet("http://dummy.com/?a=c", () => "c");
@@ -120,7 +128,7 @@ public sealed class MockTests
     [Fact]
     public async Task MapGet_AbsoluteUrl_WithScheme()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("http://dummy.com/", () => "a");
         mock.MapGet("https://dummy.com/", () => "b");
 
@@ -131,7 +139,7 @@ public sealed class MockTests
     [Fact]
     public async Task MapGet_AbsoluteUrl_WithPort()
     {
-        await using var mock = new HttpClientMock();
+        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
         mock.MapGet("http://dummy.com:2222/", () => "a");
         mock.MapGet("http://dummy.com:3333/", () => "b");
 

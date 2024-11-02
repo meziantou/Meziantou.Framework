@@ -37,6 +37,16 @@ public sealed partial class HttpClientMock : IAsyncDisposable
     {
     }
 
+    public HttpClientMock(ILogger? logger, Action<IServiceCollection>? configureServices)
+        : this(logger is null ? null : builder => builder.AddProvider(new SingletonLogger(logger)), configureServices)
+    {
+    }
+
+    public HttpClientMock(ILoggerProvider? loggerProvider, Action<IServiceCollection>? configureServices)
+        : this(loggerProvider is null ? null : builder => builder.AddProvider(loggerProvider), configureServices)
+    {
+    }
+
     public HttpClientMock(Action<ILoggingBuilder>? configureLogging, Action<IServiceCollection>? configureServices)
     {
         var builder = WebApplication.CreateBuilder();

@@ -169,5 +169,17 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 }
             }
         }
+
+        foreach (var projectReference in itemGroups.Elements(ns + "ProjectReference"))
+        {
+            var nameAttribute = projectReference.Attribute(IncludeXName);
+            var nameValue = nameAttribute?.Value;
+            if (string.IsNullOrEmpty(nameValue))
+                continue;
+
+            context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, version: null, DependencyType.MSBuildProjectReference,
+                nameLocation: new XmlLocation(context.FileSystem, context.FullPath, projectReference, nameAttribute),
+                versionLocation: null);
+        }
     }
 }

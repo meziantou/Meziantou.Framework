@@ -18,4 +18,5 @@ public enum DependencyType
     HelmChart,
     RubyGem,
     RenovateConfiguration,
+    MSBuildProjectReference,
 }

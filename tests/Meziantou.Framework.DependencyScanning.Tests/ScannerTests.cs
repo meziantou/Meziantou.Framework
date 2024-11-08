@@ -126,6 +126,9 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     <GlobalPackageReference Include="PackageD" Version="1.2.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="ProjectA.csproj" />
+  </ItemGroup>
 </Project>
 """;
         const string Expected = """
@@ -147,6 +150,9 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
     <GlobalPackageReference Include="dummy5" Version="2.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="dummy6" />
+  </ItemGroup>
 </Project>
 """;
 
@@ -157,7 +163,8 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             (DependencyType.NuGet, "PackageA", "1.2.1", 14, 42),
             (DependencyType.NuGet, "TestPackage", "4.2.1", 13, 45),
             (DependencyType.NuGet, "PackageC", "1.2.2", 15, 41),
-            (DependencyType.NuGet, "PackageD", "1.2.3", 16, 48));
+            (DependencyType.NuGet, "PackageD", "1.2.3", 16, 48),
+            (DependencyType.MSBuildProjectReference, "ProjectA.csproj", null, 0, 0));
 
         await UpdateDependencies(result, "dummy", "2.0.0");
         AssertFileContentEqual("test.csproj", Expected, ignoreNewLines: true);

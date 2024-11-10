@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Slug\Meziantou.Framework.Slug.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Uri\Meziantou.Framework.Uri.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.ValueStopwatch\Meziantou.Framework.ValueStopwatch.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework\Meziantou.Framework.csproj" />
@@ -44,6 +45,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.SingleInstance" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Slug" />
     <TrimmerRootAssembly Include="Meziantou.Framework.TemporaryDirectory" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Uri" />
     <TrimmerRootAssembly Include="Meziantou.Framework.ValueStopwatch" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
   </ItemGroup>

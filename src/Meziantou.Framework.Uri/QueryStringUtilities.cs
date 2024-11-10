@@ -58,6 +58,21 @@ public static class QueryStringUtilities
 
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
+    
+    /// <summary>
+    /// Append the given query keys and values to the URI.
+    /// </summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A dictionary of query keys and values to append.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddQueryString(string uri, IEnumerable<(string Name, StringValues Value)> queryString)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+
+        return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
+    }
 
     /// <summary>
     /// Append the given query keys and values to the URI.
@@ -192,6 +207,64 @@ public static class QueryStringUtilities
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Append the given query key and value to the URI.
+    /// </summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, string Value)> queryString)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
+
+        var parsed = ParseNullableQuery(GetQueryString(uri));
+        if (parsed is null)
+            return AddQueryString(uri, queryString);
+
+        foreach (var (name, value) in queryString)
+        {
+            parsed[name] = value;
+        }
+
+        return SetQueryString(uri, parsed);
+    }
+    
+    /// <summary>
+    /// Append the given query key and value to the URI.
+    /// </summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, IEnumerable<(string Name, StringValues Value)> queryString)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(queryString);
+
+        var parsed = ParseNullableQuery(GetQueryString(uri));
+        if (parsed is null)
+            return AddQueryString(uri, queryString);
+
+        foreach (var (name, value) in queryString)
+        {
+            parsed[name] = value;
+        }
+
+        return SetQueryString(uri, parsed);
+    }
+    
+    /// <summary>
+    /// Append the given query key and value to the URI.
+    /// </summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -209,6 +282,34 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
+    /// <param name="uri">The base URI.</param>
+    /// <param name="name">The name of the query key.</param>
+    /// <param name="value">The query value.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
+    public static string AddOrReplaceQueryString(string uri, string name, string? value)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(name);
+
+        var parsed = ParseNullableQuery(GetQueryString(uri));
+        if (parsed is null)
+            return AddQueryString(uri, name, value);
+
+        parsed[name] = value;
+        return SetQueryString(uri, parsed);
+    }
+
+    /// <summary>
+    /// Append the given query key and value to the URI.
+    /// </summary>
+    /// <param name="uri">The base URI.</param>
+    /// <param name="queryString">A collection of name value query pairs to set.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, IEnumerable<KeyValuePair<string, string?>> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);

@@ -36,4 +36,12 @@ public sealed class QueryStringUtilitiesTests
         var actual  = QueryStringUtilities.AddOrReplaceQueryString(uri, [KeyValuePair.Create("a", new StringValues("1")), KeyValuePair.Create("b", new StringValues(["2", "3"]))]);
         Assert.Equal("http://www.example.com/?a=1&extra=b&b=2&b=3#hash", actual);
     }
+
+    [Fact]
+    public void RemoveQueryString()
+    {
+        var uri = "http://www.example.com/?a=1&b=2&a=3#hash";
+        var actual  = QueryStringUtilities.RemoveQueryString(uri, "a");
+        Assert.Equal("http://www.example.com/?b=2#hash", actual);
+    }
 }

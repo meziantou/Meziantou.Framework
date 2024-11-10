@@ -58,7 +58,7 @@ public static class QueryStringUtilities
 
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
-    
+
     /// <summary>
     /// Append the given query keys and values to the URI.
     /// </summary>
@@ -231,7 +231,7 @@ public static class QueryStringUtilities
 
         return SetQueryString(uri, parsed);
     }
-    
+
     /// <summary>
     /// Append the given query key and value to the URI.
     /// </summary>
@@ -256,7 +256,7 @@ public static class QueryStringUtilities
 
         return SetQueryString(uri, parsed);
     }
-    
+
     /// <summary>
     /// Append the given query key and value to the URI.
     /// </summary>
@@ -322,6 +322,19 @@ public static class QueryStringUtilities
         }
 
         return AddOrReplaceQueryString(uri, accumulator);
+    }
+
+    /// <param name="uri">The base URI.</param>
+    /// <param name="name">The name of the query key.</param>
+    /// <returns>The combined result.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    public static string RemoveQueryString(string uri, string name)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentNullException.ThrowIfNull(name);
+
+        return AddOrReplaceQueryString(uri, name, value: null);
     }
 
     /// <summary>

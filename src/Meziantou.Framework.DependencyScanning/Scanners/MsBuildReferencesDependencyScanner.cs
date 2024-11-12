@@ -35,6 +35,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
             if (string.IsNullOrEmpty(nameValue))
                 continue;
 
+            var reported = false;
             var versionAttribute = package.Attribute(VersionXName);
             var versionAttributeValue = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(versionAttributeValue))
@@ -42,6 +43,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionAttributeValue, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute));
+                reported = true;
             }
             else
             {
@@ -51,6 +53,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                     context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionElement.Value, DependencyType.NuGet,
                         nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionElement));
+                    reported = true;
                 }
             }
 
@@ -61,6 +64,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionOverrideAttributeValue, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionOverrideAttribute));
+                reported = true;
             }
             else
             {
@@ -70,7 +74,15 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                     context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionOverrideElement.Value, DependencyType.NuGet,
                         nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionOverrideElement));
+                    reported = true;
                 }
+            }
+
+            if (!reported)
+            {
+                context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, version: null, DependencyType.NuGet,
+                    nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
+                    versionLocation: null);
             }
         }
 

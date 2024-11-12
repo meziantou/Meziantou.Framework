@@ -128,6 +128,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
   <ItemGroup>
     <ProjectReference Include="ProjectA.csproj" />
+    <PackageReference Include="PackageE" />
   </ItemGroup>
 </Project>
 """;
@@ -152,6 +153,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
   <ItemGroup>
     <ProjectReference Include="dummy6" />
+    <PackageReference Include="dummy7" />
   </ItemGroup>
 </Project>
 """;

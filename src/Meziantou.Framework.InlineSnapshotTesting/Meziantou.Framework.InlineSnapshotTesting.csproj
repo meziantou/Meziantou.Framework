@@ -42,8 +42,8 @@
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/bin/Release/net6.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
-    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/bin/Release/net6.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/bin/Release/net8.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
+    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/bin/Release/net8.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
     <None Include="package/**/*" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>

@@ -74,7 +74,7 @@ public class CommandLineBuilderTests
         var configurations = new[] { "debug", "release" };
         foreach (var configuration in configurations)
         {
-            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net6.0" / fileName;
+            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net8.0" / fileName;
             if (File.Exists(path))
             {
                 _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");

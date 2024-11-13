@@ -81,7 +81,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
                 <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
                 {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
-            </Project>            
+            </Project>
             """);
 
         var outputFilePath = directory.GetFullPath("output.txt");
@@ -131,6 +131,8 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             return "net6.0";
 #elif NET8_0
             return "net8.0";
+#elif NET9_0
+            return "net9.0";
 #endif
         }
     }

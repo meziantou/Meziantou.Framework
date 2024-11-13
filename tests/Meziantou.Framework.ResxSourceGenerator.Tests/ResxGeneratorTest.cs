@@ -14,8 +14,8 @@ public class ResxGeneratorTest
 {
     private static async Task<(GeneratorDriverRunResult Result, byte[] Assembly)> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "6.0.0", "ref/net6.0/");
-        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "6.0.0", "ref/net6.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "8.0.0", "ref/net8.0/");
         var references = netcoreRef.Concat(desktopRef)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();

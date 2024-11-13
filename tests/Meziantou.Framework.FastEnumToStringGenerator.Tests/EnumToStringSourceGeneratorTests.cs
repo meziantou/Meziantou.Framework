@@ -14,7 +14,7 @@ public sealed class EnumToStringSourceGeneratorTests
 {
     private static async Task<(GeneratorDriverRunResult GeneratorResult, Compilation OutputCompilation, byte[] Assembly)> GenerateFiles(string file, bool mustCompile = true, string[] assemblyLocations = null)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "6.0.0", "ref/net6.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         assemblyLocations ??= [];
         var references = assemblyLocations
             .Concat(netcoreRef)

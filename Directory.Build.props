@@ -2,10 +2,10 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <LatestTargetFramework>net8.0</LatestTargetFramework>
+    <LatestTargetFramework>net9.0</LatestTargetFramework>
 
-    <LatestTargetFrameworks>net6.0;net8.0</LatestTargetFrameworks>
-    <LatestTargetFrameworksWindows>net6.0-windows;net8.0-windows</LatestTargetFrameworksWindows>
+    <LatestTargetFrameworks>net8.0;net9.0</LatestTargetFrameworks>
+    <LatestTargetFrameworksWindows>net8.0-windows;net9.0-windows</LatestTargetFrameworksWindows>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
@@ -58,7 +58,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.138">
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.143">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

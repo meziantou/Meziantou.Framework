@@ -300,7 +300,7 @@ public sealed class FullPathTests
         await using var tempDir = TemporaryDirectory.Create();
         var fileName = Guid.NewGuid().ToString("N");
         var filePath = tempDir.CreateEmptyFile(fileName);
-        var subDir =  tempDir.CreateDirectory("a/b/c/d/e");
+        var subDir = tempDir.CreateDirectory("a/b/c/d/e");
 
         Assert.False(subDir.TryFindFirstAncestorOrSelf(p => false, out _));
 

@@ -190,6 +190,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
             {
                 sb.Append(" the ");
             }
+
             ListToHumanText(sb, EnglishCultureInfo, rrule.ByMonthDays.Select(GetByMonthdayHumanText).ToList(), ", ", " and ");
         }
 
@@ -202,6 +203,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 sb.Append(' ');
             }
+
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
         }
 
@@ -266,6 +268,7 @@ public sealed class RecurrenceRuleHumanizerEnglish : RecurrenceRuleHumanizer
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
                 sb.Append(' ');
             }
+
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
 
             if (rrule.ByMonths is not null && rrule.ByMonths.Any())

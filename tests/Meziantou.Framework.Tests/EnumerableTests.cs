@@ -149,9 +149,7 @@ public class EnumerableTests
         // Assert
         actual.Should().Equal(["", "a"]);
     }
-#nullable disable
 
-#nullable enable
     [Fact]
     [SuppressMessage("Style", "IDE0007:Use implicit type", Justification = "Need to validate the type is non-nullable")]
     public void WhereNotNull_Struct()

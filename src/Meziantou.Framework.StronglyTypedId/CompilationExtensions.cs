@@ -57,6 +57,7 @@ internal static class CompilationExtensions
                 // Type Parameters are private.
                 return SymbolVisibility.Private;
         }
+
         while (symbol is not null && symbol.Kind != SymbolKind.Namespace)
         {
             switch (symbol.DeclaredAccessibility)
@@ -74,8 +75,10 @@ internal static class CompilationExtensions
                     // For anything else (Public, Protected, ProtectedOrInternal), the
                     // symbol stays at the level we've gotten so far.
             }
+
             symbol = symbol.ContainingSymbol;
         }
+
         return visibility;
     }
 

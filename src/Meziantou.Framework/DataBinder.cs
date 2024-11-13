@@ -92,6 +92,7 @@ public static class DataBinder
                 properties = TypeDescriptor.GetProperties(containerType);
                 PropertyCache.TryAdd(containerType, properties);
             }
+
             return properties;
         }
 

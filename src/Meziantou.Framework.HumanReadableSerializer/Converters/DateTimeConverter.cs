@@ -11,6 +11,7 @@ internal sealed class DateTimeConverter : HumanReadableConverter<DateTime>
         {
             format += ".fffffff";
         }
+
         if (value.Kind == DateTimeKind.Utc)
         {
             format += "'Z'";

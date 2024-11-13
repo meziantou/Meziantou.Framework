@@ -46,6 +46,7 @@ public partial class QuerySyntax
                         {
                             yield return ReadSingleCharacterToken(QuerySyntaxKind.LessThanOperatorToken, ref position, text);
                         }
+
                         break;
                     case '>':
                         if (position + 1 < text.Length && text[position + 1] == '=')
@@ -59,6 +60,7 @@ public partial class QuerySyntax
                         {
                             yield return ReadSingleCharacterToken(QuerySyntaxKind.GreaterThanOperatorToken, ref position, text);
                         }
+
                         break;
 
                     case '-':

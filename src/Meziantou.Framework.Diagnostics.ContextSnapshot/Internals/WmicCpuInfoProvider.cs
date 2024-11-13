@@ -20,6 +20,7 @@ internal static class WmicCpuInfoProvider
             var content = ProcessHelper.RunAndReadOutput(wmicPath, $"cpu get {ArgList} /Format:List");
             return WmicCpuInfoParser.ParseOutput(content);
         }
+
         return null;
     }
 }

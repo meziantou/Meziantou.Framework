@@ -147,6 +147,7 @@ sealed class HtmlReader
         {
             _typeAttribute = state.Value;
         }
+
         ParserStatesQueue.Enqueue(state);
     }
 
@@ -192,6 +193,7 @@ sealed class HtmlReader
                 {
                     PushCurrentState();
                 }
+
                 break;
 
             case HtmlParserState.TagOpen:
@@ -261,6 +263,7 @@ sealed class HtmlReader
                 Column++;
                 continue;
             }
+
             if (c == '\n')
             {
                 Line++;
@@ -286,6 +289,7 @@ sealed class HtmlReader
                                 PushCurrentState(HtmlParserState.Text, _rawValue.ToString());
                                 return;
                             }
+
                             ParserState = HtmlParserState.TagStart;
                         }
                         else
@@ -299,6 +303,7 @@ sealed class HtmlReader
                     {
                         Value.Append(c);
                     }
+
                     break;
 
                 case HtmlParserState.RawText:
@@ -315,6 +320,7 @@ sealed class HtmlReader
                             ParserState = HtmlParserState.Text;
                             return;
                         }
+
                         ParserState = HtmlParserState.Atts;
                         return;
                     }
@@ -377,6 +383,7 @@ sealed class HtmlReader
                         {
                             ParserState = HtmlParserState.Text;
                         }
+
                         return;
                     }
 
@@ -410,6 +417,7 @@ sealed class HtmlReader
                         Value.Length = 0;
                         ParserState = HtmlParserState.CData;
                     }
+
                     break;
 
                 case HtmlParserState.CommentOpen:
@@ -442,6 +450,7 @@ sealed class HtmlReader
                         {
                             ParserState = HtmlParserState.Text;
                         }
+
                         return;
                     }
 
@@ -460,6 +469,7 @@ sealed class HtmlReader
                         ParserState = HtmlParserState.AttName;
                         break;
                     }
+
                     break;
 
                 case HtmlParserState.AttName:
@@ -519,6 +529,7 @@ sealed class HtmlReader
                             {
                                 ParserState = HtmlParserState.Text;
                             }
+
                             return;
                         }
 
@@ -538,8 +549,10 @@ sealed class HtmlReader
                             ParserState = HtmlParserState.AttAssign;
                             return;
                         }
+
                         Value.Append(c);
                     }
+
                     break;
 
                 case HtmlParserState.AttAssign:
@@ -569,6 +582,7 @@ sealed class HtmlReader
                         {
                             ParserState = HtmlParserState.Text;
                         }
+
                         return;
                     }
 
@@ -591,6 +605,7 @@ sealed class HtmlReader
                         Value.Append(c);
                         break;
                     }
+
                     break;
 
                 case HtmlParserState.AttValue:
@@ -608,6 +623,7 @@ sealed class HtmlReader
                                 // not quoted
                                 QuoteChar = '\0';
                             }
+
                             Value.Append(c);
                         }
                         // else skip whitespaces
@@ -647,6 +663,7 @@ sealed class HtmlReader
                                 {
                                     ParserState = HtmlParserState.Text;
                                 }
+
                                 return;
                             }
 
@@ -665,9 +682,11 @@ sealed class HtmlReader
                                 ParserState = HtmlParserState.Atts;
                                 return;
                             }
+
                             Value.Append(c);
                         }
                     }
+
                     break;
             }
         }

@@ -129,6 +129,7 @@ public partial class StronglyTypedIdSourceGenerator
                             writer.WriteLine("valueRead = true;");
                             writer.WriteLine("reader.Read();");
                         }
+
                         using (writer.BeginBlock("else"))
                         {
                             writer.WriteLine("reader.Skip();");

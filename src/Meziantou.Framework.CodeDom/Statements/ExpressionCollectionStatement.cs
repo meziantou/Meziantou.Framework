@@ -43,6 +43,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         {
             statement.Parent = null;
         }
+
         _expressions.Clear();
     }
 
@@ -63,6 +64,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         {
             item.Parent = null;
         }
+
         return remove;
     }
 

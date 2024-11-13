@@ -71,6 +71,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
                     {
                         Array.Copy(_items, newItems, Count);
                     }
+
                     _items = newItems;
                 }
                 else
@@ -318,6 +319,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
                 _index++;
                 return true;
             }
+
             return MoveNextRare();
         }
 

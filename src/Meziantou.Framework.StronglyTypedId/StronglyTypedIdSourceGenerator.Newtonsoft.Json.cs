@@ -28,6 +28,7 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     writer.WriteLine("writer.WriteNull();");
                 }
+
                 using (writer.BeginBlock("else"))
                 {
                     if (idType is IdType.System_Half)
@@ -63,6 +64,7 @@ public partial class StronglyTypedIdSourceGenerator
                             writer.WriteLine("valueRead = true;");
                             writer.WriteLine("reader.Read();");
                         }
+
                         using (writer.BeginBlock("else"))
                         {
                             writer.WriteLine("reader.Skip();");
@@ -72,6 +74,7 @@ public partial class StronglyTypedIdSourceGenerator
 
                     writer.WriteLine("return value;");
                 }
+
                 ReadValue("return ");
             }
 
@@ -81,6 +84,7 @@ public partial class StronglyTypedIdSourceGenerator
                 {
                     writer.WriteLine($"{left}null;");
                 }
+
                 using (writer.BeginBlock("else"))
                 {
                     if (idType is IdType.System_Half)

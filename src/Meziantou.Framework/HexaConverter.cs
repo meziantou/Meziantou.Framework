@@ -134,7 +134,7 @@ public static class HexaConverter
             result = new byte[length];
             for (var i = 0; i < length; i++)
             {
-                if (!TryGetHexValue(str[i * 2 + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
+                if (!TryGetHexValue(str[(i * 2) + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
                 {
                     result = default;
                     return false;
@@ -190,7 +190,7 @@ public static class HexaConverter
 
             for (var i = 0; i < length; i++)
             {
-                if (!TryGetHexValue(str[i * 2 + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
+                if (!TryGetHexValue(str[(i * 2) + PrefixLength], out var value1) || !TryGetHexValue(str[(i * 2) + 1 + PrefixLength], out var value2))
                 {
                     writtenBytes = i;
                     return false;

@@ -297,7 +297,7 @@ public sealed class GenericFormField<TModel>
 
         if (underlyingType == typeof(Guid))
             return (typeof(InputGuid<>).MakeGenericType(property.PropertyType), null);
-        
+
         if (property.PropertyType == typeof(Uri))
             return (typeof(InputUrl<Uri>), null);
 

@@ -33,6 +33,7 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
                     HumanReadableSerializer.Serialize(writer, item, typeof(T), options);
                     writer.EndArrayItem();
                 }
+
                 writer.EndArray();
             }
         }

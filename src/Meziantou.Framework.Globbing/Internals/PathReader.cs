@@ -46,6 +46,7 @@ internal ref struct PathReader
                     _currentSegmentLength = CurrentText.Length;
                 }
             }
+
             return _currentSegmentLength;
         }
     }

@@ -58,7 +58,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.143">
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.144">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

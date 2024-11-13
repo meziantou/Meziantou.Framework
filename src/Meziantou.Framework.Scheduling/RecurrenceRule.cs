@@ -123,6 +123,7 @@ public abstract class RecurrenceRule
             {
                 recurrenceRule.EndDate = Utilities.ParseDateTime(until);
             }
+
             recurrenceRule.BySetPositions = ParseBySetPos(values);
             recurrenceRule.WeekStart = ParseWeekStart(values);
 
@@ -177,6 +178,7 @@ public abstract class RecurrenceRule
 
             throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
         }
+
         return monthDays;
     }
 
@@ -195,6 +197,7 @@ public abstract class RecurrenceRule
                 throw new FormatException("BYMONTH is invalid.");
             }
         }
+
         return months;
     }
 
@@ -384,9 +387,11 @@ public abstract class RecurrenceRule
                     resultByDays.AddRange(potentialResult.Value);
                 }
             }
+
             resultByDays.Sort();
             //resultByDays = FilterBySetPosition(resultByDays, BySetPositions).ToList();
         }
+
         return resultByDays;
     }
 
@@ -444,6 +449,7 @@ public abstract class RecurrenceRule
                 list.Add(i);
             }
         }
+
         return list;
     }
 
@@ -457,6 +463,7 @@ public abstract class RecurrenceRule
                 list.Add(month);
             }
         }
+
         return list;
     }
 

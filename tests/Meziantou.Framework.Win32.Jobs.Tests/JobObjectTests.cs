@@ -132,7 +132,7 @@ public class JobObjectTests
         using var job = new JobObject();
         job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
     }
-    
+
     [RunIfFact(FactOperatingSystem.Windows)]
     public void SetIoRateLimits()
     {

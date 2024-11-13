@@ -51,7 +51,6 @@ internal static class TypeUtils
             }
         }
 
-
         var index = type.Name.IndexOf('`', StringComparison.Ordinal);
         if (index != -1)
         {
@@ -80,7 +79,6 @@ internal static class TypeUtils
             sb.Append('>');
         }
     }
-
 
     public static void GetHumanDisplayName(StringBuilder sb, ParameterInfo parameter)
     {

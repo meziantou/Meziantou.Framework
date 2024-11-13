@@ -243,7 +243,7 @@ public static class CredentialManager
             {
                 var credentialSaved = saveCredential == CredentialSaveOption.Hidden ? CredentialSaveOption.Hidden : (save ? CredentialSaveOption.Selected : CredentialSaveOption.Unselected);
 
-                error = (WIN32_ERROR)PInvoke.CredUIParseUserName(new PWSTR(userIdPtr), userBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1, domainBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1);
+                error = PInvoke.CredUIParseUserName(new PWSTR(userIdPtr), userBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1, domainBuilder, PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1);
                 return error switch
                 {
                     WIN32_ERROR.NO_ERROR or WIN32_ERROR.DNS_ERROR_RCODE_NO_ERROR => new CredentialResult(new PWSTR(userBuilder).ToString(), new PWSTR(passwordPtr).ToString(), new PWSTR(domainBuilder).ToString(), credentialSaved),
@@ -334,7 +334,7 @@ public static class CredentialManager
         if (!string.IsNullOrEmpty(user))
         {
             fixed (char* userPtr = user)
-            fixed (char* passwordPtr = (password ?? ""))
+            fixed (char* passwordPtr = password ?? "")
             {
                 inCredSize = 1024;
                 inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);
@@ -370,7 +370,7 @@ public static class CredentialManager
                         usernameBuf[0] = '\0';
                         domainBuf[0] = '\0';
 
-                        var returnCode = (WIN32_ERROR)PInvoke.CredUIParseUserName(userName, usernameBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH, domainBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH);
+                        var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH, domainBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH);
                         switch (returnCode)
                         {
                             case WIN32_ERROR.NO_ERROR:

@@ -329,7 +329,6 @@ public sealed class CodeOwnersParserTests
                                "[Test4][2] \t @defaultOwner7  \t\t  @defaultOwner8\n" +
                                "*\n";
 
-
         var actual = CodeOwnersParser.Parse(Content).ToArray();
 
         var expected = new CodeOwnersEntry[]

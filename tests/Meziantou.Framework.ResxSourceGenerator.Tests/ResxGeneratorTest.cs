@@ -207,6 +207,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.RootNamespace;
                             return true;
                         }
+
                         break;
 
                     case "ProjectDir":
@@ -215,6 +216,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ProjectDir;
                             return true;
                         }
+
                         break;
 
                     case "Namespace":
@@ -223,6 +225,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.Namespace;
                             return true;
                         }
+
                         break;
 
                     case "ResourceName":
@@ -231,6 +234,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ResourceName;
                             return true;
                         }
+
                         break;
 
                     case "ClassName":
@@ -239,6 +243,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ClassName;
                             return true;
                         }
+
                         break;
 
                 }

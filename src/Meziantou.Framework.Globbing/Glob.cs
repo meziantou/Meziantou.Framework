@@ -245,6 +245,7 @@ public sealed class Glob
         {
             sb.Append('!');
         }
+
         var first = true;
         foreach (var segment in _segments)
         {

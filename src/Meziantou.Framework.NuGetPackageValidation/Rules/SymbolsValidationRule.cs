@@ -144,6 +144,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                                 ms.Seek(0, SeekOrigin.Begin);
                                                 metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
                                             }
+
                                             break;
                                         }
                                     }
@@ -305,10 +306,12 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     {
                         await pdbStreamSeekable.DisposeAsync().ConfigureAwait(false);
                     }
+
                     if (pdbStream is not null)
                     {
                         await pdbStream.DisposeAsync().ConfigureAwait(false);
                     }
+
                     if (dllStream is not null)
                     {
                         await dllStream.DisposeAsync().ConfigureAwait(false);

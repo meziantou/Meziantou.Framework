@@ -40,7 +40,6 @@ internal sealed class AsyncDelegateCommand : IDelegateCommand
             _isExecuting = false;
             RaiseCanExecuteChanged();
         }
-
     }
 
     public void RaiseCanExecuteChanged()

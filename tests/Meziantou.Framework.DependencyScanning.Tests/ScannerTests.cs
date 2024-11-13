@@ -419,7 +419,6 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
             </Project>
             """;
 
-
         AddFile("packages.config", Original);
         AddFile("file.csproj", OriginalCsproj);
         var result = await GetDependencies<PackagesConfigDependencyScanner>();
@@ -791,7 +790,7 @@ jobs:
             container: 'dummy1'
             """, ignoreNewLines: true);
     }
-    
+
     [Fact]
     public async Task AzureDevOpsInvalidYaml()
     {

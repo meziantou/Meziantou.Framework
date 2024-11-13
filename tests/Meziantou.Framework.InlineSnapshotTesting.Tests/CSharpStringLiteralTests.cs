@@ -21,7 +21,7 @@ public sealed class CSharpStringLiteralTests
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Quoted, "    ", 0, "\n");
         result.Should().Be("\"line1\\nline2\"");
     }
-    
+
     [Fact]
     public void CreateRawString()
     {

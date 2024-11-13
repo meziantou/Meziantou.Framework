@@ -50,6 +50,7 @@ internal sealed class HtmlXsltContext : XsltContext
         {
             ns = Resolver.LookupNamespace(prefix);
         }
+
         return ns ?? string.Empty;
     }
 

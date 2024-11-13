@@ -149,6 +149,7 @@ internal static class QueryHelpers
         {
             equalIndex = textLength;
         }
+
         while (scanIndex < textLength)
         {
             var delimiterIndex = queryString.IndexOf('&', scanIndex);
@@ -156,12 +157,14 @@ internal static class QueryHelpers
             {
                 delimiterIndex = textLength;
             }
+
             if (equalIndex < delimiterIndex)
             {
                 while (scanIndex != equalIndex && char.IsWhiteSpace(queryString[scanIndex]))
                 {
                     ++scanIndex;
                 }
+
                 var name = queryString[scanIndex..equalIndex];
                 var value = queryString.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1);
                 accumulator.Append(
@@ -180,6 +183,7 @@ internal static class QueryHelpers
                     accumulator.Append(queryString[scanIndex..delimiterIndex], string.Empty);
                 }
             }
+
             scanIndex = delimiterIndex + 1;
         }
 

@@ -210,8 +210,8 @@ public sealed class ContextSnapshotBuilder
             {
                 AddValue("AppContext." + name, isEnabled);
             }
-
         }
+
         void AddContextData(string name)
         {
             var value = AppContext.GetData(name);

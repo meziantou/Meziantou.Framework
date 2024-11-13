@@ -7,7 +7,7 @@ internal abstract class GitTool : MergeTool
 {
     protected static readonly Lazy<string> GitPath = new(() => ExecutableFinder.GetFullExecutablePath("git"));
 
-    internal protected static (string Command, string Arguments) ParseCommandFromConfiguration(string value)
+    protected internal static (string Command, string Arguments) ParseCommandFromConfiguration(string value)
     {
         if (value is null)
             return ("", "");

@@ -56,6 +56,7 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
             writer.WritePropertyName(key);
             writer.WriteValue(itemValue);
         }
+
         writer.EndObject();
     }
 
@@ -80,12 +81,14 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
             {
                 delimiterIndex = textLength;
             }
+
             if (equalIndex < delimiterIndex)
             {
                 while (scanIndex != equalIndex && char.IsWhiteSpace(urlEncodedValue[scanIndex]))
                 {
                     ++scanIndex;
                 }
+
                 var name = urlEncodedValue[scanIndex..equalIndex];
                 var value = urlEncodedValue.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1);
                 result.Add((name, value));
@@ -102,6 +105,7 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
                     result.Add((urlEncodedValue[scanIndex..delimiterIndex], ""));
                 }
             }
+
             scanIndex = delimiterIndex + 1;
         }
 

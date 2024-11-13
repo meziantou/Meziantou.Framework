@@ -1,3 +1,4 @@
+#pragma warning disable MEZ_NET9
 using FluentAssertions;
 using Xunit;
 

@@ -68,7 +68,6 @@ public partial class StronglyTypedIdSourceGenerator
                     {
                         writer.WriteLine($"return value;");
                     }
-
                 }
 
                 writer.WriteLine("throw new global::System.InvalidOperationException($\"Cannot convert '{value}' to '{destinationType}'\");");

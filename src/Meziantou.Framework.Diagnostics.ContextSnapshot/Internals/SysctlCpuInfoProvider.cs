@@ -15,6 +15,7 @@ internal static class SysctlCpuInfoProvider
             var content = ProcessHelper.RunAndReadOutput("sysctl", "-a");
             return SysctlCpuInfoParser.ParseOutput(content);
         }
+
         return null;
     }
 }

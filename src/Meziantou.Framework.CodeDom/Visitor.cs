@@ -857,7 +857,7 @@ public class Visitor
         VisitTypeReferenceCollection(recordDeclaration.Implements);
         VisitTypeReferenceIfNotNull(recordDeclaration.BaseType);
     }
-    
+
     public virtual void VisitRecordStructDeclaration(RecordStructDeclaration recordDeclaration)
     {
         VisitTypeDeclaration(recordDeclaration);

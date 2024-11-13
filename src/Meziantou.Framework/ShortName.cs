@@ -25,6 +25,7 @@ public static class ShortName
                 {
                     shortName = string.Concat(name.AsSpan(0, (name.Length < (maxLength - sn.Length)) ? name.Length : (maxLength - sn.Length)), sn);
                 }
+
                 number++;
             }
             else

@@ -605,6 +605,7 @@ sealed class HtmlDocument : HtmlNode
             if (Options.ReaderThrowsOnEncodingMismatch)
                 throw new HtmlException(string.Format(CultureInfo.CurrentCulture, "HTML0004: Html encoding mismatch error. There seems to be mismatch between the stream (HTTP, File, etc.) encoding '{0}' and the declared (HTML META) encoding '{1}'.", StreamEncoding.EncodingName, DetectedEncoding.EncodingName));
         }
+
         return true;
     }
 
@@ -752,6 +753,7 @@ sealed class HtmlDocument : HtmlNode
                             }
                         }
                     }
+
                     break;
 
                 case HtmlFragmentType.TagEndClose:
@@ -794,6 +796,7 @@ sealed class HtmlDocument : HtmlNode
                                     }
                                 }
                             }
+
                             break;
                         }
                     }
@@ -844,6 +847,7 @@ sealed class HtmlDocument : HtmlNode
                             element.NamespaceURI = currentAtt.Value;
                         }
                     }
+
                     break;
 
                 case HtmlFragmentType.Comment:
@@ -867,6 +871,7 @@ sealed class HtmlDocument : HtmlNode
                     throw new HtmlException(string.Format(CultureInfo.CurrentCulture, "HTML0003: Html text encoding error. There seems to be a mismatch between the encoding '{0}', used to read the input Html text, or to open the input Html file, and the real detected text encoding, which cannot be determined at that time. If you do not want to see this exception thrown, please configure the ThrowOnEncodingError HtmlReader option. Offset of the first detected text encoding mismatch is {1}.", StreamEncoding.EncodingName, htmlReader.FirstEncodingErrorOffset));
             }
         }
+
         return true;
     }
 
@@ -887,6 +892,7 @@ sealed class HtmlDocument : HtmlNode
                         ChildNodes.AddNoCheck(node);
                     }
                 }
+
                 ClearCaches();
                 OnPropertyChanged();
             }
@@ -913,6 +919,7 @@ sealed class HtmlDocument : HtmlNode
                 _baseElement = SelectSingleNode("//base") as HtmlElement;
                 _baseElementSearched = true;
             }
+
             return _baseElement;
         }
         set
@@ -1070,6 +1077,7 @@ sealed class HtmlDocument : HtmlNode
         {
             sysid = att.NextSibling.NextSibling.Name;
         }
+
         writer.WriteDocType(name, pubid, sysid, subset: null);
     }
 
@@ -1117,6 +1125,7 @@ sealed class HtmlDocument : HtmlNode
                         return false;
                 }
             }
+
             return true;
         }
     }
@@ -1156,6 +1165,7 @@ sealed class HtmlDocument : HtmlNode
                     }
                 }
             }
+
             return;
         }
 
@@ -1174,6 +1184,7 @@ sealed class HtmlDocument : HtmlNode
                 _namespaceXml = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
                 _namespaceXml.Value = XmlNamespaceURI;
             }
+
             return _namespaceXml;
         }
     }

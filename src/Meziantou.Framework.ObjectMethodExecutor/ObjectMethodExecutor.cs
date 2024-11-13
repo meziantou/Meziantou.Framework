@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
-
 [RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
 public sealed class ObjectMethodExecutor
 {

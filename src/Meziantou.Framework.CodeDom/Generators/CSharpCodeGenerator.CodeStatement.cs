@@ -159,6 +159,7 @@ public partial class CSharpCodeGenerator
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
         }
+
         writer.WriteLine(";");
     }
 
@@ -170,6 +171,7 @@ public partial class CSharpCodeGenerator
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
         }
+
         writer.WriteLine(";");
     }
 
@@ -213,6 +215,7 @@ public partial class CSharpCodeGenerator
             writer.Write(" ");
             WriteExpression(writer, statement.Expression);
         }
+
         writer.WriteLine(";");
     }
 
@@ -264,16 +267,19 @@ public partial class CSharpCodeGenerator
         {
             WriteStatement(writer, statement.Initialization, _inlineStatementWriteStatementOptions);
         }
+
         writer.Write("; ");
         if (statement.Condition is not null)
         {
             WriteExpression(writer, statement.Condition);
         }
+
         writer.Write("; ");
         if (statement.IncrementStatement is not null)
         {
             WriteStatement(writer, statement.IncrementStatement, _inlineStatementWriteStatementOptions);
         }
+
         writer.Write(")");
         writer.WriteLine();
         WriteStatements(writer, statement.Body);

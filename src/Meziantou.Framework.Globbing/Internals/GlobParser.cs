@@ -151,6 +151,7 @@ internal static class GlobParser
                         {
                             i++;
                         }
+
                         continue;
                     }
                 }
@@ -271,7 +272,6 @@ internal static class GlobParser
                     segments.Add(MatchAllSegment.Instance);
                 }
             }
-
 
             errorMessage = null;
             result = CreateGlob(segments, exclude, ignoreCase);

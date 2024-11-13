@@ -142,7 +142,6 @@ namespace Meziantou.Framework
                 public uint Flags;
             }
 
-
             [DllImport(Kernel32Name, CharSet = CharSet.Unicode, SetLastError = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
             internal static extern bool DeviceIoControl

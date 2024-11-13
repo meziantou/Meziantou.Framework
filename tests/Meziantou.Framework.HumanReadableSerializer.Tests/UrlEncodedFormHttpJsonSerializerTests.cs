@@ -15,7 +15,6 @@ public sealed class UrlEncodedFormHttpJsonSerializerTests : SerializerTestsBase
             },
         };
 
-
         AssertSerialization(httpContent, new HumanReadableSerializerOptions().AddUrlEncodedFormFormatter(options), type: null, expected);
     }
 

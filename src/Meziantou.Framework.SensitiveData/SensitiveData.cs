@@ -127,20 +127,15 @@ public sealed unsafe class SensitiveData<T> : IDisposable
     [MemberNotNull(nameof(_data))]
     private void ThrowIfDisposed()
     {
-#if NET7_0_OR_GREATER
         ObjectDisposedException.ThrowIf(_data is null, this);
-#else
-        if (_data is null)
-            throw new ObjectDisposedException(GetType().FullName);
-#endif
     }
 
     private sealed unsafe class NativeMemorySafeHandle : SafeHandle
     {
         private const nint Invalid = 0;
 
-        public NativeMemorySafeHandle() :
-            base(invalidHandleValue: Invalid, ownsHandle: true)
+        public NativeMemorySafeHandle()
+            : base(invalidHandleValue: Invalid, ownsHandle: true)
         {
         }
 

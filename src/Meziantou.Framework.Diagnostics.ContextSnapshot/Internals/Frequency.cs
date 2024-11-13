@@ -30,7 +30,6 @@ internal readonly struct Frequency
         return MHz * value;
     }
 
-
     public static implicit operator Frequency(double value)
     {
         return new Frequency(value);

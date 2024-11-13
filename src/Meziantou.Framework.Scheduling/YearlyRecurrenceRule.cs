@@ -109,6 +109,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
 
             result.Sort();
         }
+
         return result;
     }
 

@@ -2,7 +2,6 @@
 
 namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
-
 internal sealed class PromptStrategy : SnapshotUpdateStrategy
 {
     private readonly Prompt _prompt;

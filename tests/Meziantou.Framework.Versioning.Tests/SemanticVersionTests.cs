@@ -49,13 +49,17 @@ public class SemanticVersionTests
     [Fact]
     public void TryParse_ShouldNotParseNullVersion()
     {
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
         SemanticVersion.TryParse((string)null, out _).Should().BeFalse();
+#pragma warning restore IDE0004
     }
 
     [Fact]
     public void Parse_ShouldNotParseNullVersion()
     {
+#pragma warning disable IDE0004 // Remove Unnecessary Cast
         new Func<object>(() => SemanticVersion.Parse((string)null)).Should().ThrowExactly<ArgumentNullException>();
+#pragma warning restore IDE0004
     }
 
     [Fact]

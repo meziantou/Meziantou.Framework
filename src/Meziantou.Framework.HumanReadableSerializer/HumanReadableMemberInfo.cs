@@ -105,6 +105,7 @@ internal sealed class HumanReadableMemberInfo
                 return null;
             }
         }
+
         return new HumanReadableMemberInfo(member.PropertyType, GetValue, ignoreAttributes, propertyName, converter, order, defaultValue);
     }
 

@@ -378,6 +378,7 @@ public static class QueryStringUtilities
         {
             equalIndex = textLength;
         }
+
         while (scanIndex < textLength)
         {
             var delimiterIndex = queryString.IndexOf('&', scanIndex);
@@ -385,12 +386,14 @@ public static class QueryStringUtilities
             {
                 delimiterIndex = textLength;
             }
+
             if (equalIndex < delimiterIndex)
             {
                 while (scanIndex != equalIndex && char.IsWhiteSpace(queryString[scanIndex]))
                 {
                     ++scanIndex;
                 }
+
                 var name = queryString[scanIndex..equalIndex];
                 var value = queryString.Substring(equalIndex + 1, delimiterIndex - equalIndex - 1);
                 result.Append(
@@ -409,6 +412,7 @@ public static class QueryStringUtilities
                     result.Append(queryString[scanIndex..delimiterIndex], string.Empty);
                 }
             }
+
             scanIndex = delimiterIndex + 1;
         }
 
@@ -435,6 +439,6 @@ public static class QueryStringUtilities
             return uri[(queryIndex + 1)..];
         }
 
-        return uri[(queryIndex + 1)..(anchorIndex)];
+        return uri[(queryIndex + 1)..anchorIndex];
     }
 }

@@ -259,6 +259,7 @@ public partial class CSharpCodeGenerator
             WriteTypeReference(writer, d.ReturnType);
             writer.Write(" ");
         }
+
         WriteIdentifier(writer, d.Name);
         WriteGenericParameters(writer, d);
         writer.Write("(");
@@ -512,6 +513,7 @@ public partial class CSharpCodeGenerator
             WriteConstructorInitializer(writer, member.Initializer);
             writer.Indent--;
         }
+
         writer.WriteLine();
         WriteStatements(writer, member.Statements);
     }
@@ -691,74 +693,92 @@ public partial class CSharpCodeGenerator
         {
             writer.Write("private ");
         }
+
         if ((modifiers & Modifiers.Protected) == Modifiers.Protected)
         {
             writer.Write("protected ");
         }
+
         if ((modifiers & Modifiers.Internal) == Modifiers.Internal)
         {
             writer.Write("internal ");
         }
+
         if ((modifiers & Modifiers.Public) == Modifiers.Public)
         {
             writer.Write("public ");
         }
+
         if ((modifiers & Modifiers.Abstract) == Modifiers.Abstract)
         {
             writer.Write("abstract ");
         }
+
         if ((modifiers & Modifiers.Override) == Modifiers.Override)
         {
             writer.Write("override ");
         }
+
         if ((modifiers & Modifiers.Sealed) == Modifiers.Sealed)
         {
             writer.Write("sealed ");
         }
+
         if ((modifiers & Modifiers.Static) == Modifiers.Static)
         {
             writer.Write("static ");
         }
+
         if ((modifiers & Modifiers.Async) == Modifiers.Async)
         {
             writer.Write("async ");
         }
+
         if ((modifiers & Modifiers.Const) == Modifiers.Const)
         {
             writer.Write("const ");
         }
+
         if ((modifiers & Modifiers.New) == Modifiers.New)
         {
             writer.Write("new ");
         }
+
         if ((modifiers & Modifiers.Ref) == Modifiers.Ref)
         {
             writer.Write("ref ");
         }
+
         if ((modifiers & Modifiers.ReadOnly) == Modifiers.ReadOnly)
         {
             writer.Write("readonly ");
         }
+
         if ((modifiers & Modifiers.Partial) == Modifiers.Partial)
         {
             writer.Write("partial ");
         }
+
         if ((modifiers & Modifiers.Unsafe) == Modifiers.Unsafe)
         {
             writer.Write("unsafe ");
         }
+
         if ((modifiers & Modifiers.Virtual) == Modifiers.Virtual)
         {
             writer.Write("virtual ");
         }
+
         if ((modifiers & Modifiers.Volatile) == Modifiers.Volatile)
         {
             writer.Write("volatile ");
         }
+
         if ((modifiers & Modifiers.Implicit) == Modifiers.Implicit)
         {
             writer.Write("implicit ");
         }
+
         if ((modifiers & Modifiers.Explicit) == Modifiers.Explicit)
         {
             writer.Write("explicit ");
@@ -897,8 +917,10 @@ public partial class CSharpCodeGenerator
                 writer.Write(" ");
                 writer.Write(catchClause.ExceptionVariableName);
             }
+
             writer.Write(")");
         }
+
         writer.WriteLine();
 
         WriteStatements(writer, catchClause.Body);
@@ -916,11 +938,11 @@ public partial class CSharpCodeGenerator
         writer.Write(": ");
         switch (initializer)
         {
-            case ConstructorThisInitializer _:
+            case ConstructorThisInitializer:
                 writer.Write("this");
                 break;
 
-            case ConstructorBaseInitializer _:
+            case ConstructorBaseInitializer:
                 writer.Write("base");
                 break;
 
@@ -1302,6 +1324,7 @@ public partial class CSharpCodeGenerator
                 writer.WriteLine();
             }
         }
+
         writer.Indent--;
     }
 
@@ -1367,6 +1390,7 @@ public partial class CSharpCodeGenerator
         }
     }
 
+    [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Keep it generic, no need for high perf")]
     private void Write<T>(IndentedTextWriter writer, IReadOnlyList<T> objects, Action<(T Item, bool First, bool Last)> afterItemAction) where T : CodeObject
     {
         for (var i = 0; i < objects.Count; i++)

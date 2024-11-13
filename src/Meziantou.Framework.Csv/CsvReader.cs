@@ -87,6 +87,7 @@ public class CsvReader
                             c = await ReadCharAsync().ConfigureAwait(false);
                             ColumnNumber++;
                         }
+
                         LineNumber++;
                     }
 

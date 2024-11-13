@@ -12,7 +12,7 @@ internal static class AppContextConfigHelper
             var switchValue = Environment.GetEnvironmentVariable(envVariable);
             ret = switchValue is not null ? (switchValue.Equals("true", StringComparison.OrdinalIgnoreCase) || switchValue.Equals("1", StringComparison.Ordinal)) : defaultValue;
         }
-        
+
         return ret;
     }
 }

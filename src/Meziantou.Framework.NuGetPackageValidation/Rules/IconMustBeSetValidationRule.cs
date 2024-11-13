@@ -92,7 +92,6 @@ internal sealed class IconMustBeSetValidationRule : NuGetPackageValidationRule
         return buffer.SequenceEqual(expectedMagicNumber);
     }
 
-
     private static async Task<int> TryReadAllAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var totalRead = 0;

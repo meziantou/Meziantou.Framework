@@ -30,6 +30,7 @@ internal static class ProcessHelper
         {
             return null;
         }
+
         var output = process.StandardOutput.ReadToEnd();
         process.WaitForExit();
         return output;

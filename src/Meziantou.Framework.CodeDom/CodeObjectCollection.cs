@@ -55,6 +55,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         {
             item.Parent = null;
         }
+
         _list.Clear();
     }
 
@@ -75,6 +76,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         {
             item.Parent = null;
         }
+
         return remove;
     }
 
@@ -118,6 +120,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
             {
                 item.Parent = null;
             }
+
             value.Parent = Parent;
         }
     }

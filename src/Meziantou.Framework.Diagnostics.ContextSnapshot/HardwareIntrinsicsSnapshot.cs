@@ -165,7 +165,6 @@ public sealed class HardwareIntrinsicsSnapshot
         GetIsSupported("System.Runtime.Intrinsics.X86.X86Serialize");
 #endif
 
-
     public bool IsArmBaseSupported =>
 #if NET6_0_OR_GREATER
         ArmBase.IsSupported;

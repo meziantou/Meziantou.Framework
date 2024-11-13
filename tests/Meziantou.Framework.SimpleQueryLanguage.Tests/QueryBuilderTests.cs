@@ -894,7 +894,7 @@ public sealed class QueryBuilderTests
         query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }).Should().BeFalse();
         query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }).Should().BeFalse();
     }
-    
+
     [Fact]
     public void FieldAndNotText()
     {

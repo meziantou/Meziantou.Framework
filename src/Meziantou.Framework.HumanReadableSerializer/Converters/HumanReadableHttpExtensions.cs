@@ -54,8 +54,10 @@ public static class HumanReadableHttpExtensions
             CustomCondition = data => FilterHeaders(data.Value, requestOptions?.ExcludedHeaderNames),
         });
 
-        if (requestOptions.OmitProtocolVersion is true)
+        if (requestOptions.OmitProtocolVersion)
+        {
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.Always });
+        }
 
 #pragma warning disable CS0618 // Type or member is obsolete
         options.AddAttribute(typeof(HttpRequestMessage), nameof(HttpRequestMessage.Properties), new HumanReadableIgnoreAttribute() { Condition = HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection });
@@ -96,7 +98,7 @@ public static class HumanReadableHttpExtensions
         });
 #endif
 
-        if (responseOptions.OmitProtocolVersion is true)
+        if (responseOptions.OmitProtocolVersion)
         {
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableIgnoreAttribute { Condition = HumanReadableIgnoreCondition.WhenWritingDefault });
             options.AddAttribute(typeof(HttpResponseMessage), nameof(HttpResponseMessage.Version), new HumanReadableDefaultValueAttribute(HttpVersion.Version11));

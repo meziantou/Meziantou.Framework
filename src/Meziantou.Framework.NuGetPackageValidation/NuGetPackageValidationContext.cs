@@ -89,5 +89,4 @@ public sealed class NuGetPackageValidationContext : IDisposable
             return false;
         }
     }
-
 }

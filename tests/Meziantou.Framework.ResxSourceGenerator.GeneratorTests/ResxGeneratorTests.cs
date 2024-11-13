@@ -29,14 +29,12 @@ public class ResxGeneratorTests
         Resource1.Sample.Should().Be("valeur");
     }
 
-#nullable enable
     [Fact]
     public void GetStringWithDefaultValue()
     {
         // Ensure the value is not nullable
         Resource1.GetString("UnknownValue", defaultValue: "abc").Should().HaveLength(3);
     }
-#nullable disable
 
     [Fact]
     public void TextFile()

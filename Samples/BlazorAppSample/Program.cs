@@ -16,11 +16,9 @@ public static class Program
         builder.Services.AddTimeZoneServices();
         builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-
         builder.Services.AddHttpClient<WeatherForecastClient>()
             .ConfigureHttpClient(client => client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress))
             .AddHttpMessageHandler(() => new DefaultBrowserOptionsMessageHandler() { DefaultBrowserRequestCache = BrowserRequestCache.NoCache });
-
 
         return builder.Build().RunAsync();
     }

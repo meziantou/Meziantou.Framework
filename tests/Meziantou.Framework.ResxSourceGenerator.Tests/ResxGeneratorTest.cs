@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests;
 
-public class ResxGeneratorTest
+public sealed class ResxGeneratorTest
 {
     private static async Task<(GeneratorDriverRunResult Result, byte[] Assembly)> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
     {
@@ -21,13 +21,13 @@ public class ResxGeneratorTest
             .ToArray();
 
         var compilation = CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText("") },
+            [CSharpSyntaxTree.ParseText("")],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new ResxGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { generator },
+            generators: [generator],
             additionalTexts: files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray(),
             optionsProvider: optionProvider);
 

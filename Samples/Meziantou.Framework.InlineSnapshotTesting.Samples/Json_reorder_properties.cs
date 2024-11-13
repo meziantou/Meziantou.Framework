@@ -19,7 +19,6 @@ public sealed class Json_reorder_properties
             });
         });
 
-
         var value = JsonNode.Parse("""{"foo":"bar","answer":42}""");
 
         // Json content is automatically indented

@@ -1,3 +1,4 @@
+#pragma warning disable IDE0250 // Make struct readonly
 using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;

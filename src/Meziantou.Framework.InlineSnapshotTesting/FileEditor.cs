@@ -10,7 +10,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal static class FileEditor
 {
-    private static readonly ConcurrentDictionary<string, object> FileLocks = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Lock> FileLocks = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, string> TempFiles = new(StringComparer.Ordinal);
 
     private static readonly Dictionary<string, List<FileEdit>> Changes = new(StringComparer.Ordinal);

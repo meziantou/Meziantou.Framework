@@ -8,7 +8,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
 {
     private const int MaxSegmentSize = 8000;
 
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private AppendOnlyCollectionSegment<T>? _firstSegment;
     private AppendOnlyCollectionSegment<T>? _lastSegment;
 

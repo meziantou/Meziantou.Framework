@@ -14,7 +14,7 @@ namespace Meziantou.Framework;
 /// </remarks>
 internal static class ObjectMethodExecutorFSharpSupport
 {
-    private static readonly object FsharpValuesCacheLock = new();
+    private static readonly Lock FsharpValuesCacheLock = new();
     private static Assembly? s_fsharpCoreAssembly;
     private static MethodInfo? s_fsharpAsyncStartAsTaskGenericMethod;
     private static PropertyInfo? s_fsharpOptionOfTaskCreationOptionsNoneProperty;

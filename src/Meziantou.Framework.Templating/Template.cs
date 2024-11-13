@@ -13,7 +13,7 @@ public class Template
     private const string DefaultRunMethodName = "Run";
     private const string DefaultWriterParameterName = "__output__";
 
-    private static readonly object BuildLock = new();
+    private static readonly Lock BuildLock = new();
 
     private MethodInfo? _runMethodInfo;
     private string? _className;

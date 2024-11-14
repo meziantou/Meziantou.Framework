@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using Meziantou.Framework.NuGetPackageValidation.Internal;
 using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;

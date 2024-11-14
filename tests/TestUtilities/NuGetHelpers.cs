@@ -30,7 +30,7 @@ public static class NuGetHelpers
 
         async Task<string[]> Download()
         {
-            var tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Meziantou.AnalyzerTests", "ref", packageName + '@' + version + '@' + path.Replace('/', '_').Replace('\\', '_'));
+            var tempFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Meziantou.FrameworkTests", "ref", packageName + '@' + version + '@' + path.Replace('/', '_').Replace('\\', '_'));
             if (!Directory.Exists(tempFolder) || !Directory.EnumerateFileSystemEntries(tempFolder).Any())
             {
                 Directory.CreateDirectory(tempFolder);

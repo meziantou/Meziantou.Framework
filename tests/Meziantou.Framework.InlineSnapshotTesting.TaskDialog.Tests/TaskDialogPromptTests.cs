@@ -8,28 +8,33 @@ namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.SnapshotUpd
 
 public sealed class TaskDialogPromptTests
 {
+    private static readonly Lock Lock = new();
+
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)
     {
-        var prompt = new TaskDialogPrompt()
+        lock (Lock)
         {
-            MustRegisterUriScheme = false,
-            MustStartNotificationTray = false,
-            MustShowDialog = true,
-        };
+            var prompt = new TaskDialogPrompt()
+            {
+                MustRegisterUriScheme = false,
+                MustStartNotificationTray = false,
+                MustShowDialog = true,
+            };
 
-        Automation.AddAutomationEventHandler(
-            eventId: WindowPattern.WindowOpenedEvent,
-            element: AutomationElement.RootElement,
-            scope: TreeScope.Children,
-            eventHandler: OnWindowOpened);
+            Automation.AddAutomationEventHandler(
+                eventId: WindowPattern.WindowOpenedEvent,
+                element: AutomationElement.RootElement,
+                scope: TreeScope.Children,
+                eventHandler: OnWindowOpened);
 
-        try
-        {
-            return prompt.Ask(context);
-        }
-        finally
-        {
-            Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
+            try
+            {
+                return prompt.Ask(context);
+            }
+            finally
+            {
+                Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
+            }
         }
 
         void OnWindowOpened(object sender, AutomationEventArgs automationEventArgs)

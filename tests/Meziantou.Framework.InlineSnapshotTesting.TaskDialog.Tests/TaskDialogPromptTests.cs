@@ -1,18 +1,25 @@
-﻿using System.Windows.Automation;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows.Automation;
 using FluentAssertions;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.SnapshotUpdateStrategies;
 
-public sealed class TaskDialogPromptTests
+public sealed partial class TaskDialogPromptTests
 {
-    private static readonly Lock Lock = new();
-
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)
     {
-        lock (Lock)
+        // The project is multi-targeted, so multiple process can run in parallel
+        using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkTaskDialogPromptTests");
+        mutex.WaitOne();
+
+        try
         {
             var prompt = new TaskDialogPrompt()
             {
@@ -35,6 +42,10 @@ public sealed class TaskDialogPromptTests
             {
                 Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
             }
+        }
+        finally
+        {
+            mutex.ReleaseMutex();
         }
 
         void OnWindowOpened(object sender, AutomationEventArgs automationEventArgs)

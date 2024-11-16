@@ -1,4 +1,4 @@
-﻿<#@ template debug="true" hostspecific="false" language="C#" #>
+<#@ template debug="true" hostspecific="false" language="C#" #>
 <#@ output extension=".cs" #>
 <#@ assembly name="System.Linq" #>
 <#@ import namespace="System.Linq" #>
@@ -22,14 +22,12 @@ namespace Meziantou.Framework;
 
 // https://www.meziantou.net/get-the-result-of-multiple-tasks-in-a-valuetuple-and-whenall.htm
 public static partial class TaskEx
-{
-<# for (int i = 2; i <= count; i++) { #>
+{<# for (int i = 2; i <= count; i++) { #>
+
     public static async Task<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "Task<T" + i + "> task" + i) #>)
     {
-        <# for (int j = 1; j <= i; j++) { #>
-        ArgumentNullException.ThrowIfNull(task<#= j #>);
-        <# } #>
-        await Task.WhenAll(<#= Join(", ", i, i => "task" + i) #>).ConfigureAwait(false);
+        <# for (int j = 1; j <= i; j++) { #>ArgumentNullException.ThrowIfNull(task<#= j #>);
+        <# } #>await Task.WhenAll(<#= Join(", ", i, i => "task" + i) #>).ConfigureAwait(false);
         return (<#= Join(", ", i, i => "task" + i + ".Result") #>);
     }
 
@@ -38,20 +36,19 @@ public static partial class TaskEx
         return WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
     }
 <# } #>
-
 <# for (int i = 2; i <= count; i++) { #>
+
     public static TaskAwaiter GetAwaiter(this (<#= Join(", ", i, i => "Task") #>) tasks)
     {
         return Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
     }
 <# } #>
-
 <# for (int i = 2; i <= count; i++) { #>
+
     public static async ValueTask<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
-        <# for (int j = 1; j <= i; j++) { #>
-        T<#=j#> result<#=j#>;        
+        <# for (int j = 1; j <= i; j++) { #>T<#=j#> result<#=j#>;
         try
         {
             result<#=j#> = await task<#=j#>.ConfigureAwait(false);
@@ -77,13 +74,12 @@ public static partial class TaskEx
         return WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
     }
 <# } #>
-
 <# for (int i = 2; i <= count; i++) { #>
+
     public static async ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
-        <# for (int j = 1; j <= i; j++) { #>
-        try
+        <# for (int j = 1; j <= i; j++) { #>try
         {
             await task<#=j#>.ConfigureAwait(false);
         }
@@ -111,7 +107,7 @@ public static partial class TaskEx
     {
         return Join(", ", count, i => "T" + i);
     }
-    
+
     string Join(string separator, int count, Func<int, string> selector)
     {
         var str = "";

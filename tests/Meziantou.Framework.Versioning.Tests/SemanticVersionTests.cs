@@ -20,7 +20,7 @@ public class SemanticVersionTests
             { "1.0.0", new SemanticVersion(1, 0, 0) },
             { "v1.2.3", new SemanticVersion(1, 2, 3) },
             { "1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha") },
-            {"1.0.0-alpha.1", new SemanticVersion(1, 0, 0, ["alpha", "1"], []) },
+            { "1.0.0-alpha.1", new SemanticVersion(1, 0, 0, ["alpha", "1"], []) },
             { "1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha") },
             { "1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, ["alpha", "1"], ["label"]) },
         };

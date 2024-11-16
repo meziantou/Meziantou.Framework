@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Argon" Version="0.24.2" />
+    <PackageReference Include="Argon" Version="0.25.0" />
   </ItemGroup>
 
   <ItemGroup>

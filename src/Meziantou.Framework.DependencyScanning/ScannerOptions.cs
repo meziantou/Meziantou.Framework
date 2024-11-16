@@ -5,8 +5,8 @@ namespace Meziantou.Framework.DependencyScanning;
 
 public sealed class ScannerOptions
 {
-    private static readonly ReadOnlyCollection<DependencyScanner> DefaultScanners = new(new DependencyScanner[]
-    {
+    private static readonly ReadOnlyCollection<DependencyScanner> DefaultScanners = new(
+    [
         new AzureDevOpsScanner(),
         new DockerfileDependencyScanner(),
         new DotNetGlobalJsonDependencyScanner(),
@@ -21,7 +21,7 @@ public sealed class ScannerOptions
         new ProjectJsonDependencyScanner(),
         new PythonRequirementsDependencyScanner(),
         new RenovateExtendsDependencyScanner(),
-    });
+    ]);
 
     internal static ScannerOptions Default { get; } = new ScannerOptions();
 

@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+    
     <Version>2.0.10</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>

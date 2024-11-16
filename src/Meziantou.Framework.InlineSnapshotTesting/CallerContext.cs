@@ -206,9 +206,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                             if (asma.StateMachineType == method.DeclaringType)
                             {
                                 foundAttribute = true;
-                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute
-                                    || (typeof(AsyncIteratorStateMachineAttribute) != null
-                                        && typeof(AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma));
+                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute || typeof(AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma);
                             }
                         }
 

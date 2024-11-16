@@ -74,7 +74,7 @@ public class CommandLineBuilderTests
         var configurations = new[] { "debug", "release" };
         foreach (var configuration in configurations)
         {
-            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net6.0" / fileName;
+            var path = FullPath.CurrentDirectory() / ".." / ".." / ".." / ".." / "artifacts" / "bin" / "ArgumentsPrinter" / $"{configuration}_net8.0" / fileName;
             if (File.Exists(path))
             {
                 _testOutputHelper.WriteLine($"Use ArgumentsPrinter located at '{path}'");
@@ -118,7 +118,7 @@ public class CommandLineBuilderTests
         var errors = process.StandardError.ReadToEnd();
         errors.Should().BeNullOrEmpty();
 
-        var actualArguments = process.StandardOutput.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        var actualArguments = process.StandardOutput.ReadToEnd().Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
         _testOutputHelper.WriteLine("----------");
         foreach (var arg in actualArguments)
         {

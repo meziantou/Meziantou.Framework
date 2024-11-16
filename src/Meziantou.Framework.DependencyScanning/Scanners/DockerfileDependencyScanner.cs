@@ -3,10 +3,8 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-public sealed class DockerfileDependencyScanner : DependencyScanner
+public sealed partial class DockerfileDependencyScanner : DependencyScanner
 {
-    private static readonly Regex FromRegex = new(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
-
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
@@ -15,7 +13,7 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
         while ((line = await sr.ReadLineAsync(context.CancellationToken).ConfigureAwait(false)) is not null)
         {
             lineNo++;
-            var match = FromRegex.Match(line);
+            var match = FromRegex().Match(line);
             if (!match.Success)
                 continue;
 
@@ -33,4 +31,7 @@ public sealed class DockerfileDependencyScanner : DependencyScanner
     {
         return context.HasFileName("Dockerfile", ignoreCase: true);
     }
+
+    [GeneratedRegex(@"^FROM\s*(?<ImageName>[^\s]+):(?<Version>[^\s]+)(\s+AS\s+\w+)?\s*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex FromRegex();
 }

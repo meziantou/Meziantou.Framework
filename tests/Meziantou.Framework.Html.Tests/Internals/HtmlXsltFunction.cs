@@ -151,6 +151,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
 
             return true;
         }
+
         return false;
     }
 

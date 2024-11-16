@@ -20,6 +20,7 @@ public class HtmlEmailOutput(Template template, TextWriter writer) : Output(temp
         {
             currentSection.Writer.Write(format, args);
         }
+
         base.Write(format, args);
     }
 

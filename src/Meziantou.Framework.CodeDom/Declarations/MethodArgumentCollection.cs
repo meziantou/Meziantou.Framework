@@ -62,6 +62,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
         {
             item.Parent = null;
         }
+
         _list.Clear();
     }
 
@@ -82,6 +83,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
         {
             item.Parent = null;
         }
+
         return remove;
     }
 
@@ -125,6 +127,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
             {
                 item.Parent = null;
             }
+
             value.Parent = Parent;
         }
     }

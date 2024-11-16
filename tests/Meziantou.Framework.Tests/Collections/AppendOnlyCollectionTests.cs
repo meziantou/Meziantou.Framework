@@ -13,10 +13,10 @@ public sealed class AppendOnlyCollectionTests
         collection.Should().BeEmpty();
 
         collection.Add(0);
-        collection.Should().BeEquivalentTo(new[] { 0 });
+        collection.Should().BeEquivalentTo([0]);
 
         collection.Add(1);
-        collection.Should().BeEquivalentTo(new[] { 0, 1 });
+        collection.Should().BeEquivalentTo([0, 1]);
 
         for (var i = 2; i < 10_000; i++)
         {

@@ -324,9 +324,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 LastName: Barré
                 NickName: meziantou
                 """, GetValue());
-            
+
             string GetValue() => "";
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static async System.Threading.Tasks.Task Helper(string expected, string dummy, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
@@ -389,7 +389,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 LastName: Barré
                 NickName: meziantou
                 """);
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static async System.Threading.Tasks.Task Helper1(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
@@ -402,7 +402,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 };
                 InlineSnapshot.Validate(data, expected, filePath, lineNumber);
             }
-            
+
             [InlineSnapshotAssertion(nameof(expected))]
             static async System.Threading.Tasks.Task Helper2(string expected, [CallerFilePath] string filePath = null, [CallerLineNumber] int lineNumber = -1)
             {
@@ -961,6 +961,8 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             return "net6.0";
 #elif NET8_0
             return "net8.0";
+#elif NET9_0
+            return "net9.0";
 #endif
         }
 

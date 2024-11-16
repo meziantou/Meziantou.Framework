@@ -49,6 +49,7 @@ static class HtmlMicroDataExtensions
                 {
                     type = typeParser(type);
                 }
+
                 path = type + separator + path;
             }
 

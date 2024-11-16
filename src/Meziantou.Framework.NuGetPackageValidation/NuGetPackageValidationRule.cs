@@ -3,7 +3,7 @@ using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;
 
-public abstract class NuGetPackageValidationRule
+public abstract partial class NuGetPackageValidationRule
 {
     public abstract Task ExecuteAsync(NuGetPackageValidationContext context);
 
@@ -38,6 +38,9 @@ public abstract class NuGetPackageValidationRule
 
     private protected static bool IsSatelliteAssembly(string path)
     {
-        return Regex.IsMatch(path, @"(\\|/)[^\\/]+(\\|/)([^\\/]+).resources.dll$", RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+        return SatelliteAssemblyRegex().IsMatch(path);
     }
+
+    [GeneratedRegex(@"(\\|/)[^\\/]+(\\|/)([^\\/]+).resources.dll$", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex SatelliteAssemblyRegex();
 }

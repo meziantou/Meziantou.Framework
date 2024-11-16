@@ -37,7 +37,7 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
                 var resultByDays = ResultByWeekDaysInMonth(startOfMonth, ByWeekDays);
 
                 var result = Intersect(resultByDays, resultByMonthDays);
-                result = FilterBySetPosition(result.Distinct().OrderBy(d => d).ToList(), BySetPositions);
+                result = FilterBySetPosition(result.Distinct().Order().ToArray(), BySetPositions);
 
                 foreach (var date in result.Where(d => d >= startDate))
                 {

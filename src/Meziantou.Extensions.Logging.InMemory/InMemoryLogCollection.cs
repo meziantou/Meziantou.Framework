@@ -9,7 +9,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 {
     private const int MaxChunkSize = 8000;
 
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private Chunk<InMemoryLogEntry>? _firstChunk;
     private Chunk<InMemoryLogEntry>? _lastChunk;
 

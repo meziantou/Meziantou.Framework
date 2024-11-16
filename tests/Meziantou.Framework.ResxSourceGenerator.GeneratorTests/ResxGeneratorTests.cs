@@ -29,14 +29,12 @@ public class ResxGeneratorTests
         Resource1.Sample.Should().Be("valeur");
     }
 
-#nullable enable
     [Fact]
     public void GetStringWithDefaultValue()
     {
         // Ensure the value is not nullable
         Resource1.GetString("UnknownValue", defaultValue: "abc").Should().HaveLength(3);
     }
-#nullable disable
 
     [Fact]
     public void TextFile()
@@ -47,6 +45,6 @@ public class ResxGeneratorTests
     [Fact]
     public void BinaryFile()
     {
-        Resource1.Image1.Should().StartWith(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+        Resource1.Image1.Should().StartWith([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
     }
 }

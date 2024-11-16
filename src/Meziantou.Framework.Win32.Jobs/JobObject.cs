@@ -87,6 +87,7 @@ public sealed class JobObject : IDisposable
                 jobObject = null;
                 return false;
             }
+
             throw new Win32Exception(lastError);
         }
 

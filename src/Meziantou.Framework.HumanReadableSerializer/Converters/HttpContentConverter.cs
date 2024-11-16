@@ -58,6 +58,7 @@ internal sealed class HttpContentConverter : HumanReadableConverter<HttpContent>
                 options.GetConverter(typeof(byte[])).WriteValue(writer, bytes, typeof(byte[]), options);
             }
         }
+
         writer.EndObject();
     }
 

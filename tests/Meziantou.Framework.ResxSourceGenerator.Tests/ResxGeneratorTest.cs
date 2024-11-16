@@ -10,24 +10,24 @@ using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests;
 
-public class ResxGeneratorTest
+public sealed class ResxGeneratorTest
 {
     private static async Task<(GeneratorDriverRunResult Result, byte[] Assembly)> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
     {
-        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "6.0.0", "ref/net6.0/");
-        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "6.0.0", "ref/net6.0/");
+        var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
+        var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "8.0.0", "ref/net8.0/");
         var references = netcoreRef.Concat(desktopRef)
             .Select(loc => MetadataReference.CreateFromFile(loc))
             .ToArray();
 
         var compilation = CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText("") },
+            [CSharpSyntaxTree.ParseText("")],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         var generator = new ResxGenerator().AsSourceGenerator();
         GeneratorDriver driver = CSharpGeneratorDriver.Create(
-            generators: new ISourceGenerator[] { generator },
+            generators: [generator],
             additionalTexts: files.Select(file => (AdditionalText)new TestAdditionalText(file.ResxPath, file.ResxContent)).ToArray(),
             optionsProvider: optionProvider);
 
@@ -56,7 +56,7 @@ public class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "Image1"), new XAttribute("type", "System.Resources.ResXFileRef, System.Windows.Forms"), new XElement("value", @"Resources\Image1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"))
             );
 
-        var (result, _) = await GenerateFiles(new[] { ("test.resx", element.ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
         {
             Namespace = "test",
             ResourceName = "test",
@@ -95,13 +95,13 @@ public class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "BBB"), new XElement("value", "Value"))
             );
 
-        var (result, assembly) = await GenerateFiles(new (string, string)[]
-            {
+        var (result, assembly) = await GenerateFiles(
+            [
                 (FullPath.GetTempPath() / "test.resx", element1.ToString()),
                 (FullPath.GetTempPath() / "test.en.resx", element2.ToString()),
                 (FullPath.GetTempPath() / "test.fr-FR.resx", element3.ToString()),
                 (FullPath.GetTempPath() / "test.NewResource.fr.resx", element4.ToString()),
-            }, new OptionProvider
+            ], new OptionProvider
             {
                 ProjectDir = FullPath.GetTempPath(),
                 RootNamespace = "Test",
@@ -125,7 +125,7 @@ public class ResxGeneratorTest
     [Fact]
     public async Task ComputeNamespace_RootDir()
     {
-        var (result, _) = await GenerateFiles(new (string, string)[] { (FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
@@ -139,7 +139,7 @@ public class ResxGeneratorTest
     [Fact]
     public async Task ComputeNamespace_SubFolder()
     {
-        var (result, _) = await GenerateFiles(new (string, string)[] { (FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
@@ -152,7 +152,7 @@ public class ResxGeneratorTest
     [Fact]
     public async Task WrongResx_Warning()
     {
-        var (result, _) = await GenerateFiles(new[] { ("test.resx", "invalid xml") }, new OptionProvider
+        var (result, _) = await GenerateFiles([("test.resx", "invalid xml")], new OptionProvider
         {
             ResourceName = "resource",
             Namespace = "test",
@@ -207,6 +207,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.RootNamespace;
                             return true;
                         }
+
                         break;
 
                     case "ProjectDir":
@@ -215,6 +216,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ProjectDir;
                             return true;
                         }
+
                         break;
 
                     case "Namespace":
@@ -223,6 +225,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.Namespace;
                             return true;
                         }
+
                         break;
 
                     case "ResourceName":
@@ -231,6 +234,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ResourceName;
                             return true;
                         }
+
                         break;
 
                     case "ClassName":
@@ -239,6 +243,7 @@ public class ResxGeneratorTest
                             value = _optionProvider.ClassName;
                             return true;
                         }
+
                         break;
 
                 }

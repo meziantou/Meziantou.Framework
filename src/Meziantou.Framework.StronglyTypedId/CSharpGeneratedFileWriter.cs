@@ -180,7 +180,7 @@ internal sealed class CSharpGeneratedFileWriter
             WriteXmlComment(node);
         }
     }
-    
+
     public void WriteXmlComment(XNode node)
     {
         var content = node.ToString();

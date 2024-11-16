@@ -33,7 +33,7 @@ public sealed class InlineSnapshotSettingsTests
             EndOfLine = "\r\n",
             FileEncoding = Encoding.ASCII,
             ValidateSourceFilePathUsingPdbInfoWhenAvailable = true,
-            ForceUpdateSnapshots  = false,
+            ForceUpdateSnapshots = false,
             ValidateLineNumberUsingPdbInfoWhenAvailable = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
             SnapshotSerializer = new HumanReadableSnapshotSerializer(),

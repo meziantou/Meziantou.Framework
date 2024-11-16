@@ -58,6 +58,7 @@ public sealed class HtmlSanitizer
                 hashSet.Add(trim);
             }
         }
+
         return hashSet;
     }
 

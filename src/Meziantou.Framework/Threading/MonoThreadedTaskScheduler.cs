@@ -91,7 +91,7 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
         do
         {
             // note: Stop must be first in array (in case both events happen at the same exact time)
-            var i = WaitHandle.WaitAny(new[] { _stop, _dequeue }, WaitTimeout);
+            var i = WaitHandle.WaitAny([_stop, _dequeue], WaitTimeout);
             if (i == 0)
                 break;
 

@@ -120,5 +120,4 @@ public sealed class GitHubActionsScanner : DependencyScanner
             }
         }
     }
-
 }

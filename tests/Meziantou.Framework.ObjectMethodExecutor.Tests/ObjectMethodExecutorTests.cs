@@ -125,7 +125,7 @@ public sealed class ObjectMethodExecutorTests
         result.Should().BeNull();
         validator.HasBeenInvoked.Should().BeTrue();
     }
-    
+
     [Fact]
     public async Task FSharpAsync()
     {
@@ -134,7 +134,7 @@ public sealed class ObjectMethodExecutorTests
 
         result.Should().Be(42);
     }
-    
+
     [Fact]
     public async Task FSharpAsync_Unit()
     {

@@ -144,6 +144,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                                                 ms.Seek(0, SeekOrigin.Begin);
                                                 metadataReaderProvider = MetadataReaderProvider.FromPortablePdbStream(ms, MetadataStreamOptions.PrefetchMetadata);
                                             }
+
                                             break;
                                         }
                                     }
@@ -223,7 +224,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                             continue;
 
                         var name = reader.GetString(document.Name);
-                        if (!Regex.IsMatch(name, "^/_[0-9]*/", RegexOptions.None, Timeout.InfiniteTimeSpan))
+                        if (!DeterministicFileNameRegex().IsMatch(name))
                         {
                             context.ReportError(ErrorCodes.NonDeterministic, $"Symbol file contains non-deterministic file path '{name}'", fileName: item);
                         }
@@ -305,10 +306,12 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                     {
                         await pdbStreamSeekable.DisposeAsync().ConfigureAwait(false);
                     }
+
                     if (pdbStream is not null)
                     {
                         await pdbStream.DisposeAsync().ConfigureAwait(false);
                     }
+
                     if (dllStream is not null)
                     {
                         await dllStream.DisposeAsync().ConfigureAwait(false);
@@ -502,4 +505,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
             return null;
         }
     }
+
+    [GeneratedRegex("^/_[0-9]*/", RegexOptions.None, matchTimeoutMilliseconds: -1)]
+    private static partial Regex DeterministicFileNameRegex();
 }

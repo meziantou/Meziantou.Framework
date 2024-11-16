@@ -129,6 +129,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                         return i;
                 }
             }
+
             return -1;
         }
     }
@@ -445,6 +446,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 WriteTo(w);
                 _outerHtml = w.ToString();
             }
+
             return _outerHtml;
         }
     }
@@ -459,6 +461,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 AppendChildText(sb);
                 _innerText = sb.ToString();
             }
+
             return _innerText;
         }
         set
@@ -481,6 +484,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                     text.Value = value;
                     ChildNodes.Add(text);
                 }
+
                 OnPropertyChanged();
             }
         }
@@ -514,6 +518,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 WriteContentTo(w);
                 _innerHtml = w.ToString();
             }
+
             return _innerHtml;
         }
         set => throw new InvalidOperationException();
@@ -530,8 +535,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 {
                     WriteTo(writer);
                 }
+
                 _outerXml = w.ToString();
             }
+
             return _outerXml;
         }
     }
@@ -547,8 +554,10 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 {
                     WriteContentTo(writer);
                 }
+
                 _innerXml = w.ToString();
             }
+
             return _innerXml;
         }
         set => throw new InvalidOperationException();
@@ -603,6 +612,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         {
             att.Value = value;
         }
+
         return att;
     }
 
@@ -660,6 +670,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         {
             att.Value = value;
         }
+
         return att;
     }
 
@@ -866,6 +877,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             if (n == node)
                 return true;
         }
+
         return false;
     }
 
@@ -971,6 +983,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                 child._parentNode = null;
                 ChildNodes.Insert(oldIndex++, child);
             }
+
             oldChild.ChildNodes.RemoveAllNoCheck();
         }
 

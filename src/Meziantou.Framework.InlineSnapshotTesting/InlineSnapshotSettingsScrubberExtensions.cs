@@ -18,7 +18,7 @@ public static class InlineSnapshotSettingsScrubberExtensions
 
     public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
         => ScrubLinesMatching(settings, pattern, RegexOptions.None, Timeout.InfiniteTimeSpan);
-    
+
     public static void ScrubLinesMatching(this InlineSnapshotSettings settings, [StringSyntax(StringSyntaxAttribute.Regex)] string pattern, RegexOptions options)
         => ScrubLinesMatching(settings, pattern, options, Timeout.InfiniteTimeSpan);
 

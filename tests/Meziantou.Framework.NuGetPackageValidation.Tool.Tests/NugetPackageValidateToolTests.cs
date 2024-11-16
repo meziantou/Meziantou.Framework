@@ -50,7 +50,7 @@ public sealed class NugetPackageValidateToolTests
             result.Output.Should().Contain("meziantou.validate-nuget-package");
         }
     }
-    
+
     [Fact]
     public async Task NoPackage()
     {
@@ -73,7 +73,7 @@ public sealed class NugetPackageValidateToolTests
             result.ValidationResult.Errors.Should().Contain(item => item.ErrorCode == 81);
         }
     }
-    
+
     [Fact]
     public async Task TestPackage_Multiple()
     {

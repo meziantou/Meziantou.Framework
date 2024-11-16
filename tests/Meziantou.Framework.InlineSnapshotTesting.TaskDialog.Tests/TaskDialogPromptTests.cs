@@ -1,35 +1,50 @@
-﻿using System.Windows.Automation;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows.Automation;
 using FluentAssertions;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TestUtilities;
 using Xunit;
 
-namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.SnapshotUpdateStrategies;
+namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests;
 
 public sealed class TaskDialogPromptTests
 {
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)
     {
-        var prompt = new TaskDialogPrompt()
-        {
-            MustRegisterUriScheme = false,
-            MustStartNotificationTray = false,
-            MustShowDialog = true,
-        };
-
-        Automation.AddAutomationEventHandler(
-            eventId: WindowPattern.WindowOpenedEvent,
-            element: AutomationElement.RootElement,
-            scope: TreeScope.Children,
-            eventHandler: OnWindowOpened);
-
+        // The project is multi-targeted, so multiple process can run in parallel
+        using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkTaskDialogPromptTests");
+        mutex.WaitOne();
         try
         {
-            return prompt.Ask(context);
+            var prompt = new TaskDialogPrompt()
+            {
+                MustRegisterUriScheme = false,
+                MustStartNotificationTray = false,
+                MustShowDialog = true,
+            };
+
+            Automation.AddAutomationEventHandler(
+                eventId: WindowPattern.WindowOpenedEvent,
+                element: AutomationElement.RootElement,
+                scope: TreeScope.Children,
+                eventHandler: OnWindowOpened);
+
+            try
+            {
+                return prompt.Ask(context);
+            }
+            finally
+            {
+                Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
+            }
         }
         finally
         {
-            Automation.RemoveAutomationEventHandler(WindowPattern.WindowOpenedEvent, AutomationElement.RootElement, OnWindowOpened);
+            mutex.ReleaseMutex();
         }
 
         void OnWindowOpened(object sender, AutomationEventArgs automationEventArgs)
@@ -47,18 +62,14 @@ public sealed class TaskDialogPromptTests
                         {
                             var checkbox = element.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox));
                             if (checkbox.TryGetCurrentPattern(TogglePattern.Pattern, out var checkboxPattern))
-                            {
                                 ((TogglePattern)checkboxPattern).Toggle();
-                            }
                         }
 
                         var btns = element.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button));
                         var btn = btns[buttonIndex];
 
                         if (btn.TryGetCurrentPattern(InvokePattern.Pattern, out var btnPattern))
-                        {
                             ((InvokePattern)btnPattern).Invoke();
-                        }
                     }
                 }
             }

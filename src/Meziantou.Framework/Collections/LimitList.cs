@@ -65,6 +65,7 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
 
                 i++;
             }
+
             throw new ArgumentOutOfRangeException(nameof(index));
         }
         set

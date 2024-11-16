@@ -875,7 +875,6 @@ public sealed partial class SerializerTests : SerializerTestsBase
     [Fact]
     public void UShort() => AssertSerialization((ushort)1, "1");
 
-
     [Fact]
     public void Int32() => AssertSerialization(-1, "-1");
 

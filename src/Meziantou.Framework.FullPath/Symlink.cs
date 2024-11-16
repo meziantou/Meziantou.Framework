@@ -74,6 +74,7 @@ internal static class Symlink
                 {
                     target = Path.Combine(root, symbolicLinkInfo.ContentsPath);
                 }
+
                 return true;
             }
 
@@ -103,6 +104,7 @@ internal static class Symlink
             return target is not null;
         }
 
+        [SuppressMessage("Style", "IDE0004:Remove Unnecessary Cast", Justification = "Clearer as FileAttributes.None is not available in .NET Framework")]
         internal static bool IsSymbolicLink(string path)
         {
             var findData = new Interop.Kernel32.WIN32_FIND_DATA();

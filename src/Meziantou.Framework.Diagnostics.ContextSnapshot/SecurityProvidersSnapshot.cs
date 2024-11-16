@@ -109,6 +109,5 @@ public sealed class SecurityProvidersSnapshot
 
         return null;
     }
-
 }
 

@@ -248,6 +248,7 @@ sealed class HtmlAttribute : HtmlNode
         {
             node.WriteTo(sw);
         }
+
         return sw.ToString();
     }
 
@@ -271,6 +272,7 @@ sealed class HtmlAttribute : HtmlNode
                     s = s.Replace(QuoteChar.ToString(CultureInfo.InvariantCulture), "&apos;", StringComparison.Ordinal);
                 }
             }
+
             writer.Write(s);
         }
     }

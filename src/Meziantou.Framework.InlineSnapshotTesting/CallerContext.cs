@@ -17,8 +17,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
     /// Older versions use "&lt;callerName&gt;g__functionNamex_y".
     /// </summary>
     /// <see href="https://github.com/dotnet/roslyn/blob/aecd49800750d64e08767836e2678ffa62a4647f/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNames.cs#L109" />
-    [SuppressMessage("Security", "MA0009:Add regex evaluation timeout")]
-    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+    private static readonly Regex FunctionNameRegex = new(@"^<(.*)>g__(?<name>[^\|]*)\|{0,1}[0-9]+(_[0-9]+)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture, matchTimeout: Timeout.InfiniteTimeSpan);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static CallerContext Get(InlineSnapshotSettings settings, string? filePath, int lineNumber)
@@ -206,9 +205,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                             if (asma.StateMachineType == method.DeclaringType)
                             {
                                 foundAttribute = true;
-                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute
-                                    || typeof(System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute) != null
-                                    && typeof(System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma);
+                                foundIteratorAttribute |= asma is IteratorStateMachineAttribute || typeof(AsyncIteratorStateMachineAttribute).IsInstanceOfType(asma);
                             }
                         }
 

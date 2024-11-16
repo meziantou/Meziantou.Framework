@@ -55,7 +55,7 @@ public class DependencyScannerBenchmark
     {
         var options = new ScannerOptions
         {
-            Scanners = new[] { new DummyScannerNeverMatch() },
+            Scanners = [new DummyScannerNeverMatch()],
             RecurseSubdirectories = true,
         };
         GetDependenciesChannel(options).Wait();
@@ -66,7 +66,7 @@ public class DependencyScannerBenchmark
     {
         var options = new ScannerOptions
         {
-            Scanners = new[] { new DummyScanner() },
+            Scanners = [new DummyScanner()],
             RecurseSubdirectories = true,
         };
         GetDependenciesChannel(options).Wait();
@@ -87,7 +87,7 @@ public class DependencyScannerBenchmark
     {
         var options = new ScannerOptions
         {
-            Scanners = new[] { new DummyScannerNeverMatch() },
+            Scanners = [new DummyScannerNeverMatch()],
             RecurseSubdirectories = true,
         };
         GetDependenciesForEach(options).Wait();
@@ -98,7 +98,7 @@ public class DependencyScannerBenchmark
     {
         var options = new ScannerOptions
         {
-            Scanners = new[] { new DummyScanner() },
+            Scanners = [new DummyScanner()],
             RecurseSubdirectories = true,
         };
         GetDependenciesForEach(options).Wait();

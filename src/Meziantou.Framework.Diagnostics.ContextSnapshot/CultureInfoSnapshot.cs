@@ -11,7 +11,7 @@ public sealed class CultureInfoSnapshot
         Name = culture.Name;
         IsReadOnly = culture.IsReadOnly;
     }
-    
+
     public string Name { get; }
     public bool IsReadOnly { get; }
 }

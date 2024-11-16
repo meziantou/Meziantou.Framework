@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 
-
 namespace Meziantou.AspNetCore.Components;
 
 public static class ClipboardServiceExtensions

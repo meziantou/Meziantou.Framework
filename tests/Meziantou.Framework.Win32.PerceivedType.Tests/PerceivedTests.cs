@@ -33,7 +33,7 @@ public class PerceivedTests
         var perceived = Perceived.GetPerceivedType(extension);
         perceived.PerceivedType.Should().Be(PerceivedType.Image);
     }
-    
+
     [RunIfTheory(FactOperatingSystem.Windows)]
     [InlineData(".mp3")]
     public void GetPerceivedType_Audio(string extension)

@@ -45,6 +45,7 @@ public sealed class IndentedTextWriter : TextWriter
             {
                 value = 0;
             }
+
             _indentLevel = value;
         }
     }

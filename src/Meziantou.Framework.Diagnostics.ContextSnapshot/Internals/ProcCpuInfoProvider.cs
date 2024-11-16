@@ -20,6 +20,7 @@ internal static class ProcCpuInfoProvider
             content += output;
             return ProcCpuInfoParser.ParseOutput(content);
         }
+
         return null;
     }
 

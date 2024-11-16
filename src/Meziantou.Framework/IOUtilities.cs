@@ -156,6 +156,7 @@ static partial class IOUtilities
             if (c != '.')
                 return false;
         }
+
         return true;
     }
 

@@ -164,6 +164,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
             if (att.IsNamespace)
                 return att;
         }
+
         return null;
     }
 
@@ -187,11 +188,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 attributes = element.Attributes;
                 att = MoveToFirstNamespaceLocal(attributes);
             }
+
             if (att is not null)
                 return att;
 
             element = element.ParentNode as HtmlElement;
         }
+
         return null;
     }
 
@@ -209,6 +212,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 {
                     att = MoveToFirstNamespaceLocal(element.Attributes);
                 }
+
                 if (att is null)
                     return false;
 
@@ -221,6 +225,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     attributes = element.Attributes;
                     att = MoveToFirstNamespaceGlobal(_rootNode, ref attributes);
                 }
+
                 if (att is null)
                     return false;
 
@@ -230,6 +235,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     if (att is null)
                         return false;
                 }
+
                 CurrentNode = att;
                 break;
 
@@ -240,6 +246,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     attributes = element.Attributes;
                     att = MoveToFirstNamespaceGlobal(_rootNode, ref attributes);
                 }
+
                 if (att is null)
                 {
                     if (Document is null)
@@ -251,6 +258,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 {
                     CurrentNode = att;
                 }
+
                 break;
         }
 
@@ -293,8 +301,10 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 if (next is not null)
                     return next;
             }
+
             element = element.ParentNode as HtmlElement;
         }
+
         return null;
     }
 
@@ -346,6 +356,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                 CurrentNode = att;
                 break;
         }
+
         return true;
     }
 

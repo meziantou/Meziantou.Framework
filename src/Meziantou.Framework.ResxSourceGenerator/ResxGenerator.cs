@@ -368,6 +368,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 ");
             }
         }
+
         sb.AppendLine("    }");
 
         sb.AppendLine();
@@ -381,12 +382,14 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
             sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
         }
+
         sb.AppendLine("    }");
 
         if (ns is not null)
         {
             sb.AppendLine("}");
         }
+
         return sb.ToString();
 
         string? AppendNotNullIfNotNull(string paramName)
@@ -529,6 +532,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
                     {
                         sb.Append('_');
                     }
+
                     sb.Append(c);
                     break;
 

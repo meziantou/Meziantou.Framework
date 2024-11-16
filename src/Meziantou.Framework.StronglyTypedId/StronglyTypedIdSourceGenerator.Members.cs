@@ -97,6 +97,7 @@ public partial class StronglyTypedIdSourceGenerator
                         {
                             writer.WriteLine($$"""return "{{context.TypeName}} { Value = <null> }";""");
                         }
+
                         using (writer.BeginBlock("else"))
                         {
                             writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
@@ -396,6 +397,7 @@ public partial class StronglyTypedIdSourceGenerator
                         writer.WriteLine("result = default;");
                         writer.WriteLine("return false;");
                     }
+
                     using (writer.BeginBlock("else"))
                     {
                         writer.WriteLine("return TryParse(global::System.MemoryExtensions.AsSpan(value), out result);");

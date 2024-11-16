@@ -25,6 +25,6 @@ public sealed class KeyValueQuerySyntax : QuerySyntax
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return new[] { KeyToken, OperatorToken, ValueToken };
+        return [KeyToken, OperatorToken, ValueToken];
     }
 }

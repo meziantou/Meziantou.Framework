@@ -29,7 +29,7 @@ public sealed class PromptTest
         instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null).Should().BeTrue();
         prompt.AssertAllCalled();
     }
-    
+
     [Fact]
     public void Expires_AskAgain()
     {

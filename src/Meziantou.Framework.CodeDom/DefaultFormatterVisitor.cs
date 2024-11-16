@@ -41,11 +41,11 @@ public class DefaultFormatterVisitor : Visitor
         {
             return m switch
             {
-                FieldDeclaration o => 100 + GetModifiersSortOrder(o) * 10 + GetVisibilitySortOrder(o),
-                EventFieldDeclaration o => 200 + GetModifiersSortOrder(o) * 10 + GetVisibilitySortOrder(o),
-                ConstructorDeclaration o => 300 + GetModifiersSortOrder(o) * 10 + GetVisibilitySortOrder(o),
-                PropertyDeclaration o => 400 + GetModifiersSortOrder(o) * 10 + GetVisibilitySortOrder(o),
-                MethodDeclaration o => 500 + GetModifiersSortOrder(o) * 10 + GetVisibilitySortOrder(o),
+                FieldDeclaration o => 100 + (GetModifiersSortOrder(o) * 10) + GetVisibilitySortOrder(o),
+                EventFieldDeclaration o => 200 + (GetModifiersSortOrder(o) * 10) + GetVisibilitySortOrder(o),
+                ConstructorDeclaration o => 300 + (GetModifiersSortOrder(o) * 10) + GetVisibilitySortOrder(o),
+                PropertyDeclaration o => 400 + (GetModifiersSortOrder(o) * 10) + GetVisibilitySortOrder(o),
+                MethodDeclaration o => 500 + (GetModifiersSortOrder(o) * 10) + GetVisibilitySortOrder(o),
                 _ => int.MaxValue,
             };
         }

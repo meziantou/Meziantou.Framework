@@ -73,6 +73,7 @@ partial class HtmlNode : IXPathNavigable
         {
             list.Sort(new HtmlNodeDepthComparer { Direction = ListSortDirection.Descending });
         }
+
         return list;
     }
 

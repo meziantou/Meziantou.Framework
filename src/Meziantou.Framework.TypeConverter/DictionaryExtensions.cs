@@ -1,6 +1,5 @@
 #pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
 
-
 namespace Meziantou.Framework;
 
 public static class DictionaryExtensions

@@ -36,9 +36,9 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
     public override int GetHashCode()
     {
         var hashCode = 1707150943;
-        hashCode = hashCode * -1521134295 + StringComparer.Ordinal.GetHashCode(Name);
-        hashCode = hashCode * -1521134295 + RequiredReviewerCount.GetHashCode();
-        hashCode = hashCode * -1521134295 + DefaultOwners.GetHashCode();
+        hashCode = (hashCode * -1521134295) + StringComparer.Ordinal.GetHashCode(Name);
+        hashCode = (hashCode * -1521134295) + RequiredReviewerCount.GetHashCode();
+        hashCode = (hashCode * -1521134295) + DefaultOwners.GetHashCode();
         return hashCode;
     }
 

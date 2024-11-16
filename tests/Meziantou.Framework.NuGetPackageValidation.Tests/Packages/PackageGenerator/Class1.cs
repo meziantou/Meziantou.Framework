@@ -2,6 +2,6 @@
 
 public static class Class1
 {
-	/// <summary>Test method</summary>	
-	public static void A() { }
+    /// <summary>Test method</summary>	
+    public static void A() { }
 }

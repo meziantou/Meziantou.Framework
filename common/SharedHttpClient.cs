@@ -1,4 +1,8 @@
-﻿namespace Meziantou.Framework.NuGetPackageValidation.Internal;
+﻿#if NET462
+using System.Net.Http;
+#endif
+
+namespace Meziantou.Framework;
 internal static class SharedHttpClient
 {
     public static HttpClient Instance { get; } = CreateHttpClient();
@@ -6,11 +10,15 @@ internal static class SharedHttpClient
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "False-positive")]
     private static HttpClient CreateHttpClient()
     {
+#if NET
         var socketHandler = new SocketsHttpHandler()
         {
             PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
             PooledConnectionLifetime = TimeSpan.FromMinutes(1),
         };
+#else
+        var socketHandler = new HttpClientHandler();
+#endif
 
         return new HttpClient(new HttpRetryMessageHandler(socketHandler), disposeHandler: true);
     }
@@ -25,7 +33,7 @@ internal static class SharedHttpClient
         {
             const int MaxRetries = 5;
             var defaultDelay = TimeSpan.FromMilliseconds(200);
-            for (var i = 1; ; i++, defaultDelay *= 2)
+            for (var i = 1; ; i++, defaultDelay += defaultDelay) // timespan*2 is not supported on .NET 462
             {
                 TimeSpan? delayHint = null;
                 HttpResponseMessage? result = null;
@@ -33,7 +41,7 @@ internal static class SharedHttpClient
                 try
                 {
                     result = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                    if (!IsLastAttempt(i) && ((int)result.StatusCode >= 500 || result.StatusCode is System.Net.HttpStatusCode.RequestTimeout or System.Net.HttpStatusCode.TooManyRequests))
+                    if (!IsLastAttempt(i) && ((int)result.StatusCode >= 500 || result.StatusCode is System.Net.HttpStatusCode.RequestTimeout or (System.Net.HttpStatusCode)429 /* TooManyRequests */))
                     {
                         // Use "Retry-After" value, if available. Typically, this is sent with
                         // either a 503 (Service Unavailable) or 429 (Too Many Requests):

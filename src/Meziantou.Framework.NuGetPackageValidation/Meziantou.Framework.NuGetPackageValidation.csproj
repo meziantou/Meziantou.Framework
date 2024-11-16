@@ -7,11 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\common\SharedHttpClient.cs" Link="SharedHttpClient.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.Packaging" Version="6.11.1" />
+    <PackageReference Include="NuGet.Packaging" Version="6.12.1" />
   </ItemGroup>
 
 </Project>

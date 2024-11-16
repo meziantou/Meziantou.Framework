@@ -15,7 +15,7 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
             byWeekDays = [startDate.DayOfWeek];
         }
 
-        var dayOffsets = byWeekDays.Select(day => (day - WeekStart + 7) % 7).Distinct().OrderBy(a => a).ToList();
+        var dayOffsets = byWeekDays.Select(day => (day - WeekStart + 7) % 7).Distinct().Order().ToArray();
         var startOfWeek = Extensions.StartOfWeek(startDate, WeekStart);
 
         while (true)

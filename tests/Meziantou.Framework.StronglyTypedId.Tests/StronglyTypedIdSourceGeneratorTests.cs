@@ -20,8 +20,10 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         "7.0.14"
 #elif NET8_0
         "8.0.0"
+#elif NET9_0
+        "9.0.0"
 #else
-        "6.0.12"
+#error Version not supported
 #endif
         ;
     public sealed record NuGetReference(string Name, string Version, string ReferencePath);

@@ -80,6 +80,7 @@ public class AccessTokenTests
             using var linkedToken = token.GetLinkedToken();
             return IsAdministrator(linkedToken);
         }
+
         return false;
 
         static bool IsAdministrator(AccessToken accessToken)
@@ -90,6 +91,7 @@ public class AccessTokenTests
                 if (group.Attributes.HasFlag(GroupSidAttributes.SE_GROUP_ENABLED) && group.Sid == adminSid)
                     return true;
             }
+
             return false;
         }
     }

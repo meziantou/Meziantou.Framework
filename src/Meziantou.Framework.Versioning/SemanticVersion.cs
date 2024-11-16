@@ -259,7 +259,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         return true;
     }
 
-    public static bool TryParse([NotNullWhen(returnValue:true)] string? versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
+    public static bool TryParse([NotNullWhen(returnValue: true)] string? versionString, [NotNullWhen(returnValue: true)] out SemanticVersion? version)
     {
         if (versionString is null)
         {

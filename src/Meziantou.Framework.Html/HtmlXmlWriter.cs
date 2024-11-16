@@ -92,10 +92,12 @@ sealed class HtmlXmlWriter : XmlWriter
         {
             text += " SYSTEM \"" + sysid + "\"";
         }
+
         if (subset is not null)
         {
             text += "[" + subset + "]";
         }
+
         text += ">";
         WriteCData(text);
     }

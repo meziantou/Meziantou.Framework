@@ -26,7 +26,7 @@ public static class NavigationManagerExtensions
             }
         }
 
-        return Array.Empty<string>();
+        return [];
     }
 
     public static void UpdateUrlUsingParameters(this NavigationManager navigationManager, IComponent component, bool replaceHistory = false)

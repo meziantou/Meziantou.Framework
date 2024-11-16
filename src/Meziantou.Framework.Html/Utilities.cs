@@ -89,6 +89,7 @@ internal static class Utilities
         {
             stream.Seek(0, SeekOrigin.End);
         }
+
         return new StreamWriter(stream, encoding, bufferSize, leaveOpen: false);
     }
 
@@ -99,6 +100,7 @@ internal static class Utilities
         {
             stream.Seek(0, SeekOrigin.End);
         }
+
         return new StreamWriter(stream, encoding, 0x400, leaveOpen: false);
     }
 
@@ -165,6 +167,7 @@ internal static class Utilities
 
             return header.Substring(startIndex + 1, index - startIndex - 1).Trim();
         }
+
         index = startIndex;
         while (index < header.Length)
         {
@@ -194,6 +197,7 @@ internal static class Utilities
         {
             sb.Append(GetXmlNameEscape(text[0]));
         }
+
         for (var i = 1; i < text.Length; i++)
         {
             if (IsValidXmlNamePart(text[i]))
@@ -205,6 +209,7 @@ internal static class Utilities
                 sb.Append(GetXmlNameEscape(text[i]));
             }
         }
+
         return sb.ToString();
     }
 

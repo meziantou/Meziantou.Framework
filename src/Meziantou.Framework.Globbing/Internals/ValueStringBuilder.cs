@@ -70,6 +70,7 @@ internal ref partial struct ValueStringBuilder
             EnsureCapacity(Length + 1);
             RawChars[Length] = '\0';
         }
+
         return RawChars[.._pos];
     }
 
@@ -134,6 +135,7 @@ internal ref partial struct ValueStringBuilder
         {
             dst[i] = c;
         }
+
         _pos += count;
     }
 

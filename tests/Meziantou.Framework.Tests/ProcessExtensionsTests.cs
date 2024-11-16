@@ -157,7 +157,6 @@ public class ProcessExtensionsTests
         }
     }
 
-
     [RunIfFact(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
     public void GetParentProcessId()
     {

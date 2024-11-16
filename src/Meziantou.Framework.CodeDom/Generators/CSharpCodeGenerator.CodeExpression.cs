@@ -354,6 +354,7 @@ public partial class CSharpCodeGenerator
                     break;
             }
         }
+
         writer.Write("\"");
     }
 
@@ -436,6 +437,7 @@ public partial class CSharpCodeGenerator
             WriteExpression(writer, expression.Expression);
             writer.Write(WriteUnaryOperator(expression.Operator));
         }
+
         writer.Write(")");
     }
 

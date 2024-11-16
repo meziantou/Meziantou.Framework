@@ -23,7 +23,6 @@ internal sealed class MultiDimensionalArrayConverter : HumanReadableConverter
                 hasItem = true;
             }
 
-
             var indexStr = "";
             var index2 = index;
             for (var rank = array.Rank - 1; rank >= 0; rank--)

@@ -125,7 +125,7 @@ public static partial class StringSearchUtilities
                     case 'C': // lots of C special cases
                         /* discard if SCI, SCE or SCY */
                         if ((n > 0) && (local[n - 1] == 'S') && (n + 1 < wdsz)
-                            && (Frontv.Contains(local[n + 1], StringComparison.Ordinal)))
+                            && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
                         {
                             break;
                         }
@@ -140,7 +140,7 @@ public static partial class StringSearchUtilities
                             break;
                         }
 
-                        if ((n + 1 < wdsz) && (Frontv.Contains(local[n + 1], StringComparison.Ordinal)))
+                        if ((n + 1 < wdsz) && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
                         {
                             code.Append('S');
                             mtsz++;
@@ -180,7 +180,7 @@ public static partial class StringSearchUtilities
 
                     case 'D':
                         if ((n + 2 < wdsz) && // DGE DGI DGY -> J
-                            (local[n + 1] == 'G') && (Frontv.Contains(local[n + 2], StringComparison.Ordinal)))
+                            (local[n + 1] == 'G') && Frontv.Contains(local[n + 2], StringComparison.Ordinal))
                         {
                             code.Append('J');
                             n += 2;

@@ -162,12 +162,12 @@ public sealed partial class ObservableCollectionTests
         else
         {
             eventAssert.CollectionChangedArgs.Select(e => e.Action).Should().AllBeEquivalentTo(NotifyCollectionChangedAction.Add);
-            eventAssert.CollectionChangedArgs.Should().BeEquivalentTo(new[]
-            {
+            eventAssert.CollectionChangedArgs.Should().BeEquivalentTo(
+            [
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 3, NewItems = new[] { 3 }  },
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 4, NewItems = new[] { 4 }  },
                 new { Action = NotifyCollectionChangedAction.Add, NewStartingIndex = 5, NewItems = new[] { 5 }  },
-            });
+            ]);
         }
     }
 

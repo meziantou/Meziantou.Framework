@@ -160,6 +160,7 @@ public class TypeReference
 
                     first = false;
                 }
+
                 sb.Append('>');
             }
 
@@ -188,6 +189,7 @@ public class TypeReference
 
                     first = false;
                 }
+
                 sb.Append('>');
             }
 
@@ -198,6 +200,7 @@ public class TypeReference
                 {
                     sb.Append(',');
                 }
+
                 sb.Append(']');
             }
 
@@ -220,6 +223,7 @@ public class TypeReference
         {
             clone._parameters = [.. _parameters];
         }
+
         return clone;
     }
 

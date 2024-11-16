@@ -247,6 +247,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
                 _index++;
                 return true;
             }
+
             return MoveNextRare();
         }
 

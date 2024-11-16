@@ -306,6 +306,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
                         result = FromPath(path);
                         return true;
                     }
+
                     break;
 
                 case SymbolicLinkResolutionMode.FinalTarget:
@@ -355,6 +356,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
                         result = FromPath(resultPath!);
                         return true;
                     }
+
                     break;
 
                 default:

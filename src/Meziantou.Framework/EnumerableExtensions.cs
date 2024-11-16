@@ -189,7 +189,7 @@ public static partial class EnumerableExtensions
         if (list is null)
             throw new ArgumentNullException(nameof(list));
 
-        return list.OrderBy(item => item, comparer);
+        return list.Order(comparer);
     }
 
     public static int IndexOf<T>(this IEnumerable<T> list, T value)

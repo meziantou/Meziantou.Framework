@@ -21,6 +21,7 @@ internal sealed class CharacterSetInverseSegment : Segment
         {
             pathReader.ConsumeInSegment(1);
         }
+
         return result;
     }
 

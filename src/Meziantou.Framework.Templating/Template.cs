@@ -13,7 +13,7 @@ public class Template
     private const string DefaultRunMethodName = "Run";
     private const string DefaultWriterParameterName = "__output__";
 
-    private static readonly object BuildLock = new();
+    private static readonly Lock BuildLock = new();
 
     private MethodInfo? _runMethodInfo;
     private string? _className;
@@ -129,6 +129,7 @@ public class Template
             {
                 friendlyName = friendlyName.Remove(iBacktick);
             }
+
             friendlyName += "<";
             var typeParameters = type.GetGenericArguments();
             for (var i = 0; i < typeParameters.Length; ++i)
@@ -136,6 +137,7 @@ public class Template
                 var typeParamName = GetFriendlyTypeName(typeParameters[i]);
                 friendlyName += i == 0 ? typeParamName : "," + typeParamName;
             }
+
             friendlyName += ">";
             friendlyName = type.Namespace + "." + friendlyName;
         }
@@ -266,6 +268,7 @@ public class Template
                 startLine = reader.Line;
                 startColumn = reader.Column;
             }
+
             currentBlock.Append(c);
         }
 
@@ -318,6 +321,7 @@ public class Template
                 {
                     tw.Write(" : " + BaseClassFullTypeName);
                 }
+
                 tw.WriteLine();
                 tw.WriteLine("{");
                 tw.Indent++;
@@ -429,7 +433,7 @@ public class Template
             .WithPlatform(Platform.AnyCpu);
 
         var compilation = CSharpCompilation.Create(assemblyName,
-            new[] { syntaxTree },
+            [syntaxTree],
             CreateReferences(),
             options);
 
@@ -564,6 +568,7 @@ public class Template
                 }
             }
         }
+
         return p;
     }
 

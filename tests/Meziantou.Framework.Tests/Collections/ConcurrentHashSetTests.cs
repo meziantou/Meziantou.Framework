@@ -19,12 +19,12 @@ public class ConcurrentHashSetTests
         set.Should().NotContain(4);
 
         set.Should().HaveCount(3);
-        set.Should().BeEquivalentTo(new[] { 1, 2, 3 });
+        set.Should().BeEquivalentTo([1, 2, 3]);
 
         set.Clear();
         set.Should().BeEmpty();
 
         set.AddRange(4, 5, 6);
-        set.Should().BeEquivalentTo(new[] { 4, 5, 6 });
+        set.Should().BeEquivalentTo([4, 5, 6]);
     }
 }

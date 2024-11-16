@@ -14,7 +14,7 @@ namespace Meziantou.Framework;
 /// </remarks>
 internal static class ObjectMethodExecutorFSharpSupport
 {
-    private static readonly object FsharpValuesCacheLock = new();
+    private static readonly Lock FsharpValuesCacheLock = new();
     private static Assembly? s_fsharpCoreAssembly;
     private static MethodInfo? s_fsharpAsyncStartAsTaskGenericMethod;
     private static PropertyInfo? s_fsharpOptionOfTaskCreationOptionsNoneProperty;
@@ -23,7 +23,7 @@ internal static class ObjectMethodExecutorFSharpSupport
     [UnconditionalSuppressMessage("Trimmer", "IL2060", Justification = "Reflecting over the async FSharpAsync<> contract.")]
     public static bool TryBuildCoercerFromFSharpAsyncToAwaitable(
         Type possibleFSharpAsyncType,
-        [NotNullWhen(true)]out Expression? coerceToAwaitableExpression,
+        [NotNullWhen(true)] out Expression? coerceToAwaitableExpression,
         [NotNullWhen(true)] out Type? awaitableType)
     {
         var methodReturnGenericType = possibleFSharpAsyncType.IsGenericType

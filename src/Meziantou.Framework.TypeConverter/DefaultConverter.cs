@@ -61,10 +61,11 @@ public class DefaultConverter : IConverter
                 }
             }
         }
+
         return false;
     }
 
-    private static void GetBytes(decimal d, IList<byte> buffer)
+    private static void GetBytes(decimal d, byte[] buffer)
     {
         var ints = decimal.GetBits(d);
         buffer[0] = (byte)ints[0];
@@ -146,6 +147,7 @@ public class DefaultConverter : IConverter
             sb.Append(HexaChars[bytes[i] / 16]);
             sb.Append(HexaChars[bytes[i] % 16]);
         }
+
         return sb.ToString();
     }
 
@@ -435,6 +437,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return ulong.TryParse(s, styles, provider, out value);
     }
 
@@ -467,6 +470,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return ushort.TryParse(s, styles, provider, out value);
     }
 
@@ -499,6 +503,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return decimal.TryParse(s, styles, provider, out value);
     }
 
@@ -531,6 +536,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return float.TryParse(s, styles, provider, out value);
     }
 
@@ -563,6 +569,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return double.TryParse(s, styles, provider, out value);
     }
 
@@ -649,6 +656,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return uint.TryParse(s, styles, provider, out value);
     }
 
@@ -681,6 +689,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return byte.TryParse(s, styles, provider, out value);
     }
 
@@ -713,6 +722,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return sbyte.TryParse(s, styles, provider, out value);
     }
 
@@ -732,6 +742,7 @@ public class DefaultConverter : IConverter
                 value = BitConverter.ToInt16(inputBytes, 0);
                 return true;
             }
+
             return false;
         }
 
@@ -756,6 +767,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return short.TryParse(s, styles, provider, out value);
     }
 
@@ -775,6 +787,7 @@ public class DefaultConverter : IConverter
                 value = BitConverter.ToInt32(inputBytes, 0);
                 return true;
             }
+
             return false;
         }
 
@@ -799,6 +812,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return int.TryParse(s, styles, provider, out value);
     }
 
@@ -818,6 +832,7 @@ public class DefaultConverter : IConverter
                 value = BitConverter.ToInt64(inputBytes, 0);
                 return true;
             }
+
             return false;
         }
 
@@ -842,6 +857,7 @@ public class DefaultConverter : IConverter
         {
             styles |= NumberStyles.AllowHexSpecifier;
         }
+
         return long.TryParse(s, styles, provider, out value);
     }
 
@@ -855,6 +871,7 @@ public class DefaultConverter : IConverter
                 value = BitConverter.ToBoolean(inputBytes, 0);
                 return true;
             }
+
             return false;
         }
 
@@ -959,6 +976,7 @@ public class DefaultConverter : IConverter
                     value = boolValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Byte:
@@ -968,6 +986,7 @@ public class DefaultConverter : IConverter
                     value = byteValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Char:
@@ -977,6 +996,7 @@ public class DefaultConverter : IConverter
                     value = charValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.DateTime:
@@ -986,6 +1006,7 @@ public class DefaultConverter : IConverter
                     value = dtValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Decimal:
@@ -995,6 +1016,7 @@ public class DefaultConverter : IConverter
                     value = decValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Double:
@@ -1004,6 +1026,7 @@ public class DefaultConverter : IConverter
                     value = dblValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Int16:
@@ -1013,6 +1036,7 @@ public class DefaultConverter : IConverter
                     value = i16Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Int32:
@@ -1022,6 +1046,7 @@ public class DefaultConverter : IConverter
                     value = i32Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Int64:
@@ -1031,6 +1056,7 @@ public class DefaultConverter : IConverter
                     value = i64Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.SByte:
@@ -1040,6 +1066,7 @@ public class DefaultConverter : IConverter
                     value = sbyteValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Single:
@@ -1049,6 +1076,7 @@ public class DefaultConverter : IConverter
                     value = fltValue;
                     return true;
                 }
+
                 break;
 
             case TypeCode.String:
@@ -1087,6 +1115,7 @@ public class DefaultConverter : IConverter
                     value = u16Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.UInt32:
@@ -1096,6 +1125,7 @@ public class DefaultConverter : IConverter
                     value = u32Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.UInt64:
@@ -1105,6 +1135,7 @@ public class DefaultConverter : IConverter
                     value = u64Value;
                     return true;
                 }
+
                 break;
 
             case TypeCode.Object:
@@ -1203,6 +1234,7 @@ public class DefaultConverter : IConverter
                                 value = bytes;
                                 return true;
                             }
+
                             value = null;
                             return false;
 
@@ -1236,9 +1268,11 @@ public class DefaultConverter : IConverter
                                 value = bytes;
                                 return true;
                             }
+
                             break;
                     }
                 }
+
                 break;
         }
 

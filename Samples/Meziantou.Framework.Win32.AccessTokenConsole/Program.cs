@@ -43,7 +43,6 @@ internal static class Program
         }
     }
 
-
     public static bool IsAdministrator()
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
@@ -67,5 +66,4 @@ internal static class Program
             return false;
         }
     }
-
 }

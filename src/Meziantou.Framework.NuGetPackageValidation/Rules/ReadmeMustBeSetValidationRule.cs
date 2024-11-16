@@ -14,6 +14,7 @@ internal sealed class ReadmeMustBeSetValidationRule : NuGetPackageValidationRule
             context.ReportError(ErrorCodes.ReadmeFileNotFound, "Readme file not found", fileName: value);
 
         }
+
         return Task.CompletedTask;
     }
 }

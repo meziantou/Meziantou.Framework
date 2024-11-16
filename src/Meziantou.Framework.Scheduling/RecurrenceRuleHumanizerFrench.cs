@@ -88,6 +88,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
             }
+
             sb.Append(' ');
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
         }
@@ -132,6 +133,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
                     {
                         sb.Append(" de ");
                     }
+
                     sb.Append(monthsList);
                 }
             }
@@ -154,6 +156,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
                 sb.Append(" le ");
                 sb.Append(GetBySetPosHumanText(rrule.BySetPositions[0]));
             }
+
             sb.Append(' ');
             sb.Append(GetWeekdayHumanText(rrule.ByWeekDays, options: WeekdayHumanTextOptions.AbbrDays | WeekdayHumanTextOptions.AbbrWeekdays | WeekdayHumanTextOptions.AbbrWeekendDays));
             if (rrule.ByMonths is not null && rrule.ByMonths.Any())
@@ -167,6 +170,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
                 {
                     sb.Append(" de ");
                 }
+
                 sb.Append(monthsList);
             }
         }

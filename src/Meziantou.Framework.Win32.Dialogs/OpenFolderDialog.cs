@@ -51,6 +51,7 @@ public sealed class OpenFolderDialog
                     {
                         dialog.SetFolder(item);
                     }
+
                     break;
                 case NativeMethods.FILE_NOT_FOUND:
                     break;

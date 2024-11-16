@@ -134,6 +134,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
             att.ParentNode = null;
         }
+
         _attributes.Clear();
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
     }

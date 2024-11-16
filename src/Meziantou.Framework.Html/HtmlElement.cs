@@ -72,6 +72,7 @@ sealed class HtmlElement : HtmlNode
                 {
                     _nodeType = HtmlNodeType.Element;
                 }
+
                 ClearCaches();
                 _processingInstruction = value;
                 OnPropertyChanged();
@@ -99,6 +100,7 @@ sealed class HtmlElement : HtmlNode
                         }
                     }
                 }
+
                 ClearCaches();
                 OnPropertyChanged();
             }

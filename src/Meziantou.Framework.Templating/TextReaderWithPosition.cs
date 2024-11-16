@@ -37,6 +37,7 @@ internal sealed class TextReaderWithPosition : TextReader
                     Line++;
                     Column = 1;
                 }
+
                 _previousIsCarriageReturn = false;
             }
             else

@@ -78,7 +78,7 @@ internal sealed class FSharpUtils
 
         return false;
     }
-    
+
     public UnionCaseInfo[]? GetUnionCases(Type type)
     {
         try
@@ -88,7 +88,6 @@ internal sealed class FSharpUtils
                 var array = (object[])GetUnionCasesMethod.Invoke(obj: null, [type, null])!;
                 return array.Select(o => new UnionCaseInfo(this, o)).ToArray();
             }
-
         }
         catch
         {
@@ -102,7 +101,7 @@ internal sealed class FSharpUtils
         try
         {
             var unionCases = GetUnionCases(type);
-            if(unionCases is null)
+            if (unionCases is null)
                 return null;
 
             var tag = value.GetType().GetProperty("Tag")?.GetValue(value);

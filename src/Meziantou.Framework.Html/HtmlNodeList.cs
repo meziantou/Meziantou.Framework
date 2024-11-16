@@ -116,6 +116,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
             node.ParentNode = null;
         }
+
         RemoveAllNoCheck();
     }
 

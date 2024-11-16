@@ -11,7 +11,7 @@ namespace Meziantou.Framework.WPF.Collections;
 public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
 {
     private readonly Dispatcher _dispatcher;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     private ImmutableList<T> _items = ImmutableList<T>.Empty;
     private DispatchedObservableCollection<T>? _observableCollection;
@@ -242,7 +242,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     {
         lock (_lock)
         {
-            _items = ImmutableList.CreateRange(_items.OrderBy(item => item, comparer));
+            _items = ImmutableList.CreateRange(_items.Order(comparer));
             _observableCollection?.EnqueueReset(_items);
         }
     }

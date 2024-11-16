@@ -54,7 +54,9 @@ internal static class YamlParserUtilities
 
         var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
         if (index < 0)
+        {
             context.ReportDependency<T>(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
+        }
         else
         {
             context.ReportDependency<T>(
@@ -86,7 +88,9 @@ internal static class YamlParserUtilities
         if (length is null)
         {
             if (node is YamlScalarNode scalarNode)
+            {
                 length = scalarNode.Value.Length - start;
+            }
             else
             {
                 length = (int)(node.End.Column - node.Start.Column - start);

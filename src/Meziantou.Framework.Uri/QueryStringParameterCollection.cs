@@ -33,6 +33,7 @@ public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<st
                 return parameter.Value;
             }
         }
+
         return StringValues.Empty;
     }
 

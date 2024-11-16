@@ -18,7 +18,6 @@ public sealed partial class TaskDialogPromptTests
         // The project is multi-targeted, so multiple process can run in parallel
         using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkTaskDialogPromptTests");
         mutex.WaitOne();
-
         try
         {
             var prompt = new TaskDialogPrompt()

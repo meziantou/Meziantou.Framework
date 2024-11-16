@@ -10,17 +10,27 @@ public sealed class LsaPrivateDataTests
     [RunIfWindowsAdministratorFact]
     public void LsaPrivateData_SetGetRemove()
     {
-        // Set
-        LsaPrivateData.SetValue("LsaPrivateDataTests", "test");
+        // The project is multi-targeted, so multiple process can run in parallel
+        using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkTaskDialogPromptTests");
+        mutex.WaitOne();
+        try
+        {
+            // Set
+            LsaPrivateData.SetValue("LsaPrivateDataTests", "test");
 
-        // Get
-        var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-        value.Should().Be("test");
+            // Get
+            var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
+            value.Should().Be("test");
 
-        // Remove
-        LsaPrivateData.RemoveValue("LsaPrivateDataTests");
-        value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-        value.Should().BeNull();
+            // Remove
+            LsaPrivateData.RemoveValue("LsaPrivateDataTests");
+            value = LsaPrivateData.GetValue("LsaPrivateDataTests");
+            value.Should().BeNull();
+        }
+        finally
+        {
+            mutex.ReleaseMutex();
+        }
     }
 
     [RunIfWindowsAdministratorFact]

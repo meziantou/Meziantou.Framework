@@ -1,4 +1,4 @@
-﻿# Meziantou.Extensions.Logging.Xunit
+﻿# Meziantou.Extensions.Logging.InMemory
 
 ```c#
 using var loggerProvider = new InMemoryLoggerProvider();
@@ -20,6 +20,10 @@ using var factory = new WebApplicationFactory<Program>()
     {
         builder.ConfigureLogging(builder =>
         {
+            // You can override the logging configuration if needed
+            //builder.SetMinimumLevel(LogLevel.Trace);
+            //builder.AddFilter(_ => true);
+
             builder.Services.AddSingleton<ILoggerProvider>(loggerProvider);
         });
     });

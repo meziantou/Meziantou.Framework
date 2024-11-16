@@ -130,6 +130,7 @@ jobs:
     env:
       TestResultsDirectory: ${{github.workspace}}/TestResults
       Architecture: ${{ matrix.architecture }}
+      TestTfmsInParallel: false # Attempt to reduce flakiness
     strategy:
       matrix:
         configuration: [ Debug, Release ]

@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Sanitizers;
 
-public static class UrlSanitizer
+public static partial class UrlSanitizer
 {
     // https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/url_sanitizer.ts
     /**
@@ -31,17 +31,19 @@ public static class UrlSanitizer
      *
      * This regular expression was taken from the Closure sanitization library.
      */
-    private static readonly Regex SafeUrlRegex = new("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    [GeneratedRegex("^(?:(?:https?|mailto|ftp|tel|file):|[^&:/?#]*(?:[/?#]|$))", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex SafeUrlRegex();
 
     /** A pattern that matches safe data URLs. Only matches image, video and audio types. */
-    private static readonly Regex DataUrlPattern = new("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    [GeneratedRegex("^data:(?:image/(?:bmp|gif|jpeg|jpg|png|tiff|webp)|video/(?:mpeg|mp4|ogg|webm)|audio/(?:mp3|oga|ogg|opus));base64,[a-z0-9+/]+=*$", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 10000)]
+    private static partial Regex DataUrlPattern();
 
     private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)
     {
-        return SafeUrlRegex.IsMatch(url) || DataUrlPattern.IsMatch(url);
+        return SafeUrlRegex().IsMatch(url) || DataUrlPattern().IsMatch(url);
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]

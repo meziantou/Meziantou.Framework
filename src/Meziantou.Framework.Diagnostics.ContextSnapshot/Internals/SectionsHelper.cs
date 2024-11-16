@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
-internal static class SectionsHelper
+internal static partial class SectionsHelper
 {
     internal static readonly char[] Separators = ['\r', '\n'];
 
@@ -28,13 +28,15 @@ internal static class SectionsHelper
         return values;
     }
 
-    public static List<Dictionary<string, string>> ParseSections(string? content, char separator)
+    public static Dictionary<string, string>[] ParseSections(string? content, char separator)
     {
         // wmic doubles the carriage return character due to a bug.
         // Therefore, the * quantifier should be used to workaround it.
-        return Regex.Split(content ?? "", "(\r*\n){2,}", RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan)
-                .Select(s => ParseSection(s, separator))
+        return SectionRegex().Split(content ?? "").Select(s => ParseSection(s, separator))
                 .Where(s => s.Count > 0)
-                .ToList();
+                .ToArray();
     }
+
+    [GeneratedRegex("(\r*\n){2,}", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex SectionRegex();
 }

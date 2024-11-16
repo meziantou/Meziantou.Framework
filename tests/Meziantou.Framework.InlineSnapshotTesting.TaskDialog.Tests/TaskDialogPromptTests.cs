@@ -9,9 +9,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TestUtilities;
 using Xunit;
 
-namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.SnapshotUpdateStrategies;
+namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests;
 
-public sealed partial class TaskDialogPromptTests
+public sealed class TaskDialogPromptTests
 {
     private PromptResult Invoke(PromptContext context, int buttonIndex, bool applyToAllFiles)
     {
@@ -62,18 +62,14 @@ public sealed partial class TaskDialogPromptTests
                         {
                             var checkbox = element.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox));
                             if (checkbox.TryGetCurrentPattern(TogglePattern.Pattern, out var checkboxPattern))
-                            {
                                 ((TogglePattern)checkboxPattern).Toggle();
-                            }
                         }
 
                         var btns = element.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button));
                         var btn = btns[buttonIndex];
 
                         if (btn.TryGetCurrentPattern(InvokePattern.Pattern, out var btnPattern))
-                        {
                             ((InvokePattern)btnPattern).Invoke();
-                        }
                     }
                 }
             }

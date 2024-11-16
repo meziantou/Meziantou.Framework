@@ -56,7 +56,7 @@ public sealed class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "Image1"), new XAttribute("type", "System.Resources.ResXFileRef, System.Windows.Forms"), new XElement("value", @"Resources\Image1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"))
             );
 
-        var (result, _) = await GenerateFiles(new[] { ("test.resx", element.ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
         {
             Namespace = "test",
             ResourceName = "test",
@@ -95,13 +95,13 @@ public sealed class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "BBB"), new XElement("value", "Value"))
             );
 
-        var (result, assembly) = await GenerateFiles(new (string, string)[]
-            {
+        var (result, assembly) = await GenerateFiles(
+            [
                 (FullPath.GetTempPath() / "test.resx", element1.ToString()),
                 (FullPath.GetTempPath() / "test.en.resx", element2.ToString()),
                 (FullPath.GetTempPath() / "test.fr-FR.resx", element3.ToString()),
                 (FullPath.GetTempPath() / "test.NewResource.fr.resx", element4.ToString()),
-            }, new OptionProvider
+            ], new OptionProvider
             {
                 ProjectDir = FullPath.GetTempPath(),
                 RootNamespace = "Test",
@@ -125,7 +125,7 @@ public sealed class ResxGeneratorTest
     [Fact]
     public async Task ComputeNamespace_RootDir()
     {
-        var (result, _) = await GenerateFiles(new (string, string)[] { (FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
@@ -139,7 +139,7 @@ public sealed class ResxGeneratorTest
     [Fact]
     public async Task ComputeNamespace_SubFolder()
     {
-        var (result, _) = await GenerateFiles(new (string, string)[] { (FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString()) }, new OptionProvider
+        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
@@ -152,7 +152,7 @@ public sealed class ResxGeneratorTest
     [Fact]
     public async Task WrongResx_Warning()
     {
-        var (result, _) = await GenerateFiles(new[] { ("test.resx", "invalid xml") }, new OptionProvider
+        var (result, _) = await GenerateFiles([("test.resx", "invalid xml")], new OptionProvider
         {
             ResourceName = "resource",
             Namespace = "test",

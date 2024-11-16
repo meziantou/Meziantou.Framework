@@ -31,7 +31,7 @@ public sealed class DependencyScannerTests
         _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
         stopwatch = ValueStopwatch.StartNew();
 
-        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DummyScanner()] });
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
         items.Should().HaveCount(FileCount);
     }
@@ -50,7 +50,7 @@ public sealed class DependencyScannerTests
         _testOutputHelper.WriteLine("File generated in " + stopwatch.GetElapsedTime());
         stopwatch = ValueStopwatch.StartNew();
 
-        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = new[] { new DummyScannerNeverMatch() } });
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DummyScannerNeverMatch()] });
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
         items.Should().BeEmpty();
     }
@@ -63,10 +63,10 @@ public sealed class DependencyScannerTests
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "");
 
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }, onDependencyFound: _ => { }))
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, onDependencyFound: _ => { }))
             .Should().ThrowExactlyAsync<InvalidOperationException>();
 
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }, onDependencyFound: _ => { }))
+        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, onDependencyFound: _ => { }))
             .Should().ThrowExactlyAsync<InvalidOperationException>();
     }
 
@@ -80,14 +80,14 @@ public sealed class DependencyScannerTests
 
         await new Func<Task>(async () =>
         {
-            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ShouldScanThrowScanner() } }))
+            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }))
             {
             }
         }).Should().ThrowExactlyAsync<InvalidOperationException>();
 
         await new Func<Task>(async () =>
         {
-            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = new[] { new ScanThrowScanner() } }))
+            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }))
             {
             }
         }).Should().ThrowExactlyAsync<InvalidOperationException>();
@@ -123,10 +123,10 @@ public sealed class DependencyScannerTests
             DegreeOfParallelism = degreeOfParallelism,
             ShouldScanFilePredicate = globs.IsMatch,
             ShouldRecursePredicate = globs.IsPartialMatch,
-            Scanners = new DependencyScanner[]
-            {
+            Scanners =
+            [
                 new DummyScanner(),
-            },
+            ],
         };
         var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options);
         result.Should().SatisfyRespectively(dep => dep.VersionLocation.FilePath.Should().Be(file1));
@@ -139,7 +139,7 @@ public sealed class DependencyScannerTests
         var filePath = directory.GetFullPath($"text.txt");
         await File.WriteAllTextAsync(filePath, "");
 
-        var items = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
+        var items = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, new ScannerOptions { Scanners = [new DummyScanner()] });
         items.Should().HaveCount(1);
     }
 
@@ -152,7 +152,7 @@ public sealed class DependencyScannerTests
         await File.WriteAllTextAsync(filePath1, "");
         await File.WriteAllTextAsync(filePath2, "");
 
-        var items = await DependencyScanner.ScanFilesAsync(directory.FullPath, new string[] { filePath1, filePath2 }, new ScannerOptions { Scanners = new[] { new DummyScanner() } });
+        var items = await DependencyScanner.ScanFilesAsync(directory.FullPath, [filePath1, filePath2], new ScannerOptions { Scanners = [new DummyScanner()] });
         items.Should().HaveCount(2);
     }
 
@@ -162,14 +162,14 @@ public sealed class DependencyScannerTests
         var fs = new InMemoryFileSystem();
         fs.AddFile("test.txt", "");
 
-        var items = await DependencyScanner.ScanFilesAsync("/", new string[] { "/dir/test.txt" }, new ScannerOptions { FileSystem = fs, Scanners = new[] { new DummyScanner() } });
+        var items = await DependencyScanner.ScanFilesAsync("/", ["/dir/test.txt"], new ScannerOptions { FileSystem = fs, Scanners = [new DummyScanner()] });
         items.Should().HaveCount(1);
     }
 
     [Fact]
     public async Task ScanFile_InMemory()
     {
-        var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], new[] { new DummyScanner() });
+        var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], [new DummyScanner()]);
         items.Should().HaveCount(1);
     }
 

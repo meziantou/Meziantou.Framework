@@ -4,7 +4,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
+public sealed partial class MsBuildReferencesDependencyScanner : DependencyScanner
 {
     private static readonly XName IncludeXName = XName.Get("Include");
     private static readonly XName VersionXName = XName.Get("Version");
@@ -167,12 +167,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
 
             foreach (var targetFrameworkElement in element.Elements("TargetFrameworks"))
             {
-#if NET7_0_OR_GREATER
-                const RegexOptions Options = RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking;
-#else
-                const RegexOptions Options = RegexOptions.ExplicitCapture;
-#endif
-                foreach (Match match in Regex.Matches(targetFrameworkElement.Value, @"\s*(?<version>.+?)\s*(;|$)", Options))
+                foreach (Match match in TargetFrameworksRegex().Matches(targetFrameworkElement.Value))
                 {
                     var group = match.Groups["version"];
                     context.ReportDependency<MsBuildReferencesDependencyScanner>(name: null, group.Value, DependencyType.DotNetTargetFramework,
@@ -194,4 +189,7 @@ public sealed class MsBuildReferencesDependencyScanner : DependencyScanner
                 versionLocation: null);
         }
     }
+
+    [GeneratedRegex(@"\s*(?<version>.+?)\s*(;|$)", RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking, matchTimeoutMilliseconds: -1)]
+    private static partial Regex TargetFrameworksRegex();
 }

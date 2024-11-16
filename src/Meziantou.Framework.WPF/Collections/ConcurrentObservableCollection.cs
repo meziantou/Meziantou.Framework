@@ -242,7 +242,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     {
         lock (_lock)
         {
-            _items = ImmutableList.CreateRange(_items.OrderBy(item => item, comparer));
+            _items = ImmutableList.CreateRange(_items.Order(comparer));
             _observableCollection?.EnqueueReset(_items);
         }
     }

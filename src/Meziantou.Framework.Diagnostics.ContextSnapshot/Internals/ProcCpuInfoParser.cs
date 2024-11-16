@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
-internal static class ProcCpuInfoParser
+internal static partial class ProcCpuInfoParser
 {
     internal static CpuInfo ParseOutput(string? content)
     {
@@ -58,14 +58,16 @@ internal static class ProcCpuInfoParser
 
     internal static Frequency ParseFrequencyFromBrandString(string brandString)
     {
-        const string Pattern = "(?<Value>\\d.\\d+)GHz";
-        var matches = Regex.Matches(brandString, Pattern, RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+        var matches = FrequencyRegex().Matches(brandString);
         if (matches.Count > 0 && matches[0].Groups.Count > 1)
         {
-            var match = Regex.Matches(brandString, Pattern, RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan)[0].Groups[1].ToString();
+            var match = matches[0].Groups[1].ToString();
             return Frequency.TryParseGHz(match, out var result) ? result : Frequency.Zero;
         }
 
         return 0d;
     }
+
+    [GeneratedRegex("(?<Value>\\d.\\d+)GHz", RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex FrequencyRegex();
 }

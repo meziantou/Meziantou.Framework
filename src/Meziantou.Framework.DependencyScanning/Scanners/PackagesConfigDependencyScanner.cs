@@ -6,7 +6,7 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-public sealed class PackagesConfigDependencyScanner : DependencyScanner
+public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 {
     private static readonly Version VersionZero = new(0, 0, 0, 0);
     private static readonly Version VersionOne = new(1, 0, 0, 0);
@@ -168,7 +168,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
             return;
 
         var value = attribute.Value;
-        var match = Regex.Match(value, "(?<=Version=)(?<Version>[0-9.]+)", RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        var match = VersionInAssemblyNameRegex().Match(value);
         if (match.Success)
         {
             var version = match.Groups["Version"].Value;
@@ -182,4 +182,7 @@ public sealed class PackagesConfigDependencyScanner : DependencyScanner
     }
 
     private record struct DependencyRoot(string Name, string Version, DependencyType Type);
+
+    [GeneratedRegex("(?<=Version=)(?<Version>[0-9.]+)", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: -1)]
+    private static partial Regex VersionInAssemblyNameRegex();
 }

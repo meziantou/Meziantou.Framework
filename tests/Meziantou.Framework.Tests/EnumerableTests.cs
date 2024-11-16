@@ -236,7 +236,7 @@ public class EnumerableTests
         static async Task<IEnumerable<string>> GetDataAsync()
         {
             await Task.Yield();
-            return new[] { "a", "b", "c" };
+            return ["a", "b", "c"];
         }
     }
 

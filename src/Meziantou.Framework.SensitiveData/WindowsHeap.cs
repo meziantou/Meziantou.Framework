@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace Meziantou.Framework;
 
 [SupportedOSPlatform("windows")]
-internal static class WindowsHeap
+internal static partial class WindowsHeap
 {
     private static readonly IntPtr Heap = GetOrCreateHeap();
 
@@ -30,24 +30,25 @@ internal static class WindowsHeap
         return hHeap;
     }
 
-    private static class Interop
+    private static partial class Interop
     {
         private const string KERNEL32_LIB = "kernel32.dll";
 
-        [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static extern IntPtr GetProcessHeap();
+        internal static partial IntPtr GetProcessHeap();
 
-        [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static extern IntPtr HeapCreate(uint flOptions, nuint dwInitialSize, nuint dwMaximumSize);
+        internal static partial IntPtr HeapCreate(uint flOptions, nuint dwInitialSize, nuint dwMaximumSize);
 
-        [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = false)]
+        [LibraryImport(KERNEL32_LIB, SetLastError = false)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static extern IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, nuint dwBytes);
+        internal static partial IntPtr HeapAlloc(IntPtr hHeap, uint dwFlags, nuint dwBytes);
 
-        [DllImport(KERNEL32_LIB, CallingConvention = CallingConvention.Winapi, SetLastError = true)]
+        [LibraryImport(KERNEL32_LIB, SetLastError = true)]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-        internal static extern bool HeapFree(IntPtr hHeap, uint dwFlags, IntPtr lpMem);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool HeapFree(IntPtr hHeap, uint dwFlags, IntPtr lpMem);
     }
 }

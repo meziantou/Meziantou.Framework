@@ -25,7 +25,7 @@ public sealed class ObjectGraphVisitorTests
 
         visitor.Visit(child);
 
-        visitor.VisitedValues.Should().Contain(new object[] { "a", "b" });
+        visitor.VisitedValues.Should().Contain(["a", "b"]);
     }
 
     [Fact]

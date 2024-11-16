@@ -17,16 +17,15 @@ internal static class QueryHelpers
     /// <param name="name">The name of the query key.</param>
     /// <param name="value">The query value.</param>
     /// <returns>The combined result.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, string name, string? value)
     {
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(name);
 
-        return AddQueryString(
-            uri, new[] { new KeyValuePair<string, string?>(name, value) });
+        return AddQueryString(uri, [new KeyValuePair<string, string?>(name, value)]);
     }
 
     /// <summary>
@@ -35,8 +34,8 @@ internal static class QueryHelpers
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A dictionary of query keys and values to append.</param>
     /// <returns>The combined result.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, IDictionary<string, string?> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -51,8 +50,8 @@ internal static class QueryHelpers
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of query names and values to append.</param>
     /// <returns>The combined result.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, IEnumerable<KeyValuePair<string, StringValues>> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -67,8 +66,8 @@ internal static class QueryHelpers
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to append.</param>
     /// <returns>The combined result.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="queryString"/> is <see langword="null"/>.</exception>
     public static string AddQueryString(string uri, IEnumerable<KeyValuePair<string, string?>> queryString)
     {
         ArgumentNullException.ThrowIfNull(uri);

@@ -31,7 +31,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             List<DateTime>? resultByWeekNo = null;// ResultByWeekNo(startDate, startOfYear);
 
             var result = Intersect(resultByMonths, resultByWeekNo, resultByYearDays, resultByMonthDays, resultByWeekDays);
-            result = FilterBySetPosition(result.Distinct().OrderBy(d => d).ToList(), BySetPositions);
+            result = FilterBySetPosition(result.Distinct().Order().ToList(), BySetPositions);
 
             foreach (var date in result.Where(d => d >= startDate))
             {
@@ -182,7 +182,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
         if (!IsEmpty(ByMonths))
         {
             result = [];
-            foreach (var month in ByMonths.Distinct().OrderBy(_ => _))
+            foreach (var month in ByMonths.Distinct().Order())
             {
                 if (month >= Month.January && month <= Month.December)
                 {

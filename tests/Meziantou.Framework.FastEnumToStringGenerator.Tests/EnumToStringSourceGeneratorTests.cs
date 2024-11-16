@@ -23,7 +23,7 @@ public sealed class EnumToStringSourceGeneratorTests
             .ToArray();
 
         var compilation = CSharpCompilation.Create("compilation",
-            new[] { CSharpSyntaxTree.ParseText(file) },
+            [CSharpSyntaxTree.ParseText(file)],
             references,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 

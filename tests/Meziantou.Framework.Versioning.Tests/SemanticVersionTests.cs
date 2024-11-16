@@ -13,16 +13,16 @@ public class SemanticVersionTests
         actual.Should().Be(expected);
     }
 
-    public static IEnumerable<object[]> TryParse_ShouldParseVersion_Data()
+    public static TheoryData<string, SemanticVersion> TryParse_ShouldParseVersion_Data()
     {
-        return new object[][]
+        return new()
         {
-            ["1.0.0", new SemanticVersion(1, 0, 0)],
-            ["v1.2.3", new SemanticVersion(1, 2, 3)],
-            ["1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha")],
-            ["1.0.0-alpha.1", new SemanticVersion(1, 0, 0, new[] { "alpha", "1" }, Array.Empty<string>())],
-            ["1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha")],
-            ["1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, new[] { "alpha", "1" }, new[] { "label" })],
+            { "1.0.0", new SemanticVersion(1, 0, 0) },
+            { "v1.2.3", new SemanticVersion(1, 2, 3) },
+            { "1.0.0-alpha", new SemanticVersion(1, 0, 0, "alpha") },
+            {"1.0.0-alpha.1", new SemanticVersion(1, 0, 0, ["alpha", "1"], []) },
+            { "1.0.0-0123alpha", new SemanticVersion(1, 0, 0, "0123alpha") },
+            { "1.1.2-alpha.1+label", new SemanticVersion(1, 1, 2, ["alpha", "1"], ["label"]) },
         };
     }
 
@@ -153,25 +153,25 @@ public class SemanticVersionTests
     [Fact]
     public void Constructor_WithInvalidPrerelease_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "01" }, metadata: null)).Should().ThrowExactly<ArgumentException>();
+        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: ["01"], metadata: null)).Should().ThrowExactly<ArgumentException>();
     }
 
     [Fact]
     public void Constructor_WithEmptyPrerelease_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: new[] { "" }, metadata: null)).Should().ThrowExactly<ArgumentException>();
+        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: [""], metadata: null)).Should().ThrowExactly<ArgumentException>();
     }
 
     [Fact]
     public void Constructor_WithEmptyMetadata_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "" })).Should().ThrowExactly<ArgumentException>();
+        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: [""])).Should().ThrowExactly<ArgumentException>();
     }
 
     [Fact]
     public void Constructor_WithInvalidMetadata_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: new[] { "/" })).Should().ThrowExactly<ArgumentException>();
+        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: ["/"])).Should().ThrowExactly<ArgumentException>();
     }
 
     [Fact]

@@ -433,7 +433,7 @@ public class Template
             .WithPlatform(Platform.AnyCpu);
 
         var compilation = CSharpCompilation.Create(assemblyName,
-            new[] { syntaxTree },
+            [syntaxTree],
             CreateReferences(),
             options);
 

@@ -224,7 +224,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                             continue;
 
                         var name = reader.GetString(document.Name);
-                        if (!Regex.IsMatch(name, "^/_[0-9]*/", RegexOptions.None, Timeout.InfiniteTimeSpan))
+                        if (!DeterministicFileNameRegex().IsMatch(name))
                         {
                             context.ReportError(ErrorCodes.NonDeterministic, $"Symbol file contains non-deterministic file path '{name}'", fileName: item);
                         }
@@ -505,4 +505,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
             return null;
         }
     }
+
+    [GeneratedRegex("^/_[0-9]*/", RegexOptions.None, matchTimeoutMilliseconds: -1)]
+    private static partial Regex DeterministicFileNameRegex();
 }

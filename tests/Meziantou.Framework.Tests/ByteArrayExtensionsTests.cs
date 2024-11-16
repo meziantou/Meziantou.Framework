@@ -10,48 +10,58 @@ public class ByteArrayExtensionsTests
     [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_UpperCase()
     {
-        var options = HexaOptions.UpperCase;
-        HexaConverter.ToHexaString(new byte[] { 0x00 }, options).Should().Be("00");
-        HexaConverter.ToHexaString(new byte[] { 0x01 }, options).Should().Be("01");
-        HexaConverter.ToHexaString(new byte[] { 0x02 }, options).Should().Be("02");
-        HexaConverter.ToHexaString(new byte[] { 0x03 }, options).Should().Be("03");
-        HexaConverter.ToHexaString(new byte[] { 0x04 }, options).Should().Be("04");
-        HexaConverter.ToHexaString(new byte[] { 0x05 }, options).Should().Be("05");
-        HexaConverter.ToHexaString(new byte[] { 0x06 }, options).Should().Be("06");
-        HexaConverter.ToHexaString(new byte[] { 0x07 }, options).Should().Be("07");
-        HexaConverter.ToHexaString(new byte[] { 0x08 }, options).Should().Be("08");
-        HexaConverter.ToHexaString(new byte[] { 0x09 }, options).Should().Be("09");
-        HexaConverter.ToHexaString(new byte[] { 0x0A }, options).Should().Be("0A");
-        HexaConverter.ToHexaString(new byte[] { 0x0B }, options).Should().Be("0B");
-        HexaConverter.ToHexaString(new byte[] { 0x0C }, options).Should().Be("0C");
-        HexaConverter.ToHexaString(new byte[] { 0x0D }, options).Should().Be("0D");
-        HexaConverter.ToHexaString(new byte[] { 0x0E }, options).Should().Be("0E");
-        HexaConverter.ToHexaString(new byte[] { 0x0F }, options).Should().Be("0F");
-        HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options).Should().Be("102F");
+        static void Test(byte[] value, string expectedValue)
+        {
+            Assert.Equal(expectedValue, HexaConverter.ToHexaString(value, HexaOptions.UpperCase));
+            Assert.Equal(expectedValue, HexaConverter.ToHexaString((ReadOnlySpan<byte>)value, HexaOptions.UpperCase));
+        }
+
+        Test([0x00], "00");
+        Test([0x01], "01");
+        Test([0x02], "02");
+        Test([0x03], "03");
+        Test([0x04], "04");
+        Test([0x05], "05");
+        Test([0x06], "06");
+        Test([0x07], "07");
+        Test([0x08], "08");
+        Test([0x09], "09");
+        Test([0x0A], "0A");
+        Test([0x0B], "0B");
+        Test([0x0C], "0C");
+        Test([0x0D], "0D");
+        Test([0x0E], "0E");
+        Test([0x0F], "0F");
+        Test([0x10, 0x2F], "102F");
     }
 
     [Fact]
     [SuppressMessage("Style", "IDE0230:Use UTF-8 string literal", Justification = "")]
     public void ToHexa_LowerCase()
     {
-        var options = HexaOptions.LowerCase;
-        HexaConverter.ToHexaString(new byte[] { 0x00 }, options).Should().Be("00");
-        HexaConverter.ToHexaString(new byte[] { 0x01 }, options).Should().Be("01");
-        HexaConverter.ToHexaString(new byte[] { 0x02 }, options).Should().Be("02");
-        HexaConverter.ToHexaString(new byte[] { 0x03 }, options).Should().Be("03");
-        HexaConverter.ToHexaString(new byte[] { 0x04 }, options).Should().Be("04");
-        HexaConverter.ToHexaString(new byte[] { 0x05 }, options).Should().Be("05");
-        HexaConverter.ToHexaString(new byte[] { 0x06 }, options).Should().Be("06");
-        HexaConverter.ToHexaString(new byte[] { 0x07 }, options).Should().Be("07");
-        HexaConverter.ToHexaString(new byte[] { 0x08 }, options).Should().Be("08");
-        HexaConverter.ToHexaString(new byte[] { 0x09 }, options).Should().Be("09");
-        HexaConverter.ToHexaString(new byte[] { 0x0A }, options).Should().Be("0a");
-        HexaConverter.ToHexaString(new byte[] { 0x0B }, options).Should().Be("0b");
-        HexaConverter.ToHexaString(new byte[] { 0x0C }, options).Should().Be("0c");
-        HexaConverter.ToHexaString(new byte[] { 0x0D }, options).Should().Be("0d");
-        HexaConverter.ToHexaString(new byte[] { 0x0E }, options).Should().Be("0e");
-        HexaConverter.ToHexaString(new byte[] { 0x0F }, options).Should().Be("0f");
-        HexaConverter.ToHexaString(new byte[] { 0x10, 0x2F }, options).Should().Be("102f");
+        static void Test(byte[] value, string expectedValue)
+        {
+            Assert.Equal(expectedValue, HexaConverter.ToHexaString(value, HexaOptions.LowerCase));
+            Assert.Equal(expectedValue, HexaConverter.ToHexaString((ReadOnlySpan<byte>)value, HexaOptions.LowerCase));
+        }
+
+        Test([0x00], "00");
+        Test([0x01], "01");
+        Test([0x02], "02");
+        Test([0x03], "03");
+        Test([0x04], "04");
+        Test([0x05], "05");
+        Test([0x06], "06");
+        Test([0x07], "07");
+        Test([0x08], "08");
+        Test([0x09], "09");
+        Test([0x0A], "0a");
+        Test([0x0B], "0b");
+        Test([0x0C], "0c");
+        Test([0x0D], "0d");
+        Test([0x0E], "0e");
+        Test([0x0F], "0f");
+        Test([0x10, 0x2F], "102f");
     }
 
     [Fact]

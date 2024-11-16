@@ -17,6 +17,6 @@ public sealed class TextQuerySyntax : QuerySyntax
 
     public override QueryNodeOrToken[] GetChildren()
     {
-        return new[] { TextToken };
+        return [TextToken];
     }
 }

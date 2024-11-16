@@ -14,7 +14,7 @@ public sealed class MixedConsumerProducerTests
     public async Task Process_NoParallelism()
     {
         var count = 0;
-        await MixedConsumerProducer.Process(new[] { 1 }, new ParallelOptions() { MaxDegreeOfParallelism = 1 }, (context, item, cancellationToken) =>
+        await MixedConsumerProducer.Process([1], new ParallelOptions() { MaxDegreeOfParallelism = 1 }, (context, item, cancellationToken) =>
         {
             if (item < 100)
             {
@@ -32,7 +32,7 @@ public sealed class MixedConsumerProducerTests
     public async Task Process()
     {
         var count = 0;
-        await MixedConsumerProducer.Process(new[] { 0 }, new ParallelOptions() { MaxDegreeOfParallelism = 16 }, (context, item, cancellationToken) =>
+        await MixedConsumerProducer.Process([0], new ParallelOptions() { MaxDegreeOfParallelism = 16 }, (context, item, cancellationToken) =>
         {
             if (item < 15)
             {

@@ -11,7 +11,7 @@ public sealed class LsaPrivateDataTests
     public void LsaPrivateData_SetGetRemove()
     {
         // The project is multi-targeted, so multiple process can run in parallel
-        using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkTaskDialogPromptTests");
+        using var mutex = new Mutex(initiallyOwned: false, "MeziantouFrameworkLsaTests");
         mutex.WaitOne();
         try
         {

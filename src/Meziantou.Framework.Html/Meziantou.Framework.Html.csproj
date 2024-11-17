@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>HTML parser for .NET</Description>
     <DefineConstants>$(DefineConstants);HTML_PUBLIC</DefineConstants>

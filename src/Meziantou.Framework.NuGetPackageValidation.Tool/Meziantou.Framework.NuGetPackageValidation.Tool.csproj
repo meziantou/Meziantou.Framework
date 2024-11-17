@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -7,7 +7,7 @@
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.validate-nuget-package</ToolCommandName>
-    <Version>1.0.16</Version>
+    <Version>1.0.17</Version>
     <Description>CLI tool to validate NuGet packages follows best-practices</Description>
   </PropertyGroup>
 

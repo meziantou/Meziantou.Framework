@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>TemporaryDirectory allows to create a disposable directory to store temporary files</Description>
   </PropertyGroup>

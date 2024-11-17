@@ -10,6 +10,7 @@
     <IsPackable>False</IsPackable>
 
     <ValidateProjectTargets>false</ValidateProjectTargets>
+    <SkipAutoVersionUpdates>true</SkipAutoVersionUpdates>
   </PropertyGroup>
 
   <ItemGroup>

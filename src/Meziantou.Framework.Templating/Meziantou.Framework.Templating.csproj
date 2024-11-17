@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.4</Version>
+    <Version>2.0.5</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Template parser and evaluator. The template syntax is customizable. The code sections use C#.</Description>
   </PropertyGroup>

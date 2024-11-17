@@ -1,13 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Create a snapshot of the current execution context to ease investigation</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Meziantou.Framework.Diagnostics.ContextSnapshot.Tests"/>
+    <InternalsVisibleTo Include="Meziantou.Framework.Diagnostics.ContextSnapshot.Tests" />
   </ItemGroup>
   
   <ItemGroup>

@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
-    <Version>1.0.13</Version>
+    <Version>1.0.14</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

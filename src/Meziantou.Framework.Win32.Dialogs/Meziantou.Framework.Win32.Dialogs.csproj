@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net462</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.1.4</Version>
+    <Version>1.1.5</Version>
     <Description>Provide an OpenFolderDialog that uses Vista+ design</Description>
   </PropertyGroup>
 

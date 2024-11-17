@@ -100,7 +100,7 @@ public sealed class InMemoryLogEntry
             return false;
         }
 
-        if (owner is IReadOnlyCollection<KeyValuePair<string, object?>> stateDictionary)
+        if (owner is IEnumerable<KeyValuePair<string, object?>> stateDictionary)
         {
             foreach (var item in stateDictionary)
             {

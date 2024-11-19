@@ -137,6 +137,7 @@ The HumanReadableSerializer has many options to make the snapshot deterministic 
             {
                 OrderProperties = true,
                 WriteIndented = true,
+                FormatAsStandardObject = false,
             });
 
             options.AddXmlFormatter(new XmlFormatterOptions

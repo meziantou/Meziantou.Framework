@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
 using System.Text.Json.Nodes;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
@@ -7,7 +7,8 @@ internal sealed class JsonNodeConverter : HumanReadableConverter<JsonNode>
 {
     protected override void WriteValue(HumanReadableTextWriter writer, JsonNode? value, HumanReadableSerializerOptions options)
     {
-        var str = JsonSerializer.Serialize(value, JsonElementConverter.IndentedOptions);
+        Debug.Assert(value is not null);
+        var str = value.ToJsonString(JsonElementConverter.IndentedOptions);
         writer.WriteFormattedValue("application/json", str);
     }
 }

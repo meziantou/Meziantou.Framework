@@ -1,4 +1,5 @@
-﻿using Meziantou.Framework.HumanReadable.ValueFormatters;
+﻿using System.Globalization;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
@@ -140,5 +141,46 @@ public sealed class HttpJsonSerializerTests : SerializerTestsBase
               Content-Type: application/json; charset=utf-8
             Value: {"answers":[{"a":2,"c":3,"z":1}],"foo":"bar"}
             """);
+    }
+
+    [Fact]
+    public void SerializeAsClassicObject()
+    {
+        var options = new HumanReadableSerializerOptions()
+            .AddJsonFormatter(new JsonFormatterOptions
+            {
+                OrderProperties = true,
+                FormatAsStandardObject = true,
+            });
+        options.Converters.Add(new CustomDecimalConverter());
+        options.Converters.Add(new CustomStringConverter());
+
+        using var httpContent = new StringContent("""{"foo":"bar","answers":[ {"z": 1, "a": 2, "c":3 } ]}""", encoding: null, "application/json");
+        AssertSerialization(httpContent, options, """
+            Headers:
+              Content-Type: application/json; charset=utf-8
+            Value:
+              answers:
+                - a: 3
+                  c: 4
+                  z: 2
+              foo: custom-bar
+            """);
+    }
+
+    private sealed class CustomDecimalConverter : HumanReadableConverter<decimal>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, decimal value, HumanReadableSerializerOptions options)
+        {
+            writer.WriteValue((value + 1).ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    private sealed class CustomStringConverter : HumanReadableConverter<string>
+    {
+        protected override void WriteValue(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)
+        {
+            writer.WriteValue("custom-" + value);
+        }
     }
 }

@@ -36,13 +36,13 @@ public sealed class LinkHeaderValueTests
             { "link", "<e>;rel=f" },
         };
 
-        header.ParseLinkHeaders().Should().HaveCount(3);
+        header.EnumerateLinkHeaders().Should().HaveCount(3);
     }
 
     [Fact]
     public void GetNextLink()
     {
-        Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetNextLink());
+        Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLink("Next"));
     }
 
     private sealed class CustomHttpHeaders : HttpHeaders

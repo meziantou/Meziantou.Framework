@@ -133,10 +133,10 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
-    public void AddFormatter(string name, ValueFormatter formatter)
+    public void AddFormatter(string mediaType, ValueFormatter formatter)
     {
         VerifyMutable();
-        _valueFormatters[name] = formatter;
+        _valueFormatters[mediaType] = formatter;
     }
 
     public void AddAttribute(Type type, HumanReadableAttribute attribute)

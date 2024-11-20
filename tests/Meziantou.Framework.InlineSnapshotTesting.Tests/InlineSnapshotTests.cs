@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Xml;
 using System.Xml.Linq;
 using FluentAssertions;
 using Meziantou.Framework.HumanReadable;
@@ -813,6 +815,149 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                   - int-0
                   - int-1
                   - int-1
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$.prop", node => "[redacted]");
+            })
+            .Validate(new JsonObject() { ["prop"] = "value", ["other"] = "dummy" }, """
+                {
+                  "prop": "[redacted]",
+                  "other": "dummy"
+                }
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlAttribute_Remove()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlAttribute("//item/@a", attribute => null);
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item a="1">test1</item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root>
+                  <item>test1</item>
+                  <item>test2</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlAttribute_UpdateValue()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlAttribute("//item/@a", attribute => "dummy");
+            })
+            .Validate(XDocument.Parse("""
+                <root>
+                  <item a="1">test1</item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root>
+                  <item a="dummy">test1</item>
+                  <item a="dummy">test2</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlAttribute_Xmlns()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                var ns = new XmlNamespaceManager(new NameTable());
+                ns.AddNamespace("sample", "https://example.com");
+                options.ScrubXmlAttribute("//sample:item/@a", ns, attribute => "dummy");
+            })
+            .Validate(XDocument.Parse("""
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="dummy">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlNode_Remove()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("//item", node => null);
+            })
+            .Validate(XDocument.Parse("""
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlNode_ReturnSameInstance()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("//item", node => node);
+            })
+            .Validate(XDocument.Parse("""
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """);
+    }
+
+    [Fact]
+    public void ScrubXmlNode_SetValue()
+    {
+        InlineSnapshot
+            .WithSerializer(options =>
+            {
+                options.ScrubXmlNode("//item", node => ((XElement)node).SetValue("dummy"));
+            })
+            .Validate(XDocument.Parse("""
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">test2</item>
+                </root>
+                """), """
+                <root xmlns:ns="https://example.com">
+                  <ns:item a="1">test1</ns:item>
+                  <item a="2">dummy</item>
+                </root>
                 """);
     }
 

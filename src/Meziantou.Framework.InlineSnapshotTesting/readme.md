@@ -297,6 +297,32 @@ InlineSnapshot
     .Validate("abcdef", "123def");
 ````
 
+````c#
+var data = JsonNode.Parse("""{ "prop": "value" }""");
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubJsonValue("$.prop", node => "[redacted]"))
+    .Validate(data, """
+        {
+          "prop": "[redacted]"
+        }
+        """);
+````
+
+````c#
+var data = XDocument.Parse("""
+                <root>
+                  <item attr="1">test1</item>
+                </root>
+                """);
+InlineSnapshot
+    .WithSettings(settings => settings.ScrubXmlAttribute("//item/@attr", attribute => "[redacted]"))
+    .Validate(data, """
+        <root>
+          <item attr="[redacted]">test1</item>
+        </root>
+        """);
+````
+
 ## Invisible characters
 
 If spaces or new lines are important, you can display them as visible characters.

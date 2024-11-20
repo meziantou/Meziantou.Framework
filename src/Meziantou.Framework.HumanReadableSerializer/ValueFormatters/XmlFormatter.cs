@@ -4,13 +4,18 @@ using System.Xml;
 
 namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
-internal sealed class XmlFormatter : ValueFormatter
+public sealed class XmlFormatter : ValueFormatter
 {
     private readonly XmlFormatterOptions _options;
 
-    public XmlFormatter(XmlFormatterOptions options)
+    public XmlFormatter()
+        : this(options: null)
     {
-        _options = options;
+    }
+
+    public XmlFormatter(XmlFormatterOptions? options)
+    {
+        _options = options ?? new();
     }
 
     public override void Format(HumanReadableTextWriter writer, string? value, HumanReadableSerializerOptions options)

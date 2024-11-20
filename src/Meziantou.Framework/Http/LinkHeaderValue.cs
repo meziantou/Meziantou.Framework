@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace Meziantou.Framework.Http;
@@ -26,6 +27,16 @@ public sealed class LinkHeaderValue
 
     // https://httpwg.org/specs/rfc8288.html
     // https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
+    public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse) => Parse(httpResponse.Headers);
+
+    public static IEnumerable<LinkHeaderValue> Parse(HttpHeaders headers)
+    {
+        if (!headers.TryGetValues("Link", out var values))
+            return [];
+
+        return values.SelectMany(Parse);
+    }
+
     public static IEnumerable<LinkHeaderValue> Parse(string value) => Parse(value.AsSpan());
 
     public static IEnumerable<LinkHeaderValue> Parse(ReadOnlySpan<char> value)

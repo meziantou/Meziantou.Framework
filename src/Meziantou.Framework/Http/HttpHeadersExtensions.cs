@@ -6,15 +6,11 @@ public static class HttpHeadersExtensions
 {
     public static IEnumerable<LinkHeaderValue> ParseLinkHeaders(this HttpHeaders headers)
     {
-        if (headers.TryGetValues("link", out var values))
-        {
-            foreach (var value in values)
-            {
-                foreach (var linkValue in LinkHeaderValue.Parse(value))
-                {
-                    yield return linkValue;
-                }
-            }
-        }
+        return LinkHeaderValue.Parse(headers);
+    }
+
+    public static string? GetNextLink(this IEnumerable<LinkHeaderValue> links)
+    {
+        return links.FirstOrDefault(l => string.Equals(l.Rel, "next", StringComparison.OrdinalIgnoreCase))?.Url;
     }
 }

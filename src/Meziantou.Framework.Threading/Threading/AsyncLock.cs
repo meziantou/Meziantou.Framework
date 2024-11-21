@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Threading;
 
@@ -21,22 +22,22 @@ public sealed class AsyncLock
         _onCancellationRequestHandler = OnCancellationRequest;
     }
 
-    public ValueTask<AsyncLockObject> LockAsync()
+    public ValueTask<AsyncLockLease> LockAsync()
     {
         return LockAsync(CancellationToken.None);
     }
 
-    public ValueTask<AsyncLockObject> LockAsync(CancellationToken cancellationToken)
+    public ValueTask<AsyncLockLease> LockAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
-            return ValueTask.FromCanceled<AsyncLockObject>(cancellationToken);
+            return ValueTask.FromCanceled<AsyncLockLease>(cancellationToken);
 
         lock (_signalAwaiters)
         {
             if (_signaled)
             {
                 _signaled = false;
-                return new ValueTask<AsyncLockObject>(new AsyncLockObject(this));
+                return new ValueTask<AsyncLockLease>(new AsyncLockLease(this));
             }
             else
             {
@@ -50,12 +51,12 @@ public sealed class AsyncLock
                     _signalAwaiters.Enqueue(waiter);
                 }
 
-                return new ValueTask<AsyncLockObject>(waiter.Task);
+                return new ValueTask<AsyncLockLease>(waiter.Task);
             }
         }
     }
 
-    public bool TryLock(out AsyncLockObject lockObject)
+    public bool TryLock(out AsyncLockLease lockObject)
     {
         if (_signaled)
         {
@@ -64,13 +65,13 @@ public sealed class AsyncLock
                 if (_signaled)
                 {
                     _signaled = false;
-                    lockObject = new AsyncLockObject(this);
+                    lockObject = new AsyncLockLease(this);
                     return true;
                 }
             }
         }
 
-        lockObject = new AsyncLockObject();
+        lockObject = new AsyncLockLease();
         return false;
     }
 
@@ -92,7 +93,7 @@ public sealed class AsyncLock
         if (toRelease is not null)
         {
             toRelease.Registration.Dispose();
-            toRelease.TrySetResult(new AsyncLockObject(this));
+            toRelease.TrySetResult(new AsyncLockLease(this));
         }
     }
 
@@ -139,7 +140,24 @@ public sealed class AsyncLock
         return found;
     }
 
-    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockObject>
+    [StructLayout(LayoutKind.Auto)]
+    [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
+    public readonly struct AsyncLockLease : IDisposable
+    {
+        private readonly AsyncLock? _parent;
+
+        internal AsyncLockLease(AsyncLock? parent)
+        {
+            _parent = parent;
+        }
+
+        public void Dispose()
+        {
+            _parent?.Release();
+        }
+    }
+
+    private sealed class WaiterCompletionSource : TaskCompletionSource<AsyncLockLease>
     {
         internal WaiterCompletionSource(AsyncLock owner, bool allowInliningContinuations, CancellationToken cancellationToken)
             : base(GetOptions(allowInliningContinuations))

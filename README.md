@@ -46,6 +46,7 @@
 | Meziantou.Framework.Templating | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating/) | |
 | Meziantou.Framework.Templating.Html | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Templating.Html.svg)](https://www.nuget.org/packages/Meziantou.Framework.Templating.Html/) | |
 | Meziantou.Framework.TemporaryDirectory | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TemporaryDirectory.svg)](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/) | [readme](src/Meziantou.Framework.TemporaryDirectory/readme.md) |
+| Meziantou.Framework.Threading | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Threading.svg)](https://www.nuget.org/packages/Meziantou.Framework.Threading/) | [readme](src/Meziantou.Framework.Threading/readme.md) |
 | Meziantou.Framework.TypeConverter | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.TypeConverter.svg)](https://www.nuget.org/packages/Meziantou.Framework.TypeConverter/) | |
 | Meziantou.Framework.Uri | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.Uri.svg)](https://www.nuget.org/packages/Meziantou.Framework.Uri/) | [readme](src/Meziantou.Framework.Uri/readme.md) |
 | Meziantou.Framework.ValueStopwatch | [![NuGet](https://img.shields.io/nuget/v/Meziantou.Framework.ValueStopwatch.svg)](https://www.nuget.org/packages/Meziantou.Framework.ValueStopwatch/) | [readme](src/Meziantou.Framework.ValueStopwatch/readme.md) |

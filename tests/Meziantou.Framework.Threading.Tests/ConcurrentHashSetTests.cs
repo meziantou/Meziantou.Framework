@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Meziantou.Framework.Collections;
+using Meziantou.Framework.Collections.Concurrent;
 using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections;

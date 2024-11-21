@@ -1,0 +1,11 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsTrimmable>true</IsTrimmable>
+    <Description>Types and extension methods to help with threading</Description>
+    <Version>1.0.0</Version>
+    <RootNamespace>Meziantou.Framework</RootNamespace>
+  </PropertyGroup>
+
+</Project>

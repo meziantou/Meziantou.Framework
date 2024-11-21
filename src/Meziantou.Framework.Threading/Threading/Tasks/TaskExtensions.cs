@@ -1,4 +1,4 @@
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Threading.Tasks;
 
 public static partial class TaskExtensions
 {
@@ -14,6 +14,9 @@ public static partial class TaskExtensions
 
         async static Task ForgetAwaited(Task task)
         {
+#if NET8_0_OR_GREATER
+            await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+#else
             try
             {
                 // No need to resume on the original SynchronizationContext
@@ -23,6 +26,7 @@ public static partial class TaskExtensions
             {
                 // Nothing to do here
             }
+#endif
         }
     }
 }

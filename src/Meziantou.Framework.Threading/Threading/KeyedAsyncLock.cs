@@ -16,7 +16,7 @@ public sealed class KeyedAsyncLock<TKey> where TKey : notnull
         _locks = new ConcurrentDictionary<TKey, AsyncLock>(comparer);
     }
 
-    public ValueTask<AsyncLockObject> LockAsync(TKey key, CancellationToken cancellationToken = default)
+    public ValueTask<AsyncLock.AsyncLockLease> LockAsync(TKey key, CancellationToken cancellationToken = default)
     {
         var instance = _locks.GetOrAdd(key, _ => new AsyncLock());
         return instance.LockAsync(cancellationToken);

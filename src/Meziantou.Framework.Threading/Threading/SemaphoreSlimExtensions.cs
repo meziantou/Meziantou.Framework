@@ -1,4 +1,4 @@
-namespace Meziantou.Framework;
+namespace Meziantou.Framework.Threading;
 
 public static class SemaphoreSlimExtensions
 {

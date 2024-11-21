@@ -134,9 +134,21 @@ public sealed class JobObject : IDisposable
     /// </returns>
     public void AssignProcess(IntPtr processHandle)
     {
-        if (!Windows.Win32.PInvoke.AssignProcessToJobObject((HANDLE)_jobHandle.DangerousGetHandle(), (HANDLE)processHandle))
+        var addedRef = false;
+        try
         {
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+            _jobHandle.DangerousAddRef(ref addedRef);
+            if (!Windows.Win32.PInvoke.AssignProcessToJobObject((HANDLE)_jobHandle.DangerousGetHandle(), (HANDLE)processHandle))
+            {
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                _jobHandle.DangerousRelease();
+            }
         }
     }
 
@@ -377,9 +389,22 @@ public sealed class JobObject : IDisposable
     {
         ArgumentNullException.ThrowIfNull(process);
 
-        BOOL result = default;
-        if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))
-            return result;
+        var addedRef = false;
+        try
+        {
+            _jobHandle.DangerousAddRef(ref addedRef);
+
+            BOOL result = default;
+            if (Windows.Win32.PInvoke.IsProcessInJob((HANDLE)process.Handle, (HANDLE)_jobHandle.DangerousGetHandle(), &result))
+                return result;
+        }
+        finally
+        {
+            if (addedRef)
+            {
+                _jobHandle.DangerousRelease();
+            }
+        }
 
         var err = Marshal.GetLastWin32Error();
         throw new Win32Exception(err);

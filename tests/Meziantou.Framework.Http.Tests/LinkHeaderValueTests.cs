@@ -42,7 +42,7 @@ public sealed class LinkHeaderValueTests
     [Fact]
     public void GetNextLink()
     {
-        Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLink("Next"));
+        Assert.Equal("b", LinkHeaderValue.Parse("<a>; rel=prev, <b>;rel=next").GetLinkUrl("Next"));
     }
 
     private sealed class CustomHttpHeaders : HttpHeaders

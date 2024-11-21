@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Concurrent;
 
-namespace Meziantou.Framework.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 public sealed class ConcurrentHashSet<T> : ICollection<T>, IReadOnlyCollection<T>
     where T : notnull
@@ -28,6 +28,14 @@ public sealed class ConcurrentHashSet<T> : ICollection<T>, IReadOnlyCollection<T
     public bool Contains(T item) => _dictionary.ContainsKey(item);
 
     public bool Add(T value) => _dictionary.TryAdd(value, 0);
+
+    public void AddRange(params ReadOnlySpan<T> values)
+    {
+        foreach (var v in values)
+        {
+            Add(v);
+        }
+    }
 
     public void AddRange(IEnumerable<T>? values)
     {

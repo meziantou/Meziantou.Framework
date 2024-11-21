@@ -1,7 +1,8 @@
 using FluentAssertions;
+using Meziantou.Framework.Threading.Tasks;
 using Xunit;
 
-namespace Meziantou.Framework.Tests;
+namespace Meziantou.Framework.Threading.Tests;
 
 public sealed class TaskExtensionsTests
 {

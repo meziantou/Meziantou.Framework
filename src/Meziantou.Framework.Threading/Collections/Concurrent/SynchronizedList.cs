@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace Meziantou.Framework.Collections;
+namespace Meziantou.Framework.Collections.Concurrent;
 
 public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
 {
@@ -46,22 +46,25 @@ public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
         }
     }
 
-    private List<T> Clone()
-    {
-        return _list.ToList();
-    }
-
     public IEnumerator<T> GetEnumerator()
     {
         lock (_list)
         {
-            return Clone().GetEnumerator();
+            return ((IReadOnlyCollection<T>)[.. _list]).GetEnumerator();
         }
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public int EnsureCapacity(int capacity)
+    {
+        lock (_list)
+        {
+            return _list.EnsureCapacity(capacity);
+        }
     }
 
     public void Add(T item)

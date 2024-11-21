@@ -5,7 +5,7 @@
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>3.3.0</Version>
+    <Version>3.3.1</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
 
     <!-- Buggy because of netstandard2.0 -->
@@ -43,8 +43,7 @@
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog/bin/Release/net8.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
-    <None Include="$(MSBuildThisFileDirectory)/../Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray/bin/Release/net8.0-windows/publish/*" Pack="true" PackagePath="prompt/" Visible="false" />
+    <None Include="$(PromptFolder)/*" Pack="true" PackagePath="prompt/" Visible="false" />
     <None Include="package/**/*" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>

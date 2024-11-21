@@ -7,7 +7,10 @@ public static class InlineSnapshotSettingsHumanReadableSerializerExtensions
 {
     public static void UseHumanReadableSerializer(this InlineSnapshotSettings settings)
     {
-        settings.SnapshotSerializer = new HumanReadableSnapshotSerializer();
+        if (settings.SnapshotSerializer is not HumanReadableSnapshotSerializer)
+        {
+            settings.SnapshotSerializer = new HumanReadableSnapshotSerializer();
+        }
     }
 
     public static void UseHumanReadableSerializer(this InlineSnapshotSettings settings, HumanReadableSerializerOptions options)
@@ -17,6 +20,16 @@ public static class InlineSnapshotSettingsHumanReadableSerializerExtensions
 
     public static void UseHumanReadableSerializer(this InlineSnapshotSettings settings, Action<HumanReadableSerializerOptions>? configure)
     {
-        settings.SnapshotSerializer = new HumanReadableSnapshotSerializer(configure);
+        // Preserve existing options if the current serializer is already HumanReadableSerializer
+        if (settings.SnapshotSerializer is HumanReadableSnapshotSerializer existing)
+        {
+            var clone = existing.Options with { };
+            configure(clone);
+            settings.SnapshotSerializer = new HumanReadableSnapshotSerializer(clone);
+        }
+        else
+        {
+            settings.SnapshotSerializer = new HumanReadableSnapshotSerializer(configure);
+        }
     }
 }

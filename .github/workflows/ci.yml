@@ -50,9 +50,10 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v4
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
-      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release /p:IsOfficialBuild=true /bl:publish-taskdialog.binlog
-      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release /p:IsOfficialBuild=true /bl:publish-notificationtray.binlog
-      - run: dotnet pack eng/packages.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" /bl:pack.binlog
+      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
+      - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-notificationtray.binlog
+  
+      - run: dotnet pack eng/packages.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
       - uses: actions/upload-artifact@v4
         if: always()
         with:

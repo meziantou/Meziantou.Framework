@@ -6,6 +6,8 @@ using System.Xml;
 using System.Xml.Linq;
 using FluentAssertions;
 using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -827,6 +829,62 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 options.ScrubJsonValue("$.prop", node => "[redacted]");
             })
             .Validate(new JsonObject() { ["prop"] = "value", ["other"] = "dummy" }, """
+                {
+                  "prop": "[redacted]",
+                  "other": "dummy"
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_PreserveInnerOptions()
+    {
+        var subject = new JsonObject()
+        {
+            ["prop"] = "value",
+            ["other"] = "dummy",
+        };
+        InlineSnapshot
+            .WithSettings(settings =>
+            {
+                settings.UseHumanReadableSerializer(settings =>
+                {
+                    settings.AddJsonFormatter(new JsonFormatterOptions() { WriteIndented = true, OrderProperties = true });
+                });
+            })
+            .WithSerializer(options =>
+            {
+                options.ScrubJsonValue("$.prop", node => "[redacted]");
+            })
+            .Validate(subject, """
+                {
+                  "other": "dummy",
+                  "prop": "[redacted]"
+                }
+                """);
+    }
+
+    [Fact]
+    public void Scrub_Json_PreserveInnerOptions2()
+    {
+        var subject = new JsonObject()
+        {
+            ["prop"] = "value",
+            ["other"] = "dummy",
+        };
+        InlineSnapshot
+           .WithSettings(settings =>
+           {
+               settings.UseHumanReadableSerializer(settings =>
+               {
+                   settings.AddJsonFormatter(new JsonFormatterOptions() { WriteIndented = true, OrderProperties = false });
+               });
+           })
+           .WithSerializer(options =>
+           {
+               options.ScrubJsonValue("$.prop", node => "[redacted]");
+           })
+           .Validate(subject, """
                 {
                   "prop": "[redacted]",
                   "other": "dummy"

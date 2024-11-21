@@ -6,7 +6,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
 {
-    private readonly HumanReadableSerializerOptions? _options;
+    internal HumanReadableSerializerOptions? Options { get; }
 
     internal static HumanReadableSnapshotSerializer DefaultInstance { get; } = new(CreateDefaultOptions());
 
@@ -27,18 +27,18 @@ public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
 
     public HumanReadableSnapshotSerializer(HumanReadableSerializerOptions? options = null)
     {
-        _options = options;
+        Options = options;
     }
 
     public HumanReadableSnapshotSerializer(Action<HumanReadableSerializerOptions>? configure)
     {
         var options = CreateDefaultOptions();
         configure?.Invoke(options);
-        _options = options;
+        Options = options;
     }
 
     public override string Serialize(object? value)
     {
-        return HumanReadableSerializer.Serialize(value, _options);
+        return HumanReadableSerializer.Serialize(value, Options);
     }
 }

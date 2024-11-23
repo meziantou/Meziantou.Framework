@@ -2,6 +2,9 @@ using System.Text;
 
 namespace Meziantou.Framework.IO;
 
+#if NET9_0_OR_GREATER
+[Obsolete("Use TextWriter.CreateBroadcasting", DiagnosticId = "MEZ_NET9")]
+#endif
 public sealed class TeeTextWriter : TextWriter
 {
     private readonly Lock _lock = new();

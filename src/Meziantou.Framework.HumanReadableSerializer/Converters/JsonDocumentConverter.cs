@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -7,6 +8,6 @@ internal sealed class JsonDocumentConverter : HumanReadableConverter<JsonDocumen
     protected override void WriteValue(HumanReadableTextWriter writer, JsonDocument? value, HumanReadableSerializerOptions options)
     {
         var str = JsonSerializer.Serialize(value, JsonElementConverter.IndentedOptions);
-        writer.WriteFormattedValue("application/json", str);
+        writer.WriteFormattedValue(ValueFormatter.JsonMediaTypeName, str);
     }
 }

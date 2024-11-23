@@ -164,9 +164,9 @@ public sealed class HumanReadableTextWriter
         WriteValue(value.AsSpan());
     }
 
-    public void WriteFormattedValue(string format, string value)
+    public void WriteFormattedValue(string mediaTypeName, string value)
     {
-        var formatter = _options.GetFormatter(format);
+        var formatter = _options.GetFormatter(mediaTypeName);
         if (formatter is null)
         {
             WriteValue(value);

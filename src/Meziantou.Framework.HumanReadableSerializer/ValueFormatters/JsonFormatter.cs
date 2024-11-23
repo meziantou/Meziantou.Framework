@@ -105,7 +105,7 @@ public sealed class JsonFormatter : ValueFormatter
         switch (kind)
         {
             case JsonValueKind.Undefined:
-                writer.WriteFormattedValue("application/json", value.ToJsonString(JsonElementConverter.IndentedOptions));
+                writer.WriteFormattedValue(ValueFormatter.JsonMediaTypeName, value.ToJsonString(JsonElementConverter.IndentedOptions));
                 break;
 
             case JsonValueKind.Object:

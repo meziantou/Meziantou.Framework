@@ -330,12 +330,12 @@ public sealed record HumanReadableSerializerOptions
         {
             return mediaType switch
             {
-                _ when IsJson(mediaType) => "application/json",
-                _ when IsXml(mediaType) => "application/xml",
-                _ when IsHtml(mediaType) => "text/html",
-                _ when IsUrlEncodedForm(mediaType) => "application/x-www-form-urlencoded",
-                _ when IsCss(mediaType) => "text/css",
-                _ when IsJavaScript(mediaType) => "text/javascript",
+                _ when IsJson(mediaType) => ValueFormatter.JsonMediaTypeName,
+                _ when IsXml(mediaType) => ValueFormatter.XmlMediaTypeName,
+                _ when IsHtml(mediaType) => ValueFormatter.HtmlMediaTypeName,
+                _ when IsUrlEncodedForm(mediaType) => ValueFormatter.WwwFormUrlEncodedMediaTypeName,
+                _ when IsCss(mediaType) => ValueFormatter.CssMediaTypeName,
+                _ when IsJavaScript(mediaType) => ValueFormatter.JavascriptMediaTypeName,
                 _ => null,
             };
 

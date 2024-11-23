@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json.Nodes;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 
@@ -9,6 +10,6 @@ internal sealed class JsonNodeConverter : HumanReadableConverter<JsonNode>
     {
         Debug.Assert(value is not null);
         var str = value.ToJsonString(JsonElementConverter.IndentedOptions);
-        writer.WriteFormattedValue("application/json", str);
+        writer.WriteFormattedValue(ValueFormatter.JsonMediaTypeName, str);
     }
 }

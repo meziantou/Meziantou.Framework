@@ -6,13 +6,11 @@ namespace Meziantou.Framework.Html;
 
 internal static class Utilities
 {
-    [Pure]
     public static bool EqualsIgnoreCase(this string? str1, string? str2)
     {
         return string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Pure]
     public static string? Nullify(string? str, bool trim)
     {
         if (str is null)
@@ -29,7 +27,6 @@ internal static class Utilities
         return str;
     }
 
-    [Pure]
     public static bool StartsWith(this string str, char c)
     {
         if (str.Length == 0)
@@ -38,7 +35,6 @@ internal static class Utilities
         return str[0] == c;
     }
 
-    [Pure]
     public static bool EndsWith(this string str, char c)
     {
         if (str.Length == 0)

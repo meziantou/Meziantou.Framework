@@ -5,7 +5,6 @@ namespace Meziantou.Framework.Scheduling;
 
 internal static class Extensions
 {
-    [Pure]
     public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
     {
         if (dict is null)
@@ -17,7 +16,6 @@ internal static class Extensions
         return defaultValue;
     }
 
-    [Pure]
     public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)
     {
         if (dict is null)
@@ -29,7 +27,6 @@ internal static class Extensions
         return defaultValue;
     }
 
-    [Pure]
     public static int? GetValue(this IDictionary<string, string> dict, string key, int? defaultValue)
     {
         if (dict is null)
@@ -41,7 +38,6 @@ internal static class Extensions
         return defaultValue;
     }
 
-    [Pure]
     public static Frequency GetValue(this IDictionary<string, string> dict, string key, Frequency defaultValue)
     {
         if (dict is null)
@@ -53,13 +49,11 @@ internal static class Extensions
         return defaultValue;
     }
 
-    [Pure]
     public static DateTime StartOfWeek(DateTime dt)
     {
         return StartOfWeek(dt, CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek);
     }
 
-    [Pure]
     public static DateTime StartOfWeek(DateTime dt, DayOfWeek startOfWeek)
     {
         var diff = dt.DayOfWeek - startOfWeek;
@@ -71,13 +65,11 @@ internal static class Extensions
         return dt.AddDays(-1 * diff);
     }
 
-    [Pure]
     public static DateTime StartOfMonth(DateTime dt)
     {
         return StartOfMonth(dt, keepTime: false);
     }
 
-    [Pure]
     public static DateTime StartOfMonth(DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -88,13 +80,11 @@ internal static class Extensions
         return new DateTime(dt.Year, dt.Month, 1);
     }
 
-    [Pure]
     public static DateTime StartOfYear(DateTime dt)
     {
         return StartOfYear(dt, keepTime: false);
     }
 
-    [Pure]
     public static DateTime StartOfYear(DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -107,7 +97,6 @@ internal static class Extensions
         }
     }
 
-    [Pure]
     public static string ToEnglishOrdinal(int num)
     {
         if (num <= 0)
@@ -126,7 +115,6 @@ internal static class Extensions
         };
     }
 
-    [Pure]
     public static string ToFrenchOrdinal(int num)
     {
         if (num <= 0)

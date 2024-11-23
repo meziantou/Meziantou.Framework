@@ -14,7 +14,6 @@ public static partial class StringSearchUtilities
     /// <param name="replace"> List of replacement to do before computing the soundex.</param>
     /// <returns> The soundex.</returns>
     /// <exception cref="ArgumentException">Dictionary does not contain character a character of the string <paramref name="s" /></exception>
-    [Pure]
     public static string Soundex(string s, IReadOnlyDictionary<char, byte> dic, IReadOnlyDictionary<string, char>? replace = null)
     {
         ArgumentNullException.ThrowIfNull(s);
@@ -84,7 +83,6 @@ public static partial class StringSearchUtilities
     /// </summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
-    [Pure]
     public static string Soundex2(string s)
     {
         ArgumentNullException.ThrowIfNull(s);
@@ -218,7 +216,6 @@ public static partial class StringSearchUtilities
     /// </summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
-    [Pure]
     public static string SoundexEnglish(string s)
     {
         var dic = new Dictionary<char, byte>
@@ -251,7 +248,6 @@ public static partial class StringSearchUtilities
     /// </summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
-    [Pure]
     public static string SoundexFrench(string s)
     {
         var dic = new Dictionary<char, byte>
@@ -296,7 +292,6 @@ public static partial class StringSearchUtilities
         sb.Replace(prefix, replace, 0, 1);
     }
 
-    [Pure]
     private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char>? replace = null)
     {
 

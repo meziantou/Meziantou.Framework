@@ -5,7 +5,6 @@ namespace Meziantou.Framework;
 
 public static class DateTimeExtensions
 {
-    [Pure]
     [Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
     public static DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, DayOfWeek weekStart = DayOfWeek.Monday)
     {
@@ -27,13 +26,11 @@ public static class DateTimeExtensions
         return result.AddDays(-3);
     }
 
-    [Pure]
     public static DateTime StartOfWeek(this DateTime dt)
     {
         return StartOfWeek(dt, CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek);
     }
 
-    [Pure]
     public static DateTime StartOfWeek(this DateTime dt, DayOfWeek startOfWeek)
     {
         var diff = dt.DayOfWeek - startOfWeek;
@@ -45,13 +42,11 @@ public static class DateTimeExtensions
         return dt.AddDays(-1 * diff);
     }
 
-    [Pure]
     public static DateTime StartOfMonth(this DateTime dt)
     {
         return StartOfMonth(dt, keepTime: false);
     }
 
-    [Pure]
     public static DateTime StartOfMonth(this DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -62,19 +57,16 @@ public static class DateTimeExtensions
         return new DateTime(dt.Year, dt.Month, 1);
     }
 
-    [Pure]
     public static DateTime EndOfMonth(this DateTime dt)
     {
         return new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month));
     }
 
-    [Pure]
     public static DateTime StartOfYear(this DateTime dt)
     {
         return StartOfYear(dt, keepTime: false);
     }
 
-    [Pure]
     public static DateTime StartOfYear(this DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -87,7 +79,6 @@ public static class DateTimeExtensions
         }
     }
 
-    [Pure]
     public static DateTime TruncateMilliseconds(this DateTime dt)
     {
         return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Kind);

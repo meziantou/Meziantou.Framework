@@ -5,7 +5,6 @@ namespace Meziantou.Framework;
 
 public static partial class StringSearchUtilities
 {
-    [Pure]
     public static string Metaphone(string s)
     {
         ArgumentNullException.ThrowIfNull(s);

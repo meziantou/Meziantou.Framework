@@ -11,7 +11,6 @@ internal
 #endif
 static partial class StringExtensions
 {
-    [Pure]
     public static string? Nullify(this string? str, bool trim)
     {
         if (str is null)
@@ -28,19 +27,16 @@ static partial class StringExtensions
         return str;
     }
 
-    [Pure]
     public static bool EqualsOrdinal(this string? str1, string? str2)
     {
         return string.Equals(str1, str2, StringComparison.Ordinal);
     }
 
-    [Pure]
     public static bool EqualsIgnoreCase(this string? str1, string? str2)
     {
         return string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Pure]
     public static bool ContainsIgnoreCase(this string str, string value)
     {
         return str.Contains(value, StringComparison.OrdinalIgnoreCase);
@@ -854,7 +850,6 @@ static partial class StringExtensions
         };
     }
 
-    [Pure]
     [return: NotNullIfNotNull(parameterName: nameof(str))]
     public static string? RemoveDiacritics(this string? str)
     {
@@ -896,7 +891,6 @@ static partial class StringExtensions
     /// <summary>
     /// Removes the trailing occurrence of a specified string from the current string.
     /// </summary>
-    [Pure]
     public static string RemoveSuffix(this string str, string suffix)
     {
         return RemoveSuffix(str, suffix, StringComparison.Ordinal);
@@ -905,7 +899,6 @@ static partial class StringExtensions
     /// <summary>
     /// Removes the trailing occurrence of a specified string from the current string.
     /// </summary>
-    [Pure]
     public static string RemoveSuffix(this string str, string suffix, StringComparison stringComparison)
     {
         if (str.EndsWith(suffix, stringComparison))
@@ -919,7 +912,6 @@ static partial class StringExtensions
     /// <summary>
     /// Removes the leading occurrence of a specified string from the current string.
     /// </summary>
-    [Pure]
     public static string RemovePrefix(this string str, string suffix)
     {
         return RemovePrefix(str, suffix, StringComparison.Ordinal);
@@ -928,7 +920,6 @@ static partial class StringExtensions
     /// <summary>
     /// Removes the leading occurrence of a specified string from the current string.
     /// </summary>
-    [Pure]
     public static string RemovePrefix(this string str, string suffix, StringComparison stringComparison)
     {
         if (str.StartsWith(suffix, stringComparison))

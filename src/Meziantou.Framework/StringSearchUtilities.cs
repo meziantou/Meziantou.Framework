@@ -10,7 +10,6 @@ public static partial class StringSearchUtilities
     /// <param name="word1"> The first word.</param>
     /// <param name="word2"> The second word.</param>
     /// <returns> The hamming distance.</returns>
-    [Pure]
     public static uint Hamming(uint word1, uint word2)
     {
         uint result = 0;
@@ -32,7 +31,6 @@ public static partial class StringSearchUtilities
     /// <param name="word2">The second word.</param>
     /// <exception cref="ArgumentException">Lists must have the same length.</exception>
     /// <returns> The hamming distance.</returns>
-    [Pure]
     public static int Hamming(string word1, string word2)
     {
         ArgumentNullException.ThrowIfNull(word1);
@@ -61,7 +59,6 @@ public static partial class StringSearchUtilities
     /// <param name="word2">The second most.</param>
     /// <exception cref="ArgumentException">Lists must have the same length.</exception>
     /// <returns> The hamming distance.</returns>
-    [Pure]
     public static int Hamming<T>(IEnumerable<T> word1, IEnumerable<T> word2)
         where T : notnull
     {
@@ -95,7 +92,6 @@ public static partial class StringSearchUtilities
     /// <param name="word1"> The first word.</param>
     /// <param name="word2"> The second word.</param>
     /// <returns> The Levenshtein distance.</returns>
-    [Pure]
     public static int Levenshtein(string word1, string word2)
     {
         ArgumentNullException.ThrowIfNull(word1);

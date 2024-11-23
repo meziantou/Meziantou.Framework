@@ -5,7 +5,6 @@ namespace Meziantou.Framework;
 
 public static partial class StringBuilderExtensions
 {
-    [Pure]
     public static bool StartsWith(this StringBuilder stringBuilder, char prefix)
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
@@ -16,7 +15,6 @@ public static partial class StringBuilderExtensions
         return stringBuilder[0] == prefix;
     }
 
-    [Pure]
     public static bool StartsWith(this StringBuilder stringBuilder, string prefix)
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
@@ -34,7 +32,6 @@ public static partial class StringBuilderExtensions
         return true;
     }
 
-    [Pure]
     public static bool EndsWith(this StringBuilder stringBuilder, char suffix)
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
@@ -45,7 +42,6 @@ public static partial class StringBuilderExtensions
         return stringBuilder[^1] == suffix;
     }
 
-    [Pure]
     public static bool EndsWith(this StringBuilder stringBuilder, string suffix)
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);

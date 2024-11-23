@@ -10,7 +10,6 @@ internal
 #endif
 static partial class StringExtensions
 {
-    [Pure]
     public static LineSplitEnumerator SplitLines(this string str) => new(str.AsSpan());
 
     [StructLayout(LayoutKind.Auto)]

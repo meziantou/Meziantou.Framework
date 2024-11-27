@@ -68,7 +68,7 @@ internal static class YamlParserUtilities
         }
     }
 
-    public static string? GetScalarValue(YamlNode node)
+    public static string? GetScalarValue(YamlNode? node)
     {
         if (node is YamlScalarNode scalar && scalar.Value is not null)
             return scalar.Value;

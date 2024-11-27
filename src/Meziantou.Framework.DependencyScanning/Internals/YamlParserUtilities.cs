@@ -76,14 +76,20 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static TextLocation GetLocation(ScanFileContext context, YamlNode node, int? start = null, int? length = null)
+    [return: NotNullIfNotNull(nameof(node))]
+    public static TextLocation? GetLocation(ScanFileContext context, YamlNode? node, int? start = null, int? length = null)
     {
+        if (node is null)
+            return null;
+
         start ??= 0;
 
         var line = (int)node.Start.Line;
         var column = (int)(node.Start.Column + start);
         if (node is YamlScalarNode { Style: ScalarStyle.SingleQuoted or ScalarStyle.DoubleQuoted })
+        {
             column += 1;
+        }
 
         if (length is null)
         {

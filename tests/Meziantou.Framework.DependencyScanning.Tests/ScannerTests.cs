@@ -950,6 +950,27 @@ jobs:
     }
 
     [Fact]
+    public async Task AzureDevOpsResourcesRepositoryDependencies_NoRef()
+    {
+        AddFile("sample.yml", """
+            resources:
+              repositories:
+              - repository: dummy
+                name: repo
+                type: git
+            """);
+        var result = await GetDependencies<AzureDevOpsScanner>();
+        await UpdateDependencies(result, "dummy", "1.2.3");
+        AssertFileContentEqual("sample.yml", """
+            resources:
+              repositories:
+              - repository: dummy
+                name: dummy1
+                type: git
+            """, ignoreNewLines: true);
+    }
+
+    [Fact]
     public async Task AzureDevOpsResourcesStepsTask()
     {
         AddFile("sample.yml", """

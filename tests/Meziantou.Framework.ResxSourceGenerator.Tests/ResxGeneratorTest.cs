@@ -3,6 +3,7 @@ using System.Xml.Linq;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using TestUtilities;
@@ -12,7 +13,16 @@ namespace Meziantou.Framework.ResxSourceGenerator.Tests;
 
 public sealed class ResxGeneratorTest
 {
-    private static async Task<(GeneratorDriverRunResult Result, byte[] Assembly)> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
+    private sealed record GenerationResult(GeneratorDriverRunResult Result, byte[] Assembly)
+    {
+        public IEnumerable<SyntaxTree> GeneratedTrees => Result.GeneratedTrees;
+        public SyntaxTree SyntaxTree => Result.GeneratedTrees.Single();
+        public string GeneratedFilePath => SyntaxTree.FilePath;
+        public string GeneratedFileName => Path.GetFileName(SyntaxTree.FilePath);
+        public SyntaxNode GeneratedFileRoot => SyntaxTree.GetRoot();
+    }
+
+    private static async Task<GenerationResult> GenerateFiles((string ResxPath, string ResxContent)[] files, OptionProvider optionProvider, bool mustCompile = true)
     {
         var netcoreRef = await NuGetHelpers.GetNuGetReferences("Microsoft.NETCore.App.Ref", "8.0.0", "ref/net8.0/");
         var desktopRef = await NuGetHelpers.GetNuGetReferences("Microsoft.WindowsDesktop.App.Ref", "8.0.0", "ref/net8.0/");
@@ -44,7 +54,37 @@ public sealed class ResxGeneratorTest
             result.Diagnostics.Should().BeEmpty();
         }
 
-        return (runResult, ms.ToArray());
+        return new(runResult, ms.ToArray());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("internal")]
+    [InlineData("dummy")]
+    public async Task GenerateInternalClasses(string visibility)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Visibility = visibility,
+        });
+
+        result.GeneratedFileRoot.AreTypesInternal().Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("public")]
+    [InlineData("Public")]
+    public async Task GeneratePublicClasses(string visibility)
+    {
+        var element = new XElement("root", new XElement("data", new XAttribute("name", "Sample"), new XElement("value", "Value")));
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        {
+            Visibility = visibility,
+        });
+
+        result.GeneratedFileRoot.AreTypesPublic().Should().BeTrue();
     }
 
     [Fact]
@@ -56,16 +96,14 @@ public sealed class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "Image1"), new XAttribute("type", "System.Resources.ResXFileRef, System.Windows.Forms"), new XElement("value", @"Resources\Image1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"))
             );
 
-        var (result, _) = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
+        var result = await GenerateFiles([("test.resx", element.ToString())], new OptionProvider
         {
             Namespace = "test",
             ResourceName = "test",
         });
 
-        result.Diagnostics.Should().BeEmpty();
-        result.GeneratedTrees.Should().ContainSingle();
-        Path.GetFileName(result.GeneratedTrees[0].FilePath).Should().Be("test.resx.g.cs");
-        var fileContent = (await result.GeneratedTrees[0].GetRootAsync()).ToFullString();
+        Path.GetFileName(result.GeneratedFilePath).Should().Be("test.resx.g.cs");
+        var fileContent = result.GeneratedFileRoot.ToFullString();
         fileContent.Should().Contain("Sample");
         fileContent.Should().NotContain("FormatSample");
 
@@ -95,7 +133,7 @@ public sealed class ResxGeneratorTest
             new XElement("data", new XAttribute("name", "BBB"), new XElement("value", "Value"))
             );
 
-        var (result, assembly) = await GenerateFiles(
+        var result = await GenerateFiles(
             [
                 (FullPath.GetTempPath() / "test.resx", element1.ToString()),
                 (FullPath.GetTempPath() / "test.en.resx", element2.ToString()),
@@ -125,28 +163,25 @@ public sealed class ResxGeneratorTest
     [Fact]
     public async Task ComputeNamespace_RootDir()
     {
-        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider
+        var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
         });
 
-        result.Diagnostics.Should().BeEmpty();
-        var fileContent = (await result.GeneratedTrees[0].GetRootAsync()).ToFullString();
-        fileContent.Should().Contain("namespace proj" + Environment.NewLine);
+        result.GeneratedFileRoot.GetNamespace().Should().Be("proj");
     }
 
     [Fact]
     public async Task ComputeNamespace_SubFolder()
     {
-        var (result, _) = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString())], new OptionProvider
+        var result = await GenerateFiles([(FullPath.GetTempPath() / "dir" / "proj" / "A" / "test.resx", new XElement("root").ToString())], new OptionProvider
         {
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
         });
 
-        var fileContent = (await result.GeneratedTrees[0].GetRootAsync()).ToFullString();
-        fileContent.Should().Contain("namespace proj.A" + Environment.NewLine);
+        result.GeneratedFileRoot.GetNamespace().Should().Be("proj.A");
     }
 
     [Fact]
@@ -167,7 +202,12 @@ public sealed class ResxGeneratorTest
         public string RootNamespace { get; set; }
         public string Namespace { get; set; }
         public string ClassName { get; set; }
+        public string DefaultResourcesNamespace { get; set; }
         public string ResourceName { get; set; }
+        public string DefaultResourcesVisibility { get; set; }
+        public string Visibility { get; set; }
+        public string GenerateResourcesType { get; set; }
+        public string GenerateKeyNamesType { get; set; }
 
         public override AnalyzerConfigOptions GlobalOptions => new Options(this);
 
@@ -199,53 +239,15 @@ public sealed class ResxGeneratorTest
                     return false;
                 }
 
-                switch (key)
+                var prop = typeof(OptionProvider).GetProperty(key);
+                if (prop != null)
                 {
-                    case "RootNamespace":
-                        if (_optionProvider.RootNamespace is not null)
-                        {
-                            value = _optionProvider.RootNamespace;
-                            return true;
-                        }
-
-                        break;
-
-                    case "ProjectDir":
-                        if (_optionProvider.ProjectDir is not null)
-                        {
-                            value = _optionProvider.ProjectDir;
-                            return true;
-                        }
-
-                        break;
-
-                    case "Namespace":
-                        if (_optionProvider.Namespace is not null)
-                        {
-                            value = _optionProvider.Namespace;
-                            return true;
-                        }
-
-                        break;
-
-                    case "ResourceName":
-                        if (_optionProvider.ResourceName is not null)
-                        {
-                            value = _optionProvider.ResourceName;
-                            return true;
-                        }
-
-                        break;
-
-                    case "ClassName":
-                        if (_optionProvider.ClassName is not null)
-                        {
-                            value = _optionProvider.ClassName;
-                            return true;
-                        }
-
-                        break;
-
+                    var propValue = (string?)prop.GetValue(_optionProvider, null);
+                    if (propValue is not null)
+                    {
+                        value = propValue;
+                        return true;
+                    }
                 }
 
                 value = null;
@@ -271,5 +273,30 @@ public sealed class ResxGeneratorTest
         public override string Path { get; }
 
         public override SourceText GetText(CancellationToken cancellationToken = default) => _text;
+    }
+}
+
+file static class Extensions
+{
+    public static string GetNamespace(this SyntaxNode node)
+    {
+        return node.DescendantNodesAndSelf()
+            .OfType<NamespaceDeclarationSyntax>()
+            .Single()
+            .Name.WithoutTrivia().ToFullString();
+    }
+
+    public static bool AreTypesPublic(this SyntaxNode node)
+    {
+        return node.DescendantNodesAndSelf()
+            .OfType<TypeDeclarationSyntax>()
+            .All(type => type.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.PublicKeyword)));
+    }
+
+    public static bool AreTypesInternal(this SyntaxNode node)
+    {
+        return node.DescendantNodesAndSelf()
+            .OfType<TypeDeclarationSyntax>()
+            .All(type => type.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.InternalKeyword)));
     }
 }

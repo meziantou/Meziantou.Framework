@@ -1,6 +1,7 @@
 #pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -59,6 +60,13 @@ public sealed class ResxGenerator : IIncrementalGenerator
             action: (ctx, source) => Execute(ctx, source.Left, source.Right.Left.AssemblyName, source.Right.Left.SupportNullableReferenceTypes, source.Right.Right));
     }
 
+    private static bool ParseBoolean(string? value, bool defaultValue)
+    {
+        if (bool.TryParse(value, out bool result))
+            return result;
+        return defaultValue;
+    }
+
     private static void Execute(SourceProductionContext context, AnalyzerConfigOptionsProvider options, string? assemblyName, bool supportNullableReferenceTypes, ImmutableArray<AdditionalText> files)
     {
         // Group additional file by resource kind ((a.resx, a.en.resx, a.en-us.resx), (b.resx, b.en-us.resx))
@@ -67,44 +75,54 @@ public sealed class ResxGenerator : IIncrementalGenerator
             .OrderBy(x => x.Key, StringComparer.Ordinal)
             .ToList();
 
-        foreach (var resxGroug in resxGroups)
+        foreach (var resxGroup in resxGroups)
         {
-            var rootNamespaceConfiguration = GetMetadataValue(context, options, "RootNamespace", resxGroug);
-            var projectDirConfiguration = GetMetadataValue(context, options, "ProjectDir", resxGroug);
-            var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroug);
-            var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroug);
-            var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroug);
+            // Keep in sync with the build/Meziantou.Framework.ResxSourceGenerator.props file
+            var rootNamespaceConfiguration = GetMetadataValue(context, options, "RootNamespace", resxGroup);
+            var projectDirConfiguration = GetMetadataValue(context, options, "ProjectDir", resxGroup);
+            var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroup);
+            var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroup);
+            var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroup);
+            var visibilityConfiguration = GetMetadataValue(context, options, "Visibility", globalName: "DefaultResourcesVisibility", resxGroup);
+            var generateKeyNamesConfiguration = GetMetadataValue(context, options, "GenerateKeyNamesType", globalName: null, resxGroup);
+            var generateResourcesConfiguration = GetMetadataValue(context, options, "GenerateResourcesType", globalName: null, resxGroup);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
             var projectDir = projectDirConfiguration ?? assemblyName ?? "";
-            var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroug.Key);
-            var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroug.Key);
+            var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
+            var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
             var ns = namespaceConfiguration ?? defaultNamespace;
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
-            var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroug.Key));
+            var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroup.Key));
+            var visibility = string.Equals(visibilityConfiguration, "public", StringComparison.OrdinalIgnoreCase) ? "public" : "internal";
+            var generateKeyNames = ParseBoolean(generateKeyNamesConfiguration, defaultValue: true);
+            var generateResources = ParseBoolean(generateResourcesConfiguration, defaultValue: true);
 
             if (ns is null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroug.First().Path));
+                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroup.First().Path));
             }
 
             if (resourceName is null)
             {
-                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroug.First().Path));
+                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroup.First().Path));
             }
 
-            var entries = LoadResourceFiles(context, resxGroug);
+            var entries = LoadResourceFiles(context, resxGroup);
 
             var content = $@"
 // Debug info:
-// key: {resxGroug.Key}
-// files: {string.Join(", ", resxGroug.Select(f => f.Path))}
+// key: {resxGroup.Key}
+// files: {string.Join(", ", resxGroup.Select(f => f.Path))}
 // RootNamespace (metadata): {rootNamespaceConfiguration}
 // ProjectDir (metadata): {projectDirConfiguration}
 // Namespace / DefaultResourcesNamespace (metadata): {namespaceConfiguration}
 // ResourceName (metadata): {resourceNameConfiguration}
 // ClassName (metadata): {classNameConfiguration}
+// Visibility (metadata): {visibilityConfiguration}
+// GenerateKeyNames (metadata): {generateKeyNamesConfiguration}
+// GenerateResources (metadata): {generateResourcesConfiguration}
 // AssemblyName: {assemblyName}
 // RootNamespace (computed): {rootNamespace}
 // ProjectDir (computed): {projectDir}
@@ -113,18 +131,21 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // Namespace: {ns}
 // ResourceName: {resourceName}
 // ClassName: {className}
+// visibility: {visibility}
+// generateKeyNames: {generateKeyNames}
+// generateResources: {generateResources}
 ";
 
             if (resourceName is not null && entries is not null)
             {
-                content += GenerateCode(ns, className, resourceName, entries, supportNullableReferenceTypes);
+                content += GenerateCode(ns, className, resourceName, visibility, generateResources, generateKeyNames, entries, supportNullableReferenceTypes);
             }
 
-            context.AddSource($"{Path.GetFileName(resxGroug.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
+            context.AddSource($"{Path.GetFileName(resxGroup.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
         }
     }
 
-    private static string GenerateCode(string? ns, string className, string resourceName, List<ResxEntry> entries, bool enableNullableAttributes)
+    private static string GenerateCode(string? ns, string className, string resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
     {
         var sb = new StringBuilder();
         sb.AppendLine();
@@ -136,12 +157,14 @@ public sealed class ResxGenerator : IIncrementalGenerator
             sb.AppendLine("{");
         }
 
-        sb.AppendLine("    internal partial class " + className);
-        sb.AppendLine("    {");
-        sb.AppendLine("        private static global::System.Resources.ResourceManager? resourceMan;");
-        sb.AppendLine();
-        sb.AppendLine("        public " + className + "() { }");
-        sb.AppendLine(@"
+        if (generateResourcesType)
+        {
+            sb.AppendLine($"    {visibility} partial class " + className);
+            sb.AppendLine("    {");
+            sb.AppendLine("        private static global::System.Resources.ResourceManager? resourceMan;");
+            sb.AppendLine();
+            sb.AppendLine("        public " + className + "() { }");
+            sb.AppendLine(@"
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
@@ -292,27 +315,27 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
 ");
 
-        foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
-        {
-            if (string.IsNullOrEmpty(entry.Name))
-                continue;
-
-            if (entry.IsText)
+            foreach (var entry in entries.OrderBy(e => e.Name, StringComparer.Ordinal))
             {
-                var summary = new XElement("summary", new XElement("para", $"Looks up a localized string for \"{entry.Name}\"."));
-                if (!string.IsNullOrWhiteSpace(entry.Comment))
+                if (string.IsNullOrEmpty(entry.Name))
+                    continue;
+
+                if (entry.IsText)
                 {
-                    summary.Add(new XElement("para", entry.Comment));
-                }
+                    var summary = new XElement("summary", new XElement("para", $"Looks up a localized string for \"{entry.Name}\"."));
+                    if (!string.IsNullOrWhiteSpace(entry.Comment))
+                    {
+                        summary.Add(new XElement("para", entry.Comment));
+                    }
 
-                if (!entry.IsFileRef)
-                {
-                    summary.Add(new XElement("para", $"Value: \"{entry.Value}\"."));
-                }
+                    if (!entry.IsFileRef)
+                    {
+                        summary.Add(new XElement("para", $"Value: \"{entry.Value}\"."));
+                    }
 
-                var comment = summary.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal);
+                    var comment = summary.ToString().Replace(Environment.NewLine, Environment.NewLine + "       /// ", StringComparison.Ordinal);
 
-                sb.AppendLine(@"
+                    sb.AppendLine(@"
         /// " + comment + @"
         public static string? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
@@ -323,21 +346,21 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
 ");
 
-                if (entry.Value is not null)
-                {
-                    var args = Regex.Matches(entry.Value, "\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
-                        .Cast<Match>()
-                        .Select(m => int.Parse(m.Groups["num"].Value, CultureInfo.InvariantCulture))
-                        .Distinct()
-                        .DefaultIfEmpty(-1)
-                        .Max();
-
-                    if (args >= 0)
+                    if (entry.Value is not null)
                     {
-                        var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object? arg" + arg.ToString(CultureInfo.InvariantCulture)));
-                        var callParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "arg" + arg.ToString(CultureInfo.InvariantCulture)));
+                        var args = Regex.Matches(entry.Value, "\\{(?<num>[0-9]+)(\\:[^}]*)?\\}", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1))
+                            .Cast<Match>()
+                            .Select(m => int.Parse(m.Groups["num"].Value, CultureInfo.InvariantCulture))
+                            .Distinct()
+                            .DefaultIfEmpty(-1)
+                            .Max();
 
-                        sb.AppendLine(@"
+                        if (args >= 0)
+                        {
+                            var inParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "object? arg" + arg.ToString(CultureInfo.InvariantCulture)));
+                            var callParams = string.Join(", ", Enumerable.Range(0, args + 1).Select(arg => "arg" + arg.ToString(CultureInfo.InvariantCulture)));
+
+                            sb.AppendLine(@"
         /// " + comment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(global::System.Globalization.CultureInfo? provider, " + inParams + @")
         {
@@ -345,19 +368,19 @@ public sealed class ResxGenerator : IIncrementalGenerator
         }
 ");
 
-                        sb.AppendLine(@"
+                            sb.AppendLine(@"
         /// " + comment + @"
         public static string? Format" + ToCSharpNameIdentifier(entry.Name) + "(" + inParams + @")
         {
             return GetString(""" + entry.Name + "\", " + callParams + @");
         }
 ");
+                        }
                     }
                 }
-            }
-            else
-            {
-                sb.AppendLine(@"
+                else
+                {
+                    sb.AppendLine(@"
         public static global::" + entry.FullTypeName + "? @" + ToCSharpNameIdentifier(entry.Name) + @"
         {
             get
@@ -366,24 +389,27 @@ public sealed class ResxGenerator : IIncrementalGenerator
             }
         }
 ");
+                }
             }
+
+            sb.AppendLine("    }");
+            sb.AppendLine();
         }
 
-        sb.AppendLine("    }");
-
-        sb.AppendLine();
-
-        sb.AppendLine("    internal partial class " + className + "Names");
-        sb.AppendLine("    {");
-        foreach (var entry in entries)
+        if (generateKeyNamesType)
         {
-            if (string.IsNullOrEmpty(entry.Name))
-                continue;
+            sb.AppendLine($"    {visibility} partial class {className}Names");
+            sb.AppendLine("    {");
+            foreach (var entry in entries)
+            {
+                if (string.IsNullOrEmpty(entry.Name))
+                    continue;
 
-            sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
+                sb.AppendLine("        public const string @" + ToCSharpNameIdentifier(entry.Name) + " = \"" + entry.Name + "\";");
+            }
+
+            sb.AppendLine("    }");
         }
-
-        sb.AppendLine("    }");
 
         if (ns is not null)
         {

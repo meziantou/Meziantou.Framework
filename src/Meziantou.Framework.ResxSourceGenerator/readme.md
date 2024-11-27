@@ -41,7 +41,14 @@ The generator also supports binary resources and expose them as `byte[]`.
     <AdditionalFiles Include="**/*.resx" />
 
     <!-- Use advanced configuration for a specific resx file -->
-    <AdditionalFiles Include="file1.resx" Namespace="CustomNamespace" ClassName="CustomClassName" ResourceName="CustomResourceFileName" />
+    <AdditionalFiles Include="file1.resx"
+                     Namespace="CustomNamespace"
+                     ClassName="CustomClassName"
+                     ResourceName="CustomResourceFileName"
+                     Visibility="public"
+                     GenerateResourcesType="True"
+                     GenerateKeyNamesType="True"
+                     />
   </ItemGroup>
 
 </Project>

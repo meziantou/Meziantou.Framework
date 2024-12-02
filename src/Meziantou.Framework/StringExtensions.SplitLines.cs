@@ -1,4 +1,4 @@
-using System.Diagnostics.Contracts;
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
@@ -16,6 +16,8 @@ static partial class StringExtensions
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public ref struct LineSplitEnumerator
     {
+        private static SearchValues<char> NewLineCharacters { get; } = SearchValues.Create(['\r', '\n']);
+
         private ReadOnlySpan<char> _str;
 
         public LineSplitEnumerator(ReadOnlySpan<char> str)
@@ -32,7 +34,7 @@ static partial class StringExtensions
                 return false;
 
             var span = _str;
-            var index = span.IndexOfAny('\r', '\n');
+            var index = span.IndexOfAny(NewLineCharacters);
             if (index == -1)
             {
                 _str = [];

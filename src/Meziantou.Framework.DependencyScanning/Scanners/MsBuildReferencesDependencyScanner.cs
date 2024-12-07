@@ -14,9 +14,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
-        return context.HasExtension(".csproj", ignoreCase: true)
-            || context.HasExtension(".props", ignoreCase: true)
-            || context.HasExtension(".targets", ignoreCase: true);
+        return context.HasExtension([".csproj", ".props", ".targets"], ignoreCase: true);
     }
 
     [SuppressMessage("Security", "MA0009:Add regex evaluation timeout", Justification = "The regex has no backtracking")]

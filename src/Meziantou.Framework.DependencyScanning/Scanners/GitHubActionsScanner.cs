@@ -11,7 +11,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#about-yaml-syntax-for-workflows
-        if (context.HasExtension(".yml", ignoreCase: false) || context.HasExtension(".yaml", ignoreCase: false))
+        if (context.HasExtension([".yml", ".yaml"], ignoreCase: false))
         {
             var directoryName = Path.GetFileName(context.Directory);
             if (directoryName is "workflows")

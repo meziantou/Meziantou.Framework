@@ -26,5 +26,19 @@ public readonly ref struct CandidateFileContext
         return Path.GetExtension(FileName).Equals(extension, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
     }
 
+    public bool HasExtension(ReadOnlySpan<string> extensions, bool ignoreCase)
+    {
+        var fileExtension = Path.GetExtension(FileName);
+        var comparisonType = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        foreach (var extension in extensions)
+        {
+            if (fileExtension.Equals(extension, comparisonType))
+                return true;
+        }
+
+        return false;
+    }
+
     public ReadOnlySpan<char> RelativeDirectory => Directory.SequenceEqual(RootDirectory) ? "" : Directory[(RootDirectory.Length + 1)..];
 }

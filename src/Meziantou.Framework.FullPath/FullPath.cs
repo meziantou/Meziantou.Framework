@@ -242,6 +242,16 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         return FromPath(Path.Combine(rootPath._value, Path.Combine(paths)));
     }
 
+#if NET9_0_OR_GREATER
+    public static FullPath Combine(FullPath rootPath, params ReadOnlySpan<string> paths)
+    {
+        if (rootPath.IsEmpty)
+            return FromPath(Path.Combine(paths));
+
+        return FromPath(Path.Combine([rootPath._value, .. paths]));
+    }
+#endif
+
     public static FullPath Combine(FullPath rootPath, string path1, string path2, string path3)
     {
         if (rootPath.IsEmpty)

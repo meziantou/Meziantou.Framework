@@ -24,6 +24,16 @@ public sealed class FullPathTests
         actual.Should().Be(expected);
     }
 
+#if NET9_0_OR_GREATER
+    [Fact]
+    public void CombinePath_ReadOnlySpan()
+    {
+        var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
+        var expected = FullPath.Combine(FullPath.FromPath("test"), (ReadOnlySpan<string>)["a", "b"]);
+        actual.Should().Be(expected);
+    }
+#endif
+
     [Theory]
     [InlineData("a", "a")]
     [InlineData("a b", "a b")]
@@ -245,7 +255,7 @@ public sealed class FullPathTests
     public void ChangeExtension()
     {
         var actual = FullPath.FromPath("test.a.txt").ChangeExtension(".avi");
-        var expected = FullPath.Combine("test.a.avi");
+        var expected = FullPath.FromPath("test.a.avi");
         actual.Should().Be(expected);
     }
 
@@ -253,7 +263,7 @@ public sealed class FullPathTests
     public void ChangeExtension_NoExtension()
     {
         var actual = FullPath.FromPath("test").ChangeExtension(".avi");
-        var expected = FullPath.Combine("test.avi");
+        var expected = FullPath.FromPath("test.avi");
         actual.Should().Be(expected);
     }
 
@@ -269,7 +279,7 @@ public sealed class FullPathTests
     public void ChangeExtension_Null()
     {
         var actual = FullPath.FromPath("test").ChangeExtension(null);
-        var expected = FullPath.Combine("test");
+        var expected = FullPath.FromPath("test");
         actual.Should().Be(expected);
     }
 
@@ -277,7 +287,7 @@ public sealed class FullPathTests
     public void ChangeExtension_NoDot()
     {
         var actual = FullPath.FromPath("test.txt").ChangeExtension("avi");
-        var expected = FullPath.Combine("test.avi");
+        var expected = FullPath.FromPath("test.avi");
         actual.Should().Be(expected);
     }
 

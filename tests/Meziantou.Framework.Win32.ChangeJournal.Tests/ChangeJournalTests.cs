@@ -61,6 +61,19 @@ public class ChangeJournalTests
         });
     }
 
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void NonAdministrator()
+    {
+        Retry(() =>
+        {
+            var file = Path.GetTempFileName();
+            var drive = Path.GetPathRoot(file);
+            using var changeJournal = ChangeJournal.Open(new DriveInfo(drive), unprivileged: true);
+            var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
+            entries.Count.Should().BePositive();
+        });
+    }
+
     private static void Retry(Action action)
     {
         for (var i = 5; i >= 0; i--)

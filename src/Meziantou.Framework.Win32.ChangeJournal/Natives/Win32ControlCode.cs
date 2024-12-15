@@ -2,8 +2,9 @@ namespace Meziantou.Framework.Win32.Natives;
 
 internal enum Win32ControlCode : uint
 {
-    CreateUsnJournal = 0x000900e7,
-    DeleteUsnJournal = 0x000900f8,
-    QueryUsnJournal = 0x000900f4,
-    ReadUsnJournal = 0x000900bb,
+    CreateUsnJournal = 0X000900E7,
+    DeleteUsnJournal = 0X000900F8,
+    QueryUsnJournal = 0X000900F4,
+    ReadUsnJournal = 0X000900BB,
+    ReadUnprivilegedUsnJournal = 0x000903AB,
 }

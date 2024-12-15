@@ -1,17 +1,10 @@
 namespace Meziantou.Framework.Win32;
 
-internal sealed class ReadChangeJournalOptions
+internal sealed class ReadChangeJournalOptions(Usn? initialUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout, bool unprivileged)
 {
-    public ReadChangeJournalOptions(Usn? initialUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
-    {
-        InitialUSN = initialUSN;
-        ReasonFilter = reasonFilter;
-        ReturnOnlyOnClose = returnOnlyOnClose;
-        Timeout = timeout < TimeSpan.Zero ? TimeSpan.Zero : timeout;
-    }
-
-    public Usn? InitialUSN { get; }
-    public ChangeReason ReasonFilter { get; }
-    public bool ReturnOnlyOnClose { get; }
-    public TimeSpan Timeout { get; }
+    public Usn? InitialUSN { get; } = initialUSN;
+    public ChangeReason ReasonFilter { get; } = reasonFilter;
+    public bool ReturnOnlyOnClose { get; } = returnOnlyOnClose;
+    public bool Unprivileged { get; } = unprivileged;
+    public TimeSpan Timeout { get; } = timeout < TimeSpan.Zero ? TimeSpan.Zero : timeout;
 }

@@ -99,7 +99,9 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
             };
 
             var handle = ChangeJournal.ChangeJournalHandle;
-            var entryData = Win32DeviceControl.ControlWithInput(handle, Win32ControlCode.ReadUsnJournal, ref readData, BufferSize);
+
+            var controlCode = Options.Unprivileged ? Win32ControlCode.ReadUnprivilegedUsnJournal : Win32ControlCode.ReadUsnJournal;
+            var entryData = Win32DeviceControl.ControlWithInput(handle, controlCode, ref readData, BufferSize);
             if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
             {
                 var bufferHandle = GCHandle.Alloc(entryData, GCHandleType.Pinned);

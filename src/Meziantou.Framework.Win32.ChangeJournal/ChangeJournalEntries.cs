@@ -30,6 +30,45 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
         return GetEnumerator();
     }
 
+    internal static ChangeJournalEntry GetBufferedEntry(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header)
+    {
+        if (header is { MajorVersion: 2, MinorVersion: 0 })
+        {
+            var entry = Marshal.PtrToStructure<USN_RECORD_V2>(bufferPointer);
+            var filenamePointer = bufferPointer + entry.FileNameOffset;
+            var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
+            Debug.Assert(name is not null);
+            return new ChangeJournalEntryVersion2or3(entry, name);
+        }
+        else if (header is { MajorVersion: 3, MinorVersion: 0 })
+        {
+            var entry = Marshal.PtrToStructure<USN_RECORD_V3>(bufferPointer);
+            var filenamePointer = bufferPointer + entry.FileNameOffset;
+            var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
+            Debug.Assert(name is not null);
+            return new ChangeJournalEntryVersion2or3(entry, name);
+        }
+        else if (header is { MajorVersion: 4, MinorVersion: 0 })
+        {
+            var entry = Marshal.PtrToStructure<USN_RECORD_V4>(bufferPointer);
+            var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
+
+            var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
+            for (int i = 0; i < entry.NumberOfExtents; i++)
+            {
+                var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
+                var extent = Marshal.PtrToStructure<USN_RECORD_EXTENT>(extentPointer);
+                extents[i] = new ChangeJournalEntryExtent(extent);
+            }
+
+            return new ChangeJournalEntryVersion4(entry, extents);
+        }
+        else
+        {
+            throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
+        }
+    }
+
     private sealed class ChangeJournalEntriesEnumerator : IEnumerator<ChangeJournalEntry>
     {
         private const int BufferSize = 8192;
@@ -134,45 +173,6 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             {
                 _eof = true;
                 return false;
-            }
-        }
-
-        private static ChangeJournalEntry GetBufferedEntry(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header)
-        {
-            if (header is { MajorVersion: 2, MinorVersion: 0 })
-            {
-                var entry = Marshal.PtrToStructure<USN_RECORD_V2>(bufferPointer);
-                var filenamePointer = bufferPointer + entry.FileNameOffset;
-                var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
-                Debug.Assert(name is not null);
-                return new ChangeJournalEntryVersion2or3(entry, name);
-            }
-            else if (header is { MajorVersion: 3, MinorVersion: 0 })
-            {
-                var entry = Marshal.PtrToStructure<USN_RECORD_V3>(bufferPointer);
-                var filenamePointer = bufferPointer + entry.FileNameOffset;
-                var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
-                Debug.Assert(name is not null);
-                return new ChangeJournalEntryVersion2or3(entry, name);
-            }
-            else if (header is { MajorVersion: 4, MinorVersion: 0 })
-            {
-                var entry = Marshal.PtrToStructure<USN_RECORD_V4>(bufferPointer);
-                var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
-
-                var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
-                for (int i = 0; i < entry.NumberOfExtents; i++)
-                {
-                    var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
-                    var extent = Marshal.PtrToStructure<USN_RECORD_EXTENT>(extentPointer);
-                    extents[i] = new ChangeJournalEntryExtent(extent);
-                }
-
-                return new ChangeJournalEntryVersion4(entry, extents);
-            }
-            else
-            {
-                throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
             }
         }
     }

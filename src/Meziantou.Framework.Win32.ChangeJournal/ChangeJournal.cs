@@ -5,6 +5,7 @@ using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
 using Windows.Win32.Storage.FileSystem;
+using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
@@ -67,6 +68,40 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
+    public ChangeJournalEntryVersion2or3 GetEntry(string path)
+    {
+        using var handle = File.OpenHandle(path);
+        return GetEntry(handle);
+    }
+
+    public unsafe ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
+    {
+        var buffer = new byte[USN_RECORD_V3.SizeOf(512)];
+        fixed (void* bufferPtr = buffer)
+        {
+            uint returnedSize;
+            var controlResult = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+            if (!controlResult)
+            {
+                var errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA)
+                {
+                    buffer = new byte[returnedSize];
+                    controlResult = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                    if (!controlResult)
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    throw new Win32Exception(errorCode);
+                }
+            }
+
+            var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>((nint)bufferPtr);
+            return (ChangeJournalEntryVersion2or3)ChangeJournalEntries.GetBufferedEntry((nint)bufferPtr, header);
+        }
+    }
+
     public void RefreshJournalData()
     {
         Data = ReadJournalDataImpl();
@@ -87,7 +122,7 @@ public sealed class ChangeJournal : IDisposable
 
             return new JournalData(journalData);
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == (int)Win32ErrorCode.ERROR_JOURNAL_NOT_ACTIVE)
+        catch (Win32Exception ex) when (ex.NativeErrorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_JOURNAL_NOT_ACTIVE)
         {
             return new JournalData();
         }
@@ -102,10 +137,10 @@ public sealed class ChangeJournal : IDisposable
         var deletionData = new Windows.Win32.System.Ioctl.DELETE_USN_JOURNAL_DATA
         {
             UsnJournalID = Data.ID,
-            DeleteFlags = waitForCompletion ? Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
+            DeleteFlags = waitForCompletion ? USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, bufferLength: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, initialBufferLength: 0);
         RefreshJournalData();
     }
 
@@ -117,7 +152,7 @@ public sealed class ChangeJournal : IDisposable
             MaximumSize = maximumSize,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferLength: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, initialBufferLength: 0);
         RefreshJournalData();
     }
 
@@ -129,7 +164,7 @@ public sealed class ChangeJournal : IDisposable
             MaximumSize = (ulong)maximumSize,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferLength: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, initialBufferLength: 0);
         RefreshJournalData();
     }
 
@@ -142,6 +177,6 @@ public sealed class ChangeJournal : IDisposable
             FileSizeThreshold = fileSizeThreshold,
 
         };
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, bufferLength: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, initialBufferLength: 0);
     }
 }

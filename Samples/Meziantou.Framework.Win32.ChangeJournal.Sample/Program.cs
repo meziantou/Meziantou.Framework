@@ -11,6 +11,7 @@ var entries = changeJournal.GetEntries(ChangeReason.All, returnOnlyOnClose: fals
 var lastUsn = entries.OfType<ChangeJournalEntryVersion2or3>().LastOrDefault()?.UniqueSequenceNumber;
 
 Console.WriteLine($"Last USN: {lastUsn}");
+Console.WriteLine($"Last USN: {changeJournal.GetEntry("D:/test.txt").UniqueSequenceNumber}");
 
 using (var fs = new FileStream("D:/test.txt", FileMode.Open, FileAccess.Write))
 {

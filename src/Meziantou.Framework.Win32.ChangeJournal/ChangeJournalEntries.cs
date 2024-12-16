@@ -3,11 +3,12 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
+using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
 [SupportedOSPlatform("windows5.1.2600")]
-internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
+internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
 {
     private readonly ChangeJournal _changeJournal;
     private readonly ReadChangeJournalOptions _options;
@@ -18,7 +19,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
         _options = options;
     }
 
-    public IEnumerator<JournalEntry> GetEnumerator()
+    public IEnumerator<ChangeJournalEntry> GetEnumerator()
     {
         return new ChangeJournalEntriesEnumerator(_changeJournal, _options);
     }
@@ -28,14 +29,14 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
         return GetEnumerator();
     }
 
-    private sealed class ChangeJournalEntriesEnumerator : IEnumerator<JournalEntry>
+    private sealed class ChangeJournalEntriesEnumerator : IEnumerator<ChangeJournalEntry>
     {
         private const int BufferSize = 8192;
 
         private Usn _currentUSN;
         private bool _eof;
 
-        private readonly List<JournalEntry> _entries = [];
+        private readonly List<ChangeJournalEntry> _entries = [];
         private int _currentIndex;
 
         public ChangeJournal ChangeJournal { get; }
@@ -48,7 +49,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
             Reset();
         }
 
-        public JournalEntry Current
+        public ChangeJournalEntry Current
         {
             get
             {
@@ -81,7 +82,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
 
         public void Reset()
         {
-            _currentUSN = Options.InitialUSN ?? ChangeJournal.Data.FirstUSN;
+            _currentUSN = Options.InitialUSN ?? Usn.Zero;
             _currentIndex = -1;
         }
 
@@ -89,13 +90,15 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
         {
             const int CurrentUSNLength = sizeof(long);
 
-            var readData = new READ_USN_JOURNAL_DATA_V0
+            var readData = new READ_USN_JOURNAL_DATA_V1
             {
-                StartUsn = _currentUSN,
-                ReasonMask = Options.ReasonFilter,
-                UsnJournalID = ChangeJournal.Data.ID,
+                StartUsn = _currentUSN.Value,
+                ReasonMask = (uint)Options.ReasonFilter,
                 ReturnOnlyOnClose = Options.ReturnOnlyOnClose ? 1u : 0u,
                 Timeout = (ulong)Options.Timeout.TotalSeconds,
+                UsnJournalID = ChangeJournal.Data.ID,
+                MinMajorVersion = Options.MinimumMajorVersion,
+                MaxMajorVersion = Options.MaximumMajorVersion,
             };
 
             var handle = ChangeJournal.ChangeJournalHandle;
@@ -105,21 +108,30 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
             if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
             {
                 var bufferHandle = GCHandle.Alloc(entryData, GCHandleType.Pinned);
-                var bufferPointer = bufferHandle.AddrOfPinnedObject();
-
-                _currentUSN = Marshal.ReadInt64(bufferPointer);
-
-                // Enumerate entries
-                _entries.Clear();
-                var offset = CurrentUSNLength; // Skip currentUSN field
-                while (offset < entryData.Length)
+                try
                 {
-                    var entry = GetBufferedEntry(bufferPointer, offset);
-                    offset += entry.Length;
-                    _entries.Add(entry);
+                    var bufferPointer = bufferHandle.AddrOfPinnedObject();
+
+                    _currentUSN = Marshal.ReadInt64(bufferPointer);
+
+                    // Enumerate entries
+                    _entries.Clear();
+                    var offset = CurrentUSNLength; // Skip currentUSN field
+                    while (offset < entryData.Length)
+                    {
+                        var entryPointer = bufferPointer + offset;
+                        var header = Marshal.PtrToStructure<USN_RECORD_COMMON_HEADER>(entryPointer);
+
+                        var entry = GetBufferedEntry(entryPointer, header);
+                        offset += (int)header.RecordLength;
+                        _entries.Add(entry);
+                    }
+                }
+                finally
+                {
+                    bufferHandle.Free();
                 }
 
-                bufferHandle.Free();
                 _currentIndex = 0;
                 return true;
             }
@@ -130,14 +142,43 @@ internal sealed class ChangeJournalEntries : IEnumerable<JournalEntry>
             }
         }
 
-        private static JournalEntry GetBufferedEntry(IntPtr bufferPointer, int offset)
+        private static ChangeJournalEntry GetBufferedEntry(IntPtr bufferPointer, USN_RECORD_COMMON_HEADER header)
         {
-            var entryPointer = bufferPointer + offset;
-            var nativeEntry = Marshal.PtrToStructure<USN_RECORD_V2>(entryPointer);
-            var filenamePointer = bufferPointer + offset + nativeEntry.FileNameOffset;
-            var name = Marshal.PtrToStringAuto(filenamePointer);
-            Debug.Assert(name is not null);
-            return new JournalEntry(nativeEntry, name);
+            if (header is { MajorVersion: 2, MinorVersion: 0 })
+            {
+                var entry = Marshal.PtrToStructure<USN_RECORD_V2>(bufferPointer);
+                var filenamePointer = bufferPointer + entry.FileNameOffset;
+                var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
+                Debug.Assert(name is not null);
+                return new ChangeJournalEntryVersion2or3(entry, name);
+            }
+            else if (header is { MajorVersion: 3, MinorVersion: 0 })
+            {
+                var entry = Marshal.PtrToStructure<USN_RECORD_V3>(bufferPointer);
+                var filenamePointer = bufferPointer + entry.FileNameOffset;
+                var name = Marshal.PtrToStringAuto(filenamePointer, entry.FileNameLength / 2);
+                Debug.Assert(name is not null);
+                return new ChangeJournalEntryVersion2or3(entry, name);
+            }
+            else if (header is { MajorVersion: 4, MinorVersion: 0 })
+            {
+                var entry = Marshal.PtrToStructure<USN_RECORD_V4>(bufferPointer);
+                var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
+
+                var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
+                for (int i = 0; i < entry.NumberOfExtents; i++)
+                {
+                    var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
+                    var extent = Marshal.PtrToStructure<USN_RECORD_EXTENT>(extentPointer);
+                    extents[i] = new ChangeJournalEntryExtent(extent);
+                }
+
+                return new ChangeJournalEntryVersion4(entry, extents);
+            }
+            else
+            {
+                throw new NotSupportedException($"Record version {header.MajorVersion}.{header.MinorVersion} is not supported");
+            }
         }
     }
 }

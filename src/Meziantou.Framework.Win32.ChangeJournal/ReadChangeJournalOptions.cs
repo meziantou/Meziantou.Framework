@@ -7,4 +7,6 @@ internal sealed class ReadChangeJournalOptions(Usn? initialUSN, ChangeReason rea
     public bool ReturnOnlyOnClose { get; } = returnOnlyOnClose;
     public bool Unprivileged { get; } = unprivileged;
     public TimeSpan Timeout { get; } = timeout < TimeSpan.Zero ? TimeSpan.Zero : timeout;
+    public ushort MinimumMajorVersion { get; set; } = 2;
+    public ushort MaximumMajorVersion { get; set; } = 4;
 }

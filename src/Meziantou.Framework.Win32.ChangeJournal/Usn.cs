@@ -6,6 +6,8 @@ namespace Meziantou.Framework.Win32;
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct Usn : IEquatable<Usn>
 {
+    public static Usn Zero => new(0);
+
     public long Value { get; }
 
     public Usn(long value) => Value = value;

@@ -1,5 +1,3 @@
-using Meziantou.Framework.Win32.Natives;
-
 namespace Meziantou.Framework.Win32;
 
 public sealed class JournalData
@@ -13,15 +11,20 @@ public sealed class JournalData
     ///     populating elements from the corresponding structure.
     /// </summary>
     /// <param name="nativeData"></param>
-    internal JournalData(USN_JOURNAL_DATA nativeData)
+    internal JournalData(Windows.Win32.System.Ioctl.USN_JOURNAL_DATA_V2 nativeData)
     {
         ID = nativeData.UsnJournalID;
         FirstUSN = nativeData.FirstUsn;
         NextUSN = nativeData.NextUsn;
         LowestValidUSN = nativeData.LowestValidUsn;
-        MaximumUSN = nativeData.MaxixmumUsn;
+        MaximumUSN = nativeData.MaxUsn;
         MaximumSize = nativeData.MaximumSize;
         AllocationDelta = nativeData.AllocationDelta;
+        MinSupportedMajorVersion = nativeData.MinSupportedMajorVersion;
+        MaxSupportedMajorVersion = nativeData.MaxSupportedMajorVersion;
+        Flags = (ChangeJournalFlags) nativeData.Flags;
+        RangeTrackChunkSize = nativeData.RangeTrackChunkSize;
+        RangeTrackFileSizeThreshold = nativeData.RangeTrackFileSizeThreshold;
     }
 
     /// <summary>
@@ -31,7 +34,7 @@ public sealed class JournalData
 
     /// <summary>
     ///     Identifies the first Usn in the journal.
-    ///     All Usn's below this value have been purged.
+    ///     All USN's below this value have been purged.
     /// </summary>
     public Usn FirstUSN { get; }
 
@@ -61,4 +64,31 @@ public sealed class JournalData
     ///     purge from the start of the journal is it grows past MaximumSize.
     /// </summary>
     public ulong AllocationDelta { get; }
+
+    /// <summary>
+    /// The minimum version of the USN change journal that the file system supports.
+    /// </summary>
+    public ushort MinSupportedMajorVersion { get; }
+
+    /// <summary>
+    /// The maximum version of the USN change journal that the file system supports.
+    /// </summary>
+    public ushort MaxSupportedMajorVersion { get; }
+
+    /// <summary>
+    /// Whether or not range tracking is turned on. The following are the possible values for the Flags member.
+    /// </summary>
+    public ChangeJournalFlags Flags { get; }
+
+    /// <summary>
+    /// The granularity of tracked ranges.
+    /// Valid only when you also set the Flags member to <see cref="ChangeJournalFlags.TrackModifiedRangesEnable"/>.
+    /// </summary>
+    public ulong RangeTrackChunkSize { get; }
+
+    /// <summary>
+    /// File size threshold to start tracking range for files with equal or larger size.
+    /// Valid only when you also set the Flags member to <see cref="ChangeJournalFlags.TrackModifiedRangesEnable"/>.
+    /// </summary>
+    public long RangeTrackFileSizeThreshold { get; }
 }

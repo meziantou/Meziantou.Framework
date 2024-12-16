@@ -1,5 +1,6 @@
 using FluentAssertions;
 using TestUtilities;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 
@@ -15,16 +16,16 @@ public class ChangeJournalTests
             var fileName = Path.GetFileName(file);
             var drive = Path.GetPathRoot(file);
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
-            var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
+            var item = changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
             item.Should().BeNull();
 
             File.WriteAllText(file, "test");
-            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)).Should().NotBeNull();
-            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)).Should().NotBeNull();
-            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
+            changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileCreate)).Should().NotBeNull();
+            changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.DataExtend)).Should().NotBeNull();
+            changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
 
             File.Delete(file);
-            changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)).Should().NotBeNull();
+            changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)).Should().NotBeNull();
         });
     }
 
@@ -37,12 +38,12 @@ public class ChangeJournalTests
             var fileName = Path.GetFileName(file);
             var drive = Path.GetPathRoot(file);
             using var changeJournal = ChangeJournal.Open(new DriveInfo(drive));
-            var item = changeJournal.Entries.FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
+            var item = changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
             item.Should().BeNull();
 
             File.WriteAllText(file, "test");
-            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)).Should().BeNull();
-            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
+            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && !entry.Reason.HasFlag(ChangeReason.Close)).Should().BeNull();
+            changeJournal.GetEntries(ChangeReason.Close, returnOnlyOnClose: false, TimeSpan.Zero).OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
 
             File.Delete(file);
         });
@@ -72,6 +73,13 @@ public class ChangeJournalTests
             var entries = changeJournal.GetEntries(ChangeReason.FileCreate, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
             entries.Count.Should().BePositive();
         });
+    }
+
+    [Fact]
+    public void FileIdentifierToString()
+    {
+        FileIdentifier fileIdentifier = new FileIdentifier(new UInt128(0, 10));
+        Assert.Equal("0000000000000000000000000000000a", fileIdentifier.ToString());
     }
 
     private static void Retry(Action action)

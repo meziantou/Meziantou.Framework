@@ -133,7 +133,7 @@ public sealed class ChangeJournal : IDisposable
         RefreshJournalData();
     }
 
-    public void TrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
+    public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
     {
         var trackData = new Windows.Win32.System.Ioctl.USN_TRACK_MODIFIED_RANGES
         {

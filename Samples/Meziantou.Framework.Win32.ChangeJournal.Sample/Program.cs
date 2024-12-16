@@ -3,7 +3,7 @@ using Meziantou.Framework.Win32;
 
 using var changeJournal = ChangeJournal.Open(new DriveInfo("D:"), unprivileged: !Environment.IsPrivilegedProcess);
 
-changeJournal.TrackModifiedRanges(1, 1);
+changeJournal.EnableTrackModifiedRanges(1, 1);
 //changeJournal.Create(ByteSize.FromMegaBytes(10).Value, ByteSize.FromMegaBytes(1).Value);
 File.Delete("D:/test.txt");
 File.WriteAllBytes("D:/test.txt", new byte[ByteSize.FromMegaBytes(10).Value]);

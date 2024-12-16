@@ -26,11 +26,18 @@ using (var fs = new FileStream("D:/test.txt", FileMode.Open, FileAccess.Write))
 
 entries = changeJournal.GetEntries(lastUsn!.Value, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.FromSeconds(10)).ToList();
 Console.WriteLine($"Entries: {entries.Count}");
-foreach (var entry in entries.OfType<ChangeJournalEntryVersion4>())
+foreach (var entry in entries)
 {
-    Console.WriteLine($"{entry.UniqueSequenceNumber}; file id: {entry.ReferenceNumber:X8}; reason: {entry.Reason}; remaining: {entry.RemainingExtents}");
-    foreach (var extent in entry.Extents)
+    if (entry is ChangeJournalEntryVersion2or3 entry2or3)
     {
-        Console.WriteLine("  - " + extent);
+        Console.WriteLine($"{entry2or3.UniqueSequenceNumber}; version: {entry.Version}; file id: {entry2or3.ReferenceNumber:X8}; reason: {entry2or3.Reason}; name: {entry2or3.Name}");
+    }
+    else if (entry is ChangeJournalEntryVersion4 entry4)
+    {
+        Console.WriteLine($"{entry4.UniqueSequenceNumber}; version: {entry.Version}; file id: {entry4.ReferenceNumber:X8}; reason: {entry4.Reason}; remaining: {entry4.RemainingExtents}");
+        foreach (var extent in entry4.Extents)
+        {
+            Console.WriteLine("  - " + extent);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
@@ -86,7 +87,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             _currentIndex = -1;
         }
 
-        private bool Read()
+        private unsafe bool Read()
         {
             const int CurrentUSNLength = sizeof(long);
 
@@ -107,11 +108,9 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             var entryData = Win32DeviceControl.ControlWithInput(handle, controlCode, ref readData, BufferSize);
             if (entryData.Length > CurrentUSNLength) // There are more data than just data currentUSN.
             {
-                var bufferHandle = GCHandle.Alloc(entryData, GCHandleType.Pinned);
-                try
+                fixed (byte* fixedBufferPointer = entryData)
                 {
-                    var bufferPointer = bufferHandle.AddrOfPinnedObject();
-
+                    var bufferPointer = (nint)fixedBufferPointer;
                     _currentUSN = Marshal.ReadInt64(bufferPointer);
 
                     // Enumerate entries
@@ -126,14 +125,10 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
                         offset += (int)header.RecordLength;
                         _entries.Add(entry);
                     }
-                }
-                finally
-                {
-                    bufferHandle.Free();
-                }
 
-                _currentIndex = 0;
-                return true;
+                    _currentIndex = 0;
+                    return true;
+                }
             }
             else
             {

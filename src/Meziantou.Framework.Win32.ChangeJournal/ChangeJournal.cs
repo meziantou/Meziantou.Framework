@@ -105,7 +105,7 @@ public sealed class ChangeJournal : IDisposable
             DeleteFlags = waitForCompletion ? Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, bufferlen: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, bufferLength: 0);
         RefreshJournalData();
     }
 
@@ -117,7 +117,7 @@ public sealed class ChangeJournal : IDisposable
             MaximumSize = maximumSize,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferlen: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferLength: 0);
         RefreshJournalData();
     }
 
@@ -129,7 +129,7 @@ public sealed class ChangeJournal : IDisposable
             MaximumSize = (ulong)maximumSize,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferlen: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferLength: 0);
         RefreshJournalData();
     }
 
@@ -142,6 +142,6 @@ public sealed class ChangeJournal : IDisposable
             FileSizeThreshold = fileSizeThreshold,
 
         };
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, bufferlen: 0);
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, bufferLength: 0);
     }
 }

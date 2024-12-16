@@ -76,10 +76,17 @@ public class ChangeJournalTests
     }
 
     [Fact]
-    public void FileIdentifierToString()
+    public void FileIdentifier128ToString()
     {
         FileIdentifier fileIdentifier = new FileIdentifier(new UInt128(0, 10));
         Assert.Equal("0000000000000000000000000000000a", fileIdentifier.ToString());
+    }
+
+    [Fact]
+    public void FileIdentifier64ToString()
+    {
+        FileIdentifier fileIdentifier = new FileIdentifier(10);
+        Assert.Equal("000000000000000a", fileIdentifier.ToString());
     }
 
     private static void Retry(Action action)

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>2.1.0</Version>
+    <Version>3.0.0</Version>
     <Description>Allow to access the Windows Change Journal to quickly detect changed files</Description>
   </PropertyGroup>
 

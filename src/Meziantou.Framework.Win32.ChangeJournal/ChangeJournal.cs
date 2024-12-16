@@ -17,7 +17,7 @@ public sealed class ChangeJournal : IDisposable
 
     public JournalData Data { get; private set; }
 
-    public IEnumerable<JournalEntry> Entries { get; }
+    public IEnumerable<ChangeJournalEntry> Entries { get; }
 
     private ChangeJournal(SafeFileHandle handle, bool unprivileged)
     {
@@ -54,12 +54,12 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournal(handle, unprivileged);
     }
 
-    public IEnumerable<JournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+    public IEnumerable<ChangeJournalEntry> GetEntries(ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
-    public IEnumerable<JournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
+    public IEnumerable<ChangeJournalEntry> GetEntries(Usn currentUSN, ChangeReason reasonFilter, bool returnOnlyOnClose, TimeSpan timeout)
     {
         if (currentUSN < Data.FirstUSN || currentUSN > Data.MaximumUSN)
             throw new ArgumentOutOfRangeException(nameof(currentUSN));
@@ -67,16 +67,22 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
-    public void ReadJournalData()
+    public void RefreshJournalData()
     {
         Data = ReadJournalDataImpl();
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public void ReadJournalData()
+    {
+        RefreshJournalData();
     }
 
     private JournalData ReadJournalDataImpl()
     {
         try
         {
-            var journalData = new USN_JOURNAL_DATA();
+            var journalData = new Windows.Win32.System.Ioctl.USN_JOURNAL_DATA_V2();
             Win32DeviceControl.ControlWithOutput(ChangeJournalHandle, Win32ControlCode.QueryUsnJournal, ref journalData);
 
             return new JournalData(journalData);
@@ -87,32 +93,55 @@ public sealed class ChangeJournal : IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        ChangeJournalHandle.Dispose();
-    }
+    public void Dispose() => ChangeJournalHandle.Dispose();
 
-    public void Delete()
+    public void Delete() => Delete(waitForCompletion: true);
+
+    public void Delete(bool waitForCompletion)
     {
-        var deletionData = new DELETE_USN_JOURNAL_DATA
+        var deletionData = new Windows.Win32.System.Ioctl.DELETE_USN_JOURNAL_DATA
         {
             UsnJournalID = Data.ID,
-            DeleteFlags = DeletionFlag.WaitUntilDeleteCompletes,
+            DeleteFlags = waitForCompletion ? Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : Windows.Win32.System.Ioctl.USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, 0);
-        ReadJournalData();
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref deletionData, bufferlen: 0);
+        RefreshJournalData();
     }
 
-    public void Create(long maximumSize, long allocationDelta)
+    public void Create(ulong maximumSize, ulong allocationDelta)
     {
-        var creationData = new CREATE_USN_JOURNAL_DATA
+        var creationData = new Windows.Win32.System.Ioctl.CREATE_USN_JOURNAL_DATA
         {
             AllocationDelta = allocationDelta,
             MaximumSize = maximumSize,
         };
 
-        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, 0);
-        ReadJournalData();
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferlen: 0);
+        RefreshJournalData();
+    }
+
+    public void Create(long maximumSize, long allocationDelta)
+    {
+        var creationData = new Windows.Win32.System.Ioctl.CREATE_USN_JOURNAL_DATA
+        {
+            AllocationDelta = (ulong)allocationDelta,
+            MaximumSize = (ulong)maximumSize,
+        };
+
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.CreateUsnJournal, ref creationData, bufferlen: 0);
+        RefreshJournalData();
+    }
+
+    public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
+    {
+        var trackData = new Windows.Win32.System.Ioctl.USN_TRACK_MODIFIED_RANGES
+        {
+            Flags = PInvoke.FLAG_USN_TRACK_MODIFIED_RANGES_ENABLE,
+            ChunkSize = chunkSize,
+            FileSizeThreshold = fileSizeThreshold,
+
+        };
+        Win32DeviceControl.ControlWithInput(ChangeJournalHandle, Win32ControlCode.TrackModifiedRanges, ref trackData, bufferlen: 0);
     }
 }

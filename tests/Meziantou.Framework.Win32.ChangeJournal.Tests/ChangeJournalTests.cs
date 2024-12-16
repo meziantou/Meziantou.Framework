@@ -75,6 +75,14 @@ public class ChangeJournalTests
         });
     }
 
+    [RunIfFact(FactOperatingSystem.Windows)]
+    public void GetFileIdentifier()
+    {
+        var file = Path.GetTempFileName();
+        var identifier = FileIdentifier.FromFile(file);
+        Assert.NotEqual(default, identifier);
+    }
+
     [Fact]
     public void FileIdentifier128ToString()
     {

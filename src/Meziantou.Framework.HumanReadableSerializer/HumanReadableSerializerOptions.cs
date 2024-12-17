@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 using Meziantou.Framework.HumanReadable.Converters;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
@@ -179,6 +180,31 @@ public sealed record HumanReadableSerializerOptions
     {
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
+    }
+
+    public void AddAttribute<T>(Expression<Func<T, object>> member, HumanReadableAttribute attribute)
+    {
+        VerifyMutable();
+        var memberInfos = member.GetMemberInfos();
+        if (memberInfos.Count is 0)
+            throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
+
+        foreach (var memberInfo in memberInfos)
+        {
+            if (memberInfo is PropertyInfo propertyInfo)
+            {
+                AddAttribute(propertyInfo, attribute);
+                continue;
+            }
+
+            if (memberInfo is FieldInfo fieldInfo)
+            {
+                AddAttribute(fieldInfo, attribute);
+                continue;
+            }
+
+            throw new ArgumentException($"Member '{member.Name}' does not refer to a field or a property", nameof(member));
+        }
     }
 
     public void AddFieldAttribute(Func<FieldInfo, bool> condition, HumanReadableAttribute attribute)

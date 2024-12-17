@@ -2240,6 +2240,27 @@ public sealed partial class SerializerTests : SerializerTestsBase
     }
 
     [Fact]
+    public void AddPropertyInfoAttribute()
+    {
+        var options = new HumanReadableSerializerOptions();
+        options.PropertyOrder = StringComparer.Ordinal;
+        options.AddAttribute<Exception>(e => e.Source, new HumanReadableIgnoreAttribute());
+        options.AddAttribute<Exception>(e => new { e.HResult, e.TargetSite, e.Data }, new HumanReadableIgnoreAttribute());
+
+        AssertSerialization(new Validation
+        {
+            Subject = new Exception("test"),
+            Options = options,
+            Expected = """
+                HelpLink: <null>
+                InnerException: <null>
+                Message: test
+                StackTrace: <null>
+                """,
+        });
+    }
+
+    [Fact]
     public void FuncConverter()
     {
         var options = new HumanReadableSerializerOptions();

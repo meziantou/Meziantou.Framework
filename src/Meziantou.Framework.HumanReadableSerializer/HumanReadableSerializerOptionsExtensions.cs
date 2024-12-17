@@ -31,56 +31,22 @@ public static class HumanReadableSerializerOptionsExtensions
 
     public static void IgnoreMember<T>(this HumanReadableSerializerOptions options, Expression<Func<T, object>> member)
     {
-        var body = UnwrapConversion(member.Body);
+        var memberInfos = member.GetMemberInfos();
+        if (memberInfos.Count is 0)
+            throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
 
-        if (body is MemberExpression memberExpression)
+        foreach (var memberInfo in memberInfos)
         {
-            if (memberExpression.Member is PropertyInfo propertyInfo)
+            if (memberInfo is PropertyInfo propertyInfo)
             {
                 IgnoreMember(options, propertyInfo);
-                return;
+                continue;
             }
-
-            if (memberExpression.Member is FieldInfo fieldInfo)
+            if (memberInfo is FieldInfo fieldInfo)
             {
                 IgnoreMember(options, fieldInfo);
-                return;
+                continue;
             }
-        }
-
-        if (body is NewExpression newExpression)
-        {
-            foreach (var argument in newExpression.Arguments)
-            {
-                if (argument is MemberExpression argumentMemberExpression)
-                {
-                    if (argumentMemberExpression.Member is PropertyInfo propertyInfo)
-                    {
-                        IgnoreMember(options, propertyInfo);
-                        continue;
-                    }
-
-                    if (argumentMemberExpression.Member is FieldInfo fieldInfo)
-                    {
-                        IgnoreMember(options, fieldInfo);
-                        continue;
-                    }
-                }
-
-                throw new ArgumentException($"Expression '{argument}' does not refer to a field or a property.", nameof(member));
-            }
-
-            return;
-        }
-
-        throw new ArgumentException($"Expression '{member}' does not refer to a field or a property.", nameof(member));
-
-        static Expression UnwrapConversion(Expression expression)
-        {
-            if (expression is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
-                return unaryExpression.Operand;
-
-            return expression;
         }
     }
 

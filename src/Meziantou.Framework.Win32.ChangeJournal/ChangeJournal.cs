@@ -68,13 +68,13 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
-    public ChangeJournalEntryVersion2or3 GetEntry(string path)
+    public static ChangeJournalEntryVersion2or3 GetEntry(string path)
     {
         using var handle = File.OpenHandle(path);
         return GetEntry(handle);
     }
 
-    public unsafe ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
+    public static unsafe ChangeJournalEntryVersion2or3 GetEntry(SafeFileHandle handle)
     {
         var buffer = new byte[USN_RECORD_V3.SizeOf(512)];
         fixed (void* bufferPtr = buffer)

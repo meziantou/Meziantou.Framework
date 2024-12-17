@@ -274,6 +274,32 @@ InlineSnapshot
 ````
 
 ````c#
+var data = JsonNode.Parse("""{ "prop": "value" }""");
+InlineSnapshot
+    .WithSerializer(options => options.ScrubJsonValue("$.prop", node => "[redacted]"))
+    .Validate(data, """
+        {
+          "prop": "[redacted]"
+        }
+        """);
+````
+
+````c#
+var data = XDocument.Parse("""
+                <root>
+                  <item attr="1">test1</item>
+                </root>
+                """);
+InlineSnapshot
+    .WithSerializer(options => options.ScrubXmlAttribute("//item/@attr", attribute => "[redacted]"))
+    .Validate(data, """
+        <root>
+          <item attr="[redacted]">test1</item>
+        </root>
+        """);
+````
+
+````c#
 InlineSnapshot
     .WithSettings(settings => settings.ScrubLines(line => line.Contains("dummy")))
     .Validate("abc\ndummy", "abc");
@@ -295,32 +321,6 @@ InlineSnapshot
 InlineSnapshot
     .WithSettings(settings => settings.ScrubLinesWithReplace(line => line.Replace("abc", "123")))
     .Validate("abcdef", "123def");
-````
-
-````c#
-var data = JsonNode.Parse("""{ "prop": "value" }""");
-InlineSnapshot
-    .WithSettings(settings => settings.ScrubJsonValue("$.prop", node => "[redacted]"))
-    .Validate(data, """
-        {
-          "prop": "[redacted]"
-        }
-        """);
-````
-
-````c#
-var data = XDocument.Parse("""
-                <root>
-                  <item attr="1">test1</item>
-                </root>
-                """);
-InlineSnapshot
-    .WithSettings(settings => settings.ScrubXmlAttribute("//item/@attr", attribute => "[redacted]"))
-    .Validate(data, """
-        <root>
-          <item attr="[redacted]">test1</item>
-        </root>
-        """);
 ````
 
 ## Invisible characters

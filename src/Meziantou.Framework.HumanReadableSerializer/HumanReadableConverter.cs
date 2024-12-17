@@ -18,7 +18,7 @@ public abstract class HumanReadableConverter
         {
             converterAttribute.EnsureTypeIsValid();
 
-            converter = (HumanReadableConverter)Activator.CreateInstance(converterAttribute.ConverterType)!;
+            converter = converterAttribute.ConverterInstance is not null ? converterAttribute.ConverterInstance : (HumanReadableConverter)Activator.CreateInstance(converterAttribute.ConverterType)!;
             if (!converter.HandleNull)
                 converter = new NullConverterWrapper(converter);
 

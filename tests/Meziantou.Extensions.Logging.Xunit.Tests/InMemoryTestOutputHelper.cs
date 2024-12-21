@@ -1,7 +1,7 @@
 ﻿using Xunit.Abstractions;
 using System.Globalization;
 
-namespace Meziantou.Extensions.Logging.Tests.Tests;
+namespace Meziantou.Extensions.Logging.Xunit.Tests;
 
 internal sealed class InMemoryTestOutputHelper : ITestOutputHelper
 {

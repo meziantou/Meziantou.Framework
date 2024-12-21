@@ -5,7 +5,7 @@ using Xunit;
 using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Meziantou.Extensions.Logging.Tests.Tests;
+namespace Meziantou.Extensions.Logging.Xunit.Tests;
 
 public sealed class XunitLoggerTests
 {

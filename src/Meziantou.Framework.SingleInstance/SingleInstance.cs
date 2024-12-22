@@ -1,7 +1,7 @@
 using System.IO.Pipes;
 using System.Runtime.Versioning;
 
-#if NET461 || NET462
+#if NET461 || NET462 || NET472
 using System.Security.AccessControl;
 using System.Security.Principal;
 #endif
@@ -64,7 +64,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
                 NamedPipeServerStream.MaxAllowedServerInstances,
                 PipeTransmissionMode.Message,
                 PipeOptions.CurrentUserOnly);
-#elif NET461 || NET462
+#elif NET461 || NET462 || NET472
         using (var currentIdentity = WindowsIdentity.GetCurrent())
         {
             var identifier = currentIdentity.Owner;
@@ -199,7 +199,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
     {
 #if NET5_0_OR_GREATER
         return Environment.ProcessId;
-#elif NET461 || NET462
+#elif NET461 || NET462 || NET472
         return System.Diagnostics.Process.GetCurrentProcess().Id;
 #else
 #error Platform not supported

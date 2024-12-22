@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Xunit;
 using System.Diagnostics;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
 public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)

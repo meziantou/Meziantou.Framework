@@ -1,30 +1,40 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
-using Xunit;
+using Xunit.v3;
 
 namespace TestUtilities;
 
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class RunIfFactAttribute : FactAttribute
+public sealed class RunIfAttribute : BeforeAfterTestAttribute
 {
-    public RunIfFactAttribute(FactOperatingSystem operatingSystems = FactOperatingSystem.All, bool enableOnGitHubActions = true, FactInvariantGlobalizationMode globalizationMode = FactInvariantGlobalizationMode.Any)
+    public RunIfAttribute(FactOperatingSystem operatingSystems = FactOperatingSystem.All, FactInvariantGlobalizationMode globalizationMode = FactInvariantGlobalizationMode.Any)
     {
         OperatingSystems = operatingSystems;
-        EnableOnGitHubActions = enableOnGitHubActions;
         GlobalizationMode = globalizationMode;
-
-        Skip = GetSkipReason(operatingSystems, enableOnGitHubActions, globalizationMode);
     }
 
-    internal static string GetSkipReason(FactOperatingSystem operatingSystems, bool enableOnGitHubActions = true, FactInvariantGlobalizationMode globalizationMode = FactInvariantGlobalizationMode.Any)
+    public static bool IsGlobalizationInvariant()
     {
-        if (!enableOnGitHubActions)
-        {
-            if (IsOnGitHubActions())
-            {
-                return "Does not run on GitHub Actions";
-            }
-        }
+        if (AppContext.TryGetSwitch("System.Globalization.Invariant", out var isEnabled))
+            return isEnabled;
 
+        return false;
+    }
+
+    public FactOperatingSystem OperatingSystems { get; }
+    public FactInvariantGlobalizationMode GlobalizationMode { get; }
+
+    public override void Before(MethodInfo methodUnderTest, IXunitTest test)
+    {
+        var skipReason = GetSkipReason(OperatingSystems, GlobalizationMode);
+
+        // We use the dynamic skip exception message pattern to turn this into a skipped test
+        // when it's not running on one of the targeted OSes
+        if (skipReason is not null)
+            throw new Exception("$XunitDynamicSkip$" + skipReason);
+    }
+
+    private static string? GetSkipReason(FactOperatingSystem operatingSystems, FactInvariantGlobalizationMode globalizationMode = FactInvariantGlobalizationMode.Any)
+    {
         if (globalizationMode != FactInvariantGlobalizationMode.Any)
         {
             var isEnabled = IsGlobalizationInvariant();
@@ -61,21 +71,4 @@ public sealed class RunIfFactAttribute : FactAttribute
             return false;
         }
     }
-
-    public static bool IsOnGitHubActions()
-    {
-        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
-    }
-
-    public static bool IsGlobalizationInvariant()
-    {
-        if (AppContext.TryGetSwitch("System.Globalization.Invariant", out var isEnabled))
-            return isEnabled;
-
-        return false;
-    }
-
-    public FactOperatingSystem OperatingSystems { get; }
-    public bool EnableOnGitHubActions { get; }
-    public FactInvariantGlobalizationMode GlobalizationMode { get; }
 }

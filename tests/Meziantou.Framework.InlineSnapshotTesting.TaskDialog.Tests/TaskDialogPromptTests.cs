@@ -73,7 +73,7 @@ public sealed class TaskDialogPromptTests
         }
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [InlineData(0, false, PromptConfigurationMode.Disallow, PromptConfigurationScope.CurrentFile)]
     [InlineData(1, false, PromptConfigurationMode.MergeTool, PromptConfigurationScope.CurrentFile)]
     [InlineData(2, false, PromptConfigurationMode.Overwrite, PromptConfigurationScope.CurrentFile)]
@@ -88,7 +88,7 @@ public sealed class TaskDialogPromptTests
         Assert.Equal(TimeSpan.FromHours(1), result.RememberPeriod);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     internal void Ask_Cancel()
     {
         var result = Invoke(new PromptContext("path.cs", "dummy test", ParentProcessInfo: null), buttonIndex: 4, applyToAllFiles: false);

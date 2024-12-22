@@ -147,12 +147,12 @@ public sealed class ResxGeneratorTest
 
         result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).Should().SatisfyRespectively(tree =>
             {
-                var fileContent = tree.GetRoot().ToFullString();
+                var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Path.GetFileName(tree.FilePath).Should().Be("test.NewResource.resx.g.cs");
                 fileContent.Should().Contain("BBB");
             }, tree =>
             {
-                var fileContent = tree.GetRoot().ToFullString();
+                var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Path.GetFileName(tree.FilePath).Should().Be("test.resx.g.cs");
                 fileContent.Should().Contain("Sample");
                 fileContent.Should().Contain("HelloWorld");

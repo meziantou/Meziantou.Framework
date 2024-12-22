@@ -1,18 +1,19 @@
 using FluentAssertions;
 using TestUtilities;
+using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
 public class ExecutableFinderTests
 {
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetFullExecutablePathTests_Windows()
     {
         var result = ExecutableFinder.GetFullExecutablePath("calc");
         result.Should().BeEquivalentTo(@"C:\Windows\System32\calc.exe");
     }
 
-    [RunIfFact(FactOperatingSystem.Linux | FactOperatingSystem.OSX)]
+    [Fact, RunIf(FactOperatingSystem.Linux | FactOperatingSystem.OSX)]
     public void GetFullExecutablePathTests_Linux()
     {
         var result = ExecutableFinder.GetFullExecutablePath("ls");

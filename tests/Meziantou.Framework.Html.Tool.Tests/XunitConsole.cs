@@ -1,6 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.IO;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Meziantou.Framework.Html.Tool.Tests;
 

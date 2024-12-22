@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Win32.Jobs.Tests;
 [Collection("JobObjectTests")]
 public class JobObjectTests
 {
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void ShouldKillProcessOnTerminate()
     {
         using var job = new JobObject();
@@ -35,7 +35,7 @@ public class JobObjectTests
         process.WaitForExit();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void KillOnJobClose_ShouldKillProcessOnClose()
     {
         using var job = new JobObject();
@@ -61,7 +61,7 @@ public class JobObjectTests
         process.WaitForExit();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CreateAndOpenJobObject()
     {
         var objectName = Guid.NewGuid().ToString("N");
@@ -72,21 +72,21 @@ public class JobObjectTests
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void InvalidName_TooLong()
     {
         var objectName = "Local\\" + new string('a', 40000);
         FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void InvalidName_InvalidCharacter()
     {
         var objectName = "Local\\a\\b";
         FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void TryOpen()
     {
         // The project is multi-targeted, so multiple process can run in parallel
@@ -118,7 +118,7 @@ public class JobObjectTests
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CpuHardRateCap()
     {
         using var job = new JobObject();
@@ -137,14 +137,14 @@ public class JobObjectTests
         cap.Enabled.Should().BeFalse();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void SetUILimits()
     {
         using var job = new JobObject();
         job.SetUIRestrictions(Natives.JobObjectUILimit.ReadClipboard);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void SetIoRateLimits()
     {
         using var job = new JobObject();
@@ -157,14 +157,14 @@ public class JobObjectTests
         });
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void IsAssignedToProcess_NotAssociated()
     {
         using var job = new JobObject();
         job.IsAssignedToProcess(Process.GetCurrentProcess()).Should().BeFalse();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void IsAssignedToProcess_Associated()
     {
         using var job = new JobObject();

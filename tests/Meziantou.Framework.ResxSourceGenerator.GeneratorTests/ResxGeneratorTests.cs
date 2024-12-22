@@ -9,7 +9,7 @@ namespace Meziantou.Framework.ResxSourceGenerator.GeneratorTests;
 
 public class ResxGeneratorTests
 {
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void FormatString()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
@@ -19,7 +19,7 @@ public class ResxGeneratorTests
         Resource1.FormatHello("le monde").Should().Be("Bonjour le monde!");
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void StringValue()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");

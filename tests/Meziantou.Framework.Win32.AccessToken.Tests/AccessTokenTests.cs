@@ -1,10 +1,10 @@
 using System.ComponentModel;
 using TestUtilities;
-using Xunit.Abstractions;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 
-public class AccessTokenTests
+public sealed class AccessTokenTests
 {
     private readonly ITestOutputHelper _output;
 
@@ -13,14 +13,14 @@ public class AccessTokenTests
         _output = output;
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void AccessTokenTest()
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
         PrintToken(token);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void LinkedAccessTokenTest()
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
@@ -31,18 +31,18 @@ public class AccessTokenTests
             using var linkedToken = token.GetLinkedToken();
             PrintToken(linkedToken);
         }
-        catch (Win32Exception) when (RunIfFactAttribute.IsOnGitHubActions())
+        catch (Win32Exception) when (SkipOnGitHubActionsAttribute.IsOnGitHubActions())
         {
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void IsAdministratorTest()
     {
         _output.WriteLine(IsAdministrator().ToString());
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void FromWellKnownTest()
     {
         _output.WriteLine("WellKownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));

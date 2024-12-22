@@ -6,7 +6,6 @@ using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using TestUtilities;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 
@@ -490,7 +489,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         AssertFileContentEqual("global.json", Expected, ignoreNewLines: true);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public async Task GitSubmodulesFromDependencies()
     {
         // Initialize remote repository

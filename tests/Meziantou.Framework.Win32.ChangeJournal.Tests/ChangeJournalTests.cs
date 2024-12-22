@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Win32.Tests;
 // The tests are flaky on GitHub Actions, use a retry mechanism
 public class ChangeJournalTests
 {
-    [RunIfWindowsAdministratorFact]
+    [Fact, RunIfWindowsAdministrator]
     public void EnumerateEntries_ShouldFindNewFile()
     {
         Retry(() =>
@@ -32,7 +32,7 @@ public class ChangeJournalTests
         });
     }
 
-    [RunIfWindowsAdministratorFact]
+    [Fact, RunIfWindowsAdministrator]
     public void GetEntries_ShouldFilterEntries()
     {
         Retry(() =>
@@ -52,7 +52,7 @@ public class ChangeJournalTests
         });
     }
 
-    [RunIfWindowsAdministratorFact]
+    [Fact, RunIfWindowsAdministrator]
     public void EnumerateEntries_ShouldNotBeEmpty()
     {
         Retry(() =>
@@ -65,7 +65,7 @@ public class ChangeJournalTests
         });
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void NonAdministrator()
     {
         Retry(() =>
@@ -78,7 +78,7 @@ public class ChangeJournalTests
         });
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetFileIdentifier()
     {
         var file = Path.GetTempFileName();

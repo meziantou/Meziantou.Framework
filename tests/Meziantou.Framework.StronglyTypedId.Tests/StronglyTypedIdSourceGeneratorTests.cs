@@ -580,7 +580,7 @@ public partial class Test : System.IComparable<Test> {}
 
         GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol> validate = null)
         {
-            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
             diagnostics.Should().BeEmpty();
 
             var type = outputCompilation.GetTypeByMetadataName("Test");
@@ -591,7 +591,7 @@ public partial class Test : System.IComparable<Test> {}
                 type.GetMembers("FromInt32").Should().NotBeNull();
 
                 // Run the driver twice to ensure the second invocation is cached
-                var driver2 = driver.RunGenerators(compilation);
+                var driver2 = driver.RunGenerators(compilation, XunitCancellationToken);
                 AssertSyntaxStepIsCached(driver2.GetRunResult().Results.Single());
                 AssertOutputIsCached(driver2.GetRunResult().Results.Single());
             }
@@ -715,17 +715,17 @@ public partial class Test : System.IComparable<Test> {}
             }
             """;
         var compilation = await CreateCompilation(sourceCode, arg.NuGetReferences);
-        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
+        driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
         diagnostics.Should().BeEmpty();
 
         var runResult = driver.GetRunResult();
 
         // Validate the output project compiles
         using var ms = new MemoryStream();
-        var compilationOutput = outputCompilation.Emit(ms);
+        var compilationOutput = outputCompilation.Emit(ms, cancellationToken: XunitCancellationToken);
 
         var diags = string.Join('\n', compilationOutput.Diagnostics);
-        var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
+        var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
         compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
         compilationOutput.Diagnostics.Should().BeEmpty();
     }

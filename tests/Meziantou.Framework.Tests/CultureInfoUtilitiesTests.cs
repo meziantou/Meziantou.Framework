@@ -7,19 +7,19 @@ namespace Meziantou.Framework.Tests;
 
 public class CultureInfoUtilitiesTests
 {
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void NeutralEquals_fr()
     {
         CultureInfo.GetCultureInfo("fr-FR").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")).Should().BeTrue();
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void NeutralEquals_fr2()
     {
         CultureInfo.GetCultureInfo("fr").NeutralEquals(CultureInfo.GetCultureInfo("fr-CA")).Should().BeTrue();
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void NeutralEquals_en()
     {
         var fr = CultureInfo.GetCultureInfo("fr-FR");
@@ -32,7 +32,7 @@ public class CultureInfoUtilitiesTests
     {
         CultureInfoUtilities.UseCulture(CultureInfo.GetCultureInfo("fr-FR"), () =>
         {
-            if (RunIfFactAttribute.IsGlobalizationInvariant())
+            if (RunIfAttribute.IsGlobalizationInvariant())
             {
                 12.ToString("F2", CultureInfo.CurrentCulture).Should().Be("12.00");
             }

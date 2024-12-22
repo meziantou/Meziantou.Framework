@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0-windows;net9.0-windows</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
-    <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>

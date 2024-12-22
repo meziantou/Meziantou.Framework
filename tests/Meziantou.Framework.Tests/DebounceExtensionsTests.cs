@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
-public class DebouceExtensionsTests
+public sealed class DebounceExtensionsTests
 {
     [Fact]
     public void Debounce_CallActionsWithArgumentsOfTheLastCall()

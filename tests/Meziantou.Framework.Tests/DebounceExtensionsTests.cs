@@ -9,12 +9,13 @@ public sealed class DebounceExtensionsTests
     public void Debounce_CallActionsWithArgumentsOfTheLastCall()
     {
         using var resetEvent = new ManualResetEventSlim(initialState: false);
-        int lastArg = default;
+        var lastArg = 0;
         var count = 0;
         var debounced = DebounceExtensions.Debounce<int>(i =>
         {
             lastArg = i;
-            count++;
+            Interlocked.CompareExchange(ref lastArg, i, 0);
+            Interlocked.Increment(ref count);
             resetEvent.Set();
         }, TimeSpan.FromMilliseconds(200));
 

@@ -1,3 +1,0 @@
-<Project>
-  <Import Project="$(MSBuildThisFileDirectory)/../build/Meziantou.Framework.InlineSnapshotTesting.props"/>
-</Project>

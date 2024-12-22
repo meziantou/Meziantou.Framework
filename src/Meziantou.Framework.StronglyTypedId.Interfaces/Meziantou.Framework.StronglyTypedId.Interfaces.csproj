@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
-    <Version>1.0.1</Version>
-    <Description>Provide optional interfaces for the Meziantou.Framework.StronglyTypedId source generator</Description>
-  </PropertyGroup>
-
-</Project>

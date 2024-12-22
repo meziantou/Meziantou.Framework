@@ -1,8 +1,0 @@
-﻿STATUS_OBJECT_NAME_NOT_FOUND
-POLICY_GET_PRIVATE_INFORMATION
-LsaRetrievePrivateData
-LsaStorePrivateData
-LsaOpenPolicy
-LsaNtStatusToWinError
-LsaClose
-LsaFreeMemory

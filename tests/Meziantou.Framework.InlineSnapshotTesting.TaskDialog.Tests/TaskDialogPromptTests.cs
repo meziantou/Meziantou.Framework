@@ -1,11 +1,5 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows.Automation;
-using FluentAssertions;
+﻿using System.Windows.Automation;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TestUtilities;
 using Xunit;
 

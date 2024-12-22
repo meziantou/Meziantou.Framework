@@ -8,7 +8,7 @@ namespace Meziantou.Framework.Win32.AmsiTests;
 [Collection("AmsiContextTests")]
 public class AmsiContextTests
 {
-    [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
+    [Fact, SkipOnGitHubActionsAttribute]
     public void AmsiShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -17,7 +17,7 @@ public class AmsiContextTests
         application.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR").Should().BeFalse();
     }
 
-    [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
+    [Fact, SkipOnGitHubActionsAttribute]
     public void AmsiShouldDetectMalware_String()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -26,7 +26,7 @@ public class AmsiContextTests
         application.IsMalware("0000", "EICAR").Should().BeFalse();
     }
 
-    [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
+    [Fact, SkipOnGitHubActionsAttribute]
     public void AmsiSessionShouldDetectMalware_Buffer()
     {
         using var application = AmsiContext.Create("MyApplication");
@@ -37,7 +37,7 @@ public class AmsiContextTests
         session.IsMalware(new byte[] { 0, 0, 0, 0 }, "EICAR").Should().BeFalse();
     }
 
-    [RunIfFact(FactOperatingSystem.All, enableOnGitHubActions: false)]
+    [Fact, SkipOnGitHubActionsAttribute]
     public void AmsiSessionShouldDetectMalware_String()
     {
         using var application = AmsiContext.Create("MyApplication");

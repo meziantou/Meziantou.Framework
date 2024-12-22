@@ -9,7 +9,6 @@ using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Microsoft.CodeAnalysis;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 

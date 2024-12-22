@@ -4,19 +4,21 @@
   <PropertyGroup>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <Content Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) != 'netstandard2.0' AND '$(IncludeDefaultTestReferences)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)..\common\XUnitStaticHelpers.cs" Link="XUnitStaticHelpers.cs" Condition="'$(MSBuildProjectExtension)' == '.csproj'" Visible="false" />
+
+    <Using Include="Xunit.TestContext" Alias="TestContext" />
+    <Using Include="TestUtilities.XUnitStaticHelpers" Static="true" />
+    
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit.v3" Version="1.0.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.0" />
     <PackageReference Include="FluentAssertions" Version="7.0.0" />
-    <PackageReference Include="xunit" Version="2.9.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>    
     <PackageReference Include="Meziantou.FluentAssertionsAnalyzers" Version="1.0.21">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

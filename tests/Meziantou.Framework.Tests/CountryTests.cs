@@ -18,7 +18,7 @@ public sealed class CountryTests
         Country.GetUnicodeFlag(name).Should().Be("\U0001F1EB\U0001F1F7");
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void FrenchFlagFromRegion()
     {
         Country.GetUnicodeFlag(new RegionInfo("FR")).Should().Be("\U0001F1EB\U0001F1F7");

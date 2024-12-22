@@ -1,13 +1,12 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 using Meziantou.Extensions.Logging.InMemory;
-using Meziantou.Extensions.Logging.Xunit;
+using Meziantou.Extensions.Logging.Xunit.v3;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.Tests;
 public sealed class MockTests(ITestOutputHelper testOutputHelper)
@@ -23,7 +22,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());
 
         using var client = mock.CreateHttpClient();
-        var value = await client.GetStringAsync("https://example.com/");
+        var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
         Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
     }
 
@@ -43,14 +42,14 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var client = mock.CreateHttpClient();
 
         {
-            using var value = await client.GetAsync("https://example.com/not_found");
+            using var value = await client.GetAsync("https://example.com/not_found", XunitCancellationToken);
             Assert.Equal(HttpStatusCode.NotFound, value.StatusCode);
-            var content = await value.Content.ReadFromJsonAsync<string>();
+            var content = await value.Content.ReadFromJsonAsync<string>(XunitCancellationToken);
             Assert.Equal("not_found", content);
         }
 
         {
-            var value = await client.GetStringAsync("https://example.com/");
+            var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
             Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
         }
     }
@@ -75,7 +74,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         mock.MapGet("/", () => Results.Extensions.RawJson("""{"id":1}"""));
 
         using var client = mock.CreateHttpClient();
-        var data = await client.GetFromJsonAsync<Dictionary<string, object?>>("/");
+        var data = await client.GetFromJsonAsync<Dictionary<string, object?>>("/", XunitCancellationToken);
         Assert.True(data.ContainsKey("id"));
     }
 
@@ -168,7 +167,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
 
         await using var serviceProvider = services.BuildServiceProvider();
         var httpClient = serviceProvider.GetRequiredService<HttpClient>();
-        Assert.Equal("\"test1\"", await httpClient.GetStringAsync("https://example.com/"));
+        Assert.Equal("\"test1\"", await httpClient.GetStringAsync("https://example.com/", XunitCancellationToken));
 
         var sampleClient = serviceProvider.GetRequiredService<SampleClient>();
         Assert.Equal("\"test2\"", await sampleClient.GetStringAsync("https://example.com/"));
@@ -194,7 +193,7 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
 
         await using var serviceProvider = services.BuildServiceProvider();
         var httpClient = serviceProvider.GetRequiredService<HttpClient>();
-        Assert.Equal("\"test1\"", await httpClient.GetStringAsync("https://example.com/"));
+        Assert.Equal("\"test1\"", await httpClient.GetStringAsync("https://example.com/", XunitCancellationToken));
 
         Assert.NotEmpty(loggerProvider.Logs);
     }

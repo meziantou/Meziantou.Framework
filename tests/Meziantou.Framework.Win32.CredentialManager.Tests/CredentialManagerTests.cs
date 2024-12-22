@@ -23,7 +23,7 @@ public sealed class CredentialManagerTests : IDisposable
         _mutex = new Mutex(initiallyOwned: false, typeof(CredentialManagerTests).FullName);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_01()
     {
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -39,7 +39,7 @@ public sealed class CredentialManagerTests : IDisposable
         cred.Should().BeNull();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_Enumerate()
     {
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
@@ -56,7 +56,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_LimitComment()
     {
         var comment = new string('a', 255);
@@ -73,7 +73,7 @@ public sealed class CredentialManagerTests : IDisposable
         cred.Should().BeNull();
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [InlineData(512)]
     [InlineData(513)]
     [InlineData(1024)]
@@ -91,7 +91,7 @@ public sealed class CredentialManagerTests : IDisposable
         cred.Should().BeNull();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/32")]
     public void CredentialManager_EnumerateCredential()
     {
@@ -120,7 +120,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [Trait("Issue", "https://github.com/meziantou/Meziantou.Framework/issues/263")]
     [InlineData(null)]
     [InlineData("*")]
@@ -152,7 +152,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_CredentialType_DomainPassword()
     {
         var credType = CredentialType.DomainPassword;
@@ -172,7 +172,7 @@ public sealed class CredentialManagerTests : IDisposable
         cred.Should().BeNull();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_CredentialType_DomainPassword_Enumerate()
     {
         var credType = CredentialType.DomainPassword;
@@ -192,7 +192,7 @@ public sealed class CredentialManagerTests : IDisposable
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_CredentialType_Invalid()
     {
         var act = () => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate);

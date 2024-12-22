@@ -3,7 +3,6 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
     <UseWPF>true</UseWPF>
-    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
   </PropertyGroup>
 
   <ItemGroup>

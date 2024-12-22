@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <RollForward>LatestMajor</RollForward>
-    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
-  </PropertyGroup>
-</Project>

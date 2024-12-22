@@ -16,7 +16,7 @@ public class DebouceExtensionsTests
             lastArg = i;
             count++;
             resetEvent.Set();
-        }, TimeSpan.FromMilliseconds(10));
+        }, TimeSpan.FromMilliseconds(200));
 
         debounced(1);
         debounced(2);

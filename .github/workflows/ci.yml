@@ -123,7 +123,9 @@ jobs:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: error
           retention-days: 3
-          path: ${{ env.TestResultsDirectory }}/**/*
+          path: |
+            **/*.binlog
+            ${{ env.TestResultsDirectory }}/**/*
 
   build_and_test_windows_x86:
     runs-on: ${{ matrix.runs-on }}
@@ -184,7 +186,9 @@ jobs:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
           if-no-files-found: error
           retention-days: 3
-          path: ${{ env.TestResultsDirectory }}/**/*
+          path: |
+            **/*.binlog
+            ${{ env.TestResultsDirectory }}/**/*
 
   test_trimming:
     runs-on: ubuntu-24.04

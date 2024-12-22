@@ -7,7 +7,7 @@
     <CompatibilityRecord>true</CompatibilityRecord>
   </PropertyGroup>
 
-  <ItemGroup Condition=" $(TargetFramework) == 'net472' ">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Windows" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>

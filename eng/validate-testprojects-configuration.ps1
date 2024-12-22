@@ -42,6 +42,10 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
             if ($RefTfm -eq "netstandard2.1") {
                 continue;
             }
+            
+            if ($RefTfm -eq "net462" -and $TestProjectTfms.Contains("net472")) {
+                continue;
+            }
 
             if ($RefTfm -eq "net462" -and $TestProjectTfms.Contains("net472")) {
                 continue;

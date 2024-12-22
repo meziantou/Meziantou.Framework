@@ -1,11 +1,5 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Windows.Automation;
-using FluentAssertions;
+﻿using System.Windows.Automation;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using TestUtilities;
 using Xunit;
 
@@ -89,9 +83,9 @@ public sealed class TaskDialogPromptTests
     {
         var result = Invoke(new PromptContext("path.cs", "dummy test", ParentProcessInfo: null), buttonIndex, applyToAllFiles);
 
-        result.Mode.Should().Be(expectedMode);
-        result.Scope.Should().Be(expectedScope);
-        result.RememberPeriod.Should().Be(TimeSpan.FromHours(1));
+        Assert.Equal(expectedMode, result.Mode);
+        Assert.Equal(expectedScope, result.Scope);
+        Assert.Equal(TimeSpan.FromHours(1), result.RememberPeriod);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -99,8 +93,8 @@ public sealed class TaskDialogPromptTests
     {
         var result = Invoke(new PromptContext("path.cs", "dummy test", ParentProcessInfo: null), buttonIndex: 4, applyToAllFiles: false);
 
-        result.Mode.Should().Be(PromptConfigurationMode.Disallow);
-        result.Scope.Should().Be(PromptConfigurationScope.CurrentSnapshot);
-        result.RememberPeriod.Should().BeLessThanOrEqualTo(TimeSpan.Zero);
+        Assert.Equal(PromptConfigurationMode.Disallow, result.Mode);
+        Assert.Equal(PromptConfigurationScope.CurrentSnapshot, result.Scope);
+        Assert.True(result.RememberPeriod <= TimeSpan.Zero);
     }
 }

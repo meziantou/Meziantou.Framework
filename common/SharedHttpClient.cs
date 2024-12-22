@@ -1,4 +1,4 @@
-﻿#if NET462
+﻿#if NET462 || NET472
 using System.Net.Http;
 #endif
 

@@ -1,42 +1,5 @@
-# Schema: http://EditorConfig.org
-# Docs: https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-code-style-settings-reference
-
 # top-most EditorConfig file
 root = true
-
-# Don't use tabs for indentation.
-[*]
-indent_style = space
-trim_trailing_whitespace = true
-end_of_line = lf
-
-# Xml project files
-[*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
-indent_size = 2
-
-# Xml config files
-[*.{props,targets,ruleset,config,nuspec,resx,vsixmanifest,vsct,xml,stylecop}]
-indent_size = 2
-
-# JSON files
-[*.{json,json5}]
-indent_size = 2
-
-# YAML Files
-[*.{yml,yaml}]
-indent_size = 2
-
-# Shell scripts
-[*.sh]
-end_of_line = lf
-
-[*.{cmd,bat,ps1}]
-end_of_line = crlf
-
-# Web Files
-[*.{htm,html,js,ts,css,scss,less}]
-indent_size = 2
-insert_final_newline = true
 
 [*.cs]
 dotnet_diagnostic.CA1008.severity = none
@@ -53,9 +16,3 @@ dotnet_diagnostic.MFA001.severity = silent
 # disable non-application rules because of multitargeting
 dotnet_diagnostic.CA1510.severity = silent
 dotnet_diagnostic.CA1512.severity = silent
-
-[Samples/**/*.cs]
-dotnet_diagnostic.CA1852.severity = none
-
-[tests/**/*.cs]
-dotnet_diagnostic.MA0144.severity = none

@@ -654,7 +654,12 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void FSharpOptionNone() => AssertSerialization(Factory.create_option_none<int>(), "<null>");
 
     [Fact]
-    public void FSharpOptionSome() => AssertSerialization(Factory.create_option_some, "1");
+    public void FSharpOptionSome()
+    {
+        var value = Factory.create_option_some;
+        Assert.NotNull(value);
+        AssertSerialization(value, "1");
+    }
 
     [Fact]
     public void FSharpValueOptionNone() => AssertSerialization(Factory.create_valueoption_none<int>(), "<null>");

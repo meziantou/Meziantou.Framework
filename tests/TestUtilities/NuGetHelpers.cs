@@ -89,7 +89,9 @@ public static class NuGetHelpers
                 }
             }
 
-            Assert.NotEmpty(result);
+            if (result is [])
+                throw new Exception("No valid assembly found in the NuGet package");
+
             return [.. result];
         }
     }

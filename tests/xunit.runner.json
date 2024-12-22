@@ -1,7 +1,0 @@
-{
-  "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
-  "maxParallelThreads": 0,
-  "parallelizeAssembly": true,
-  "parallelizeTestCollections": true,
-  "parallelAlgorithm": "aggressive"
-}

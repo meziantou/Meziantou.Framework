@@ -9,7 +9,7 @@ public class RestartManagerTests
 
     public RestartManagerTests()
     {
-#if NET462
+#if NET462 || NET472
         _currentProcessId = System.Diagnostics.Process.GetCurrentProcess().Id;
 #else
         _currentProcessId = System.Environment.ProcessId;

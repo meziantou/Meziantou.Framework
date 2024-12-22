@@ -1,4 +1,4 @@
-#if !NET462
+#if !NET462 && !NET472
 #pragma warning disable MA0042
 #endif
 using System.Collections.Concurrent;
@@ -10,7 +10,7 @@ using System.Text;
 using Meziantou.Framework;
 using Xunit;
 
-#if NET462
+#if NET462 || NET472
 using System.Net.Http;
 #endif
 
@@ -20,7 +20,7 @@ public static class NuGetHelpers
 {
     private static readonly ConcurrentDictionary<string, Lazy<Task<string[]>>> NuGetPackagesCache = new(StringComparer.Ordinal);
 
-#if !NET462
+#if !NET462 && !NET472
     [SuppressMessage("Performance", "MA0106:Avoid closure by using an overload with the 'factoryArgument' parameter", Justification = "Not important in tests")]
 #endif
     public static async Task<string[]> GetNuGetReferences(string packageName, string version, params string[] paths)

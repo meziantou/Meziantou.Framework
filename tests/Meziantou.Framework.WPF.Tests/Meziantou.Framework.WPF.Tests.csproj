@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net462</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
     <UseWpf>true</UseWpf>
     <CompatibilityRecord>true</CompatibilityRecord>
   </PropertyGroup>
 
-  <ItemGroup Condition=" $(TargetFramework) == 'net462' ">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Windows" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>

@@ -22,5 +22,8 @@ dotnet_diagnostic.MA0036.severity = none
 dotnet_diagnostic.MA0038.severity = none
 dotnet_diagnostic.MA0080.severity = none
 
+# xunit rule for CancellationToken (XunitCancellationToken)
+dotnet_diagnostic.xUnit1051.severity = none
+
 # Async suffix
 dotnet_diagnostic.VSTHRD200.severity = none

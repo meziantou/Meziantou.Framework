@@ -125,7 +125,7 @@ public class DefaultConverterTests_StringTo
         value.Name.Should().Be("es");
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void TryConvert_StringToCultureInfo_LcidAsString()
     {
         var converter = new DefaultConverter();
@@ -143,7 +143,7 @@ public class DefaultConverterTests_StringTo
         }
     }
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void TryConvert_StringToCultureInfo_InvalidCulture()
     {
         var converter = new DefaultConverter();

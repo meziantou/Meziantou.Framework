@@ -43,6 +43,10 @@ $Errors = $Projs | Foreach-Object -ThrottleLimit 5 -Parallel {
                 continue;
             }
 
+            if ($RefTfm -eq "net462" -and $TestProjectTfms.Contains("net472")) {
+                continue;
+            }
+
             if (-not $TestProjectTfms.Contains($RefTfm)) {
                 Write-Error "Project $($Proj.FullName) does not target $RefTfm, but it references $RefProj which does. ($TestProjectTfms) != ($RefTfms)"
                 return 1

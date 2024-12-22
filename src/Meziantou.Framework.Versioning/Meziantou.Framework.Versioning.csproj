@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
@@ -7,11 +7,11 @@
     <Description>Provide a SemanticVersion class to parse, compare, format semantic versions</Description>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'net462'">
+  <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'netstandard2.0'">
+  <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472' OR $(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="System.Memory" Version="4.6.0" />
   </ItemGroup>
 

@@ -52,7 +52,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     public void CultureInfo_Invariant()
         => AssertSerialization(CultureInfo.InvariantCulture, "Invariant Language (Invariant Country)");
 
-    [RunIfFact(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
+    [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void CultureInfo_EnUs()
         => AssertSerialization(CultureInfo.GetCultureInfo("en-US"), "en-US");
 
@@ -356,7 +356,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
 
         static async IAsyncEnumerable<int> TypedYield()
         {
-            await Task.Delay(1);
+            await Task.Delay(1, XunitCancellationToken);
             yield return 1;
             yield return 2;
             yield return 3;

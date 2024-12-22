@@ -3,7 +3,6 @@ using FluentAssertions;
 using FluentAssertions.Execution;
 using TestUtilities;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.CommandLineTests;
@@ -49,7 +48,7 @@ public class CommandLineBuilderTests
         ValidateArguments("dotnet", "\"" + path + "\" " + args, [expected]);
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [MemberData(nameof(GetArguments))]
     public void WindowsCmdArgument_Test(string value, string expected)
     {

@@ -6,14 +6,14 @@ namespace Meziantou.Framework.Win32.Tests;
 
 public class PerceivedTests
 {
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetPerceivedType_txt()
     {
         var perceived = Perceived.GetPerceivedType(".txt");
         perceived.PerceivedType.Should().Be(PerceivedType.Text);
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [InlineData(".avi")]
     [InlineData(".mpeg")]
     [InlineData(".mp4")]
@@ -23,7 +23,7 @@ public class PerceivedTests
         perceived.PerceivedType.Should().Be(PerceivedType.Video);
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [InlineData(".jpg")]
     [InlineData(".jpeg")]
     [InlineData(".png")]
@@ -34,7 +34,7 @@ public class PerceivedTests
         perceived.PerceivedType.Should().Be(PerceivedType.Image);
     }
 
-    [RunIfTheory(FactOperatingSystem.Windows)]
+    [Theory, RunIf(FactOperatingSystem.Windows)]
     [InlineData(".mp3")]
     public void GetPerceivedType_Audio(string extension)
     {
@@ -42,7 +42,7 @@ public class PerceivedTests
         perceived.PerceivedType.Should().Be(PerceivedType.Audio);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetPerceivedType_Unspecified()
     {
         var perceived = Perceived.GetPerceivedType(".unknown_extension");

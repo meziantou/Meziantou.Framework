@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
+    <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>

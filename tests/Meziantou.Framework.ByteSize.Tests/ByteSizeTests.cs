@@ -1,6 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -27,8 +25,8 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(length);
         var formattedValue = byteSize.ToString(format, CultureInfo.InvariantCulture);
 
-        formattedValue.Should().Be(expectedValue);
-        ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture).Should().Be(ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture));
+        Assert.Equal(expectedValue, formattedValue);
+        Assert.Equal(ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture), ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture));
     }
 
     [Theory]
@@ -42,7 +40,7 @@ public sealed class ByteSizeTests
         var byteSize = new ByteSize(length);
         var formattedValue = byteSize.ToString(unit, CultureInfo.InvariantCulture);
 
-        formattedValue.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, formattedValue);
     }
 
     [Theory]
@@ -58,12 +56,9 @@ public sealed class ByteSizeTests
         var actual = ByteSize.Parse(str, CultureInfo.InvariantCulture);
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
 
-        using (new AssertionScope())
-        {
-            actual.Value.Should().Be(expectedValue);
-            actualTry.Value.Should().Be(expectedValue);
-            parsed.Should().BeTrue();
-        }
+        Assert.Equal(expectedValue, actual.Value);
+        Assert.Equal(expectedValue, actualTry.Value);
+        Assert.True(parsed);
     }
 
     [Theory]
@@ -71,17 +66,16 @@ public sealed class ByteSizeTests
     [InlineData("1AB")]
     public void Parse_Invalid(string str)
     {
-        Func<object> parse = () => ByteSize.Parse(str, CultureInfo.InvariantCulture);
-        parse.Should().ThrowExactly<FormatException>();
+        Assert.Throws<FormatException>(() => ByteSize.Parse(str, CultureInfo.InvariantCulture));
 
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
-        parsed.Should().BeFalse();
+        Assert.False(parsed);
     }
 
     [Fact]
     public void Operator_Add()
     {
         var result = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
-        result.Should().Be(3000L);
+        Assert.Equal(3000L, result);
     }
 }

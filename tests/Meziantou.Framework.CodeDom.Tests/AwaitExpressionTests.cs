@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -11,8 +10,8 @@ public class AwaitExpressionTests
         var expression = new AwaitExpression(new SnippetExpression("test"));
         var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-        configuredExpression.Should().Be(expression);
-        configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value.Should().Be(true);
+        Assert.Same(expression, configuredExpression);
+        Assert.True(configuredExpression.Expression is MethodInvokeExpression methodInvokeExpression && methodInvokeExpression.Arguments[0] is LiteralExpression literalExpression && literalExpression.Value.Equals(true));
     }
 
     [Fact]
@@ -21,7 +20,7 @@ public class AwaitExpressionTests
         var expression = new AwaitExpression();
         var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
 
-        configuredExpression.Should().Be(expression);
-        configuredExpression.Expression.Should().BeNull();
+        Assert.Same(expression, configuredExpression);
+        Assert.Null(configuredExpression.Expression);
     }
 }

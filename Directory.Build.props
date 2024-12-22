@@ -1,23 +1,8 @@
 ﻿<Project>
 
   <PropertyGroup>
-    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>False</IsPackable>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
-
-  <!-- disable the nullable warnings when compiling for target that haven't annotation -->
-  <PropertyGroup Condition="'$(TargetFramework)' != '$(LatestTargetFrameworkPreview)'">
-    <NoWarn>$(NoWarn);nullable</NoWarn>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Using Include="System.Diagnostics.CodeAnalysis" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-7jgj-8wvc-jh57" />
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-cmhx-cq75-c4mj" />
-  </ItemGroup>
 </Project>

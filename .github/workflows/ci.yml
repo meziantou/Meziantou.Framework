@@ -26,4 +26,4 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v4
       - name: Build
-        run: dotnet build tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests/Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests.csproj
+        run: dotnet build demo.csproj

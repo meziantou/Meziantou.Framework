@@ -1,8 +1,0 @@
-﻿<Project>
-
-  <PropertyGroup>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <IsPackable>False</IsPackable>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-  </PropertyGroup>
-</Project>

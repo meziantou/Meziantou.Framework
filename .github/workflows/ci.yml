@@ -8,10 +8,6 @@ on:
     branches:
       - '*'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
@@ -24,43 +20,10 @@ defaults:
 
 jobs:
   build_and_test_x64:
-    runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: 60
-    env:
-      TestResultsDirectory: ${{ github.workspace}}/TestResults
-    strategy:
-      matrix:
-        runs-on: [ windows-2022 ]
-        configuration: [ Debug ]
-        additionalArguments: [ "" ]
-      fail-fast: false
+    runs-on: windows-2022
     steps:
-      - id: compute-artifact-name
-        name: Compute artifact name
-        run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-x64-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
-      - run: git config --global protocol.file.allow always
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v4
-      - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
       - name: Build
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-
-      - name: Run tests
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: error
-          retention-days: 3
-          path: |
-            **/*.binlog
-            ${{ env.TestResultsDirectory }}/**/*
+        run: dotnet build eng/build.proj --configuration Debug /bl

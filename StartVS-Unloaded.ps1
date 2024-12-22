@@ -1,1 +1,0 @@
-& $(& "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -prerelease -latest -property productPath -format json | ConvertFrom-Json)[0].productPath Meziantou.Framework.sln -donotloadprojects

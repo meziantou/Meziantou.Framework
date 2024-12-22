@@ -3,10 +3,16 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
     <UseWPF>true</UseWPF>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit.v3" Version="1.0.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.0.0" />
+    <PackageReference Include="FluentAssertions" Version="7.0.0" />
   </ItemGroup>
 </Project>

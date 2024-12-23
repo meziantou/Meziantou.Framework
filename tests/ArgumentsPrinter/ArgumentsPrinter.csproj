@@ -5,4 +5,5 @@
     <RollForward>LatestMajor</RollForward>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
   </PropertyGroup>
+
 </Project>

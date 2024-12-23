@@ -1,4 +1,4 @@
-﻿#if NET462 || NET472
+﻿#if NETFRAMEWORK
 using System.Net.Http;
 #endif
 

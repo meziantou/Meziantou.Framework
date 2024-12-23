@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <OutputType>Library</OutputType>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
   </PropertyGroup>
@@ -10,14 +12,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
-    <PackageReference Include="System.Reflection.Metadata" Version="9.0.0" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="9.0.0" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="System.IO.Compression" Version="4.3.0" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   
 </Project>

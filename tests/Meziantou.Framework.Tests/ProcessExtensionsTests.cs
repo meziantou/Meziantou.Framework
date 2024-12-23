@@ -123,7 +123,7 @@ public class ProcessExtensionsTests
         await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetProcesses()
     {
         var processes = ProcessExtensions.GetProcesses();
@@ -133,7 +133,7 @@ public class ProcessExtensionsTests
         processes.Should().OnlyHaveUniqueItems();
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetDescendantProcesses()
     {
         using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");
@@ -157,7 +157,7 @@ public class ProcessExtensionsTests
         }
     }
 
-    [RunIfFact(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
+    [Fact, RunIf(FactOperatingSystem.Windows | FactOperatingSystem.Linux)]
     public void GetParentProcessId()
     {
         var current = Process.GetCurrentProcess();
@@ -167,7 +167,7 @@ public class ProcessExtensionsTests
         parent.Should().NotBe(current.Id);
     }
 
-    [RunIfFact(FactOperatingSystem.Windows)]
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetParent()
     {
         var current = Process.GetCurrentProcess();

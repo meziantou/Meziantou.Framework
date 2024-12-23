@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows);net462</TargetFrameworks>
@@ -12,7 +12,7 @@
     <PackageReference Include="System.Collections.Immutable" Version="9.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'net472'">
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
 

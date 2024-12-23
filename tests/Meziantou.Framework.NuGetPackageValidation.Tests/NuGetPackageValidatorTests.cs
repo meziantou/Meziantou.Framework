@@ -267,7 +267,7 @@ public sealed class NuGetPackageValidatorTests
             }
             catch
             {
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromSeconds(1), XunitCancellationToken);
             }
         }
     }

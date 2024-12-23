@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
@@ -8,7 +8,7 @@
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'net462'">
+  <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 

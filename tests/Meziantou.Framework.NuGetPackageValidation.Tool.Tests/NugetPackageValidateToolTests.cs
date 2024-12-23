@@ -2,7 +2,6 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 

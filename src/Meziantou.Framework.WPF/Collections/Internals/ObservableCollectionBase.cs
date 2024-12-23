@@ -33,7 +33,7 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
     {
         Items.EnsureCapacity(capacity);
     }
-#elif NET461 || NET462
+#elif NET461 || NET462 || NET472
 #else
 #error Platform not supported
 #endif

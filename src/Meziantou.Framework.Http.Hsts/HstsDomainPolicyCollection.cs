@@ -11,13 +11,11 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     public static HstsDomainPolicyCollection Default { get; } = new HstsDomainPolicyCollection();
 
-    [SetsRequiredMembers]
     public HstsDomainPolicyCollection(bool includePreloadDomains = true)
         : this(timeProvider: null, includePreloadDomains)
     {
     }
 
-    [SetsRequiredMembers]
     public HstsDomainPolicyCollection(TimeProvider? timeProvider, bool includePreloadDomains = true)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;

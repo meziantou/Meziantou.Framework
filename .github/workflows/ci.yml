@@ -17,6 +17,7 @@ env:
   DOTNET_NOLOGO: true
   NuGetDirectory: ${{ github.workspace}}/nuget
   NuGetSource: "https://api.nuget.org/v3/index.json"
+  MSBUILDDEBUGPATH: ${{ github.workspace}}/msbuilddebug
 
 defaults:
   run:
@@ -53,7 +54,7 @@ jobs:
       - run: dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: dotnet build src/Meziantou.Framework.Http.Hsts --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
+      - run: dotnet build src/Meziantou.Framework.Http.Hsts /p:RunAnalyzers=false --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
 
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
@@ -73,7 +74,9 @@ jobs:
           name: binlog
           if-no-files-found: error
           retention-days: 3
-          path: '**/*.binlog'
+          path: |
+            **/*.binlog
+            msbuilddebug/**/*
 
   validate_nuget:
     runs-on: ubuntu-24.04

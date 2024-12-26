@@ -9,7 +9,9 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using Meziantou.Framework;
+using Meziantou.Framework.Versioning;
 
 // Enable generating a subset of the data. Otherwise the IDE is not responsive because of the large file.
 var fullGeneration = true;
@@ -104,19 +106,34 @@ var result = $$"""
 
     partial class HstsDomainPolicyCollection
     {
-        private void Initialize(TimeProvider timeProvider)
+        private void LoadPreloadDomains(TimeProvider timeProvider)
         {
             // HSTS preload data source: {{fileUrl}} 
             // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
     {{sb.ToString().TrimEnd('\n')}}
         }
     }
-    """;
+    """.ReplaceLineEndings("\n");
 
 if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
     throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
 
-await File.WriteAllTextAsync(root / "src" / "Meziantou.Framework.Http.Hsts" / "HstsDomainPolicyCollection.g.cs", result);
+var outputPath = root / "src" / "Meziantou.Framework.Http.Hsts" / "HstsDomainPolicyCollection.g.cs";
+var csprojPath = root / "src" / "Meziantou.Framework.Http.Hsts" / "Meziantou.Framework.Http.Hsts.csproj";
+if ((await File.ReadAllTextAsync(outputPath)).ReplaceLineEndings("\n") != result)
+{
+    await File.WriteAllTextAsync(outputPath, result);
+    Console.WriteLine("The file has been updated");
+
+    var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
+    var versionNode = doc.Descendants().First(e => e.Name.LocalName == "Version");
+    var version = SemanticVersion.Parse(versionNode.Value);
+    versionNode.Value = version.NextPatchVersion().ToString();
+    doc.Save(csprojPath, SaveOptions.DisableFormatting);
+    return 1;
+}
+
+return 0;
 
 internal sealed class Data
 {

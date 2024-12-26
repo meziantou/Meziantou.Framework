@@ -23,7 +23,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         _timeProvider = timeProvider ?? TimeProvider.System;
         if (includePreloadDomains)
         {
-            Initialize(_timeProvider);
+            LoadPreloadDomains(_timeProvider);
         }
     }
 

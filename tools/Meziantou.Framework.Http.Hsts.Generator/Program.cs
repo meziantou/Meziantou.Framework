@@ -2,6 +2,8 @@
 #pragma warning disable MA0004 // Use Task.ConfigureAwait
 #pragma warning disable MA0047 // Declare types in namespaces
 #pragma warning disable MA0048 // File name must match type name
+#pragma warning disable CA1849 // Call async methods when in an async method
+#pragma warning disable MA0042 // Do not use blocking calls in an async method
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
@@ -28,8 +30,8 @@ if (token is null)
         RedirectStandardOutput = true,
         UseShellExecute = false,
     });
-    await process!.WaitForExitAsync();
-    token = (await process.StandardOutput.ReadToEndAsync()).Trim();
+    process!.WaitForExit();
+    token = process.StandardOutput.ReadToEnd().Trim();
 }
 
 var jsonOptions = new JsonSerializerOptions
@@ -107,7 +109,7 @@ var result = $$"""
 
     partial class HstsDomainPolicyCollection
     {
-        private void LoadPreloadDomains(TimeProvider timeProvider)
+        partial void LoadPreloadDomains(TimeProvider timeProvider)
         {
             // HSTS preload data source: {{fileUrl}} 
             // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
@@ -121,9 +123,9 @@ if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Ex
 
 var outputPath = root / "src" / "Meziantou.Framework.Http.Hsts" / "HstsDomainPolicyCollection.g.cs";
 var csprojPath = root / "src" / "Meziantou.Framework.Http.Hsts" / "Meziantou.Framework.Http.Hsts.csproj";
-if ((await File.ReadAllTextAsync(outputPath)).ReplaceLineEndings("\n") != result)
+if (!File.Exists(outputPath) || File.ReadAllText(outputPath).ReplaceLineEndings("\n") != result)
 {
-    await File.WriteAllTextAsync(outputPath, result);
+    File.WriteAllText(outputPath, result);
     Console.WriteLine("The file has been updated");
 
     var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
@@ -132,8 +134,8 @@ if ((await File.ReadAllTextAsync(outputPath)).ReplaceLineEndings("\n") != result
     versionNode.Value = version.NextPatchVersion().ToString();
 
     var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
-    await using XmlWriter xw = XmlWriter.Create(csprojPath, xws);
-    await doc.SaveAsync(xw, CancellationToken.None);
+    using XmlWriter writer = XmlWriter.Create(csprojPath, xws);
+    doc.Save(writer);
     return 1;
 }
 

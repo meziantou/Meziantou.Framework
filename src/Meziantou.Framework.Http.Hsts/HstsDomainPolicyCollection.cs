@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections;
-using System.ComponentModel.Design;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Http;
 
@@ -27,6 +27,8 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         }
     }
 
+    partial void LoadPreloadDomains(TimeProvider timeProvider);
+
     public void Add(string host, TimeSpan maxAge, bool includeSubdomains)
     {
         Add(host, _timeProvider.GetUtcNow().Add(maxAge), includeSubdomains);
@@ -34,6 +36,8 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     public void Add(string host, DateTimeOffset expiresAt, bool includeSubdomains)
     {
+        ArgumentNullException.ThrowIfNull(host);
+
         var partCount = CountSegments(host);
         ConcurrentDictionary<string, HstsDomainPolicy> dictionary;
         lock (_policies)
@@ -54,11 +58,17 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
 
     public bool Match(string host)
     {
-        var segments = CountSegments(host);
-        for (var i = 0; i < _policies.Count && i < segments; i++)
+        ArgumentNullException.ThrowIfNull(host);
+        return Match(host.AsSpan());
+    }
+
+    public bool Match(ReadOnlySpan<char> host)
+    {
+        var enumerator = new DomainSplitReverseEnumerator(host);
+        for (var i = 0; i < _policies.Count && enumerator.MoveNext(); i++)
         {
             var dictionary = _policies[i];
-            var lastSegments = i == segments - 1 ? host : GetLastSegments(host, i + 1);
+            var lastSegments = host[enumerator.Current..];
 
 #if NET9_0_OR_GREATER
             var lookup = dictionary.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -72,7 +82,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
                     return false;
                 }
 
-                if (!hsts.IncludeSubdomains && i != segments - 1)
+                if (!hsts.IncludeSubdomains && enumerator.Current != 0)
                 {
                     return false;
                 }
@@ -82,18 +92,6 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         }
 
         return false;
-    }
-
-    private static ReadOnlySpan<char> GetLastSegments(string host, int count)
-    {
-        var hostSpan = host.AsSpan();
-        for (var i = 0; i < count; i++)
-        {
-            var start = hostSpan.LastIndexOf('.');
-            hostSpan = hostSpan.Slice(0, start);
-        }
-
-        return host.AsSpan(hostSpan.Length + 1);
     }
 
     // internal for tests
@@ -128,4 +126,36 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    [StructLayout(LayoutKind.Auto)]
+    private ref struct DomainSplitReverseEnumerator
+    {
+        private ReadOnlySpan<char> _span;
+        private int _index;
+        public DomainSplitReverseEnumerator(ReadOnlySpan<char> span)
+        {
+            _span = span;
+            _index = span.Length;
+        }
+
+        public int Current => _index == 0 ? 0 : (_index + 1);
+
+        public bool MoveNext()
+        {
+            var index = _span.LastIndexOf('.');
+            if (index == -1)
+            {
+                if (_span.IsEmpty)
+                    return false;
+
+                _index = 0;
+                _span = ReadOnlySpan<char>.Empty;
+                return true;
+            }
+
+            _index = index;
+            _span = _span.Slice(0, index);
+            return true;
+        }
+    }
 }

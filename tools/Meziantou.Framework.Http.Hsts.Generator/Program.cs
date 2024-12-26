@@ -11,8 +11,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Meziantou.Framework;
 
-// By default, generate a subset of the data. Otherwise the IDE is not responsive because of the large file
-var fullGeneration = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
+// Enable generating a subset of the data. Otherwise the IDE is not responsive because of the large file.
+var fullGeneration = true;
+
 var token = Environment.GetEnvironmentVariable("GITHUB_TOKEN");
 if (token is null)
 {

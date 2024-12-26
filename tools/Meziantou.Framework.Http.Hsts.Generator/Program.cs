@@ -9,6 +9,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml;
 using System.Xml.Linq;
 using Meziantou.Framework;
 using Meziantou.Framework.Versioning;
@@ -129,7 +130,11 @@ if ((await File.ReadAllTextAsync(outputPath)).ReplaceLineEndings("\n") != result
     var versionNode = doc.Descendants().First(e => e.Name.LocalName == "Version");
     var version = SemanticVersion.Parse(versionNode.Value);
     versionNode.Value = version.NextPatchVersion().ToString();
-    doc.Save(csprojPath, SaveOptions.DisableFormatting);
+
+
+    var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
+    using XmlWriter xw = XmlWriter.Create(csprojPath, xws);
+    doc.Save(xw);
     return 1;
 }
 

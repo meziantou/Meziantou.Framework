@@ -131,10 +131,9 @@ if ((await File.ReadAllTextAsync(outputPath)).ReplaceLineEndings("\n") != result
     var version = SemanticVersion.Parse(versionNode.Value);
     versionNode.Value = version.NextPatchVersion().ToString();
 
-
     var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
-    using XmlWriter xw = XmlWriter.Create(csprojPath, xws);
-    doc.Save(xw);
+    await using XmlWriter xw = XmlWriter.Create(csprojPath, xws);
+    await doc.SaveAsync(xw, CancellationToken.None);
     return 1;
 }
 

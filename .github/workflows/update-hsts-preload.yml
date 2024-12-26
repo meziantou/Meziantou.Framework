@@ -1,0 +1,36 @@
+name: publish
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET Core (global.json)
+        uses: actions/setup-dotnet@v4
+      - run: |
+          dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
+          if ($LASTEXITCODE -ne 0) {
+            git config --global user.email "git@meziantou.net"
+            git config --global user.name "meziantou"
+            git checkout -b update-hsts-preload
+            git add .
+            git commit -m "Update HSTS preload list"
+            git push origin update-hsts-preload
+            gh pr create --title "Update HSTS preload list" --body "Update HSTS preload list" --base main
+          }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -11,15 +11,15 @@ public class ThrottleExtensionsTests
         using var resetEvent = new ManualResetEventSlim(initialState: false);
         int lastArg = default;
         var count = 0;
-        var debounced = ThrottleExtensions.Throttle<int>(i =>
+        var throttled = ThrottleExtensions.Throttle<int>(i =>
         {
             lastArg = i;
             count++;
             resetEvent.Set();
-        }, TimeSpan.FromMilliseconds(10));
+        }, TimeSpan.FromMilliseconds(200));
 
-        debounced(1);
-        debounced(2);
+        throttled(1);
+        throttled(2);
 
         resetEvent.Wait();
         count.Should().Be(1);

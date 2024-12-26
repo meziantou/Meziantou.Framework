@@ -51,9 +51,9 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v4
 
-      - run: dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - run: dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: dotnet restore src/Meziantou.Framework.Http.Hsts
       - run: dotnet build src/Meziantou.Framework.Http.Hsts /p:RunAnalyzers=false --configuration Release --no-restore
 

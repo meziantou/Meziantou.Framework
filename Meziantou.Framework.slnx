@@ -55,6 +55,7 @@
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" Id="6f7af63d-c479-436c-9591-5ecaea583f3f" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
@@ -123,6 +124,7 @@
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Http.Hsts.Tests/Meziantou.Framework.Http.Hsts.Tests.csproj" Id="d39369d9-5b50-46e9-82c6-c3fb9c9be707" />
     <Project Path="tests/Meziantou.Framework.Http.Tests/Meziantou.Framework.Http.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
@@ -165,5 +167,8 @@
   <Folder Name="/tests/SourceGenerators/" Id="e54454da-4c95-3b35-b079-896c88f3efab">
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/" Id="02ea681e-c7d8-13c7-8484-4ac65e1b71e8">
+    <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" Id="5ee93510-9d10-40cc-99fc-d84b09b77034" />
   </Folder>
 </Solution>

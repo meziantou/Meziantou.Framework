@@ -6,10 +6,11 @@
   <Folder Name="/samples/">
     <Project Path="Samples/BlazorAppSample/BlazorAppSample.csproj" />
     <Project Path="Samples/DependencyScannerSample/DependencyScannerSample.csproj" />
+    <Project Path="Samples/Meziantou.Framework.Http.HstsSample/Meziantou.Framework.Http.HstsSample.csproj" />
     <Project Path="Samples/Meziantou.Framework.InlineSnapshotTesting.Samples/Meziantou.Framework.InlineSnapshotTesting.Samples.csproj" />
     <Project Path="Samples/Meziantou.Framework.Scheduling.RecurrenceRuleSample/Meziantou.Framework.Scheduling.RecurrenceRuleSample.csproj" />
     <Project Path="Samples/Meziantou.Framework.Win32.AccessTokenConsole/Meziantou.Framework.Win32.AccessTokenConsole.csproj" />
-    <Project Path="Samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" Id="5e610dbc-0acc-47b2-8f86-90672537c2fb" />
+    <Project Path="Samples/Meziantou.Framework.Win32.ChangeJournal.Sample/Meziantou.Framework.Win32.ChangeJournal.Sample.csproj" />
     <Project Path="Samples/Meziantou.Framework.Win32.CredentialManagerConsole/Meziantou.Framework.Win32.CredentialManagerConsole.csproj" />
     <Project Path="Samples/Meziantou.Framework.Win32.DialogsSamples/Meziantou.Framework.Win32.DialogsSamples.csproj" />
     <Project Path="Samples/Meziantou.Framework.Win32.RecentDocumentsConsole/Meziantou.Framework.Win32.RecentDocumentsConsole.csproj" />
@@ -38,7 +39,7 @@
     <Project Path="src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
-    <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" Id="8042aa97-6cec-4290-bec6-946194ec67d2" />
+    <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />
     <Project Path="src/Meziantou.Framework.ByteSize/Meziantou.Framework.ByteSize.csproj" />
     <Project Path="src/Meziantou.Framework.ChromiumTracing/Meziantou.Framework.ChromiumTracing.csproj" />
@@ -55,6 +56,7 @@
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.Html/Meziantou.Framework.Html.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
+    <Project Path="src/Meziantou.Framework.Http.Hsts/Meziantou.Framework.Http.Hsts.csproj" />
     <Project Path="src/Meziantou.Framework.Http/Meziantou.Framework.Http.csproj" />
     <Project Path="src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj" />
     <Project Path="src/Meziantou.Framework.HumanReadableSerializer/Meziantou.Framework.HumanReadableSerializer.csproj" />
@@ -123,6 +125,7 @@
     <Project Path="tests/Meziantou.Framework.Html.Tests/Meziantou.Framework.Html.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Http.Hsts.Tests/Meziantou.Framework.Http.Hsts.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Http.Tests/Meziantou.Framework.Http.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests/Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />
@@ -162,8 +165,11 @@
     <Project Path="tests/Meziantou.Framework.WPF.Tests/Meziantou.Framework.WPF.Tests.csproj" />
     <Project Path="tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
-  <Folder Name="/tests/SourceGenerators/" Id="e54454da-4c95-3b35-b079-896c88f3efab">
+  <Folder Name="/tests/SourceGenerators/">
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Meziantou.Framework.Http.Hsts.Generator/Meziantou.Framework.Http.Hsts.Generator.csproj" />
   </Folder>
 </Solution>

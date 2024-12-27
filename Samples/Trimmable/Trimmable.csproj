@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Csv\Meziantou.Framework.Csv.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Http.Hsts\Meziantou.Framework.Http.Hsts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.RelativeDate\Meziantou.Framework.RelativeDate.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Scheduling\Meziantou.Framework.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.SingleInstance\Meziantou.Framework.SingleInstance.csproj" />
@@ -43,6 +44,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Csv" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Http.Hsts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.RelativeDate" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Scheduling" />
     <TrimmerRootAssembly Include="Meziantou.Framework.SingleInstance" />

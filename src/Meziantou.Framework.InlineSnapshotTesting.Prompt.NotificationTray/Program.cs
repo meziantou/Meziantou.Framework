@@ -4,13 +4,23 @@ namespace Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray;
 
 internal static class Program
 {
+    private static readonly System.Threading.Timer Timer = new(_ => Application.Exit());
+
+    private static void ResetTimer()
+    {
+        Timer.Change(TimeSpan.FromHours(4), Timeout.InfiniteTimeSpan);
+    }
+
     [STAThread]
     public static void Main()
     {
         const string AppId = "Local\\6495bb03-4c5c-4695-bb73-310b06982b5c";
         using var mutex = new Mutex(initiallyOwned: false, AppId);
         if (!mutex.WaitOne(0))
+        {
+            ResetTimer();
             return;
+        }
 
         Application.EnableVisualStyles();
         using var appContext = new MyCustomApplicationContext();

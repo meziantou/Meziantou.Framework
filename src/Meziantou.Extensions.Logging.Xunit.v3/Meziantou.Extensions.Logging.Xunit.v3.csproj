@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
-    <PackageReference Include="xunit.v3.extensibility.core" Version="1.0.0" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="1.0.1" />
   </ItemGroup>
 
 </Project>

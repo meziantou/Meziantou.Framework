@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -10,7 +9,7 @@ public sealed class Sample
     {
         var expression = new MemberReferenceExpression(typeof(HashCode), nameof(HashCode.Combine));
 
-        expression.TargetObject.Should().NotBeNull();
-        expression.Name.Should().NotBeNull();
+        Assert.NotNull(expression.TargetObject);
+        Assert.NotNull(expression.Name);
     }
 }

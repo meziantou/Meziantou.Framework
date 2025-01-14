@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -13,7 +12,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticSyncVoid"));
         var result = executor.Execute(target: null, [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -24,7 +23,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
         var result = executor.Execute(new Test(), [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -51,7 +50,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("StaticAsyncTask"));
         var result = await executor.ExecuteAsync(null, [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -62,7 +61,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncTask"));
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -105,7 +104,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncValueTask"));
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -116,7 +115,7 @@ public sealed class ObjectMethodExecutorTests
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("SyncVoid"));
         var result = await executor.ExecuteAsync(new Test(), [validator]);
 
-        result.Should().BeNull();
+        Assert.Null(result);
         Assert.True(validator.HasBeenInvoked);
     }
 
@@ -133,7 +132,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var executor = ObjectMethodExecutor.Create(typeof(FSharpTests.Say).GetMethod("get_dummyUnit"));
         var result = await executor.ExecuteAsync(new FSharpTests.Say(), []);
-        Assert.Equal(null, result);
+        Assert.Null(result);
     }
 
     private sealed class Validator

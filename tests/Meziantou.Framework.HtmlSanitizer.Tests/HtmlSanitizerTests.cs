@@ -2,7 +2,6 @@ using System.Diagnostics;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Sanitizers.Tests;

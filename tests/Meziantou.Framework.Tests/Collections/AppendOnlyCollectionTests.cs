@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -13,17 +12,17 @@ public sealed class AppendOnlyCollectionTests
         Assert.Empty(collection);
 
         collection.Add(0);
-        collection.Should().BeEquivalentTo([0]);
+        Assert.Equal(new int[] { 0, }, collection);
 
         collection.Add(1);
-        collection.Should().BeEquivalentTo([0, 1]);
+        Assert.Equal(new int[] { 0, 1 }, collection);
 
         for (var i = 2; i < 10_000; i++)
         {
             collection.Add(i);
         }
 
-        collection.Should().HaveCount(10_000);
+        Assert.Equal(10000, collection.Count);
         Assert.Equal(0, collection[0]);
         Assert.Equal(1000, collection[1000]);
     }

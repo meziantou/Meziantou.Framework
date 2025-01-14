@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests;
@@ -55,7 +54,7 @@ public class PromptTests
             Assert.True(result);
         });
         Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));
-        output.LastIndexOf("test?", StringComparison.Ordinal).Should().BePositive();
+        Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) >= 0);
     }
 
     private static string UsingConsole(string input, Action action)

@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using FluentAssertions;
 using Meziantou.Framework.Http;
 using Xunit;
 
@@ -11,7 +10,7 @@ public sealed class LinkHeaderValueTests
     public void LinkHeaderValue_Parse()
     {
         var result = LinkHeaderValue.Parse("<sample>; rel=abc, <plop>; rel\t=\"d\\\"e;f,\"; title = test title; abc");
-        result.Should().SatisfyRespectively(
+        Assert.Collection(result,
             item =>
             {
                 Assert.Equal("sample", item.Url);
@@ -23,7 +22,7 @@ public sealed class LinkHeaderValueTests
                 Assert.Equal("d\"e;f,", item.Rel);
                 Assert.Equal("test title", item.GetParameterValue("title"));
                 Assert.Empty(item.GetParameterValue("abc"));
-                item.GetParameterValue("unknown").Should().BeNull();
+                Assert.Null(item.GetParameterValue("unknown"));
             });
     }
 
@@ -36,7 +35,7 @@ public sealed class LinkHeaderValueTests
             { "link", "<e>;rel=f" },
         };
 
-        header.EnumerateLinkHeaders().Should().HaveCount(3);
+        Assert.Equal(3, header.EnumerateLinkHeaders().Count());
     }
 
     [Fact]

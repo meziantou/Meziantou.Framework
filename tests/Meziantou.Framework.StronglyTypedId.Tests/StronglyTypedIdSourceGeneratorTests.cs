@@ -4,7 +4,6 @@
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
-using FluentAssertions;
 using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -104,7 +103,7 @@ namespace A
 }";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -143,7 +142,7 @@ namespace A
 }";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -190,7 +189,7 @@ namespace A
         """;
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -204,7 +203,7 @@ namespace A
         """;
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
 #if NET7_0_OR_GREATER
@@ -217,7 +216,7 @@ namespace A
         """;
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -230,7 +229,7 @@ namespace A
         """;
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 #endif
 
@@ -243,7 +242,7 @@ public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -258,8 +257,8 @@ public partial struct Test {}
                 var emptyInstance = from.Invoke(null, [Guid.Empty]);
                 var instance = from.Invoke(null, [guid]);
                 var newInstance = newMethod.Invoke(null, null);
-                newInstance.Should().NotBe(instance);
-                newInstance.Should().NotBe(emptyInstance);
+                Assert.NotEqual(instance, newInstance);
+                Assert.NotEqual(emptyInstance, newInstance);
             }
         }
         finally
@@ -285,9 +284,9 @@ public partial struct Test : System.IEquatable<Test>
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
-        result.Assembly.Should().NotBeNull();
+        Assert.NotNull(result.Assembly);
     }
 
     [Fact]
@@ -299,7 +298,7 @@ public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -329,7 +328,7 @@ public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -362,7 +361,7 @@ public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -390,7 +389,7 @@ public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -424,7 +423,7 @@ interface IStronglyTypedId<T> {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
         try
@@ -454,7 +453,7 @@ public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -466,7 +465,7 @@ public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -478,7 +477,7 @@ public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -490,7 +489,7 @@ public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
         Assert.Empty(result.GeneratorResult.Diagnostics);
-        result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -538,22 +537,22 @@ public partial class Test : System.IComparable<Test> {}
 
         static void AssertOutputIsCached(GeneratorRunResult result)
         {
-            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+            Assert.All(result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs), output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
         }
 
         static void AssertOutputIsNotCached(GeneratorRunResult result)
         {
-            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => output.Reason.Should().NotBe(IncrementalStepRunReason.Cached));
+            Assert.All(result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs), output => Assert.NotEqual(IncrementalStepRunReason.Cached, output.Reason));
         }
 
         static void AssertSyntaxStepIsCached(GeneratorRunResult result)
         {
-            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Should().AllSatisfy(output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+            Assert.All(result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs), output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
         }
 
         static void AssertSyntaxStepIsNotCached(GeneratorRunResult result)
         {
-            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Select(output => output.Reason).Should().NotContain(IncrementalStepRunReason.Cached);
+            Assert.DoesNotContain(IncrementalStepRunReason.Cached, result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Select(output => output.Reason));
         }
 
         GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol> validate = null)
@@ -565,8 +564,8 @@ public partial class Test : System.IComparable<Test> {}
             validate?.Invoke(outputCompilation, type);
             if (shouldGenerateFiles)
             {
-                type.Should().NotBeNull();
-                type.GetMembers("FromInt32").Should().NotBeNull();
+                Assert.NotNull(type);
+                Assert.NotEmpty(type.GetMembers("FromInt32"));
 
                 // Run the driver twice to ensure the second invocation is cached
                 var driver2 = driver.RunGenerators(compilation, XunitCancellationToken);

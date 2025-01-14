@@ -1,5 +1,4 @@
 ﻿using System.Text.Encodings.Web;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;

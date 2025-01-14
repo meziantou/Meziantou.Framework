@@ -1,7 +1,5 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Reflection;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -75,7 +73,7 @@ public sealed class EnumToStringSourceGeneratorTests
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
         Assert.Empty(generatorResult.Diagnostics);
-        Assert.Equal(1, generatorResult.GeneratedTrees.Length);
+        Assert.Single(generatorResult.GeneratedTrees);
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
@@ -114,7 +112,7 @@ public sealed class EnumToStringSourceGeneratorTests
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
         Assert.Empty(generatorResult.Diagnostics);
-        Assert.Equal(1, generatorResult.GeneratedTrees.Length);
+        Assert.Single(generatorResult.GeneratedTrees);
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
@@ -122,30 +120,25 @@ public sealed class EnumToStringSourceGeneratorTests
             .Where(m => m.Name == "ToStringFast")
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-        using (new AssertionScope())
-        {
-            ns1Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
-            methods1.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public),
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+        Assert.True(ns1Type.IsPublic);
+        Assert.Collection(methods1,
+            m => Assert.True(m.IsPublic),
+            m => Assert.False(m.IsPublic));
 
-            var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
-            var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
+        var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
+        var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
+            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-            ns3Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal);
-            methods3.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+        Assert.False(ns3Type.IsPublic);
 
-            var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
-            var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => m.Name == "ToStringFast")
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
+        var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
+        var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .Where(m => m.Name == "ToStringFast")
+            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-            ns4Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
-            methods4.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public));
-        }
+        Assert.True(ns4Type.IsPublic);
+        Assert.Collection(methods4,
+            m => Assert.True(m.IsPublic));
     }
 }

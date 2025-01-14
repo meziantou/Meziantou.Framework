@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -52,7 +51,7 @@ public class DefaultConverterTests_StringTo
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out int? value);
         Assert.True(converted);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
@@ -160,7 +159,7 @@ public class DefaultConverterTests_StringTo
         string inputValue = null;
         var converted = converter.TryChangeType<CultureInfo>(inputValue, cultureInfo, out var value);
         Assert.True(converted);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
@@ -170,7 +169,7 @@ public class DefaultConverterTests_StringTo
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out Uri value);
         Assert.True(converted);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]

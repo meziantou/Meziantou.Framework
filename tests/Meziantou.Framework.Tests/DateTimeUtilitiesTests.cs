@@ -1,6 +1,5 @@
 #pragma warning disable MEZ_NETCORE3_1
 
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Numerics;
 using System.Reflection;
-using FluentAssertions;
 using Meziantou.Framework.Annotations;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
@@ -91,8 +90,8 @@ public sealed partial class StronglyTypedIdTests
             var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
             var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
 
-            deserialized.Should().Be(instance);
-            deserialized2.Should().Be(instance);
+            Assert.Equal(instance, deserialized);
+            Assert.Equal(instance, deserialized2);
         }
 
         // Newtonsoft.Json
@@ -101,18 +100,18 @@ public sealed partial class StronglyTypedIdTests
             var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject(json, type);
             var deserialized2 = Newtonsoft.Json.JsonConvert.DeserializeObject(@"{ ""a"": {}, ""b"": false, ""Value"": " + json + " }", type);
 
-            deserialized.Should().Be(instance);
-            deserialized2.Should().Be(instance);
+            Assert.Equal(instance, deserialized);
+            Assert.Equal(instance, deserialized2);
         }
 
         // TypeConverter ToString - FromString
         {
             var converter = TypeDescriptor.GetConverter(type);
-            converter.CanConvertTo(typeof(string)).Should().BeTrue();
+            Assert.True(converter.CanConvertTo(typeof(string)));
             var str = converter.ConvertTo(instance, typeof(string))!;
 
-            converter.CanConvertFrom(typeof(string)).Should().BeTrue();
-            converter.ConvertFrom(str).Should().Be(instance);
+            Assert.True(converter.CanConvertFrom(typeof(string)));
+            Assert.Equal(instance, converter.ConvertFrom(str));
         }
 
         // BsonConverter
@@ -120,32 +119,32 @@ public sealed partial class StronglyTypedIdTests
             var json = BsonExtensionMethods.ToJson(instance, type);
             var deserialized = BsonSerializer.Deserialize(json, type);
 
-            deserialized.Should().Be(instance);
+            Assert.Equal(instance, deserialized);
         }
 
         var defaultValue = value.GetType() == typeof(string) ? null : Activator.CreateInstance(value.GetType());
         var defaultInstance = from.Invoke(null, [defaultValue]);
-        defaultInstance.Should().NotBe(instance);
+        Assert.NotEqual(instance, defaultInstance);
     }
 
     [Fact]
     public void TestNullableClass()
     {
         IdClassInt32 value = IdClassInt32.FromInt32(42);
-        (value == null).Should().BeFalse();
+        Assert.False(value == null);
     }
 
     [Fact]
     public void DisableSomeGenerator()
     {
-        typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>().Should().BeNull();
+        Assert.Null(typeof(IdRecordInt32WithoutSystemTextJson).GetCustomAttribute<System.Text.Json.Serialization.JsonConverterAttribute>());
     }
 
     [Fact]
     public void CodeGeneratedAttribute()
     {
-        typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().NotBeNull();
-        typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>().Should().BeNull();
+        Assert.NotNull(typeof(IdInt32WithCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
+        Assert.Null(typeof(IdInt32WithoutCodeGeneratedAttribute).GetMethod("FromInt32")!.GetCustomAttribute<System.CodeDom.Compiler.GeneratedCodeAttribute>());
     }
 
 #if NET7_0_OR_GREATER
@@ -169,165 +168,164 @@ public sealed partial class StronglyTypedIdTests
     [Fact]
     public void String_Parse()
     {
-        IdString.Parse("test").Value.Should().Be("test");
+        Assert.Equal("test", IdString.Parse("test").Value);
     }
 
     [Fact]
     public void String_Parse_ReadOnlySpan()
     {
-        IdString.Parse("test".AsSpan()).Value.Should().Be("test");
+        Assert.Equal("test", IdString.Parse("test".AsSpan()).Value);
     }
 
     [Fact]
     public void String_TryParse_ReadOnlySpan()
     {
-        IdString.TryParse("test".AsSpan(), out var value).Should().BeTrue();
-        value.Value.Should().Be("test");
+        Assert.True(IdString.TryParse("test".AsSpan(), out var value));
+        Assert.Equal("test", value.Value);
     }
 
     [Fact]
     public void String_TryParse_Null()
     {
-        IdString.TryParse(null, out _).Should().BeFalse();
+        Assert.False(IdString.TryParse(null, out _));
     }
 
     [Fact]
     public void String_Parse_Null()
     {
-        var action = () => IdString.Parse(null!);
-        action.Should().Throw<FormatException>();
+        Assert.Throws<FormatException>(() => IdString.Parse(null!));
     }
 
     [Fact]
     public void MongoDB_NullableStringId_ParseNull()
     {
         var value = BsonClone<IdString?>(null);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
     public void SystemTextJson_NullableStringId_ParseNull()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdString?>("null");
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
     public void NewtonsoftJson_NullableStringId_ParseNull()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdString?>("null");
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
     public void NewtonsoftJson_Int32_ParseNull()
     {
-        var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null");
-        action.Should().Throw<JsonException>();
+        Assert.Throws<JsonSerializationException>(() => Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32>("null"));
     }
 
     [Fact]
     public void NewtonsoftJson_IdRecordStructInt32_ParseNull()
     {
-        var action = () => Newtonsoft.Json.JsonConvert.DeserializeObject<IdRecordStructInt32>("null");
-        action.Should().Throw<JsonException>();
+        Assert.Throws<JsonSerializationException>(() => Newtonsoft.Json.JsonConvert.DeserializeObject<IdRecordStructInt32>("null"));
     }
 
     [Fact]
     public void NewtonsoftJson_NullableInt32_ParseNull()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("null");
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
     public void NewtonsoftJson_NullableInt32_ParseValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt32?>("42");
-        value!.Value.Value.Should().Be(42);
+        Assert.Equal(42, value!.Value.Value);
     }
-
-#if NET7_0_OR_GREATER
+    #if NET7_0_OR_GREATER
     [Fact]
     public void NewtonsoftJson_Int128_ParseStringValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("\"170141183460469231731687303715884105727\"");
-        value!.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void NewtonsoftJson_Int128_ParseLargeIntValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("170141183460469231731687303715884105727");
-        value!.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture), value!.Value.Value);
+
     }
 
     [Fact]
     public void NewtonsoftJson_Int128_ParseIntValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdInt128?>("42");
-        value!.Value.Value.Should().Be(Int128.Parse("42", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("42", CultureInfo.InvariantCulture), value!.Value.Value);
+
     }
     [Fact]
     public void NewtonsoftJson_UInt128_ParseStringValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("\"340282366920938463463374607431768211455\"");
-        value!.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void NewtonsoftJson_UInt128_ParseLargeIntValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("340282366920938463463374607431768211455");
-        value!.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void NewtonsoftJson_UInt128_ParseIntValue()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdUInt128?>("42");
-        value!.Value.Value.Should().Be(UInt128.Parse("42", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("42", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void SystemTextJson_Int128_ParseStringValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("\"170141183460469231731687303715884105727\"");
-        value!.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void SystemTextJson_Int128_ParseLargeIntValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("170141183460469231731687303715884105727");
-        value!.Value.Value.Should().Be(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("170141183460469231731687303715884105727", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void SystemTextJson_Int128_ParseIntValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdInt128?>("42");
-        value!.Value.Value.Should().Be(Int128.Parse("42", CultureInfo.InvariantCulture));
+        Assert.Equal(Int128.Parse("42", CultureInfo.InvariantCulture), value!.Value.Value);
     }
+
     [Fact]
     public void SystemTextJson_UInt128_ParseStringValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("\"340282366920938463463374607431768211455\"");
-        value!.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void SystemTextJson_UInt128_ParseLargeIntValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("340282366920938463463374607431768211455");
-        value!.Value.Value.Should().Be(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("340282366920938463463374607431768211455", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
     public void SystemTextJson_UInt128_ParseIntValue()
     {
         var value = System.Text.Json.JsonSerializer.Deserialize<IdUInt128?>("42");
-        value!.Value.Value.Should().Be(UInt128.Parse("42", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("42", CultureInfo.InvariantCulture), value!.Value.Value);
     }
 
     [Fact]
@@ -335,7 +333,7 @@ public sealed partial class StronglyTypedIdTests
     {
         var json = System.Text.Json.JsonSerializer.Serialize(new Dictionary<IdUInt128, object?> { [IdUInt128.Parse("1")] = null });
         var value = System.Text.Json.JsonSerializer.Deserialize<Dictionary<IdUInt128, object?>>(json);
-        value!.Single().Key.Value.Should().Be(UInt128.Parse("1", CultureInfo.InvariantCulture));
+        Assert.Equal(UInt128.Parse("1", CultureInfo.InvariantCulture), value!.Single().Key.Value);
     }
 #endif
 
@@ -343,35 +341,35 @@ public sealed partial class StronglyTypedIdTests
     public void NewtonsoftJson_IdClassString_ParseNull()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdClassString>("null");
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
     public void NewtonsoftJson_IdClassString_ParseString()
     {
         var value = Newtonsoft.Json.JsonConvert.DeserializeObject<IdClassString>("\"test\"");
-        value.Should().Be(IdClassString.FromString("test"));
+        Assert.Equal(IdClassString.FromString("test"), value);
     }
 
     [Fact]
     public void IdClassString_ToString_Null()
     {
         var value = IdClassString.FromString(null!);
-        value.ToString().Should().Be("IdClassString { Value = <null> }");
+        Assert.Equal("IdClassString { Value = <null> }", value.ToString());
     }
 
     [Fact]
     public void IdClassString_ToString_NonNull()
     {
         var value = IdClassString.FromString("test");
-        value.ToString().Should().Be("IdClassString { Value = test }");
+        Assert.Equal("IdClassString { Value = test }", value.ToString());
     }
 
     [Fact]
     public void IdInt32_ToString_NonNull()
     {
         var value = IdInt32.FromInt32(-1);
-        value.ToString().Should().Be("IdInt32 { Value = -1 }");
+        Assert.Equal("IdInt32 { Value = -1 }", value.ToString());
     }
 
     [Fact]

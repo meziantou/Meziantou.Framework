@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Csv.Tests;
@@ -93,7 +92,7 @@ public class CsvWriterTests
         while ((csvRow = await reader.ReadRowAsync()) is not null)
         {
             rowIndex++;
-            csvRow.Values.ToList().Should().BeEquivalentTo(rows[rowIndex]);
+            Assert.Equivalent(rows[rowIndex], csvRow.Values.ToList());
         }
 
         Assert.Equal(rows.Count - 1, rowIndex);

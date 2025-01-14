@@ -1,6 +1,5 @@
 using System.Text;
 using System.Xml.Linq;
-using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -101,11 +100,11 @@ public sealed class ResxGeneratorTest
         });
         Assert.Equal("test.resx.g.cs", Path.GetFileName(result.GeneratedFilePath));
         var fileContent = result.GeneratedFileRoot.ToFullString();
-        Assert.Contains("Sample", fileContent);
-        fileContent.Should().NotContain("FormatSample");
-        Assert.Contains("HelloWorld\n", fileContent);
-        Assert.Contains("FormatHelloWorld(object? arg0)", fileContent);
-        Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent);
+        Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("FormatSample", fileContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HelloWorld\n", fileContent, StringComparison.Ordinal);
+        Assert.Contains("FormatHelloWorld(object? arg0)", fileContent, StringComparison.Ordinal);
+        Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -141,18 +140,20 @@ public sealed class ResxGeneratorTest
                 RootNamespace = "Test",
             });
 
-        result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).Should().SatisfyRespectively(tree =>
+        Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal),
+            tree =>
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Assert.Equal("test.NewResource.resx.g.cs", Path.GetFileName(tree.FilePath));
-                Assert.Contains("BBB", fileContent);
-            }, tree =>
+                Assert.Contains("BBB", fileContent, StringComparison.Ordinal);
+            },
+            tree =>
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
                 Assert.Equal("test.resx.g.cs", Path.GetFileName(tree.FilePath));
-                Assert.Contains("Sample", fileContent);
-                Assert.Contains("HelloWorld", fileContent);
-                Assert.Contains("AAA", fileContent);
+                Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
+                Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
+                Assert.Contains("AAA", fileContent, StringComparison.Ordinal);
             });
     }
 
@@ -187,7 +188,7 @@ public sealed class ResxGeneratorTest
             Namespace = "test",
         }, mustCompile: false);
 
-        result.Diagnostics.Should().SatisfyRespectively(diag => Assert.Equal("MFRG0001", diag.Id));
+        Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
     }
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Globbing.Tests;
@@ -20,9 +19,9 @@ public class GlobTests
     public void ParseInvalid(string pattern)
     {
         Assert.False(Glob.TryParse(pattern, GlobOptions.None, out var result));
-        result.Should().BeNull();
+        Assert.Null(result);
 
-        new Func<object>(() => Glob.Parse(pattern, GlobOptions.None)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => Glob.Parse(pattern, GlobOptions.None));
     }
 
     [Theory]

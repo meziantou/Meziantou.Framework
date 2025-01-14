@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -12,8 +11,10 @@ public sealed class ObjectGraphVisitorTests
         var visitor = new TestObjectGraphVisitor();
         visitor.Visit(new { A = 0, B = new object[] { "abc", 1u } });
 
-        visitor.VisitedValues.Should().Contain([0, "abc", 1u]);
-        visitor.VisitedProperties.Select(p => p.Name).Should().Contain(["Length"]);
+        Assert.Contains(0, visitor.VisitedValues);
+        Assert.Contains("abc", visitor.VisitedValues);
+        Assert.Contains(1u, visitor.VisitedValues);
+        Assert.Contains("Length", visitor.VisitedProperties.Select(p => p.Name));
     }
 
     [Fact]
@@ -25,7 +26,8 @@ public sealed class ObjectGraphVisitorTests
 
         visitor.Visit(child);
 
-        visitor.VisitedValues.Should().Contain(["a", "b"]);
+        Assert.Contains("a", visitor.VisitedValues);
+        Assert.Contains("b", visitor.VisitedValues);
     }
 
     [Fact]

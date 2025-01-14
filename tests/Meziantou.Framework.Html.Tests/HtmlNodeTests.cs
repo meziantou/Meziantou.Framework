@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -26,7 +25,7 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        doc.SelectSingleNode("/p").ParentElement.Should().BeNull();
+        Assert.Null(doc.SelectSingleNode("/p").ParentElement);
     }
 
     [Fact]

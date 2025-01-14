@@ -30,6 +30,8 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
         return HashCode.Combine(ProcessId, ParentProcessId);
     }
 
+    public override string ToString() => $"Id: {ProcessId}; Parent Id: {ParentProcessId}";
+
     public Process ToProcess()
     {
         return Process.GetProcessById(ProcessId);

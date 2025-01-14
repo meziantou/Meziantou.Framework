@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -15,8 +14,8 @@ public class VisitorTests
 
         foreach (var type in types)
         {
-            Action visit = () => VisitType(type);
-            visit.Should().NotThrow(type.FullName + " should be visitable");
+            // Should not throw
+            VisitType(type);
         }
     }
 

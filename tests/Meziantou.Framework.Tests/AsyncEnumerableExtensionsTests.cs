@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -54,8 +53,8 @@ public sealed class AsyncEnumerableExtensionsTests
     [Fact]
     public async Task FirstAsyncTest()
     {
-        await new Func<Task>(async () => await CreateEnumerable<int>().FirstAsync()).Should().ThrowExactlyAsync<InvalidOperationException>();
-        await new Func<Task>(async () => await CreateEnumerable(1, 2).FirstAsync(item => item == 3)).Should().ThrowExactlyAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await CreateEnumerable<int>().FirstAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await CreateEnumerable(1, 2).FirstAsync(item => item == 3));
         Assert.Equal(0, await CreateEnumerable<int>().FirstOrDefaultAsync());
         Assert.Equal(1, await CreateEnumerable(1, 2, 3).FirstOrDefaultAsync());
         Assert.Equal(2, await CreateEnumerable(1, 2, 3).FirstOrDefaultAsync(i => i == 2));
@@ -64,8 +63,8 @@ public sealed class AsyncEnumerableExtensionsTests
     [Fact]
     public async Task LastAsyncTest()
     {
-        await new Func<Task>(async () => await CreateEnumerable<int>().LastAsync()).Should().ThrowExactlyAsync<InvalidOperationException>();
-        await new Func<Task>(async () => await CreateEnumerable(1, 2).LastAsync(item => item == 3)).Should().ThrowExactlyAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await CreateEnumerable<int>().LastAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await CreateEnumerable(1, 2).LastAsync(item => item == 3));
         Assert.Equal(0, await CreateEnumerable<int>().LastOrDefaultAsync());
         Assert.Equal(3, await CreateEnumerable(1, 2, 3).LastOrDefaultAsync());
         Assert.Equal(2, await CreateEnumerable(1, 2, 3).LastOrDefaultAsync(i => i == 2));

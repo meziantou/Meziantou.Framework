@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -76,14 +75,14 @@ public class JobObjectTests
     public void InvalidName_TooLong()
     {
         var objectName = "Local\\" + new string('a', 40000);
-        FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
+        Assert.Throws<Win32Exception>(() => new JobObject(objectName));
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
     public void InvalidName_InvalidCharacter()
     {
         var objectName = "Local\\a\\b";
-        FluentActions.Invoking(() => new JobObject(objectName)).Should().Throw<Win32Exception>();
+        Assert.Throws<Win32Exception>(() => new JobObject(objectName));
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -95,18 +94,18 @@ public class JobObjectTests
         try
         {
 
-            FluentActions.Invoking(() => JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests")).Should().Throw<Win32Exception>();
+            Assert.Throws<Win32Exception>(() => JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests"));
             Assert.False(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? testObject));
-            testObject.Should().BeNull();
+            Assert.Null(testObject);
             testObject?.Dispose();
 
             using (new JobObject("JobObjectTests"))
             {
                 JobObject job = JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests");
-                job.Should().NotBeNull();
+                Assert.NotNull(job);
                 job.Dispose();
                 Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out job));
-                job.Should().NotBeNull();
+                Assert.NotNull(job);
                 job.Dispose();
             }
         }

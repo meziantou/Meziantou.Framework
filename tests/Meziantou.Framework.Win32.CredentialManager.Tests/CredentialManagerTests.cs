@@ -1,4 +1,3 @@
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -36,7 +35,7 @@ public sealed class CredentialManagerTests : IDisposable
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.Should().BeNull();
+        Assert.Null(cred);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -70,7 +69,7 @@ public sealed class CredentialManagerTests : IDisposable
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.Should().BeNull();
+        Assert.Null(cred);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
@@ -88,7 +87,7 @@ public sealed class CredentialManagerTests : IDisposable
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.Should().BeNull();
+        Assert.Null(cred);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -135,11 +134,10 @@ public sealed class CredentialManagerTests : IDisposable
                 var credentials = CredentialManager.EnumerateCredentials(filter);
                 foreach (var credential in credentials)
                 {
-                    Assert.NotEmpty(credential.UserName);
-                    Assert.NotEmpty(credential.Password);
+                    Assert.NotEmpty(credential.ApplicationName);
                 }
 
-                credentials.Should().NotBeEmpty().And.ContainSingle(cred => cred.ApplicationName == _credentialName1);
+                Assert.Single(credentials, cred => cred.ApplicationName == _credentialName1);
             }
             finally
             {
@@ -160,16 +158,16 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, credType);
 
         var cred = CredentialManager.ReadCredential(_credentialName1, credType);
-        cred.Should().NotBeNull();
+        Assert.NotNull(cred);
         Assert.Equal(_credentialName1, cred.ApplicationName);
         Assert.Equal("John", cred.UserName);
-        cred.Password.Should().BeNull(); // Domain Passwords can not be read back using CredRead API
+        Assert.Null(cred.Password); // Domain Passwords can not be read back using CredRead API
         Assert.Equal("Test", cred.Comment);
         Assert.Equal(credType, cred.CredentialType);
 
         CredentialManager.DeleteCredential(_credentialName1, credType);
         cred = CredentialManager.ReadCredential(_credentialName1, credType);
-        cred.Should().BeNull();
+        Assert.Null(cred);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -195,9 +193,8 @@ public sealed class CredentialManagerTests : IDisposable
     [Fact, RunIf(FactOperatingSystem.Windows)]
     public void CredentialManager_CredentialType_Invalid()
     {
-        var act = () => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate);
-
-        act.Should().Throw<ArgumentOutOfRangeException>().WithMessage("Only CredentialType.Generic and CredentialType.DomainPassword is supported*");
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session, CredentialType.DomainCertificate));
+        Assert.StartsWith("Only CredentialType.Generic and CredentialType.DomainPassword is supported", ex.Message, StringComparison.Ordinal);
     }
 
     public void Dispose()

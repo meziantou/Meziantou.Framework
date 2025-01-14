@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;

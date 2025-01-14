@@ -1,7 +1,6 @@
 #pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;

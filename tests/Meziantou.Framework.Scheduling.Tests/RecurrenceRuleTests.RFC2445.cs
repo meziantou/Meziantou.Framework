@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests;
@@ -32,7 +31,7 @@ public partial class RecurrenceRuleTests
         {
             while (enumerator1.MoveNext())
             {
-                occurrenceCount.Should().BeLessOrEqualTo(maxOccurences.Value);
+                Assert.True(occurrenceCount <= maxOccurences.Value);
                 occurrenceCount++;
             }
         }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Versioning.Tests;
@@ -40,9 +39,9 @@ public class SemanticVersionTests
     public void TryParse_ShouldNotParseVersion(string version)
     {
         Assert.False(SemanticVersion.TryParse(version, out _));
-        new Func<object>(() => SemanticVersion.Parse(version)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => SemanticVersion.Parse(version));
         Assert.False(SemanticVersion.TryParse(version.AsSpan(), out _));
-        new Func<object>(() => SemanticVersion.Parse(version)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => SemanticVersion.Parse(version.AsSpan()));
     }
 
     [Fact]
@@ -56,7 +55,7 @@ public class SemanticVersionTests
     public void Parse_ShouldNotParseNullVersion()
     {
 #pragma warning disable IDE0004 // Remove Unnecessary Cast
-        new Func<object>(() => SemanticVersion.Parse((string)null)).Should().ThrowExactly<ArgumentNullException>();
+        Assert.Throws<ArgumentNullException>(() => SemanticVersion.Parse((string)null));
 #pragma warning restore IDE0004
     }
 
@@ -82,8 +81,8 @@ public class SemanticVersionTests
         Assert.Equal(left, left);
         Assert.Equal(right, right);
 
-        right.Should().NotBe(left);
-        right.GetHashCode().Should().NotBe(left.GetHashCode());
+        Assert.NotEqual(left, right);
+        Assert.NotEqual(left.GetHashCode(), right.GetHashCode());
         Assert.False(left == right);
         Assert.True(left != right);
         Assert.True(left < right);
@@ -146,31 +145,31 @@ public class SemanticVersionTests
     [Fact]
     public void Constructor_WithInvalidPrerelease_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: ["01"], metadata: null)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: ["01"], metadata: null));
     }
 
     [Fact]
     public void Constructor_WithEmptyPrerelease_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: [""], metadata: null)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: [""], metadata: null));
     }
 
     [Fact]
     public void Constructor_WithEmptyMetadata_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: [""])).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: [""]));
     }
 
     [Fact]
     public void Constructor_WithInvalidMetadata_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: ["/"])).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: ["/"]));
     }
 
     [Fact]
     public void Constructor_WithInvalidMetadataString_ShouldThrowException()
     {
-        new Func<object>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new SemanticVersion(1, 2, 3, prereleaseLabel: null, metadata: "label./"));
     }
 
     [Fact]

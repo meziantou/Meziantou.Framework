@@ -1,5 +1,3 @@
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tool.Tests;
@@ -26,7 +24,7 @@ public class HtmlToolTests
         var console = new StringBuilderConsole();
         var result = await Program.MainImpl(["--help"], console);
         Assert.Equal(0, result);
-        Assert.Contains("meziantou.html", console.Output);
+        Assert.Contains("meziantou.html", console.Output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -90,28 +88,25 @@ public class HtmlToolTests
     public async Task InlineResources()
     {
         await using var temp = TemporaryDirectory.Create();
-        var htmlPath = await temp.CreateTextFileAsync("test.html",
-            """
-<link href="style.css" />
-<script src="script.js" />
-<img src="img.png" />
-<img src="img.jpg" />
-""", XunitCancellationToken);
+        var htmlPath = await temp.CreateTextFileAsync("test.html", """
+            <link href="style.css" />
+            <script src="script.js" />
+            <img src="img.png" />
+            <img src="img.jpg" />
+            """, XunitCancellationToken);
 
         await temp.CreateTextFileAsync("style.css", "a", XunitCancellationToken);
         await temp.CreateTextFileAsync("script.js", "b", XunitCancellationToken);
         await temp.CreateTextFileAsync("img.png", "c", XunitCancellationToken);
 
         var result = await Program.MainImpl(["inline-resources", "--single-file=" + htmlPath, "--resource-patterns=.(png|js|css)$"], new XunitConsole(_testOutputHelper));
-        using (new AssertionScope())
-        {
-            Assert.Equal(0, result);
-            await ContentEquals(htmlPath, """
-<style>a</style>
-<script>b</script>
-<img src="data:image/png;base64,Yw==" />
-<img src="img.jpg" />
-""");
-        }
+        Assert.Equal(0, result);
+        await ContentEquals(htmlPath, """
+            <style>a</style>
+            <script>b</script>
+            <img src="data:image/png;base64,Yw==" />
+            <img src="img.jpg" />
+            """);
+
     }
 }

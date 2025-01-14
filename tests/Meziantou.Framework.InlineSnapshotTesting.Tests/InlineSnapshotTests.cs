@@ -4,7 +4,6 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
-using FluentAssertions;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Microsoft.CodeAnalysis;

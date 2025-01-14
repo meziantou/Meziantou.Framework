@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -19,8 +18,8 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);
-        log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") });
-        log.Scopes.Should().BeEquivalentTo(Array.Empty<object>());
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.Empty(log.Scopes);
         Assert.Equal("[my_category] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
 
@@ -39,8 +38,8 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test 1", log.Message);
-        log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") });
-        log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
+        Assert.Equivalent(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } }, log.Scopes);
         Assert.Equal("[my_category] Information: Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
     }
 
@@ -57,8 +56,8 @@ public sealed partial class InMemoryLoggerTests
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test 1", log.Message);
-        log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") });
-        log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") }, log.State);
+        Assert.Equivalent(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } }, log.Scopes);
         Assert.Equal("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
         Assert.True(log.TryGetParameterValue("{OriginalFormat}", out var format));
         Assert.Equal("Test {Number}", format);
@@ -81,7 +80,7 @@ public sealed partial class InMemoryLoggerTests
         var logger = provider.CreateLogger("my_category");
         Parallel.For(0, 100_000, i => Log(logger, 1));
 
-        provider.Logs.Should().HaveCount(100_000);
+        Assert.Equivalent(100_000, provider.Logs.Count());
     }
 
 #if NET8_0_OR_GREATER

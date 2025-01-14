@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;

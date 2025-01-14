@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+﻿using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;

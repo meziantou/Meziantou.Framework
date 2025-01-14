@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -20,6 +19,6 @@ public class AwaitExpressionTests
         var expression = new AwaitExpression();
         var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
         Assert.Equal(expression, configuredExpression);
-        configuredExpression.Expression.Should().BeNull();
+        Assert.Null(configuredExpression.Expression);
     }
 }

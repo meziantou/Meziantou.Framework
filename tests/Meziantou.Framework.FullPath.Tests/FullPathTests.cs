@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -82,7 +81,7 @@ public sealed class FullPathTests
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
 
-        rootPath.Should().NotBe(childPath);
+        Assert.NotEqual(childPath, rootPath);
     }
 
     [Theory]
@@ -224,7 +223,7 @@ public sealed class FullPathTests
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1));
         Assert.Equal(symlink, resolved1);
         Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2));
-        resolved2.Value.Value.Should().EndWith(Path.Combine("a", "b.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.EndsWith(Path.Combine("a", "b.txt"), resolved2.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]
@@ -237,7 +236,7 @@ public sealed class FullPathTests
         var file = temp.CreateEmptyFile("c/d.txt");
         Assert.True(file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved));
 
-        resolved.Value.Value.Should().EndWith(Path.Combine("a", "b", "d.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.EndsWith(Path.Combine("a", "b", "d.txt"), resolved.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]

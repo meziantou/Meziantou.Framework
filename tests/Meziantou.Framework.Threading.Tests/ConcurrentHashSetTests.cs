@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Meziantou.Framework.Collections.Concurrent;
 using Xunit;
 
@@ -15,16 +14,16 @@ public class ConcurrentHashSetTests
         Assert.True(set.Add(3));
         Assert.False(set.Add(3));
 
-        set.Should().Contain(1);
-        set.Should().NotContain(4);
+        Assert.Contains(1, set);
+        Assert.DoesNotContain(4, set);
 
-        set.Should().HaveCount(3);
-        set.Should().BeEquivalentTo([1, 2, 3]);
+        Assert.Equal(3, set.Count);
+        Assert.Equal([1, 2, 3], set.Order());
 
         set.Clear();
         Assert.Empty(set);
 
         set.AddRange(4, 5, 6);
-        set.Should().BeEquivalentTo([4, 5, 6]);
+        Assert.Equal([4, 5, 6], set.Order());
     }
 }

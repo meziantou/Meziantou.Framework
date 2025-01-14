@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Meziantou.Framework.InlineSnapshotTesting.Utils;
+﻿using Meziantou.Framework.InlineSnapshotTesting.Utils;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;

@@ -1,6 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -56,12 +54,9 @@ public sealed class ByteSizeTests
         var actual = ByteSize.Parse(str, CultureInfo.InvariantCulture);
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
 
-        using (new AssertionScope())
-        {
-            Assert.Equal(expectedValue, actual.Value);
-            Assert.Equal(expectedValue, actualTry.Value);
-            Assert.True(parsed);
-        }
+        Assert.Equal(expectedValue, actual.Value);
+        Assert.Equal(expectedValue, actualTry.Value);
+        Assert.True(parsed);
     }
 
     [Theory]
@@ -69,8 +64,7 @@ public sealed class ByteSizeTests
     [InlineData("1AB")]
     public void Parse_Invalid(string str)
     {
-        Func<object> parse = () => ByteSize.Parse(str, CultureInfo.InvariantCulture);
-        parse.Should().ThrowExactly<FormatException>();
+        Assert.Throws<FormatException>(() => ByteSize.Parse(str, CultureInfo.InvariantCulture));
 
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
         Assert.False(parsed);

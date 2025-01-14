@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -24,7 +23,7 @@ public class EnumerableTests
         var list = new List<int>() { 1, 2, 3 };
 
         // Act
-        new Action(() => list.Replace(10, 5)).Should().ThrowExactly<ArgumentOutOfRangeException>();
+        Assert.Throws<ArgumentOutOfRangeException>(() => list.Replace(10, 5));
     }
 
     [Fact]
@@ -70,7 +69,7 @@ public class EnumerableTests
             bag.Add(i);
         });
 
-        bag.Should().HaveCount(100);
+        Assert.Equal(100, bag.Count);
     }
 
     [Fact]
@@ -83,7 +82,7 @@ public class EnumerableTests
             bag.Add(i);
         });
 
-        bag.Should().HaveCount(100);
+        Assert.Equal(100, bag.Count);
     }
 
     [Fact]
@@ -119,7 +118,7 @@ public class EnumerableTests
     public void EmptyIfNull_NotNull()
     {
         var items = new string[] { "" };
-        items.EmptyIfNull().Should().BeSameAs(items);
+        Assert.StrictEqual(items, items.EmptyIfNull());
     }
 
 #nullable enable
@@ -226,6 +225,6 @@ public class EnumerableTests
     {
         var data = new[] { "a" }.AsEnumerableOnce();
         _ = data.ToList();
-        FluentActions.Invoking(() => data.ToList()).Should().ThrowExactly<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(() => data.ToList());
     }
 }

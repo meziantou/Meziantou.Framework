@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Meziantou.Framework.HumanReadable.Utils;
+﻿using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 

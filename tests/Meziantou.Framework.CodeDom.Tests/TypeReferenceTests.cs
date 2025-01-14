@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -35,7 +34,7 @@ public class TypeReferenceTests
         // Act
         var typeReference = new TypeReference(typeof(Nullable<>)).MakeGeneric(typeof(int));
         Assert.Equal("System.Nullable<System.Int32>", typeReference.ClrFullTypeName);
-        typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList().Should().BeEquivalentTo([typeof(int).FullName]);
+        Assert.Equal([typeof(int).FullName], typeReference.Parameters.Select(p => p.ClrFullTypeName));
     }
 
     private sealed class TestNested

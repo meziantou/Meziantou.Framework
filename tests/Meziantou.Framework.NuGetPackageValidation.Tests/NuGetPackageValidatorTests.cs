@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Meziantou.Framework.NuGetPackageValidation.Rules;
+﻿using Meziantou.Framework.NuGetPackageValidation.Rules;
 using Xunit;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
@@ -53,7 +52,7 @@ public sealed class NuGetPackageValidatorTests
 
     private static void AssertHasError(NuGetPackageValidationResult result, int expectedErrorCode)
     {
-        result.Errors.Should().Contain(item => item.ErrorCode == expectedErrorCode);
+        Assert.Contains(result.Errors, item => item.ErrorCode == expectedErrorCode);
     }
 
     [Fact]

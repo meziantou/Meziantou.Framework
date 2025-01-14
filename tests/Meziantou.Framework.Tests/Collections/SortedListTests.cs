@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -11,8 +10,8 @@ public sealed class SortedListTests
     {
         var list = new SortedList<int> { 1, 3, 2, 1 };
         Assert.Equal([1, 1, 2, 3], list);
-        Assert.True(list.Contains(1));
-        Assert.False(list.Contains(42));
+        Assert.Contains(1, list);
+        Assert.DoesNotContain(42, list);
         Assert.Equal(1, list.IndexOf(1));
         Assert.Equal(2, list.IndexOf(2));
         Assert.Equal(-1, list.IndexOf(42));

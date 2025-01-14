@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -13,7 +12,7 @@ public class DefaultConverterTests_DbNullTo
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int? value);
         Assert.True(converted);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 
     [Fact]
@@ -32,6 +31,6 @@ public class DefaultConverterTests_DbNullTo
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
         Assert.True(converted);
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 }

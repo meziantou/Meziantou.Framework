@@ -1,6 +1,4 @@
 using System.Text;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.Csv.Tests;
@@ -24,17 +22,13 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        using (new AssertionScope())
-        {
-            Assert.Equal("value1.1", row1[0]);
-            Assert.Equal("value1.2", row1[1]);
-            Assert.Equal("value1.3", row1[2]);
-            Assert.Equal("value2.1", row2[0]);
-            Assert.Equal("value2.2", row2[1]);
-            Assert.Equal("value2.3", row2[2]);
-
-            row3.Should().BeNull();
-        }
+        Assert.Equal("value1.1", row1[0]);
+        Assert.Equal("value1.2", row1[1]);
+        Assert.Equal("value1.3", row1[2]);
+        Assert.Equal("value2.1", row2[0]);
+        Assert.Equal("value2.2", row2[1]);
+        Assert.Equal("value2.3", row2[2]);
+        Assert.Null(row3);
     }
 
     [Fact]
@@ -54,17 +48,14 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        using (new AssertionScope())
-        {
-            Assert.Equal("value1.1", row1["column1"]);
-            Assert.Equal("value1.2", row1["column2"]);
-            Assert.Equal("value1.3", row1["column3"]);
-            Assert.Equal("value2.1", row2["column1"]);
-            Assert.Equal("value2.2", row2["column2"]);
-            Assert.Equal("value2.3", row2["column3"]);
+        Assert.Equal("value1.1", row1["column1"]);
+        Assert.Equal("value1.2", row1["column2"]);
+        Assert.Equal("value1.3", row1["column3"]);
+        Assert.Equal("value2.1", row2["column1"]);
+        Assert.Equal("value2.2", row2["column2"]);
+        Assert.Equal("value2.3", row2["column3"]);
 
-            row3.Should().BeNull();
-        }
+        Assert.Null(row3);
     }
 
     [Fact]
@@ -84,17 +75,14 @@ public class CsvReaderTests
         var row2 = await reader.ReadRowAsync();
         var row3 = await reader.ReadRowAsync();
 
-        using (new AssertionScope())
-        {
-            Assert.Equal("value1.1", row1["column1"]);
-            Assert.Equal("value1.2\r\nline2", row1["column2"]);
-            Assert.Equal("value1.3", row1["column3"]);
-            Assert.Equal("value2.1", row2["column1"]);
-            Assert.Equal("value2.2", row2["column2"]);
-            Assert.Equal("value2.3", row2["column3"]);
+        Assert.Equal("value1.1", row1["column1"]);
+        Assert.Equal("value1.2\r\nline2", row1["column2"]);
+        Assert.Equal("value1.3", row1["column3"]);
+        Assert.Equal("value2.1", row2["column1"]);
+        Assert.Equal("value2.2", row2["column2"]);
+        Assert.Equal("value2.3", row2["column3"]);
 
-            row3.Should().BeNull();
-        }
+        Assert.Null(row3);
     }
 
     [Fact]

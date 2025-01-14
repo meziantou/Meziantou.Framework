@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
@@ -32,7 +31,7 @@ public sealed class DependencyScannerTests
 
         var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DummyScanner()] }, XunitCancellationToken);
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-        items.Should().HaveCount(FileCount);
+        Assert.Equal(FileCount, items.Count);
     }
 
     [Fact]
@@ -62,11 +61,8 @@ public sealed class DependencyScannerTests
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
 
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken))
-            .Should().ThrowExactlyAsync<InvalidOperationException>();
-
-        await new Func<Task>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken))
-            .Should().ThrowExactlyAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, onDependencyFound: _ => { }, XunitCancellationToken));
     }
 
     [Theory]
@@ -77,19 +73,19 @@ public sealed class DependencyScannerTests
         await using var directory = TemporaryDirectory.Create();
         await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
 
-        await new Func<Task>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ShouldScanThrowScanner()] }, XunitCancellationToken))
             {
             }
-        }).Should().ThrowExactlyAsync<InvalidOperationException>();
+        });
 
-        await new Func<Task>(async () =>
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
         {
             foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { DegreeOfParallelism = degreeOfParallelism, Scanners = [new ScanThrowScanner()] }, XunitCancellationToken))
             {
             }
-        }).Should().ThrowExactlyAsync<InvalidOperationException>();
+        });
     }
 
     [Fact]
@@ -102,7 +98,7 @@ public sealed class DependencyScannerTests
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToArray();
         Assert.NotEmpty(scanners);
-        scanners.Should().BeEquivalentTo(allScanners);
+        Assert.Equal(allScanners, scanners);
     }
 
     [Theory]
@@ -127,7 +123,7 @@ public sealed class DependencyScannerTests
             ],
         };
         var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
-        result.Should().SatisfyRespectively(dep => Assert.Equal(file1, dep.VersionLocation.FilePath));
+        Assert.Collection(result, dep => Assert.Equal(file1, dep.VersionLocation.FilePath));
     }
 
     [Fact]
@@ -138,7 +134,7 @@ public sealed class DependencyScannerTests
         await File.WriteAllTextAsync(filePath, "", XunitCancellationToken);
 
         var items = await DependencyScanner.ScanFileAsync(directory.FullPath, filePath, new ScannerOptions { Scanners = [new DummyScanner()] }, XunitCancellationToken);
-        items.Should().HaveCount(1);
+        Assert.Single(items);
     }
 
     [Fact]
@@ -151,7 +147,7 @@ public sealed class DependencyScannerTests
         await File.WriteAllTextAsync(filePath2, "", XunitCancellationToken);
 
         var items = await DependencyScanner.ScanFilesAsync(directory.FullPath, [filePath1, filePath2], new ScannerOptions { Scanners = [new DummyScanner()] }, XunitCancellationToken);
-        items.Should().HaveCount(2);
+        Assert.Equal(2, items.Count);
     }
 
     [Fact]
@@ -161,14 +157,14 @@ public sealed class DependencyScannerTests
         fs.AddFile("test.txt", "");
 
         var items = await DependencyScanner.ScanFilesAsync("/", ["/dir/test.txt"], new ScannerOptions { FileSystem = fs, Scanners = [new DummyScanner()] }, XunitCancellationToken);
-        items.Should().HaveCount(1);
+        Assert.Single(items);
     }
 
     [Fact]
     public async Task ScanFile_InMemory()
     {
         var items = await DependencyScanner.ScanFileAsync("/", "/test.txt", [], [new DummyScanner()], XunitCancellationToken);
-        items.Should().HaveCount(1);
+        Assert.Single(items);
     }
 
     [Fact]
@@ -181,7 +177,7 @@ public sealed class DependencyScannerTests
         var location = new TextLocation(FileSystem.Instance, filePath, 1, 2, 1);
         await location.UpdateAsync("e", "a", XunitCancellationToken);
 
-        await FluentActions.Invoking(() => location.UpdateAsync("e", "b", XunitCancellationToken)).Should().ThrowExactlyAsync<DependencyScannerException>();
+        await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("e", "b", XunitCancellationToken));
     }
 
     private sealed class DummyScanner : DependencyScanner

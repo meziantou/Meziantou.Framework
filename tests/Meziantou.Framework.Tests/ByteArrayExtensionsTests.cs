@@ -1,5 +1,4 @@
 #pragma warning disable MEZ_NET9
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -129,13 +128,13 @@ public class ByteArrayExtensionsTests
     [Fact]
     public void ParseHexa_InvalidCharacters()
     {
-        new Func<object>(() => HexaConverter.ParseHexaString("0H")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => HexaConverter.ParseHexaString("0H"));
     }
 
     [Fact]
     public void ParseHexa_InvalidLength()
     {
-        new Func<object>(() => HexaConverter.ParseHexaString("000")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => HexaConverter.ParseHexaString("000"));
     }
 
     [Fact]
@@ -267,10 +266,10 @@ public class ByteArrayExtensionsTests
     [Fact]
     public void TryHexa_Span_InvalidLength()
     {
-        new Action(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             Span<byte> bytes = new byte[10];
             HexaConverter.ParseHexaString("000");
-        }).Should().ThrowExactly<ArgumentException>();
+        });
     }
 }

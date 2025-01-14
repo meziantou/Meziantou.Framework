@@ -1,5 +1,4 @@
-﻿using FluentAssertions;
-using Xunit;
+﻿using Xunit;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Tests;
 
@@ -76,7 +75,7 @@ public class ValueParserTests
     public void TryParseMethod()
     {
         Assert.True(ValueConverter.TryParseValue<CustomTypeWithTryParse>("test", out var result));
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]

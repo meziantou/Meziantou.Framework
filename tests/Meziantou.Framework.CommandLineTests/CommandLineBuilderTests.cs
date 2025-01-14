@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using TestUtilities;
 using Xunit;
 using Xunit.Sdk;
@@ -115,7 +113,7 @@ public class CommandLineBuilderTests
         process.WaitForExit();
 
         var errors = process.StandardError.ReadToEnd();
-        errors.Should().BeNullOrEmpty();
+        Assert.True(string.IsNullOrEmpty(errors));
 
         var actualArguments = process.StandardOutput.ReadToEnd().Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
         _testOutputHelper.WriteLine("----------");
@@ -124,10 +122,7 @@ public class CommandLineBuilderTests
             _testOutputHelper.WriteLine(arg);
         }
 
-        using (new AssertionScope())
-        {
-            Assert.Equal(0, process.ExitCode);
-            actualArguments.Should().BeEquivalentTo(expectedArguments);
-        }
+        Assert.Equal(0, process.ExitCode);
+        Assert.Equal(expectedArguments, actualArguments);
     }
 }

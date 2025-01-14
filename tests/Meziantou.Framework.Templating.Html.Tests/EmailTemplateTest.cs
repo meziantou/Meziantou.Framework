@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests;
@@ -15,7 +14,7 @@ public class EmailTemplateTest
         // Act 
         var result = template.Run(out var metadata);
         Assert.Equal("Hello Meziantou!", result);
-        metadata.Title.Should().BeNull();
+        Assert.Null(metadata.Title);
     }
 
     [Fact]
@@ -89,8 +88,8 @@ public class EmailTemplateTest
         // Act 
         var result = template.Run(out var metadata);
         Assert.Equal("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
-        metadata.ContentIdentifiers.Should().SatisfyRespectively(
-            item => Assert.Equal("test1.png", item),
-            item => Assert.Equal("test2.png", item));
+        Assert.Collection(metadata.ContentIdentifiers,
+             item => Assert.Equal("test1.png", item),
+             item => Assert.Equal("test2.png", item));
     }
 }

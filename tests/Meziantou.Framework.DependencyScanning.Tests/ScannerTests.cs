@@ -1,6 +1,5 @@
 #pragma warning disable MA0101
 using System.Text;
-using FluentAssertions;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
@@ -535,7 +534,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
         AssertContainDependency(result, (DependencyType.GitSubmodule, remote.FullPath, head, 0, 0));
 
-        result.Should().OnlyContain(item => !item.VersionLocation.IsUpdatable);
+        Assert.All(result, item => Assert.False(item.VersionLocation.IsUpdatable));
 
         async Task ExecuteProcess(string process, string args, string workingDirectory)
         {
@@ -1157,19 +1156,19 @@ jobs:
         {
             if (dep.Name is not null)
             {
-                dep.NameLocation.Should().NotBeNull();
+                Assert.NotNull(dep.NameLocation);
             }
 
             if (dep.Version is not null)
             {
-                dep.VersionLocation.Should().NotBeNull();
+                Assert.NotNull(dep.VersionLocation);
             }
         }
 
         // Ensure getting scanning in parallel gives the same result
         options.DegreeOfParallelism = 16;
         var dependencies2 = await Scan(options);
-        dependencies2.Should().HaveCount(dependencies.Length);
+        Assert.Equal(dependencies.Length, dependencies2.Length);
         return dependencies;
 
         async Task<Dependency[]> Scan(ScannerOptions options)
@@ -1232,12 +1231,12 @@ jobs:
     {
         foreach (var expected in expectedDependencies)
         {
-            dependencies.Should().Contain(d =>
+            Assert.Contains(dependencies, d =>
                 d.Type == expected.Type &&
                 d.Name == expected.Name &&
                 d.Version == expected.Version &&
                 (expected.VersionLine == 0 || ((ILocationLineInfo)d.VersionLocation).LineNumber == expected.VersionLine) &&
-                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn), $"\n'{expected}' should be detected. Dependencies ({dependencies.Count()}):\n{string.Join('\n', dependencies)}");
+                (expected.VersionColumn == 0 || ((ILocationLineInfo)d.VersionLocation).LinePosition == expected.VersionColumn));
         }
     }
 

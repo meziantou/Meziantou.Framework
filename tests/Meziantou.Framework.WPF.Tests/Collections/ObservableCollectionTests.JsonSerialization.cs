@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Meziantou.Framework.WPF.Collections;
 using Xunit;
 
@@ -20,6 +19,6 @@ public sealed partial class ObservableCollectionTests
         Assert.Equal("[1,2,3]", json);
 
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<ConcurrentObservableCollection<int>>(json);
-        deserialized.Should().BeEquivalentTo(collection);
+        Assert.Equivalent(collection, deserialized);
     }
 }

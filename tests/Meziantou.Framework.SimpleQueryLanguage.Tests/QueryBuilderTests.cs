@@ -1,5 +1,4 @@
 using System.Numerics;
-using FluentAssertions;
 using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Xunit;
 
@@ -398,7 +397,7 @@ public sealed class QueryBuilderTests
         queryBuilder.SetTextFilterHandler((obj, value) => throw new NotSupportedException());
         var query = queryBuilder.Build("id:sample query");
 
-        new Func<object>(() => query.Evaluate(new() { StringValue = "sample" })).Should().ThrowExactly<NotSupportedException>();
+        Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "sample" }));
     }
 
     [Theory]
@@ -587,7 +586,7 @@ public sealed class QueryBuilderTests
         Assert.True(queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 1 }));
         Assert.False(queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 2 }));
 
-        new Func<object>(() => queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 })).Should().ThrowExactly<NotSupportedException>();
+        Assert.Throws<NotSupportedException>(() => queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -670,7 +669,7 @@ public sealed class QueryBuilderTests
         queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => throw new NotSupportedException());
         var query = queryBuilder.Build("dummy:10");
 
-        new Func<object>(() => query.Evaluate(new() { StringValue = "dummy:10" })).Should().ThrowExactly<NotSupportedException>();
+        Assert.Throws<NotSupportedException>(() => query.Evaluate(new() { StringValue = "dummy:10" }));
     }
 
     [Fact]

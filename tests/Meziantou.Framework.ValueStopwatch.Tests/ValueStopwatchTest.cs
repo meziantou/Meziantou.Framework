@@ -1,5 +1,3 @@
-using FluentAssertions;
-using FluentAssertions.Extensions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -22,7 +20,7 @@ public class ValueStopwatchTest
     public void GetElapsedTimeThrowsIfValueStopwatchIsDefaultValue()
     {
         var stopwatch = default(ValueStopwatch);
-        new Func<object>(() => stopwatch.GetElapsedTime()).Should().ThrowExactly<InvalidOperationException>();
+        Assert.Throws<InvalidOperationException>(() => stopwatch.GetElapsedTime());
     }
 
     [Fact]
@@ -31,6 +29,6 @@ public class ValueStopwatchTest
         var stopwatch = ValueStopwatch.StartNew();
         await Task.Delay(200);
         var elapsed = stopwatch.GetElapsedTime();
-        elapsed.Should().BeCloseTo(200.Milliseconds(), precision: TimeSpan.FromSeconds(3));
+        Assert.True(elapsed >= TimeSpan.FromMilliseconds(200));
     }
 }

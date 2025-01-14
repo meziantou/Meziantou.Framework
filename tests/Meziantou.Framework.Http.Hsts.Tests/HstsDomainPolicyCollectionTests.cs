@@ -1,5 +1,4 @@
 ﻿using Xunit;
-using Xunit.Internal;
 
 namespace Meziantou.Framework.Http.Hsts.Tests;
 public sealed class HstsDomainPolicyCollectionTests

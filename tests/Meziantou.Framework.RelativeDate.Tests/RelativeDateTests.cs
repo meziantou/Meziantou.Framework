@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -11,7 +10,7 @@ public class RelativeDateTests
     public void DefaultDate_ToString()
     {
         DateTimeService.Clock = new Clock(new DateTime(2018, 1, 1));
-        new Func<object>(() => new RelativeDate(default).ToString()).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => new RelativeDate(default).ToString());
     }
 
     [Theory]

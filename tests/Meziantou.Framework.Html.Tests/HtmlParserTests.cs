@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -63,7 +62,7 @@ public class HtmlParserTests
 
         var errors = document.Errors.ToList();
 
-        errors.Should().ContainSingle();
+        Assert.Single(errors);
         Assert.Equal(HtmlErrorType.TagNotOpened, errors[0].ErrorType);
     }
 
@@ -75,7 +74,7 @@ public class HtmlParserTests
 
         var errors = document.Errors.ToList();
 
-        errors.Should().ContainSingle();
+        Assert.Single(errors);
         Assert.Equal(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
     }
 

@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -24,7 +23,7 @@ public class ProcessExtensionsTests
 
         var result = await CreateProcess();
         Assert.Equal(0, result.ExitCode);
-        result.Output.Should().ContainSingle();
+        Assert.Single(result.Output);
         Assert.Equal("test", result.Output[0].Text);
         Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
     }
@@ -52,7 +51,7 @@ public class ProcessExtensionsTests
 
         var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None);
         Assert.Equal(0, result.ExitCode);
-        result.Output.Should().ContainSingle();
+        Assert.Single(result.Output);
         Assert.Equal("test", result.Output[0].Text);
         Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
     }
@@ -84,11 +83,10 @@ public class ProcessExtensionsTests
     }
 
     [Fact]
-    public Task RunAsTask_ProcessDoesNotExists()
+    public async Task RunAsTask_ProcessDoesNotExists()
     {
         var psi = new ProcessStartInfo("ProcessDoesNotExists.exe");
-
-        return new Func<Task>(() => psi.RunAsTaskAsync(CancellationToken.None)).Should().ThrowExactlyAsync<Win32Exception>();
+        await Assert.ThrowsAsync<Win32Exception>(() => psi.RunAsTaskAsync(CancellationToken.None));
     }
 
     [Fact]
@@ -119,7 +117,7 @@ public class ProcessExtensionsTests
         }
 
         await cts.CancelAsync();
-        await new Func<Task>(() => task).Should().ThrowAsync<OperationCanceledException>();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -128,8 +126,7 @@ public class ProcessExtensionsTests
         var processes = ProcessExtensions.GetProcesses();
 
         var currentProcess = Process.GetCurrentProcess();
-        processes.Should().Contain(p => p.ProcessId == currentProcess.Id, "Current process is not in the list of processes");
-        processes.Should().OnlyHaveUniqueItems();
+        Assert.Contains(processes, p => p.ProcessId == currentProcess.Id);        Assert.Equal(processes.Distinct(), processes); // items must be unique
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -146,8 +143,8 @@ public class ProcessExtensionsTests
                 continue;
             }
 
-            Assert.True(processes.Count == 1 || processes.Count == 2);
-            Assert.True(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")));
+            Assert.True(processes.Count is 1 or 2);
+            Assert.Contains(processes, p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST"));
         }
         finally
         {
@@ -162,8 +159,8 @@ public class ProcessExtensionsTests
         var current = Process.GetCurrentProcess();
         var parent = current.GetParentProcessId();
 
-        parent.Should().NotBeNull();
-        parent.Should().NotBe(current.Id);
+        Assert.NotNull(parent);
+        Assert.NotEqual(current.Id, parent);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -173,10 +170,10 @@ public class ProcessExtensionsTests
         var parent = current.GetParentProcess();
         var grandParent = parent.GetParentProcess();
 
-        grandParent.Should().NotBeNull();
+        Assert.NotNull(grandParent);
 
         var descendants = grandParent.GetDescendantProcesses();
-        descendants.Should().Contain(p => p.Id == current.Id, "Descendants must contains current process");
-        descendants.Should().Contain(p => p.Id == parent.Id, "Descendants must contains parent process");
+        Assert.Contains(descendants, p => p.Id == current.Id);
+        Assert.Contains(descendants, p => p.Id == parent.Id);
     }
 }

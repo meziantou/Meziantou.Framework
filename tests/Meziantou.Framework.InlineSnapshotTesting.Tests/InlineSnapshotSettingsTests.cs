@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using FluentAssertions;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using TestUtilities;
@@ -12,14 +11,14 @@ public sealed class InlineSnapshotSettingsTests
     public void UpdateStrategy_Windows_Prompt()
     {
         var settings = new InlineSnapshotSettings();
-        settings.SnapshotUpdateStrategy.Should().BeOfType<PromptStrategy>();
+        Assert.IsType<PromptStrategy>(settings.SnapshotUpdateStrategy);
     }
 
     [Fact, RunIf(FactOperatingSystem.All & ~FactOperatingSystem.Windows)]
     public void UpdateStrategy_NonWindows_Prompt()
     {
         var settings = new InlineSnapshotSettings();
-        settings.SnapshotUpdateStrategy.Should().BeOfType<MergeToolStrategy>();
+        Assert.IsType<MergeToolStrategy>(settings.SnapshotUpdateStrategy);
     }
 
     [Fact]

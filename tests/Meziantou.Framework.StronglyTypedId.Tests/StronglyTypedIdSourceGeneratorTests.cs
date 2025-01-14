@@ -66,7 +66,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         var runResult = driver.GetRunResult();
 
@@ -80,8 +80,8 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var diags = string.Join('\n', result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
-            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
-            result.Diagnostics.Should().BeEmpty();
+            Assert.True(result.Success);
+            Assert.Empty(result.Diagnostics);
         }
 
         return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
@@ -103,8 +103,7 @@ namespace A
     }
 }";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -119,10 +118,9 @@ namespace A
                 var json = System.Text.Json.JsonSerializer.Serialize(instance);
                 var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                 var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
-
-                json.Should().Be("10");
-                deserialized.Should().Be(instance);
-                deserialized2.Should().Be(instance);
+                Assert.Equal("10", json);
+                Assert.Equal(instance, deserialized);
+                Assert.Equal(instance, deserialized2);
             }
         }
         finally
@@ -144,8 +142,7 @@ namespace A
     }
 }";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -160,10 +157,9 @@ namespace A
                 var json = System.Text.Json.JsonSerializer.Serialize(instance);
                 var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
                 var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
-
-                json.Should().Be("10");
-                deserialized.Should().Be(instance);
-                deserialized2.Should().Be(instance);
+                Assert.Equal("10", json);
+                Assert.Equal(instance, deserialized);
+                Assert.Equal(instance, deserialized2);
             }
         }
         finally
@@ -180,9 +176,8 @@ namespace A
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
-        result.GeneratorResult.GeneratedTrees.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Empty(result.GeneratorResult.GeneratedTrees);
     }
 
     [Fact]
@@ -194,8 +189,7 @@ namespace A
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -209,8 +203,7 @@ namespace A
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -223,8 +216,7 @@ namespace A
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -237,8 +229,7 @@ namespace A
         public partial struct Test { }
         """;
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 #endif
@@ -251,8 +242,7 @@ namespace A
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -294,8 +284,7 @@ public partial struct Test : System.IEquatable<Test>
 }
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         result.Assembly.Should().NotBeNull();
@@ -309,8 +298,7 @@ public partial struct Test : System.IEquatable<Test>
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -323,8 +311,7 @@ public partial struct Test {}
                 var from = (MethodInfo)type.GetMember("FromString").Single();
                 var instance1 = from.Invoke(null, ["test"]);
                 var instance2 = from.Invoke(null, ["TEST"]);
-
-                instance1.Should().Be(instance2);
+                Assert.Equal(instance2, instance1);
             }
         }
         finally
@@ -341,8 +328,7 @@ public partial struct Test {}
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -357,8 +343,7 @@ public partial struct Test {}
                     var from = (MethodInfo)type.GetMember("FromInt32").Single();
                     var instance = from.Invoke(null, [-42]);
                     var str = instance.ToString();
-
-                    str.Should().Be("Test { Value = -42 }");
+                    Assert.Equal("Test { Value = -42 }", str);
                 });
             }
         }
@@ -376,8 +361,7 @@ public partial struct Test {}
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -388,7 +372,7 @@ public partial struct Test {}
             {
                 var type = a.GetType("Test");
                 var parse = type.GetMember("Parse").Length;
-                parse.Should().Be(2);
+                Assert.Equal(2, parse);
             }
         }
         finally
@@ -405,8 +389,7 @@ public partial struct Test {}
 public partial struct Test {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -417,7 +400,7 @@ public partial struct Test {}
             {
                 var type = a.GetType("Test");
                 var parse = type.GetMember("Parse").Length;
-                parse.Should().Be(2);
+                Assert.Equal(2, parse);
             }
         }
         finally
@@ -440,8 +423,7 @@ interface IStronglyTypedId<T> {}
 }
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
 
         var alc = new AssemblyLoadContext("test", isCollectible: true);
@@ -471,8 +453,7 @@ interface IStronglyTypedId<T> {}
 public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -484,8 +465,7 @@ public partial struct Test : System.IComparable<Test> {}
 public partial struct Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -497,8 +477,7 @@ public partial struct Test : System.IComparable<Test> {}
 public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -510,8 +489,7 @@ public partial class Test : System.IComparable<Test> {}
 public partial class Test : System.IComparable<Test> {}
 ";
         var result = await GenerateFiles(sourceCode);
-
-        result.GeneratorResult.Diagnostics.Should().BeEmpty();
+        Assert.Empty(result.GeneratorResult.Diagnostics);
         result.GeneratorResult.GeneratedTrees.Should().HaveCount(1);
     }
 
@@ -539,14 +517,14 @@ public partial class Test : System.IComparable<Test> {}
 
         // Replace struct with record struct
         compilation = compilation.ReplaceSyntaxTree(compilation.SyntaxTrees.First(), CSharpSyntaxTree.ParseText("[Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))] public partial record struct Test { }"));
-        result = RunGenerator(validate: (_, symbol) => (symbol.IsRecord, symbol.IsValueType).Should().Be((true, true)));
+        result = RunGenerator(validate: (_, symbol) => Assert.Equal((true, true), (symbol.IsRecord, symbol.IsValueType)));
         AssertSyntaxStepIsNotCached(result);
         AssertOutputIsNotCached(result);
 
         // Update references
         var newReferences = await NuGetHelpers.GetNuGetReferences("Newtonsoft.Json", "12.0.3", "lib/netstandard2.0/");
         compilation = compilation.AddReferences(newReferences.Select(path => MetadataReference.CreateFromFile(path)));
-        result = RunGenerator(validate: (_, symbol) => symbol.GetTypeMembers("TestNewtonsoftJsonConverter").Should().NotBeEmpty());
+        result = RunGenerator(validate: (_, symbol) => Assert.NotEmpty(symbol.GetTypeMembers("TestNewtonsoftJsonConverter")));
         AssertOutputIsNotCached(result);
 
         // Update syntax
@@ -556,11 +534,11 @@ public partial class Test : System.IComparable<Test> {}
         // Add dummy syntax tree
         compilation = compilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("public partial record struct Test2 { }"));
         result = RunGenerator(shouldGenerateFiles: false);
-        result.TrackedSteps.Should().BeEmpty();
+        Assert.Empty(result.TrackedSteps);
 
         static void AssertOutputIsCached(GeneratorRunResult result)
         {
-            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => output.Reason.Should().Be(IncrementalStepRunReason.Cached));
+            result.TrackedOutputSteps.SelectMany(step => step.Value).SelectMany(value => value.Outputs).Should().AllSatisfy(output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
         }
 
         static void AssertOutputIsNotCached(GeneratorRunResult result)
@@ -570,7 +548,7 @@ public partial class Test : System.IComparable<Test> {}
 
         static void AssertSyntaxStepIsCached(GeneratorRunResult result)
         {
-            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Should().AllSatisfy(output => output.Reason.Should().Be(IncrementalStepRunReason.Cached));
+            result.TrackedSteps["Syntax"].SelectMany(step => step.Outputs).Should().AllSatisfy(output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
         }
 
         static void AssertSyntaxStepIsNotCached(GeneratorRunResult result)
@@ -581,7 +559,7 @@ public partial class Test : System.IComparable<Test> {}
         GeneratorRunResult RunGenerator(bool shouldGenerateFiles = true, Action<Compilation, INamedTypeSymbol> validate = null)
         {
             driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
-            diagnostics.Should().BeEmpty();
+            Assert.Empty(diagnostics);
 
             var type = outputCompilation.GetTypeByMetadataName("Test");
             validate?.Invoke(outputCompilation, type);
@@ -716,7 +694,7 @@ public partial class Test : System.IComparable<Test> {}
             """;
         var compilation = await CreateCompilation(sourceCode, arg.NuGetReferences);
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics, XunitCancellationToken);
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         var runResult = driver.GetRunResult();
 
@@ -726,8 +704,8 @@ public partial class Test : System.IComparable<Test> {}
 
         var diags = string.Join('\n', compilationOutput.Diagnostics);
         var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
-        compilationOutput.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + AddNumberLine(generated));
-        compilationOutput.Diagnostics.Should().BeEmpty();
+        Assert.True(compilationOutput.Success);
+        Assert.Empty(compilationOutput.Diagnostics);
     }
 
     private static string AddNumberLine(string value)

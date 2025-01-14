@@ -11,8 +11,7 @@ public class ExtensionsTests
         var member = new TypeReferenceExpression(typeof(string)).Member("Test", "Name");
 
         var csharp = new CSharpCodeGenerator().Write(member);
-
-        csharp.Should().Be("string.Test.Name");
+        Assert.Equal("string.Test.Name", csharp);
     }
 
     [Fact]
@@ -22,8 +21,7 @@ public class ExtensionsTests
         var member = v.InvokeMethod(Expression.Null());
 
         var csharp = new CSharpCodeGenerator().Write(member);
-
-        csharp.Should().Be("a(null)");
+        Assert.Equal("a(null)", csharp);
     }
 
     [Fact]
@@ -33,7 +31,6 @@ public class ExtensionsTests
         var member = v.InvokeMethod("Test", "Name");
 
         var csharp = new CSharpCodeGenerator().Write(member);
-
-        csharp.Should().Be("a(\"Test\", \"Name\")");
+        Assert.Equal("a(\"Test\", \"Name\")", csharp);
     }
 }

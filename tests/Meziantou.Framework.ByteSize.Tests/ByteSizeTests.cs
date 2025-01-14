@@ -26,9 +26,8 @@ public sealed class ByteSizeTests
     {
         var byteSize = new ByteSize(length);
         var formattedValue = byteSize.ToString(format, CultureInfo.InvariantCulture);
-
-        formattedValue.Should().Be(expectedValue);
-        ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture).Should().Be(ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture));
+        Assert.Equal(expectedValue, formattedValue);
+        Assert.Equal(ByteSize.Parse(expectedValue, CultureInfo.InvariantCulture), ByteSize.Parse(formattedValue, CultureInfo.InvariantCulture));
     }
 
     [Theory]
@@ -41,8 +40,7 @@ public sealed class ByteSizeTests
     {
         var byteSize = new ByteSize(length);
         var formattedValue = byteSize.ToString(unit, CultureInfo.InvariantCulture);
-
-        formattedValue.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, formattedValue);
     }
 
     [Theory]
@@ -60,9 +58,9 @@ public sealed class ByteSizeTests
 
         using (new AssertionScope())
         {
-            actual.Value.Should().Be(expectedValue);
-            actualTry.Value.Should().Be(expectedValue);
-            parsed.Should().BeTrue();
+            Assert.Equal(expectedValue, actual.Value);
+            Assert.Equal(expectedValue, actualTry.Value);
+            Assert.True(parsed);
         }
     }
 
@@ -75,13 +73,13 @@ public sealed class ByteSizeTests
         parse.Should().ThrowExactly<FormatException>();
 
         var parsed = ByteSize.TryParse(str, CultureInfo.InvariantCulture, out var actualTry);
-        parsed.Should().BeFalse();
+        Assert.False(parsed);
     }
 
     [Fact]
     public void Operator_Add()
     {
         var result = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
-        result.Should().Be(3000L);
+        Assert.Equal(3000L, result);
     }
 }

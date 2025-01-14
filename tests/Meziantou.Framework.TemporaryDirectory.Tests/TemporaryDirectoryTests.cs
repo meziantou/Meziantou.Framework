@@ -47,7 +47,7 @@ public class TemporaryDirectoryTests
             File.WriteAllText(dir.GetFullPath("a.txt"), "content");
         }
 
-        Directory.Exists(path).Should().BeFalse();
+        Assert.False(Directory.Exists(path));
     }
 
     [Fact]
@@ -67,6 +67,6 @@ public class TemporaryDirectoryTests
 #endif
         }
 
-        Directory.Exists(path).Should().BeFalse();
+        Assert.False(Directory.Exists(path));
     }
 }

@@ -10,7 +10,7 @@ public sealed class DataBinderTests
     {
         var obj = new { A = "test" };
         var actual = DataBinder.Eval(obj, "A");
-        actual.Should().Be("test");
+        Assert.Equal("test", actual);
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public sealed class DataBinderTests
     {
         var obj = new { A = new { B = new[] { "a", "b", "c" } } };
         var actual = DataBinder.Eval(obj, "A.B[1]");
-        actual.Should().Be("b");
+        Assert.Equal("b", actual);
     }
 
     [Fact]

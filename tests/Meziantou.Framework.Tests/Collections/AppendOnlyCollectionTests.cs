@@ -10,7 +10,7 @@ public sealed class AppendOnlyCollectionTests
     public void Test()
     {
         var collection = new AppendOnlyCollection<int>();
-        collection.Should().BeEmpty();
+        Assert.Empty(collection);
 
         collection.Add(0);
         collection.Should().BeEquivalentTo([0]);
@@ -24,8 +24,7 @@ public sealed class AppendOnlyCollectionTests
         }
 
         collection.Should().HaveCount(10_000);
-
-        collection[0].Should().Be(0);
-        collection[1000].Should().Be(1000);
+        Assert.Equal(0, collection[0]);
+        Assert.Equal(1000, collection[1000]);
     }
 }

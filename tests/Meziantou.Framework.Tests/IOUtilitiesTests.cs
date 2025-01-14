@@ -17,7 +17,7 @@ public class IOUtilitiesTests
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var result = IOUtilities.IsChildPathOf(parent, child);
-            result.Should().Be(expectedResult);
+            Assert.Equal(expectedResult, result);
         }
     }
 
@@ -31,7 +31,7 @@ public class IOUtilitiesTests
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var result = IOUtilities.ArePathEqual(path1, path2);
-            result.Should().Be(expectedResult);
+            Assert.Equal(expectedResult, result);
         }
     }
 
@@ -46,7 +46,7 @@ public class IOUtilitiesTests
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             var result = IOUtilities.MakeRelativePath(path1, path2);
-            result.Should().Be(expectedResult);
+            Assert.Equal(expectedResult, result);
         }
     }
 
@@ -57,6 +57,6 @@ public class IOUtilitiesTests
     public void ToValidFileName(string fileName, string expectedResult)
     {
         var result = IOUtilities.ToValidFileName(fileName);
-        result.Should().Be(expectedResult);
+        Assert.Equal(expectedResult, result);
     }
 }

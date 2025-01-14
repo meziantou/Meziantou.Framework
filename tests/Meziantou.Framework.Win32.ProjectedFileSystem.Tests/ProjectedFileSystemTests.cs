@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
@@ -47,18 +48,16 @@ public sealed class ProjectedFileSystemTests
 
             var directories = Directory.GetDirectories(fullPath);
             directories.Should().ContainSingle();
-            Path.GetFileName(directories[0]).Should().Be("folder");
+            Assert.Equal("folder", Path.GetFileName(directories[0]));
 
             // Get unknown file
             var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-            fi2.Exists.Should().BeFalse();
+            Assert.False(fi2.Exists);
             new Func<object>(() => fi2.Length).Should().ThrowExactly<FileNotFoundException>();
-
-            // Get file content
-            File.ReadAllBytes(Path.Combine(fullPath, "a")).Should().Equal([1]);
+            Assert.Equal([1], File.ReadAllBytes(Path.Combine(fullPath, "a")));
             using var stream = File.OpenRead(Path.Combine(fullPath, "b"));
-            stream.ReadByte().Should().Be(1);
-            stream.ReadByte().Should().Be(2);
+            Assert.Equal(1, stream.ReadByte());
+            Assert.Equal(2, stream.ReadByte());
         }
         finally
         {

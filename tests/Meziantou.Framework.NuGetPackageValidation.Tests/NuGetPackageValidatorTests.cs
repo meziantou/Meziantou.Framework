@@ -48,7 +48,7 @@ public sealed class NuGetPackageValidatorTests
 
     private static void AssertNoErrors(NuGetPackageValidationResult result)
     {
-        result.Errors.Should().BeEmpty();
+        Assert.Empty(result.Errors);
     }
 
     private static void AssertHasError(NuGetPackageValidationResult result, int expectedErrorCode)

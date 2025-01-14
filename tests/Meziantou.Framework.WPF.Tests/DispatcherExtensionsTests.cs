@@ -27,7 +27,7 @@ public sealed class DispatcherExtensionsTests
 
         Environment.CurrentManagedThreadId.Should().NotBe(t.ManagedThreadId);
         await dispatcher.SwitchToDispatcherThread();
-        Environment.CurrentManagedThreadId.Should().Be(t.ManagedThreadId);
+        Assert.Equal(t.ManagedThreadId, Environment.CurrentManagedThreadId);
 
         dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
     }

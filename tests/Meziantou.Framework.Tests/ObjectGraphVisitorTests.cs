@@ -33,8 +33,7 @@ public sealed class ObjectGraphVisitorTests
     {
         var visitor = new TestObjectGraphVisitor();
         visitor.Visit(new Indexer());
-
-        visitor.VisitedProperties.Should().BeEmpty();
+        Assert.Empty(visitor.VisitedProperties);
     }
 
     private sealed record Recursive(object Value, Recursive Parent);

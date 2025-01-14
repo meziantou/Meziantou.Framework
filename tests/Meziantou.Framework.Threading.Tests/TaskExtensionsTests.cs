@@ -33,9 +33,8 @@ public sealed class TaskExtensionsTests
     public async Task WhenAll()
     {
         var (a, b) = await (Task.FromResult(0), Task.FromResult("test"));
-
-        a.Should().Be(0);
-        b.Should().Be("test");
+        Assert.Equal(0, a);
+        Assert.Equal("test", b);
     }
 
     [Fact]
@@ -49,9 +48,8 @@ public sealed class TaskExtensionsTests
     public async Task WhenAll_ValueTask()
     {
         var (a, b) = await (ValueTask.FromResult(0), ValueTask.FromResult("test"));
-
-        a.Should().Be(0);
-        b.Should().Be("test");
+        Assert.Equal(0, a);
+        Assert.Equal("test", b);
     }
 
     [Fact]
@@ -59,6 +57,6 @@ public sealed class TaskExtensionsTests
     public async Task WhenAll_ValueTask_Exception()
     {
         var exception = await Assert.ThrowsAsync<AggregateException>(async () => await (ValueTask.FromResult(0), ValueTask.FromException<string>(new InvalidOperationException("test"))));
-        exception.Message.Should().Be("One or more errors occurred. (test)");
+        Assert.Equal("One or more errors occurred. (test)", exception.Message);
     }
 }

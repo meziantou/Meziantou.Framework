@@ -12,8 +12,7 @@ public class CsvWriterTests
         var writer = new CsvWriter(sw);
         await writer.WriteRowAsync("A", "B");
         await writer.WriteRowAsync("C", "D");
-
-        sw.ToString().Should().Be($"A,B{Environment.NewLine}C,D");
+        Assert.Equal($"A,B{Environment.NewLine}C,D", sw.ToString());
     }
 
     [Fact]
@@ -23,8 +22,7 @@ public class CsvWriterTests
         var writer = new CsvWriter(sw);
         await writer.WriteRowAsync("A", "B,");
         await writer.WriteRowAsync("C", "D");
-
-        sw.ToString().Should().Be($@"A,""B,""{Environment.NewLine}C,D");
+        Assert.Equal($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
     }
 
     [Fact]
@@ -33,8 +31,7 @@ public class CsvWriterTests
         using var sw = new StringWriter();
         var writer = new CsvWriter(sw);
         await writer.WriteRowAsync("A", "\"B");
-
-        sw.ToString().Should().Be("A,\"\"\"B\"");
+        Assert.Equal("A,\"\"\"B\"", sw.ToString());
     }
 
     [Fact]
@@ -50,8 +47,7 @@ public class CsvWriterTests
         await writer.WriteValuesAsync("C", "D");
         await writer.BeginRowAsync();
         await writer.WriteValuesAsync("E");
-
-        sw.ToString().Should().Be("A,B,C,D\nE");
+        Assert.Equal("A,B,C,D\nE", sw.ToString());
     }
 
     [Fact]
@@ -64,8 +60,7 @@ public class CsvWriterTests
         };
 
         await writer.WriteRowAsync("A\"", "B");
-
-        sw.ToString().Should().Be("A\",B");
+        Assert.Equal("A\",B", sw.ToString());
     }
 
     [Theory]
@@ -101,6 +96,6 @@ public class CsvWriterTests
             csvRow.Values.ToList().Should().BeEquivalentTo(rows[rowIndex]);
         }
 
-        rowIndex.Should().Be(rows.Count - 1);
+        Assert.Equal(rows.Count - 1, rowIndex);
     }
 }

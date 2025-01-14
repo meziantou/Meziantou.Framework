@@ -10,7 +10,7 @@ public class PerceivedTests
     public void GetPerceivedType_txt()
     {
         var perceived = Perceived.GetPerceivedType(".txt");
-        perceived.PerceivedType.Should().Be(PerceivedType.Text);
+        Assert.Equal(PerceivedType.Text, perceived.PerceivedType);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
@@ -20,7 +20,7 @@ public class PerceivedTests
     public void GetPerceivedType_Video(string extension)
     {
         var perceived = Perceived.GetPerceivedType(extension);
-        perceived.PerceivedType.Should().Be(PerceivedType.Video);
+        Assert.Equal(PerceivedType.Video, perceived.PerceivedType);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
@@ -31,7 +31,7 @@ public class PerceivedTests
     public void GetPerceivedType_Image(string extension)
     {
         var perceived = Perceived.GetPerceivedType(extension);
-        perceived.PerceivedType.Should().Be(PerceivedType.Image);
+        Assert.Equal(PerceivedType.Image, perceived.PerceivedType);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
@@ -39,13 +39,13 @@ public class PerceivedTests
     public void GetPerceivedType_Audio(string extension)
     {
         var perceived = Perceived.GetPerceivedType(extension);
-        perceived.PerceivedType.Should().Be(PerceivedType.Audio);
+        Assert.Equal(PerceivedType.Audio, perceived.PerceivedType);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetPerceivedType_Unspecified()
     {
         var perceived = Perceived.GetPerceivedType(".unknown_extension");
-        perceived.PerceivedType.Should().Be(PerceivedType.Unspecified);
+        Assert.Equal(PerceivedType.Unspecified, perceived.PerceivedType);
     }
 }

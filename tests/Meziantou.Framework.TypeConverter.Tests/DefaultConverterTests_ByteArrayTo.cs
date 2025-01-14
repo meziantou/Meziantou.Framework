@@ -12,9 +12,8 @@ public class DefaultConverterTests_ByteArrayTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-        converted.Should().BeTrue();
-        value.Should().Be("AQIDBA==");
+        Assert.True(converted);
+        Assert.Equal("AQIDBA==", value);
     }
 
     [Fact]
@@ -26,9 +25,8 @@ public class DefaultConverterTests_ByteArrayTo
         };
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-        converted.Should().BeTrue();
-        value.Should().Be("0x01020304");
+        Assert.True(converted);
+        Assert.Equal("0x01020304", value);
     }
 
     [Fact]
@@ -40,8 +38,7 @@ public class DefaultConverterTests_ByteArrayTo
         };
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, cultureInfo, out string value);
-
-        converted.Should().BeTrue();
-        value.Should().Be("01020304");
+        Assert.True(converted);
+        Assert.Equal("01020304", value);
     }
 }

@@ -10,7 +10,7 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.AppendChild(doc.CreateText("abc"));
-        doc.InnerText.Should().Be("abc");
+        Assert.Equal("abc", doc.InnerText);
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("abc<p>def</p>");
-        doc.InnerText.Should().Be("abcdef");
+        Assert.Equal("abcdef", doc.InnerText);
     }
 
     [Fact]
@@ -34,6 +34,6 @@ public class HtmlNodeTests
     {
         var doc = new HtmlDocument();
         doc.LoadHtml("<p>def</p>");
-        doc.SelectSingleNode("/p/node()").ParentElement.Name.Should().Be("p");
+        Assert.Equal("p", doc.SelectSingleNode("/p/node()").ParentElement.Name);
     }
 }

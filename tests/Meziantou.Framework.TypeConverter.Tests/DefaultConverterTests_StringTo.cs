@@ -22,9 +22,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("42", cultureInfo, out int value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(42);
+        Assert.True(converted);
+        Assert.Equal(42, value);
     }
 
     [Fact]
@@ -33,8 +32,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out int _);
-
-        converted.Should().BeFalse();
+        Assert.False(converted);
     }
 
     [Fact]
@@ -43,9 +41,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("42", cultureInfo, out int? value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(42);
+        Assert.True(converted);
+        Assert.Equal(42, value);
     }
 
     [Fact]
@@ -54,8 +51,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out int? value);
-
-        converted.Should().BeTrue();
+        Assert.True(converted);
         value.Should().BeNull();
     }
 
@@ -65,9 +61,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("2", cultureInfo, out SampleEnum value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(SampleEnum.Option2);
+        Assert.True(converted);
+        Assert.Equal(SampleEnum.Option2, value);
     }
 
     [Fact]
@@ -76,9 +71,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("Option1, Option2", cultureInfo, out SampleEnum value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(SampleEnum.Option1 | SampleEnum.Option2);
+        Assert.True(converted);
+        Assert.Equal(SampleEnum.Option1 | SampleEnum.Option2, value);
     }
 
     [Fact]
@@ -87,9 +81,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("Option1, 2", cultureInfo, out SampleEnum value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(SampleEnum.Option1 | SampleEnum.Option2);
+        Assert.True(converted);
+        Assert.Equal(SampleEnum.Option1 | SampleEnum.Option2, value);
     }
 
     [Fact]
@@ -98,9 +91,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("3000000000", cultureInfo, out long? value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(3000000000L);
+        Assert.True(converted);
+        Assert.Equal(3000000000L, value);
     }
 
     [Fact]
@@ -109,9 +101,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("fr-FR", cultureInfo, out CultureInfo value);
-
-        converted.Should().BeTrue();
-        value.Name.Should().Be("fr-FR");
+        Assert.True(converted);
+        Assert.Equal("fr-FR", value.Name);
     }
 
     [Fact]
@@ -120,9 +111,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("es", cultureInfo, out CultureInfo value);
-
-        converted.Should().BeTrue();
-        value.Name.Should().Be("es");
+        Assert.True(converted);
+        Assert.Equal("es", value.Name);
     }
 
     [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
@@ -134,12 +124,12 @@ public class DefaultConverterTests_StringTo
 
         if (OperatingSystem.IsWindows())
         {
-            converted.Should().BeTrue();
-            value.Name.Should().Be("en-US");
+            Assert.True(converted);
+            Assert.Equal("en-US", value.Name);
         }
         else
         {
-            converted.Should().BeFalse();
+            Assert.False(converted);
         }
     }
 
@@ -149,8 +139,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("dfgnksdfklgfg", cultureInfo, out CultureInfo _);
-
-        converted.Should().BeFalse();
+        Assert.False(converted);
     }
 
     [Fact]
@@ -159,9 +148,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out CultureInfo value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(CultureInfo.InvariantCulture);
+        Assert.True(converted);
+        Assert.Equal(CultureInfo.InvariantCulture, value);
     }
 
     [Fact]
@@ -171,8 +159,7 @@ public class DefaultConverterTests_StringTo
         var cultureInfo = CultureInfo.InvariantCulture;
         string inputValue = null;
         var converted = converter.TryChangeType<CultureInfo>(inputValue, cultureInfo, out var value);
-
-        converted.Should().BeTrue();
+        Assert.True(converted);
         value.Should().BeNull();
     }
 
@@ -182,8 +169,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("", cultureInfo, out Uri value);
-
-        converted.Should().BeTrue();
+        Assert.True(converted);
         value.Should().BeNull();
     }
 
@@ -193,9 +179,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("test.png", cultureInfo, out Uri value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new Uri("test.png", UriKind.Relative));
+        Assert.True(converted);
+        Assert.Equal(new Uri("test.png", UriKind.Relative), value);
     }
 
     [Fact]
@@ -204,9 +189,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("https://meziantou.net", cultureInfo, out Uri value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new Uri("https://meziantou.net", UriKind.Absolute));
+        Assert.True(converted);
+        Assert.Equal(new Uri("https://meziantou.net", UriKind.Absolute), value);
     }
 
     [Fact]
@@ -215,9 +199,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("12:30", cultureInfo, out TimeSpan value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new TimeSpan(12, 30, 0));
+        Assert.True(converted);
+        Assert.Equal(new TimeSpan(12, 30, 0), value);
     }
 
     [Fact]
@@ -226,9 +209,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("2d8a54aa-569b-404f-933b-693918885dba", cultureInfo, out Guid value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new Guid("2d8a54aa-569b-404f-933b-693918885dba"));
+        Assert.True(converted);
+        Assert.Equal(new Guid("2d8a54aa-569b-404f-933b-693918885dba"), value);
     }
 
     [Fact]
@@ -237,9 +219,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("42.24", cultureInfo, out decimal value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(42.24m);
+        Assert.True(converted);
+        Assert.Equal(42.24m, value);
     }
 
     [Fact]
@@ -248,9 +229,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("0x0AFF", cultureInfo, out byte[] value);
-
-        converted.Should().BeTrue();
-        value.Should().Equal([0x0A, 0xFF]);
+        Assert.True(converted);
+        Assert.Equal([0x0A, 0xFF], value);
     }
 
     [Fact]
@@ -259,9 +239,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("AQIDBA==", cultureInfo, out byte[] value);
-
-        converted.Should().BeTrue();
-        value.Should().Equal([1, 2, 3, 4]);
+        Assert.True(converted);
+        Assert.Equal([1, 2, 3, 4], value);
     }
 
     [Fact]
@@ -270,8 +249,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("AQIDBA=", cultureInfo, out byte[] _);
-
-        converted.Should().BeFalse();
+        Assert.False(converted);
     }
 
     [Fact]
@@ -280,9 +258,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("2018/06/24 14:21:01", cultureInfo, out DateTime value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new DateTime(2018, 06, 24, 14, 21, 01));
+        Assert.True(converted);
+        Assert.Equal(new DateTime(2018, 06, 24, 14, 21, 01), value);
     }
 
     [Fact]
@@ -291,9 +268,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("2018/06/24 14:21:01+0230", cultureInfo, out DateTimeOffset value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(new DateTimeOffset(2018, 06, 24, 14, 21, 01, new TimeSpan(2, 30, 0)));
+        Assert.True(converted);
+        Assert.Equal(new DateTimeOffset(2018, 06, 24, 14, 21, 01, new TimeSpan(2, 30, 0)), value);
     }
 
     [Fact]
@@ -302,9 +278,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("0d0102", cultureInfo, out byte[] value);
-
-        converted.Should().BeTrue();
-        value.Should().Equal([0x0d, 0x01, 0x02]);
+        Assert.True(converted);
+        Assert.Equal([0x0d, 0x01, 0x02], value);
     }
 
     [Fact]
@@ -313,9 +288,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType("0x0d01", cultureInfo, out byte[] value);
-
-        converted.Should().BeTrue();
-        value.Should().Equal([0x0d, 0x01]);
+        Assert.True(converted);
+        Assert.Equal([0x0d, 0x01], value);
     }
 
     [Theory]
@@ -329,9 +303,8 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(text, cultureInfo, out bool value);
-
-        converted.Should().BeTrue();
-        value.Should().BeTrue();
+        Assert.True(converted);
+        Assert.True(value);
     }
 
     [Theory]
@@ -345,8 +318,7 @@ public class DefaultConverterTests_StringTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(text, cultureInfo, out bool value);
-
-        converted.Should().BeTrue();
-        value.Should().BeFalse();
+        Assert.True(converted);
+        Assert.False(value);
     }
 }

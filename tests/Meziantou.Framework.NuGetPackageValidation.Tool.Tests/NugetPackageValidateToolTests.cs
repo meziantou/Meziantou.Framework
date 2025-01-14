@@ -45,8 +45,8 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("--help");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(0);
-            result.Output.Should().Contain("meziantou.validate-nuget-package");
+            Assert.Equal(0, result.ExitCode);
+            Assert.Contains("meziantou.validate-nuget-package", result.Output);
         }
     }
 
@@ -56,7 +56,7 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation();
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(1);
+            Assert.Equal(1, result.ExitCode);
             result.ValidationResult.Should().BeNull();
         }
     }
@@ -67,8 +67,8 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResult.IsValid.Should().BeFalse();
+            Assert.Equal(1, result.ExitCode);
+            Assert.False(result.ValidationResult.IsValid);
             result.ValidationResult.Errors.Should().Contain(item => item.ErrorCode == 81);
         }
     }
@@ -81,13 +81,11 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation(path1, path2);
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(1);
+            Assert.Equal(1, result.ExitCode);
             result.ValidationResults.Packages.Should().HaveCount(2);
-
-            result.ValidationResults.Packages[path1].IsValid.Should().BeFalse();
+            Assert.False(result.ValidationResults.Packages[path1].IsValid);
             result.ValidationResults.Packages[path1].Errors.Should().Contain(item => item.ErrorCode == 81);
-
-            result.ValidationResults.Packages[path2].IsValid.Should().BeFalse();
+            Assert.False(result.ValidationResults.Packages[path2].IsValid);
             result.ValidationResults.Packages[path2].Errors.Should().Contain(item => item.ErrorCode == 101);
         }
     }
@@ -98,8 +96,8 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--excluded-rule-ids", "81,73;101", "--excluded-rule-ids", "75");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResult.IsValid.Should().BeFalse();
+            Assert.Equal(1, result.ExitCode);
+            Assert.False(result.ValidationResult.IsValid);
             result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 73);
             result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 75);
             result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 81);
@@ -113,9 +111,9 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized,AuthorMustBeSet");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(0);
-            result.ValidationResult.IsValid.Should().BeTrue();
-            result.ValidationResult.Errors.Should().BeEmpty();
+            Assert.Equal(0, result.ExitCode);
+            Assert.True(result.ValidationResult.IsValid);
+            Assert.Empty(result.ValidationResult.Errors);
         }
     }
 
@@ -125,8 +123,8 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "Unknown");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(1);
-            result.Output.Should().Contain("Invalid rule 'Unknown'");
+            Assert.Equal(1, result.ExitCode);
+            Assert.Contains("Invalid rule 'Unknown'", result.Output);
             result.ValidationResult.Should().BeNull();
         }
     }
@@ -137,9 +135,9 @@ public sealed class NugetPackageValidateToolTests
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized", "--rules", "AuthorMustBeSet");
         using (new AssertionScope())
         {
-            result.ExitCode.Should().Be(0);
-            result.ValidationResult.IsValid.Should().BeTrue();
-            result.ValidationResult.Errors.Should().BeEmpty();
+            Assert.Equal(0, result.ExitCode);
+            Assert.True(result.ValidationResult.IsValid);
+            Assert.Empty(result.ValidationResult.Errors);
         }
     }
 }

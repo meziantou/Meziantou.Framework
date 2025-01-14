@@ -10,9 +10,8 @@ public class AwaitExpressionTests
     {
         var expression = new AwaitExpression(new SnippetExpression("test"));
         var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
-
-        configuredExpression.Should().Be(expression);
-        configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value.Should().Be(true);
+        Assert.Equal(expression, configuredExpression);
+        Assert.Equal(true, configuredExpression.Expression.As<MethodInvokeExpression>().Arguments[0].As<LiteralExpression>().Value);
     }
 
     [Fact]
@@ -20,8 +19,7 @@ public class AwaitExpressionTests
     {
         var expression = new AwaitExpression();
         var configuredExpression = expression.ConfigureAwait(continueOnCapturedContext: true);
-
-        configuredExpression.Should().Be(expression);
+        Assert.Equal(expression, configuredExpression);
         configuredExpression.Expression.Should().BeNull();
     }
 }

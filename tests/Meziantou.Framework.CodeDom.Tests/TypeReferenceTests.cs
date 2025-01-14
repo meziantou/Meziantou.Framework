@@ -17,17 +17,15 @@ public class TypeReferenceTests
     public void TypeReference_FromType(Type type, string expectedClrFullTypeName)
     {
         var typeReference = new TypeReference(type);
-
-        // Assert
-        typeReference.ClrFullTypeName.Should().Be(expectedClrFullTypeName);
+        Assert.Equal(expectedClrFullTypeName, typeReference.ClrFullTypeName);
 
         if (type.IsArray)
         {
-            typeReference.ArrayRank.Should().Be(type.GetArrayRank());
+            Assert.Equal(type.GetArrayRank(), typeReference.ArrayRank);
         }
         else
         {
-            typeReference.ArrayRank.Should().Be(0);
+            Assert.Equal(0, typeReference.ArrayRank);
         }
     }
 
@@ -36,9 +34,7 @@ public class TypeReferenceTests
     {
         // Act
         var typeReference = new TypeReference(typeof(Nullable<>)).MakeGeneric(typeof(int));
-
-        // Assert
-        typeReference.ClrFullTypeName.Should().Be("System.Nullable<System.Int32>");
+        Assert.Equal("System.Nullable<System.Int32>", typeReference.ClrFullTypeName);
         typeReference.Parameters.Select(p => p.ClrFullTypeName).ToList().Should().BeEquivalentTo([typeof(int).FullName]);
     }
 

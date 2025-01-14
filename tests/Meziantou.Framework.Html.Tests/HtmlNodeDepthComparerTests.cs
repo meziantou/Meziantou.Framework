@@ -14,7 +14,7 @@ public class HtmlNodeDepthComparerTests
         var element2 = document.SelectSingleNode("//span[@id='id2']");
 
         var comparer = new HtmlNodeDepthComparer();
-        comparer.Compare(element1, element2).Should().Be(0);
+        Assert.Equal(0, comparer.Compare(element1, element2));
     }
 
     [Fact]
@@ -29,8 +29,8 @@ public class HtmlNodeDepthComparerTests
         {
             Direction = ListSortDirection.Ascending,
         };
-        comparer.Compare(element1, element2).Should().Be(-1);
-        comparer.Compare(element2, element1).Should().Be(1);
+        Assert.Equal(-1, comparer.Compare(element1, element2));
+        Assert.Equal(1, comparer.Compare(element2, element1));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class HtmlNodeDepthComparerTests
         {
             Direction = ListSortDirection.Descending,
         };
-        comparer.Compare(element1, element2).Should().Be(1);
-        comparer.Compare(element2, element1).Should().Be(-1);
+        Assert.Equal(1, comparer.Compare(element1, element2));
+        Assert.Equal(-1, comparer.Compare(element2, element1));
     }
 }

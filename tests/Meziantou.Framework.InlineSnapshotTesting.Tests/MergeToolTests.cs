@@ -14,8 +14,7 @@ public sealed class MergeToolTests
             .GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
             .Where(p => p.CanRead && typeof(MergeTool).IsAssignableFrom(p.PropertyType))
             .Select(p => p.Name);
-
-        diffToolNames.Except(inlineSnapshotPreferredDiffToolNames, StringComparer.Ordinal).Should().BeEmpty();
+        Assert.Empty(diffToolNames.Except(inlineSnapshotPreferredDiffToolNames, StringComparer.Ordinal));
     }
 
     [Theory]

@@ -10,10 +10,10 @@ public class ConcurrentHashSetTests
     public void TestConcurrentHashSet()
     {
         ConcurrentHashSet<int> set = [];
-        set.Add(1).Should().BeTrue();
-        set.Add(2).Should().BeTrue();
-        set.Add(3).Should().BeTrue();
-        set.Add(3).Should().BeFalse();
+        Assert.True(set.Add(1));
+        Assert.True(set.Add(2));
+        Assert.True(set.Add(3));
+        Assert.False(set.Add(3));
 
         set.Should().Contain(1);
         set.Should().NotContain(4);
@@ -22,7 +22,7 @@ public class ConcurrentHashSetTests
         set.Should().BeEquivalentTo([1, 2, 3]);
 
         set.Clear();
-        set.Should().BeEmpty();
+        Assert.Empty(set);
 
         set.AddRange(4, 5, 6);
         set.Should().BeEquivalentTo([4, 5, 6]);

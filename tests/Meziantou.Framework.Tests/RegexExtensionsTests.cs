@@ -16,7 +16,6 @@ public sealed class RegexExtensionsTests
             await Task.Yield();
             return "_";
         });
-
-        actual.Should().Be("a___b");
+        Assert.Equal("a___b", actual);
     }
 }

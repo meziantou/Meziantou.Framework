@@ -20,7 +20,7 @@ public sealed class LsaPrivateDataTests
 
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            value.Should().Be("test");
+            Assert.Equal("test", value);
 
             // Remove
             LsaPrivateData.RemoveValue("LsaPrivateDataTests");

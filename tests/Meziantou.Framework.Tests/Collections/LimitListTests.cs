@@ -15,9 +15,7 @@ public class LimitListTests
         // Act
         list.AddFirst(1);
         list.AddFirst(2);
-
-        // Assert
-        list.ToList().Should().Equal([2, 1]);
+        Assert.Equal([2, 1], list.ToList());
     }
 
     [Fact]
@@ -31,9 +29,7 @@ public class LimitListTests
         list.AddFirst(2);
         list.AddFirst(3);
         list.AddFirst(4);
-
-        // Assert
-        list.ToList().Should().Equal([4, 3, 2]);
+        Assert.Equal([4, 3, 2], list.ToList());
     }
 
     [Fact]
@@ -45,9 +41,7 @@ public class LimitListTests
         // Act
         list.AddLast(1);
         list.AddLast(2);
-
-        // Assert
-        list.ToList().Should().Equal([1, 2]);
+        Assert.Equal([1, 2], list.ToList());
     }
 
     [Fact]
@@ -61,9 +55,7 @@ public class LimitListTests
         list.AddLast(2);
         list.AddLast(3);
         list.AddLast(4);
-
-        // Assert
-        list.ToList().Should().Equal([2, 3, 4]);
+        Assert.Equal([2, 3, 4], list.ToList());
     }
 
     [Fact]
@@ -77,9 +69,7 @@ public class LimitListTests
 
         // Act
         var index = list.IndexOf(2);
-
-        // Assert
-        index.Should().Be(1);
+        Assert.Equal(1, index);
     }
 
     [Fact]
@@ -94,9 +84,7 @@ public class LimitListTests
 
         // Act
         var index = list.IndexOf(1);
-
-        // Assert
-        index.Should().Be(-1);
+        Assert.Equal(-1, index);
     }
 
     [Fact]
@@ -109,9 +97,7 @@ public class LimitListTests
 
         // Act
         var count = list.Count;
-
-        // Assert
-        count.Should().Be(2);
+        Assert.Equal(2, count);
     }
 
     [Fact]
@@ -124,9 +110,7 @@ public class LimitListTests
 
         // Act
         var result = list.Contains(2);
-
-        // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -139,9 +123,7 @@ public class LimitListTests
 
         // Act
         var result = list.Contains(3);
-
-        // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -154,10 +136,8 @@ public class LimitListTests
 
         // Act
         var result = list.Remove(1);
-
-        // Assert
-        result.Should().BeTrue();
-        list.Should().Equal(2);
+        Assert.True(result);
+        Assert.Equal(list.Should().Equal(2), list);
     }
 
     [Fact]
@@ -171,10 +151,8 @@ public class LimitListTests
 
         // Act
         var result = list.Remove(2);
-
-        // Assert
-        result.Should().BeTrue();
-        list.Should().Equal(1, 3);
+        Assert.True(result);
+        Assert.Equal(list.Should().Equal(1, 3), list);
     }
 
     [Fact]
@@ -186,10 +164,8 @@ public class LimitListTests
 
         // Act
         var result = list.Remove(4);
-
-        // Assert
-        result.Should().BeFalse();
-        list.Should().Equal(1);
+        Assert.False(result);
+        Assert.Equal(list.Should().Equal(1), list);
     }
 
     [Fact]
@@ -201,9 +177,10 @@ public class LimitListTests
 
         // Act
         list[0] = 10;
+        Assert.Equal(
 
-        // Assert
-        list.Should().Equal(10);
+                // Assert
+                list.Should().Equal(10), list);
     }
 
     [Fact]
@@ -215,9 +192,10 @@ public class LimitListTests
 
         // Act
         list[1] = 10;
+        Assert.Equal(
 
-        // Assert
-        list.Should().Equal(1, 10);
+                // Assert
+                list.Should().Equal(1, 10), list);
     }
 
     [Fact]
@@ -241,8 +219,9 @@ public class LimitListTests
 
         // Act
         list.RemoveAt(1);
+        Assert.Equal(
 
-        // Assert
-        list.Should().Equal(1, 3);
+                // Assert
+                list.Should().Equal(1, 3), list);
     }
 }

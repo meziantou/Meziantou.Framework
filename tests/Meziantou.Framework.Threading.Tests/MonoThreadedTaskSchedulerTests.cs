@@ -29,7 +29,7 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
             await EnqueueTask();
         }
 
-        _count.Should().Be(Count);
+        Assert.Equal(Count, _count);
     }
 
     [Fact]
@@ -43,14 +43,14 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         }
 
         await Task.WhenAll(tasks);
-        _count.Should().Be(Count);
+        Assert.Equal(Count, _count);
     }
 
     private Task EnqueueTask()
     {
         return Task.Factory.StartNew(() =>
         {
-            Thread.CurrentThread.Name.Should().Be(ThreadName);
+            Assert.Equal(ThreadName, Thread.CurrentThread.Name);
             _count++;
         }, CancellationToken.None, TaskCreationOptions.None, _taskScheduler);
     }

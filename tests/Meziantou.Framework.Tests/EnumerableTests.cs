@@ -14,9 +14,7 @@ public class EnumerableTests
 
         // Act
         list.Replace(2, 5);
-
-        // Assert
-        list.Should().Equal(new List<int> { 1, 5, 3 });
+        Assert.Equal(new List<int> { 1, 5, 3 }, list);
     }
 
     [Fact]
@@ -37,9 +35,7 @@ public class EnumerableTests
 
         // Act
         list.AddOrReplace(10, 5);
-
-        // Assert
-        list.Should().Equal([1, 2, 3, 5]);
+        Assert.Equal([1, 2, 3, 5], list);
     }
 
     [Fact]
@@ -50,9 +46,7 @@ public class EnumerableTests
 
         // Act
         list.AddOrReplace(null, "");
-
-        // Assert
-        list.Should().Equal([""]);
+        Assert.Equal([""], list);
     }
 
     [Fact]
@@ -63,9 +57,7 @@ public class EnumerableTests
 
         // Act
         list.AddOrReplace(2, 5);
-
-        // Assert
-        list.Should().Equal([1, 5, 3]);
+        Assert.Equal([1, 5, 3], list);
     }
 
     [Fact]
@@ -102,9 +94,7 @@ public class EnumerableTests
 
         // Act
         var sum = list.Sum();
-
-        // Assert
-        sum.Should().Be(TimeSpan.FromSeconds(23));
+        Assert.Equal(TimeSpan.FromSeconds(23), sum);
     }
 
     [Fact]
@@ -115,16 +105,14 @@ public class EnumerableTests
 
         // Act
         var sum = list.Average();
-
-        // Assert
-        sum.Should().Be(TimeSpan.FromSeconds(9));
+        Assert.Equal(TimeSpan.FromSeconds(9), sum);
     }
 
     [Fact]
     public void EmptyIfNull_Null()
     {
         IEnumerable<string> items = null;
-        items.EmptyIfNull().Should().Equal([]);
+        Assert.Equal([], items.EmptyIfNull());
     }
 
     [Fact]
@@ -145,9 +133,7 @@ public class EnumerableTests
         // Act
         // Do not use var, so we can validate the nullable annotations
         List<string> actual = list.WhereNotNull().ToList();
-
-        // Assert
-        actual.Should().Equal(["", "a"]);
+        Assert.Equal(["", "a"], actual);
     }
 
     [Fact]
@@ -160,9 +146,7 @@ public class EnumerableTests
         // Act
         // Do not use var, so we can validate the nullable annotations
         List<int> actual = list.WhereNotNull().ToList();
-
-        // Assert
-        actual.Should().Equal([0, 2]);
+        Assert.Equal([0, 2], actual);
     }
 #nullable disable
 
@@ -175,7 +159,7 @@ public class EnumerableTests
             items.Add(item);
         }
 
-        items.Should().Equal([1, 2]);
+        Assert.Equal([1, 2], items);
 
         static IEnumerator<int> CustomEnumerator()
         {
@@ -193,7 +177,7 @@ public class EnumerableTests
             items.Add(item);
         }
 
-        items.Should().Equal([1, 2]);
+        Assert.Equal([1, 2], items);
 
         static async IAsyncEnumerator<int> CustomEnumerator()
         {
@@ -207,31 +191,28 @@ public class EnumerableTests
     public void IsDistinct_MultipleNulls()
     {
         var array = new[] { "a", null, null };
-
-        array.IsDistinct().Should().BeFalse();
+        Assert.False(array.IsDistinct());
     }
 
     [Fact]
     public void IsDistinct_MultipleIdenticalValues()
     {
         var array = new[] { "a", "b", "a" };
-
-        array.IsDistinct().Should().BeFalse();
+        Assert.False(array.IsDistinct());
     }
 
     [Fact]
     public void IsDistinct()
     {
         var array = new[] { "a", "b", "c" };
-
-        array.IsDistinct().Should().BeTrue();
+        Assert.True(array.IsDistinct());
     }
 
     [Fact]
     public async Task ToListAsync()
     {
         var data = await GetDataAsync().ToListAsync();
-        data.Should().Equal(["a", "b", "c"]);
+        Assert.Equal(["a", "b", "c"], data);
 
         static async Task<IEnumerable<string>> GetDataAsync()
         {

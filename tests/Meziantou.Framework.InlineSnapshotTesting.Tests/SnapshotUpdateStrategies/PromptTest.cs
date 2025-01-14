@@ -11,9 +11,8 @@ public sealed class PromptTest
         var prompt = new PromptMock(
                     ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), PromptConfigurationScope.ParentProcess));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
-
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null).Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null).Should().BeFalse();
+        Assert.False(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null));
+        Assert.False(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null));
         prompt.AssertAllCalled();
     }
 
@@ -24,9 +23,8 @@ public sealed class PromptTest
                     ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(1), PromptConfigurationScope.CurrentFile),
                     ctx => new PromptResult(PromptConfigurationMode.OverwriteWithoutFailure, TimeSpan.FromHours(1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
-
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null).Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null).Should().BeTrue();
+        Assert.False(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file1.cs", null, null));
+        Assert.True(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file2.cs", null, null));
         prompt.AssertAllCalled();
     }
 
@@ -38,9 +36,8 @@ public sealed class PromptTest
                     ctx => new PromptResult(PromptConfigurationMode.Disallow, TimeSpan.FromHours(-1), PromptConfigurationScope.CurrentFile),
                     ctx => new PromptResult(PromptConfigurationMode.Overwrite, TimeSpan.FromHours(-1), PromptConfigurationScope.CurrentFile));
         var instance = new PromptStrategy(prompt) { FilePath = Path.GetTempFileName() };
-
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null).Should().BeFalse();
-        instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null).Should().BeTrue();
+        Assert.False(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null));
+        Assert.True(instance.CanUpdateSnapshot(InlineSnapshotSettings.Default, "file.cs", null, null));
         prompt.AssertAllCalled();
     }
 
@@ -60,7 +57,7 @@ public sealed class PromptTest
 
         public void AssertAllCalled()
         {
-            _results.Should().BeEmpty();
+            Assert.Empty(_results);
         }
     }
 }

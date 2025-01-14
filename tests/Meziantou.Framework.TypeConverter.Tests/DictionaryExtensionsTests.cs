@@ -16,9 +16,7 @@ public static class DictionaryExtensionsTests
 
         // Act
         var actual = dictionary.GetValueOrDefault("test", "");
-
-        // Assert
-        actual.Should().Be("42");
+        Assert.Equal("42", actual);
     }
 
     [Fact]
@@ -32,9 +30,7 @@ public static class DictionaryExtensionsTests
 
         // Act
         var actual = dictionary.GetValueOrDefault("unknown", "");
-
-        // Assert
-        actual.Should().BeEmpty();
+        Assert.Empty(actual);
     }
 
     [Fact]
@@ -48,8 +44,6 @@ public static class DictionaryExtensionsTests
 
         // Act
         var actual = dictionary.GetValueOrDefault("test", 0);
-
-        // Assert
-        actual.Should().Be(0);
+        Assert.Equal(0, actual);
     }
 }

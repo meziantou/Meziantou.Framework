@@ -37,9 +37,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.Add(1);
-
-        // Assert
-        collection.ToList().Should().Equal([1]);
+        Assert.Equal([1], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedAddItem(1);
     }
@@ -55,9 +53,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.Remove(1);
-
-        // Assert
-        collection.ToList().Should().Equal([2]);
+        Assert.Equal([2], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedRemoveItem(1);
     }
@@ -74,9 +70,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.RemoveAt(0);
-
-        // Assert
-        collection.ToList().Should().Equal([2, 3]);
+        Assert.Equal([2, 3], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedRemoveItem(1);
     }
@@ -90,9 +84,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.Insert(index: 0, item: 1);
-
-        // Assert
-        collection.ToList().Should().Equal([1]);
+        Assert.Equal([1], collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedAddItem(1);
     }
@@ -109,9 +101,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.Clear();
-
-        // Assert
-        collection.ToList().Should().BeEmpty();
+        Assert.Empty(collection.ToList());
         eventAssert.AssertPropertyChanged("Count", "Item[]");
         eventAssert.AssertCollectionChangedReset();
     }
@@ -126,9 +116,7 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection[0] = 2;
-
-        // Assert
-        collection.ToList().Should().Equal([2]);
+        Assert.Equal([2], collection.ToList());
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReplace(oldValue: 1, newValue: 2);
     }
@@ -150,10 +138,8 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.AddRange(3, 4, 5);
-
-        // Assert
-        collection.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
-        collection.AsObservable.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
+        Assert.Equal([0, 1, 2, 3, 4, 5], collection.ToList());
+        Assert.Equal([0, 1, 2, 3, 4, 5], collection.AsObservable.ToList());
 
         if (supportRangeNotifications)
         {
@@ -188,10 +174,8 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.InsertRange(2, new[] { 2, 3, 4 });
-
-        // Assert
-        collection.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
-        collection.AsObservable.ToList().Should().Equal([0, 1, 2, 3, 4, 5]);
+        Assert.Equal([0, 1, 2, 3, 4, 5], collection.ToList());
+        Assert.Equal([0, 1, 2, 3, 4, 5], collection.AsObservable.ToList());
 
         if (supportRangeNotifications)
         {
@@ -218,10 +202,8 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.Sort();
-
-        // Assert
-        collection.ToList().Should().Equal([0, 1, 2]);
-        collection.AsObservable.ToList().Should().Equal([0, 1, 2]);
+        Assert.Equal([0, 1, 2], collection.ToList());
+        Assert.Equal([0, 1, 2], collection.AsObservable.ToList());
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReset();
     }
@@ -235,10 +217,8 @@ public sealed partial class ObservableCollectionTests
 
         // Act
         collection.StableSort();
-
-        // Assert
-        collection.ToList().Should().Equal([0, 1, 2]);
-        collection.AsObservable.ToList().Should().Equal([0, 1, 2]);
+        Assert.Equal([0, 1, 2], collection.ToList());
+        Assert.Equal([0, 1, 2], collection.AsObservable.ToList());
         eventAssert.AssertPropertyChanged("Item[]");
         eventAssert.AssertCollectionChangedReset();
     }
@@ -334,18 +314,16 @@ public sealed partial class ObservableCollectionTests
 
         public void AssertPropertyChanged(params string[] propertyNames)
         {
-            PropertyChangedArgs.Select(e => e.PropertyName).ToList().Should().Equal(propertyNames);
+            Assert.Equal(propertyNames, PropertyChangedArgs.Select(e => e.PropertyName).ToList());
         }
 
         public void AssertCollectionChangedAddItem(object obj)
         {
             CollectionChangedArgs.Should().ContainSingle();
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
-
-            args.NewItems[0].Should().Be(obj);
-
-            args.NewStartingIndex.Should().Be(0);
-            args.OldStartingIndex.Should().Be(-1);
+            Assert.Equal(obj, args.NewItems[0]);
+            Assert.Equal(0, args.NewStartingIndex);
+            Assert.Equal(-1, args.OldStartingIndex);
             args.OldItems.Should().BeNull();
         }
 
@@ -353,11 +331,9 @@ public sealed partial class ObservableCollectionTests
         {
             CollectionChangedArgs.Should().ContainSingle();
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Add);
-
-            args.NewItems.OfType<object>().Should().Equal(obj);
-
-            args.NewStartingIndex.Should().Be(startIndex);
-            args.OldStartingIndex.Should().Be(-1);
+            Assert.Equal(obj, args.NewItems.OfType<object>());
+            Assert.Equal(startIndex, args.NewStartingIndex);
+            Assert.Equal(-1, args.OldStartingIndex);
             args.OldItems.Should().BeNull();
         }
 
@@ -365,11 +341,9 @@ public sealed partial class ObservableCollectionTests
         {
             CollectionChangedArgs.Should().ContainSingle();
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Remove);
-
-            args.OldItems[0].Should().Be(obj);
-
-            args.NewStartingIndex.Should().Be(-1);
-            args.OldStartingIndex.Should().Be(0);
+            Assert.Equal(obj, args.OldItems[0]);
+            Assert.Equal(-1, args.NewStartingIndex);
+            Assert.Equal(0, args.OldStartingIndex);
             args.NewItems.Should().BeNull();
         }
 
@@ -377,9 +351,8 @@ public sealed partial class ObservableCollectionTests
         {
             CollectionChangedArgs.Should().ContainSingle();
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Reset);
-
-            args.NewStartingIndex.Should().Be(-1);
-            args.OldStartingIndex.Should().Be(-1);
+            Assert.Equal(-1, args.NewStartingIndex);
+            Assert.Equal(-1, args.OldStartingIndex);
             args.NewItems.Should().BeNull();
             args.OldItems.Should().BeNull();
         }
@@ -388,12 +361,10 @@ public sealed partial class ObservableCollectionTests
         {
             CollectionChangedArgs.Should().ContainSingle();
             var args = CollectionChangedArgs.Single(e => e.Action == NotifyCollectionChangedAction.Replace);
-
-            args.NewItems[0].Should().Be(newValue);
-            args.OldItems[0].Should().Be(oldValue);
-
-            args.NewStartingIndex.Should().Be(0);
-            args.OldStartingIndex.Should().Be(0);
+            Assert.Equal(newValue, args.NewItems[0]);
+            Assert.Equal(oldValue, args.OldItems[0]);
+            Assert.Equal(0, args.NewStartingIndex);
+            Assert.Equal(0, args.OldStartingIndex);
         }
     }
 }

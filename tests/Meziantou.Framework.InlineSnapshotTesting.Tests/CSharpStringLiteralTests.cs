@@ -12,34 +12,34 @@ public sealed class CSharpStringLiteralTests
     public void ChooseFormat(CSharpStringFormats formats, string value, string expected)
     {
         var actual = CSharpStringLiteral.Create(value, formats, "    ", 0, "\n");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
     public void CreateQuotedString()
     {
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Quoted, "    ", 0, "\n");
-        result.Should().Be("\"line1\\nline2\"");
+        Assert.Equal("\"line1\\nline2\"", result);
     }
 
     [Fact]
     public void CreateRawString()
     {
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.Raw, "    ", 0, "\n");
-        result.Should().Be("\"\"\"\n    line1\n    line2\n    \"\"\"");
+        Assert.Equal("\"\"\"\n    line1\n    line2\n    \"\"\"", result);
     }
 
     [Fact]
     public void CreateRawStringWithEmptyLine()
     {
         var result = CSharpStringLiteral.Create("line1\n    \nline2", CSharpStringFormats.Raw, "    ", 0, "\n");
-        result.Should().Be("\"\"\"\n    line1\n\n    line2\n    \"\"\"");
+        Assert.Equal("\"\"\"\n    line1\n\n    line2\n    \"\"\"", result);
     }
 
     [Fact]
     public void CreateLeftAlignedRawString()
     {
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.LeftAlignedRaw, "    ", 0, "\n");
-        result.Should().Be("\"\"\"\nline1\nline2\n\"\"\"");
+        Assert.Equal("\"\"\"\nline1\nline2\n\"\"\"", result);
     }
 }

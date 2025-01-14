@@ -12,8 +12,7 @@ public class DefaultConverterTests_DbNullTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int? value);
-
-        converted.Should().BeTrue();
+        Assert.True(converted);
         value.Should().BeNull();
     }
 
@@ -23,8 +22,7 @@ public class DefaultConverterTests_DbNullTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out int _);
-
-        converted.Should().BeFalse();
+        Assert.False(converted);
     }
 
     [Fact]
@@ -33,8 +31,7 @@ public class DefaultConverterTests_DbNullTo
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(DBNull.Value, cultureInfo, out string value);
-
-        converted.Should().BeTrue();
+        Assert.True(converted);
         value.Should().BeNull();
     }
 }

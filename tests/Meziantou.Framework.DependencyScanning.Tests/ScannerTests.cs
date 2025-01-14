@@ -551,7 +551,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
         void AssertProcessResult(ProcessResult result)
         {
-            result.ExitCode.Should().Be(0, "git command should return 0. Logs:\n" + string.Join('\n', result.Output));
+            Assert.Equal(0, result.ExitCode);
             testOutputHelper.WriteLine("git command succeeds\n" + string.Join('\n', result.Output));
         }
     }
@@ -646,7 +646,7 @@ jobs:
 """;
         AddFile(Path, Original);
         var result = await GetDependencies<GitHubActionsScanner>();
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -1251,7 +1251,7 @@ jobs:
             expected = expected.Replace("\r\n", "\n", StringComparison.Ordinal);
         }
 
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     public void Dispose()

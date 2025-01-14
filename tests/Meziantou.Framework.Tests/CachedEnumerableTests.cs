@@ -28,9 +28,8 @@ public sealed class CachedEnumerableTests
     {
         var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));
         using var cachedEnumerable = CachedEnumerable.Create(enumerable);
-
-        cachedEnumerable.Should().Equal([1, 2, 3]);
-        cachedEnumerable.Should().Equal([1, 2, 3]);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
     }
 
     [Fact]
@@ -49,34 +48,26 @@ public sealed class CachedEnumerableTests
 
         var enumerator1 = cachedEnumerable.GetEnumerator();
         var enumerator2 = cachedEnumerable.GetEnumerator();
-
-        // Act & assert
-        enumerator1.MoveNext().Should().BeTrue();
-        enumerator1.Current.Should().Be(1);
-        count.Should().Be(1);
-
-        enumerator2.MoveNext().Should().BeTrue();
-        enumerator2.Current.Should().Be(1);
-        count.Should().Be(1);
-
-        enumerator2.MoveNext().Should().BeTrue();
-        enumerator2.Current.Should().Be(2);
-        count.Should().Be(2);
-
-        enumerator2.MoveNext().Should().BeTrue();
-        enumerator2.Current.Should().Be(3);
-        count.Should().Be(3);
-
-        enumerator1.MoveNext().Should().BeTrue();
-        enumerator1.Current.Should().Be(2);
-        count.Should().Be(3);
-
-        enumerator2.MoveNext().Should().BeFalse();
-        enumerator1.MoveNext().Should().BeTrue();
-        enumerator1.MoveNext().Should().BeFalse();
-        count.Should().Be(3);
-
-        cachedEnumerable.Should().Equal([1, 2, 3]);
+        Assert.True(enumerator1.MoveNext());
+        Assert.Equal(1, enumerator1.Current);
+        Assert.Equal(1, count);
+        Assert.True(enumerator2.MoveNext());
+        Assert.Equal(1, enumerator2.Current);
+        Assert.Equal(1, count);
+        Assert.True(enumerator2.MoveNext());
+        Assert.Equal(2, enumerator2.Current);
+        Assert.Equal(2, count);
+        Assert.True(enumerator2.MoveNext());
+        Assert.Equal(3, enumerator2.Current);
+        Assert.Equal(3, count);
+        Assert.True(enumerator1.MoveNext());
+        Assert.Equal(2, enumerator1.Current);
+        Assert.Equal(3, count);
+        Assert.False(enumerator2.MoveNext());
+        Assert.True(enumerator1.MoveNext());
+        Assert.False(enumerator1.MoveNext());
+        Assert.Equal(3, count);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
     }
 
     [Fact]
@@ -106,12 +97,10 @@ public sealed class CachedEnumerableTests
 
         resetEvent.Set();
         await task;
-
-        // Act & assert
-        count.Should().Be(maxCount);
+        Assert.Equal(maxCount, count);
         foreach (var result in results)
         {
-            result.Should().Equal(Enumerable.Range(1, maxCount));
+            Assert.Equal(Enumerable.Range(1, maxCount), result);
         }
     }
 }

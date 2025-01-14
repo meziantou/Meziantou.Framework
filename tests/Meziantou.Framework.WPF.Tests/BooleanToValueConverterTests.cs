@@ -37,15 +37,13 @@ public sealed class BooleanToValueConverterTests
             false => _converter.FalseValue,
             true => _converter.TrueValue,
         };
-
-        Convert(value).Should().Be(expected);
+        Assert.Equal(expected, Convert(value));
     }
 
     [Fact]
     public void FallbackToFalseValue()
     {
         _converter.NullValue = null;
-
-        Convert(null).Should().Be(_converter.FalseValue);
+        Assert.Equal(_converter.FalseValue, Convert(null));
     }
 }

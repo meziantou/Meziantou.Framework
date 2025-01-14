@@ -14,15 +14,15 @@ public sealed class LinkHeaderValueTests
         result.Should().SatisfyRespectively(
             item =>
             {
-                item.Url.Should().Be("sample");
-                item.Rel.Should().Be("abc");
+                Assert.Equal("sample", item.Url);
+                Assert.Equal("abc", item.Rel);
             },
             item =>
             {
-                item.Url.Should().Be("plop");
-                item.Rel.Should().Be("d\"e;f,");
-                item.GetParameterValue("title").Should().Be("test title");
-                item.GetParameterValue("abc").Should().BeEmpty();
+                Assert.Equal("plop", item.Url);
+                Assert.Equal("d\"e;f,", item.Rel);
+                Assert.Equal("test title", item.GetParameterValue("title"));
+                Assert.Empty(item.GetParameterValue("abc"));
                 item.GetParameterValue("unknown").Should().BeNull();
             });
     }

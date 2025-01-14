@@ -51,7 +51,7 @@ public sealed class DependencyScannerTests
 
         var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new DummyScannerNeverMatch()] }, XunitCancellationToken);
         _testOutputHelper.WriteLine("File scanned in " + stopwatch.GetElapsedTime());
-        items.Should().BeEmpty();
+        Assert.Empty(items);
     }
 
     [Theory]
@@ -101,8 +101,7 @@ public sealed class DependencyScannerTests
             .Where(type => !type.IsAbstract && type.IsAssignableTo(typeof(DependencyScanner)) && type != typeof(RegexScanner))
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToArray();
-
-        scanners.Should().NotBeEmpty();
+        Assert.NotEmpty(scanners);
         scanners.Should().BeEquivalentTo(allScanners);
     }
 
@@ -128,7 +127,7 @@ public sealed class DependencyScannerTests
             ],
         };
         var result = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
-        result.Should().SatisfyRespectively(dep => dep.VersionLocation.FilePath.Should().Be(file1));
+        result.Should().SatisfyRespectively(dep => Assert.Equal(file1, dep.VersionLocation.FilePath));
     }
 
     [Fact]

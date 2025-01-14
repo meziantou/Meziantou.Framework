@@ -9,13 +9,13 @@ public class ValueStopwatchTest
     [Fact]
     public void IsActiveIsFalseForDefaultValueStopwatch()
     {
-        default(ValueStopwatch).IsActive.Should().BeFalse();
+        Assert.False(default(ValueStopwatch).IsActive);
     }
 
     [Fact]
     public void IsActiveIsTrueWhenValueStopwatchStartedWithStartNew()
     {
-        ValueStopwatch.StartNew().IsActive.Should().BeTrue();
+        Assert.True(ValueStopwatch.StartNew().IsActive);
     }
 
     [Fact]

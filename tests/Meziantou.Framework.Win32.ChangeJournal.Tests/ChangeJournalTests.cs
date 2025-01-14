@@ -25,7 +25,7 @@ public class ChangeJournalTests
             changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.Close)).Should().NotBeNull();
 
             var lastUsn = changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().Last(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal));
-            ChangeJournal.GetEntry(file).UniqueSequenceNumber.Should().Be(lastUsn.UniqueSequenceNumber);
+            Assert.Equal(lastUsn.UniqueSequenceNumber, ChangeJournal.GetEntry(file).UniqueSequenceNumber);
 
             File.Delete(file);
             changeJournal.Entries.OfType<ChangeJournalEntryVersion2or3>().FirstOrDefault(entry => string.Equals(entry.Name, fileName, StringComparison.Ordinal) && entry.Reason.HasFlag(ChangeReason.FileDelete)).Should().NotBeNull();

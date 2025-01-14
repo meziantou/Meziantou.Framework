@@ -44,11 +44,11 @@ public class HtmlSanitizerTests
 
         if (ignoreSpaces)
         {
-            FormatDocument(actualDocument).Should().Be(FormatDocument(expectedDocument));
+            Assert.Equal(FormatDocument(expectedDocument), FormatDocument(actualDocument));
         }
         else
         {
-            actualDocument.Body.InnerHtml.Should().Be(expectedDocument.Body.InnerHtml);
+            Assert.Equal(expectedDocument.Body.InnerHtml, actualDocument.Body.InnerHtml);
         }
     }
 

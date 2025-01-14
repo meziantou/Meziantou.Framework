@@ -17,8 +17,7 @@ public class TeeTextWriterTests
         using var tee = new TeeTextWriter(sw1, sw2);
         tee.Write("abc");
         tee.Flush();
-
-        sw1.ToString().Should().Be("abc");
-        sw2.ToString().Should().Be("abc");
+        Assert.Equal("abc", sw1.ToString());
+        Assert.Equal("abc", sw2.ToString());
     }
 }

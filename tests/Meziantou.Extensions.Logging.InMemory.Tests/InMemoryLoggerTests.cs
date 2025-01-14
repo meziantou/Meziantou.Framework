@@ -18,11 +18,10 @@ public sealed partial class InMemoryLoggerTests
 #pragma warning restore CA1848
 
         var log = provider.Logs.Informations.Single();
-        log.Message.Should().Be("Test");
+        Assert.Equal("Test", log.Message);
         log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") });
         log.Scopes.Should().BeEquivalentTo(Array.Empty<object>());
-
-        log.ToString().Should().Be("[my_category] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]");
+        Assert.Equal("[my_category] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
     }
 
     [Fact]
@@ -39,11 +38,10 @@ public sealed partial class InMemoryLoggerTests
         }
 
         var log = provider.Logs.Informations.Single();
-        log.Message.Should().Be("Test 1");
+        Assert.Equal("Test 1", log.Message);
         log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") });
         log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
-
-        log.ToString().Should().Be("[my_category] Information: Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}");
+        Assert.Equal("[my_category] Information: Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
     }
 
     [Fact]
@@ -58,25 +56,19 @@ public sealed partial class InMemoryLoggerTests
         }
 
         var log = provider.Logs.Informations.Single();
-        log.Message.Should().Be("Test 1");
+        Assert.Equal("Test 1", log.Message);
         log.State.Should().BeEquivalentTo(new[] { KeyValuePair.Create<string, object>("Number", 1), KeyValuePair.Create<string, object>("{OriginalFormat}", "Test {Number}") });
         log.Scopes.Should().BeEquivalentTo(new object[] { new { Age = 52, Name = "John" }, new { Name = "test" } });
-
-        log.ToString().Should().Be("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}");
-
-        log.TryGetParameterValue("{OriginalFormat}", out var format).Should().BeTrue();
-        format.Should().Be("Test {Number}");
-
-        log.TryGetParameterValue("Name", out var name).Should().BeTrue();
-        name.Should().Be("test");
-
-        log.TryGetParameterValue("Number", out var number).Should().BeTrue();
-        number.Should().Be(1);
-
-        log.TryGetParameterValue("Age", out var age).Should().BeTrue();
-        age.Should().Be(52);
-
-        log.GetAllParameterValues("Name").Should().Equal(["test", "John"]);
+        Assert.Equal("[my_category] Information (1 Sample Event Id): Test 1\n  => [{\"Key\":\"Number\",\"Value\":1},{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test {Number}\"}]\n  => {\"Name\":\"test\"}\n  => {\"Age\":52,\"Name\":\"John\"}", log.ToString());
+        Assert.True(log.TryGetParameterValue("{OriginalFormat}", out var format));
+        Assert.Equal("Test {Number}", format);
+        Assert.True(log.TryGetParameterValue("Name", out var name));
+        Assert.Equal("test", name);
+        Assert.True(log.TryGetParameterValue("Number", out var number));
+        Assert.Equal(1, number);
+        Assert.True(log.TryGetParameterValue("Age", out var age));
+        Assert.Equal(52, age);
+        Assert.Equal(["test", "John"], log.GetAllParameterValues("Name"));
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Value is {value}")]
@@ -101,7 +93,7 @@ public sealed partial class InMemoryLoggerTests
         Log(logger, 1);
 
         var log = provider.Logs.Informations.Single();
-        log.CreatedAt.Should().Be(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        Assert.Equal(new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), log.CreatedAt);
     }
 
     private sealed class CustomTimeProvider : TimeProvider

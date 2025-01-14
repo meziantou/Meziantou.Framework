@@ -16,8 +16,7 @@ public sealed class StreamExtensionsTests
         using var byteByByteStream = new CustomStream(stream, canSeek);
 
         var result = byteByByteStream.ReadToEnd();
-
-        result.Should().Equal([0, 1, 2, 3, 4]);
+        Assert.Equal([0, 1, 2, 3, 4], result);
     }
 
     [Theory]
@@ -31,8 +30,7 @@ public sealed class StreamExtensionsTests
         using var byteByByteStream = new CustomStream(stream, canSeek);
 
         var result = await byteByByteStream.ReadToEndAsync();
-
-        result.Should().Equal([0, 1, 2, 3, 4]);
+        Assert.Equal([0, 1, 2, 3, 4], result);
     }
 
     [Theory]
@@ -47,8 +45,7 @@ public sealed class StreamExtensionsTests
 
         var buffer = new byte[5];
         byteByByteStream.TryReadAll(buffer, 0, 5);
-
-        buffer.Should().Equal([0, 1, 2, 3, 4]);
+        Assert.Equal([0, 1, 2, 3, 4], buffer);
     }
 
     [Theory]
@@ -63,8 +60,7 @@ public sealed class StreamExtensionsTests
 
         var buffer = new byte[5];
         await byteByByteStream.TryReadAllAsync(buffer, 0, 5);
-
-        buffer.Should().Equal([0, 1, 2, 3, 4]);
+        Assert.Equal([0, 1, 2, 3, 4], buffer);
     }
 
     [Fact]
@@ -75,8 +71,7 @@ public sealed class StreamExtensionsTests
         stream.Seek(1, SeekOrigin.Begin);
 
         using var copy = await stream.ToMemoryStreamAsync();
-
-        copy.ToArray().Should().Equal([1, 2, 3, 4]);
+        Assert.Equal([1, 2, 3, 4], copy.ToArray());
     }
 
     private sealed class CustomStream(Stream stream, bool canSeek) : Stream

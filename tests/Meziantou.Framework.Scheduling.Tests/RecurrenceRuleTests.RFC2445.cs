@@ -24,7 +24,7 @@ public partial class RecurrenceRuleTests
             while (enumerator1.MoveNext() && enumerator2.MoveNext())
             {
                 occurrenceCount++;
-                enumerator1.Current.Should().Be(enumerator2.Current);
+                Assert.Equal(enumerator2.Current, enumerator1.Current);
             }
         }
 
@@ -40,7 +40,7 @@ public partial class RecurrenceRuleTests
         {
             if (checkEnd)
             {
-                enumerator1.MoveNext().Should().BeFalse("there are more occurences than expected.");
+                Assert.False(enumerator1.MoveNext());
             }
         }
     }

@@ -27,7 +27,7 @@ public class JobObjectTests
         };
 
         using var process = Process.Start(psi);
-        process.WaitForExit(500).Should().BeFalse(); // Ensure process is started
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
 
         job.AssignProcess(process);
         job.Terminate();
@@ -53,7 +53,7 @@ public class JobObjectTests
         };
 
         using var process = Process.Start(psi);
-        process.WaitForExit(500).Should().BeFalse(); // Ensure process is started
+        Assert.False(process.WaitForExit(500)); // Ensure process is started
 
         job.AssignProcess(process);
         job.Dispose();
@@ -96,8 +96,7 @@ public class JobObjectTests
         {
 
             FluentActions.Invoking(() => JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests")).Should().Throw<Win32Exception>();
-
-            JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? testObject).Should().BeFalse();
+            Assert.False(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? testObject));
             testObject.Should().BeNull();
             testObject?.Dispose();
 
@@ -106,8 +105,7 @@ public class JobObjectTests
                 JobObject job = JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests");
                 job.Should().NotBeNull();
                 job.Dispose();
-
-                JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out job).Should().BeTrue();
+                Assert.True(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out job));
                 job.Should().NotBeNull();
                 job.Dispose();
             }
@@ -125,16 +123,16 @@ public class JobObjectTests
         JobObjectCpuHardCap cap;
 
         cap = job.GetCpuRateHardCap();
-        cap.Enabled.Should().BeFalse();
+        Assert.False(cap.Enabled);
 
         job.SetCpuRateHardCap(7654);
         cap = job.GetCpuRateHardCap();
-        cap.Enabled.Should().BeTrue();
-        cap.Rate.Should().Be(7654);
+        Assert.True(cap.Enabled);
+        Assert.Equal(7654, cap.Rate);
 
         job.DisableCpuRateHardCap();
         cap = job.GetCpuRateHardCap();
-        cap.Enabled.Should().BeFalse();
+        Assert.False(cap.Enabled);
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -161,7 +159,7 @@ public class JobObjectTests
     public void IsAssignedToProcess_NotAssociated()
     {
         using var job = new JobObject();
-        job.IsAssignedToProcess(Process.GetCurrentProcess()).Should().BeFalse();
+        Assert.False(job.IsAssignedToProcess(Process.GetCurrentProcess()));
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -170,7 +168,6 @@ public class JobObjectTests
         using var job = new JobObject();
         var process = Process.GetCurrentProcess();
         job.AssignProcess(process);
-
-        job.IsAssignedToProcess(process).Should().BeTrue();
+        Assert.True(job.IsAssignedToProcess(process));
     }
 }

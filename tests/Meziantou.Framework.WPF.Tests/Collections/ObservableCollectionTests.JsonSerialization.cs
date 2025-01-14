@@ -17,7 +17,7 @@ public sealed partial class ObservableCollectionTests
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(collection);
-        json.Should().Be("[1,2,3]");
+        Assert.Equal("[1,2,3]", json);
 
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<ConcurrentObservableCollection<int>>(json);
         deserialized.Should().BeEquivalentTo(collection);

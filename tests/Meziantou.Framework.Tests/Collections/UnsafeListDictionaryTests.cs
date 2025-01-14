@@ -23,16 +23,15 @@ public class UnsafeListDictionaryTests
         dict.Should().NotContainKey(4);
 
         dict[1] = "d";
-        dict.Count.Should().Be(3); // Replace existing item
-
-        dict.Keys.Should().Equal([1, 2, 2]);
-        dict.Values.Should().Equal(["d", "b", "c"]);
+        Assert.Equal(3, dict.Count); // Replace existing item
+        Assert.Equal([1, 2, 2], dict.Keys);
+        Assert.Equal(["d", "b", "c"], dict.Values);
 
         dict.Clear();
-        dict.Count.Should().Be(0);
+        Assert.Equal(0, dict.Count);
 
         dict.AddRange(new KeyValuePair<int, string>[] { new(4, "a"), new(5, "e") });
-        dict.Keys.Should().Equal([4, 5]);
+        Assert.Equal([4, 5], dict.Keys);
     }
 
     [Fact]
@@ -48,7 +47,6 @@ public class UnsafeListDictionaryTests
         var json = JsonSerializer.Serialize(dict);
         json.Should().StartWith("{");
         var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
-
-        deserialized.Should().Equal(dict);
+        Assert.Equal(dict, deserialized);
     }
 }

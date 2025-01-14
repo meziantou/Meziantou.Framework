@@ -33,7 +33,7 @@ public sealed class EnumToStringSourceGeneratorTests
             generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         var runResult = driver.GetRunResult();
 
@@ -44,8 +44,8 @@ public sealed class EnumToStringSourceGeneratorTests
         {
             var diags = string.Join('\n', result.Diagnostics);
             var generated = (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString();
-            result.Success.Should().BeTrue("Project should build build:\n" + diags + "\n\n\n" + generated);
-            result.Diagnostics.Should().BeEmpty();
+            Assert.True(result.Success);
+            Assert.Empty(result.Diagnostics);
         }
 
         return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
@@ -74,15 +74,14 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
-
-        generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(1);
+        Assert.Empty(generatorResult.Diagnostics);
+        Assert.Equal(1, generatorResult.GeneratedTrees.Length);
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
         var method = type.GetMethod("Sample", BindingFlags.Public | BindingFlags.Static);
-        method.Invoke(null, [1]).Should().Be("Value2");
-        method.Invoke(null, [999]).Should().Be("999");
+        Assert.Equal("Value2", method.Invoke(null, [1]));
+        Assert.Equal("999", method.Invoke(null, [999]));
 
     }
 
@@ -114,9 +113,8 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
-
-        generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(1);
+        Assert.Empty(generatorResult.Diagnostics);
+        Assert.Equal(1, generatorResult.GeneratedTrees.Length);
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");

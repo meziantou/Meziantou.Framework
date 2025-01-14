@@ -13,10 +13,10 @@ public class HtmlNodeExtensionsTests
 
         var nodes = document.Descendants().ToList();
         nodes.Should().SatisfyRespectively(
-            node => node.Name.Should().Be("p"),
-            node => node.Name.Should().Be("i"),
-            node => node.Name.Should().Be("b"),
-            node => node.Value.Should().Be("1"),
-            node => node.Value.Should().Be("2"));
+            node => Assert.Equal("p", node.Name),
+            node => Assert.Equal("i", node.Name),
+            node => Assert.Equal("b", node.Name),
+            node => Assert.Equal("1", node.Value),
+            node => Assert.Equal("2", node.Value));
     }
 }

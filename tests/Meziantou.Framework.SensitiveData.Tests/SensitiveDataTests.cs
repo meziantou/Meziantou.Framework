@@ -15,8 +15,8 @@ public sealed class SensitiveDataTests
         var data = SensitiveData.Create("foo");
         using (data)
         {
-            data.GetLength().Should().Be(3);
-            data.RevealToString().Should().Be("foo");
+            Assert.Equal(3, data.GetLength());
+            Assert.Equal("foo", data.RevealToString());
         }
 
         FluentActions.Invoking(() => data.GetLength()).Should().Throw<ObjectDisposedException>();
@@ -76,7 +76,7 @@ public sealed class SensitiveDataTests
     public void CanConvertFromString()
     {
         using var data = (SensitiveData<char>)TypeDescriptor.GetConverter(typeof(SensitiveData<char>)).ConvertFromString("bar");
-        data.RevealToString().Should().Be("bar");
+        Assert.Equal("bar", data.RevealToString());
     }
 
     [Fact]

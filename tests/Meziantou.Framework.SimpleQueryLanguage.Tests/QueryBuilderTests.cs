@@ -15,9 +15,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<byte>("id", (obj, value) => obj.ByteValue == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { ByteValue = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { ByteValue = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -27,9 +26,8 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<sbyte>("field", (obj, value) => obj.SByteValue == value);
         queryBuilder.SetTextFilterHandler((obj, value) => throw new Exception($"Unexpected text query '{value}'"));
         var query = queryBuilder.Build("field:\"-10\"");
-
-        query.Evaluate(new() { SByteValue = -10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { SByteValue = -10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -38,9 +36,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<short>("id", (obj, value) => obj.Int16Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { Int16Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { Int16Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -49,9 +46,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<ushort>("id", (obj, value) => obj.UInt16Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { UInt16Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { UInt16Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -60,9 +56,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<int>("id", (obj, value) => obj.Int32Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { Int32Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { Int32Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -71,9 +66,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<uint>("id", (obj, value) => obj.UInt32Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { UInt32Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { UInt32Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -82,9 +76,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<long>("id", (obj, value) => obj.Int64Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { Int64Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { Int64Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -93,9 +86,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<ulong>("id", (obj, value) => obj.UInt64Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { UInt64Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { UInt64Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
 #if NET7_0_OR_GREATER
@@ -105,9 +97,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<Int128>("id", (obj, value) => obj.Int128Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { Int128Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { Int128Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -116,9 +107,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<UInt128>("id", (obj, value) => obj.UInt128Value == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { UInt128Value = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { UInt128Value = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 #endif
 
@@ -128,9 +118,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<BigInteger>("id", (obj, value) => obj.BigIntegerValue == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { BigIntegerValue = 10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { BigIntegerValue = 10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -139,9 +128,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<Half>("id", (obj, value) => obj.HalfValue == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { HalfValue = (Half)10 }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { HalfValue = (Half)10 }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -150,9 +138,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<float>("id", (obj, value) => obj.SingleValue == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { SingleValue = 10f }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { SingleValue = 10f }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -161,9 +148,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<double>("id", (obj, value) => obj.DoubleValue == value);
         var query = queryBuilder.Build("id:10");
-
-        query.Evaluate(new() { DoubleValue = 10f }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DoubleValue = 10f }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -172,9 +158,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<decimal>("id", (obj, value) => obj.DecimalValue == value);
         var query = queryBuilder.Build("id:10.2");
-
-        query.Evaluate(new() { DecimalValue = 10.2m }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DecimalValue = 10.2m }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -183,9 +168,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<DateTimeOffset>("id", (obj, value) => obj.DateTimeOffsetValue == value);
         var query = queryBuilder.Build("id:2022-01-01");
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -194,9 +178,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<DateTime>("id", (obj, value) => obj.DateTimeValue == value);
         var query = queryBuilder.Build("id:2022-01-01");
-
-        query.Evaluate(new() { DateTimeValue = new DateTime(2022, 1, 1, 0, 0, 0) }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeValue = new DateTime(2022, 1, 1, 0, 0, 0) }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -205,9 +188,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<DateOnly>("id", (obj, value) => obj.DateOnlyValue == value);
         var query = queryBuilder.Build("id:2022-01-01");
-
-        query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 1, 1, 0, 0, 0)) }).Should().BeTrue();
-        query.Evaluate(new()).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 1, 1, 0, 0, 0)) }));
+        Assert.False(query.Evaluate(new()));
     }
 
     [Fact]
@@ -216,9 +198,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("id", (obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("id:\"sample query\"");
-
-        query.Evaluate(new() { StringValue = "sample query" }).Should().BeTrue();
-        query.Evaluate(new() { StringValue = "Another value" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { StringValue = "sample query" }));
+        Assert.False(query.Evaluate(new() { StringValue = "Another value" }));
     }
 
     [Fact]
@@ -229,11 +210,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:today");
 
         RangeSyntax.UtcNow = new DateTime(2022, 1, 1, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -244,11 +224,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:Yesterday");
 
         RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -259,11 +238,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"this week\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 27, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 2, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 26, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 3, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 27, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 2, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 26, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 3, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -274,11 +252,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"this month\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 1, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -289,11 +266,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"this month\"");
 
         RangeSyntax.UtcNow = new DateTime(2020, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -304,11 +280,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"this month\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 3, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 3, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -319,11 +294,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"last month\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -334,11 +308,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"last month\"");
 
         RangeSyntax.UtcNow = new DateTime(2020, 3, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 2, 29, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2020, 3, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -349,11 +322,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"last month\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 3, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 3, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 2, 28, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 3, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -364,11 +336,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"This Year\"");
 
         RangeSyntax.UtcNow = new DateTime(2022, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -379,11 +350,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"last Year\"");
 
         RangeSyntax.UtcNow = new DateTime(2023, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeTrue();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
+        Assert.True(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(query.Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2023, 1, 1, 0, 0, 0, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -394,11 +364,10 @@ public sealed class QueryBuilderTests
         var query = queryBuilder.Build("date:\"last Year\"");
 
         RangeSyntax.UtcNow = new DateTime(2023, 2, 2, 10, 0, 0);
-        query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 1, 1, 0, 0, 0)) }).Should().BeTrue();
-        query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 12, 31, 23, 59, 59)) }).Should().BeTrue();
-
-        query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2021, 12, 31, 23, 59, 59)) }).Should().BeFalse();
-        query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2023, 1, 1, 0, 0, 0)) }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 1, 1, 0, 0, 0)) }));
+        Assert.True(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2022, 12, 31, 23, 59, 59)) }));
+        Assert.False(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2021, 12, 31, 23, 59, 59)) }));
+        Assert.False(query.Evaluate(new() { DateOnlyValue = DateOnly.FromDateTime(new DateTime(2023, 1, 1, 0, 0, 0)) }));
     }
 
     [Fact]
@@ -407,9 +376,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("field", (obj, range) => range.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("field:10");
-
-        query.Evaluate(new() { Int32Value = 10 }).Should().BeTrue();
-        query.Evaluate(new() { Int32Value = 9 }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { Int32Value = 10 }));
+        Assert.False(query.Evaluate(new() { Int32Value = 9 }));
     }
 
     [Fact]
@@ -418,8 +386,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("field", (obj, range) => range.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("field:test");
-
-        query.Evaluate(new() { Int32Value = 9 }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = 9 }));
     }
 
     [Fact]
@@ -443,8 +410,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id:1..10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -455,8 +421,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id:1..10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -468,8 +433,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id>=10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -480,8 +444,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id>=10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -492,8 +455,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id>10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -504,8 +466,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id>10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -517,8 +478,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<=10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -529,8 +489,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<=10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -541,8 +500,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -553,8 +511,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -566,8 +523,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<>10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeTrue();
+        Assert.True(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Theory]
@@ -577,8 +533,7 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<int>("id", (obj, value) => value.IsInRange(obj.Int32Value));
         var query = queryBuilder.Build("id<>10");
-
-        query.Evaluate(new() { Int32Value = value }).Should().BeFalse();
+        Assert.False(query.Evaluate(new() { Int32Value = value }));
     }
 
     [Fact]
@@ -586,11 +541,10 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, value) => value.IsInRange(obj.DateTimeOffsetValue));
-        queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeTrue();
-        queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 30, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }));
+        Assert.True(queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 30, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01..2022-01-31").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -598,11 +552,10 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, value) => value.IsInRange(obj.DateTimeOffsetValue));
-        queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeTrue();
-        queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }));
+        Assert.True(queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01T00:00:00..2022-01-31T23:59:59").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -610,11 +563,10 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddRangeHandler<DateTimeOffset>("date", (obj, value) => value.IsInRange(obj.DateTimeOffsetValue));
-        queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeTrue();
-        queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeTrue();
-
-        queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }).Should().BeFalse();
-        queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 01, 00, 00, 00, TimeSpan.Zero) }));
+        Assert.True(queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 01, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2021, 12, 31, 23, 59, 59, TimeSpan.Zero) }));
+        Assert.False(queryBuilder.Build("date:2022-01-01T00:00:00Z..2022-01-31T23:59:59Z").Evaluate(new() { DateTimeOffsetValue = new DateTimeOffset(2022, 02, 01, 00, 00, 00, TimeSpan.Zero) }));
     }
 
     [Fact]
@@ -622,8 +574,8 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<DayOfWeek>("date", (obj, value) => obj.DayOfWeekValue == value);
-        queryBuilder.Build("date:monday").Evaluate(new() { DayOfWeekValue = DayOfWeek.Monday }).Should().BeTrue();
-        queryBuilder.Build("date:monday").Evaluate(new() { DayOfWeekValue = DayOfWeek.Tuesday }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("date:monday").Evaluate(new() { DayOfWeekValue = DayOfWeek.Monday }));
+        Assert.False(queryBuilder.Build("date:monday").Evaluate(new() { DayOfWeekValue = DayOfWeek.Tuesday }));
     }
 
     [Fact]
@@ -632,8 +584,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("a", "value", (obj) => obj.Int32Value == 1);
         queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => throw new NotSupportedException());
-        queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 2 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 2 }));
 
         new Func<object>(() => queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 })).Should().ThrowExactly<NotSupportedException>();
     }
@@ -645,9 +597,9 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler("a", "0", (obj) => true);
         queryBuilder.AddHandler<int>("a", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => throw new NotSupportedException());
-        queryBuilder.Build("a:0").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:2").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a:0").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a:2").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -655,10 +607,9 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("a", "value", (obj, value) => obj.Int32Value == 1);
-
-        queryBuilder.Build("a=value").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a=value").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:value").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -666,11 +617,10 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler<int>("a", (obj, op, value) => op == KeyValueOperator.EqualTo && obj.Int32Value == value);
-
-        queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
-        queryBuilder.Build("a=invalid").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a=invalid").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -678,10 +628,9 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("a", "1", (obj, op) => op == KeyValueOperator.EqualTo && obj.Int32Value == 1);
-
-        queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -689,10 +638,9 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("a", "1", (obj, op) => op == KeyValueOperator.EqualTo && obj.Int32Value == 1);
-
-        queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -700,10 +648,9 @@ public sealed class QueryBuilderTests
     {
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.AddHandler("a", (obj, op, value) => op == KeyValueOperator.EqualTo && obj.Int32Value == 1);
-
-        queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }).Should().BeTrue();
-        queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }).Should().BeFalse();
+        Assert.True(queryBuilder.Build("a=1").Evaluate(new() { Int32Value = 1 }));
+        Assert.True(queryBuilder.Build("a:1").Evaluate(new() { Int32Value = 1 }));
+        Assert.False(queryBuilder.Build("a<>2").Evaluate(new() { Int32Value = 1 }));
     }
 
     [Fact]
@@ -712,9 +659,8 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue?.Contains(value, StringComparison.OrdinalIgnoreCase) == true);
         var query = queryBuilder.Build("dummy:10");
-
-        query.Evaluate(new() { StringValue = "dummy:10" }).Should().BeTrue();
-        query.Evaluate(new() { StringValue = "Another value" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new() { StringValue = "dummy:10" }));
+        Assert.False(query.Evaluate(new() { StringValue = "Another value" }));
     }
 
     [Fact]
@@ -734,8 +680,7 @@ public sealed class QueryBuilderTests
         queryBuilder.SetUnhandledPropertyHandler((obj, key, op, value) => false);
         queryBuilder.SetTextFilterHandler((obj, value) => false);
         var query = queryBuilder.Build("");
-
-        query.Evaluate(new Sample { }).Should().BeTrue();
+        Assert.True(query.Evaluate(new Sample { }));
     }
 
     [Fact]
@@ -746,11 +691,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<long>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => value == "test");
         var query = queryBuilder.Build("int32:1 OR int64:2");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }));
     }
 
     [Fact]
@@ -761,12 +705,11 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<long>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => value == "test");
         var query = queryBuilder.Build("int32:1 OR int64:2 OR int32:2");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 2, Int64Value = 99 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 2, Int64Value = 99 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }));
     }
 
     [Fact]
@@ -775,10 +718,9 @@ public sealed class QueryBuilderTests
         var queryBuilder = new QueryBuilder<Sample>();
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("abc OR def");
-
-        query.Evaluate(new Sample { StringValue = "abc" }).Should().BeTrue();
-        query.Evaluate(new Sample { StringValue = "def" }).Should().BeTrue();
-        query.Evaluate(new Sample { StringValue = "dummy" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { StringValue = "abc" }));
+        Assert.True(query.Evaluate(new Sample { StringValue = "def" }));
+        Assert.False(query.Evaluate(new Sample { StringValue = "dummy" }));
     }
 
     [Fact]
@@ -789,11 +731,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<long>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => value == "test");
         var query = queryBuilder.Build("int32:1 AND int64:2");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2 }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 99 }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2 }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 99 }));
     }
 
     [Fact]
@@ -803,11 +744,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("int32:1 AND");
-
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "AND" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, StringValue = "AND" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, StringValue = "dummy" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "AND" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "dummy" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, StringValue = "AND" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, StringValue = "dummy" }));
     }
 
     [Fact]
@@ -818,9 +758,8 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("-int32:1");
-
-        query.Evaluate(new Sample { Int32Value = 1 }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99 }).Should().BeTrue();
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1 }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 99 }));
     }
 
     [Fact]
@@ -830,11 +769,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("-\"int32:1\"");
-
-        query.Evaluate(new Sample { StringValue = "int32:1" }).Should().BeFalse();
-        query.Evaluate(new Sample { StringValue = "dummy" }).Should().BeTrue();
-        query.Evaluate(new Sample { StringValue = "dummy" }).Should().BeTrue();
-        query.Evaluate(new Sample { StringValue = "dummy" }).Should().BeTrue();
+        Assert.False(query.Evaluate(new Sample { StringValue = "int32:1" }));
+        Assert.True(query.Evaluate(new Sample { StringValue = "dummy" }));
+        Assert.True(query.Evaluate(new Sample { StringValue = "dummy" }));
+        Assert.True(query.Evaluate(new Sample { StringValue = "dummy" }));
     }
 
     [Fact]
@@ -845,11 +783,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("(int32:1 AND int64:2) OR dummy");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }));
     }
 
     [Fact]
@@ -860,11 +797,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("(int32:1 AND int64:2) AND dummy");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }));
     }
 
     [Fact]
@@ -875,11 +811,10 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int64", (obj, value) => obj.Int64Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("(int32:1 AND int64:2) AND NOT dummy");
-
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "AND" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, Int64Value = 2, StringValue = "dummy" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "dummy" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 99, Int64Value = 2, StringValue = "AND" }));
     }
 
     [Fact]
@@ -889,10 +824,9 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("int32:1 sample");
-
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }).Should().BeFalse();
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }));
     }
 
     [Fact]
@@ -902,10 +836,9 @@ public sealed class QueryBuilderTests
         queryBuilder.AddHandler<int>("int32", (obj, value) => obj.Int32Value == value);
         queryBuilder.SetTextFilterHandler((obj, value) => obj.StringValue == value);
         var query = queryBuilder.Build("int32:1 AND NOT sample");
-
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }).Should().BeFalse();
-        query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }).Should().BeTrue();
-        query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }).Should().BeFalse();
+        Assert.False(query.Evaluate(new Sample { Int32Value = 1, StringValue = "sample" }));
+        Assert.True(query.Evaluate(new Sample { Int32Value = 1, StringValue = "no" }));
+        Assert.False(query.Evaluate(new Sample { Int32Value = 2, StringValue = "sample" }));
     }
 
     private sealed class Sample

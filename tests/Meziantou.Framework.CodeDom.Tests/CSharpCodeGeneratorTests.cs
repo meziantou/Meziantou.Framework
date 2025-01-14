@@ -17,7 +17,7 @@ public class CSharpCodeGeneratorTests
             actual = actual.Replace("\r\n", "\n", StringComparison.Ordinal);
         }
 
-        actual.Should().Be(expectedCsharpCode);
+        Assert.Equal(expectedCsharpCode, actual);
     }
 
     [Fact]

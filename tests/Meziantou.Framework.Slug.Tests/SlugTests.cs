@@ -21,8 +21,7 @@ public class SlugTests
     public void Slug_WithDefaultOptions(string text, string expected)
     {
         var slug = Slug.Create(text);
-
-        slug.Should().Be(expected);
+        Assert.Equal(expected, slug);
     }
 
     [Theory]
@@ -35,7 +34,6 @@ public class SlugTests
             CasingTransformation = CasingTransformation.ToLowerCase,
         };
         var slug = Slug.Create(text, options);
-
-        slug.Should().Be(expected);
+        Assert.Equal(expected, slug);
     }
 }

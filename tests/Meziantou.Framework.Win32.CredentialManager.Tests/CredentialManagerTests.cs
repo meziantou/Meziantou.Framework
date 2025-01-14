@@ -29,10 +29,10 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", "Test", CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.ApplicationName.Should().Be(_credentialName1);
-        cred.UserName.Should().Be("John");
-        cred.Password.Should().Be("Doe");
-        cred.Comment.Should().Be("Test");
+        Assert.Equal(_credentialName1, cred.ApplicationName);
+        Assert.Equal("John", cred.UserName);
+        Assert.Equal("Doe", cred.Password);
+        Assert.Equal("Test", cred.Comment);
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
@@ -47,7 +47,7 @@ public sealed class CredentialManagerTests : IDisposable
         try
         {
             var creds = CredentialManager.EnumerateCredentials(_prefix + "*");
-            creds.Count.Should().Be(2);
+            Assert.Equal(2, creds.Count);
         }
         finally
         {
@@ -63,10 +63,10 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", "Doe", comment, CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.ApplicationName.Should().Be(_credentialName1);
-        cred.UserName.Should().Be("John");
-        cred.Password.Should().Be("Doe");
-        cred.Comment.Should().Be(comment);
+        Assert.Equal(_credentialName1, cred.ApplicationName);
+        Assert.Equal("John", cred.UserName);
+        Assert.Equal("Doe", cred.Password);
+        Assert.Equal(comment, cred.Comment);
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
@@ -84,7 +84,7 @@ public sealed class CredentialManagerTests : IDisposable
         CredentialManager.WriteCredential(_credentialName1, "John", secret, CredentialPersistence.Session);
 
         var cred = CredentialManager.ReadCredential(_credentialName1);
-        cred.Password.Should().Be(secret);
+        Assert.Equal(secret, cred.Password);
 
         CredentialManager.DeleteCredential(_credentialName1);
         cred = CredentialManager.ReadCredential(_credentialName1);
@@ -107,7 +107,7 @@ public sealed class CredentialManagerTests : IDisposable
                     _ = credential.UserName;
                 }
 
-                credentials.Should().NotBeEmpty();
+                Assert.NotEmpty(credentials);
             }
             finally
             {
@@ -135,8 +135,8 @@ public sealed class CredentialManagerTests : IDisposable
                 var credentials = CredentialManager.EnumerateCredentials(filter);
                 foreach (var credential in credentials)
                 {
-                    credential.UserName.Should().NotBeEmpty();
-                    credential.Password.Should().NotBeEmpty();
+                    Assert.NotEmpty(credential.UserName);
+                    Assert.NotEmpty(credential.Password);
                 }
 
                 credentials.Should().NotBeEmpty().And.ContainSingle(cred => cred.ApplicationName == _credentialName1);
@@ -161,11 +161,11 @@ public sealed class CredentialManagerTests : IDisposable
 
         var cred = CredentialManager.ReadCredential(_credentialName1, credType);
         cred.Should().NotBeNull();
-        cred.ApplicationName.Should().Be(_credentialName1);
-        cred.UserName.Should().Be("John");
+        Assert.Equal(_credentialName1, cred.ApplicationName);
+        Assert.Equal("John", cred.UserName);
         cred.Password.Should().BeNull(); // Domain Passwords can not be read back using CredRead API
-        cred.Comment.Should().Be("Test");
-        cred.CredentialType.Should().Be(credType);
+        Assert.Equal("Test", cred.Comment);
+        Assert.Equal(credType, cred.CredentialType);
 
         CredentialManager.DeleteCredential(_credentialName1, credType);
         cred = CredentialManager.ReadCredential(_credentialName1, credType);
@@ -182,8 +182,8 @@ public sealed class CredentialManagerTests : IDisposable
         try
         {
             var creds = CredentialManager.EnumerateCredentials(_prefix + "*");
-            creds.Count.Should().Be(2);
-            creds.All(cred => cred.CredentialType == credType).Should().BeTrue();
+            Assert.Equal(2, creds.Count);
+            Assert.True(creds.All(cred => cred.CredentialType == credType));
         }
         finally
         {

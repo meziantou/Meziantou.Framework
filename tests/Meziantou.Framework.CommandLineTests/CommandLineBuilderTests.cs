@@ -126,7 +126,7 @@ public class CommandLineBuilderTests
 
         using (new AssertionScope())
         {
-            process.ExitCode.Should().Be(0);
+            Assert.Equal(0, process.ExitCode);
             actualArguments.Should().BeEquivalentTo(expectedArguments);
         }
     }

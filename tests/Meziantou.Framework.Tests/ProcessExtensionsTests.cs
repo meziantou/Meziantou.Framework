@@ -23,10 +23,10 @@ public class ProcessExtensionsTests
         }
 
         var result = await CreateProcess();
-        result.ExitCode.Should().Be(0);
+        Assert.Equal(0, result.ExitCode);
         result.Output.Should().ContainSingle();
-        result.Output[0].Text.Should().Be("test");
-        result.Output[0].Type.Should().Be(ProcessOutputType.StandardOutput);
+        Assert.Equal("test", result.Output[0].Text);
+        Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
     }
 
     [Fact]
@@ -51,10 +51,10 @@ public class ProcessExtensionsTests
         }
 
         var result = await psi.RunAsTaskAsync(redirectOutput: true, CancellationToken.None);
-        result.ExitCode.Should().Be(0);
+        Assert.Equal(0, result.ExitCode);
         result.Output.Should().ContainSingle();
-        result.Output[0].Text.Should().Be("test");
-        result.Output[0].Type.Should().Be(ProcessOutputType.StandardOutput);
+        Assert.Equal("test", result.Output[0].Text);
+        Assert.Equal(ProcessOutputType.StandardOutput, result.Output[0].Type);
     }
 
     [Fact]
@@ -79,8 +79,8 @@ public class ProcessExtensionsTests
         }
 
         var result = await psi.RunAsTaskAsync(redirectOutput: false, CancellationToken.None);
-        result.ExitCode.Should().Be(0);
-        result.Output.Should().BeEmpty();
+        Assert.Equal(0, result.ExitCode);
+        Assert.Empty(result.Output);
     }
 
     [Fact]
@@ -115,8 +115,7 @@ public class ProcessExtensionsTests
                 break;
 
             await Task.Delay(100, cts.Token);
-
-            (stopwatch.Elapsed > TimeSpan.FromSeconds(10)).Should().BeFalse("Cannot find the process");
+            Assert.False(stopwatch.Elapsed > TimeSpan.FromSeconds(10));
         }
 
         await cts.CancelAsync();
@@ -147,8 +146,8 @@ public class ProcessExtensionsTests
                 continue;
             }
 
-            (processes.Count == 1 || processes.Count == 2).Should().BeTrue($"There should be 1 or 2 children (ping and conhost): {string.Join(',', processes.Select(p => p.ProcessName))}");
-            processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")).Should().BeTrue($"PING and CONHOST are not in the child processes: {string.Join(',', processes.Select(p => p.ProcessName))}");
+            Assert.True(processes.Count == 1 || processes.Count == 2);
+            Assert.True(processes.Any(p => p.ProcessName.EqualsIgnoreCase("PING") || p.ProcessName.EqualsIgnoreCase("CONHOST")));
         }
         finally
         {

@@ -13,17 +13,16 @@ public sealed class SingleInstanceTests
 
         var applicationId = Guid.NewGuid();
         using var singleInstance = new SingleInstance(applicationId);
-        singleInstance.StartApplication().Should().BeTrue("it should start the instance");
+        Assert.True(singleInstance.StartApplication());
 
         // Be sure the server is ready
         await Task.Delay(50);
 
         var events = new List<SingleInstanceEventArgs>();
         singleInstance.NewInstance += SingleInstance_NewInstance;
-
-        singleInstance.NotifyFirstInstance(["a", "b", "c"]).Should().BeTrue("it should notify first instance (1)");
+        Assert.True(singleInstance.NotifyFirstInstance(["a", "b", "c"]));
         await Task.Delay(50);
-        singleInstance.NotifyFirstInstance(["123"]).Should().BeTrue("it should notify the first instance (2)");
+        Assert.True(singleInstance.NotifyFirstInstance(["123"]));
 
         while (!cts.Token.IsCancellationRequested && events.Count < 2)
         {
@@ -32,12 +31,12 @@ public sealed class SingleInstanceTests
 
         events.Should().HaveCount(2);
         var orderedEvents = events.OrderBy(args => args.Arguments.Length).ToList();
-        orderedEvents[0].Arguments.Should().Equal(["123"]);
-        orderedEvents[1].Arguments.Should().Equal(["a", "b", "c"]);
+        Assert.Equal(["123"], orderedEvents[0].Arguments);
+        Assert.Equal(["a", "b", "c"], orderedEvents[1].Arguments);
 
         void SingleInstance_NewInstance(object sender, SingleInstanceEventArgs e)
         {
-            sender.Should().Be(singleInstance);
+            Assert.Equal(singleInstance, sender);
             lock (events)
             {
                 events.Add(e);
@@ -53,9 +52,8 @@ public sealed class SingleInstanceTests
         {
             StartServer = false,
         };
-
-        singleInstance.StartApplication().Should().BeTrue();
-        singleInstance.StartApplication().Should().BeTrue();
+        Assert.True(singleInstance.StartApplication());
+        Assert.True(singleInstance.StartApplication());
 
         // Need to run on another thread because the lock is re-entrant
         var isStarted = false;
@@ -66,7 +64,6 @@ public sealed class SingleInstanceTests
         });
         t.Start();
         t.Join();
-
-        Volatile.Read(ref isStarted).Should().BeFalse("the second instance should not be able to start");
+        Assert.False(Volatile.Read(ref isStarted));
     }
 }

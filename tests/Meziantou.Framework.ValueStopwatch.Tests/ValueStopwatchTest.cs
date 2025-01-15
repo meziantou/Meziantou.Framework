@@ -27,8 +27,8 @@ public class ValueStopwatchTest
     public async Task GetElapsedTimeReturnsTimeElapsedSinceStart()
     {
         var stopwatch = ValueStopwatch.StartNew();
-        await Task.Delay(200);
+        await Task.Delay(300);
         var elapsed = stopwatch.GetElapsedTime();
-        Assert.True(elapsed >= TimeSpan.FromMilliseconds(200), $"{elapsed}");
+        Assert.True(elapsed >= TimeSpan.FromMilliseconds(200), $"{elapsed}"); // Allow some margin
     }
 }

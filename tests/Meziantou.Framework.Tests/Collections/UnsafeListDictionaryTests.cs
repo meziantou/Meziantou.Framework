@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -17,22 +16,21 @@ public class UnsafeListDictionaryTests
             { 2, "c" },
         };
 
-        dict.Should().HaveCount(3); // Allows duplicate values
-        dict.Should().ContainKey(1);
-        dict.Should().ContainKey(2);
-        dict.Should().NotContainKey(4);
+        Assert.Equal(3, dict.Count); // Allows duplicate values
+        Assert.Contains(1, (IReadOnlyDictionary<int, string>)dict);
+        Assert.Contains(2, (IReadOnlyDictionary<int, string>)dict);
+        Assert.DoesNotContain(4, (IReadOnlyDictionary<int, string>)dict);
 
         dict[1] = "d";
-        dict.Count.Should().Be(3); // Replace existing item
-
-        dict.Keys.Should().Equal([1, 2, 2]);
-        dict.Values.Should().Equal(["d", "b", "c"]);
+        Assert.Equal(3, dict.Count); // Replace existing item
+        Assert.Equal([1, 2, 2], dict.Keys);
+        Assert.Equal(["d", "b", "c"], dict.Values);
 
         dict.Clear();
-        dict.Count.Should().Be(0);
+        Assert.Empty(dict);
 
         dict.AddRange(new KeyValuePair<int, string>[] { new(4, "a"), new(5, "e") });
-        dict.Keys.Should().Equal([4, 5]);
+        Assert.Equal([4, 5], dict.Keys);
     }
 
     [Fact]
@@ -46,9 +44,8 @@ public class UnsafeListDictionaryTests
         };
 
         var json = JsonSerializer.Serialize(dict);
-        json.Should().StartWith("{");
+        Assert.StartsWith(['{'], json, StringComparison.Ordinal);
         var deserialized = JsonSerializer.Deserialize<UnsafeListDictionary<int, string>>(json);
-
-        deserialized.Should().Equal(dict);
+        Assert.Equal(dict, deserialized);
     }
 }

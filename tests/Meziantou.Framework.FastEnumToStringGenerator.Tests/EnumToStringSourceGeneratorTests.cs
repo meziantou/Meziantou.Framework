@@ -1,7 +1,5 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Reflection;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -33,7 +31,7 @@ public sealed class EnumToStringSourceGeneratorTests
             generators: [generator]);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out var outputCompilation, out var diagnostics);
-        diagnostics.Should().BeEmpty();
+        Assert.Empty(diagnostics);
 
         var runResult = driver.GetRunResult();
 
@@ -44,8 +42,8 @@ public sealed class EnumToStringSourceGeneratorTests
         {
             var diags = string.Join('\n', result.Diagnostics);
             var generated = (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString();
-            result.Success.Should().BeTrue("Project should build build:\n" + diags + "\n\n\n" + generated);
-            result.Diagnostics.Should().BeEmpty();
+            Assert.True(result.Success);
+            Assert.Empty(result.Diagnostics);
         }
 
         return (runResult, outputCompilation, result.Success ? ms.ToArray() : null);
@@ -74,15 +72,14 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
-
-        generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(1);
+        Assert.Empty(generatorResult.Diagnostics);
+        Assert.Single(generatorResult.GeneratedTrees);
 
         var asm = Assembly.Load(assembly);
         var type = asm.GetType("A.B.C");
         var method = type.GetMethod("Sample", BindingFlags.Public | BindingFlags.Static);
-        method.Invoke(null, [1]).Should().Be("Value2");
-        method.Invoke(null, [999]).Should().Be("999");
+        Assert.Equal("Value2", method.Invoke(null, [1]));
+        Assert.Equal("999", method.Invoke(null, [999]));
 
     }
 
@@ -114,9 +111,8 @@ public sealed class EnumToStringSourceGeneratorTests
             }
             """;
         var (generatorResult, _, assembly) = await GenerateFiles(sourceCode);
-
-        generatorResult.Diagnostics.Should().BeEmpty();
-        generatorResult.GeneratedTrees.Length.Should().Be(1);
+        Assert.Empty(generatorResult.Diagnostics);
+        Assert.Single(generatorResult.GeneratedTrees);
 
         var asm = Assembly.Load(assembly);
         var ns1Type = asm.GetType("SampleNs1.FastEnumToStringExtensions");
@@ -124,30 +120,25 @@ public sealed class EnumToStringSourceGeneratorTests
             .Where(m => m.Name == "ToStringFast")
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-        using (new AssertionScope())
-        {
-            ns1Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
-            methods1.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public),
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+        Assert.True(ns1Type.IsPublic);
+        Assert.Collection(methods1,
+            m => Assert.True(m.IsPublic),
+            m => Assert.False(m.IsPublic));
 
-            var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
-            var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
+        var ns3Type = asm.GetType("SampleNs3.FastEnumToStringExtensions");
+        var methods3 = ns3Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .Where(m => string.Equals(m.Name, "ToStringFast", StringComparison.Ordinal))
+            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-            ns3Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal);
-            methods3.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Internal));
+        Assert.False(ns3Type.IsPublic);
 
-            var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
-            var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => m.Name == "ToStringFast")
-                .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
+        var ns4Type = asm.GetType("SampleNs4.FastEnumToStringExtensions");
+        var methods4 = ns4Type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+            .Where(m => m.Name == "ToStringFast")
+            .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
-            ns4Type.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public);
-            methods4.Should().SatisfyRespectively(
-                m => m.Should().HaveAccessModifier(FluentAssertions.Common.CSharpAccessModifier.Public));
-        }
+        Assert.True(ns4Type.IsPublic);
+        Assert.Collection(methods4,
+            m => Assert.True(m.IsPublic));
     }
 }

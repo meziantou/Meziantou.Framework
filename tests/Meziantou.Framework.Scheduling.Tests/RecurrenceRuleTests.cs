@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Scheduling.Tests;
@@ -25,8 +24,7 @@ public partial class RecurrenceRuleTests
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
 
         var text = rrule.Text;
-
-        text.Should().Be("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
+        Assert.Equal("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1", text);
     }
 
     [Fact]
@@ -35,8 +33,7 @@ public partial class RecurrenceRuleTests
         var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;INTERVAL=2");
 
         var text = rrule.Text;
-
-        text.Should().Be("FREQ=DAILY;INTERVAL=2;UNTIL=20000131T140000Z");
+        Assert.Equal("FREQ=DAILY;INTERVAL=2;UNTIL=20000131T140000Z", text);
     }
 
     [Fact]
@@ -45,8 +42,7 @@ public partial class RecurrenceRuleTests
         var rrule = RecurrenceRule.Parse("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");
 
         var text = rrule.Text;
-
-        text.Should().Be("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE");
+        Assert.Equal("FREQ=WEEKLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE", text);
     }
 
     [Fact]
@@ -55,8 +51,7 @@ public partial class RecurrenceRuleTests
         var rrule = RecurrenceRule.Parse("FREQ=MONTHLY;UNTIL=20000131T140000Z;BYMONTH=1;BYDAY=TU,WE;BYMONTHDAY=2");
 
         var text = rrule.Text;
-
-        text.Should().Be("FREQ=MONTHLY;UNTIL=20000131T140000Z;BYMONTH=1;BYMONTHDAY=2;BYDAY=TU,WE");
+        Assert.Equal("FREQ=MONTHLY;UNTIL=20000131T140000Z;BYMONTH=1;BYMONTHDAY=2;BYDAY=TU,WE", text);
     }
 
     [Fact]
@@ -65,8 +60,7 @@ public partial class RecurrenceRuleTests
         var rrule = RecurrenceRule.Parse("FREQ=YEARLY;UNTIL=20000131T140000Z;BYYEARDAY=1,-1;BYMONTH=1;BYDAY=TU,WE;BYMONTHDAY=2");
 
         var text = rrule.Text;
-
-        text.Should().Be("FREQ=YEARLY;UNTIL=20000131T140000Z;BYMONTH=1;BYYEARDAY=1,-1;BYMONTHDAY=2;BYDAY=TU,WE");
+        Assert.Equal("FREQ=YEARLY;UNTIL=20000131T140000Z;BYMONTH=1;BYYEARDAY=1,-1;BYMONTHDAY=2;BYDAY=TU,WE", text);
     }
 
     private static void TestGetHumanText(string rruleText, string cultureInfo, string expectedText)
@@ -79,6 +73,6 @@ public partial class RecurrenceRuleTests
 
         var rrule = RecurrenceRule.Parse(rruleText);
         var text = rrule.GetHumanText(culture);
-        text.Should().Be(expectedText);
+        Assert.Equal(expectedText, text);
     }
 }

@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -16,12 +15,12 @@ public class DefaultConverterTests_Int32To
 
         if (OperatingSystem.IsWindows())
         {
-            converted.Should().BeTrue();
-            value.Name.Should().Be("en-US");
+            Assert.True(converted);
+            Assert.Equal("en-US", value.Name);
         }
         else
         {
-            converted.Should().BeFalse();
+            Assert.False(converted);
         }
     }
 
@@ -31,9 +30,8 @@ public class DefaultConverterTests_Int32To
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(15, cultureInfo, out long value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(15L);
+        Assert.True(converted);
+        Assert.Equal(15L, value);
     }
 
     [Fact]
@@ -42,9 +40,8 @@ public class DefaultConverterTests_Int32To
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(15, cultureInfo, out short value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(15);
+        Assert.True(converted);
+        Assert.Equal(15, value);
     }
 
     [Fact]
@@ -53,9 +50,8 @@ public class DefaultConverterTests_Int32To
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(15, cultureInfo, out ushort value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(15);
+        Assert.True(converted);
+        Assert.Equal(15, value);
     }
 
     [Fact]
@@ -64,8 +60,7 @@ public class DefaultConverterTests_Int32To
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(0x12345678, cultureInfo, out byte[] value);
-
-        converted.Should().BeTrue();
-        value.Should().Equal([0x78, 0x56, 0x34, 0x12]);
+        Assert.True(converted);
+        Assert.Equal([0x78, 0x56, 0x34, 0x12], value);
     }
 }

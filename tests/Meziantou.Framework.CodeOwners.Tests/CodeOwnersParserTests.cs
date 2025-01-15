@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeOwners.Tests;
@@ -9,7 +8,7 @@ public sealed class CodeOwnersParserTests
     public void ParseEmptyCodeOwners()
     {
         var actual = CodeOwnersParser.Parse("").ToArray();
-        actual.Should().BeEmpty();
+        Assert.Empty(actual);
     }
 
     [Fact]
@@ -22,8 +21,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "user1", section: null),
             CodeOwnersEntry.FromUsername(0, "*", "user2", section: null),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -36,8 +34,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test")),
             CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test")),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -103,8 +100,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(7, "/apps/", "octocat", section: null),
             CodeOwnersEntry.FromNone(8, "/apps/github", section: null),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -117,8 +113,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "user1", section: null),
             CodeOwnersEntry.FromUsername(0, "*", "user2", section: null),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -127,7 +122,7 @@ public sealed class CodeOwnersParserTests
         const string Content = "* @user1 @user2  ";
         var parse1 = CodeOwnersParser.Parse(Content).ToArray();
         var parse2 = CodeOwnersParser.Parse(Content).ToArray();
-        parse1.Should().Equal(parse2);
+        Assert.Equal(parse2, parse1);
     }
 
     [Fact]
@@ -151,8 +146,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(2, "*.js", "user2", section: new CodeOwnersSection("Optional Section", 0)),
             CodeOwnersEntry.FromUsername(2, "*.js", "user3", section: new CodeOwnersSection("Optional Section", 0)),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -177,8 +171,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromNone(4, "*.md", null),
             CodeOwnersEntry.FromNone(5, "app/", null),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -191,8 +184,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test", 2)),
             CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test", 2)),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -205,8 +197,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
             CodeOwnersEntry.FromEmailAddress(0, "*", "default.owner@example.com", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -219,8 +210,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "user1", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
             CodeOwnersEntry.FromUsername(0, "*", "user2", section: new CodeOwnersSection("Test", 1, ["@defaultOwner", "default.owner@example.com"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -233,8 +223,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(0, "*", "defaultOwner", section: new CodeOwnersSection("Test", 2, ["@defaultOwner", "default.owner@example.com"])),
             CodeOwnersEntry.FromEmailAddress(0, "*", "default.owner@example.com", section: new CodeOwnersSection("Test", 2, ["@defaultOwner", "default.owner@example.com"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -246,8 +235,7 @@ public sealed class CodeOwnersParserTests
         {
             CodeOwnersEntry.FromUsername(0, "*", "user", section: new CodeOwnersSection("Test", 0)),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -269,8 +257,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromNone(1, "*", section: new CodeOwnersSection("Test2", 1)),
             CodeOwnersEntry.FromUsername(2, "*", "defaultOwner2", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner2"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -294,8 +281,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromNone(2, "*", section: new CodeOwnersSection("Test3", 1)),
             CodeOwnersEntry.FromNone(3, "*", section: new CodeOwnersSection("Test4", 1)),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -313,8 +299,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromNone(0, "*", section: new CodeOwnersSection("Test1", 1)),
             CodeOwnersEntry.FromNone(1, "*", section: new CodeOwnersSection("Test2", 2)),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -342,8 +327,7 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(3, "*", "defaultOwner7", section: new CodeOwnersSection("Test4", 2, ["@defaultOwner7", "@defaultOwner8"])),
             CodeOwnersEntry.FromUsername(3, "*", "defaultOwner8", section: new CodeOwnersSection("Test4", 2, ["@defaultOwner7", "@defaultOwner8"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -368,7 +352,6 @@ public sealed class CodeOwnersParserTests
             CodeOwnersEntry.FromUsername(1, "*", "user2", section: new CodeOwnersSection("Test2", 2)),
             CodeOwnersEntry.FromUsername(2, "*", "user3", section: new CodeOwnersSection("Test3", 1, ["@defaultOwner"])),
         };
-
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 }

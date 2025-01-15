@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Text.Tests;
@@ -22,6 +21,6 @@ public sealed class Utf8ExtensionsTests
             new Rune('\u003C'),
             new Rune('\u221A'),
         };
-        runes.Should().Equal(expected);
+        Assert.Equal(expected, runes);
     }
 }

@@ -1,7 +1,4 @@
-﻿using System.Text;
-using System.Xml.Linq;
-
-namespace Meziantou.Framework.HumanReadable.ValueFormatters;
+﻿namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
 internal sealed class UrlEncodedFormFormatter : ValueFormatter
 {

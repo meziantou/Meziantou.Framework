@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests;
@@ -15,9 +14,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Sample");
+        Assert.Equal("Sample", result);
     }
 
     [Fact]
@@ -29,9 +26,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Sample");
+        Assert.Equal("Sample", result);
     }
 
     [Fact]
@@ -43,9 +38,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Sample");
+        Assert.Equal("Sample", result);
     }
 
     [Fact]
@@ -58,9 +51,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run("Meziantou");
-
-        // Assert
-        result.Should().Be("Hello Meziantou!");
+        Assert.Equal("Hello Meziantou!", result);
     }
 
     [Fact]
@@ -77,9 +68,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run(arguments);
-
-        // Assert
-        result.Should().Be("Hello Meziantou!");
+        Assert.Equal("Hello Meziantou!", result);
     }
 
     [Fact]
@@ -91,9 +80,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Hello 12345!");
+        Assert.Equal("Hello 12345!", result);
     }
 
     [Fact]
@@ -106,9 +93,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run("John");
-
-        // Assert
-        result.Should().Be("Hello John!");
+        Assert.Equal("Hello John!", result);
     }
 
     [Fact]
@@ -131,9 +116,7 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Hello debug!");
+        Assert.Equal("Hello debug!", result);
     }
 
     [Fact]
@@ -156,8 +139,6 @@ public class TemplateTest
 
         // Act 
         var result = template.Run();
-
-        // Assert
-        result.Should().Be("Hello release!");
+        Assert.Equal("Hello release!", result);
     }
 }

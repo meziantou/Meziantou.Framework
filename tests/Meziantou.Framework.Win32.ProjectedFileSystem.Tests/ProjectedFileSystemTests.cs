@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
@@ -18,21 +18,21 @@ public sealed class ProjectedFileSystemTests
             {
                 UseNegativePathCache = false,
                 Notifications =
-                    {
-                        new Notification(
-                            PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_FILE_DELETED |
-                            PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_FILE_MODIFIED |
-                            PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_NO_MODIFICATION |
-                            PRJ_NOTIFY_TYPES.FILE_OPENED |
-                            PRJ_NOTIFY_TYPES.FILE_OVERWRITTEN |
-                            PRJ_NOTIFY_TYPES.FILE_PRE_CONVERT_TO_FULL |
-                            PRJ_NOTIFY_TYPES.FILE_RENAMED |
-                            PRJ_NOTIFY_TYPES.HARDLINK_CREATED |
-                            PRJ_NOTIFY_TYPES.NEW_FILE_CREATED |
-                            PRJ_NOTIFY_TYPES.PRE_DELETE |
-                            PRJ_NOTIFY_TYPES.PRE_RENAME |
-                            PRJ_NOTIFY_TYPES.PRE_SET_HARDLINK),
-                    },
+                {
+                    new Notification(
+                        PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_FILE_DELETED |
+                        PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_FILE_MODIFIED |
+                        PRJ_NOTIFY_TYPES.FILE_HANDLE_CLOSED_NO_MODIFICATION |
+                        PRJ_NOTIFY_TYPES.FILE_OPENED |
+                        PRJ_NOTIFY_TYPES.FILE_OVERWRITTEN |
+                        PRJ_NOTIFY_TYPES.FILE_PRE_CONVERT_TO_FULL |
+                        PRJ_NOTIFY_TYPES.FILE_RENAMED |
+                        PRJ_NOTIFY_TYPES.HARDLINK_CREATED |
+                        PRJ_NOTIFY_TYPES.NEW_FILE_CREATED |
+                        PRJ_NOTIFY_TYPES.PRE_DELETE |
+                        PRJ_NOTIFY_TYPES.PRE_RENAME |
+                        PRJ_NOTIFY_TYPES.PRE_SET_HARDLINK),
+                },
             };
 
             vfs.Start(options);
@@ -46,19 +46,17 @@ public sealed class ProjectedFileSystemTests
             }
 
             var directories = Directory.GetDirectories(fullPath);
-            directories.Should().ContainSingle();
-            Path.GetFileName(directories[0]).Should().Be("folder");
+            Assert.Single(directories);
+            Assert.Equal("folder", Path.GetFileName(directories[0]));
 
             // Get unknown file
             var fi2 = new FileInfo(Path.Combine(fullPath, "unknownfile.txt"));
-            fi2.Exists.Should().BeFalse();
-            new Func<object>(() => fi2.Length).Should().ThrowExactly<FileNotFoundException>();
-
-            // Get file content
-            File.ReadAllBytes(Path.Combine(fullPath, "a")).Should().Equal([1]);
+            Assert.False(fi2.Exists);
+            Assert.Throws<FileNotFoundException>(() => fi2.Length);
+            Assert.Equal([1], File.ReadAllBytes(Path.Combine(fullPath, "a")));
             using var stream = File.OpenRead(Path.Combine(fullPath, "b"));
-            stream.ReadByte().Should().Be(1);
-            stream.ReadByte().Should().Be(2);
+            Assert.Equal(1, stream.ReadByte());
+            Assert.Equal(2, stream.ReadByte());
         }
         finally
         {

@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -13,7 +12,7 @@ public class HtmlParserTests
         document.LoadHtml("<p><i>1<i>2</p>");
 
         var html = document.OuterHtml;
-        html.Should().Be("<p><i>1<i>2</i></i></p>");
+        Assert.Equal("<p><i>1<i>2</i></i></p>", html);
     }
 
     [Fact]
@@ -23,7 +22,7 @@ public class HtmlParserTests
         document.LoadHtml("<p><img>1<img>2</p>");
 
         var html = document.OuterHtml;
-        html.Should().Be("<p><img />1<img />2</p>");
+        Assert.Equal("<p><img />1<img />2</p>", html);
     }
 
     [Fact]
@@ -31,9 +30,8 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<script type='text/javascript'>my script</script>");
-
-        document.SelectSingleNode("//script").InnerHtml.Should().Be("my script");
-        document.SelectSingleNode("//script").GetAttributeValue("type").Should().Be("text/javascript");
+        Assert.Equal("my script", document.SelectSingleNode("//script").InnerHtml);
+        Assert.Equal("text/javascript", document.SelectSingleNode("//script").GetAttributeValue("type"));
     }
 
     [Fact]
@@ -43,8 +41,7 @@ public class HtmlParserTests
         document.LoadHtml("<div><p>sample1</p><p>sample2</p></div>");
         document.BaseAddress = new System.Uri("https://www.meziantou.net");
         var absoluteUrl = document.MakeAbsoluteUrl("test.html");
-
-        absoluteUrl.Should().Be("https://www.meziantou.net/test.html");
+        Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
     }
 
     [Fact]
@@ -54,8 +51,7 @@ public class HtmlParserTests
         document.LoadHtml("<base href='https://www.meziantou.net'>");
         document.BaseAddress = new System.Uri("https://www.meziantou.net");
         var absoluteUrl = document.MakeAbsoluteUrl("test.html");
-
-        absoluteUrl.Should().Be("https://www.meziantou.net/test.html");
+        Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
     }
 
     [Fact]
@@ -66,8 +62,8 @@ public class HtmlParserTests
 
         var errors = document.Errors.ToList();
 
-        errors.Should().ContainSingle();
-        errors[0].ErrorType.Should().Be(HtmlErrorType.TagNotOpened);
+        Assert.Single(errors);
+        Assert.Equal(HtmlErrorType.TagNotOpened, errors[0].ErrorType);
     }
 
     [Fact]
@@ -78,8 +74,8 @@ public class HtmlParserTests
 
         var errors = document.Errors.ToList();
 
-        errors.Should().ContainSingle();
-        errors[0].ErrorType.Should().Be(HtmlErrorType.DuplicateAttribute);
+        Assert.Single(errors);
+        Assert.Equal(HtmlErrorType.DuplicateAttribute, errors[0].ErrorType);
     }
 
     [Fact]
@@ -87,8 +83,7 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<!--Test-->");
-
-        document.FirstChild.NodeType.Should().Be(HtmlNodeType.Comment);
+        Assert.Equal(HtmlNodeType.Comment, document.FirstChild.NodeType);
     }
 
     [Fact]
@@ -98,7 +93,7 @@ public class HtmlParserTests
         using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
         var document = new HtmlDocument();
         document.Load(memoryStream);
-        document.DetectedEncoding.Should().Be(Encoding.UTF8);
+        Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
     }
 
     [Fact]
@@ -108,7 +103,7 @@ public class HtmlParserTests
         using var memoryStream = new MemoryStream(new UTF8Encoding(encoderShouldEmitUTF8Identifier: false).GetBytes(html));
         var document = new HtmlDocument();
         document.Load(memoryStream);
-        document.DetectedEncoding.Should().Be(Encoding.UTF8);
+        Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
     }
 
     [Fact]
@@ -118,6 +113,6 @@ public class HtmlParserTests
         using var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(html));
         var document = new HtmlDocument();
         document.Load(memoryStream);
-        document.DetectedEncoding.Should().Be(Encoding.UTF8);
+        Assert.Equal(Encoding.UTF8, document.DetectedEncoding);
     }
 }

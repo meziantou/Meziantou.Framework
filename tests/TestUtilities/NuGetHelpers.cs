@@ -8,7 +8,6 @@ using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework;
-using Xunit;
 
 #if NETFRAMEWORK
 using System.Net.Http;

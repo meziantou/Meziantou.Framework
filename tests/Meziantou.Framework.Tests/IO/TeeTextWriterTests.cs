@@ -1,7 +1,6 @@
 #if NET9_0_OR_GREATER
 #pragma warning disable MEZ_NET9 // Type or member is obsolete
 #endif
-using FluentAssertions;
 using Meziantou.Framework.IO;
 using Xunit;
 
@@ -17,8 +16,7 @@ public class TeeTextWriterTests
         using var tee = new TeeTextWriter(sw1, sw2);
         tee.Write("abc");
         tee.Flush();
-
-        sw1.ToString().Should().Be("abc");
-        sw2.ToString().Should().Be("abc");
+        Assert.Equal("abc", sw1.ToString());
+        Assert.Equal("abc", sw2.ToString());
     }
 }

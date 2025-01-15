@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -11,9 +10,9 @@ public sealed class FullPathTests
     [Fact]
     public void IsEmpty()
     {
-        default(FullPath).IsEmpty.Should().BeTrue();
-        FullPath.Empty.IsEmpty.Should().BeTrue();
-        FullPath.FromPath("test").IsEmpty.Should().BeFalse();
+        Assert.True(default(FullPath).IsEmpty);
+        Assert.True(FullPath.Empty.IsEmpty);
+        Assert.False(FullPath.FromPath("test").IsEmpty);
     }
 
     [Fact]
@@ -21,7 +20,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
         var expected = FullPath.Combine("test", "a", "b");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
 #if NET9_0_OR_GREATER
@@ -30,7 +29,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";
         var expected = FullPath.Combine(FullPath.FromPath("test"), (ReadOnlySpan<string>)["a", "b"]);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 #endif
 
@@ -44,8 +43,7 @@ public sealed class FullPathTests
     {
         var rootPath = FullPath.FromPath("test");
         var path1 = FullPath.Combine("test", childPath);
-
-        path1.MakePathRelativeTo(rootPath).Should().Be(expected);
+        Assert.Equal(expected, path1.MakePathRelativeTo(rootPath));
     }
 
     [Theory]
@@ -56,8 +54,7 @@ public sealed class FullPathTests
     {
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.Combine(root, path);
-
-        childPath.IsChildOf(rootPath).Should().BeTrue();
+        Assert.True(childPath.IsChildOf(rootPath));
     }
 
     [Theory]
@@ -72,8 +69,7 @@ public sealed class FullPathTests
     {
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
-
-        childPath.IsChildOf(rootPath).Should().BeFalse();
+        Assert.False(childPath.IsChildOf(rootPath));
     }
 
     [Theory]
@@ -85,7 +81,7 @@ public sealed class FullPathTests
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
 
-        rootPath.Should().NotBe(childPath);
+        Assert.NotEqual(childPath, rootPath);
     }
 
     [Theory]
@@ -98,54 +94,53 @@ public sealed class FullPathTests
     {
         var rootPath = FullPath.FromPath(root);
         var childPath = FullPath.FromPath(path);
-
-        rootPath.Should().Be(childPath);
+        Assert.Equal(childPath, rootPath);
     }
 
     [Fact]
     public void JsonSerialize_RoundTripEmpty()
     {
         var value = FullPath.Empty;
-        JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)).Should().Be(value);
+        Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
     }
 
     [Fact]
     public void JsonSerialize_RoundTripNonEmpty()
     {
         var value = FullPath.FromPath(@"c:\test");
-        JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)).Should().Be(value);
+        Assert.Equal(value, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(value)));
     }
 
     [Fact]
     public void JsonSerialize_Empty()
     {
-        JsonSerializer.Serialize(FullPath.Empty).Should().Be("\"\"");
+        Assert.Equal("\"\"", JsonSerializer.Serialize(FullPath.Empty));
     }
 
     [Fact]
     public void JsonSerialize_NonEmpty()
     {
         var path = Environment.CurrentDirectory;
-        JsonSerializer.Serialize(FullPath.FromPath(path)).Should().Be(JsonSerializer.Serialize(path));
-        JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value.Should().Be(path);
+        Assert.Equal(JsonSerializer.Serialize(path), JsonSerializer.Serialize(FullPath.FromPath(path)));
+        Assert.Equal(path, JsonSerializer.Deserialize<FullPath>(JsonSerializer.Serialize(FullPath.FromPath(path))).Value);
     }
 
     [Fact]
     public void JsonDeserialize_Null()
     {
-        JsonSerializer.Deserialize<FullPath>(@"null").Should().Be(FullPath.Empty);
+        Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@"null"));
     }
 
     [Fact]
     public void JsonDeserialize_Empty()
     {
-        JsonSerializer.Deserialize<FullPath>(@"""""").Should().Be(FullPath.Empty);
+        Assert.Equal(FullPath.Empty, JsonSerializer.Deserialize<FullPath>(@""""""));
     }
 
     [Fact]
     public void JsonDeserialize_NonEmpty()
     {
-        JsonSerializer.Deserialize<FullPath>(@"""c:\\test""").Should().Be(FullPath.FromPath(@"c:\test"));
+        Assert.Equal(FullPath.FromPath(@"c:\test"), JsonSerializer.Deserialize<FullPath>(@"""c:\\test"""));
     }
 
     [Fact]
@@ -153,17 +148,16 @@ public sealed class FullPathTests
     {
         await using var temp = TemporaryDirectory.Create();
         var path = temp.CreateEmptyFile("a.txt");
-        path.IsSymbolicLink().Should().BeFalse();
-        path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
+        Assert.False(path.IsSymbolicLink());
+        Assert.False(path.TryGetSymbolicLinkTarget(out _));
 
         // Create symlink
         var symlink = temp.GetFullPath("b.txt");
         CreateSymlink(symlink, path, SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
-
-        File.Exists(symlink).Should().BeTrue("File does not exist");
-        symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
-        symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
-        target.Should().Be(path);
+        Assert.True(File.Exists(symlink));
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
     }
 
     [Fact]
@@ -171,17 +165,16 @@ public sealed class FullPathTests
     {
         await using var temp = TemporaryDirectory.Create();
         var path = temp.CreateEmptyFile("a.txt");
-        path.IsSymbolicLink().Should().BeFalse();
-        path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
+        Assert.False(path.IsSymbolicLink());
+        Assert.False(path.TryGetSymbolicLinkTarget(out _));
 
         // Create symlink
         var symlink = temp.GetFullPath("b.txt");
         CreateSymlink(symlink, "a.txt", SymbolicLink.File | SymbolicLink.AllowUnpriviledgedCreate);
-
-        File.Exists(symlink).Should().BeTrue("File does not exist");
-        symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
-        symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
-        target.Should().Be(path);
+        Assert.True(File.Exists(symlink));
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
     }
 
     [Fact]
@@ -189,17 +182,16 @@ public sealed class FullPathTests
     {
         await using var temp = TemporaryDirectory.Create();
         var path = temp.CreateDirectory("a");
-        path.IsSymbolicLink().Should().BeFalse();
-        path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
+        Assert.False(path.IsSymbolicLink());
+        Assert.False(path.TryGetSymbolicLinkTarget(out _));
 
         // Create symlink
         var symlink = temp.GetFullPath("b");
         CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
-
-        Directory.Exists(symlink).Should().BeTrue("Directory should exist");
-        symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
-        symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
-        target.Should().Be(path);
+        Assert.True(Directory.Exists(symlink));
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
     }
 
     [Fact]
@@ -207,17 +199,16 @@ public sealed class FullPathTests
     {
         await using var temp = TemporaryDirectory.Create();
         var path = temp.CreateDirectory("a");
-        path.IsSymbolicLink().Should().BeFalse();
-        path.TryGetSymbolicLinkTarget(out _).Should().BeFalse();
+        Assert.False(path.IsSymbolicLink());
+        Assert.False(path.TryGetSymbolicLinkTarget(out _));
 
         // Create symlink
         var symlink = temp.GetFullPath("b");
         CreateSymlink(symlink, "a", SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
-
-        Directory.Exists(symlink).Should().BeTrue("Directory does not exist");
-        symlink.IsSymbolicLink().Should().BeTrue("IsSymbolicLink should be true");
-        symlink.TryGetSymbolicLinkTarget(out var target).Should().BeTrue("TryGetSymbolicLinkTarget should be true");
-        target.Should().Be(path);
+        Assert.True(Directory.Exists(symlink));
+        Assert.True(symlink.IsSymbolicLink());
+        Assert.True(symlink.TryGetSymbolicLinkTarget(out var target));
+        Assert.Equal(path, target);
     }
 
     [Fact]
@@ -229,12 +220,10 @@ public sealed class FullPathTests
         var symlink2 = temp.GetFullPath("d");
         CreateSymlink(symlink, file, SymbolicLink.AllowUnpriviledgedCreate);
         CreateSymlink(symlink2, symlink, SymbolicLink.AllowUnpriviledgedCreate);
-
-        symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1).Should().BeTrue();
-        resolved1.Should().Be(symlink);
-
-        symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2).Should().BeTrue();
-        resolved2.Value.Value.Should().EndWith(Path.Combine("a", "b.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.Immediate, out var resolved1));
+        Assert.Equal(symlink, resolved1);
+        Assert.True(symlink2.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved2));
+        Assert.EndsWith(Path.Combine("a", "b.txt"), resolved2.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]
@@ -245,10 +234,9 @@ public sealed class FullPathTests
         var symlink = temp.GetFullPath("c");
         CreateSymlink(symlink, path, SymbolicLink.Directory | SymbolicLink.AllowUnpriviledgedCreate);
         var file = temp.CreateEmptyFile("c/d.txt");
+        Assert.True(file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved));
 
-        file.TryGetSymbolicLinkTarget(SymbolicLinkResolutionMode.AllSymbolicLinks, out var resolved).Should().BeTrue();
-
-        resolved.Value.Value.Should().EndWith(Path.Combine("a", "b", "d.txt")); // On GitHub Actions, path starts with a symlink, so resolved2 != file
+        Assert.EndsWith(Path.Combine("a", "b", "d.txt"), resolved.Value.Value, StringComparison.Ordinal); // On GitHub Actions, path starts with a symlink, so resolved2 != file
     }
 
     [Fact]
@@ -256,7 +244,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test.a.txt").ChangeExtension(".avi");
         var expected = FullPath.FromPath("test.a.avi");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -264,7 +252,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test").ChangeExtension(".avi");
         var expected = FullPath.FromPath("test.avi");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -272,7 +260,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.Empty.ChangeExtension(".avi");
         var expected = FullPath.Empty;
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -280,7 +268,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test").ChangeExtension(null);
         var expected = FullPath.FromPath("test");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -288,7 +276,7 @@ public sealed class FullPathTests
     {
         var actual = FullPath.FromPath("test.txt").ChangeExtension("avi");
         var expected = FullPath.FromPath("test.avi");
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -336,7 +324,7 @@ public sealed class FullPathTests
 #if NETCOREAPP3_1_OR_GREATER
         else
         {
-            Mono.Unix.Native.Syscall.symlink(target, source).Should().Be(0);
+            Assert.Equal(0, Mono.Unix.Native.Syscall.symlink(target, source));
         }
 #endif
     }

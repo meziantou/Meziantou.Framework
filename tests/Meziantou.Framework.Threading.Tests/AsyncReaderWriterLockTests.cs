@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Threading.Tests;
@@ -23,10 +22,10 @@ public class AsyncReaderWriterLockTests
                     using (await l.WriterLockAsync())
                     {
                         count++;
-                        count.Should().Be(1);
+                        Assert.Equal(1, count);
                         value++;
                         count--;
-                        count.Should().Be(0);
+                        Assert.Equal(0, count);
                     }
                 });
             }
@@ -36,14 +35,14 @@ public class AsyncReaderWriterLockTests
                 {
                     using (await l.ReaderLockAsync())
                     {
-                        count.Should().Be(0);
-                        value.Should().BeLessOrEqualTo(128);
+                        Assert.Equal(0, count);
+                        Assert.True(value <= 128);
                     }
                 });
             }
         }
 
         await Task.WhenAll(tasks);
-        value.Should().Be(64);
+        Assert.Equal(64, value);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests;
@@ -12,7 +11,7 @@ public class PromptTests
         UsingConsole("\r\n", () =>
         {
             var result = Prompt.YesNo("test?", defaultValue: true);
-            result.Should().BeTrue();
+            Assert.True(result);
         });
     }
 
@@ -22,7 +21,7 @@ public class PromptTests
         UsingConsole("\r\n", () =>
         {
             var result = Prompt.YesNo("test?", defaultValue: false);
-            result.Should().BeFalse();
+            Assert.False(result);
         });
     }
 
@@ -32,7 +31,7 @@ public class PromptTests
         UsingConsole("Y\r\n", () =>
         {
             var result = Prompt.YesNo("test?", defaultValue: null);
-            result.Should().BeTrue();
+            Assert.True(result);
         });
     }
 
@@ -42,7 +41,7 @@ public class PromptTests
         UsingConsole("no\r\n", () =>
         {
             var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-            result.Should().BeFalse();
+            Assert.False(result);
         });
     }
 
@@ -52,11 +51,10 @@ public class PromptTests
         var output = UsingConsole("test\r\nYes\r\n", () =>
         {
             var result = Prompt.YesNo("test?", "Yes", "No", defaultValue: null);
-            result.Should().BeTrue();
+            Assert.True(result);
         });
-
-        output.IndexOf("test?", StringComparison.Ordinal).Should().Be(0);
-        output.LastIndexOf("test?", StringComparison.Ordinal).Should().BePositive();
+        Assert.Equal(0, output.IndexOf("test?", StringComparison.Ordinal));
+        Assert.True(output.LastIndexOf("test?", StringComparison.Ordinal) >= 0);
     }
 
     private static string UsingConsole(string input, Action action)

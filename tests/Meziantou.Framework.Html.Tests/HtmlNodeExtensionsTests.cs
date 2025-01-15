@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -12,11 +11,11 @@ public class HtmlNodeExtensionsTests
         document.LoadHtml("<p><i><b>1</b></i>2</p>");
 
         var nodes = document.Descendants().ToList();
-        nodes.Should().SatisfyRespectively(
-            node => node.Name.Should().Be("p"),
-            node => node.Name.Should().Be("i"),
-            node => node.Name.Should().Be("b"),
-            node => node.Value.Should().Be("1"),
-            node => node.Value.Should().Be("2"));
+        Assert.Collection(nodes,
+            node => Assert.Equal("p", node.Name),
+            node => Assert.Equal("i", node.Name),
+            node => Assert.Equal("b", node.Name),
+            node => Assert.Equal("1", node.Value),
+            node => Assert.Equal("2", node.Value));
     }
 }

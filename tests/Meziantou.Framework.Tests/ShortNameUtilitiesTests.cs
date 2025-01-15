@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -14,9 +13,7 @@ public class ShortNameUtilitiesTests
 
         // Act
         var shortName = ShortName.Create(names, 3, name);
-
-        // Assert
-        shortName.Should().Be("bbb");
+        Assert.Equal("bbb", shortName);
     }
 
     [Fact]
@@ -28,9 +25,7 @@ public class ShortNameUtilitiesTests
 
         // Act
         var shortName = ShortName.Create(names, 3, name);
-
-        // Assert
-        shortName.Should().Be("aa0");
+        Assert.Equal("aa0", shortName);
     }
 
     [Fact]
@@ -41,12 +36,10 @@ public class ShortNameUtilitiesTests
 
         // Act
         var shortNames = ShortName.Create(names, 3, StringComparer.Ordinal);
-
-        // Assert
-        shortNames["aaaa"].Should().Be("aa0");
-        shortNames["aaab"].Should().Be("aa1");
-        shortNames["aaa"].Should().Be("aaa");
-        shortNames["aab"].Should().Be("aab");
-        shortNames["other"].Should().Be("oth");
+        Assert.Equal("aa0", shortNames["aaaa"]);
+        Assert.Equal("aa1", shortNames["aaab"]);
+        Assert.Equal("aaa", shortNames["aaa"]);
+        Assert.Equal("aab", shortNames["aab"]);
+        Assert.Equal("oth", shortNames["other"]);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -26,7 +25,7 @@ public class RestartManagerTests
             using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
                 var processes = RestartManager.GetProcessesLockingFile(path);
-                processes.Single().Id.Should().Be(_currentProcessId);
+                Assert.Equal(_currentProcessId, processes.Single().Id);
             }
         }
         finally
@@ -43,7 +42,7 @@ public class RestartManagerTests
         {
             using (File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
-                RestartManager.IsFileLocked(path).Should().BeTrue();
+                Assert.True(RestartManager.IsFileLocked(path));
             }
         }
         finally
@@ -58,7 +57,7 @@ public class RestartManagerTests
         var path = Path.GetTempFileName();
         try
         {
-            RestartManager.IsFileLocked(path).Should().BeFalse();
+            Assert.False(RestartManager.IsFileLocked(path));
         }
         finally
         {

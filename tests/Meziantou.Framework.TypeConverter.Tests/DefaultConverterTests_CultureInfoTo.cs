@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -11,8 +10,7 @@ public class DefaultConverterTests_CultureInfoTo
     {
         var converter = new DefaultConverter();
         var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.InvariantCulture);
-
-        value.Should().Be("en");
+        Assert.Equal("en", value);
     }
 
     [Fact]
@@ -20,7 +18,6 @@ public class DefaultConverterTests_CultureInfoTo
     {
         var converter = new DefaultConverter();
         var value = converter.ChangeType<string>(CultureInfo.GetCultureInfo("en"), defaultValue: null, CultureInfo.GetCultureInfo("en-US"));
-
-        value.Should().Be("en");
+        Assert.Equal("en", value);
     }
 }

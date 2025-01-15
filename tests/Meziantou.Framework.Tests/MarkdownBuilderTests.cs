@@ -1,5 +1,4 @@
 ﻿using System.Text.Encodings.Web;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -32,7 +31,7 @@ public sealed class MarkdownBuilderTests
     public void Escape(string text, string expected)
     {
         var html = EscapeAndConvertToHtml(text);
-        html.Should().Be(expected);
+        Assert.Equal(expected, html);
     }
 
     [Theory]
@@ -41,7 +40,7 @@ public sealed class MarkdownBuilderTests
     {
         var markdown = $"[test]({MarkdownBuilder.Escape(url)})";
         var html = Markdig.Markdown.ToHtml(markdown);
-        html.Should().Be(expected);
+        Assert.Equal(expected, html);
     }
 
     [Theory]
@@ -57,6 +56,6 @@ public sealed class MarkdownBuilderTests
     {
         var value = MarkdownBuilder.CreateCodeSpan(text);
         var html = Markdig.Markdown.ToHtml(value);
-        html.Should().Be("<p><code>" + HtmlEncoder.Default.Encode(text) + "</code></p>\n");
+        Assert.Equal("<p><code>" + HtmlEncoder.Default.Encode(text) + "</code></p>\n", html);
     }
 }

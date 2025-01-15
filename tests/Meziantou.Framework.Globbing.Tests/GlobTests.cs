@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Globbing.Tests;
@@ -19,10 +18,10 @@ public class GlobTests
     [InlineData("a{a,/}b")] // literal contains '/'
     public void ParseInvalid(string pattern)
     {
-        Glob.TryParse(pattern, GlobOptions.None, out var result).Should().BeFalse();
-        result.Should().BeNull();
+        Assert.False(Glob.TryParse(pattern, GlobOptions.None, out var result));
+        Assert.Null(result);
 
-        new Func<object>(() => Glob.Parse(pattern, GlobOptions.None)).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => Glob.Parse(pattern, GlobOptions.None));
     }
 
     [Theory]
@@ -38,8 +37,8 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-        glob.IsPartialMatch(folderPath).Should().BeTrue();
-        globi.IsPartialMatch(folderPath).Should().BeTrue();
+        Assert.True(glob.IsPartialMatch(folderPath));
+        Assert.True(globi.IsPartialMatch(folderPath));
     }
 
     [Theory]
@@ -50,8 +49,8 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-        glob.IsPartialMatch(folderPath).Should().BeFalse();
-        globi.IsPartialMatch(folderPath).Should().BeFalse();
+        Assert.False(glob.IsPartialMatch(folderPath));
+        Assert.False(globi.IsPartialMatch(folderPath));
     }
 
     [Theory]
@@ -158,22 +157,20 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-        glob.IsMatch(path).Should().BeTrue();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
-
-        globi.IsMatch(path).Should().BeTrue();
-        globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
-
-        glob.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
-        globi.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(globi.IsMatch(path));
+        Assert.True(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
+        Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
 
 #if NET472
 #else
         if (OperatingSystem.IsWindows())
 #endif
         {
-            glob.IsMatch(path.Replace('/', '\\')).Should().BeTrue();
-            glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)).Should().BeTrue();
+            Assert.True(glob.IsMatch(path.Replace('/', '\\')));
+            Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));
         }
     }
 
@@ -225,8 +222,8 @@ public class GlobTests
     public void MatchIgnoreCase(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-        glob.IsMatch(path).Should().BeTrue();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
     [Theory]
@@ -272,12 +269,10 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
-
-        glob.IsMatch(path).Should().BeFalse();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
-
-        globi.IsMatch(path).Should().BeFalse();
-        globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(globi.IsMatch(path));
+        Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
     [Theory]
@@ -292,8 +287,8 @@ public class GlobTests
     public void DoesNotMatch_CaseSensitive(string pattern, string path)
     {
         var glob = Glob.Parse(pattern, GlobOptions.None);
-        glob.IsMatch(path).Should().BeFalse();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
     [Theory]
@@ -365,15 +360,12 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.Git);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
-
-        glob.IsMatch(path).Should().BeTrue();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
-
-        globi.IsMatch(path).Should().BeTrue();
-        globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeTrue();
-
-        glob.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
-        globi.IsPartialMatch(Path.GetDirectoryName(path)).Should().BeTrue();
+        Assert.True(glob.IsMatch(path));
+        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(globi.IsMatch(path));
+        Assert.True(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
+        Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
 
 #if NET472
 #elif NETCOREAPP3_1
@@ -382,8 +374,8 @@ public class GlobTests
         if (OperatingSystem.IsWindows())
 #endif
         {
-            glob.IsMatch(path.Replace('/', '\\')).Should().BeTrue();
-            glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)).Should().BeTrue();
+            Assert.True(glob.IsMatch(path.Replace('/', '\\')));
+            Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));
         }
     }
 
@@ -399,12 +391,10 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobOptions.Git);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase | GlobOptions.Git);
-
-        glob.IsMatch(path).Should().BeFalse();
-        glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
-
-        globi.IsMatch(path).Should().BeFalse();
-        globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)).Should().BeFalse();
+        Assert.False(glob.IsMatch(path));
+        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(globi.IsMatch(path));
+        Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
     private static void TestEvaluate(TemporaryDirectory directory, Glob glob, string[] expectedResult)
@@ -414,8 +404,7 @@ public class GlobTests
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)
             .ToList();
-
-        items.Should().Equal(expectedResult);
+        Assert.Equal(expectedResult, items);
     }
 
     private static void TestEvaluate(TemporaryDirectory directory, GlobCollection glob, string[] expectedResult)
@@ -425,7 +414,6 @@ public class GlobTests
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)
             .ToList();
-
-        items.Should().Equal(expectedResult);
+        Assert.Equal(expectedResult, items);
     }
 }

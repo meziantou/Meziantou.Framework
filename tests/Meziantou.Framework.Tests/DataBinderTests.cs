@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -10,7 +9,7 @@ public sealed class DataBinderTests
     {
         var obj = new { A = "test" };
         var actual = DataBinder.Eval(obj, "A");
-        actual.Should().Be("test");
+        Assert.Equal("test", actual);
     }
 
     [Fact]
@@ -18,20 +17,20 @@ public sealed class DataBinderTests
     {
         var obj = new { A = new { B = new[] { "a", "b", "c" } } };
         var actual = DataBinder.Eval(obj, "A.B[1]");
-        actual.Should().Be("b");
+        Assert.Equal("b", actual);
     }
 
     [Fact]
     public void MissingProperty()
     {
         var obj = new { A = "test" };
-        new Func<object>(() => DataBinder.Eval(obj, "B")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => DataBinder.Eval(obj, "B"));
     }
 
     [Fact]
     public void NonIndexableObjectg()
     {
         var obj = new { A = 0 };
-        new Func<object>(() => DataBinder.Eval(obj, "A[0]")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => DataBinder.Eval(obj, "A[0]"));
     }
 }

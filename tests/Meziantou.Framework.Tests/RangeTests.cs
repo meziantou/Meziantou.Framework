@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -15,7 +14,7 @@ public class RangeTests
     {
         var range = Range.Create(from, to);
         var result = range.IsInRangeInclusive(value);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -30,7 +29,7 @@ public class RangeTests
         var range1 = Range.Create(from1, to1);
         var range2 = Range.Create(from2, to2);
         var result = range1.IsInRangeInclusive(range2);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -43,7 +42,7 @@ public class RangeTests
     {
         var range = Range.Create(from, to);
         var result = range.IsInRangeExclusive(value);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -58,7 +57,7 @@ public class RangeTests
         var range1 = Range.Create(from1, to1);
         var range2 = Range.Create(from2, to2);
         var result = range1.IsInRangeExclusive(range2);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -71,7 +70,7 @@ public class RangeTests
     {
         var range = Range.Create(from, to);
         var result = range.IsInRangeLowerInclusive(value);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -86,7 +85,7 @@ public class RangeTests
         var range1 = Range.Create(from1, to1);
         var range2 = Range.Create(from2, to2);
         var result = range1.IsInRangeLowerInclusive(range2);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -99,7 +98,7 @@ public class RangeTests
     {
         var range = Range.Create(from, to);
         var result = range.IsInRangeUpperInclusive(value);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -114,6 +113,6 @@ public class RangeTests
         var range1 = Range.Create(from1, to1);
         var range2 = Range.Create(from2, to2);
         var result = range1.IsInRangeUpperInclusive(range2);
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 }

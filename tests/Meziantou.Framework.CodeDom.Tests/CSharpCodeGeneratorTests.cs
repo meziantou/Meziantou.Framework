@@ -1,5 +1,4 @@
 #pragma warning disable MA0101 // String contains an implicit end of line character
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CodeDom.Tests;
@@ -17,7 +16,7 @@ public class CSharpCodeGeneratorTests
             actual = actual.Replace("\r\n", "\n", StringComparison.Ordinal);
         }
 
-        actual.Should().Be(expectedCsharpCode);
+        Assert.Equal(expectedCsharpCode, actual);
     }
 
     [Fact]

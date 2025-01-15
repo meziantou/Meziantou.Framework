@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -15,7 +14,7 @@ public class StringSearchUtilitiesTests
     [InlineData("Car", "Kart", 2)]
     public void Levenshtein_Tests(string word1, string word2, int expected)
     {
-        StringSearchUtilities.Levenshtein(word1, word2).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1, word2));
     }
 
     [Theory]
@@ -25,21 +24,21 @@ public class StringSearchUtilitiesTests
     [InlineData(0b11111111u, 0b11110111u, 1u)]
     public void Hamming_Uint32Tests(uint word1, uint word2, uint expected)
     {
-        StringSearchUtilities.Hamming(word1, word2).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
     }
 
     [Theory]
     [InlineData("ramer", "cases", 3)]
     public void Hamming_StringTests(string word1, string word2, int expected)
     {
-        StringSearchUtilities.Hamming(word1, word2).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
     }
 
     [Fact]
     public void Soundex_Test()
     {
         var soundex = StringSearchUtilities.Soundex("", new Dictionary<char, byte>());
-        soundex.Should().Be("0000");
+        Assert.Equal("0000", soundex);
     }
 
     [Theory]
@@ -81,7 +80,7 @@ public class StringSearchUtilitiesTests
     [InlineData("Z325", "Zitzmeinn")]
     public void SoundexEnglish_Test(string expected, string value)
     {
-        StringSearchUtilities.SoundexEnglish(value).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.SoundexEnglish(value));
     }
 
     [Theory]
@@ -102,7 +101,7 @@ public class StringSearchUtilitiesTests
     [InlineData("RS  ", "YROUSSYEAU")]
     public void Soundex2_Test(string expected, string value)
     {
-        StringSearchUtilities.Soundex2(value).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.Soundex2(value));
     }
 
     [Theory]
@@ -114,7 +113,7 @@ public class StringSearchUtilitiesTests
     [InlineData("R000", "RAY")]
     public void SoundexFrench_Test(string expected, string value)
     {
-        StringSearchUtilities.SoundexFrench(value).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.SoundexFrench(value));
     }
 
     [Theory]
@@ -150,7 +149,7 @@ public class StringSearchUtilitiesTests
     [InlineData("AXXX", "atiatiotch")]
     public void Metaphone_Test(string expected, string value)
     {
-        StringSearchUtilities.Metaphone(value).Should().Be(expected);
+        Assert.Equal(expected, StringSearchUtilities.Metaphone(value));
     }
 
     [Theory]
@@ -166,7 +165,7 @@ public class StringSearchUtilitiesTests
     {
         var v1 = StringSearchUtilities.Metaphone(value);
         var v2 = StringSearchUtilities.Metaphone(otherValue);
-        v2.Should().Be(v1);
+        Assert.Equal(v1, v2);
     }
 
     public static IEnumerable<object[]> MetaphoneList()

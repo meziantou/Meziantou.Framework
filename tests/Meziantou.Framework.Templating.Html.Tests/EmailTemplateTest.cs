@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Templating.Tests;
@@ -14,10 +13,8 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out var metadata);
-
-        // Assert
-        result.Should().Be("Hello Meziantou!");
-        metadata.Title.Should().BeNull();
+        Assert.Equal("Hello Meziantou!", result);
+        Assert.Null(metadata.Title);
     }
 
     [Fact]
@@ -29,10 +26,8 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out var metadata);
-
-        // Assert
-        result.Should().Be("Hello Meziantou!");
-        metadata.Title.Should().Be("Meziantou");
+        Assert.Equal("Hello Meziantou!", result);
+        Assert.Equal("Meziantou", metadata.Title);
     }
 
     [Fact]
@@ -44,9 +39,7 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out _);
-
-        // Assert
-        result.Should().Be("Hello &lt;Meziantou&gt;!");
+        Assert.Equal("Hello &lt;Meziantou&gt;!", result);
     }
 
     [Fact]
@@ -58,9 +51,7 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out _);
-
-        // Assert
-        result.Should().Be("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!");
+        Assert.Equal("Hello <a href=\"http://www.localhost.com/Sample%26Url\">Meziantou</a>!", result);
     }
 
     [Fact]
@@ -72,9 +63,7 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out _);
-
-        // Assert
-        result.Should().Be("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!");
+        Assert.Equal("Hello <a href=\"Sample&amp;Sample\">Meziantou</a>!", result);
     }
 
     [Fact]
@@ -86,9 +75,7 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out _);
-
-        // Assert
-        result.Should().Be("0 1 2 ");
+        Assert.Equal("0 1 2 ", result);
     }
 
     [Fact]
@@ -100,11 +87,9 @@ public class EmailTemplateTest
 
         // Act 
         var result = template.Run(out var metadata);
-
-        // Assert
-        result.Should().Be("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />");
-        metadata.ContentIdentifiers.Should().SatisfyRespectively(
-            item => item.Should().Be("test1.png"),
-            item => item.Should().Be("test2.png"));
+        Assert.Equal("<img src=\"cid:test1.png\" /><img src=\"cid:test2.png\" />", result);
+        Assert.Collection(metadata.ContentIdentifiers,
+             item => Assert.Equal("test1.png", item),
+             item => Assert.Equal("test2.png", item));
     }
 }

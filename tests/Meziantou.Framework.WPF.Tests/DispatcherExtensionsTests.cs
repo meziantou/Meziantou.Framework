@@ -1,5 +1,4 @@
 using System.Windows.Threading;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.WPF.Tests;
@@ -25,9 +24,9 @@ public sealed class DispatcherExtensionsTests
             await Task.Delay(1);
         }
 
-        Environment.CurrentManagedThreadId.Should().NotBe(t.ManagedThreadId);
+        Assert.NotEqual(t.ManagedThreadId, Environment.CurrentManagedThreadId);
         await dispatcher.SwitchToDispatcherThread();
-        Environment.CurrentManagedThreadId.Should().Be(t.ManagedThreadId);
+        Assert.Equal(t.ManagedThreadId, Environment.CurrentManagedThreadId);
 
         dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
     }

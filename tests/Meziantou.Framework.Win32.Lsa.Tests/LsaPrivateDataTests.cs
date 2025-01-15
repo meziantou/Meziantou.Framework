@@ -1,4 +1,3 @@
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -20,12 +19,12 @@ public sealed class LsaPrivateDataTests
 
             // Get
             var value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            value.Should().Be("test");
+            Assert.Equal("test", value);
 
             // Remove
             LsaPrivateData.RemoveValue("LsaPrivateDataTests");
             value = LsaPrivateData.GetValue("LsaPrivateDataTests");
-            value.Should().BeNull();
+            Assert.Null(value);
         }
         finally
         {
@@ -38,6 +37,6 @@ public sealed class LsaPrivateDataTests
     {
         // Get
         var value = LsaPrivateData.GetValue("LsaPrivateDataTestsUnset");
-        value.Should().BeNull();
+        Assert.Null(value);
     }
 }

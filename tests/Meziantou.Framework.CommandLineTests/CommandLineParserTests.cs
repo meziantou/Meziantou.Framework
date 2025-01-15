@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.CommandLineTests;
@@ -17,11 +16,9 @@ public class CommandLineParserTests
         var valueA = parser.HasArgument("a");
         var valueB = parser.HasArgument("b");
         var valueC = parser.HasArgument("c");
-
-        // Assert
-        valueA.Should().BeTrue();
-        valueB.Should().BeTrue();
-        valueC.Should().BeFalse();
+        Assert.True(valueA);
+        Assert.True(valueB);
+        Assert.False(valueC);
     }
 
     [Fact]
@@ -36,11 +33,9 @@ public class CommandLineParserTests
         var valueA = parser.GetArgument("a");
         var valueB = parser.GetArgument("b");
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        valueA.Should().Be("value1");
-        valueB.Should().Be("value2");
-        helpRequested.Should().BeFalse();
+        Assert.Equal("value1", valueA);
+        Assert.Equal("value2", valueB);
+        Assert.False(helpRequested);
     }
 
     [Fact]
@@ -55,11 +50,9 @@ public class CommandLineParserTests
         var valueA = parser.GetArgument("a");
         var valueB = parser.GetArgument(1);
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        valueA.Should().Be("value1");
-        valueB.Should().Be("value2");
-        helpRequested.Should().BeFalse();
+        Assert.Equal("value1", valueA);
+        Assert.Equal("value2", valueB);
+        Assert.False(helpRequested);
     }
 
     [Fact]
@@ -74,11 +67,9 @@ public class CommandLineParserTests
         var valueA = parser.GetArgument("a");
         var valueB = parser.GetArgument(1);
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        valueA.Should().Be("value1 ");
-        valueB.Should().Be("value2");
-        helpRequested.Should().BeFalse();
+        Assert.Equal("value1 ", valueA);
+        Assert.Equal("value2", valueB);
+        Assert.False(helpRequested);
     }
 
     [Fact]
@@ -92,10 +83,8 @@ public class CommandLineParserTests
         // Act
         var valueA = parser.GetArgument(0);
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        valueA.Should().Be("   ");
-        helpRequested.Should().BeFalse();
+        Assert.Equal("   ", valueA);
+        Assert.False(helpRequested);
     }
 
     [Fact]
@@ -108,9 +97,7 @@ public class CommandLineParserTests
 
         // Act
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        helpRequested.Should().BeTrue();
+        Assert.True(helpRequested);
     }
 
     [Fact]
@@ -123,9 +110,7 @@ public class CommandLineParserTests
 
         // Act
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        helpRequested.Should().BeTrue();
+        Assert.True(helpRequested);
     }
 
     [Fact]
@@ -138,8 +123,6 @@ public class CommandLineParserTests
 
         // Act
         var helpRequested = parser.HelpRequested;
-
-        // Assert
-        helpRequested.Should().BeFalse();
+        Assert.False(helpRequested);
     }
 }

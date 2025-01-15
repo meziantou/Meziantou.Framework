@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -9,7 +8,7 @@ public sealed class DeterministicGuidTests
     public void DeterministicGuid_Version5()
     {
         var actual = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "www.example.com", DeterministicGuidVersion.Version5);
-        actual.Should().Be(Guid.Parse("2ed6657d-e927-568b-95e1-2665a8aea6a2"));
+        Assert.Equal(Guid.Parse("2ed6657d-e927-568b-95e1-2665a8aea6a2"), actual);
     }
 
     [Theory]
@@ -18,6 +17,6 @@ public sealed class DeterministicGuidTests
     public void DeterministicGuid_Version3_Dns(string name, string expectedGuid)
     {
         var actual = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, name, DeterministicGuidVersion.Version3);
-        actual.Should().Be(Guid.Parse(expectedGuid));
+        Assert.Equal(Guid.Parse(expectedGuid), actual);
     }
 }

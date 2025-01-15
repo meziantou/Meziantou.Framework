@@ -1,6 +1,5 @@
 #pragma warning disable MEZ_NETCORE3_1
 
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -18,7 +17,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2015, 05, 17);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -32,7 +31,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2015, 05, 11);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -47,7 +46,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2005, 01, 03);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2005, 12, 26);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -77,7 +76,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2006, 1, 2);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -92,7 +91,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2006, 12, 25);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -107,7 +106,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2007, 12, 31);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -122,7 +121,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2008, 12, 22);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -137,7 +136,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2008, 12, 29);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -152,7 +151,7 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2009, 12, 28);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -166,6 +165,6 @@ public class DateTimeUtilitiesTests
 
         // Assert
         var expected = new DateTime(2018, 2, 3, 4, 5, 6, 0, DateTimeKind.Utc);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 }

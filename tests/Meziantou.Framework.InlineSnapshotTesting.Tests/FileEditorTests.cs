@@ -1,22 +1,21 @@
-﻿using FluentAssertions;
-using Microsoft.CodeAnalysis.Text;
+﻿using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class FileEditorTests
 {
     [Fact]
-    public void DetectEndOfLine_SingleLine_Default() => FileEditor.DetectEndOfLine(SourceText.From("test")).Should().Be(Environment.NewLine);
+    public void DetectEndOfLine_SingleLine_Default() => Assert.Equal(Environment.NewLine, FileEditor.DetectEndOfLine(SourceText.From("test")));
 
     [Fact]
-    public void DetectEndOfLine_Lf() => FileEditor.DetectEndOfLine(SourceText.From("test\n")).Should().Be("\n");
+    public void DetectEndOfLine_Lf() => Assert.Equal("\n", FileEditor.DetectEndOfLine(SourceText.From("test\n")));
 
     [Fact]
-    public void DetectEndOfLine_CrLf() => FileEditor.DetectEndOfLine(SourceText.From("test\r\n")).Should().Be("\r\n");
+    public void DetectEndOfLine_CrLf() => Assert.Equal("\r\n", FileEditor.DetectEndOfLine(SourceText.From("test\r\n")));
 
     [Fact]
-    public void DetectIndentation_FirstLineIndented() => FileEditor.DetectIndentation(SourceText.From("  dummy")).Should().Be("  ");
+    public void DetectIndentation_FirstLineIndented() => Assert.Equal("  ", FileEditor.DetectIndentation(SourceText.From("  dummy")));
 
     [Fact]
-    public void DetectIndentation_SecondLineIndented() => FileEditor.DetectIndentation(SourceText.From("dummy\n  dummy")).Should().Be("  ");
+    public void DetectIndentation_SecondLineIndented() => Assert.Equal("  ", FileEditor.DetectIndentation(SourceText.From("dummy\n  dummy")));
 }

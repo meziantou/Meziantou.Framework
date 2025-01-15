@@ -1,7 +1,6 @@
 #pragma warning disable CA1304
 #pragma warning disable MA0011
 using System.Globalization;
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -13,38 +12,38 @@ public class ResxGeneratorTests
     public void FormatString()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Resource1.FormatHello("world").Should().Be("Hello world!");
+        Assert.Equal("Hello world!", Resource1.FormatHello("world"));
 
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Resource1.FormatHello("le monde").Should().Be("Bonjour le monde!");
+        Assert.Equal("Bonjour le monde!", Resource1.FormatHello("le monde"));
     }
 
     [Fact, RunIf(globalizationMode: FactInvariantGlobalizationMode.Disabled)]
     public void StringValue()
     {
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-        Resource1.Sample.Should().Be("value");
+        Assert.Equal("value", Resource1.Sample);
 
         CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo("fr");
-        Resource1.Sample.Should().Be("valeur");
+        Assert.Equal("valeur", Resource1.Sample);
     }
 
     [Fact]
     public void GetStringWithDefaultValue()
     {
         // Ensure the value is not nullable
-        Resource1.GetString("UnknownValue", defaultValue: "abc").Should().HaveLength(3);
+        Assert.Equal(3, Resource1.GetString("UnknownValue", defaultValue: "abc").Length);
     }
 
     [Fact]
     public void TextFile()
     {
-        Resource1.TextFile1.Should().Be("test");
+       Assert.Equal("test", Resource1.TextFile1);
     }
 
     [Fact]
     public void BinaryFile()
     {
-        Resource1.Image1.Should().StartWith([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        Assert.Equal([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], Resource1.Image1[..8]);
     }
 }

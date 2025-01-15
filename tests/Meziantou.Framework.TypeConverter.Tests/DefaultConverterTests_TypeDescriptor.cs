@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -43,9 +42,8 @@ public sealed class DefaultConverterTests_TypeDescriptor
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(new Dummy(), cultureInfo, out int value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(10);
+        Assert.True(converted);
+        Assert.Equal(10, value);
     }
 
     [Fact]
@@ -54,9 +52,8 @@ public sealed class DefaultConverterTests_TypeDescriptor
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(1, cultureInfo, out Dummy value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(CustomTypeConverter.Instance);
+        Assert.True(converted);
+        Assert.Equal(CustomTypeConverter.Instance, value);
     }
 
     [Fact]
@@ -66,7 +63,6 @@ public sealed class DefaultConverterTests_TypeDescriptor
         var cultureInfo = CultureInfo.InvariantCulture;
 
         var converted = converter.TryChangeType("", cultureInfo, out Dummy _);
-
-        converted.Should().BeFalse();
+        Assert.False(converted);
     }
 }

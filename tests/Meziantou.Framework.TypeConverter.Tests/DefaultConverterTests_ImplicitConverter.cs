@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -17,8 +16,7 @@ public class DefaultConverterTests_ImplicitConverter
         var converter = new DefaultConverter();
         var cultureInfo = CultureInfo.InvariantCulture;
         var converted = converter.TryChangeType(new ImplicitConverter(), cultureInfo, out int value);
-
-        converted.Should().BeTrue();
-        value.Should().Be(1);
+        Assert.True(converted);
+        Assert.Equal(1, value);
     }
 }

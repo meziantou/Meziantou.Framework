@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Csv.Tests;
@@ -15,8 +14,6 @@ public class CsvRowTests
 
         // Act
         var actual = row.GetValueOrDefault("test", 0);
-
-        // Assert
-        actual.Should().Be(42);
+        Assert.Equal(42, actual);
     }
 }

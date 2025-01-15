@@ -1,6 +1,4 @@
 ﻿using System.Text.Json;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
@@ -43,34 +41,25 @@ public sealed class NugetPackageValidateToolTests
     public async Task Help()
     {
         var result = await RunValidation("--help");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(0);
-            result.Output.Should().Contain("meziantou.validate-nuget-package");
-        }
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("meziantou.validate-nuget-package", result.Output, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task NoPackage()
     {
         var result = await RunValidation();
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResult.Should().BeNull();
-        }
+        Assert.Equal(1, result.ExitCode);
+        Assert.Null(result.ValidationResult);
     }
 
     [Fact]
     public async Task TestPackage()
     {
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResult.IsValid.Should().BeFalse();
-            result.ValidationResult.Errors.Should().Contain(item => item.ErrorCode == 81);
-        }
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(result.ValidationResult.IsValid);
+        Assert.Contains(result.ValidationResult.Errors, item => item.ErrorCode == 81);
     }
 
     [Fact]
@@ -79,67 +68,50 @@ public sealed class NugetPackageValidateToolTests
         var path1 = FullPath.FromPath("Packages/Debug.1.0.0.nupkg");
         var path2 = FullPath.FromPath("Packages/Release.1.0.0.nupkg");
         var result = await RunValidation(path1, path2);
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResults.Packages.Should().HaveCount(2);
-
-            result.ValidationResults.Packages[path1].IsValid.Should().BeFalse();
-            result.ValidationResults.Packages[path1].Errors.Should().Contain(item => item.ErrorCode == 81);
-
-            result.ValidationResults.Packages[path2].IsValid.Should().BeFalse();
-            result.ValidationResults.Packages[path2].Errors.Should().Contain(item => item.ErrorCode == 101);
-        }
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal(2, result.ValidationResults.Packages.Count);
+        Assert.False(result.ValidationResults.Packages[path1].IsValid);
+        Assert.Contains(result.ValidationResults.Packages[path1].Errors, item => item.ErrorCode == 81);
+        Assert.False(result.ValidationResults.Packages[path2].IsValid);
+        Assert.Contains(result.ValidationResults.Packages[path2].Errors, item => item.ErrorCode == 101);
     }
 
     [Fact]
     public async Task ExcludedRuleIds()
     {
         var result = await RunValidation("Packages/Debug.1.0.0.nupkg", "--excluded-rule-ids", "81,73;101", "--excluded-rule-ids", "75");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(1);
-            result.ValidationResult.IsValid.Should().BeFalse();
-            result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 73);
-            result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 75);
-            result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 81);
-            result.ValidationResult.Errors.Should().NotContain(item => item.ErrorCode == 101);
-        }
+        Assert.Equal(1, result.ExitCode);
+        Assert.False(result.ValidationResult.IsValid);
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 73);
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 75);
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 81);
+        Assert.DoesNotContain(result.ValidationResult.Errors, item => item.ErrorCode == 101);
     }
 
     [Fact]
     public async Task CustomRules()
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized,AuthorMustBeSet");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(0);
-            result.ValidationResult.IsValid.Should().BeTrue();
-            result.ValidationResult.Errors.Should().BeEmpty();
-        }
+        Assert.Equal(0, result.ExitCode);
+        Assert.True(result.ValidationResult.IsValid);
+        Assert.Empty(result.ValidationResult.Errors);
     }
 
     [Fact]
     public async Task CustomRules_UnknownRules()
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "Unknown");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(1);
-            result.Output.Should().Contain("Invalid rule 'Unknown'");
-            result.ValidationResult.Should().BeNull();
-        }
+        Assert.Equal(1, result.ExitCode);
+        Assert.Contains("Invalid rule 'Unknown'", result.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(result.ValidationResult);
     }
 
     [Fact]
     public async Task CustomRules_Multiple()
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "AssembliesMustBeOptimized", "--rules", "AuthorMustBeSet");
-        using (new AssertionScope())
-        {
-            result.ExitCode.Should().Be(0);
-            result.ValidationResult.IsValid.Should().BeTrue();
-            result.ValidationResult.Errors.Should().BeEmpty();
-        }
+        Assert.Equal(0, result.ExitCode);
+        Assert.True(result.ValidationResult.IsValid);
+        Assert.Empty(result.ValidationResult.Errors);
     }
 }

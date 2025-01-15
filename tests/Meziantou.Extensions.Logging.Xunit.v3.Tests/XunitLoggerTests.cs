@@ -3,7 +3,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Xunit;
-using Meziantou.Extensions.Logging.Xunit;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;

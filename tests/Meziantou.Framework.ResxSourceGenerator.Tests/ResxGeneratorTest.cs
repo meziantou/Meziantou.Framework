@@ -1,6 +1,5 @@
 using System.Text;
 using System.Xml.Linq;
-using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -50,8 +49,8 @@ public sealed class ResxGeneratorTest
         {
             var diags = string.Join('\n', result.Diagnostics);
             var generated = (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString();
-            result.Success.Should().BeTrue("Project cannot build:\n" + diags + "\n\n\n" + generated);
-            result.Diagnostics.Should().BeEmpty();
+            Assert.True(result.Success);
+            Assert.Empty(result.Diagnostics);
         }
 
         return new(runResult, ms.ToArray());
@@ -69,8 +68,7 @@ public sealed class ResxGeneratorTest
         {
             Visibility = visibility,
         });
-
-        result.GeneratedFileRoot.AreTypesInternal().Should().BeTrue();
+        Assert.True(result.GeneratedFileRoot.AreTypesInternal());
     }
 
     [Theory]
@@ -83,8 +81,7 @@ public sealed class ResxGeneratorTest
         {
             Visibility = visibility,
         });
-
-        result.GeneratedFileRoot.AreTypesPublic().Should().BeTrue();
+        Assert.True(result.GeneratedFileRoot.AreTypesPublic());
     }
 
     [Fact]
@@ -101,15 +98,13 @@ public sealed class ResxGeneratorTest
             Namespace = "test",
             ResourceName = "test",
         });
-
-        Path.GetFileName(result.GeneratedFilePath).Should().Be("test.resx.g.cs");
+        Assert.Equal("test.resx.g.cs", Path.GetFileName(result.GeneratedFilePath));
         var fileContent = result.GeneratedFileRoot.ToFullString();
-        fileContent.Should().Contain("Sample");
-        fileContent.Should().NotContain("FormatSample");
-
-        fileContent.Should().Contain("HelloWorld\n");
-        fileContent.Should().Contain("FormatHelloWorld(object? arg0)");
-        fileContent.Should().Contain("public static global::System.Drawing.Bitmap? @Image1");
+        Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
+        Assert.DoesNotContain("FormatSample", fileContent, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("HelloWorld\n", fileContent, StringComparison.Ordinal);
+        Assert.Contains("FormatHelloWorld(object? arg0)", fileContent, StringComparison.Ordinal);
+        Assert.Contains("public static global::System.Drawing.Bitmap? @Image1", fileContent, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -145,18 +140,20 @@ public sealed class ResxGeneratorTest
                 RootNamespace = "Test",
             });
 
-        result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal).Should().SatisfyRespectively(tree =>
+        Assert.Collection(result.GeneratedTrees.OrderBy(t => t.FilePath, StringComparer.Ordinal),
+            tree =>
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
-                Path.GetFileName(tree.FilePath).Should().Be("test.NewResource.resx.g.cs");
-                fileContent.Should().Contain("BBB");
-            }, tree =>
+                Assert.Equal("test.NewResource.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Contains("BBB", fileContent, StringComparison.Ordinal);
+            },
+            tree =>
             {
                 var fileContent = tree.GetRoot(XunitCancellationToken).ToFullString();
-                Path.GetFileName(tree.FilePath).Should().Be("test.resx.g.cs");
-                fileContent.Should().Contain("Sample");
-                fileContent.Should().Contain("HelloWorld");
-                fileContent.Should().Contain("AAA");
+                Assert.Equal("test.resx.g.cs", Path.GetFileName(tree.FilePath));
+                Assert.Contains("Sample", fileContent, StringComparison.Ordinal);
+                Assert.Contains("HelloWorld", fileContent, StringComparison.Ordinal);
+                Assert.Contains("AAA", fileContent, StringComparison.Ordinal);
             });
     }
 
@@ -168,8 +165,7 @@ public sealed class ResxGeneratorTest
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
         });
-
-        result.GeneratedFileRoot.GetNamespace().Should().Be("proj");
+        Assert.Equal("proj", result.GeneratedFileRoot.GetNamespace());
     }
 
     [Fact]
@@ -180,8 +176,7 @@ public sealed class ResxGeneratorTest
             ProjectDir = FullPath.GetTempPath() / "dir" / "proj",
             RootNamespace = "proj",
         });
-
-        result.GeneratedFileRoot.GetNamespace().Should().Be("proj.A");
+        Assert.Equal("proj.A", result.GeneratedFileRoot.GetNamespace());
     }
 
     [Fact]
@@ -193,7 +188,7 @@ public sealed class ResxGeneratorTest
             Namespace = "test",
         }, mustCompile: false);
 
-        result.Diagnostics.Should().SatisfyRespectively(diag => diag.Id.Should().Be("MFRG0001"));
+        Assert.Collection(result.Diagnostics, diag => Assert.Equal("MFRG0001", diag.Id));
     }
 
     private sealed class OptionProvider : AnalyzerConfigOptionsProvider

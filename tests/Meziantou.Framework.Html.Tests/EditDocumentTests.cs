@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -12,8 +11,7 @@ public class EditDocumentTests
         document.LoadHtml("<div><p>sample1</p><p>sample2</p></div>");
         var node = document.SelectSingleNode("/div/p[1]/text()", HtmlNodeNavigatorOptions.LowercasedAll);
         node.Value = "edited";
-
-        document.OuterHtml.Should().Be("<div><p>edited</p><p>sample2</p></div>");
+        Assert.Equal("<div><p>edited</p><p>sample2</p></div>", document.OuterHtml);
     }
 
     [Fact]
@@ -26,7 +24,6 @@ public class EditDocumentTests
         anchorElement.SetAttribute("href", "sample.txt");
         anchorElement.InnerText = "sample";
         node.AppendChild(anchorElement);
-
-        document.OuterHtml.Should().Be("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>");
+        Assert.Equal("<div><p>sample1<a href=\"sample.txt\">sample</a></p><p>sample2</p></div>", document.OuterHtml);
     }
 }

@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.Threading;
-using Xunit;
+﻿using Xunit;
 
 namespace Meziantou.Framework.Threading.Tests;
 

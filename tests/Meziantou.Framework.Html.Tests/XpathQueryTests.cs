@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -11,8 +10,7 @@ public class XpathQueryTests
         var document = new HtmlDocument();
         document.LoadHtml("<div><p>sample1</p><p>sample2</p></div>");
         var nodes = document.SelectNodes("//p/text()", HtmlNodeNavigatorOptions.LowercasedAll).Select(node => node.Value).ToList();
-
-        nodes.Should().Equal(["sample1", "sample2"]);
+        Assert.Equal(["sample1", "sample2"], nodes);
     }
 
     [Fact]
@@ -23,6 +21,6 @@ public class XpathQueryTests
         var context = new HtmlXsltContext(document.ParentNamespaceResolver);
 
         var node = document.SelectSingleNode("//p[lowercase(@class)='abc']", context);
-        node.InnerText.Should().Be("Sample1");
+        Assert.Equal("Sample1", node.InnerText);
     }
 }

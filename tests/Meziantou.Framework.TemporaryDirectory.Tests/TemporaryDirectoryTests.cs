@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -21,11 +20,11 @@ public class TemporaryDirectoryTests
                 dirs[i].CreateEmptyFile("test.txt");
             });
 
-            dirs.Select(dir => dir.FullPath).Distinct().Should().HaveCount(Iterations);
+            Assert.Equal(Iterations, dirs.Select(dir => dir.FullPath).Distinct().Count());
 
             foreach (var dir in dirs)
             {
-                dirs.Should().OnlyContain(dir => Directory.Exists(dir.FullPath));
+                Assert.All(dirs, dir => Assert.True(Directory.Exists(dir.FullPath)));
             }
         }
         finally
@@ -47,7 +46,7 @@ public class TemporaryDirectoryTests
             File.WriteAllText(dir.GetFullPath("a.txt"), "content");
         }
 
-        Directory.Exists(path).Should().BeFalse();
+        Assert.False(Directory.Exists(path));
     }
 
     [Fact]
@@ -67,6 +66,6 @@ public class TemporaryDirectoryTests
 #endif
         }
 
-        Directory.Exists(path).Should().BeFalse();
+        Assert.False(Directory.Exists(path));
     }
 }

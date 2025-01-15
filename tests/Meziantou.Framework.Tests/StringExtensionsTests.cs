@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -12,7 +11,7 @@ public class StringExtensionsTests
     public void RemoveDiacritics_Test(string str, string expected)
     {
         var actual = str.RemoveDiacritics();
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
@@ -23,7 +22,7 @@ public class StringExtensionsTests
     [InlineData("aabc", "abc", false)]
     public void EqualsIgnoreCase(string left, string right, bool expectedResult)
     {
-        left.EqualsIgnoreCase(right).Should().Be(expectedResult);
+        Assert.Equal(expectedResult, left.EqualsIgnoreCase(right));
     }
 
     [Theory]
@@ -34,7 +33,7 @@ public class StringExtensionsTests
     [InlineData("bc", "abc", false)]
     public void ContainsIgnoreCase(string left, string right, bool expectedResult)
     {
-        left.ContainsIgnoreCase(right).Should().Be(expectedResult);
+        Assert.Equal(expectedResult, left.ContainsIgnoreCase(right));
     }
 
     [Fact]
@@ -48,7 +47,7 @@ public class StringExtensionsTests
                 break;
         }
 
-        actual.Should().Equal([("a", "\n"), ("b", "\n")]);
+        Assert.Equal([("a", "\n"), ("b", "\n")], actual);
     }
 
     [Theory]
@@ -61,7 +60,7 @@ public class StringExtensionsTests
             actual.Add((line.ToString(), separator.ToString()));
         }
 
-        actual.Should().Equal(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
@@ -74,7 +73,7 @@ public class StringExtensionsTests
             actual.Add(line.ToString());
         }
 
-        actual.Should().Equal(expected.Select(item => item.Line).ToArray());
+        Assert.Equal(expected.Select(item => item.Line).ToArray(), actual);
     }
 
     public static TheoryData<string, (string Line, string Separator)[]> SplitLineData()
@@ -102,7 +101,7 @@ public class StringExtensionsTests
     [InlineData("abc", "C", StringComparison.OrdinalIgnoreCase, "ab")]
     public void RemoveSuffix(string str, string suffx, StringComparison comparison, string expected)
     {
-        str.RemoveSuffix(suffx, comparison).Should().Be(expected);
+        Assert.Equal(expected, str.RemoveSuffix(suffx, comparison));
     }
 
     [Theory]
@@ -116,6 +115,6 @@ public class StringExtensionsTests
     [InlineData("abc", "A", StringComparison.OrdinalIgnoreCase, "bc")]
     public void RemovePrefix(string str, string suffx, StringComparison comparison, string expected)
     {
-        str.RemovePrefix(suffx, comparison).Should().Be(expected);
+        Assert.Equal(expected, str.RemovePrefix(suffx, comparison));
     }
 }

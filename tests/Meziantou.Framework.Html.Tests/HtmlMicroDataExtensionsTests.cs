@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Html.Tests;
@@ -27,7 +26,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<{tagName} {attributeName}='test'>");
 
         var value = document.FirstChild.GetItemValue();
-        value.Should().Be("test");
+        Assert.Equal("test", value);
     }
 
     [Fact]
@@ -37,7 +36,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<time>test</time>");
 
         var value = document.FirstChild.GetItemValue();
-        value.Should().Be("test");
+        Assert.Equal("test", value);
     }
 
     [Fact]
@@ -47,7 +46,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<dummy>test</dummy>");
 
         var value = document.FirstChild.GetItemValue();
-        value.Should().Be("test");
+        Assert.Equal("test", value);
     }
 
     [Fact]
@@ -57,7 +56,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<a>test</a>");
 
         var value = document.FirstChild.GetItemValue();
-        value.Should().BeEmpty();
+        Assert.Empty(value);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'></a>");
 
         var value = document.FirstChild.GetItemScopeType();
-        value.Should().Be("https://schema.org/Recipe");
+        Assert.Equal("https://schema.org/Recipe", value);
     }
 
     [Fact]
@@ -77,6 +76,6 @@ public class HtmlMicroDataExtensionsTests
         document.LoadHtml($"<a itemscope itemtype='https://schema.org/Recipe'><img/></a>");
 
         var value = document.SelectSingleNode("//img").GetItemScopeType();
-        value.Should().Be("https://schema.org/Recipe");
+        Assert.Equal("https://schema.org/Recipe", value);
     }
 }

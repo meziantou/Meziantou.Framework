@@ -1,4 +1,3 @@
-using FluentAssertions;
 using TestUtilities;
 using Xunit;
 
@@ -10,13 +9,13 @@ public class ExecutableFinderTests
     public void GetFullExecutablePathTests_Windows()
     {
         var result = ExecutableFinder.GetFullExecutablePath("calc");
-        result.Should().BeEquivalentTo(@"C:\Windows\System32\calc.exe");
+        Assert.Equal(@"C:\Windows\System32\calc.exe", result, ignoreCase: true);
     }
 
     [Fact, RunIf(FactOperatingSystem.Linux | FactOperatingSystem.OSX)]
     public void GetFullExecutablePathTests_Linux()
     {
         var result = ExecutableFinder.GetFullExecutablePath("ls");
-        result.Should().BeOneOf("/bin/ls", "/usr/bin/ls");
+        Assert.True(result is "/bin/ls" or "/usr/bin/ls");
     }
 }

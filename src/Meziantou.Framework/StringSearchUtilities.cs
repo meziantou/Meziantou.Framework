@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-
 namespace Meziantou.Framework;
 
 public static partial class StringSearchUtilities

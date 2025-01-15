@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -82,7 +81,7 @@ public class ReflectionDynamicObjectTests
     public void ReflectionDynamicObject_StringConstructor_ThrowException()
     {
         var rdo = new ReflectionDynamicObject(typeof(Test3));
-        new Func<object>(() => rdo.CreateInstance("tests")).Should().ThrowExactly<ArgumentException>();
+        Assert.Throws<ArgumentException>(() => rdo.CreateInstance("tests"));
     }
 
 #pragma warning disable IDE0051 // Remove unused private members

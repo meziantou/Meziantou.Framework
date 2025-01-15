@@ -19,11 +19,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit.v3" Version="1.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.1" />
-    <PackageReference Include="FluentAssertions" Version="7.0.0" />
-    <PackageReference Include="Meziantou.FluentAssertionsAnalyzers" Version="1.0.21">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
 </Project>

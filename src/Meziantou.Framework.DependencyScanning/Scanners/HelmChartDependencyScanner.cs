@@ -1,6 +1,4 @@
-﻿using Meziantou.Framework.DependencyScanning.Internals;
-using YamlDotNet.Core;
-using YamlDotNet.RepresentationModel;
+﻿using YamlDotNet.RepresentationModel;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;

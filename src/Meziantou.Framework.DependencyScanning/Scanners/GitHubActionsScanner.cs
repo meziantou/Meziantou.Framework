@@ -1,4 +1,3 @@
-using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 

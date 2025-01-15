@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -12,13 +11,13 @@ public class StringBuilderExtensionsTests
         CultureInfoUtilities.UseCulture("sv-SE", () =>
         {
             var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
-            actual.Should().Be("test-42");
+            Assert.Equal("test-42", actual);
         });
 
         CultureInfoUtilities.UseCulture("en-US", () =>
         {
             var actual = new StringBuilder().AppendInvariant($"test{-42}").ToString();
-            actual.Should().Be("test-42");
+            Assert.Equal("test-42", actual);
         });
     }
 
@@ -29,7 +28,7 @@ public class StringBuilderExtensionsTests
     public void EndsWith_Test(string str, char c, bool expected)
     {
         var actual = new StringBuilder(str).EndsWith(c);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
@@ -39,7 +38,7 @@ public class StringBuilderExtensionsTests
     public void StartsWith_Test(string str, char c, bool expected)
     {
         var actual = new StringBuilder(str).StartsWith(c);
-        actual.Should().Be(expected);
+        Assert.Equal(expected, actual);
     }
 
     [Theory]
@@ -51,7 +50,7 @@ public class StringBuilderExtensionsTests
     {
         var actual = new StringBuilder(str);
         actual.TrimStart(c);
-        actual.ToString().Should().Be(expected);
+        Assert.Equal(expected, actual.ToString());
     }
 
     [Theory]
@@ -63,7 +62,7 @@ public class StringBuilderExtensionsTests
     {
         var actual = new StringBuilder(str);
         actual.TrimEnd(c);
-        actual.ToString().Should().Be(expected);
+        Assert.Equal(expected, actual.ToString());
     }
 
     [Theory]
@@ -76,6 +75,6 @@ public class StringBuilderExtensionsTests
     {
         var actual = new StringBuilder(str);
         actual.Trim(c);
-        actual.ToString().Should().Be(expected);
+        Assert.Equal(expected, actual.ToString());
     }
 }

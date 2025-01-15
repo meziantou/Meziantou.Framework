@@ -1,4 +1,3 @@
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace Meziantou.Framework;

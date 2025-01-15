@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Meziantou.Framework.Collections;
 using Xunit;
 
@@ -14,28 +13,26 @@ public class CircularBufferTests
         list.AddFirst(1);
         list.AddFirst(2);
         list.AddLast(3);
-
-        list.Should().Equal([2, 1, 3]);
-        list[0].Should().Be(2);
-        list[1].Should().Be(1);
-        list[2].Should().Be(3);
+        Assert.Equal([2, 1, 3], list);
+        Assert.Equal(2, list[0]);
+        Assert.Equal(1, list[1]);
+        Assert.Equal(3, list[2]);
 
         list.AddLast(4);
-        list.Should().Equal([1, 3, 4]);
+        Assert.Equal([1, 3, 4], list);
 
         list.RemoveFirst();
-        list.Should().Equal([3, 4]);
+        Assert.Equal([3, 4], list);
 
         list.RemoveLast();
-        list.Should().Equal([3]);
-
-        list[0].Should().Be(3);
+        Assert.Equal([3], list);
+        Assert.Equal(3, list[0]);
 
         list.RemoveLast();
-        list.Should().BeEmpty();
+        Assert.Empty(list);
 
         list.AddFirst(1);
-        list.Should().Equal([1]);
+        Assert.Equal([1], list);
     }
 
     [Fact]
@@ -46,8 +43,7 @@ public class CircularBufferTests
         list.AddLast(1);
         list.AddLast(2);
         list.AddLast(3);
-
-        list.Should().Equal([1, 2, 3]);
+        Assert.Equal([1, 2, 3], list);
     }
 
     [Fact]
@@ -56,13 +52,13 @@ public class CircularBufferTests
         var list = new CircularBuffer<int>(1) { AllowOverwrite = true };
 
         list.AddFirst(1);
-        list.Should().Equal([1]);
+        Assert.Equal([1], list);
 
         list.AddFirst(2);
-        list.Should().Equal([2]);
+        Assert.Equal([2], list);
 
         list.AddLast(3);
-        list.Should().Equal([3]);
+        Assert.Equal([3], list);
     }
 
     [Fact]
@@ -76,9 +72,7 @@ public class CircularBufferTests
 
         // Act
         var index = list.IndexOf(2);
-
-        // Assert
-        index.Should().Be(1);
+        Assert.Equal(1, index);
     }
 
     [Fact]
@@ -93,9 +87,7 @@ public class CircularBufferTests
 
         // Act
         var index = list.IndexOf(1);
-
-        // Assert
-        index.Should().Be(-1);
+        Assert.Equal(-1, index);
     }
 
     [Fact]
@@ -108,9 +100,7 @@ public class CircularBufferTests
 
         // Act
         var count = list.Count;
-
-        // Assert
-        count.Should().Be(2);
+        Assert.Equal(2, count);
     }
 
     [Fact]
@@ -123,9 +113,7 @@ public class CircularBufferTests
 
         // Act
         var result = list.Contains(2);
-
-        // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -138,9 +126,7 @@ public class CircularBufferTests
 
         // Act
         var result = list.Contains(3);
-
-        // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -152,7 +138,7 @@ public class CircularBufferTests
         list.RemoveFirst();
 
         list.Capacity = 1;
-        list.Should().Equal([2]);
+        Assert.Equal([2], list);
     }
 
     [Fact]
@@ -165,7 +151,7 @@ public class CircularBufferTests
         list.AddLast(1);
 
         list.Capacity = 2;
-        list.Should().Equal([2, 1]);
+        Assert.Equal([2, 1], list);
     }
 
     [Fact]
@@ -176,13 +162,13 @@ public class CircularBufferTests
         list.AddLast(2);
         list.RemoveFirst();
         list.AddLast(1);
-        list.Should().Equal([2, 1]);
+        Assert.Equal([2, 1], list);
 
         list.Clear();
-        list.Should().BeEmpty();
+        Assert.Empty(list);
 
         list.AddLast(1);
-        list.Should().Equal([1]);
+        Assert.Equal([1], list);
     }
 
     [Fact]

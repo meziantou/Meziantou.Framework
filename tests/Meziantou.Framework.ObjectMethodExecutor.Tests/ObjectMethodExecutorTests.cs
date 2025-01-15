@@ -94,7 +94,7 @@ public sealed class ObjectMethodExecutorTests
     {
         var executor = ObjectMethodExecutor.Create(typeof(Test).GetMethod("AsyncCustomAwaiter"));
         var result = await executor.ExecuteAsync(new Test(), []);
-        Assert.Equal(null, result);
+        Assert.Null(result);
     }
 
     [Fact]

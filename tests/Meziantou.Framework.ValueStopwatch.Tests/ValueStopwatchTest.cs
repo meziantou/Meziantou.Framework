@@ -29,6 +29,6 @@ public class ValueStopwatchTest
         var stopwatch = ValueStopwatch.StartNew();
         await Task.Delay(200);
         var elapsed = stopwatch.GetElapsedTime();
-        Assert.True(elapsed >= TimeSpan.FromMilliseconds(200));
+        Assert.True(elapsed >= TimeSpan.FromMilliseconds(200), $"{elapsed}");
     }
 }

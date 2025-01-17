@@ -44,8 +44,10 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            Debug.Assert(_firstSegment is not null);
             var segment = _firstSegment;
+            if (segment is null)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
             while (true)
             {
                 if (index < segment.Count)

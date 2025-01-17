@@ -23,7 +23,9 @@ public sealed class AppendOnlyCollectionTests
         }
 
         Assert.Equal(10000, collection.Count);
-        Assert.Equal(0, collection[0]);
-        Assert.Equal(1000, collection[1000]);
+        for (var i = 0; i < 1000; i++)
+        {
+            Assert.Equal(i, collection[i]);
+        }
     }
 }

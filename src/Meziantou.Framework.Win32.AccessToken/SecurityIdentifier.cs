@@ -45,7 +45,7 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
 
         try
         {
-            if (!PInvoke.CreateWellKnownSid((WELL_KNOWN_SID_TYPE)type, default, resultSid, ref size))
+            if (!PInvoke.CreateWellKnownSid((WELL_KNOWN_SID_TYPE)type, default, resultSid, &size))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
             return new SecurityIdentifier(resultSid);
@@ -59,9 +59,10 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         }
     }
 
-    private static string ConvertSidToStringSid(PSID sid)
+    private static unsafe string ConvertSidToStringSid(PSID sid)
     {
-        if (PInvoke.ConvertSidToStringSid(sid, out var result))
+        PWSTR result = default;
+        if (PInvoke.ConvertSidToStringSid(sid, &result))
             return result.ToString();
 
         throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -75,10 +76,11 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         fixed (char* userName = new char[userNameLen])
         fixed (char* domainName = new char[domainNameLen])
         {
-            if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, ref userNameLen, domainName, ref domainNameLen, out _) != 0)
+            SID_NAME_USE sidType;
+            if (PInvoke.LookupAccountSid(lpSystemName: null, sid, userName, &userNameLen, domainName, &domainNameLen, &sidType) != 0)
             {
-                domain = new string(userName, 0, (int)domainNameLen);
-                name = new string(domainName, 0, (int)userNameLen);
+                name = new string(userName, 0, (int)userNameLen);
+                domain = new string(domainName, 0, (int)domainNameLen);
                 return;
             }
 

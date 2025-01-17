@@ -18,6 +18,7 @@ public sealed class AccessTokenTests
     {
         using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
         PrintToken(token);
+        var owner = token.GetOwner();
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
@@ -45,7 +46,7 @@ public sealed class AccessTokenTests
     [Fact, RunIf(FactOperatingSystem.Windows)]
     public void FromWellKnownTest()
     {
-        _output.WriteLine("WellKownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));
+        _output.WriteLine("WellKnownSID " + SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLowLabelSid));
     }
 
     private void PrintToken(AccessToken token)

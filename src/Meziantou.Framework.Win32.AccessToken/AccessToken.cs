@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
@@ -167,7 +168,7 @@ public sealed class AccessToken : IDisposable
     private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
         where T : unmanaged
     {
-        if (!PInvoke.GetTokenInformation(_token, type, null, 0u, out var dwLength))
+        if (!PInvoke.GetTokenInformation(_token, type, TokenInformation: null, 0u, out var dwLength))
         {
             var errorCode = Marshal.GetLastWin32Error();
             switch (errorCode)
@@ -240,26 +241,25 @@ public sealed class AccessToken : IDisposable
         if (!PInvoke.LookupPrivilegeValue(lpSystemName: null, privilegeName, out var luid))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
+        var privileges = new VariableLengthInlineArray<LUID_AND_ATTRIBUTES>();
+        privileges[0] = new LUID_AND_ATTRIBUTES
+        {
+            Luid = luid,
+            Attributes = operation switch
+            {
+                PrivilegeOperation.Enable => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
+                PrivilegeOperation.Remove => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
+                _ => 0,
+            },
+        };
         var tp = new TOKEN_PRIVILEGES
         {
             PrivilegeCount = 1,
-            Privileges = (ReadOnlySpan<LUID_AND_ATTRIBUTES>)
-            [
-                new LUID_AND_ATTRIBUTES
-                {
-                    Luid = luid,
-                    Attributes = operation switch
-                    {
-                        PrivilegeOperation.Enable => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_ENABLED,
-                        PrivilegeOperation.Remove => TOKEN_PRIVILEGES_ATTRIBUTES.SE_PRIVILEGE_REMOVED,
-                        _ => 0,
-                    },
-                },
-            ],
+            Privileges = privileges,
         };
 
         uint returnSize = 0;
-        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: false, tp, 0, PreviousState: null, &returnSize))
+        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 

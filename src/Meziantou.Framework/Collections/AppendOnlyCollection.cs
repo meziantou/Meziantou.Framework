@@ -12,6 +12,21 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
     private AppendOnlyCollectionSegment<T>? _firstSegment;
     private AppendOnlyCollectionSegment<T>? _lastSegment;
 
+    public AppendOnlyCollection()
+    {
+    }
+
+    public AppendOnlyCollection(int capacity)
+    {
+        if (capacity < 0)
+            throw new ArgumentException("Capacity must be greater than or equal to 0", nameof(capacity));
+
+        if (capacity > 0)
+        {
+            _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(capacity);
+        }
+    }
+
     public int Count { get; private set; }
 
     public void Add(T item)

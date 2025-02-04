@@ -29,7 +29,7 @@ jobs:
             git checkout -b update-hsts-preload
             git add .
             git commit -m "Update HSTS preload list"
-            git push origin update-hsts-preload
+            git push origin update-hsts-preload --force
             gh pr create --title "Update HSTS preload list" --body "Update HSTS preload list" --base main
           }
         env:

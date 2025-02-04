@@ -37,10 +37,10 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         mock.MapGet("https://example.com/not_found", () => Results.NotFound("not_found"));
         mock.ForwardUnknownRequestsToUpstream();
 
+
         await ExpectString(mock, "https://example.com/dummy", "dummy");
 
         using var client = mock.CreateHttpClient();
-
         {
             using var value = await client.GetAsync("https://example.com/not_found", XunitCancellationToken);
             Assert.Equal(HttpStatusCode.NotFound, value.StatusCode);
@@ -49,7 +49,8 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         }
 
         {
-            var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
+            // There are many issues with connection initialization on GitHub Actions
+            var value = await Retry(() => client.GetStringAsync("https://example.com/", XunitCancellationToken));
             Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
         }
     }
@@ -210,6 +211,28 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var client = mock.CreateHttpClient();
         using var response = await client.GetAsync(url);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    private static async Task<T> Retry<T>(Func<Task<T>> action)
+    {
+        var attempt = 0;
+        while (true)
+        {
+            try
+            {
+                return await action();
+            }
+            catch
+            {
+                if (attempt >= 10)
+                {
+                    throw;
+                }
+            }
+
+            attempt++;
+            await Task.Delay(50, XunitCancellationToken);
+        }
     }
 
     private sealed class SampleClient(HttpClient httpClient)

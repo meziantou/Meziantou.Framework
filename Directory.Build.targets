@@ -6,6 +6,12 @@
              Link="Properties/AssemblyInfo.common.cs" />
   </ItemGroup>
 
+  <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <MeziantouPolyfill_ExcludedPolyfills Condition="@(Analyzer->AnyHaveMetadataValue('NuGetPackageId', 'Microsoft.Windows.CsWin32'))">T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute</MeziantouPolyfill_ExcludedPolyfills>
+    </PropertyGroup>
+  </Target>
+
   <!-- Ensure the latest framework is a target of the project -->
   <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(MSBuildProjectFile) != 'packages.proj'  AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />
@@ -14,5 +20,5 @@
   <PropertyGroup>
     <IsTrimmable Condition="$(IsTrimmable) == 'true' AND ($(TargetFramework) == 'net462' OR $(TargetFramework) == 'net471' OR $(TargetFramework) == 'net472' OR $(TargetFramework) == 'netstandard2.0')">false</IsTrimmable>
   </PropertyGroup>
-  
+
 </Project>

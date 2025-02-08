@@ -132,11 +132,9 @@ public sealed class AccessToken : IDisposable
         var luidNameLen = 0u;
         PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, lpName: null, ref luidNameLen);
 
-        fixed (char* name = new char[luidNameLen])
-        {
-            if (PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, name, ref luidNameLen))
-                return new string(name);
-        }
+        Span<char> name = new char[luidNameLen];
+        if (PInvoke.LookupPrivilegeName(lpSystemName: null, in luid, name, ref luidNameLen))
+            return new string(name);
 
         throw new Win32Exception(Marshal.GetLastWin32Error());
     }

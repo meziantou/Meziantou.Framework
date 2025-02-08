@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -353,62 +354,73 @@ public static class CredentialManager
         var maxUserName = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
         var maxDomain = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
         var maxPassword = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
-        fixed (char* usernameBuf = new char[maxUserName])
-        fixed (char* passwordBuf = new char[maxDomain])
-        fixed (char* domainBuf = new char[maxPassword])
+        Span<char> usernameBuf = new char[maxUserName];
+        Span<char> passwordBuf = new char[maxDomain];
+        Span<char> domainBuf = new char[maxPassword];
+        try
         {
-            try
+            if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, &maxDomain, passwordBuf, ref maxPassword))
             {
-                if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, &maxDomain, passwordBuf, ref maxPassword))
-                {
-                    userName = new PWSTR(usernameBuf).ToString();
-                    password = new PWSTR(passwordBuf).ToString();
-                    domain = new PWSTR(domainBuf).ToString();
+                userName = ToString(usernameBuf, maxUserName);
+                password = ToString(passwordBuf, maxPassword);
+                domain = ToString(domainBuf, maxDomain);
 
-                    if (string.IsNullOrWhiteSpace(domain))
+                if (string.IsNullOrWhiteSpace(domain))
+                {
+                    var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
+                    switch (returnCode)
                     {
-                        usernameBuf[0] = '\0';
-                        domainBuf[0] = '\0';
+                        case WIN32_ERROR.NO_ERROR:
+                            userName = ToStringZero(usernameBuf);
+                            domain = ToStringZero(domainBuf);
+                            break;
 
-                        var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH, domainBuf, PInvoke.CREDUI_MAX_USERNAME_LENGTH);
-                        switch (returnCode)
-                        {
-                            case WIN32_ERROR.NO_ERROR:
-                                userName = new PWSTR(usernameBuf).ToString();
-                                domain = new PWSTR(domainBuf).ToString();
-                                break;
+                        case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
+                            break;
 
-                            case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
-                                break;
+                        case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
+                            throw new Win32Exception((int)returnCode, "Insufficient buffer");
 
-                            case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
-                                throw new Win32Exception((int)returnCode, "Insufficient buffer");
+                        case WIN32_ERROR.ERROR_INVALID_PARAMETER:
+                            throw new Win32Exception((int)returnCode, "Invalid parameter");
 
-                            case WIN32_ERROR.ERROR_INVALID_PARAMETER:
-                                throw new Win32Exception((int)returnCode, "Invalid parameter");
-
-                            default:
-                                throw new Win32Exception((int)returnCode);
-                        }
+                        default:
+                            throw new Win32Exception((int)returnCode);
                     }
+                }
 
-                    return true;
-                }
-                else
-                {
-                    userName = null;
-                    password = null;
-                    domain = null;
-                    return false;
-                }
+                return true;
             }
-            finally
+            else
             {
-                //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
-                var zeroBytes = new byte[outCredSize];
-                Marshal.Copy(zeroBytes, 0, (nint)outCredBuffer, (int)outCredSize);
-                FreeCoTaskMem((nint)outCredBuffer);
+                userName = null;
+                password = null;
+                domain = null;
+                return false;
             }
+        }
+        finally
+        {
+            //mimic SecureZeroMem function to make sure buffer is zeroed out. SecureZeroMem is not an exported function, neither is RtlSecureZeroMemory
+            var zeroBytes = new byte[outCredSize];
+            Marshal.Copy(zeroBytes, 0, (nint)outCredBuffer, (int)outCredSize);
+            FreeCoTaskMem((nint)outCredBuffer);
+        }
+
+        static string ToString(ReadOnlySpan<char> buffer, uint length)
+        {
+            if (length == 0)
+                return "";
+
+            // Remove trailing \0
+            Debug.Assert(buffer[(int)length] == '\0');
+            return buffer.Slice(0, (int)length - 1).ToString();
+        }
+
+        static string ToStringZero(ReadOnlySpan<char> buffer)
+        {
+            var index = buffer.IndexOf('\0');
+            return index >= 0 ? buffer.Slice(0, index).ToString() : buffer.ToString();
         }
     }
 

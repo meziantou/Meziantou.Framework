@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using Meziantou.Extensions.Logging.InMemory;
 using Meziantou.Extensions.Logging.Xunit.v3;
@@ -76,6 +76,19 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
 
         using var client = mock.CreateHttpClient();
         var data = await client.GetFromJsonAsync<Dictionary<string, object?>>("/", XunitCancellationToken);
+        Assert.True(data.ContainsKey("id"));
+    }
+
+    [Fact]
+    public async Task Extensions_RawJson_StatusCode()
+    {
+        await using var mock = new HttpClientMock();
+        mock.MapGet("/", () => Results.Extensions.RawJson("""{"id":1}""", statusCode: 400));
+
+        using var client = mock.CreateHttpClient();
+        using var response = await client.GetAsync("/", XunitCancellationToken);
+        Assert.Equal(400, (int)response.StatusCode);
+        var data = await response.Content.ReadFromJsonAsync<Dictionary<string, object?>>(XunitCancellationToken);
         Assert.True(data.ContainsKey("id"));
     }
 

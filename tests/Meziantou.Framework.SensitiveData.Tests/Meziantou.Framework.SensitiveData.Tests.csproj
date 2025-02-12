@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="9.0.1" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="9.0.2" />
   </ItemGroup>
 
 </Project>

@@ -79,6 +79,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
         {
             var diags = string.Join('\n', result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
+
             Assert.True(result.Success);
             Assert.Empty(result.Diagnostics);
         }
@@ -705,21 +706,5 @@ public partial class Test : System.IComparable<Test> {}
         var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
         Assert.True(compilationOutput.Success);
         Assert.Empty(compilationOutput.Diagnostics);
-    }
-
-    private static string AddNumberLine(string value)
-    {
-        var sb = new StringBuilder();
-        var i = 0;
-        foreach (var line in value.SplitLines())
-        {
-            i++;
-            sb.Append(i.ToStringInvariant("#000"));
-            sb.Append(' ');
-            sb.Append(line.Line);
-            sb.Append(line.Separator);
-        }
-
-        return sb.ToString();
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -26,15 +26,12 @@ public sealed class ObjectMethodExecutor
     {
         ArgumentNullException.ThrowIfNull(methodInfo);
 
-        MethodInfo = methodInfo;
         MethodParameters = methodInfo.GetParameters();
-        TargetTypeInfo = targetTypeInfo;
         MethodReturnType = methodInfo.ReturnType;
 
         var isAwaitable = CoercedAwaitableInfo.IsTypeAwaitable(MethodReturnType, out var coercedAwaitableInfo);
 
         IsMethodAsync = isAwaitable;
-        AsyncResultType = isAwaitable ? coercedAwaitableInfo.AwaitableInfo.ResultType : null;
 
         // Upstream code may prefer to use the sync-executor even for async methods, because if it knows
         // that the result is a specific Task<T> where T is known, then it can directly cast to that type
@@ -60,13 +57,7 @@ public sealed class ObjectMethodExecutor
 
     private delegate void VoidMethodExecutor(object target, object?[]? parameters);
 
-    private MethodInfo MethodInfo { get; }
-
     private ParameterInfo[] MethodParameters { get; }
-
-    private TypeInfo TargetTypeInfo { get; }
-
-    private Type? AsyncResultType { get; }
 
     private Type MethodReturnType { get; set; }
 

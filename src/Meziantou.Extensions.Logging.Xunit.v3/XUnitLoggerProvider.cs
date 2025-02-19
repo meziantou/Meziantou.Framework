@@ -3,7 +3,7 @@ using Xunit;
 
 #pragma warning disable IDE1006 // Naming Styles
 namespace Meziantou.Extensions.Logging.Xunit.v3;
-#pragma warning restore IDE1006 // Naming Styles
+#pragma warning restore IDE1006
 
 public sealed class XUnitLoggerProvider : ILoggerProvider
 {
@@ -11,17 +11,27 @@ public sealed class XUnitLoggerProvider : ILoggerProvider
     private readonly XUnitLoggerOptions _options;
     private readonly LoggerExternalScopeProvider _scopeProvider = new();
 
-    public XUnitLoggerProvider(ITestOutputHelper testOutputHelper)
+    public XUnitLoggerProvider()
+        : this(testOutputHelper: null)
+    {
+    }
+
+    public XUnitLoggerProvider(ITestOutputHelper? testOutputHelper)
         : this(testOutputHelper, options: null)
     {
     }
 
-    public XUnitLoggerProvider(ITestOutputHelper testOutputHelper, bool appendScope)
+    public XUnitLoggerProvider(ITestOutputHelper? testOutputHelper, bool appendScope)
         : this(testOutputHelper, new XUnitLoggerOptions { IncludeScopes = appendScope })
     {
     }
 
-    public XUnitLoggerProvider(ITestOutputHelper testOutputHelper, XUnitLoggerOptions? options)
+    public XUnitLoggerProvider(XUnitLoggerOptions? options)
+        : this(testOutputHelper: null, options)
+    {
+    }
+
+    public XUnitLoggerProvider(ITestOutputHelper? testOutputHelper, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
         _options = options ?? new XUnitLoggerOptions();

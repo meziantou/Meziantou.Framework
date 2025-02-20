@@ -6,25 +6,36 @@ namespace Meziantou.Framework;
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
 {
+    private TimeProvider TimeProvider { get; }
     private DateTime DateTime { get; }
 
-    public RelativeDate(DateTime dateTime)
+    public RelativeDate(DateTime dateTime, TimeProvider? timeProvider)
     {
         if (dateTime.Kind == DateTimeKind.Unspecified)
             throw new ArgumentException("Cannot determine if the argument is a local datetime or UTC datetime", nameof(dateTime));
 
-        DateTime = dateTime;
+        DateTime = dateTime.ToUniversalTime();
+        TimeProvider = timeProvider ?? TimeProvider.System;
+    }
+
+    public RelativeDate(DateTime dateTime)
+        : this(dateTime, timeProvider: null)
+    {
     }
 
     public static RelativeDate Get(DateTime dateTime) => new(dateTime);
 
     public static RelativeDate Get(DateTimeOffset dateTime) => new(dateTime.UtcDateTime);
 
+    public static RelativeDate Get(DateTime dateTime, TimeProvider? timeProvider) => new(dateTime, timeProvider);
+
+    public static RelativeDate Get(DateTimeOffset dateTime, TimeProvider? timeProvider) => new(dateTime.UtcDateTime, timeProvider);
+
     public override string ToString() => ToString(format: null, formatProvider: null);
 
     public string ToString(string? format, IFormatProvider? formatProvider)
     {
-        var now = DateTime.Kind == DateTimeKind.Utc ? DateTimeService.UtcNow : DateTimeService.Now;
+        var now = TimeProvider.GetUtcNow().UtcDateTime;
 
         var delta = now - DateTime;
         var culture = formatProvider as CultureInfo;

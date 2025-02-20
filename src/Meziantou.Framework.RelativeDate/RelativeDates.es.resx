@@ -1,0 +1,89 @@
+﻿<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AMinuteAgo" xml:space="preserve">
+    <value>hace un minuto</value>
+  </data>
+  <data name="AnHourAgo" xml:space="preserve">
+    <value>hace una hora</value>
+  </data>
+  <data name="InAMinute" xml:space="preserve">
+    <value>en un minuto</value>
+  </data>
+  <data name="InAnHour" xml:space="preserve">
+    <value>en una hora</value>
+  </data>
+  <data name="InManyDays" xml:space="preserve">
+    <value>en {0} días</value>
+  </data>
+  <data name="InManyHours" xml:space="preserve">
+    <value>en {0} horas</value>
+  </data>
+  <data name="InManyMinutes" xml:space="preserve">
+    <value>en {0} minutos</value>
+  </data>
+  <data name="InManyMonths" xml:space="preserve">
+    <value>en {0} meses</value>
+  </data>
+  <data name="InManySeconds" xml:space="preserve">
+    <value>en {0} segundos</value>
+  </data>
+  <data name="InManyYears" xml:space="preserve">
+    <value>en {0} años</value>
+  </data>
+  <data name="InOneMonth" xml:space="preserve">
+    <value>en un mes</value>
+  </data>
+  <data name="InOneSecond" xml:space="preserve">
+    <value>en un segundo</value>
+  </data>
+  <data name="InOneYear" xml:space="preserve">
+    <value>en un año</value>
+  </data>
+  <data name="ManyDaysAgo" xml:space="preserve">
+    <value>hace {0} días</value>
+  </data>
+  <data name="ManyHoursAgo" xml:space="preserve">
+    <value>hace {0} horas</value>
+  </data>
+  <data name="ManyMinutesAgo" xml:space="preserve">
+    <value>hace {0} minutos</value>
+  </data>
+  <data name="ManyMonthsAgo" xml:space="preserve">
+    <value>hace {0} meses</value>
+  </data>
+  <data name="ManySecondsAgo" xml:space="preserve">
+    <value>hace {0} segundos</value>
+  </data>
+  <data name="ManyYearsAgo" xml:space="preserve">
+    <value>hace {0} años</value>
+  </data>
+  <data name="Now" xml:space="preserve">
+    <value>ahora</value>
+  </data>
+  <data name="OneMonthAgo" xml:space="preserve">
+    <value>hace un mes</value>
+  </data>
+  <data name="OneSecondAgo" xml:space="preserve">
+    <value>hace un segundo</value>
+  </data>
+  <data name="OneYearAgo" xml:space="preserve">
+    <value>hace un año</value>
+  </data>
+  <data name="Tomorrow" xml:space="preserve">
+    <value>mañana</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>ayer</value>
+  </data>
+</root>

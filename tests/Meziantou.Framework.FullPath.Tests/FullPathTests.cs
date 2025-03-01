@@ -16,6 +16,18 @@ public sealed class FullPathTests
     }
 
     [Fact]
+    public void Properties()
+    {
+        var path = FullPath.FromPath("test") / "a" / "b.txt";
+        Assert.False(path.IsEmpty);
+        Assert.Equal("b.txt", path.Name);
+        Assert.Equal(".txt", path.Extension);
+        Assert.Equal("b", path.NameWithoutExtension);
+        Assert.Equal(FullPath.FromPath("test") / "a", path.Parent);
+    }
+
+
+    [Fact]
     public void CombinePath()
     {
         var actual = FullPath.FromPath("test") / "a" / ".." / "a" / "." / "b";

@@ -55,11 +55,11 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         }
     }
 
-    public string? Name => Path.GetFileName(_value);
+    public string Name => Path.GetFileName(_value) ?? "";
 
-    public string? NameWithoutExtension => Path.GetFileNameWithoutExtension(_value);
+    public string NameWithoutExtension => Path.GetFileNameWithoutExtension(_value) ?? "";
 
-    public string? Extension => Path.GetExtension(_value);
+    public string Extension => Path.GetExtension(_value) ?? "";
 
     public int CompareTo(FullPath other) => FullPathComparer.Default.Compare(this, other);
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);

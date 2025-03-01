@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

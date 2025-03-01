@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.2</Version>
+    <Version>2.1.3</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>2.0.4</Version>
+    <Version>2.0.5</Version>
     <Description>.NET wrapper to get or set private data stored in Local Security Authority (LSA)</Description>
   </PropertyGroup>
 

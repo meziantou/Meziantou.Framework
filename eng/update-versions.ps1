@@ -1,3 +1,8 @@
+param (
+    [Parameter()][bool]$CreatePullRequest,
+    [Parameter()][int]$NumberOfCommits = 100
+)
+
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
@@ -18,11 +23,12 @@ function IncrementVersion($csprojPath) {
     $doc.PreserveWhitespace = $true
     $doc.Load($csprojPath);
     if ($doc.Project.PropertyGroup.SkipAutoVersionUpdates) {
-        return
+        return $false
     }
 
     $doc.Project.PropertyGroup.Version = $newVersion
     $doc.Save($csprojPath)
+    return $true
 }
 
 function GetCsproj($path) {
@@ -45,7 +51,7 @@ function GetCsproj($path) {
 
 $RootPath = Join-Path $PSScriptRoot ".." -Resolve
 
-$commits = git log --pretty=format:'%H' -n 300
+$commits = git log --pretty=format:'%H' -n $NumberOfCommits
 $ChangesPerCsproj = @{}
 
 foreach ($file in Get-ChildItem -Path $RootPath -Recurse -Filter *.csproj) {
@@ -118,21 +124,37 @@ foreach ($commit in $commits) {
     }
 }
 
+$updated = $false
+$prMessage = ""
 foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
     $info = $ChangesPerCsproj[$csproj]
     if ($info.commits.Count -eq 0) {
         continue
     }
 
-    # Find commit messages
-    $messages = $info.commits | Select-Object -Unique | ForEach-Object { git log --format=%B -n 1 "$_" | Where-Object { $_.trim() -ne "" } }
+    if (IncrementVersion($csproj)) {
+        $updated = $true
 
-    Write-Host "- $csproj"
-    Write-Host "  Commits: $($info.commits.Count)"
-    Write-Host "  Messages:"
-    foreach ($message in $messages) {
-        Write-Host "    - $message"
+        $prMessage += "## $csproj`n"
+        foreach ($commit in ($info.commits | Select-Object -Unique)) {
+            $message = git log --format=%B -n 1 $commit
+            $prMessage += "- ${commit}: $message`n"
+        }
     }
+}
 
-    IncrementVersion($csproj)
+if ($updated) {
+    Write-Host $prMessage
+    if ($CreatePullRequest) {
+        git config --global user.email "git@meziantou.net"
+        git config --global user.name "meziantou"
+        git checkout -b generated/bump-package-versions
+        git add .
+        git commit -m "Bump package versions"
+        git push origin generated/bump-package-versions --force
+        gh pr create --title "Bump package versions" --body $prMessage --base main
+    }
+}
+else {
+    Write-Host "No version updated"
 }

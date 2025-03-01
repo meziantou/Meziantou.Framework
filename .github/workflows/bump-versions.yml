@@ -1,0 +1,26 @@
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 0' # once a week
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  update_file:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: ./eng/bump-versions.ps1 -CreatePullRequest $true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Win32.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

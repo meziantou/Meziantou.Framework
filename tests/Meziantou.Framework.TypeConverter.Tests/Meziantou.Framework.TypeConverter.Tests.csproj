@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

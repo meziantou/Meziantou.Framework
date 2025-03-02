@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+namespace Meziantou.Framework.HumanReadable;
 
 public static class HumanReadableSerializer
 {

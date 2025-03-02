@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Extensions.Logging.Xunit;
+namespace Meziantou.Extensions.Logging.Xunit;
 
 public sealed class XUnitLoggerOptions
 {

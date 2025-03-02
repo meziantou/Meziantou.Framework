@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
+namespace Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 internal static class ExecutableFinder
 {

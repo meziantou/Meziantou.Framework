@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.HumanReadable.Converters;

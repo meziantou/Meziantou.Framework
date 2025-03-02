@@ -1,4 +1,4 @@
-﻿using YamlDotNet.Core;
+using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 namespace Meziantou.Framework.DependencyScanning.Internals;

@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting;
+namespace Meziantou.Framework.InlineSnapshotTesting;
 
 internal sealed class LineReplaceScrubber : LineScrubber
 {

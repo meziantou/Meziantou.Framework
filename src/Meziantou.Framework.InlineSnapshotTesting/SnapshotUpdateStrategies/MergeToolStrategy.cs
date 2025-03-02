@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 internal sealed class MergeToolStrategy : MergeToolStrategyBase
 {

@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
+namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 internal sealed class MergeToolFromEnvironment : MergeTool
 {

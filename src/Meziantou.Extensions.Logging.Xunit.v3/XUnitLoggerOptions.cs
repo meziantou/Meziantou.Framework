@@ -1,4 +1,4 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
 namespace Meziantou.Extensions.Logging.Xunit.v3;
 #pragma warning restore IDE1006 // Naming Styles
 

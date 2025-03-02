@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
+namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
 public sealed class TimeZoneSnapshot
 {

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using DiffEngine;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;

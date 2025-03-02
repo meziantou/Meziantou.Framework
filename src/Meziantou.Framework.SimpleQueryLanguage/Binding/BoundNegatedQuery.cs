@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SimpleQueryLanguage.Binding;
+namespace Meziantou.Framework.SimpleQueryLanguage.Binding;
 
 public sealed class BoundNegatedQuery : BoundQuery
 {

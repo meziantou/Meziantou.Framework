@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.NuGetPackageValidation.Rules;
+namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 
 internal sealed class TagsMustBeSetValidationRule : NuGetPackageValidationRule
 {

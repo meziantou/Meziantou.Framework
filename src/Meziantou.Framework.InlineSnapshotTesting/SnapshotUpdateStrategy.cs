@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
+using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;

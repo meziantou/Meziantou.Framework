@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+namespace Meziantou.Framework.HumanReadable;
 public class HumanReadableSerializerException : Exception
 {
     public HumanReadableSerializerException()

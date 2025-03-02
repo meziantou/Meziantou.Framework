@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text;
 using Meziantou.Framework.HumanReadable.Utils;
 

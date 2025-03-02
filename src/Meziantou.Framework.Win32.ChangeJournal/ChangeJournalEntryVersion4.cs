@@ -1,4 +1,4 @@
-﻿using Windows.Win32.System.Ioctl;
+using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 

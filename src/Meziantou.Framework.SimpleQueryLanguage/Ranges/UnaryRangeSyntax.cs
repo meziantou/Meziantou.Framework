@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
+namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
 
 internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
 {

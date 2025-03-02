@@ -1,4 +1,4 @@
-﻿# Meziantou.Extensions.Logging.Xunit.v3
+# Meziantou.Extensions.Logging.Xunit.v3
 
 ```c#
 ILogger logger = XUnitLogger.CreateLogger();

@@ -1,4 +1,4 @@
-﻿# Meziantou.Extensions.Logging.InMemory
+# Meziantou.Extensions.Logging.InMemory
 
 ```c#
 using var loggerProvider = new InMemoryLoggerProvider();

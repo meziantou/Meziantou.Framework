@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 

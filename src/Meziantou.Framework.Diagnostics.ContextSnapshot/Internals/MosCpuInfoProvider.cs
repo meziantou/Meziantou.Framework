@@ -1,4 +1,4 @@
-﻿using System.Management;
+using System.Management;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 

@@ -1,4 +1,4 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
+#pragma warning disable IDE1006 // Naming Styles
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;

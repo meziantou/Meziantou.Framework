@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
+namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 internal static class Utils
 {

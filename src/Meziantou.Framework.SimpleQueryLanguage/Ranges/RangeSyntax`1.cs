@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
+namespace Meziantou.Framework.SimpleQueryLanguage.Ranges;
 
 public abstract class RangeSyntax<T>
 {

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1822 // Mark members as static
 #pragma warning disable CA2252 // This API requires opting into preview features
 using System.Numerics;
 using System.Reflection;

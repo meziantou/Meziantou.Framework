@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.NuGetPackageValidation;
+namespace Meziantou.Framework.NuGetPackageValidation;
 
 public sealed class NuGetPackageValidationResult
 {

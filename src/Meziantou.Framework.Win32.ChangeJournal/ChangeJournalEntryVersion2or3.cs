@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;

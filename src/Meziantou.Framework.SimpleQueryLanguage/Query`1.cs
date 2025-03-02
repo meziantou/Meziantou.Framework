@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SimpleQueryLanguage;
+namespace Meziantou.Framework.SimpleQueryLanguage;
 
 public sealed class Query<T>
 {

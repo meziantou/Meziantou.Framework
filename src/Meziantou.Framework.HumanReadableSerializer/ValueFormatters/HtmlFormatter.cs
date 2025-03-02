@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.Html;
+using Meziantou.Framework.Html;
 
 namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 

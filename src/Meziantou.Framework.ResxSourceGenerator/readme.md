@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.ResxSourceGenerator
+# Meziantou.Framework.ResxSourceGenerator
 
 Generate code to access the content of resx files. It does provides more methods than the generator provided by Visual Studio. For instance, it parses placeholders in text and provides method
 

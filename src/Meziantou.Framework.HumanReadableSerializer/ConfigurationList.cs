@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 
 namespace Meziantou.Framework.HumanReadable;
 internal abstract class ConfigurationList<TItem> : IList<TItem>

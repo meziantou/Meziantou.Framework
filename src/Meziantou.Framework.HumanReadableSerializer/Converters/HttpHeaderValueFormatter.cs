@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 public abstract class HttpHeaderValueFormatter
 {

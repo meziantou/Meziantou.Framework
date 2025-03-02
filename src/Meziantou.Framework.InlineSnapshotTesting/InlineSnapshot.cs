@@ -1,4 +1,4 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using DiffEngine;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;

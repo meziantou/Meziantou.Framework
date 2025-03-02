@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.HumanReadable.Converters;
+using Meziantou.Framework.HumanReadable.Converters;
 
 namespace Meziantou.Framework.HumanReadable;
 

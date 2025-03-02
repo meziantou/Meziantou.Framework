@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Xml;
 
 namespace Meziantou.Framework.HumanReadable.Converters;

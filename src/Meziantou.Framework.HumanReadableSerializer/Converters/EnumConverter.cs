@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 internal sealed class EnumConverter : HumanReadableConverter

@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.HumanReadable;
+using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;

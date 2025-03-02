@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class StringUtils

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Argon;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;

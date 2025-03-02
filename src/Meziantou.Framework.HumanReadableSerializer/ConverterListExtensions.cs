@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+namespace Meziantou.Framework.HumanReadable;
 public static class ConverterListExtensions
 {
     public static void Add<T>(this IList<HumanReadableConverter> converters, Func<T, string> convert)

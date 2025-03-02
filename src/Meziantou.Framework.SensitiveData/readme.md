@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.SensitiveData
+# Meziantou.Framework.SensitiveData
 
 `Meziantou.Framework.SensitiveData` provides the `SensitiveData` class. This class represent sensitive data which should be difficult to accidentally disclose. But there's no effort to thwart *intentional* disclosure of these contents, such as through a debugger or memory dump utility.
 

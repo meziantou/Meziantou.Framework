@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+namespace Meziantou.Framework.HumanReadable;
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = true)]
 public sealed class HumanReadableIgnoreAttribute : HumanReadableAttribute

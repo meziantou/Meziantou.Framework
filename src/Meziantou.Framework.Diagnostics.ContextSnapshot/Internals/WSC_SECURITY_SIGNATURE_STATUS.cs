@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
+namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 internal enum WSC_SECURITY_SIGNATURE_STATUS : int
 {

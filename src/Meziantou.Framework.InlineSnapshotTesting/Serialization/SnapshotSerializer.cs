@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
+namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 public abstract class SnapshotSerializer
 {

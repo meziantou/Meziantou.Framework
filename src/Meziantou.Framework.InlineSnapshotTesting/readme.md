@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.InlineSnapshotTesting
+# Meziantou.Framework.InlineSnapshotTesting
 
 `Meziantou.Framework.InlineSnapshotTesting` is a snapshot testing library that simplifies the assertion of complex data models and documents. It is inspired by [Verify](https://github.com/VerifyTests/Verify).
 

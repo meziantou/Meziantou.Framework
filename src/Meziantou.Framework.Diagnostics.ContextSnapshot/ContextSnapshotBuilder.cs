@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Immutable;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;

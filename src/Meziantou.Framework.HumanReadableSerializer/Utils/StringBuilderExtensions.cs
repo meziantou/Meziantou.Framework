@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable.Utils;
+namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class StringBuilderExtensions
 {
 #if NETSTANDARD2_0 || NET471

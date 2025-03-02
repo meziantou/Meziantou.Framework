@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.InlineSnapshotTesting;
+namespace Meziantou.Framework.InlineSnapshotTesting;
 
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class InlineSnapshotAssertionAttribute : Attribute

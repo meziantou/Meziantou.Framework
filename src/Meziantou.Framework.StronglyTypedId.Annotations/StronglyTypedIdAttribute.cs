@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Annotations;
+namespace Meziantou.Framework.Annotations;
 
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]
 [System.AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = false)]

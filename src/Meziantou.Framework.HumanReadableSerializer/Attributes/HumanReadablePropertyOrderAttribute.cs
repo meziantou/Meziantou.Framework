@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable;
+namespace Meziantou.Framework.HumanReadable;
 
 /// <summary>
 /// Specifies the property order that is present in the output when serializing. Lower values are serialized first.

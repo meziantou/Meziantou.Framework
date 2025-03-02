@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
+namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 /// <summary>
 /// CPU information from output of the `wmic cpu get Name, NumberOfCores, NumberOfLogicalProcessors /Format:List` command.

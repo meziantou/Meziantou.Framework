@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Annotations;
+namespace Meziantou.Framework.Annotations;
 
 [System.Diagnostics.Conditional("FastEnumToString_Attributes")]
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]

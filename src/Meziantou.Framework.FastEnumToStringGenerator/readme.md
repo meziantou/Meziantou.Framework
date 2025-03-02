@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.FastEnumToStringGenerator
+# Meziantou.Framework.FastEnumToStringGenerator
 
 The source generator generates a `ToStringFast` method for some enumerations
 

@@ -1,4 +1,4 @@
-﻿
+
 using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;

@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable.Converters;
+namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class GuidConverter : HumanReadableConverter<Guid>
 {

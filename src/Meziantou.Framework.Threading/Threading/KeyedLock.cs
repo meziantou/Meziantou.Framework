@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace Meziantou.Framework.Threading;
 public sealed class KeyedLock<TKey> where TKey : notnull

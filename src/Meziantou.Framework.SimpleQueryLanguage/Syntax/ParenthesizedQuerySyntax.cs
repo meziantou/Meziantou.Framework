@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
+namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 public sealed class ParenthesizedQuerySyntax : QuerySyntax
 {

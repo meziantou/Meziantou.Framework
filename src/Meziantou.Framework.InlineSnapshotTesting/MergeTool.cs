@@ -1,4 +1,4 @@
-﻿using DiffEngine;
+using DiffEngine;
 
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 

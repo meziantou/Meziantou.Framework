@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.Internals;
+using Meziantou.Framework.Internals;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;

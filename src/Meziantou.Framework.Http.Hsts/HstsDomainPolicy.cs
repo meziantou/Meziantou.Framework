@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.Http;
+namespace Meziantou.Framework.Http;
 
 public sealed class HstsDomainPolicy
 {

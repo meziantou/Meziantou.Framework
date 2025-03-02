@@ -1,4 +1,4 @@
-﻿namespace Meziantou.AspNetCore.Components;
+namespace Meziantou.AspNetCore.Components;
 public enum TimestampDisplayFormat
 {
     Hidden,

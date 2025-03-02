@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 

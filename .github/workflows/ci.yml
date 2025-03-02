@@ -23,6 +23,13 @@ defaults:
     shell: pwsh
 
 jobs:
+  validate_bom:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Code
+        run: ./eng/update-bom.ps1
+
   validate_readme:
     runs-on: ubuntu-24.04
     steps:
@@ -30,9 +37,9 @@ jobs:
       - name: Setup .NET Core (global.json)
         uses: actions/setup-dotnet@v4
       - name: Validate Readme
-        run: .\eng\update-readme.ps1
+        run: ./eng/update-readme.ps1
       - name: Validate Tool Readme
-        run: .\eng\update-tool-readme.ps1
+        run: ./eng/update-tool-readme.ps1
 
   validate_test_projects:
     runs-on: windows-2022
@@ -246,7 +253,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
+    needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
       - uses: actions/download-artifact@v4
         with:

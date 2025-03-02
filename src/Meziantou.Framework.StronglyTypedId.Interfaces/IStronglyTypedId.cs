@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework;
+namespace Meziantou.Framework;
 
 public interface IStronglyTypedId
 {

@@ -1,4 +1,4 @@
-﻿# Meziantou.Framework.StronglyTypedId
+# Meziantou.Framework.StronglyTypedId
 
 The source generator generates constructors, properties, equality members, common interfaces, converters for multiple serializers
 

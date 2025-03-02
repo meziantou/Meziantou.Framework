@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;

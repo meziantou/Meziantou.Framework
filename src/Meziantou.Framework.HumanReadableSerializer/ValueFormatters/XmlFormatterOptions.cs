@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.HumanReadable.ValueFormatters;
+namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
 public sealed record XmlFormatterOptions
 {

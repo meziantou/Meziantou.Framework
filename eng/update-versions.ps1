@@ -1,15 +1,25 @@
 param (
     [Parameter()][bool]$CreatePullRequest,
-    [Parameter()][int]$NumberOfCommits = 100
+    [Parameter()][int]$NumberOfCommits = 50
 )
 
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
+$skippedCommits = @("ef6862b9195bd864e1f449317edc85a19041149f")
+
 function GetVersion($fileContent) {
-    $doc = [xml](($fileContent | Out-String) -replace "∩╗┐")
-    $version = $doc.Project.PropertyGroup.Version
-    return $version
+    $fileContent = ($fileContent | Out-String) -replace "∩╗┐", ""
+    $fileContent = $fileContent -replace "^.*?<", "<"
+
+    try {
+        $doc = [xml]$fileContent
+        $version = $doc.Project.PropertyGroup.Version
+        return $version
+    }
+    catch {
+        throw "Cannot parse the version in the csproj file`n$fileContent"
+    }
 }
 
 function IncrementVersion($csprojPath) {
@@ -52,9 +62,12 @@ function GetCsproj($path) {
 $RootPath = Join-Path $PSScriptRoot ".." -Resolve
 
 $commits = git log --pretty=format:'%H' -n $NumberOfCommits
+Write-Host "Commits loaded ($($commits.Length) commits)"
+
 $ChangesPerCsproj = @{}
 
 foreach ($file in Get-ChildItem -Path $RootPath -Recurse -Filter *.csproj) {
+    Write-Host "Project file detected: $($file.FullName)"
     $ChangesPerCsproj[$file.FullName] = @{
         "commits"        = @()
         "stopProcessing" = $false
@@ -63,6 +76,11 @@ foreach ($file in Get-ChildItem -Path $RootPath -Recurse -Filter *.csproj) {
 
 $i = 0;
 foreach ($commit in $commits) {
+    if ($skippedCommits -contains $commit) {
+        Write-Host "Skipping commit $commit"
+        continue
+    }
+
     $i++
     Write-Host "Processing commit $i/$($commits.Length): $commit"
 
@@ -74,15 +92,18 @@ foreach ($commit in $commits) {
     foreach ($change in $changes | Where-Object { $_ -like "*.csproj" }) {
         try {
             # The previous version may not exists if the file was added in the commit
-            $previousContent = git show "${commit}~1:$change"
+            $previousContent = $(git show "${commit}~1:$change")
         }
         catch {
             $previousContent = ""
         }
 
+        Write-Host "Getting previous version of $change"
         $previousVersion = GetVersion($previousContent)
 
         $currentContent = git show "${commit}:$change"
+
+        Write-Host "Getting current version of $change"
         $currentVersion = GetVersion($currentContent)
         if ($previousVersion -ne $currentVersion) {
             $csproj = GetCsproj($change)

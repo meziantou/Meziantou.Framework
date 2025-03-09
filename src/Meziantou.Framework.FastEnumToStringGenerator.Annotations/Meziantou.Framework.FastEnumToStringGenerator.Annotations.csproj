@@ -3,7 +3,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>Attributes for the Meziantou.Framework.FastEnumToStringGenerator source generator</Description>
     <IsPackable>false</IsPackable>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <GenerateSBOM>false</GenerateSBOM>
   </PropertyGroup>
 

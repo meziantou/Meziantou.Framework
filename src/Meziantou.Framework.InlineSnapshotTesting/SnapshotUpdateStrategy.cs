@@ -45,6 +45,15 @@ public abstract class SnapshotUpdateStrategy
 
     public virtual bool ReuseTemporaryFile => true;
 
+    internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot)
+    {
+        if (settings.AutoDetectContinuousEnvironment && settings.IsRunningOnContinuousIntegration())
+            return false;
+
+        return CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
+    }
+
+
     /// <summary>
     /// Indicates if an an inline snapshot must be updated
     /// </summary>

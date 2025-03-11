@@ -178,7 +178,7 @@ public sealed record InlineSnapshotSettings
         }
     }
 
-    internal bool IsRunningOnContinuousIntegration() => AutoDetectContinuousEnvironment && (BuildServerDetector.Detected || ContinuousTestingDetector.Detected);
+    internal bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)

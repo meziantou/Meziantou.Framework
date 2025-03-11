@@ -120,6 +120,9 @@ jobs:
             8.0.x
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        
+      - name: List environment variables
+        run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
         run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}

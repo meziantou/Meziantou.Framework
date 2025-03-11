@@ -143,6 +143,8 @@ public sealed record InlineSnapshotSettings
         ForceUpdateSnapshots = {ForceUpdateSnapshots},
         Scrubbers = {Scrubbers}
         IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()}
+        BuildServerDetector = {BuildServerDetector.Detected}
+        ContinuousTestingDetector = {ContinuousTestingDetector.Detected}
         """;
 
     public InlineSnapshotSettings()
@@ -178,7 +180,7 @@ public sealed record InlineSnapshotSettings
         }
     }
 
-    internal bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
+    internal static bool IsRunningOnContinuousIntegration() => BuildServerDetector.Detected || ContinuousTestingDetector.Detected;
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)

@@ -47,7 +47,7 @@ public abstract class SnapshotUpdateStrategy
 
     internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot)
     {
-        if (settings.AutoDetectContinuousEnvironment && settings.IsRunningOnContinuousIntegration())
+        if (settings.AutoDetectContinuousEnvironment && InlineSnapshotSettings.IsRunningOnContinuousIntegration())
             return false;
 
         return CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);

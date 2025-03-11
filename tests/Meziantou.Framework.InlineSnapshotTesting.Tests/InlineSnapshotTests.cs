@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -1075,9 +1075,11 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                         {{nameof(InlineSnapshotSettings.SnapshotUpdateStrategy)}} = {{nameof(SnapshotUpdateStrategy)}}.{{nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure)}},
                         {{nameof(InlineSnapshotSettings.ForceUpdateSnapshots)}} = {{(forceUpdateSnapshots ? "true" : "false")}},
                     };
+
+                    System.Environment.GetEnvironmentVariables().Cast<System.Collections.DictionaryEntry>().OrderBy(e => e.Key).ToList().ForEach(e => System.Console.WriteLine($"{e.Key}={e.Value}"));
                 }
             }
-            """");
+            """");        
 
 #if NET472 || NET48
         CreateTextFile("ModuleInitializerAttribute.cs", $$""""

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Text;
+using DiffEngine;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
@@ -125,6 +126,25 @@ public sealed record InlineSnapshotSettings
     /// </summary>
     public bool ForceUpdateSnapshots { get; set; }
 
+    public override string ToString() => $"""
+        Indentation = {Indentation},
+        EndOfLine = {EndOfLine},
+        FileEncoding = {FileEncoding},
+        AutoDetectContinuousEnvironment = {AutoDetectContinuousEnvironment},
+        SnapshotUpdateStrategy = {SnapshotUpdateStrategy},
+        SnapshotSerializer = {SnapshotSerializer},
+        SnapshotComparer = {SnapshotComparer},
+        ErrorMessageFormatter = {ErrorMessageFormatter},
+        AssertionExceptionCreator = {AssertionExceptionCreator},
+        AllowedStringFormats = {AllowedStringFormats},
+        MergeTools = {MergeTools},
+        ValidateSourceFilePathUsingPdbInfoWhenAvailable = {ValidateSourceFilePathUsingPdbInfoWhenAvailable},
+        ValidateLineNumberUsingPdbInfoWhenAvailable = {ValidateLineNumberUsingPdbInfoWhenAvailable},
+        ForceUpdateSnapshots = {ForceUpdateSnapshots},
+        Scrubbers = {Scrubbers}
+        IsRunningOnContinuousIntegration = {IsRunningOnContinuousIntegration()}
+        """;
+
     public InlineSnapshotSettings()
     {
         Scrubbers = [];
@@ -157,6 +177,8 @@ public sealed record InlineSnapshotSettings
             }
         }
     }
+
+    internal bool IsRunningOnContinuousIntegration() => AutoDetectContinuousEnvironment && (BuildServerDetector.Detected || ContinuousTestingDetector.Detected);
 
     [DoesNotReturn]
     internal void AssertSnapshot(string? expected, string? actual)

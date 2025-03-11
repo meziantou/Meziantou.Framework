@@ -88,4 +88,15 @@ public abstract class SnapshotUpdateStrategy
         {
         }
     }
+
+    public override string ToString()
+    {
+        var name = this.GetType().Name;
+        if (name.EndsWith("Strategy", StringComparison.Ordinal))
+        {
+            name = name.Substring(0, name.Length - "Strategy".Length);
+        }
+
+        return name;
+    }
 }

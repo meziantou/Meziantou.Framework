@@ -1076,6 +1076,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                         {{nameof(InlineSnapshotSettings.ForceUpdateSnapshots)}} = {{(forceUpdateSnapshots ? "true" : "false")}},
                     };
 
+                    System.Console.WriteLine(InlineSnapshotSettings.Default.ToString());
+
+                    System.Console.WriteLine();
+                    System.Console.WriteLine("Environment variables:");
                     foreach(System.Collections.DictionaryEntry e in System.Environment.GetEnvironmentVariables())
                     {
                         System.Console.WriteLine($"{e.Key}={e.Value}");

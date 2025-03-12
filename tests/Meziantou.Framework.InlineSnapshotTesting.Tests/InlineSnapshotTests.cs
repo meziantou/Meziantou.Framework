@@ -1086,7 +1086,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                     }
                 }
             }
-            """");        
+            """");
 
 #if NET472 || NET48
         CreateTextFile("ModuleInitializerAttribute.cs", $$""""
@@ -1136,13 +1136,11 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         }
 
         var process = Process.Start(psi);
+        process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data);
+        process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
-
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        testOutputHelper.WriteLine(stdout);
-
-        var stderr = await process.StandardError.ReadToEndAsync();
-        testOutputHelper.WriteLine(stderr);
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

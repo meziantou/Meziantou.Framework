@@ -1115,7 +1115,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         };
 
         psi.EnvironmentVariables.Remove("CI");
-        foreach (DictionaryEntry entry in psi.EnvironmentVariables)
+        foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
         {
             var key = (string)entry.Key;
             if (key == "GITHUB_WORKSPACE")

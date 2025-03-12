@@ -21,4 +21,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
   </ItemGroup>
 
+  <PropertyGroup Condition="$(TargetFramework) != 'netstandard2.0' AND '$(IncludeDefaultTestReferences)' == 'true'">
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
+  
 </Project>

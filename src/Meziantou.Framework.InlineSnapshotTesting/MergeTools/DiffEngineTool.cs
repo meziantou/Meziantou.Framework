@@ -36,4 +36,6 @@ internal sealed class DiffEngineTool(DiffTool tool) : MergeTool
             throw new InlineSnapshotException($"Failed to launch diff tool: {resolvedTool.ExePath} {arguments}", exception);
         }
     }
+
+    public override string ToString() => tool.ToString();
 }

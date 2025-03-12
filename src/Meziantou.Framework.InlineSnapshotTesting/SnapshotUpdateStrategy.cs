@@ -45,6 +45,15 @@ public abstract class SnapshotUpdateStrategy
 
     public virtual bool ReuseTemporaryFile => true;
 
+    internal bool CanUpdateSnapshotInternal(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot)
+    {
+        if (settings.AutoDetectContinuousEnvironment && InlineSnapshotSettings.IsRunningOnContinuousIntegration())
+            return false;
+
+        return CanUpdateSnapshot(settings, path, expectedSnapshot, actualSnapshot);
+    }
+
+
     /// <summary>
     /// Indicates if an an inline snapshot must be updated
     /// </summary>
@@ -87,5 +96,16 @@ public abstract class SnapshotUpdateStrategy
         catch
         {
         }
+    }
+
+    public override string ToString()
+    {
+        var name = this.GetType().Name;
+        if (name.EndsWith("Strategy", StringComparison.Ordinal))
+        {
+            name = name.Substring(0, name.Length - "Strategy".Length);
+        }
+
+        return name;
     }
 }

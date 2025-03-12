@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+using System.Collections;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -1075,6 +1076,15 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                         {{nameof(InlineSnapshotSettings.SnapshotUpdateStrategy)}} = {{nameof(SnapshotUpdateStrategy)}}.{{nameof(SnapshotUpdateStrategy.OverwriteWithoutFailure)}},
                         {{nameof(InlineSnapshotSettings.ForceUpdateSnapshots)}} = {{(forceUpdateSnapshots ? "true" : "false")}},
                     };
+
+                    System.Console.WriteLine(InlineSnapshotSettings.Default.ToString());
+
+                    System.Console.WriteLine();
+                    System.Console.WriteLine("Environment variables:");
+                    foreach(System.Collections.DictionaryEntry e in System.Environment.GetEnvironmentVariables())
+                    {
+                        System.Console.WriteLine($"{e.Key}={e.Value}");
+                    }
                 }
             }
             """");
@@ -1105,8 +1115,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         };
 
         psi.EnvironmentVariables.Remove("CI");
-        foreach (var key in psi.EnvironmentVariables.Keys.Cast<string>().ToArray())
+        foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
         {
+            var key = (string)entry.Key;
             if (key == "GITHUB_WORKSPACE")
                 continue;
 
@@ -1126,14 +1137,12 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
         }
 
-        var process = Process.Start(psi);
+        using var process = Process.Start(psi);
+        process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
+        process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
-
-        var stdout = await process.StandardOutput.ReadToEndAsync();
-        testOutputHelper.WriteLine(stdout);
-
-        var stderr = await process.StandardError.ReadToEndAsync();
-        testOutputHelper.WriteLine(stderr);
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

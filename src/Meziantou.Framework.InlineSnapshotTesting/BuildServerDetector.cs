@@ -14,7 +14,7 @@ internal static class BuildServerDetector
         || HasEnvironmentVariable("TRAVIS_BUILD_ID")
         || HasEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")
         || HasEnvironmentVariable("APPVEYOR")
-        || HasEnvironmentVariable("WSLENV")
+        || HasEnvironmentVariable("WSL_DISTRO_NAME")
         || HasEnvironmentVariable("BuildRunner", "MyGet")
         || HasEnvironmentVariable("TF_BUILD", "True")
         ;

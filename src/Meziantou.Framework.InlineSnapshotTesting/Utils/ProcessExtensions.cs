@@ -69,8 +69,15 @@ internal static partial class ProcessExtensions
                 try
                 {
                     p = entry.ToProcess();
-                    if (p is null || p.StartTime > process.StartTime)
+                    try
+                    {
+                        if (p is null || p.StartTime > process.StartTime)
+                            continue;
+                    }
+                    catch
+                    {
                         continue;
+                    }
                 }
                 catch (ArgumentException)
                 {

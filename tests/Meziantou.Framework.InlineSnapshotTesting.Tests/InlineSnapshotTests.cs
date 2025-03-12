@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json.Nodes;
@@ -1114,8 +1115,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         };
 
         psi.EnvironmentVariables.Remove("CI");
-        foreach (var key in psi.EnvironmentVariables.Keys.Cast<string>().ToArray())
+        foreach (DictionaryEntry entry in psi.EnvironmentVariables)
         {
+            var key = (string)entry.Key;
             if (key == "GITHUB_WORKSPACE")
                 continue;
 
@@ -1135,9 +1137,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             }
         }
 
-        var process = Process.Start(psi);
-        process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data);
-        process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data);
+        using var process = Process.Start(psi);
+        process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
+        process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();

@@ -416,15 +416,19 @@ public partial class StronglyTypedIdSourceGenerator
                         {
                             using (writer.BeginBlock($"if (value != null)"))
                             {
-                                writer.WriteLine($"result = new {context.TypeName}(value);");
-                                writer.WriteLine("return true;");
+                                using (writer.BeginBlock("try"))
+                                {
+                                    writer.WriteLine($"result = new {context.TypeName}(value);");
+                                    writer.WriteLine("return true;");
+                                }
+
+                                using (writer.BeginBlock("catch"))
+                                {
+                                }
                             }
 
-                            using (writer.BeginBlock("else"))
-                            {
-                                writer.WriteLine($"result = default;");
-                                writer.WriteLine("return false;");
-                            }
+                            writer.WriteLine($"result = default;");
+                            writer.WriteLine("return false;");
                         }
                     }
                     else
@@ -474,8 +478,15 @@ public partial class StronglyTypedIdSourceGenerator
 
                         using (writer.BeginBlock())
                         {
-                            writer.WriteLine($"result = new {context.TypeName}(parsedValue);");
-                            writer.WriteLine("return true;");
+                            using (writer.BeginBlock("try"))
+                            {
+                                writer.WriteLine($"result = new {context.TypeName}(parsedValue);");
+                                writer.WriteLine("return true;");
+                            }
+
+                            using (writer.BeginBlock("catch"))
+                            {
+                            }
                         }
 
                         writer.WriteLine("result = default;");

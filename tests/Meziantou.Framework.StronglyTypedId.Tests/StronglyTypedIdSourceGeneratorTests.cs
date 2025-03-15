@@ -1,6 +1,7 @@
 #pragma warning disable CA1034 // Nested types should not be visible
 #pragma warning disable CA1819 // Properties should not return arrays
 #pragma warning disable MA0101 // String contains an implicit end of line character
+using System;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
@@ -80,8 +81,8 @@ public sealed class StronglyTypedIdSourceGeneratorTests
             var diags = string.Join('\n', result.Diagnostics);
             var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync()).ToFullString() : "<no file generated>";
 
-            Assert.True(result.Success);
             Assert.Empty(result.Diagnostics);
+            Assert.True(result.Success);
         }
 
         return (runResult, outputCompilation, result.Success ? outputStream.ToArray() : null, pdbStream.ToArray());
@@ -90,94 +91,69 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     [Fact]
     public async Task GenerateStructInNamespaceAndClass()
     {
-        var sourceCode = @"
-namespace A
-{
-    namespace B
-    {
-        partial class C
-        {
-            [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
-            public partial struct Test {}
-        }
-    }
-}";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
-
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
-        {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
+        var sourceCode = """
+            namespace A
             {
-                var type = a.GetType("A.B.C+Test");
-                var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                var instance = from.Invoke(null, [10]);
-                var json = System.Text.Json.JsonSerializer.Serialize(instance);
-                var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
-                var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
-                Assert.Equal("10", json);
-                Assert.Equal(instance, deserialized);
-                Assert.Equal(instance, deserialized2);
+                namespace B
+                {
+                    partial class C
+                    {
+                        [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                        public partial struct Test {}
+                    }
+                }
             }
-        }
-        finally
+            """;
+
+        await TestGeneratedAssembly(sourceCode, typeName: "A.B.C+Test", type =>
         {
-            alc.Unload();
-        }
+            var from = (MethodInfo)type.GetMember("FromInt32").Single();
+            var instance = from.Invoke(null, [10]);
+            var json = System.Text.Json.JsonSerializer.Serialize(instance);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
+            var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
+            Assert.Equal("10", json);
+            Assert.Equal(instance, deserialized);
+            Assert.Equal(instance, deserialized2);
+        });
     }
 
     [Fact]
     public async Task GenerateStructInNamespace()
     {
-        var sourceCode = @"
-namespace A
-{
-    namespace B
-    {
-        [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-        public partial struct Test {}
-    }
-}";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
-
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
-        {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
+        var sourceCode = """
+            namespace A
             {
-                var type = a.GetType("A.B.Test");
-                var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                var instance = from.Invoke(null, [10]);
-                var json = System.Text.Json.JsonSerializer.Serialize(instance);
-                var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
-                var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
-                Assert.Equal("10", json);
-                Assert.Equal(instance, deserialized);
-                Assert.Equal(instance, deserialized2);
+                namespace B
+                {
+                    [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+                    public partial struct Test {}
+                }
             }
-        }
-        finally
+            """;
+
+        await TestGeneratedAssembly(sourceCode, typeName: "A.B.Test", type =>
         {
-            alc.Unload();
-        }
+            var from = (MethodInfo)type.GetMember("FromInt32").Single();
+            var instance = from.Invoke(null, [10]);
+            var json = System.Text.Json.JsonSerializer.Serialize(instance);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, type);
+            var deserialized2 = System.Text.Json.JsonSerializer.Deserialize(@"{ ""a"": {}, ""b"": false, ""Value"": 10 }", type);
+            Assert.Equal("10", json);
+            Assert.Equal(instance, deserialized);
+            Assert.Equal(instance, deserialized2);
+        });
     }
 
     [Fact]
     public async Task DummyAttribute()
     {
         var sourceCode = """
-        [System.Obsolete]
-        public partial struct Test { }
-        """;
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Empty(result.GeneratorResult.GeneratedTrees);
+            [System.Obsolete]
+            public partial struct Test { }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, typeName: null, type => { }, mustGenerateTrees: false);
     }
 
     [Fact]
@@ -188,23 +164,24 @@ namespace A
         [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
         public partial struct Test { }
         """;
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+
+        await TestGeneratedAssembly(sourceCode, type =>
+        {
+            Assert.NotEmpty(type.GetMember("Parse"));
+        });
     }
 
     [Fact]
     public async Task AttributeAlias()
     {
         var sourceCode = """
-        using Dummy = Meziantou.Framework.Annotations.StronglyTypedIdAttribute;
+            using Dummy = Meziantou.Framework.Annotations.StronglyTypedIdAttribute;
 
-        [Dummy(typeof(System.Guid))]
-        public partial struct Test { }
-        """;
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+            [Dummy(typeof(System.Guid))]
+            public partial struct Test { }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
 #if NET7_0_OR_GREATER
@@ -212,285 +189,221 @@ namespace A
     public async Task GenericAttribute()
     {
         var sourceCode = """
-        [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<System.Guid>]
-        public partial struct Test { }
-        """;
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute<System.Guid>]
+            public partial struct Test { }
+            """;
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
     public async Task GenericAttribute_Using_Namespace()
     {
         var sourceCode = """
-        using Meziantou.Framework.Annotations;
-        [StronglyTypedIdAttribute<System.Guid>]
-        public partial struct Test { }
-        """;
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+            using Meziantou.Framework.Annotations;
+            [StronglyTypedIdAttribute<System.Guid>]
+            public partial struct Test { }
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 #endif
 
     [Fact]
     public async Task GenerateStruct_Guid_New()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
-public partial struct Test {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(System.Guid))]
+            public partial struct Test {}
+            """;
 
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
-            {
-                var guid = Guid.NewGuid();
-                var type = a.GetType("Test");
-                var from = (MethodInfo)type.GetMember("FromGuid").Single();
-                var newMethod = (MethodInfo)type.GetMember("New").Single();
-                var emptyInstance = from.Invoke(null, [Guid.Empty]);
-                var instance = from.Invoke(null, [guid]);
-                var newInstance = newMethod.Invoke(null, null);
-                Assert.NotEqual(instance, newInstance);
-                Assert.NotEqual(emptyInstance, newInstance);
-            }
-        }
-        finally
-        {
-            alc.Unload();
-        }
+            var guid = Guid.NewGuid();
+            var from = (MethodInfo)type.GetMember("FromGuid").Single();
+            var newMethod = (MethodInfo)type.GetMember("New").Single();
+            var emptyInstance = from.Invoke(null, [Guid.Empty]);
+            var instance = from.Invoke(null, [guid]);
+            var newInstance = newMethod.Invoke(null, null);
+            Assert.NotEqual(instance, newInstance);
+            Assert.NotEqual(emptyInstance, newInstance);
+        });
     }
 
     [Fact]
     public async Task Generate_ExistingOperators()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-public partial struct Test : System.IEquatable<Test>
-{
-    public override string? ToString() => null;
-    public override bool Equals(object? a) => true;
-    public override int GetHashCode() => 0;
-    public bool Equals(Test? a) => true;
-    public static bool operator ==(Test a, Test b) => true;
-    public static bool operator !=(Test a, Test b) => true;
-}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test : System.IEquatable<Test>
+            {
+                public override string? ToString() => null;
+                public override bool Equals(object? a) => true;
+                public override int GetHashCode() => 0;
+                public bool Equals(Test? a) => true;
+                public static bool operator ==(Test a, Test b) => true;
+                public static bool operator !=(Test a, Test b) => true;
+            }
+            """;
 
-        Assert.NotNull(result.Assembly);
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
     public async Task Generate_StringComparison()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string), StringComparison = System.StringComparison.OrdinalIgnoreCase)]
-public partial struct Test {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string), StringComparison = System.StringComparison.OrdinalIgnoreCase)]
+            public partial struct Test {}
+            """;
 
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
-            foreach (var a in alc.Assemblies)
-            {
-                var type = a.GetType("Test");
-                var from = (MethodInfo)type.GetMember("FromString").Single();
-                var instance1 = from.Invoke(null, ["test"]);
-                var instance2 = from.Invoke(null, ["TEST"]);
-                Assert.Equal(instance2, instance1);
-            }
-        }
-        finally
-        {
-            alc.Unload();
-        }
+            var from = (MethodInfo)type.GetMember("FromString").Single();
+            var instance1 = from.Invoke(null, ["test"]);
+            var instance2 = from.Invoke(null, ["TEST"]);
+            Assert.Equal(instance2, instance1);
+        });
     }
 
     [Fact]
     public async Task GenerateStruct_ToString()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-public partial struct Test {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """;
 
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
+            CultureInfoUtilities.UseCulture("sv-SE", () =>
             {
-                CultureInfoUtilities.UseCulture("sv-SE", () =>
+                var from = (MethodInfo)type.GetMember("FromInt32").Single();
+                var instance = from.Invoke(null, [-42]);
+                var str = instance.ToString();
+                Assert.Equal("Test { Value = -42 }", str);
+            });
+        });
+    }
+
+    [Fact]
+    public async Task GenerateStruct_TryParseDoesNotThrow()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test
+            {
+                public Test(int value)
                 {
-                    var type = a.GetType("Test");
-                    var from = (MethodInfo)type.GetMember("FromInt32").Single();
-                    var instance = from.Invoke(null, [-42]);
-                    var str = instance.ToString();
-                    Assert.Equal("Test { Value = -42 }", str);
-                });
+                    if (value == 0)
+                        throw new System.Exception();
+
+                    _value = value;
+                }
             }
-        }
-        finally
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.Unload();
-        }
+            var from = type.GetMember("TryParse").OfType<MethodInfo>().Single(m => m.GetParameters()[0].ParameterType == typeof(string));
+            var parsed = from.Invoke(null, ["0", null]);
+            Assert.False((bool)parsed);
+        });
     }
 
     [Fact]
     public async Task GenerateStruct_Parse_ReadOnlySpan()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-public partial struct Test {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test {}
+            """;
 
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
-            {
-                var type = a.GetType("Test");
-                var parse = type.GetMember("Parse").Length;
-                Assert.Equal(2, parse);
-            }
-        }
-        finally
-        {
-            alc.Unload();
-        }
+            var parse = type.GetMember("Parse").Length;
+            Assert.Equal(2, parse);
+        });
     }
 
     [Fact]
     public async Task GenerateStruct_Parse_ReadOnlySpan_String()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
-public partial struct Test {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
+            public partial struct Test {}
+            """;
 
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
-            {
-                var type = a.GetType("Test");
-                var parse = type.GetMember("Parse").Length;
-                Assert.Equal(2, parse);
-            }
-        }
-        finally
-        {
-            alc.Unload();
-        }
+            var parse = type.GetMember("Parse").Length;
+            Assert.Equal(2, parse);
+        });
     }
 
     [Fact]
     public async Task Generate_IStronglyTypedId()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
-public partial struct Test {}
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
+            public partial struct Test {}
 
-namespace Meziantou.Framework
-{
-interface IStronglyTypedId {}
-interface IStronglyTypedId<T> {}
-}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
-
-        var alc = new AssemblyLoadContext("test", isCollectible: true);
-        try
-        {
-            alc.LoadFromStream(new MemoryStream(result.Assembly));
-            foreach (var a in alc.Assemblies)
+            namespace Meziantou.Framework
             {
-                var type = a.GetType("Test");
-
-                var interfaces = type.GetInterfaces();
-                Assert.Contains(interfaces, x => x.FullName == "Meziantou.Framework.IStronglyTypedId");
-                Assert.Contains(interfaces, x => x.FullName.StartsWith("Meziantou.Framework.IStronglyTypedId`1", StringComparison.Ordinal));
+                interface IStronglyTypedId {}
+                interface IStronglyTypedId<T> {}
             }
-        }
-        finally
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type =>
         {
-            alc.Unload();
-        }
+            var interfaces = type.GetInterfaces();
+            Assert.Contains(interfaces, x => x.FullName == "Meziantou.Framework.IStronglyTypedId");
+            Assert.Contains(interfaces, x => x.FullName.StartsWith("Meziantou.Framework.IStronglyTypedId`1", StringComparison.Ordinal));
+        });
     }
 
     [Fact]
     public async Task Generate_IComparable_Struct_ReferenceType()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
-public partial struct Test : System.IComparable<Test> {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
+            public partial struct Test : System.IComparable<Test> {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
     public async Task Generate_IComparable_Struct_ValueType()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-public partial struct Test : System.IComparable<Test> {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial struct Test : System.IComparable<Test> {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
     public async Task Generate_IComparable_Class_ReferenceType()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
-public partial class Test : System.IComparable<Test> {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(string))]
+            public partial class Test : System.IComparable<Test> {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
     public async Task Generate_IComparable_Class_ValueType()
     {
-        var sourceCode = @"
-[Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
-public partial class Test : System.IComparable<Test> {}
-";
-        var result = await GenerateFiles(sourceCode);
-        Assert.Empty(result.GeneratorResult.Diagnostics);
-        Assert.Single(result.GeneratorResult.GeneratedTrees);
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedIdAttribute(typeof(int))]
+            public partial class Test : System.IComparable<Test> {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, type => { });
     }
 
     [Fact]
@@ -582,7 +495,7 @@ public partial class Test : System.IComparable<Test> {}
 
     public static TheoryData<BuildMatrixArguments> BuildMatrixTestCases()
     {
-        return new TheoryData<BuildMatrixArguments>(BuildMatrixTestCases());
+        return [.. BuildMatrixTestCases()];
 
         static IEnumerable<BuildMatrixArguments> BuildMatrixTestCases()
         {
@@ -706,5 +619,39 @@ public partial class Test : System.IComparable<Test> {}
         var generated = runResult.GeneratedTrees.Length > 0 ? (await runResult.GeneratedTrees[0].GetRootAsync(XunitCancellationToken)).ToFullString() : "<no file generated>";
         Assert.True(compilationOutput.Success);
         Assert.Empty(compilationOutput.Diagnostics);
+    }
+
+    private static Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, Action<Type> assert)
+    {
+        return TestGeneratedAssembly(sourceCode, typeName: null, assert);
+    }
+
+    private static async Task TestGeneratedAssembly([StringSyntax("c#-test")] string sourceCode, string? typeName, Action<Type> assert, bool mustGenerateTrees = true)
+    {
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+
+        if (mustGenerateTrees)
+        {
+            Assert.Single(result.GeneratorResult.GeneratedTrees);
+        }
+        else
+        {
+            Assert.Empty(result.GeneratorResult.GeneratedTrees);
+            return;
+        }
+
+        var alc = new AssemblyLoadContext("test", isCollectible: true);
+        try
+        {
+            var assembly = alc.LoadFromStream(new MemoryStream(result.Assembly), new MemoryStream(result.Symbols));
+            var type = assembly.GetType(typeName ?? "Test");
+
+            assert(type);
+        }
+        finally
+        {
+            alc.Unload();
+        }
     }
 }

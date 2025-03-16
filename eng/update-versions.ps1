@@ -169,10 +169,9 @@ if ($updated) {
     if ($CreatePullRequest) {
         git config --global user.email "git@meziantou.net"
         git config --global user.name "meziantou"
-        git checkout -b generated/bump-package-versions
         git add .
         git commit -m "Bump package versions"
-        git push origin generated/bump-package-versions --force
+        git push origin main:generated/bump-package-versions --force
         gh pr create --title "Bump package versions" --body $prMessage --base main
     }
 }

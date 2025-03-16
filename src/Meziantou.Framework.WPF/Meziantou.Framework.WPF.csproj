@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows);net462</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
-    <Version>1.5.7</Version>
+    <Version>1.5.8</Version>
     <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
 

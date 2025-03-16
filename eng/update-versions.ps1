@@ -172,7 +172,13 @@ if ($updated) {
         git add .
         git commit -m "Bump package versions"
         git push origin main:generated/bump-package-versions --force
-        gh pr create --title "Bump package versions" --body $prMessage --base main
+
+        $OpenPR = gh pr list --repo meziantou/meziantou.framework --head generated/bump-package-versions --json number | ConvertFrom-Json
+        if ($OpenPR) {
+            gh pr edit $OpenPR.number --title "Bump package versions" --body $prMessage
+        }else {
+            gh pr create --title "Bump package versions" --body $prMessage --base main
+        }
     }
 }
 else {

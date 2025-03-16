@@ -6,7 +6,7 @@ param (
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
-$skippedCommits = @("ef6862b9195bd864e1f449317edc85a19041149f")
+$skippedCommits = @("ef6862b9195bd864e1f449317edc85a19041149f", "c4ac0bdd868a37b37e2eddd6ae99b7b888f3fd29")
 
 function GetVersion($fileContent) {
     $fileContent = ($fileContent | Out-String) -replace "∩╗┐", ""

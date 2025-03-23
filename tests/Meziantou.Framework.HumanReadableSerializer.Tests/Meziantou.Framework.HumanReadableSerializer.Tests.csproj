@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="NodaTime" Version="3.2.1" />
+    <PackageReference Include="NodaTime" Version="3.2.2" />
     <PackageReference Include="System.Net.Http.Json" Version="9.0.3" />
   </ItemGroup>
 

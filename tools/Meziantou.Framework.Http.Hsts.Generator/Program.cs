@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes
 #pragma warning disable MA0004 // Use Task.ConfigureAwait
 #pragma warning disable MA0047 // Declare types in namespaces
 #pragma warning disable MA0048 // File name must match type name
@@ -115,7 +115,8 @@ var result = $$"""
 // Write file and update csproj
 if (!File.Exists(outputFilePath) || File.ReadAllText(outputFilePath).ReplaceLineEndings("\n") != result)
 {
-    File.WriteAllText(outputFilePath, result);
+    var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+    File.WriteAllText(outputFilePath, result, encoding);
     Console.WriteLine("The file has been updated");
 
     var doc = XDocument.Load(csprojPath, LoadOptions.PreserveWhitespace);
@@ -123,7 +124,7 @@ if (!File.Exists(outputFilePath) || File.ReadAllText(outputFilePath).ReplaceLine
     var version = SemanticVersion.Parse(versionNode.Value);
     versionNode.Value = version.NextPatchVersion().ToString();
 
-    var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false };
+    var xws = new XmlWriterSettings { OmitXmlDeclaration = true, Indent = false, Encoding = encoding };
     using var writer = XmlWriter.Create(csprojPath, xws);
     doc.Save(writer);
     return 1;

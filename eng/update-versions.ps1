@@ -167,16 +167,25 @@ foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
 if ($updated) {
     Write-Host $prMessage
     if ($CreatePullRequest) {
+        Write-Host "Commiting changes"
         git config --global user.email "git@meziantou.net"
         git config --global user.name "meziantou"
         git add .
-        git commit -m "Bump package versions"
+        git commit -m "Bump package versions`n`n$prMessage"
+
+        Write-Host "Pushing changes"
         git push origin main:generated/bump-package-versions --force
 
+        # Give some time to process the push
+        Start-Sleep -Seconds 10
+
+        Write-Host "Listing existing pull requests"
         $OpenPR = gh pr list --repo meziantou/meziantou.framework --head generated/bump-package-versions --json number | ConvertFrom-Json
         if ($OpenPR) {
+            Write-Host "Editing existing pull request $($OpenPR.number)"
             gh pr edit $OpenPR.number --title "Bump package versions" --body $prMessage
         }else {
+            Write-Host "Creating new pull request"
             gh pr create --title "Bump package versions" --body $prMessage --base main
         }
     }

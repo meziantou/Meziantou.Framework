@@ -186,7 +186,7 @@ if ($updated) {
             gh pr edit $OpenPR.number --title "Bump package versions" --body $prMessage
         }else {
             Write-Host "Creating new pull request"
-            gh pr create --title "Bump package versions" --body $prMessage --base main
+            gh pr create --title "Bump package versions" --body $prMessage --base main --head generated/bump-package-versions
         }
     }
 }

@@ -42,7 +42,7 @@ jobs:
         run: ./eng/update-tool-readme.ps1
 
   validate_test_projects:
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
@@ -215,7 +215,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 60
     strategy:
       matrix:

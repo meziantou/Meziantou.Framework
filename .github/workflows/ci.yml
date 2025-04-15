@@ -42,7 +42,7 @@ jobs:
         run: ./eng/update-tool-readme.ps1
 
   validate_test_projects:
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core (global.json)
@@ -99,7 +99,7 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        runs-on: [ windows-2022, windows-11-arm, ubuntu-24.04, ubuntu-24.04-arm, macos-14 ]
+        runs-on: [ windows-2025, windows-11-arm, ubuntu-24.04, ubuntu-24.04-arm, macos-14 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false
@@ -149,7 +149,7 @@ jobs:
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
         include:
-        - runs-on: windows-2022
+        - runs-on: windows-2025
           architecture: x86
       fail-fast: false
     steps:
@@ -215,7 +215,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 60
     strategy:
       matrix:

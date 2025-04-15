@@ -99,7 +99,7 @@ jobs:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        runs-on: [ windows-2022, ubuntu-24.04, ubuntu-24.04-arm, macos-14 ]
+        runs-on: [ windows-2022, windows-11-arm, ubuntu-24.04, ubuntu-24.04-arm, macos-14 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
       fail-fast: false

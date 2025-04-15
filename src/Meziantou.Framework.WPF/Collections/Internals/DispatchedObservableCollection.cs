@@ -29,14 +29,6 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
     }
 
-    private static void AssertType(object? value, string argumentName)
-    {
-        if (value is null || value is T)
-            return;
-
-        throw new ArgumentException($"value must be of type '{typeof(T).FullName}'", argumentName);
-    }
-
     public int Count
     {
         get
@@ -51,7 +43,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         get
         {
             AssertIsOnDispatcherThread();
-            return ((ICollection<T>)_collection).IsReadOnly;
+            return ((ICollection<T>)Items).IsReadOnly;
         }
     }
 
@@ -110,8 +102,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
         set
         {
-            // it will immediatly modify both collections as we are on the dispatcher thread
-            AssertType(value, nameof(value));
+            // it will immediately modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
             _collection[index] = (T)value!;
         }
@@ -126,7 +117,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
         set
         {
-            // it will immediatly modify both collections as we are on the dispatcher thread
+            // it will immediately modify both collections as we are on the dispatcher thread
             AssertIsOnDispatcherThread();
             _collection[index] = value;
         }
@@ -288,94 +279,89 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     void IList<T>.Insert(int index, T item)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         _collection.Insert(index, item);
     }
 
     void IList<T>.RemoveAt(int index)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         _collection.RemoveAt(index);
     }
 
     void ICollection<T>.Add(T item)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         _collection.Add(item);
     }
 
     void ICollection<T>.Clear()
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         _collection.Clear();
     }
 
     bool ICollection<T>.Remove(T item)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         return _collection.Remove(item);
     }
 
     void ICollection.CopyTo(Array array, int index)
     {
+        AssertIsOnDispatcherThread();
         ((ICollection)Items).CopyTo(array, index);
     }
 
     int IList.Add(object? value)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
-        AssertType(value, nameof(value));
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         return ((IList)_collection).Add(value);
     }
 
     bool IList.Contains(object? value)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
-        AssertType(value, nameof(value));
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         return ((IList)_collection).Contains(value);
     }
 
     void IList.Clear()
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         ((IList)_collection).Clear();
     }
 
     int IList.IndexOf(object? value)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
-        AssertType(value, nameof(value));
         AssertIsOnDispatcherThread();
         return Items.IndexOf((T)value!);
     }
 
     void IList.Insert(int index, object? value)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
-        AssertType(value, nameof(value));
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         ((IList)_collection).Insert(index, value);
     }
 
     void IList.Remove(object? value)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
-        AssertType(value, nameof(value));
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         ((IList)_collection).Remove(value);
     }
 
     void IList.RemoveAt(int index)
     {
-        // it will immediatly modify both collections as we are on the dispatcher thread
+        // it will immediately modify both collections as we are on the dispatcher thread
         AssertIsOnDispatcherThread();
         ((IList)_collection).RemoveAt(index);
     }

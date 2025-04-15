@@ -72,8 +72,16 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         get => this[index];
         set
         {
-            AssertType(value, nameof(value));
-            this[index] = (T)value!;
+            ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, nameof(value));
+
+            try
+            {
+                this[index] = (T)value!;
+            }
+            catch (InvalidCastException)
+            {
+                ThrowHelper.ThrowInvalidTypeException<T>(value);
+            }
         }
     }
 
@@ -249,21 +257,34 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
 
     int IList.Add(object? value)
     {
-        AssertType(value, nameof(value));
-        var item = (T)value!;
-        lock (_lock)
+        ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, nameof(value));
+
+        try
         {
-            var index = _items.Count;
-            _items = _items.Add(item);
-            _observableCollection?.EnqueueAdd(item);
-            return index;
+            var item = (T)value!;
+            lock (_lock)
+            {
+                var index = _items.Count;
+                _items = _items.Add(item);
+                _observableCollection?.EnqueueAdd(item);
+                return index;
+            }
+        }
+        catch (InvalidCastException)
+        {
+            ThrowHelper.ThrowInvalidTypeException<T>(value);
+            return -1; // Never reached, but the compiler needs it
         }
     }
 
     bool IList.Contains(object? value)
     {
-        AssertType(value, nameof(value));
-        return Contains((T)value!);
+        if (IsCompatibleObject(value))
+        {
+            return Contains((T)value!);
+        }
+
+        return false;
     }
 
     void IList.Clear()
@@ -273,20 +294,34 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
 
     int IList.IndexOf(object? value)
     {
-        AssertType(value, nameof(value));
-        return IndexOf((T)value!);
+        if (IsCompatibleObject(value))
+        {
+            return IndexOf((T)value!);
+        }
+
+        return -1;
     }
 
     void IList.Insert(int index, object? value)
     {
-        AssertType(value, nameof(value));
-        Insert(index, (T)value!);
+        ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(value, nameof(value));
+
+        try
+        {
+            Insert(index, (T)value!);
+        }
+        catch (InvalidCastException)
+        {
+            ThrowHelper.ThrowInvalidTypeException<T>(value);
+        }
     }
 
     void IList.Remove(object? value)
     {
-        AssertType(value, nameof(value));
-        Remove((T)value!);
+        if (IsCompatibleObject(value))
+        {
+            Remove((T)value!);
+        }
     }
 
     void IList.RemoveAt(int index)
@@ -299,11 +334,10 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         ((ICollection)_items).CopyTo(array, index);
     }
 
-    private static void AssertType(object? value, string argumentName)
+    private static bool IsCompatibleObject(object? value)
     {
-        if (value is null || value is T)
-            return;
-
-        throw new ArgumentException($"value must be of type '{typeof(T).FullName}'", argumentName);
+        // Non-null values are fine. Only accept nulls if T is a class or Nullable<U>.
+        // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
+        return (value is T) || (value == null && default(T) == null);
     }
 }

@@ -14,6 +14,7 @@ public sealed partial class ObservableCollectionTests
         get
         {
             yield return new object[] { new ConcurrentObservableCollection<int>() };
+            yield return new object[] { new ConcurrentObservableCollection<int>().AsObservable };
             yield return new object[] { new System.Collections.ObjectModel.ObservableCollection<int>() };
         }
     }
@@ -22,6 +23,9 @@ public sealed partial class ObservableCollectionTests
     {
         if (collection is ConcurrentObservableCollection<T> result)
             return result.AsObservable;
+
+        if (collection is DispatchedObservableCollection<T> dispatched)
+            return dispatched;
 
         return collection;
     }
@@ -251,6 +255,13 @@ public sealed partial class ObservableCollectionTests
         collection.Add("");
 
         Assert.Throws<ArgumentException>(() => collection.Add(10));
+    }
+
+    [Theory]
+    [MemberData(nameof(GetCollections))]
+    public void Contains_Struct_Null(IList<int> collection)
+    {
+        Assert.False(((IList)collection).Contains(null));
     }
 
     private sealed record Sample(int Index, string Value);

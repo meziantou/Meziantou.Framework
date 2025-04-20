@@ -156,7 +156,8 @@ foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
     if (IncrementVersion($csproj)) {
         $updated = $true
 
-        $prMessage += "## $csproj`n"
+        $csprojRelativePath = $csproj.Substring($RootPath.Length + 1) -replace "\\", "/"
+        $prMessage += "## $csprojRelativePath`n"
         foreach ($commit in ($info.commits | Select-Object -Unique)) {
             $message = git log --format=%B -n 1 $commit
             $prMessage += "- ${commit}: $message`n"

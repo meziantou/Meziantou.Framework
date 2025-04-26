@@ -27,14 +27,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DiffEngine" Version="16.1.0" />
+    <PackageReference Include="DiffEngine" Version="16.2.1" />
     <PackageReference Include="JsonPath.Net" Version="2.1.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="System.Memory" Version="4.6.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
 
     <!-- This is required to generate csproj in the tests, even if the dependency is included transitively -->
     <PackageReference Include="System.Text.Json" Version="9.0.4" />

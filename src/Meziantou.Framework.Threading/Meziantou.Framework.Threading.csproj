@@ -4,8 +4,27 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>Types and extension methods to help with threading</Description>
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Threading\Tasks\TaskExtensions.WhenAll.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TaskExtensions.WhenAll.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Threading\Tasks\TaskExtensions.WhenAll.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TaskExtensions.WhenAll.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
 
 </Project>

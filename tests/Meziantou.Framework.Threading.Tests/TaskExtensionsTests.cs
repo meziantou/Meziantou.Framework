@@ -37,9 +37,29 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
+    public async Task WhenAll_ConfigureAwait()
+    {
+        var (a, b) = await (Task.FromResult(0), Task.FromResult("test")).ConfigureAwait(false);
+        Assert.Equal(0, a);
+        Assert.Equal("test", b);
+    }
+
+    [Fact]
     public async Task WhenAll_NonGenericTask()
     {
         await (Task.CompletedTask, Task.CompletedTask);
+    }
+
+    [Fact]
+    public async Task WhenAll_NonGenericTask_ConfigureAwait_bool()
+    {
+        await (Task.CompletedTask, Task.CompletedTask).ConfigureAwait(false);
+    }
+
+    [Fact]
+    public async Task WhenAll_NonGenericTask_ConfigureAwait_Options()
+    {
+        await (Task.CompletedTask, Task.CompletedTask).ConfigureAwait(ConfigureAwaitOptions.None);
     }
 
     [Fact]

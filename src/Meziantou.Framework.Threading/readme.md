@@ -17,4 +17,5 @@ Simplifying task awaiting ([blog post](https://www.meziantou.net/get-the-result-
 
 ```c#
 var (a, b) = await (task1, task2);
+var (a, b) = await (task1, task2).ConfigureAwait(false);
 ```

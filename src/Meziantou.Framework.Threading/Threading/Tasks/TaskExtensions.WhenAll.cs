@@ -18,130 +18,51 @@ namespace Meziantou.Framework.Threading.Tasks;
 // https://www.meziantou.net/get-the-result-of-multiple-tasks-in-a-valuetuple-and-whenall.htm
 public static partial class TaskExtensions
 {
-    public static async Task<(T1, T2)> WhenAll<T1, T2>(Task<T1> task1, Task<T2> task2)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        await Task.WhenAll(task1, task2).ConfigureAwait(false);
-        return (task1.Result, task2.Result);
-    }
+    public static TaskAwaiter<T1> GetAwaiter<T1>(this ValueTuple<Task<T1>> tasks) => tasks.Item1.GetAwaiter();
+    public static TupleTaskAwaiter<T1, T2> GetAwaiter<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks) => new(tasks);
+    public static TupleTaskAwaiter<T1, T2, T3> GetAwaiter<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks) => new(tasks);
+    public static TupleTaskAwaiter<T1, T2, T3, T4> GetAwaiter<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks) => new(tasks);
+    public static TupleTaskAwaiter<T1, T2, T3, T4, T5> GetAwaiter<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks) => new(tasks);
+    public static TupleTaskAwaiter<T1, T2, T3, T4, T5, T6> GetAwaiter<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks) => new(tasks);
+    public static TupleTaskAwaiter<T1, T2, T3, T4, T5, T6, T7> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks) => new(tasks);
 
-    public static TaskAwaiter<(T1, T2)> GetAwaiter<T1, T2>(this (Task<T1>, Task<T2>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    }
+    public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
+    public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);
+    public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2> ConfigureAwait<T1, T2>(this ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3> ConfigureAwait<T1, T2, T3>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
 
-    public static async Task<(T1, T2, T3)> WhenAll<T1, T2, T3>(Task<T1> task1, Task<T2> task2, Task<T3> task3)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        ArgumentNullException.ThrowIfNull(task3);
-        await Task.WhenAll(task1, task2, task3).ConfigureAwait(false);
-        return (task1.Result, task2.Result, task3.Result);
-    }
-
-    public static TaskAwaiter<(T1, T2, T3)> GetAwaiter<T1, T2, T3>(this (Task<T1>, Task<T2>, Task<T3>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    }
-
-    public static async Task<(T1, T2, T3, T4)> WhenAll<T1, T2, T3, T4>(Task<T1> task1, Task<T2> task2, Task<T3> task3, Task<T4> task4)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        ArgumentNullException.ThrowIfNull(task3);
-        ArgumentNullException.ThrowIfNull(task4);
-        await Task.WhenAll(task1, task2, task3, task4).ConfigureAwait(false);
-        return (task1.Result, task2.Result, task3.Result, task4.Result);
-    }
-
-    public static TaskAwaiter<(T1, T2, T3, T4)> GetAwaiter<T1, T2, T3, T4>(this (Task<T1>, Task<T2>, Task<T3>, Task<T4>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    }
-
-    public static async Task<(T1, T2, T3, T4, T5)> WhenAll<T1, T2, T3, T4, T5>(Task<T1> task1, Task<T2> task2, Task<T3> task3, Task<T4> task4, Task<T5> task5)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        ArgumentNullException.ThrowIfNull(task3);
-        ArgumentNullException.ThrowIfNull(task4);
-        ArgumentNullException.ThrowIfNull(task5);
-        await Task.WhenAll(task1, task2, task3, task4, task5).ConfigureAwait(false);
-        return (task1.Result, task2.Result, task3.Result, task4.Result, task5.Result);
-    }
-
-    public static TaskAwaiter<(T1, T2, T3, T4, T5)> GetAwaiter<T1, T2, T3, T4, T5>(this (Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    }
-
-    public static async Task<(T1, T2, T3, T4, T5, T6)> WhenAll<T1, T2, T3, T4, T5, T6>(Task<T1> task1, Task<T2> task2, Task<T3> task3, Task<T4> task4, Task<T5> task5, Task<T6> task6)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        ArgumentNullException.ThrowIfNull(task3);
-        ArgumentNullException.ThrowIfNull(task4);
-        ArgumentNullException.ThrowIfNull(task5);
-        ArgumentNullException.ThrowIfNull(task6);
-        await Task.WhenAll(task1, task2, task3, task4, task5, task6).ConfigureAwait(false);
-        return (task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result);
-    }
-
-    public static TaskAwaiter<(T1, T2, T3, T4, T5, T6)> GetAwaiter<T1, T2, T3, T4, T5, T6>(this (Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    }
-
-    public static async Task<(T1, T2, T3, T4, T5, T6, T7)> WhenAll<T1, T2, T3, T4, T5, T6, T7>(Task<T1> task1, Task<T2> task2, Task<T3> task3, Task<T4> task4, Task<T5> task5, Task<T6> task6, Task<T7> task7)
-    {
-        ArgumentNullException.ThrowIfNull(task1);
-        ArgumentNullException.ThrowIfNull(task2);
-        ArgumentNullException.ThrowIfNull(task3);
-        ArgumentNullException.ThrowIfNull(task4);
-        ArgumentNullException.ThrowIfNull(task5);
-        ArgumentNullException.ThrowIfNull(task6);
-        ArgumentNullException.ThrowIfNull(task7);
-        await Task.WhenAll(task1, task2, task3, task4, task5, task6, task7).ConfigureAwait(false);
-        return (task1.Result, task2.Result, task3.Result, task4.Result, task5.Result, task6.Result, task7.Result);
-    }
-
-    public static TaskAwaiter<(T1, T2, T3, T4, T5, T6, T7)> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this (Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task, Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task, Task, Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task, Task, Task, Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    }
-
-    public static TaskAwaiter GetAwaiter(this (Task, Task, Task, Task, Task, Task, Task) tasks)
-    {
-        return Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2)> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task> tasks) => tasks.Item1.GetAwaiter();
+    public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
+    public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable2 ConfigureAwait(this ValueTuple<Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable2 ConfigureAwait(this ValueTuple<Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable3 ConfigureAwait(this ValueTuple<Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable3 ConfigureAwait(this ValueTuple<Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable4 ConfigureAwait(this ValueTuple<Task, Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable4 ConfigureAwait(this ValueTuple<Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable5 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable5 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task, Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable6 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable6 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks) => Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable7 ConfigureAwait(this ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+    public static async ValueTask<ValueTuple<T1>> WhenAll<T1>(ValueTask<T1> task1)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -151,7 +72,31 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
+            observedExceptions.Add(ex);
+            Unsafe.SkipInit(out result1);
+        }
+        
+        if (observedExceptions is not null)
+        {
+            throw new AggregateException(observedExceptions);
+        }
+
+        return new(result1);
+    }
+
+    public static ValueTaskAwaiter<ValueTuple<T1>> GetAwaiter<T1>(this ValueTuple<ValueTask<T1>> tasks) => WhenAll(tasks.Item1).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2>> WhenAll<T1, T2>(ValueTask<T1> task1, ValueTask<T2> task2)
+    {
+        List<Exception>? observedExceptions = null;
+        T1 result1;
+        try
+        {
+            result1 = await task1.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -162,7 +107,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -172,15 +117,11 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2);
+        return new(result1, result2);
     }
 
-    public static ValueTaskAwaiter<(T1, T2)> GetAwaiter<T1, T2>(this (ValueTask<T1>, ValueTask<T2>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2, T3)> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
+    public static ValueTaskAwaiter<ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this ValueTuple<ValueTask<T1>, ValueTask<T2>> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2, T3>> WhenAll<T1, T2, T3>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -190,7 +131,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -201,7 +142,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -212,7 +153,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result3);
         }
@@ -222,15 +163,11 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2, result3);
+        return new(result1, result2, result3);
     }
 
-    public static ValueTaskAwaiter<(T1, T2, T3)> GetAwaiter<T1, T2, T3>(this (ValueTask<T1>, ValueTask<T2>, ValueTask<T3>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2, T3, T4)> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
+    public static ValueTaskAwaiter<ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2, T3, T4>> WhenAll<T1, T2, T3, T4>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -240,7 +177,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -251,7 +188,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -262,7 +199,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result3);
         }
@@ -273,7 +210,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result4);
         }
@@ -283,15 +220,11 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2, result3, result4);
+        return new(result1, result2, result3, result4);
     }
 
-    public static ValueTaskAwaiter<(T1, T2, T3, T4)> GetAwaiter<T1, T2, T3, T4>(this (ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2, T3, T4, T5)> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
+    public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5>> WhenAll<T1, T2, T3, T4, T5>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -301,7 +234,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -312,7 +245,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -323,7 +256,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result3);
         }
@@ -334,7 +267,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result4);
         }
@@ -345,7 +278,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result5);
         }
@@ -355,15 +288,11 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2, result3, result4, result5);
+        return new(result1, result2, result3, result4, result5);
     }
 
-    public static ValueTaskAwaiter<(T1, T2, T3, T4, T5)> GetAwaiter<T1, T2, T3, T4, T5>(this (ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2, T3, T4, T5, T6)> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
+    public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6>> WhenAll<T1, T2, T3, T4, T5, T6>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -373,7 +302,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -384,7 +313,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -395,7 +324,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result3);
         }
@@ -406,7 +335,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result4);
         }
@@ -417,7 +346,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result5);
         }
@@ -428,7 +357,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result6);
         }
@@ -438,15 +367,11 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2, result3, result4, result5, result6);
+        return new(result1, result2, result3, result4, result5, result6);
     }
 
-    public static ValueTaskAwaiter<(T1, T2, T3, T4, T5, T6)> GetAwaiter<T1, T2, T3, T4, T5, T6>(this (ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    }
-
-    public static async ValueTask<(T1, T2, T3, T4, T5, T6, T7)> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
+    public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+    public static async ValueTask<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> WhenAll<T1, T2, T3, T4, T5, T6, T7>(ValueTask<T1> task1, ValueTask<T2> task2, ValueTask<T3> task3, ValueTask<T4> task4, ValueTask<T5> task5, ValueTask<T6> task6, ValueTask<T7> task7)
     {
         List<Exception>? observedExceptions = null;
         T1 result1;
@@ -456,7 +381,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result1);
         }
@@ -467,7 +392,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result2);
         }
@@ -478,7 +403,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result3);
         }
@@ -489,7 +414,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result4);
         }
@@ -500,7 +425,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result5);
         }
@@ -511,7 +436,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result6);
         }
@@ -522,7 +447,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result7);
         }
@@ -532,15 +457,13 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (result1, result2, result3, result4, result5, result6, result7);
+        return new(result1, result2, result3, result4, result5, result6, result7);
     }
 
-    public static ValueTaskAwaiter<(T1, T2, T3, T4, T5, T6, T7)> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this (ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
-    }
+    public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
 
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2)
+    private static ValueTask WhenAll(ValueTask task1) => task1;
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -549,7 +472,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -558,7 +481,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -568,12 +491,8 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
-    }
-
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -582,7 +501,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -591,7 +510,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -600,7 +519,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -610,12 +529,8 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask, ValueTask) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
-    }
-
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -624,7 +539,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -633,7 +548,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -642,7 +557,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -651,7 +566,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -661,12 +576,8 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask, ValueTask, ValueTask) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
-    }
-
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -675,7 +586,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -684,7 +595,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -693,7 +604,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -702,7 +613,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -711,7 +622,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -721,12 +632,8 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask, ValueTask, ValueTask, ValueTask) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
-    }
-
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -735,7 +642,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -744,7 +651,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -753,7 +660,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -762,7 +669,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -771,7 +678,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -780,7 +687,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -790,12 +697,8 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask) tasks)
-    {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
-    }
-
-    public static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+    private static async ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
     {
         List<Exception>? observedExceptions = null;
         try
@@ -804,7 +707,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -813,7 +716,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -822,7 +725,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -831,7 +734,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -840,7 +743,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -849,7 +752,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         try
@@ -858,7 +761,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         
@@ -868,8 +771,378 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask) tasks)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+
+    public readonly struct TupleTaskAwaiter<T1, T2>(ValueTuple<Task<T1>, Task<T2>> tasks) : ICriticalNotifyCompletion
     {
-        return WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2>(ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter2(ValueTuple<Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable2(ValueTuple<Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
+    }
+    public readonly struct TupleTaskAwaiter<T1, T2, T3>(ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2, T3> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3>(ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2, T3> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter3(ValueTuple<Task, Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable3(ValueTuple<Task, Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
+    }
+    public readonly struct TupleTaskAwaiter<T1, T2, T3, T4>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2, T3, T4> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2, T3, T4> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter4(ValueTuple<Task, Task, Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable4(ValueTuple<Task, Task, Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task, Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
+    }
+    public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2, T3, T4, T5> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2, T3, T4, T5> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter5(ValueTuple<Task, Task, Task, Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable5(ValueTuple<Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task, Task, Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
+    }
+    public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5, T6>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2, T3, T4, T5, T6> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result, tasks.Item6.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2, T3, T4, T5, T6> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result, tasks.Item6.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter6(ValueTuple<Task, Task, Task, Task, Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable6(ValueTuple<Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task, Task, Task, Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
+    }
+    public readonly struct TupleTaskAwaiter<T1, T2, T3, T4, T5, T6, T7>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result, tasks.Item6.Result, tasks.Item7.Result);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<T1, T2, T3, T4, T5, T6, T7>(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<Task<T1>, Task<T2>, Task<T3>, Task<T4>, Task<T5>, Task<T6>, Task<T7>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<T1, T2, T3, T4, T5, T6, T7> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(tasks.Item1.Result, tasks.Item2.Result, tasks.Item3.Result, tasks.Item4.Result, tasks.Item5.Result, tasks.Item6.Result, tasks.Item7.Result);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter7(ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable7(ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<Task, Task, Task, Task, Task, Task, Task> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<Task, Task, Task, Task, Task, Task, Task> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
     }
 }

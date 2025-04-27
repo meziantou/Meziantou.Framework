@@ -22,30 +22,27 @@ namespace Meziantou.Framework.Threading.Tasks;
 
 // https://www.meziantou.net/get-the-result-of-multiple-tasks-in-a-valuetuple-and-whenall.htm
 public static partial class TaskExtensions
-{<# for (int i = 2; i <= count; i++) { #>
-
-    public static async Task<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "Task<T" + i + "> task" + i) #>)
-    {
-        <# for (int j = 1; j <= i; j++) { #>ArgumentNullException.ThrowIfNull(task<#= j #>);
-        <# } #>await Task.WhenAll(<#= Join(", ", i, i => "task" + i) #>).ConfigureAwait(false);
-        return (<#= Join(", ", i, i => "task" + i + ".Result") #>);
-    }
-
-    public static TaskAwaiter<(<#= GetTemplateString(i) #>)> GetAwaiter<<#= GetTemplateString(i) #>>(this (<#= Join(", ", i, i => "Task<T" + i + ">") #>) tasks)
-    {
-        return WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
-    }
-<# } #>
+{
+    public static TaskAwaiter<T1> GetAwaiter<T1>(this ValueTuple<Task<T1>> tasks) => tasks.Item1.GetAwaiter();
 <# for (int i = 2; i <= count; i++) { #>
-
-    public static TaskAwaiter GetAwaiter(this (<#= Join(", ", i, i => "Task") #>) tasks)
-    {
-        return Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
-    }
+    public static TupleTaskAwaiter<<#= GetTemplateString(i) #>> GetAwaiter<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks) => new(tasks);
 <# } #>
+    public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
+    public static ConfiguredTaskAwaitable<T1> ConfigureAwait<T1>(this ValueTuple<Task<T1>> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);
 <# for (int i = 2; i <= count; i++) { #>
-
-    public static async ValueTask<(<#= GetTemplateString(i) #>)> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
+    public static TupleConfiguredTaskAwaitable<<#= GetTemplateString(i) #>> ConfigureAwait<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<<#= GetTemplateString(i) #>> ConfigureAwait<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+<# } #>
+    public static TaskAwaiter GetAwaiter(this ValueTuple<Task> tasks) => tasks.Item1.GetAwaiter();
+    public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, bool continueOnCapturedContext) => tasks.Item1.ConfigureAwait(continueOnCapturedContext);
+    public static ConfiguredTaskAwaitable ConfigureAwait(this ValueTuple<Task> tasks, ConfigureAwaitOptions options) => tasks.Item1.ConfigureAwait(options);
+<# for (int i = 2; i <= count; i++) { #>
+    public static TaskAwaiter GetAwaiter(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks) => Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+    public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, bool continueOnCapturedContext) => new(tasks, continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None);
+    public static TupleConfiguredTaskAwaitable<#= i #> ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, ConfigureAwaitOptions options) => new(tasks, options);
+<# } #>
+<# for (int i = 1; i <= count; i++) { #>
+    public static async ValueTask<ValueTuple<<#= GetTemplateString(i) #>>> WhenAll<<#= GetTemplateString(i) #>>(<#= Join(", ", i, i => "ValueTask<T" + i + "> task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
         <# for (int j = 1; j <= i; j++) { #>T<#=j#> result<#=j#>;
@@ -55,7 +52,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
             Unsafe.SkipInit(out result<#=j#>);
         }
@@ -66,17 +63,14 @@ public static partial class TaskExtensions
             throw new AggregateException(observedExceptions);
         }
 
-        return (<#= Join(", ", i, i => "result" + i) #>);
+        return new(<#= Join(", ", i, i => "result" + i) #>);
     }
 
-    public static ValueTaskAwaiter<(<#= GetTemplateString(i) #>)> GetAwaiter<<#= GetTemplateString(i) #>>(this (<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>) tasks)
-    {
-        return WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
-    }
+    public static ValueTaskAwaiter<ValueTuple<<#= GetTemplateString(i) #>>> GetAwaiter<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
 <# } #>
+    private static ValueTask WhenAll(ValueTask task1) => task1;
 <# for (int i = 2; i <= count; i++) { #>
-
-    public static async ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
+    private static async ValueTask WhenAll(<#= Join(", ", i, i => "ValueTask task" + i) #>)
     {
         List<Exception>? observedExceptions = null;
         <# for (int j = 1; j <= i; j++) { #>try
@@ -85,7 +79,7 @@ public static partial class TaskExtensions
         }
         catch (Exception ex)
         {
-            observedExceptions ??= new();
+            observedExceptions ??= [];
             observedExceptions.Add(ex);
         }
         <# } #>
@@ -96,9 +90,71 @@ public static partial class TaskExtensions
         }
     }
 
-    public static ValueTaskAwaiter GetAwaiter(this (<#= Join(", ", i, i => "ValueTask") #>) tasks)
+    public static ValueTaskAwaiter GetAwaiter(this ValueTuple<<#= Join(", ", i, i => "ValueTask") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+<# } #>
+
+<# for (int i = 2; i <= count; i++) { #>
+    public readonly struct TupleTaskAwaiter<<#= GetTemplateString(i) #>>(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks) : ICriticalNotifyCompletion
     {
-        return WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+        public ValueTuple<<#= GetTemplateString(i) #>> GetResult()
+        {
+            _whenAllAwaiter.GetResult();
+            return new(<#= Join(", ", i, i => "tasks.Item" + i + ".Result") #>);
+        }
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<<#= GetTemplateString(i) #>>(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options)
+    {
+        public Awaiter GetAwaiter() => new(tasks, options);
+
+        public readonly struct Awaiter(ValueTuple<<#= Join(", ", i, i => "Task<T" + i + ">") #>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+
+            public ValueTuple<<#= Join(", ", i, i => "T" + i) #>> GetResult()
+            {
+                _whenAllAwaiter.GetResult();
+                return new(<#= Join(", ", i, i => "tasks.Item" + i + ".Result") #>);
+            }
+        }
+    }
+
+    public readonly struct TupleTaskAwaiter<#= i #>(ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks) : ICriticalNotifyCompletion
+    {
+        private readonly TaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+
+        public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+        public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+        public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+        public void GetResult() => _whenAllAwaiter.GetResult();
+    }
+
+    public readonly struct TupleConfiguredTaskAwaitable<#= i #>(ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, ConfigureAwaitOptions options)
+    {
+        private readonly ValueTuple<<#= Join(", ", i, i => "Task") #>> _tasks = tasks;
+        private readonly ConfigureAwaitOptions _options = options;
+
+        public Awaiter GetAwaiter() => new(_tasks, _options);
+
+        public readonly struct Awaiter(ValueTuple<<#= Join(", ", i, i => "Task") #>> tasks, ConfigureAwaitOptions options) : ICriticalNotifyCompletion
+        {
+            private readonly ConfiguredTaskAwaitable.ConfiguredTaskAwaiter _whenAllAwaiter = Task.WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(options).GetAwaiter();
+
+            public bool IsCompleted => _whenAllAwaiter.IsCompleted;
+            public void OnCompleted(Action continuation) => _whenAllAwaiter.OnCompleted(continuation);
+            public void UnsafeOnCompleted(Action continuation) => _whenAllAwaiter.UnsafeOnCompleted(continuation);
+            public void GetResult() => _whenAllAwaiter.GetResult();
+        }
     }
 <# } #>
 }

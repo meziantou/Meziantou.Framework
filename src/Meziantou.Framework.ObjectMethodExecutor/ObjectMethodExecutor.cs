@@ -53,9 +53,9 @@ public sealed class ObjectMethodExecutor
 
     private delegate ObjectMethodExecutorAwaitable MethodExecutorAsync(object target, object?[]? parameters);
 
-    private delegate object? MethodExecutor(object target, object?[]? parameters);
+    private delegate object? MethodExecutor(object? target, object?[]? parameters);
 
-    private delegate void VoidMethodExecutor(object target, object?[]? parameters);
+    private delegate void VoidMethodExecutor(object? target, object?[]? parameters);
 
     private ParameterInfo[] MethodParameters { get; }
 
@@ -95,7 +95,7 @@ public sealed class ObjectMethodExecutor
     /// <param name="target">The object whose method is to be executed.</param>
     /// <param name="parameters">Parameters to pass to the method.</param>
     /// <returns>The method return value.</returns>
-    public object? Execute(object target, object?[]? parameters)
+    public object? Execute(object? target, object?[]? parameters)
     {
         Debug.Assert(_executor is not null, "Sync execution is not supported.");
         return _executor(target, parameters);
@@ -120,7 +120,7 @@ public sealed class ObjectMethodExecutor
     /// <param name="target">The object whose method is to be executed.</param>
     /// <param name="parameters">Parameters to pass to the method.</param>
     /// <returns>An object that you can "await" to get the method return value.</returns>
-    public ObjectMethodExecutorAwaitable ExecuteAsync(object target, object?[]? parameters)
+    public ObjectMethodExecutorAwaitable ExecuteAsync(object? target, object?[]? parameters)
     {
         Debug.Assert(_executorAsync is not null, "Async execution is not supported.");
         return _executorAsync(target, parameters);

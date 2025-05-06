@@ -911,19 +911,19 @@ static partial class StringExtensions
     /// <summary>
     /// Removes the leading occurrence of a specified string from the current string.
     /// </summary>
-    public static string RemovePrefix(this string str, string suffix)
+    public static string RemovePrefix(this string str, string prefix)
     {
-        return RemovePrefix(str, suffix, StringComparison.Ordinal);
+        return RemovePrefix(str, prefix, StringComparison.Ordinal);
     }
 
     /// <summary>
     /// Removes the leading occurrence of a specified string from the current string.
     /// </summary>
-    public static string RemovePrefix(this string str, string suffix, StringComparison stringComparison)
+    public static string RemovePrefix(this string str, string prefix, StringComparison stringComparison)
     {
-        if (str.StartsWith(suffix, stringComparison))
+        if (str.StartsWith(prefix, stringComparison))
         {
-            return str[suffix.Length..];
+            return str[prefix.Length..];
         }
 
         return str;

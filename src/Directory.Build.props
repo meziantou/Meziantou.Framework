@@ -12,7 +12,7 @@
     <GenerateSBOM Condition="'$(GenerateSBOM)' == ''">$(IsPackable)</GenerateSBOM>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Sbom.Targets" Version="3.1.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Sbom.Targets" Version="4.0.2" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

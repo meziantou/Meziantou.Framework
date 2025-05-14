@@ -12,9 +12,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.v3.extensibility.core" Version="2.0.1" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.4" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageReference Include="System.Reflection.Metadata" Version="9.0.4" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="2.0.2" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageReference Include="System.Reflection.Metadata" Version="9.0.5" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageReference Include="System.IO.Compression" Version="4.3.0" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageReference Include="System.Security.Principal.Windows" Version="5.0.0" />
   </ItemGroup>

@@ -284,7 +284,7 @@ public static class CodeOwnersParser
                 {
                     // GitLab stops parsing default owners when encountering an unexpected token
                     // but keeps the default owners already parsed as valid.
-                    if (split.StartsWith("[", StringComparison.Ordinal) || split.StartsWith("#", StringComparison.Ordinal))
+                    if (split.StartsWith('[') || split.StartsWith('#'))
                         break;
 
                     defaultOwners.Add(split);

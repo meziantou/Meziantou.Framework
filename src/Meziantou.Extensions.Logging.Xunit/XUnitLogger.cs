@@ -104,7 +104,7 @@ public class XUnitLogger : ILogger
             LogLevel.Warning => "warn",
             LogLevel.Error => "fail",
             LogLevel.Critical => "crit",
-            _ => throw new ArgumentOutOfRangeException(nameof(logLevel))
+            _ => throw new ArgumentOutOfRangeException(nameof(logLevel)),
         };
     }
 }

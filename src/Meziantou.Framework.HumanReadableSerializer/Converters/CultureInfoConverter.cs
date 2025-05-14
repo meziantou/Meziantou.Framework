@@ -9,7 +9,7 @@ internal sealed class CultureInfoConverter : HumanReadableConverter<CultureInfo>
     {
         Debug.Assert(value is not null);
 
-        if (value == CultureInfo.InvariantCulture)
+        if (ReferenceEquals(value, CultureInfo.InvariantCulture))
         {
             writer.WriteValue(value.EnglishName);
         }

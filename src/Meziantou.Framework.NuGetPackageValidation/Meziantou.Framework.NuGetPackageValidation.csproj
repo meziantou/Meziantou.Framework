@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.15</Version>
+    <Version>1.0.16</Version>
     <Description>Provide rules to validate a NuGet package follows best practices</Description>
   </PropertyGroup>
 

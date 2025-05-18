@@ -156,8 +156,12 @@ foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
     if (IncrementVersion($csproj)) {
         $updated = $true
 
-        $csprojRelativePath = $csproj.Substring($RootPath.Length + 1) -replace "\\", "/"
-        $prMessage += "## $csprojRelativePath`n"
+        if ($prMessage) {
+            $prMessage += "`n"
+        }
+
+        $packageName = [System.IO.Path]::GetFileNameWithoutExtension($csproj)
+        $prMessage += "## $packageName`n"
         foreach ($commit in ($info.commits | Select-Object -Unique)) {
             $message = git log --format=%B -n 1 $commit
             $prMessage += "- ${commit}: $message`n"
@@ -185,7 +189,8 @@ if ($updated) {
         if ($OpenPR) {
             Write-Host "Editing existing pull request $($OpenPR.number)"
             gh pr edit $OpenPR.number --title "Bump package versions" --body $prMessage
-        }else {
+        }
+        else {
             Write-Host "Creating new pull request"
             gh pr create --title "Bump package versions" --body $prMessage --base main --head generated/bump-package-versions
         }

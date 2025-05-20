@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
-    <PackageReference Include="System.Memory" Version="4.6.1" />
-    <PackageReference Include="Microsoft.IO.Redist" Version="6.1.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="Microsoft.IO.Redist" Version="6.1.3" />
   </ItemGroup>
 
 </Project>

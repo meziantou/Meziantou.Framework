@@ -10,13 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0'">
-    <PackageReference Include="System.Memory" Version="4.6.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
     <PackageReference Include="System.Text.Json" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net472'">
-    <PackageReference Include="System.Memory" Version="4.6.1" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.5" />
     <PackageReference Include="System.Text.Json" Version="9.0.5" />
     <Reference Include="System.Net.Http" />

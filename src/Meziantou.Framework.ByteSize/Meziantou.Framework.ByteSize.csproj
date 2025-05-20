@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
-    <PackageReference Include="System.ValueTuple" Version="4.6.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.6.1" />
   </ItemGroup>
 
   <ItemGroup>

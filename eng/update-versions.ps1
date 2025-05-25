@@ -7,7 +7,6 @@ $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
 $skippedCommits = @("ef6862b9195bd864e1f449317edc85a19041149f", "c4ac0bdd868a37b37e2eddd6ae99b7b888f3fd29")
-
 function GetVersion($fileContent) {
     $fileContent = ($fileContent | Out-String) -replace "∩╗┐", ""
     $fileContent = $fileContent -replace "^.*?<", "<"
@@ -164,6 +163,10 @@ foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
         $prMessage += "## $packageName`n"
         foreach ($commit in ($info.commits | Select-Object -Unique)) {
             $message = git log --format=%B -n 1 $commit
+            $message = $message -replace "\r?\n", "`n"
+            $message = $message -replace "\s+", " "
+            $message = $message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", [System.StringComparison]::OrdinalIgnoreCase)
+            $message = $message.Trim()
             $prMessage += "- ${commit}: $message`n"
         }
     }

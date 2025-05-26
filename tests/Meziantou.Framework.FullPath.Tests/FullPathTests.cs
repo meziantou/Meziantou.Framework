@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using TestUtilities;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -316,6 +317,14 @@ public sealed class FullPathTests
 
         Assert.True(subDir.TryFindFirstAncestorOrSelf(p => File.Exists(p / fileName), out var result));
         Assert.Equal(tempDir.FullPath, result);
+    }
+
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ShellFolderTest()
+    {
+        var fullPath = FullPath.GetShellFolderPath(ShellFolder.Downloads);
+        Assert.NotEmpty(fullPath.Value);
     }
 
     private static bool IsWindows()

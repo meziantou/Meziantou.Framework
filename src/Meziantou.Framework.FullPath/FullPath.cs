@@ -1,7 +1,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json.Serialization;
+using Windows.Win32;
 
 namespace Meziantou.Framework;
 
@@ -179,6 +182,22 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
     public static FullPath CreateTempFile() => FromPath(Path.GetTempFileName());
 
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
+
+    [SupportedOSPlatform("windows6.0.6000")]
+    public static unsafe FullPath GetShellFolderPath(ShellFolder shellFolder)
+    {
+        var result = PInvoke.SHGetKnownFolderPath(shellFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
+        if (result.Succeeded)
+        {
+            var expandedValue = Environment.ExpandEnvironmentVariables(path.ToString());
+            Marshal.FreeCoTaskMem((nint)path.Value);
+            return FromPath(expandedValue);
+        }
+
+        Marshal.FreeCoTaskMem((nint)path.Value);
+        throw new Win32Exception(result.Value, $"Failed to get shell folder path for {shellFolder}");
+    }
+
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 
     public static FullPath FromPath(string path)

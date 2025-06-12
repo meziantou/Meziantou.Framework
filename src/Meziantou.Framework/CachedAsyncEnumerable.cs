@@ -1,29 +1,28 @@
-using System.Collections;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
-internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
+internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
 {
     private readonly List<T> _cache = [];
-    private readonly IEnumerable<T> _enumerable;
-    private IEnumerator<T>? _enumerator;
+    private readonly IAsyncEnumerable<T> _enumerable;
+    private IAsyncEnumerator<T>? _enumerator;
     private bool _enumerated;
 
-    public CachedEnumerable(IEnumerable<T> enumerable)
+    public CachedAsyncEnumerable(IAsyncEnumerable<T> enumerable)
     {
         ArgumentNullException.ThrowIfNull(enumerable);
 
         _enumerable = enumerable;
     }
 
-    public IEnumerator<T> GetEnumerator()
+    public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
         var index = 0;
         while (true)
         {
-            if (TryGetItem(index, out var result))
+            var (hasItem, result) = await TryGetItem(index, cancellationToken).ConfigureAwait(false);
+            if (hasItem)
             {
                 yield return result;
                 index++;
@@ -36,54 +35,45 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
         }
     }
 
-    private bool TryGetItem(int index, out T result)
+    private async ValueTask<(bool HasItem, T Item)> TryGetItem(int index, CancellationToken cancellationToken)
     {
         // if the item is in the cache, use it
         if (index < _cache.Count)
-        {
-            result = _cache[index];
-            return true;
-        }
+            return (true, _cache[index]);
 
         if (_enumerator is null && !_enumerated)
         {
-            _enumerator = _enumerable.GetEnumerator();
+            _enumerator = _enumerable.GetAsyncEnumerator(cancellationToken);
         }
 
         // If we have already enumerate the whole stream, there is nothing else to do
         if (_enumerated)
-        {
-            result = default!;
-            return false;
-        }
+            return (false, default);
 
         // Get the next item and store it to the cache
         Debug.Assert(_enumerator is not null);
-        if (_enumerator.MoveNext())
+        if (await _enumerator.MoveNextAsync().ConfigureAwait(false))
         {
-            result = _enumerator.Current;
+            var result = _enumerator.Current;
             _cache.Add(result);
-            return true;
+            return (true, result);
         }
         else
         {
             // There are no more items, we can dispose the underlying enumerator
-            _enumerator.Dispose();
+            await _enumerator.DisposeAsync().ConfigureAwait(false);
             _enumerator = null;
             _enumerated = true;
-            result = default!;
-            return false;
+            return (false, default);
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         if (_enumerator is not null)
         {
-            _enumerator.Dispose();
+            await _enumerator.DisposeAsync().ConfigureAwait(false);
             _enumerator = null;
         }
     }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

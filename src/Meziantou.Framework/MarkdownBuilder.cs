@@ -2,7 +2,12 @@ using System.Text;
 
 namespace Meziantou.Framework;
 
-public static class MarkdownBuilder
+#if PUBLIC_MARKDOWN_BUILDER
+public
+#else
+internal
+#endif
+static class MarkdownBuilder
 {
     // https://spec.commonmark.org/0.30/#preliminaries
     public static string Escape(string value)

@@ -15,15 +15,28 @@ public sealed class CachedEnumerableTests
                 throw new InvalidOperationException();
 
             _enumerated = true;
-
             return enumerable.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
+    private sealed class SingleAsyncEnumerable<T>(IAsyncEnumerable<T> enumerable) : IAsyncEnumerable<T>
+    {
+        private bool _enumerated;
+
+        public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+        {
+            if (_enumerated)
+                throw new InvalidOperationException();
+
+            _enumerated = true;
+            return enumerable.GetAsyncEnumerator(cancellationToken);
+        }
+    }
+
     [Fact]
-    public void MultipleEnumerations_ShouldEnumerateOnce()
+    public void Enumerable_MultipleEnumerations_ShouldEnumerateOnce()
     {
         var enumerable = new SingleEnumerable<int>(Enumerable.Range(1, 3));
         using var cachedEnumerable = CachedEnumerable.Create(enumerable);
@@ -32,7 +45,7 @@ public sealed class CachedEnumerableTests
     }
 
     [Fact]
-    public void MultipleConcurrentEnumerations_ShouldEnumerateOnce()
+    public void Enumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce()
     {
         // Arrange
         var count = 0;
@@ -70,7 +83,7 @@ public sealed class CachedEnumerableTests
     }
 
     [Fact]
-    public async Task MultipleConcurrentEnumerations_ShouldEnumerateOnce_ThreadSafe()
+    public async Task Enumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce_ThreadSafe()
     {
         // Arrange
         var maxCount = 1000;
@@ -100,6 +113,99 @@ public sealed class CachedEnumerableTests
         foreach (var result in results)
         {
             Assert.Equal(Enumerable.Range(1, maxCount), result);
+        }
+    }
+
+    [Fact]
+    public async Task AsyncEnumerable_MultipleEnumerations_ShouldEnumerateOnce()
+    {
+        var enumerable = new SingleAsyncEnumerable<int>(RangeAsync(1, 3));
+        await using var cachedEnumerable = CachedEnumerable.Create(enumerable);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+    }
+
+    [Fact]
+    public async Task AsyncEnumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce()
+    {
+        // Arrange
+        var count = 0;
+        await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(GetData()));
+
+        async IAsyncEnumerable<int> GetData()
+        {
+            yield return ++count;
+            await Task.Yield();
+            yield return ++count;
+            await Task.Yield();
+            yield return ++count;
+        }
+
+        var enumerator1 = cachedEnumerable.GetAsyncEnumerator();
+        var enumerator2 = cachedEnumerable.GetAsyncEnumerator();
+        Assert.True(await enumerator1.MoveNextAsync());
+        Assert.Equal(1, enumerator1.Current);
+        Assert.Equal(1, count);
+        Assert.True(await enumerator2.MoveNextAsync());
+        Assert.Equal(1, enumerator2.Current);
+        Assert.Equal(1, count);
+        Assert.True(await enumerator2.MoveNextAsync());
+        Assert.Equal(2, enumerator2.Current);
+        Assert.Equal(2, count);
+        Assert.True(await enumerator2.MoveNextAsync());
+        Assert.Equal(3, enumerator2.Current);
+        Assert.Equal(3, count);
+        Assert.True(await enumerator1.MoveNextAsync());
+        Assert.Equal(2, enumerator1.Current);
+        Assert.Equal(3, count);
+        Assert.False(await enumerator2.MoveNextAsync());
+        Assert.True(await enumerator1.MoveNextAsync());
+        Assert.False(await enumerator1.MoveNextAsync());
+        Assert.Equal(3, count);
+        Assert.Equal([1, 2, 3], cachedEnumerable);
+    }
+
+    [Fact]
+    public async Task AsyncEnumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce_ThreadSafe()
+    {
+        // Arrange
+        var maxCount = 1000;
+        var threadCount = 16;
+        using var resetEvent = new ManualResetEventSlim(initialState: false);
+
+        var count = 0;
+        await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(GetData()));
+
+        async IAsyncEnumerable<int> GetData()
+        {
+            for (var i = 0; i < maxCount; i++)
+            {
+                yield return ++count;
+                await Task.Yield();
+            }
+        }
+
+        var results = new List<int>[1000];
+        var task = Task.Run(() => Parallel.ForAsync(0, 1000, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, async (i, cancellationToken) =>
+        {
+            results[i] = await cachedEnumerable.ToListAsync(cancellationToken);
+        }));
+
+        resetEvent.Set();
+        await task;
+        Assert.Equal(maxCount, count);
+        foreach (var result in results)
+        {
+            Assert.Equal(Enumerable.Range(1, maxCount), result);
+        }
+    }
+
+    private static async IAsyncEnumerable<int> RangeAsync(int start, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            yield return start + i;
+            await Task.Yield();
         }
     }
 }

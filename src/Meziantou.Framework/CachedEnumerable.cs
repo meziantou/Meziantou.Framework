@@ -9,4 +9,12 @@ public static class CachedEnumerable
 
         return new CachedEnumerable<T>(enumerable);
     }
+
+    public static ICachedAsyncEnumerable<T> Create<T>(IAsyncEnumerable<T> enumerable, bool threadSafe = true)
+    {
+        if (threadSafe)
+            return new CachedAsyncEnumerableThreadSafe<T>(enumerable);
+
+        return new CachedAsyncEnumerable<T>(enumerable);
+    }
 }

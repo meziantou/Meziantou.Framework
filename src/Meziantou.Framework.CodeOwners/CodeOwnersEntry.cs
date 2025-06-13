@@ -26,6 +26,17 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 
     public bool IsOptional => Section?.IsOptional ?? false;
 
+    public override string ToString()
+    {
+        var result = $"{Pattern} {Member}";
+        if (IsOptional)
+        {
+            result += " (optional)";
+        }
+
+        return result;
+    }
+
     internal static CodeOwnersEntry FromUsername(int patternIndex, string pattern, string username, CodeOwnersSection? section)
     {
         return new CodeOwnersEntry(patternIndex, pattern, CodeOwnersEntryType.Username, username, section);
@@ -55,15 +66,7 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
                Section == other.Section;
     }
 
-    public override int GetHashCode()
-    {
-        var hashCode = 1707150943;
-        hashCode = (hashCode * -1521134295) + EntryType.GetHashCode();
-        hashCode = (hashCode * -1521134295) + StringComparer.Ordinal.GetHashCode(Pattern);
-        hashCode = (hashCode * -1521134295) + (Member is null ? 0 : StringComparer.Ordinal.GetHashCode(Member));
-        hashCode = (hashCode * -1521134295) + (Section == null ? 0 : Section.GetHashCode());
-        return hashCode;
-    }
+    public override int GetHashCode() => HashCode.Combine(Pattern, EntryType, Member, Section);
 
     public static bool operator ==(CodeOwnersEntry left, CodeOwnersEntry right) => left.Equals(right);
     public static bool operator !=(CodeOwnersEntry left, CodeOwnersEntry right) => !(left == right);

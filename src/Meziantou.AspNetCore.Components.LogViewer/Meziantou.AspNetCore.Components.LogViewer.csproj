@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.AspNetCore.Components</RootNamespace>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>A log viewer component for Blazor</Description>
 

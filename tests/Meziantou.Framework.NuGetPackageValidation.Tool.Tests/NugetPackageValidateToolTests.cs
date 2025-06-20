@@ -1,26 +1,20 @@
 ﻿using System.Text.Json;
 using Xunit;
+using Xunit.v3;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 
 [Collection("Tool")] // Ensure tests run sequentially
-public sealed class NugetPackageValidateToolTests
+public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
-
     private sealed record RunResult(int ExitCode, string Output, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
 
     private sealed record ValidationResult(bool IsValid, Dictionary<string, NuGetPackageValidationResult> Packages);
 
     private async Task<RunResult> RunValidation(params string[] arguments)
     {
-        var console = new StringBuilderConsole();
-        var exitCode = await Program.MainImpl(arguments, console);
+        var console = new ConsoleHelper(testOutputHelper);
+        var exitCode = await Program.MainImpl(arguments, console.ConfigureConsole);
 
         Assert.True(console.Output.Count(c => c == '\n') > 2); // Check if output is written indented
 
@@ -33,7 +27,6 @@ public sealed class NugetPackageValidateToolTests
         {
         }
 
-        _testOutputHelper.WriteLine(console.Output);
         return new RunResult(exitCode, console.Output, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
     }
 

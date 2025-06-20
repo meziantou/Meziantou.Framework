@@ -16,32 +16,32 @@ internal static partial class Program
 
     public static Task<int> Main(string[] args)
     {
-        return MainImpl(args, console: null);
+        return MainImpl(args, configure: null);
     }
 
     [SuppressMessage("Performance", "CA1869:Cache and reuse 'JsonSerializerOptions' instances", Justification = "Used only once")]
-    internal static Task<int> MainImpl(string[] args, IConsole? console)
+    internal static Task<int> MainImpl(string[] args, Action<CommandLineConfiguration>? configure)
     {
-        var rootCommand = new RootCommand("Validate a NuGet package") { Name = "meziantou.validate-nuget-package" }; // Name must match <ToolCommandName> in csproj
-        var pathsArgument = new Argument<string[]>("package-path", "Paths to the NuGet packages to validate") { Arity = ArgumentArity.OneOrMore };
-        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
-        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules", description: GetRulesDescription(), parseArgument: ParseRuleValues);
-        var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids", description: "List of rule ids to exclude from analysis", parseArgument: ParseIntValues);
-        var githubTokenOptions = new Option<string?>("--github-token", description: "GitHub token to authenticate requests");
-        var onlyReportErrorsOptions = new Option<bool>("--only-report-errors", description: "Only report errors on the output");
-        rootCommand.AddArgument(pathsArgument);
-        rootCommand.AddOption(rulesOptions);
-        rootCommand.AddOption(excludedRulesOptions);
-        rootCommand.AddOption(excludedRuleIdsOptions);
-        rootCommand.AddOption(githubTokenOptions);
-        rootCommand.AddOption(onlyReportErrorsOptions);
-        rootCommand.SetHandler(async context =>
+        var rootCommand = new RootCommand("Validate a NuGet package");
+        var pathsArgument = new Argument<string[]>("package-path") { Arity = ArgumentArity.OneOrMore, Description = "Paths to the NuGet packages to validate" };
+        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules") { Description = GetRulesDescription(), CustomParser = ParseRuleValues };
+        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules") { Description = GetRulesDescription(), CustomParser = ParseRuleValues };
+        var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids") { Description = "List of rule ids to exclude from analysis", CustomParser = ParseIntValues };
+        var githubTokenOptions = new Option<string?>("--github-token") { Description = "GitHub token to authenticate requests" };
+        var onlyReportErrorsOptions = new Option<bool>("--only-report-errors") { Description = "Only report errors on the output" };
+        rootCommand.Arguments.Add(pathsArgument);
+        rootCommand.Options.Add(rulesOptions);
+        rootCommand.Options.Add(excludedRulesOptions);
+        rootCommand.Options.Add(excludedRuleIdsOptions);
+        rootCommand.Options.Add(githubTokenOptions);
+        rootCommand.Options.Add(onlyReportErrorsOptions);
+        rootCommand.SetAction(async (parseResult, cancellationToken) =>
         {
-            var paths = context.ParseResult.GetValueForArgument(pathsArgument);
-            var onlyReportErrors = context.ParseResult.GetValueForOption(onlyReportErrorsOptions);
+            var paths = parseResult.GetValue(pathsArgument);
+            var onlyReportErrors = parseResult.GetValue(onlyReportErrorsOptions);
             var options = new NuGetPackageValidationOptions();
 
-            var includedRules = context.ParseResult.GetValueForOption(rulesOptions);
+            var includedRules = parseResult.GetValue(rulesOptions);
             if (includedRules is null || includedRules.Length == 0)
             {
                 foreach (var rule in NuGetPackageValidationRules.Default)
@@ -50,7 +50,7 @@ internal static partial class Program
                 }
             }
 
-            var excludedRules = context.ParseResult.GetValueForOption(excludedRulesOptions);
+            var excludedRules = parseResult.GetValue(excludedRulesOptions);
             if (excludedRules is not null && excludedRules.Length > 0)
             {
                 foreach (var excludedRule in excludedRules)
@@ -59,7 +59,7 @@ internal static partial class Program
                 }
             }
 
-            var excludedRuleIds = context.ParseResult.GetValueForOption(excludedRuleIdsOptions);
+            var excludedRuleIds = parseResult.GetValue(excludedRuleIdsOptions);
             if (excludedRuleIds is not null && excludedRuleIds.Length > 0)
             {
                 foreach (var excludedRuleId in excludedRuleIds)
@@ -68,7 +68,7 @@ internal static partial class Program
                 }
             }
 
-            var githubToken = context.ParseResult.GetValueForOption(githubTokenOptions);
+            var githubToken = parseResult.GetValue(githubTokenOptions);
             if (!string.IsNullOrEmpty(githubToken))
             {
                 options.ConfigureRequest = request =>
@@ -91,7 +91,7 @@ internal static partial class Program
                 if (packageResults.ContainsKey(packagePath))
                     continue;
 
-                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, context.GetCancellationToken()).ConfigureAwait(false);
+                var packageResult = await NuGetPackageValidator.ValidateAsync(packagePath, options, cancellationToken).ConfigureAwait(false);
 
                 if (!packageResult.IsValid || !onlyReportErrors)
                     packageResults.Add(packagePath, packageResult);
@@ -106,14 +106,18 @@ internal static partial class Program
                 WriteIndented = true,
             };
             var json = JsonSerializer.Serialize(result, jsonOptions);
-            context.Console.WriteLine(json);
+            await parseResult.Configuration.Output.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
             if (!result.IsValid)
             {
-                context.ExitCode = 1;
+                return 1;
             }
+
+            return 0;
         });
 
-        return rootCommand.InvokeAsync(args, console);
+        var commandLineConfiguration = new CommandLineConfiguration(rootCommand);
+        configure?.Invoke(commandLineConfiguration);
+        return commandLineConfiguration.InvokeAsync(args);
     }
 
     private static string GetRulesDescription()
@@ -143,13 +147,13 @@ internal static partial class Program
                 var members = typeof(NuGetPackageValidationRules).GetMember(ruleName, BindingFlags.Public | BindingFlags.Static);
                 if (members is null || members.Length != 1)
                 {
-                    result.ErrorMessage = $"Invalid rule '{ruleName}'";
+                    result.AddError($"Invalid rule '{ruleName}'");
                     return null;
                 }
 
                 if (members[0] is not PropertyInfo property)
                 {
-                    result.ErrorMessage = $"Invalid rule '{ruleName}'";
+                    result.AddError($"Invalid rule '{ruleName}'");
                     return null;
                 }
 
@@ -172,7 +176,7 @@ internal static partial class Program
             {
                 if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var parsedValue))
                 {
-                    result.ErrorMessage = $"Invalid value '{value}'";
+                    result.AddError($"Invalid value '{value}'");
                     return null;
                 }
 

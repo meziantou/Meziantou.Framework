@@ -15,41 +15,44 @@ internal static class Program
 {
     public static Task<int> Main(string[] args)
     {
-        return MainImpl(args, console: null);
+        return MainImpl(args, configure: null);
     }
 
-    internal static Task<int> MainImpl(string[] args, IConsole? console)
+    internal static Task<int> MainImpl(string[] args, Action<CommandLineConfiguration>? configure)
     {
-        var rootCommand = new RootCommand() { Name = "meziantou.html" }; // Name must match <ToolCommandName> in csproj
+        var rootCommand = new RootCommand();
         AddReplaceValueCommand(rootCommand);
         AddAppendVersionCommand(rootCommand);
         InlineResourceCommand(rootCommand);
-        return rootCommand.InvokeAsync(args, console);
+        var commandLineConfiguration = new CommandLineConfiguration(rootCommand);
+        configure?.Invoke(commandLineConfiguration);
+        return commandLineConfiguration.InvokeAsync(args);
     }
 
     private static void AddReplaceValueCommand(RootCommand rootCommand)
     {
-        var singleFileOption = new Option<string>("--single-file", description: "Path of the file to update") { IsRequired = false };
-        var filePatternOption = new Option<string>("--file-pattern", description: "Glob pattern to find files to update") { IsRequired = false };
-        var rootDirectoryOption = new Option<string>("--root-directory", description: "Root directory for glob pattern") { IsRequired = false };
-        var xpathOption = new Option<string>("--xpath", "XPath to the elements/attributes to replace") { IsRequired = true };
-        var newValueOption = new Option<string>("--new-value", "New value for the elements/attributes") { IsRequired = true };
+        var singleFileOption = new Option<string>("--single-file") { Required = false, Description = "Path of the file to update" };
+        var filePatternOption = new Option<string>("--file-pattern") { Required = false, Description = "Glob pattern to find files to update" };
+        var rootDirectoryOption = new Option<string>("--root-directory") { Required = false, Description = "Root directory for glob pattern" };
+        var xpathOption = new Option<string>("--xpath", "XPath to the elements/attributes to replace") { Required = true };
+        var newValueOption = new Option<string>("--new-value", "New value for the elements/attributes") { Required = true };
 
         var replaceValueCommand = new Command("replace-value")
         {
             Description = "Replace element/attribute values in an html file",
         };
-        replaceValueCommand.AddOption(singleFileOption);
-        replaceValueCommand.AddOption(filePatternOption);
-        replaceValueCommand.AddOption(rootDirectoryOption);
-        replaceValueCommand.AddOption(xpathOption);
-        replaceValueCommand.AddOption(newValueOption);
+        replaceValueCommand.Options.Add(singleFileOption);
+        replaceValueCommand.Options.Add(filePatternOption);
+        replaceValueCommand.Options.Add(rootDirectoryOption);
+        replaceValueCommand.Options.Add(xpathOption);
+        replaceValueCommand.Options.Add(newValueOption);
 
-        replaceValueCommand.SetHandler(
-            (string? singleFile, string? filePattern, string? rootDirectory, string xpath, string newValue) => ReplaceValue(singleFile, filePattern, rootDirectory, xpath, newValue),
-            singleFileOption, filePatternOption, rootDirectoryOption, xpathOption, newValueOption);
+        replaceValueCommand.SetAction((parseResult, cancellationToken) =>
+        {
+            return ReplaceValue(parseResult.GetValue(singleFileOption), parseResult.GetValue(filePatternOption), parseResult.GetValue(rootDirectoryOption), parseResult.GetValue(xpathOption), parseResult.GetValue(newValueOption));
+        });
 
-        rootCommand.AddCommand(replaceValueCommand);
+        rootCommand.Subcommands.Add(replaceValueCommand);
     }
 
     private static async Task<int> ReplaceValue(string? filePath, string? globPattern, string? rootDirectory, string xpath, string newValue)
@@ -98,26 +101,26 @@ internal static class Program
 
     private static void AddAppendVersionCommand(RootCommand rootCommand)
     {
-        var singleFileOption = new Option<string>("--single-file", description: "Path of the file to update") { IsRequired = false };
-        var filePatternOption = new Option<string>("--file-pattern", description: "Glob pattern to find files to update") { IsRequired = false };
-        var rootDirectoryOption = new Option<string>("--root-directory", description: "Root directory for glob pattern") { IsRequired = false };
+        var singleFileOption = new Option<string>("--single-file") { Required = false, Description = "Path of the file to update" };
+        var filePatternOption = new Option<string>("--file-pattern") { Required = false, Description = "Glob pattern to find files to update" };
+        var rootDirectoryOption = new Option<string>("--root-directory") { Required = false, Description = "Root directory for glob pattern" };
 
         var command = new Command("append-version")
         {
             Description = "Append version to style / script URLs",
         };
-        command.AddOption(singleFileOption);
-        command.AddOption(filePatternOption);
-        command.AddOption(rootDirectoryOption);
+        command.Options.Add(singleFileOption);
+        command.Options.Add(filePatternOption);
+        command.Options.Add(rootDirectoryOption);
 
-        command.SetHandler(async (InvocationContext ctx) =>
+        command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var singleFile = ctx.ParseResult.GetValueForOption(singleFileOption);
-            var filePattern = ctx.ParseResult.GetValueForOption(filePatternOption);
-            var rootDirectory = ctx.ParseResult.GetValueForOption(rootDirectoryOption);
+            var singleFile = parseResult.GetValue(singleFileOption);
+            var filePattern = parseResult.GetValue(filePatternOption);
+            var rootDirectory = parseResult.GetValue(rootDirectoryOption);
             if (!string.IsNullOrEmpty(singleFile))
             {
-                await UpdateFileAsync(singleFile).ConfigureAwait(false);
+                await UpdateFileAsync(singleFile, cancellationToken).ConfigureAwait(false);
             }
 
             if (!string.IsNullOrEmpty(filePattern))
@@ -125,19 +128,18 @@ internal static class Program
                 if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                 {
                     await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
-                    ctx.ExitCode = -1;
-                    return;
+                    return -1;
                 }
 
                 foreach (var f in glob.EnumerateFiles(string.IsNullOrEmpty(rootDirectory) ? Environment.CurrentDirectory : rootDirectory))
                 {
-                    await UpdateFileAsync(f).ConfigureAwait(false);
+                    await UpdateFileAsync(f, cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            return;
+            return 0;
 
-            static async Task UpdateFileAsync(string file)
+            static async Task UpdateFileAsync(string file, CancellationToken cancellationToken)
             {
                 var doc = new HtmlDocument();
                 await using (var stream = File.OpenRead(file))
@@ -198,7 +200,7 @@ internal static class Program
                     if (!File.Exists(assetPath))
                         continue;
 
-                    var bytes = await File.ReadAllBytesAsync(assetPath).ConfigureAwait(false);
+                    var bytes = await File.ReadAllBytesAsync(assetPath, cancellationToken).ConfigureAwait(false);
 #pragma warning disable CA1308 // Normalize strings to uppercase
                     var hash = Convert.ToHexString(SHA512.HashData(bytes))[0..6].ToLowerInvariant();
 #pragma warning restore CA1308
@@ -246,34 +248,34 @@ internal static class Program
             }
         });
 
-        rootCommand.AddCommand(command);
+        rootCommand.Subcommands.Add(command);
     }
 
     private static void InlineResourceCommand(RootCommand rootCommand)
     {
-        var singleFileOption = new Option<string>("--single-file", description: "Path of the file to update") { IsRequired = false };
-        var filePatternOption = new Option<string>("--file-pattern", description: "Glob pattern to find files to update") { IsRequired = false };
-        var rootDirectoryOption = new Option<string>("--root-directory", description: "Root directory for glob pattern") { IsRequired = false };
-        var resourcePatternsOption = new Option<string[]>("--resource-patterns", description: "Files to inline") { IsRequired = true, AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.OneOrMore };
+        var singleFileOption = new Option<string>("--single-file") { Required = false, Description = "Path of the file to update" };
+        var filePatternOption = new Option<string>("--file-pattern") { Required = false, Description = "Glob pattern to find files to update" };
+        var rootDirectoryOption = new Option<string>("--root-directory") { Required = false, Description = "Root directory for glob pattern" };
+        var resourcePatternsOption = new Option<string[]>("--resource-patterns") { Required = true, AllowMultipleArgumentsPerToken = true, Arity = ArgumentArity.OneOrMore, Description = "Files to inline" };
 
         var command = new Command("inline-resources")
         {
             Description = "Inline scripts, styles, and images",
         };
-        command.AddOption(singleFileOption);
-        command.AddOption(filePatternOption);
-        command.AddOption(rootDirectoryOption);
-        command.AddOption(resourcePatternsOption);
+        command.Options.Add(singleFileOption);
+        command.Options.Add(filePatternOption);
+        command.Options.Add(rootDirectoryOption);
+        command.Options.Add(resourcePatternsOption);
 
-        command.SetHandler(async (InvocationContext ctx) =>
+        command.SetAction(async (parseResult, cancellationToken) =>
         {
-            var singleFile = ctx.ParseResult.GetValueForOption(singleFileOption);
-            var filePattern = ctx.ParseResult.GetValueForOption(filePatternOption);
-            var rootDirectory = ctx.ParseResult.GetValueForOption(rootDirectoryOption);
-            var resourcePatterns = ctx.ParseResult.GetValueForOption(resourcePatternsOption);
+            var singleFile = parseResult.GetValue(singleFileOption);
+            var filePattern = parseResult.GetValue(filePatternOption);
+            var rootDirectory = parseResult.GetValue(rootDirectoryOption);
+            var resourcePatterns = parseResult.GetValue(resourcePatternsOption);
             if (!string.IsNullOrEmpty(singleFile))
             {
-                await UpdateFileAsync(singleFile).ConfigureAwait(false);
+                await UpdateFileAsync(singleFile, cancellationToken).ConfigureAwait(false);
             }
 
             if (!string.IsNullOrEmpty(filePattern))
@@ -281,19 +283,18 @@ internal static class Program
                 if (!Glob.TryParse(filePattern, GlobOptions.None, out var glob))
                 {
                     await Console.Error.WriteLineAsync($"Glob pattern '{filePattern}' is invalid");
-                    ctx.ExitCode = -1;
-                    return;
+                    return -1;
                 }
 
                 foreach (var f in glob.EnumerateFiles(string.IsNullOrEmpty(rootDirectory) ? Environment.CurrentDirectory : rootDirectory))
                 {
-                    await UpdateFileAsync(f).ConfigureAwait(false);
+                    await UpdateFileAsync(f, cancellationToken).ConfigureAwait(false);
                 }
             }
 
-            return;
+            return 0;
 
-            static async Task UpdateFileAsync(string file)
+            static async Task UpdateFileAsync(string file, CancellationToken cancellationToken)
             {
                 var doc = new HtmlDocument();
                 await using (var stream = File.OpenRead(file))
@@ -357,21 +358,21 @@ internal static class Program
                     var element = node.ParentElement!;
                     if (string.Equals(element.Name, "SCRIPT", StringComparison.OrdinalIgnoreCase))
                     {
-                        var text = await File.ReadAllTextAsync(assetPath).ConfigureAwait(false);
+                        var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         element.RemoveAttribute("src");
                         element.InnerText = text;
 
                     }
                     else if (string.Equals(element.Name, "LINK", StringComparison.OrdinalIgnoreCase))
                     {
-                        var text = await File.ReadAllTextAsync(assetPath).ConfigureAwait(false);
+                        var text = await File.ReadAllTextAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         element.Name = "style";
                         element.RemoveAttribute("href");
                         element.InnerText = text;
                     }
                     else
                     {
-                        var bytes = await File.ReadAllBytesAsync(assetPath).ConfigureAwait(false);
+                        var bytes = await File.ReadAllBytesAsync(assetPath, cancellationToken).ConfigureAwait(false);
                         var base64 = Convert.ToBase64String(bytes);
                         if (!new FileExtensionContentTypeProvider().TryGetContentType(assetPath, out var contentType))
                         {
@@ -394,6 +395,6 @@ internal static class Program
             }
         });
 
-        rootCommand.AddCommand(command);
+        rootCommand.Subcommands.Add(command);
     }
 }

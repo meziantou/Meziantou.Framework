@@ -14,4 +14,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\common\ConsoleHelper.cs" Link="ConsoleHelper.cs" />
+  </ItemGroup>
+
 </Project>

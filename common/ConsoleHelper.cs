@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1001
 #pragma warning disable CA2213
+#pragma warning disable CA2215
 using System.CommandLine;
 using System.Diagnostics;
 using System.Text;

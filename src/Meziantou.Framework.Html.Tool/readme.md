@@ -5,11 +5,11 @@
 Description:
 
 Usage:
-  meziantou.html [command] [options]
+  Meziantou.Framework.Html.Tool [command] [options]
 
 Options:
-  --version       Show version information
   -?, -h, --help  Show help and usage information
+  --version       Show version information
 
 Commands:
   replace-value     Replace element/attribute values in an html file

@@ -9,10 +9,13 @@ foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
 
     [xml]$csprojContent = Get-Content -LiteralPath $csproj.FullName
     if ($csprojContent.Project.PropertyGroup.PackAsTool -ieq "true") {
+        $toolName = $csprojContent.Project.PropertyGroup.ToolCommandName.Value
+
         $toolReadme = Join-Path $csproj.DirectoryName "readme.md"
         if (Test-Path -LiteralPath $toolReadme) {
             $helpText = dotnet run --project $csproj --framework net9.0 -- --help
             $helpText = $($helpText -join "`n").TrimEnd(@(" ", "`t", "`r", "`n")).Replace(']9;4;3;\]9;4;0;\', '')
+            $helpText = $helpText.Replace($([System.IO.Path]::GetFileNameWithoutExtension($csproj.FullName), $toolName))
 
             [string]$toolReadmeContent = Get-Content -LiteralPath $toolReadme -Raw -Encoding utf8
 

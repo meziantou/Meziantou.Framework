@@ -31,18 +31,18 @@ Description:
   Validate a NuGet package
 
 Usage:
-  meziantou.validate-nuget-package <package-path>... [options]
+  Meziantou.Framework.NuGetPackageValidation.Tool <package-path>... [options]
 
 Arguments:
   <package-path>  Paths to the NuGet packages to validate
 
 Options:
-  --rules <rules>                          Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
-  --excluded-rules <excluded-rules>        Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
-  --excluded-rule-ids <excluded-rule-ids>  List of rule ids to exclude from analysis
-  --github-token <github-token>            GitHub token to authenticate requests
-  --only-report-errors                     Only report errors on the output
-  --version                                Show version information
-  -?, -h, --help                           Show help and usage information
+  -?, -h, --help                                                                                                                                                                                                                                                                       Show help and usage information
+  --version                                                                                                                                                                                                                                                                            Show version information
+  --rules <AssembliesMustBeOptimized|AuthorMustBeSet|DescriptionMustBeSet|IconMustBeSet|LicenseMustBeSet|PackageIdAvailableOnNuGetOrg|ProjectUrlMustBeSet|ReadmeMustBeSet|RepositoryBranchMustBeSet|RepositoryMustBeSet|Symbols|TagsMustBeSet|XmlDocumentationMustBePresent>
+  --excluded-rules <AssembliesMustBeOptimized|AuthorMustBeSet|DescriptionMustBeSet|IconMustBeSet|LicenseMustBeSet|PackageIdAvailableOnNuGetOrg|ProjectUrlMustBeSet|ReadmeMustBeSet|RepositoryBranchMustBeSet|RepositoryMustBeSet|Symbols|TagsMustBeSet|XmlDocumentationMustBePresent>
+  --excluded-rule-ids                                                                                                                                                                                                                                                                  List of rule ids to exclude from analysis
+  --github-token                                                                                                                                                                                                                                                                       GitHub token to authenticate requests
+  --only-report-errors                                                                                                                                                                                                                                                                 Only report errors on the output
 ```
 <!-- help -->

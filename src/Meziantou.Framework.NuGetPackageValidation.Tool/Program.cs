@@ -24,8 +24,11 @@ internal static partial class Program
     {
         var rootCommand = new RootCommand("Validate a NuGet package");
         var pathsArgument = new Argument<string[]>("package-path") { Arity = ArgumentArity.OneOrMore, Description = "Paths to the NuGet packages to validate" };
-        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules") { Description = GetRulesDescription(), CustomParser = ParseRuleValues };
-        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules") { Description = GetRulesDescription(), CustomParser = ParseRuleValues };
+        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules") { CustomParser = ParseRuleValues };
+        rulesOptions.AcceptOnlyFromAmong(GetRuleNames());
+        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules") { CustomParser = ParseRuleValues };
+        excludedRulesOptions.AcceptOnlyFromAmong(GetRuleNames());
+
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids") { Description = "List of rule ids to exclude from analysis", CustomParser = ParseIntValues };
         var githubTokenOptions = new Option<string?>("--github-token") { Description = "GitHub token to authenticate requests" };
         var onlyReportErrorsOptions = new Option<bool>("--only-report-errors") { Description = "Only report errors on the output" };
@@ -120,12 +123,13 @@ internal static partial class Program
         return commandLineConfiguration.InvokeAsync(args);
     }
 
-    private static string GetRulesDescription()
+    private static string[] GetRuleNames()
     {
-        return "Available rules: " + string.Join(", ", typeof(NuGetPackageValidationRules).GetMembers(BindingFlags.Public | BindingFlags.Static)
+        return typeof(NuGetPackageValidationRules).GetMembers(BindingFlags.Public | BindingFlags.Static)
             .OfType<PropertyInfo>()
             .Where(m => m.CanRead && m.PropertyType == typeof(NuGetPackageValidationRule))
-            .Select(m => m.Name));
+            .Select(m => m.Name)
+            .ToArray();
     }
 
     private static NuGetPackageValidationRule[]? ParseRuleValues(ArgumentResult result)

@@ -34,8 +34,8 @@ internal static class Program
         var singleFileOption = new Option<string>("--single-file") { Required = false, Description = "Path of the file to update" };
         var filePatternOption = new Option<string>("--file-pattern") { Required = false, Description = "Glob pattern to find files to update" };
         var rootDirectoryOption = new Option<string>("--root-directory") { Required = false, Description = "Root directory for glob pattern" };
-        var xpathOption = new Option<string>("--xpath", "XPath to the elements/attributes to replace") { Required = true };
-        var newValueOption = new Option<string>("--new-value", "New value for the elements/attributes") { Required = true };
+        var xpathOption = new Option<string>("--xpath") { Required = true, Description = "XPath to the elements/attributes to replace" };
+        var newValueOption = new Option<string>("--new-value") { Required = true, Description = "New value for the elements/attributes" };
 
         var replaceValueCommand = new Command("replace-value")
         {

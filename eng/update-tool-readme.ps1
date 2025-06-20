@@ -9,7 +9,7 @@ foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
 
     [xml]$csprojContent = Get-Content -LiteralPath $csproj.FullName
     if ($csprojContent.Project.PropertyGroup.PackAsTool -ieq "true") {
-        $toolName = $csprojContent.Project.PropertyGroup.ToolCommandName.Value
+        $toolName = $csprojContent.Project.PropertyGroup.ToolCommandName
 
         $toolReadme = Join-Path $csproj.DirectoryName "readme.md"
         if (Test-Path -LiteralPath $toolReadme) {

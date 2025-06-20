@@ -31,7 +31,7 @@ Description:
   Validate a NuGet package
 
 Usage:
-  Meziantou.Framework.NuGetPackageValidation.Tool <package-path>... [options]
+  meziantou.validate-nuget-package <package-path>... [options]
 
 Arguments:
   <package-path>  Paths to the NuGet packages to validate

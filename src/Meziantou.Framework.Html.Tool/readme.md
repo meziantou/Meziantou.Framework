@@ -5,7 +5,7 @@
 Description:
 
 Usage:
-  Meziantou.Framework.Html.Tool [command] [options]
+  meziantou.html [command] [options]
 
 Options:
   -?, -h, --help  Show help and usage information

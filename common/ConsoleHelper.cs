@@ -1,14 +1,16 @@
-﻿using System.CommandLine;
+﻿#pragma warning disable CA1001
+#pragma warning disable CA2213
+using System.CommandLine;
 using System.Diagnostics;
 using System.Text;
 using Xunit;
 
-namespace Meziantou.Framework.Html.Tool.Tests;
+namespace Meziantou.Framework;
 
 internal sealed class ConsoleHelper
 {
-    private readonly StringWriter _outputWriter = new StringWriter();
-    private readonly StringWriter _errorWriter = new StringWriter();
+    private readonly StringWriter _outputWriter = new();
+    private readonly StringWriter _errorWriter = new();
 
     private readonly TextWriter _teeOutputWriter;
     private readonly TextWriter _teeErrorWriter;

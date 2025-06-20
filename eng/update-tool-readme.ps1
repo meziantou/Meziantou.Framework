@@ -1,8 +1,8 @@
 $SrcRootPath = Join-Path $PSScriptRoot ".." "src" -Resolve
 $EditedFiles = 0
 
-$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE="1"
-$env:DOTNET_NOLOGO="true"
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
+$env:DOTNET_NOLOGO = "true"
 
 foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
     Write-Host "Processing $($csproj.FullName)"
@@ -15,7 +15,9 @@ foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
         if (Test-Path -LiteralPath $toolReadme) {
             $helpText = dotnet run --project $csproj --framework net9.0 -- --help
             $helpText = $($helpText -join "`n").TrimEnd(@(" ", "`t", "`r", "`n")).Replace(']9;4;3;\]9;4;0;\', '')
-            $helpText = $helpText.Replace($([System.IO.Path]::GetFileNameWithoutExtension($csproj.FullName), $toolName))
+            if ($toolName) {
+                $helpText = $helpText.Replace($([System.IO.Path]::GetFileNameWithoutExtension($csproj.FullName)), $toolName)
+            }
 
             [string]$toolReadmeContent = Get-Content -LiteralPath $toolReadme -Raw -Encoding utf8
 

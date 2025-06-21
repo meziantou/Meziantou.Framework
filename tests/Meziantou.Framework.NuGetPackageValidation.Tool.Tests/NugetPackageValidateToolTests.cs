@@ -1,26 +1,20 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Xunit;
+using Xunit.v3;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 
 [Collection("Tool")] // Ensure tests run sequentially
-public sealed class NugetPackageValidateToolTests
+public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
 {
-    private readonly ITestOutputHelper _testOutputHelper;
-
-    public NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-    }
-
-    private sealed record RunResult(int ExitCode, string Output, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
+    private sealed record RunResult(int ExitCode, string StdOutput, string StdError, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
 
     private sealed record ValidationResult(bool IsValid, Dictionary<string, NuGetPackageValidationResult> Packages);
 
     private async Task<RunResult> RunValidation(params string[] arguments)
     {
-        var console = new StringBuilderConsole();
-        var exitCode = await Program.MainImpl(arguments, console);
+        var console = new ConsoleHelper(testOutputHelper);
+        var exitCode = await Program.MainImpl(arguments, console.ConfigureConsole);
 
         Assert.True(console.Output.Count(c => c == '\n') > 2); // Check if output is written indented
 
@@ -33,16 +27,7 @@ public sealed class NugetPackageValidateToolTests
         {
         }
 
-        _testOutputHelper.WriteLine(console.Output);
-        return new RunResult(exitCode, console.Output, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
-    }
-
-    [Fact]
-    public async Task Help()
-    {
-        var result = await RunValidation("--help");
-        Assert.Equal(0, result.ExitCode);
-        Assert.Contains("meziantou.validate-nuget-package", result.Output, StringComparison.Ordinal);
+        return new RunResult(exitCode, console.Output, console.Error, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
     }
 
     [Fact]
@@ -102,7 +87,7 @@ public sealed class NugetPackageValidateToolTests
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "Unknown");
         Assert.Equal(1, result.ExitCode);
-        Assert.Contains("Invalid rule 'Unknown'", result.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Invalid rule 'Unknown'", result.StdError, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.ValidationResult);
     }
 

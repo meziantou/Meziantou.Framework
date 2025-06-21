@@ -1,3 +1,6 @@
+$ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
+
 $SrcRootPath = Join-Path $PSScriptRoot ".." "src" -Resolve
 $EditedFiles = 0
 

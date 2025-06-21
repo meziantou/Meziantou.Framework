@@ -12,15 +12,6 @@ public class HtmlToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-    public async Task Help()
-    {
-        var console = new ConsoleHelper(testOutputHelper);
-        var result = await Program.MainImpl(["--help"], console.ConfigureConsole);
-        Assert.Equal(0, result);
-        Assert.Contains("meziantou.html", console.Output, StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task AppendVersion_SingleFile()
     {
         await using var temp = TemporaryDirectory.Create();

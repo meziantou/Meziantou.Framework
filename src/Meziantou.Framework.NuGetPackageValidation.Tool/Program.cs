@@ -22,13 +22,10 @@ internal static partial class Program
     [SuppressMessage("Performance", "CA1869:Cache and reuse 'JsonSerializerOptions' instances", Justification = "Used only once")]
     internal static Task<int> MainImpl(string[] args, Action<CommandLineConfiguration>? configure)
     {
-        var rootCommand = new RootCommand("Validate a NuGet package");
+        var rootCommand = new RootCommand(description: "Validate a NuGet package");
         var pathsArgument = new Argument<string[]>("package-path") { Arity = ArgumentArity.OneOrMore, Description = "Paths to the NuGet packages to validate" };
-        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules") { CustomParser = ParseRuleValues };
-        rulesOptions.AcceptOnlyFromAmong(GetRuleNames());
-        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules") { CustomParser = ParseRuleValues };
-        excludedRulesOptions.AcceptOnlyFromAmong(GetRuleNames());
-
+        var rulesOptions = new Option<NuGetPackageValidationRule[]?>("--rules") { CustomParser = ParseRuleValues, Description = GetRulesDescription() };
+        var excludedRulesOptions = new Option<NuGetPackageValidationRule[]?>("--excluded-rules") { CustomParser = ParseRuleValues, Description = GetRulesDescription() };
         var excludedRuleIdsOptions = new Option<int[]?>("--excluded-rule-ids") { Description = "List of rule ids to exclude from analysis", CustomParser = ParseIntValues };
         var githubTokenOptions = new Option<string?>("--github-token") { Description = "GitHub token to authenticate requests" };
         var onlyReportErrorsOptions = new Option<bool>("--only-report-errors") { Description = "Only report errors on the output" };
@@ -123,13 +120,12 @@ internal static partial class Program
         return commandLineConfiguration.InvokeAsync(args);
     }
 
-    private static string[] GetRuleNames()
+    private static string GetRulesDescription()
     {
-        return typeof(NuGetPackageValidationRules).GetMembers(BindingFlags.Public | BindingFlags.Static)
+        return "Available rules: " + string.Join(", ", typeof(NuGetPackageValidationRules).GetMembers(BindingFlags.Public | BindingFlags.Static)
             .OfType<PropertyInfo>()
             .Where(m => m.CanRead && m.PropertyType == typeof(NuGetPackageValidationRule))
-            .Select(m => m.Name)
-            .ToArray();
+            .Select(m => m.Name));
     }
 
     private static NuGetPackageValidationRule[]? ParseRuleValues(ArgumentResult result)

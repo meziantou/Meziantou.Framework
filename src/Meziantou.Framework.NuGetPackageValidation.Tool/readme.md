@@ -37,12 +37,12 @@ Arguments:
   <package-path>  Paths to the NuGet packages to validate
 
 Options:
-  -?, -h, --help                                                                                                                                                                                                                                                                       Show help and usage information
-  --version                                                                                                                                                                                                                                                                            Show version information
-  --rules <AssembliesMustBeOptimized|AuthorMustBeSet|DescriptionMustBeSet|IconMustBeSet|LicenseMustBeSet|PackageIdAvailableOnNuGetOrg|ProjectUrlMustBeSet|ReadmeMustBeSet|RepositoryBranchMustBeSet|RepositoryMustBeSet|Symbols|TagsMustBeSet|XmlDocumentationMustBePresent>
-  --excluded-rules <AssembliesMustBeOptimized|AuthorMustBeSet|DescriptionMustBeSet|IconMustBeSet|LicenseMustBeSet|PackageIdAvailableOnNuGetOrg|ProjectUrlMustBeSet|ReadmeMustBeSet|RepositoryBranchMustBeSet|RepositoryMustBeSet|Symbols|TagsMustBeSet|XmlDocumentationMustBePresent>
-  --excluded-rule-ids                                                                                                                                                                                                                                                                  List of rule ids to exclude from analysis
-  --github-token                                                                                                                                                                                                                                                                       GitHub token to authenticate requests
-  --only-report-errors                                                                                                                                                                                                                                                                 Only report errors on the output
+  -?, -h, --help        Show help and usage information
+  --version             Show version information
+  --rules               Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --excluded-rules      Available rules: AssembliesMustBeOptimized, AuthorMustBeSet, DescriptionMustBeSet, IconMustBeSet, LicenseMustBeSet, PackageIdAvailableOnNuGetOrg, ProjectUrlMustBeSet, ReadmeMustBeSet, RepositoryMustBeSet, RepositoryBranchMustBeSet, Symbols, TagsMustBeSet, XmlDocumentationMustBePresent
+  --excluded-rule-ids   List of rule ids to exclude from analysis
+  --github-token        GitHub token to authenticate requests
+  --only-report-errors  Only report errors on the output
 ```
 <!-- help -->

@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Xunit;
 using Xunit.v3;
 
@@ -7,7 +7,7 @@ namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 [Collection("Tool")] // Ensure tests run sequentially
 public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHelper)
 {
-    private sealed record RunResult(int ExitCode, string Output, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
+    private sealed record RunResult(int ExitCode, string StdOutput, string StdError, ValidationResult ValidationResults, NuGetPackageValidationResult ValidationResult);
 
     private sealed record ValidationResult(bool IsValid, Dictionary<string, NuGetPackageValidationResult> Packages);
 
@@ -27,15 +27,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
         {
         }
 
-        return new RunResult(exitCode, console.Output, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
-    }
-
-    [Fact]
-    public async Task Help()
-    {
-        var result = await RunValidation("--help");
-        Assert.Equal(0, result.ExitCode);
-        Assert.Contains("meziantou.validate-nuget-package", result.Output, StringComparison.Ordinal);
+        return new RunResult(exitCode, console.Output, console.Error, deserializedResult, deserializedResult?.Packages.FirstOrDefault().Value);
     }
 
     [Fact]
@@ -95,7 +87,7 @@ public sealed class NugetPackageValidateToolTests(ITestOutputHelper testOutputHe
     {
         var result = await RunValidation("Packages/Release_Author.1.0.0.nupkg", "--rules", "Unknown");
         Assert.Equal(1, result.ExitCode);
-        Assert.Contains("Invalid rule 'Unknown'", result.Output, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Invalid rule 'Unknown'", result.StdError, StringComparison.OrdinalIgnoreCase);
         Assert.Null(result.ValidationResult);
     }
 

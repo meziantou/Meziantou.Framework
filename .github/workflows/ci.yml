@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate Readme
         run: ./eng/update-readme.ps1
       - name: Validate Tool Readme
@@ -45,8 +45,8 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 

@@ -1,0 +1,11 @@
+name: 'Setup .NET'
+runs:
+  using: "composite"
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        global-json-file: global.json
+        dotnet-version: |
+          9.0.x
+          8.0.x

@@ -43,7 +43,8 @@ public class CommandLineBuilderTests
         var args = CommandLineBuilder.WindowsQuotedArgument(value);
         var path = GetArgumentPrinterPath();
 
-        ValidateArguments("dotnet", "\"" + path + "\" " + args, [expected]);
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        ValidateArguments(dotnetPath, "\"" + path + "\" " + args, [expected]);
     }
 
     [Theory, RunIf(FactOperatingSystem.Windows)]
@@ -54,7 +55,8 @@ public class CommandLineBuilderTests
         var batPath = FullPath.Combine(Path.GetTempPath(), Guid.NewGuid() + ".cmd");
 
         var path = GetArgumentPrinterPath();
-        var fileContent = "dotnet \"" + path + "\" " + args;
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        var fileContent = $"\"{dotnetPath}\" \"{path}\" {args}";
         File.WriteAllText(batPath, fileContent);
 
         var cmdArguments = "/Q /C \"" + batPath + "\"";

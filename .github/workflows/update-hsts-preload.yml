@@ -19,8 +19,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - run: |
           dotnet run --project tools/Meziantou.Framework.Http.Hsts.Generator
           if ($LASTEXITCODE -ne 0) {

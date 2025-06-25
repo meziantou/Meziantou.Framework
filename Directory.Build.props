@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 
   <!-- Build options -->
   <PropertyGroup>
@@ -58,7 +58,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.154">
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.156">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -34,8 +34,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate Readme
         run: ./eng/update-readme.ps1
       - name: Validate Tool Readme
@@ -45,8 +45,8 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Validate
         run: .\eng\validate-testprojects-configuration.ps1
 
@@ -55,8 +55,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-taskdialog.binlog
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-notificationtray.binlog
@@ -82,8 +82,8 @@ jobs:
     needs: [ create_nuget ]
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: nuget
@@ -112,16 +112,11 @@ jobs:
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
-      - name: Setup .NET Core (additional versions)
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: |
-            8.0.x
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-        
+
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
@@ -171,6 +166,9 @@ jobs:
           echo "Installing .NET 8.0"
           ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
 
+          echo "Installing .NET 9.0"
+          ./dotnet-install.ps1 -Channel 9.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
+
           echo "Installing .NET (global.json)"
           ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet
 
@@ -211,8 +209,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
@@ -224,8 +222,8 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
 
   merge_coverage:
@@ -233,8 +231,8 @@ jobs:
     needs: [build_and_test_x64, build_and_test_windows_x86]
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
@@ -259,12 +257,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
-      - name: Setup .NET Core (global.json)
-        uses: actions/setup-dotnet@v4
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

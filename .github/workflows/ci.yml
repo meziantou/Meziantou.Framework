@@ -116,7 +116,7 @@ jobs:
         uses: ./.github/setup-dotnet
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-        
+
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
@@ -208,7 +208,7 @@ jobs:
         runtime: [ "win-x64", "win-x86", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4      
+      - uses: actions/checkout@v4
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
@@ -221,7 +221,7 @@ jobs:
         runtime: [ "win-x64", "win-x86" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4      
+      - uses: actions/checkout@v4
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -230,7 +230,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build_and_test_x64, build_and_test_windows_x86]
     steps:
-      - uses: actions/checkout@v4      
+      - uses: actions/checkout@v4
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Install dotnet-coverage

@@ -257,12 +257,13 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
     steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
       - uses: actions/download-artifact@v4
         with:
           name: nuget
-          path: ${{ env.NuGetDirectory }}      
-      - name: Setup .NET
-        uses: ./.github/setup-dotnet
+          path: ${{ env.NuGetDirectory }}
       - run: |
           Write-Host "Current ref: $env:GITHUB_REF"
           Write-Host "Searching nupkg in folder: ${{ env.NuGetDirectory }}"

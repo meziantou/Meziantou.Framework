@@ -163,10 +163,9 @@ internal static class FileEditor
                 tempFileInfo.TrySetReadOnly(false);
             }
 
-            using (var outputStream = File.OpenWrite(tempPath))
+            using (var outputStream = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var textWriter = new StreamWriter(outputStream, encoding))
             {
-                outputStream.SetLength(0); // Clear the file
                 newRoot.WriteTo(textWriter);
             }
 

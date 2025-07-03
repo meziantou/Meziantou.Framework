@@ -166,6 +166,7 @@ internal static class FileEditor
             using (var outputStream = File.OpenWrite(tempPath))
             using (var textWriter = new StreamWriter(outputStream, encoding))
             {
+                outputStream.SetLength(0); // Clear the file
                 newRoot.WriteTo(textWriter);
             }
 

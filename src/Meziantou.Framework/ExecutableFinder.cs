@@ -1,12 +1,26 @@
 namespace Meziantou.Framework;
 
-public static class ExecutableFinder
+#if PUBLIC_EXECUTABLE_FINDER
+public
+#else
+internal
+#endif
+static class ExecutableFinder
 {
+    private static bool IsWindows()
+    {
+#if NETFRAMEWORK
+        return Environment.OSVersion.Platform == PlatformID.Win32NT;
+#else
+        return OperatingSystem.IsWindows();
+#endif
+    }
+
     // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/path
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
-        var separator = OperatingSystem.IsWindows() ? ';' : ':';
-        var extensions = OperatingSystem.IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
+        var separator = IsWindows() ? ';' : ':';
+        var extensions = IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;

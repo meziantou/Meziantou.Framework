@@ -5,7 +5,7 @@
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>3.3.14</Version>
+    <Version>3.3.15</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
 
     <!-- Buggy because of netstandard2.0 -->
@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="..\Meziantou.Framework.CommandLine\CommandLineBuilder.cs" Link="Utils\CommandLineBuilder.cs" />
     <Compile Include="..\Meziantou.Framework.HumanReadableSerializer\Utils\StringUtils.cs" Link="Utils\StringUtils.cs" />
+    <Compile Include="..\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -38,6 +38,7 @@
     <Project Path="src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
+    <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit/Meziantou.Extensions.Logging.Xunit.csproj" />

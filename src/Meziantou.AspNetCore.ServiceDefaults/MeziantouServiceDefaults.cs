@@ -118,13 +118,16 @@ public static class MeziantouServiceDefaults
     {
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
 
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
         var environment = app.Services.GetRequiredService<IWebHostEnvironment>();
         if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
             app.UseHsts();
+        }
+
+        if (options.AntiForgery.Enabled)
+        {
+            app.UseAntiforgery();
         }
 
         app.MapHealthChecks("/health");

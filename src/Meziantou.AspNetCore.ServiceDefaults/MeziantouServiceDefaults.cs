@@ -48,6 +48,8 @@ public static class MeziantouServiceDefaults
         options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
         options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.RespectNullableAnnotations = true;
+        options.RespectRequiredConstructorParameters = true;
         options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
     }
 

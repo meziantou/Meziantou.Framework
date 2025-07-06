@@ -8,5 +8,4 @@ public sealed class MeziantouServiceDefaultsOptions
     public MeziantouOpenTelemetryConfiguration OpenTelemetry { get; } = new();
     public Action<JsonSerializerOptions>? ConfigureJsonOptions { get; set; }
     public MeziantouAntiForgeryConfiguration AntiForgery { get; } = new();
-
 }

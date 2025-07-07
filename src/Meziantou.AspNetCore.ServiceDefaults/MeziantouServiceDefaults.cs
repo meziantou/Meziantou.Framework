@@ -23,6 +23,11 @@ public static class MeziantouServiceDefaults
         configure?.Invoke(options);
 
         builder.Services.AddSingleton(options);
+        if (options.AntiForgery.Enabled)
+        {
+            builder.Services.AddDataProtection();
+        }
+
         builder.ConfigureOpenTelemetry(options);
         builder.AddDefaultHealthChecks();
 

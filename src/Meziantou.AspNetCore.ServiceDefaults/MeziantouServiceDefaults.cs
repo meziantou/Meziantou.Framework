@@ -25,7 +25,7 @@ public static class MeziantouServiceDefaults
         builder.Services.AddSingleton(options);
         if (options.AntiForgery.Enabled)
         {
-            builder.Services.AddDataProtection();
+            builder.Services.AddAntiforgery();
         }
 
         builder.ConfigureOpenTelemetry(options);

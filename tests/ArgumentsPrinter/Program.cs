@@ -1,12 +1,4 @@
-namespace ArgumentsPrinter;
-
-internal static class Program
+foreach (var argument in args)
 {
-    private static void Main(string[] args)
-    {
-        foreach (var argument in args)
-        {
-            Console.WriteLine(argument);
-        }
-    }
+    Console.WriteLine(argument);
 }

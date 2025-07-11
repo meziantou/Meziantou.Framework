@@ -125,11 +125,21 @@ public static class MeziantouServiceDefaults
     {
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
 
+        app.UseForwardedHeaders();
+        if (options.Https.Enabled)
+        {
+            app.UseHttpsRedirection();
+        }
+
         var environment = app.Services.GetRequiredService<IWebHostEnvironment>();
         if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
-            app.UseHsts();
+
+            if (options.Https.Enabled && options.Https.HstsEnabled)
+            {
+                app.UseHsts();
+            }
         }
 
         if (options.AntiForgery.Enabled)
@@ -140,7 +150,7 @@ public static class MeziantouServiceDefaults
         app.MapHealthChecks("/health");
         app.MapHealthChecks("/alive", new HealthCheckOptions
         {
-            Predicate = r => r.Tags.Contains("live")
+            Predicate = r => r.Tags.Contains("live"),
         });
 
         app.MapStaticAssets();

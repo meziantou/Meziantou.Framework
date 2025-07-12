@@ -35,6 +35,7 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
         {
             if (_lastSegment is null)
             {
+                Debug.Assert(_firstSegment is null);
                 _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(16);
             }
 
@@ -63,13 +64,18 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
             if (segment is null)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
+            // The first assertion ensures that we'll find the item.
+            // The collection is append-only, so items are never removed.
+            // So, there is no need to check if segment is null in the loop, or if index is negative.
             while (true)
             {
-                if (index < segment.Count)
+                var segmentCount = segment.Count;
+                if (index < segmentCount)
                     return segment.Items[index];
 
-                index -= segment.Count;
+                index -= segmentCount;
 
+                Debug.Assert(index >= 0);
                 Debug.Assert(segment.Next is not null);
                 segment = segment.Next;
             }

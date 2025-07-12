@@ -83,12 +83,11 @@ public sealed class CachedEnumerableTests
     }
 
     [Fact]
-    public async Task Enumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce_ThreadSafe()
+    public void Enumerable_MultipleConcurrentEnumerations_ShouldEnumerateOnce_ThreadSafe()
     {
         // Arrange
         var maxCount = 1000;
         var threadCount = 16;
-        using var resetEvent = new ManualResetEventSlim(initialState: false);
 
         var count = 0;
         using var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(GetData()));
@@ -101,14 +100,12 @@ public sealed class CachedEnumerableTests
             }
         }
 
-        var results = new List<int>[1000];
-        var task = Task.Run(() => Parallel.For(0, 1000, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, i =>
+        var results = new List<int>[10_000];
+        Parallel.For(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, i =>
         {
             results[i] = cachedEnumerable.ToList();
-        }));
+        });
 
-        resetEvent.Set();
-        await task;
         Assert.Equal(maxCount, count);
         foreach (var result in results)
         {
@@ -171,7 +168,6 @@ public sealed class CachedEnumerableTests
         // Arrange
         var maxCount = 1000;
         var threadCount = 16;
-        using var resetEvent = new ManualResetEventSlim(initialState: false);
 
         var count = 0;
         await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(GetData()));
@@ -185,14 +181,12 @@ public sealed class CachedEnumerableTests
             }
         }
 
-        var results = new List<int>[1000];
-        var task = Task.Run(() => Parallel.ForAsync(0, 1000, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, async (i, cancellationToken) =>
+        var results = new List<int>[10_000];
+        await Parallel.ForAsync(0, results.Length, new ParallelOptions { MaxDegreeOfParallelism = threadCount }, async (i, cancellationToken) =>
         {
             results[i] = await cachedEnumerable.ToListAsync(cancellationToken);
-        }));
+        });
 
-        resetEvent.Set();
-        await task;
         Assert.Equal(maxCount, count);
         foreach (var result in results)
         {

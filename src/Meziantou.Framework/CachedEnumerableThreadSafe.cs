@@ -54,11 +54,6 @@ internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
                 return true;
             }
 
-            if (_enumerator is null && !_enumerated)
-            {
-                _enumerator = _enumerable.GetEnumerator();
-            }
-
             // If we have already enumerate the whole stream, there is nothing else to do
             if (_enumerated)
             {
@@ -66,8 +61,9 @@ internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
                 return false;
             }
 
+            _enumerator ??= _enumerable.GetEnumerator();
+
             // Get the next item and store it to the cache
-            Debug.Assert(_enumerator is not null);
             if (_enumerator.MoveNext())
             {
                 result = _enumerator.Current;
@@ -77,9 +73,9 @@ internal sealed class CachedEnumerableThreadSafe<T> : ICachedEnumerable<T>
             else
             {
                 // There are no more items, we can dispose the underlying enumerator
+                _enumerated = true;
                 _enumerator.Dispose();
                 _enumerator = null;
-                _enumerated = true;
                 result = default!;
                 return false;
             }

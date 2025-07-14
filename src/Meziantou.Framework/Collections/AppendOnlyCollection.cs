@@ -75,8 +75,11 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
 
                 index -= segmentCount;
 
-                Debug.Assert(index >= 0);
-                Debug.Assert(segment.Next is not null);
+                if (index < 0)
+                    throw new InvalidOperationException("Index became negative while traversing segments.");
+                if (segment.Next is null)
+                    throw new InvalidOperationException("Next segment is null while traversing segments.");
+
                 segment = segment.Next;
             }
         }

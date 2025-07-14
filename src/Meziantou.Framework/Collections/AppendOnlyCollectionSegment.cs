@@ -10,7 +10,13 @@ internal sealed class AppendOnlyCollectionSegment<T>
     }
 
     public T[] Items { get; set; }
-    public int Count { get; set; }
+    
+    public int Count 
+    {
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
+    }
+
     public AppendOnlyCollectionSegment<T>? Next
     {
         get => Volatile.Read(ref field);

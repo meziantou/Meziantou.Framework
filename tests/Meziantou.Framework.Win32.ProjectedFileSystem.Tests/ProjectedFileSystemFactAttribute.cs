@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
@@ -5,7 +6,8 @@ namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 [AttributeUsage(AttributeTargets.All)]
 public sealed class ProjectedFileSystemFactAttribute : FactAttribute
 {
-    public ProjectedFileSystemFactAttribute()
+    public ProjectedFileSystemFactAttribute([CallerFilePath] string sourceFilePath = null, [CallerLineNumber] int sourceLineNumber = -1)
+        : base(sourceFilePath, sourceLineNumber)
     {
         var guid = Guid.NewGuid();
         var fullPath = Path.Combine(Path.GetTempPath(), "projFS", guid.ToString("N"));

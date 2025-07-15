@@ -108,15 +108,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
         try
         {
-            try
-            {
-                server.EndWaitForConnection(ar);
-            }
-            catch (ObjectDisposedException)
-            {
-                return;
-            }
-
+            server.EndWaitForConnection(ar);
             StartNamedPipeServer();
 
             using var binaryReader = new BinaryReader(server);
@@ -135,6 +127,9 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
                     NewInstance?.Invoke(this, new SingleInstanceEventArgs(processId, args));
                 }
             }
+        }
+        catch (ObjectDisposedException)
+        {
         }
         finally
         {

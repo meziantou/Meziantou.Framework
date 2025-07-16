@@ -109,18 +109,18 @@ jobs:
         include:
         - runs-on: windows-2022
           configuration: Debug
-          additionalArguments: "/p:InvariantGlobalization=true"
-          architecture: x86
-        - runs-on: windows-2022
-          configuration: Release
           architecture: x86
         - runs-on: windows-2022
           configuration: Debug
+          architecture: x86
           additionalArguments: "/p:InvariantGlobalization=true"
+        - runs-on: windows-2022
+          configuration: Release
           architecture: x86
         - runs-on: windows-2022
           configuration: Release
           architecture: x86
+          additionalArguments: "/p:InvariantGlobalization=true"
       fail-fast: false
     steps:
       - id: compute-artifact-name

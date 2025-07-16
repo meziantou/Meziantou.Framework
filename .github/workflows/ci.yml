@@ -42,7 +42,7 @@ jobs:
         run: ./eng/update-tool-readme.ps1
 
   validate_test_projects:
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET
@@ -101,23 +101,23 @@ jobs:
     strategy:
       matrix:
         # x64, arm64
-        runs-on: [ windows-2022, ubuntu-24.04, ubuntu-24.04-arm, macos-15 ]
+        runs-on: [ windows-2025, ubuntu-24.04, ubuntu-24.04-arm, macos-15 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
         architecture: [""]
         # x86
         include:
-        - runs-on: windows-2022
+        - runs-on: windows-2025
           configuration: Debug
           architecture: x86
-        - runs-on: windows-2022
+        - runs-on: windows-2025
           configuration: Debug
           architecture: x86
           additionalArguments: "/p:InvariantGlobalization=true"
-        - runs-on: windows-2022
+        - runs-on: windows-2025
           configuration: Release
           architecture: x86
-        - runs-on: windows-2022
+        - runs-on: windows-2025
           configuration: Release
           architecture: x86
           additionalArguments: "/p:InvariantGlobalization=true"
@@ -170,7 +170,7 @@ jobs:
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
-    runs-on: windows-2022
+    runs-on: windows-2025
     timeout-minutes: 60
     strategy:
       matrix:

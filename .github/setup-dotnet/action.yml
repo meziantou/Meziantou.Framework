@@ -7,7 +7,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup .NET
-      if: ${{ inputs.architecture == "" }}
+      if: inputs.architecture == ""
       uses: actions/setup-dotnet@v4
       with:
         global-json-file: global.json
@@ -15,7 +15,7 @@ runs:
           9.0.x
           8.0.x
     - name: Setup .NET
-      if: ${{ inputs.architecture == "x86"}}
+      if: inputs.architecture == "x86" }}
       shell: pwsh
       run: |     
           echo "Downloading dotnet-install.ps1 script"

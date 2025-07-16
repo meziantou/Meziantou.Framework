@@ -1,11 +1,39 @@
 name: 'Setup .NET'
+inputs:
+  architecture:
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
     - name: Setup .NET
+      if: ${{ inputs.architecture == "" }}
       uses: actions/setup-dotnet@v4
       with:
         global-json-file: global.json
         dotnet-version: |
           9.0.x
           8.0.x
+    - name: Setup .NET
+      if: ${{ inputs.architecture == "x86"}}
+      shell: pwsh
+      run: |     
+          echo "Downloading dotnet-install.ps1 script"
+          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
+          
+          echo "::group::Install .NET 8.0"
+          ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
+          echo "::endgroup::"
+
+          echo "::group::Install .NET 9.0"
+          ./dotnet-install.ps1 -Channel 9.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
+          echo "::endgroup::"
+
+          echo "::group::Install .NET (global.json)"
+          ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet
+          echo "::endgroup::"
+
+          echo "::group::Validating installation"
+          Get-Command dotnet
+          dotnet --info
+          echo "::endgroup::"

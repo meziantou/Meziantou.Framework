@@ -156,26 +156,12 @@ jobs:
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always
+      - name: Setup .NET
+        uses: ./.github/setup-dotnet
+        with:
+          architecture: x86
       - name: Build and Run Tests
         run: |
-          echo "::group::Install .NET"
-
-          echo "Downloading dotnet-install.ps1 script"
-          Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-
-          echo "Installing .NET 8.0"
-          ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
-
-          echo "Installing .NET 9.0"
-          ./dotnet-install.ps1 -Channel 9.0 -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet -NoPath
-
-          echo "Installing .NET (global.json)"
-          ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ matrix.architecture }} -InstallDir ~/dotnet
-
-          Get-Command dotnet
-          dotnet --info
-          echo "::endgroup::"
-
           echo "::group::Build"
           dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /p:BuildInParallel=false /bl ${{ matrix.additionalArguments }}
           if ($LASTEXITCODE -ne 0) {

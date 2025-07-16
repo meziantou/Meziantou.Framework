@@ -93,27 +93,46 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_and_test_x64:
+  build_and_test:
     runs-on: ${{ matrix.runs-on }}
     timeout-minutes: 60
     env:
       TestResultsDirectory: ${{ github.workspace}}/TestResults
     strategy:
       matrix:
-        runs-on: [ windows-2022, ubuntu-24.04, ubuntu-24.04-arm, macos-14 ]
+        # x64, arm64
+        runs-on: [ windows-2022, ubuntu-24.04, ubuntu-24.04-arm, macos-15 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
+        # x86
+        include:
+        - runs-on: windows-2022
+          configuration: Debug
+          additionalArguments: "/p:InvariantGlobalization=true"
+          architecture: x86
+        - runs-on: windows-2022
+          configuration: Release
+          architecture: x86
+        - runs-on: windows-2022
+          configuration: Debug
+          additionalArguments: "/p:InvariantGlobalization=true"
+          architecture: x86
+        - runs-on: windows-2022
+          configuration: Release
+          architecture: x86
       fail-fast: false
     steps:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-x64-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.architecture}}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v4
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
         uses: ./.github/setup-dotnet
+        with:
+          architecture: ${{ matrix.architecture }}
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
@@ -121,60 +140,10 @@ jobs:
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
+        env: 
+          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }} # Attempt to reduce flakiness
         run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
 
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
-          if-no-files-found: error
-          retention-days: 3
-          path: |
-            **/*.binlog
-            ${{ env.TestResultsDirectory }}/**/*
-
-  build_and_test_windows_x86:
-    runs-on: ${{ matrix.runs-on }}
-    timeout-minutes: 60
-    env:
-      TestResultsDirectory: ${{github.workspace}}/TestResults
-      Architecture: ${{ matrix.architecture }}
-      TestTfmsInParallel: false # Attempt to reduce flakiness
-    strategy:
-      matrix:
-        configuration: [ Debug, Release ]
-        additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        include:
-        - runs-on: windows-2022
-          architecture: x86
-      fail-fast: false
-    steps:
-      - id: compute-artifact-name
-        name: Compute artifact name
-        run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ matrix.architecture }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
-          "artifact-name=$Name" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v4
-      - run: git config --global protocol.file.allow always
-      - name: Setup .NET
-        uses: ./.github/setup-dotnet
-        with:
-          architecture: x86
-      - name: Build and Run Tests
-        run: |
-          echo "::group::Build"
-          dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /p:BuildInParallel=false /bl ${{ matrix.additionalArguments }}
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
-          echo "::endgroup::"
-
-          echo "::group::Run tests"
-          dotnet test eng/build.proj --configuration "${{ matrix.configuration }}" --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
-          echo "::endgroup::"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -214,7 +183,7 @@ jobs:
 
   merge_coverage:
     runs-on: ubuntu-24.04
-    needs: [build_and_test_x64, build_and_test_windows_x86]
+    needs: [build_and_test]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET
@@ -241,7 +210,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-24.04
-    needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test_x64, build_and_test_windows_x86, test_trimming, test_trimming_wpf ]
+    needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET

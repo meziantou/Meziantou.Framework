@@ -10,6 +10,7 @@ internal sealed class ForwardResult(HttpClient? httpClient) : IResult
         return ExecuteAsyncCore(context, httpClient);
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "HttpClient doesn't need to be disposed")]
     public static async Task ExecuteAsyncCore(HttpContext context, HttpClient? httpClient = null)
     {
         var localHttpClient = httpClient ?? context.RequestServices.GetRequiredService<IHttpClientFactory>().CreateClient();

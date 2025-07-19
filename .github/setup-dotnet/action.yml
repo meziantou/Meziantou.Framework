@@ -18,10 +18,10 @@ runs:
     - name: Setup .NET
       if: ${{ inputs.architecture == 'x86' }}
       shell: pwsh
-      run: |     
+      run: |
           echo "Downloading dotnet-install.ps1 script"
           Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-          
+
           echo "::group::Install .NET 8.0"
           ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet -NoPath
           echo "::endgroup::"
@@ -45,7 +45,7 @@ runs:
             Write-Error "Dotnet command not found. Ensure .NET is installed correctly."
             exit 1
           }
-   
+
           $DotnetPath = Split-Path $DotnetPath -Parent
           Write-Host "Adding $DotnetPath to PATH"
           Write-Host "$DotnetPath" >> "$GITHUB_PATH"

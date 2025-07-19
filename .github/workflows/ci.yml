@@ -142,7 +142,10 @@ jobs:
         run: dotnet --info
 
       - name: Build
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        env: 
+          # Attempt to reduce flakiness on x86 because of limited RAM
+          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
+        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"

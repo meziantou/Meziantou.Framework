@@ -141,14 +141,11 @@ jobs:
       - name: .NET info
         run: dotnet --info
 
-      - name: Restore
-        run: dotnet restore eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
-
       - name: Build
         env:
           # Attempt to reduce flakiness on x86 because of limited RAM
           AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
-        run: dotnet build eng/build.proj --no-restore --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
+        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"

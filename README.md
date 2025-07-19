@@ -73,8 +73,9 @@ If you want to contribute to this repo, please [read the contributing guide](CON
 
 How to setup your development environment:
 
+1. Install the version of .NET SDK specified in the `global.json` file
 1. Install the latest version of Visual Studio
-2. Use the solution `Meziantou.Framework.sln`
-3. You can run unit tests using the Test explorer in Visual Studio or the command line `dotnet test`
+1. Use the solution `Meziantou.Framework.slnx`
+1. You can run unit tests using the Test explorer in Visual Studio or the command line `dotnet test`
 
 You can also use Visual Studio Code but I haven't test it.

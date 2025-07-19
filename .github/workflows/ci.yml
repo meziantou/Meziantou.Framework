@@ -134,10 +134,13 @@ jobs:
         uses: ./.github/setup-dotnet
         with:
           architecture: ${{ matrix.architecture }}
+          
       - name: PATH
         run: echo $env:PATH
+
       - name: .NET info
         run: dotnet --info
+
       - name: Build
         run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 

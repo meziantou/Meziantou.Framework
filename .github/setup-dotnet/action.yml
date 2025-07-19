@@ -16,6 +16,7 @@ runs:
           9.0.x
           8.0.x
     - name: Setup .NET
+      id: install-win-x86
       if: ${{ inputs.architecture == 'x86' }}
       shell: pwsh
       run: |
@@ -48,5 +49,6 @@ runs:
 
           $DotnetPath = Split-Path $DotnetPath -Parent
           Write-Host "Adding $DotnetPath to PATH ($env:GITHUB_PATH)"
-          Write-Host "$DotnetPath" >> "$env:GITHUB_PATH"
+          "$DotnetPath" >> "$env:GITHUB_PATH"
+          Get-Content "$env:GITHUB_PATH"
           echo "::endgroup::"

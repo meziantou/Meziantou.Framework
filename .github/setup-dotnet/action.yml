@@ -1,4 +1,4 @@
-name: 'Setup .NET'
+  name: 'Setup .NET'
 inputs:
   architecture:
     required: false
@@ -39,15 +39,14 @@ runs:
           dotnet --info
           echo "::endgroup::"
 
-    - name: Add dotnet to path
-      shell: pwsh
-      run: |
-        $DotnetPath = (Get-Command dotnet).Source
-        if ($DotnetPath -eq $null) {
-          Write-Error "Dotnet command not found. Ensure .NET is installed correctly."
-          exit 1
-        }
-
-        $DotnetPath = Split-Path $DotnetPath -Parent
-        Write-Host "Adding $DotnetPath to PATH"
-        Write-Host "$DotnetPath" >> "$GITHUB_PATH"
+          echo "::group::Add dotnet to PATH"
+          $DotnetPath = (Get-Command dotnet).Source
+          if ($DotnetPath -eq $null) {
+            Write-Error "Dotnet command not found. Ensure .NET is installed correctly."
+            exit 1
+          }
+   
+          $DotnetPath = Split-Path $DotnetPath -Parent
+          Write-Host "Adding $DotnetPath to PATH"
+          Write-Host "$DotnetPath" >> "$GITHUB_PATH"
+          echo "::endgroup::"

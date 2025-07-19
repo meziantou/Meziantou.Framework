@@ -1,4 +1,4 @@
-  name: 'Setup .NET'
+name: 'Setup .NET'
 inputs:
   architecture:
     required: false

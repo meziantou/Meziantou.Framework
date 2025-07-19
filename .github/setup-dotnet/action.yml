@@ -16,12 +16,13 @@ runs:
           9.0.x
           8.0.x
     - name: Setup .NET
+      id: install-win-x86
       if: ${{ inputs.architecture == 'x86' }}
       shell: pwsh
-      run: |     
+      run: |
           echo "Downloading dotnet-install.ps1 script"
           Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
-          
+
           echo "::group::Install .NET 8.0"
           ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet -NoPath
           echo "::endgroup::"
@@ -37,4 +38,17 @@ runs:
           echo "::group::Validating installation"
           Get-Command dotnet
           dotnet --info
+          echo "::endgroup::"
+
+          echo "::group::Add dotnet to PATH"
+          $DotnetPath = (Get-Command dotnet).Source
+          if ($DotnetPath -eq $null) {
+            Write-Error "Dotnet command not found. Ensure .NET is installed correctly."
+            exit 1
+          }
+
+          $DotnetPath = Split-Path $DotnetPath -Parent
+          Write-Host "Adding $DotnetPath to PATH ($env:GITHUB_PATH)"
+          "$DotnetPath" >> "$env:GITHUB_PATH"
+          Get-Content "$env:GITHUB_PATH"
           echo "::endgroup::"

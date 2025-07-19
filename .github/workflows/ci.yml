@@ -134,16 +134,28 @@ jobs:
         uses: ./.github/setup-dotnet
         with:
           architecture: ${{ matrix.architecture }}
+
+      - name: PATH
+        run: echo $env:PATH
+
+      - name: .NET info
+        run: dotnet --info
+
       - name: Build
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
+        env:
+          # Attempt to reduce flakiness on x86 because of limited RAM
+          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
+        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        env: 
-          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }} # Attempt to reduce flakiness
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
+        env:
+          # Attempt to reduce flakiness on x86 because of limited RAM
+          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }}
+          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
+        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v4
         if: always()

@@ -16,7 +16,9 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
     {
         await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
         {
-            services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
+            services.ConfigureHttpClientDefaults(services => services
+                .ConfigurePrimaryHttpMessageHandler(_ => new SocketsHttpHandler() { AllowAutoRedirect = true })
+                .AddStandardResilienceHandler());
         });
 
         mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());

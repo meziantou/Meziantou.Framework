@@ -48,7 +48,7 @@ public sealed partial class HttpClientMock : IAsyncDisposable
     {
         var builder = WebApplication.CreateBuilder();
         builder.Services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
-        builder.Services.AddSingleton<HttpClient>();
+        builder.Services.AddHttpClient();
         builder.Services.AddSingleton<MatcherPolicy, SchemeMatcherPolicy>();
         builder.Services.AddSingleton<MatcherPolicy, QueryStringMatcherPolicy>();
         builder.Services.AddSingleton<RequestCounter>();

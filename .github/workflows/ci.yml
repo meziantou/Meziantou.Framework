@@ -134,7 +134,7 @@ jobs:
         uses: ./.github/setup-dotnet
         with:
           architecture: ${{ matrix.architecture }}
-          
+
       - name: PATH
         run: echo $env:PATH
 
@@ -149,8 +149,10 @@ jobs:
 
       - name: Run tests
         env: 
-          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }} # Attempt to reduce flakiness
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ matrix.additionalArguments }}
+          # Attempt to reduce flakiness on x86 because of limited RAM
+          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }}
+          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
+        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v4
         if: always()

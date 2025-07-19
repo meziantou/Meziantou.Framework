@@ -142,7 +142,7 @@ jobs:
         run: dotnet --info
 
       - name: Restore
-        run: dotnet restore eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
+        run: dotnet restore eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
       - name: Build
         env:

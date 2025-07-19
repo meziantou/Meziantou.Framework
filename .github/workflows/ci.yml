@@ -123,6 +123,8 @@ jobs:
           additionalArguments: "/p:InvariantGlobalization=true"
       fail-fast: false
     steps:
+      - name: PATH
+        run: echo $env:PATH
       - name: .NET info
         run: dotnet --info
       - id: compute-artifact-name

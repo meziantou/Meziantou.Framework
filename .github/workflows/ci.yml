@@ -123,6 +123,8 @@ jobs:
           additionalArguments: "/p:InvariantGlobalization=true"
       fail-fast: false
     steps:
+      - name: .NET info
+        run: dotnet --info
       - id: compute-artifact-name
         name: Compute artifact name
         run: |

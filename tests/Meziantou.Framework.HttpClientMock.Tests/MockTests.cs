@@ -19,11 +19,11 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
             services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
         });
 
-        mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());
+        mock.MapGet("https://google.com/", () => Results.Extensions.ForwardToUpstream());
 
         using var client = mock.CreateHttpClient();
-        var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
-        Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
+        var value = await client.GetStringAsync("https://google.com/", XunitCancellationToken);
+        Assert.Contains("<title>Google</title>", value, StringComparison.Ordinal);
     }
 
     [Fact]

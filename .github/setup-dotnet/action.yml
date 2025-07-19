@@ -47,6 +47,6 @@ runs:
           }
 
           $DotnetPath = Split-Path $DotnetPath -Parent
-          Write-Host "Adding $DotnetPath to PATH"
-          Write-Host "$DotnetPath" >> "$GITHUB_PATH"
+          Write-Host "Adding $DotnetPath to PATH ($env:GITHUB_PATH)"
+          Write-Host "$DotnetPath" >> "$env:GITHUB_PATH"
           echo "::endgroup::"

@@ -98,19 +98,4 @@ public class ChangeJournalTests
         FileIdentifier fileIdentifier = new FileIdentifier(10);
         Assert.Equal("000000000000000a", fileIdentifier.ToString());
     }
-
-    private static void Retry(Action action)
-    {
-        for (var i = 5; i >= 0; i--)
-        {
-            try
-            {
-                action();
-                return;
-            }
-            catch when (i > 0)
-            {
-            }
-        }
-    }
 }

@@ -16,15 +16,13 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
     {
         await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
         {
-            services.ConfigureHttpClientDefaults(services => services
-                .ConfigurePrimaryHttpMessageHandler(_ => new SocketsHttpHandler() { AllowAutoRedirect = true })
-                .AddStandardResilienceHandler());
+            services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
         });
 
         mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());
 
         using var client = mock.CreateHttpClient();
-        var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
+        var value = await Retry(() => client.GetStringAsync("https://example.com/", XunitCancellationToken));
         Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
     }
 
@@ -38,7 +36,6 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         mock.MapGet("https://example.com/dummy", () => "dummy");
         mock.MapGet("https://example.com/not_found", () => Results.NotFound("not_found"));
         mock.ForwardUnknownRequestsToUpstream();
-
 
         await ExpectString(mock, "https://example.com/dummy", "dummy");
 
@@ -226,28 +223,6 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
         using var client = mock.CreateHttpClient();
         using var response = await client.GetAsync(url);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    private static async Task<T> Retry<T>(Func<Task<T>> action)
-    {
-        var attempt = 0;
-        while (true)
-        {
-            try
-            {
-                return await action();
-            }
-            catch
-            {
-                if (attempt >= 10)
-                {
-                    throw;
-                }
-            }
-
-            attempt++;
-            await Task.Delay(50, XunitCancellationToken);
-        }
     }
 
     private sealed class SampleClient(HttpClient httpClient)

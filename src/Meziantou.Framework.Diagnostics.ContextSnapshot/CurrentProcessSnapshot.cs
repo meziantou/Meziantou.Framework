@@ -13,8 +13,5 @@ public sealed class CurrentProcessSnapshot : ProcessSnapshot
     public string CommandLine { get; } = Environment.CommandLine;
     public string ProcessPath { get; } = Environment.ProcessPath;
     public Architecture ProcessArchitecture { get; } = RuntimeInformation.ProcessArchitecture;
-
-#if NET8_0_OR_GREATER
     public bool IsPrivilegedProcess { get; } = Environment.IsPrivilegedProcess;
-#endif
 }

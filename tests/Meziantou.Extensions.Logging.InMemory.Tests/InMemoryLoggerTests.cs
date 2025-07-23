@@ -1,3 +1,5 @@
+#pragma warning disable CA1848 // Use the LoggerMessage delegates
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -8,13 +10,62 @@ public sealed partial class InMemoryLoggerTests
     private static readonly Action<ILogger, int, Exception> SampleMessage = LoggerMessage.Define<int>(LogLevel.Information, new EventId(1, "Sample Event Id"), "Test {Number}");
 
     [Fact]
+    public void CreateLogger()
+    {
+        var logger = InMemoryLogger.CreateLogger("sample");
+
+        logger.LogInformation("Test");
+
+        var log = logger.Logs.Informations.Single();
+        Assert.Equal("Test", log.Message);
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.Empty(log.Scopes);
+        Assert.Equal("[sample] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
+    }
+
+    [Fact]
+    public void CreateTypedLogger()
+    {
+        var logger = InMemoryLogger.CreateLogger<InMemoryLoggerTests>();
+
+        logger.LogInformation("Test");
+
+        var log = logger.Logs.Informations.Single();
+        Assert.Equal("Test", log.Message);
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.Empty(log.Scopes);
+        Assert.Equal("[Meziantou.Extensions.Logging.InMemory.Tests.InMemoryLoggerTests] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
+    }
+
+    [Fact]
+    public void UsingDependencyInjection()
+    {
+        using var inMemoryLoggerProvider = new InMemoryLoggerProvider(NullExternalScopeProvider.Instance);
+        var serviceCollection = new ServiceCollection();
+        serviceCollection.AddLogging(builder =>
+        {
+            builder.AddProvider(inMemoryLoggerProvider);
+            builder.SetMinimumLevel(LogLevel.Trace);
+        });
+
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+        var logger = serviceProvider.GetRequiredService<ILogger<InMemoryLoggerTests>>();
+
+        logger.LogInformation("Test");
+
+        var log = inMemoryLoggerProvider.Logs.Informations.Single();
+        Assert.Equal("Test", log.Message);
+        Assert.Equivalent(new[] { KeyValuePair.Create<string, object>("{OriginalFormat}", "Test") }, log.State);
+        Assert.Empty(log.Scopes);
+        Assert.Equal("[Meziantou.Extensions.Logging.InMemory.Tests.InMemoryLoggerTests] Information: Test\n  => [{\"Key\":\"{OriginalFormat}\",\"Value\":\"Test\"}]", log.ToString());
+    }
+
+    [Fact]
     public void WithoutScope()
     {
         using var provider = new InMemoryLoggerProvider(NullExternalScopeProvider.Instance);
         var logger = provider.CreateLogger("my_category");
-#pragma warning disable CA1848 // Use the LoggerMessage delegates
         logger.LogInformation("Test");
-#pragma warning restore CA1848
 
         var log = provider.Logs.Informations.Single();
         Assert.Equal("Test", log.Message);

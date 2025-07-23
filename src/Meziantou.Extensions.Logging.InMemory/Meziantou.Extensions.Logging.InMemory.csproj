@@ -6,8 +6,12 @@
 
     <Description>An in-memory implementation of Microsoft.Extension.Logging.ILogger</Description>
     <PackageTags>logger</PackageTags>
-    <Version>1.2.7</Version>
+    <Version>1.3.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\common\TypeNameHelper.cs" Link="TypeNameHelper.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Extensions.Logging.InMemory.Tests" />

@@ -6,14 +6,6 @@ using Xunit;
 namespace Meziantou.Extensions.Logging.Xunit.v3;
 #pragma warning restore IDE1006 // Naming Styles
 
-public sealed class XUnitLogger<T> : XUnitLogger, ILogger<T>
-{
-    public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider)
-        : base(testOutputHelper, scopeProvider, typeof(T).FullName)
-    {
-    }
-}
-
 public class XUnitLogger : ILogger
 {
     private readonly ITestOutputHelper? _testOutputHelper;

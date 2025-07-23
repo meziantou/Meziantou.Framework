@@ -6,9 +6,7 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
 {
     private readonly IExternalScopeProvider _scopeProvider;
     private readonly InMemoryLogCollection _logs;
-#if NET8_0_OR_GREATER
     private readonly TimeProvider _timeProvider;
-#endif
 
     public InMemoryLogCollection Logs => _logs;
 
@@ -31,13 +29,9 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     {
         _logs = logs ?? [];
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
-
-#if NET8_0_OR_GREATER
         _timeProvider = TimeProvider.System;
-#endif
     }
 
-#if NET8_0_OR_GREATER
     public InMemoryLoggerProvider(TimeProvider? timeProvider)
     : this(timeProvider, logs: null, scopeProvider: null)
     {
@@ -60,15 +54,14 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
     }
 
-#endif
-
     public ILogger CreateLogger(string categoryName)
     {
-        return new InMemoryLogger(categoryName, _logs, _scopeProvider
-#if NET8_0_OR_GREATER
-            , _timeProvider
-#endif
-            );
+        return new InMemoryLogger(categoryName, _logs, _scopeProvider, _timeProvider);
+    }
+
+    public ILogger<T> CreateLogger<T>()
+    {
+        return new InMemoryLogger<T>(_logs, _scopeProvider, _timeProvider);
     }
 
     public void Dispose()

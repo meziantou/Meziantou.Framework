@@ -44,7 +44,6 @@ public sealed partial class InMemoryLoggerTests
         var serviceCollection = new ServiceCollection();
         serviceCollection.AddLogging(builder =>
         {
-
             builder.AddProvider(inMemoryLoggerProvider);
             builder.SetMinimumLevel(LogLevel.Trace);
         });

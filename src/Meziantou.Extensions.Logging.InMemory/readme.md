@@ -6,8 +6,8 @@ var logger = loggerProvider.CreateLogger("sample");
 var typedLogger = loggerProvider.CreateLogger<Sample>();
 
 // Short version if you need a single logger instance:
-var logger = InMemoryLogger.CreateLogger("sample");
-var logger = InMemoryLogger.CreateLogger<Sample>();
+var singleLogger = InMemoryLogger.CreateLogger("sample");
+var singleTypedLogger = InMemoryLogger.CreateLogger<Sample>();
 
 // do stuff with the logger
 

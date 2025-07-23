@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;

@@ -12,14 +12,9 @@ public sealed class HardwareIntrinsicsSnapshot
     internal HardwareIntrinsicsSnapshot() { }
 
     public int VectorLength => Vector<byte>.Count * 8;
-
-#if NET7_0_OR_GREATER
     public bool IsVector64HardwareAccelerated => System.Runtime.Intrinsics.Vector64.IsHardwareAccelerated;
     public bool IsVector128HardwareAccelerated => System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated;
     public bool IsVector256HardwareAccelerated => System.Runtime.Intrinsics.Vector256.IsHardwareAccelerated;
-#endif
-
-#if NET8_0_OR_GREATER
     public bool IsVector512HardwareAccelerated => System.Runtime.Intrinsics.Vector512.IsHardwareAccelerated;
     public bool IsX86Avx512FSupported => Avx512F.IsSupported;
     public bool IsX86Avx512FVLSupported => Avx512F.VL.IsSupported;
@@ -27,199 +22,36 @@ public sealed class HardwareIntrinsicsSnapshot
     public bool IsX86Avx512CDSupported => Avx512CD.IsSupported;
     public bool IsX86Avx512DQSupported => Avx512DQ.IsSupported;
     public bool IsX86Avx512VbmiSupported => Avx512Vbmi.IsSupported;
-#endif
 
-    public bool IsWasmBaseSupported =>
-        GetIsSupported("System.Runtime.Intrinsics.Wasm.WasmBase");
+    public bool IsWasmBaseSupported => GetIsSupported("System.Runtime.Intrinsics.Wasm.WasmBase");
 
-    public bool IsWasmPackedSimdSupported =>
-#if NET8_0_OR_GREATER
-        System.Runtime.Intrinsics.Wasm.PackedSimd.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Wasm.PackedSimd");
-#endif
-
-    public bool IsX86BaseSupported =>
-#if NET6_0_OR_GREATER
-        X86Base.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.X86Base");
-#endif
-
-    public bool IsX86SseSupported =>
-#if NET6_0_OR_GREATER
-        Sse.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Sse");
-#endif
-
-    public bool IsX86Sse2Supported =>
-#if NET6_0_OR_GREATER
-        Sse2.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Sse2");
-#endif
-
-    public bool IsX86Sse3Supported =>
-#if NET6_0_OR_GREATER
-        Sse3.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Sse3");
-#endif
-
-    public bool IsX86Ssse3Supported =>
-#if NET6_0_OR_GREATER
-        Ssse3.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Ssse3");
-#endif
-
-    public bool IsX86Sse41Supported =>
-#if NET6_0_OR_GREATER
-        Sse41.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Sse41");
-#endif
-
-    public bool IsX86Sse42Supported =>
-#if NET6_0_OR_GREATER
-        Sse42.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Sse42");
-#endif
-
-    public bool IsX86AvxSupported =>
-#if NET6_0_OR_GREATER
-        Avx.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Avx");
-#endif
-
-    public bool IsX86Avx2Supported =>
-#if NET6_0_OR_GREATER
-        Avx2.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Avx2");
-#endif
-
-    public bool IsX86AesSupported =>
-#if NET6_0_OR_GREATER
-        System.Runtime.Intrinsics.X86.Aes.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Aes");
-#endif
-
-    public bool IsX86Bmi1Supported =>
-#if NET6_0_OR_GREATER
-        Bmi1.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Bmi1");
-#endif
-
-    public bool IsX86Bmi2Supported =>
-#if NET6_0_OR_GREATER
-        Bmi2.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Bmi2");
-#endif
-
-    public bool IsX86FmaSupported =>
-#if NET6_0_OR_GREATER
-        Fma.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Fma");
-#endif
-
-    public bool IsX86LzcntSupported =>
-#if NET6_0_OR_GREATER
-        Lzcnt.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Lzcnt");
-#endif
-
-    public bool IsX86PclmulqdqSupported =>
-#if NET6_0_OR_GREATER
-        Pclmulqdq.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Pclmulqdq");
-#endif
-
-    public bool IsX86PopcntSupported =>
-#if NET6_0_OR_GREATER
-        Popcnt.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.Popcnt");
-#endif
-
-    public bool IsX86AvxVnniSupported =>
-#if NET6_0_OR_GREATER
-        AvxVnni.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.AvxVnni");
-#endif
-
-    public bool IsX86SerializeSupported =>
-#if NET7_0_OR_GREATER
-        X86Serialize.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.X86.X86Serialize");
-#endif
-
-    public bool IsArmBaseSupported =>
-#if NET6_0_OR_GREATER
-        ArmBase.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.ArmBase");
-#endif
-
-    public bool IsArmAdvSimdSupported =>
-#if NET6_0_OR_GREATER
-        AdvSimd.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.AdvSimd");
-#endif
-
-    public bool IsArmAesSupported =>
-#if NET6_0_OR_GREATER
-        System.Runtime.Intrinsics.Arm.Aes.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Aes");
-#endif
-
-    public bool IsArmCrc32Supported =>
-#if NET6_0_OR_GREATER
-        Crc32.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Crc32");
-#endif
-
-    public bool IsArmDpSupported =>
-#if NET6_0_OR_GREATER
-        Dp.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Dp");
-#endif
-
-    public bool IsArmRdmSupported =>
-#if NET6_0_OR_GREATER
-        Rdm.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Rdm");
-#endif
-
-    public bool IsArmSha1Supported =>
-#if NET6_0_OR_GREATER
-        Sha1.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Sha1");
-#endif
-
-    public bool IsArmSha256Supported =>
-#if NET6_0_OR_GREATER
-        Sha256.IsSupported;
-#else
-        GetIsSupported("System.Runtime.Intrinsics.Arm.Sha256");
-#endif
+    public bool IsWasmPackedSimdSupported => System.Runtime.Intrinsics.Wasm.PackedSimd.IsSupported;
+    public bool IsX86BaseSupported => X86Base.IsSupported;
+    public bool IsX86SseSupported => Sse.IsSupported;
+    public bool IsX86Sse2Supported => Sse2.IsSupported;
+    public bool IsX86Sse3Supported => Sse3.IsSupported;
+    public bool IsX86Ssse3Supported => Ssse3.IsSupported;
+    public bool IsX86Sse41Supported => Sse41.IsSupported;
+    public bool IsX86Sse42Supported => Sse42.IsSupported;
+    public bool IsX86AvxSupported => Avx.IsSupported;
+    public bool IsX86Avx2Supported => Avx2.IsSupported;
+    public bool IsX86AesSupported => System.Runtime.Intrinsics.X86.Aes.IsSupported;
+    public bool IsX86Bmi1Supported => Bmi1.IsSupported;
+    public bool IsX86Bmi2Supported => Bmi2.IsSupported;
+    public bool IsX86FmaSupported => Fma.IsSupported;
+    public bool IsX86LzcntSupported => Lzcnt.IsSupported;
+    public bool IsX86PclmulqdqSupported => Pclmulqdq.IsSupported;
+    public bool IsX86PopcntSupported => Popcnt.IsSupported;
+    public bool IsX86AvxVnniSupported => AvxVnni.IsSupported;
+    public bool IsX86SerializeSupported => X86Serialize.IsSupported;
+    public bool IsArmBaseSupported => ArmBase.IsSupported;
+    public bool IsArmAdvSimdSupported => AdvSimd.IsSupported;
+    public bool IsArmAesSupported => System.Runtime.Intrinsics.Arm.Aes.IsSupported;
+    public bool IsArmCrc32Supported => Crc32.IsSupported;
+    public bool IsArmDpSupported => Dp.IsSupported;
+    public bool IsArmRdmSupported => Rdm.IsSupported;
+    public bool IsArmSha1Supported => Sha1.IsSupported;
+    public bool IsArmSha256Supported => Sha256.IsSupported;
 
     private static bool GetIsSupported([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] string typeName)
     {

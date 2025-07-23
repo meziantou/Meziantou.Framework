@@ -28,10 +28,7 @@ public sealed class OperatingSystemSnapshot
     public bool IsMacCatalyst { get; } = OperatingSystem.IsMacCatalyst();
     public bool IsTvOS { get; } = OperatingSystem.IsTvOS();
     public bool IsWatchOS { get; } = OperatingSystem.IsWatchOS();
-
-#if NET8_0_OR_GREATER
     public bool IsWasi { get; } = OperatingSystem.IsWasi();
-#endif
 
     private static int? GetWindowsUbr()
     {

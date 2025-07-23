@@ -134,7 +134,6 @@ public sealed partial class InMemoryLoggerTests
         Assert.Equivalent(100_000, provider.Logs.Count());
     }
 
-#if NET8_0_OR_GREATER
     [Fact]
     public void WithTimeProvider()
     {
@@ -150,5 +149,4 @@ public sealed partial class InMemoryLoggerTests
     {
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
     }
-#endif
 }

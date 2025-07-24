@@ -15,10 +15,21 @@
 
     <Using Include="Xunit.TestContext" Alias="TestContext" />
     <Using Include="TestUtilities.XUnitStaticHelpers" Static="true" />
-    
+
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit.v3" Version="3.0.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.3" />
+
+    <PackageReference Include="Microsoft.Testing.Extensions.CrashDump" Version="1.7.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.14.2" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HangDump" Version="1.7.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.HotReload" Version="1.7.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.Retry" Version="1.7.3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="1.7.3" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(IncludeDefaultTestReferences)' == 'true'">
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+  </PropertyGroup>
 </Project>

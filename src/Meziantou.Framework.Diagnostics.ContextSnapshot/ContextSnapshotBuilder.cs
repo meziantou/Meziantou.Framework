@@ -91,6 +91,7 @@ public sealed class ContextSnapshotBuilder
         AddContextData("STARTUP_HOOKS");
         AddContextData("System.Net.Security.TlsCacheSize");
         AddContextData("System.Security.Cryptography.Pkcs12UnspecifiedPasswordIterationLimit");
+        AddContextData("System.Threading.DefaultStackSize");
         AddContextData("System.Threading.ThreadPool.HillClimbing.Bias");
         AddContextData("System.Threading.ThreadPool.HillClimbing.ErrorSmoothingFactor");
         AddContextData("System.Threading.ThreadPool.HillClimbing.GainExponent");

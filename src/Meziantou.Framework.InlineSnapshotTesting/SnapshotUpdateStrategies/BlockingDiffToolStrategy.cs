@@ -10,7 +10,7 @@ internal sealed class BlockingDiffToolStrategy : MergeToolStrategyBase
 
     public override void UpdateFile(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
+        using var process = LaunchMergeTool(settings, currentFilePath, newFilePath);
         process.WaitForExit();
         TryDeleteFile(newFilePath);
     }

@@ -6,6 +6,8 @@ internal sealed class MergeToolStrategy : MergeToolStrategyBase
     public override bool MustReportError(InlineSnapshotSettings settings, string path) => true;
     public override void UpdateFile(InlineSnapshotSettings settings, string currentFilePath, string newFilePath)
     {
-        LaunchMergeTool(settings, currentFilePath, newFilePath);
+        using (LaunchMergeTool(settings, currentFilePath, newFilePath))
+        {
+        }
     }
 }

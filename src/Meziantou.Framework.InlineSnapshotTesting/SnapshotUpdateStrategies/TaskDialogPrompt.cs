@@ -167,7 +167,8 @@ internal sealed class TaskDialogPrompt : Prompt
                 UseShellExecute = false,
             };
 
-            Process.Start(psi);
+            var process = Process.Start(psi);
+            process?.Dispose();
         }
     }
 

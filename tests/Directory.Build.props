@@ -2,6 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
   <PropertyGroup>
+    <Nullable>disable</Nullable>
     <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
     <IncludeDefaultTestReferences Condition="'$(IncludeDefaultTestReferences)' == ''">true</IncludeDefaultTestReferences>
   </PropertyGroup>

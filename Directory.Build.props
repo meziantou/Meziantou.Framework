@@ -31,19 +31,12 @@
 
   <!-- Package configuration -->
   <PropertyGroup>
-    <_PackageThirdPartyNoticesPath Condition="Exists('$(MSBuildProjectDirectory)\THIRD-PARTY-NOTICES.TXT')">$(MSBuildProjectDirectory)\THIRD-PARTY-NOTICES.TXT</_PackageThirdPartyNoticesPath>
-
     <PackageProjectUrl>https://github.com/meziantou/Meziantou.Framework</PackageProjectUrl>
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)\LICENSE.txt" Pack="true" PackagePath="" Visible="false" />
-    <None Include="$(_PackageThirdPartyNoticesPath)" Pack="true" PackagePath="" Condition="$(_PackageThirdPartyNoticesPath) != ''" />
-  </ItemGroup>
-
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.170">
+    <PackageReference Include="Meziantou.DotNet.CodingStandard" Version="1.0.172">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

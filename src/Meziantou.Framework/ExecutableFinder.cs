@@ -44,14 +44,11 @@ static class ExecutableFinder
             if (File.Exists(fullPath))
                 return fullPath;
 
-            if (!executableName.Contains('.', StringComparison.Ordinal))
+            foreach (var extension in extensions)
             {
-                foreach (var extension in extensions)
-                {
-                    var pathWithExt = fullPath + extension;
-                    if (File.Exists(pathWithExt))
-                        return pathWithExt;
-                }
+                var pathWithExt = fullPath + extension;
+                if (File.Exists(pathWithExt))
+                    return pathWithExt;
             }
 
             return null;

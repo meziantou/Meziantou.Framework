@@ -12,34 +12,61 @@ namespace Meziantou.Framework.Tests;
 public sealed class MockTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
-    public async Task Results_ForwardToUpstream()
+    public async Task Results_ForwardToUpstream_HttpClient()
     {
-        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
+        await using var mock1 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
+        mock1.MapGet("https://example.com/", () => "test");
+        using var mock1Client = mock1.CreateHttpClient();
+
+        await using var mock2 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
         {
             services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
         });
 
-        mock.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream());
+        mock2.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream(mock1Client));
 
-        using var client = mock.CreateHttpClient();
-        var value = await Retry(() => client.GetStringAsync("https://example.com/", XunitCancellationToken));
-        Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
+        using var client = mock2.CreateHttpClient();
+        var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
+        Assert.Equal("test", value);
+    }
+
+    [Fact]
+    public async Task Results_ForwardToUpstream_HttpClientFactory()
+    {
+        await using var mock1 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
+        mock1.MapGet("https://example.com/", () => "test");
+        using var mock1Client = mock1.CreateHttpClient();
+
+        await using var mock2 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
+        {
+            services.AddSingleton<IHttpClientFactory>(new CustomHttpFactory(mock1));
+        });
+
+        mock2.MapGet("https://example.com/", () => Results.Extensions.ForwardToUpstream(mock1Client));
+
+        using var client = mock2.CreateHttpClient();
+        var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
+        Assert.Equal("test", value);
     }
 
     [Fact]
     public async Task ForwardUnknownRequestsToUpstream()
     {
-        await using var mock = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
+        await using var mock1 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper));
+        mock1.MapGet("https://example.com/", () => "test");
+        using var mock1Client = mock1.CreateHttpClient();
+
+        await using var mock2 = new HttpClientMock(XUnitLogger.CreateLogger(testOutputHelper), services =>
         {
             services.ConfigureHttpClientDefaults(services => services.AddStandardResilienceHandler());
         });
-        mock.MapGet("https://example.com/dummy", () => "dummy");
-        mock.MapGet("https://example.com/not_found", () => Results.NotFound("not_found"));
-        mock.ForwardUnknownRequestsToUpstream();
+        mock2.MapGet("https://example.com/dummy", () => "dummy");
+        mock2.MapGet("https://example.com/not_found", () => Results.NotFound("not_found"));
+        mock2.ForwardUnknownRequestsToUpstream(mock1Client);
 
-        await ExpectString(mock, "https://example.com/dummy", "dummy");
+        await ExpectString(mock2, "https://example.com/dummy", "dummy");
 
-        using var client = mock.CreateHttpClient();
+        using var client = mock2.CreateHttpClient();
         {
             using var value = await client.GetAsync("https://example.com/not_found", XunitCancellationToken);
             Assert.Equal(HttpStatusCode.NotFound, value.StatusCode);
@@ -49,8 +76,8 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
 
         {
             // There are many issues with connection initialization on GitHub Actions
-            var value = await Retry(() => client.GetStringAsync("https://example.com/", XunitCancellationToken));
-            Assert.Contains("<title>Example Domain</title>", value, StringComparison.Ordinal);
+            var value = await client.GetStringAsync("https://example.com/", XunitCancellationToken);
+            Assert.Equal("test", value);
         }
     }
 
@@ -214,19 +241,25 @@ public sealed class MockTests(ITestOutputHelper testOutputHelper)
     private static async Task ExpectString(HttpClientMock mock, string url, string expectedValue)
     {
         using var client = mock.CreateHttpClient();
-        var value = await client.GetStringAsync(url);
+        var value = await client.GetStringAsync(url, TestContext.Current.CancellationToken);
         Assert.Equal(expectedValue, value);
     }
 
     private static async Task ExpectNotFound(HttpClientMock mock, string url)
     {
         using var client = mock.CreateHttpClient();
-        using var response = await client.GetAsync(url);
+        using var response = await client.GetAsync(url, TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private sealed class SampleClient(HttpClient httpClient)
     {
-        public Task<string> GetStringAsync(string url) => httpClient.GetStringAsync(url);
+        public Task<string> GetStringAsync(string url) => httpClient.GetStringAsync(url, TestContext.Current.CancellationToken);
     }
+
+    private sealed class CustomHttpFactory(HttpClientMock mock) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => mock.CreateHttpClient();
+    }
+
 }

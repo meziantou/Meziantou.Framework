@@ -123,7 +123,7 @@ public class ProcessExtensionsTests
     [Fact, RunIf(FactOperatingSystem.Windows)]
     public void GetProcesses()
     {
-        var processes = ProcessExtensions.GetProcesses();
+        var processes = ProcessExtensions.GetProcesses().ToArray();
 
         var currentProcess = Process.GetCurrentProcess();
         Assert.Contains(processes, p => p.ProcessId == currentProcess.Id);

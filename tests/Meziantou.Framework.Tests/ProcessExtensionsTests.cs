@@ -127,7 +127,7 @@ public class ProcessExtensionsTests
 
         var currentProcess = Process.GetCurrentProcess();
         Assert.Contains(processes, p => p.ProcessId == currentProcess.Id);
-        Assert.Equal(processes.Distinct(), processes); // items must be unique
+        Assert.Equal(processes.Distinct().OrderBy(p => p.ProcessId), processes.OrderBy(p => p.ProcessId)); // items must be unique
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]

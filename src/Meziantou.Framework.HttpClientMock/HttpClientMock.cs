@@ -98,6 +98,11 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         Application.Map(RoutePatternFactory.Parse("{**catchAll}"), () => Results.Extensions.ForwardToUpstream());
     }
 
+    public void ForwardUnknownRequestsToUpstream(HttpClient httpClient)
+    {
+        Application.Map(RoutePatternFactory.Parse("{**catchAll}"), () => Results.Extensions.ForwardToUpstream(httpClient));
+    }
+
     private IEndpointConventionBuilder Map(string[] methods, string path, Delegate handler)
     {
         return MapCore(path, path => Application.MapMethods(path, methods, handler));

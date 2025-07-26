@@ -10,4 +10,4 @@ Console.WriteLine("Data Loaded in " + loadingTime.ElapsedMilliseconds + "ms");
 using var client = new HttpClient(new HstsClientHandler(new SocketsHttpHandler(), policyCollection), disposeHandler: true);
 using var response = await client.GetAsync("http://apis.google.com").ConfigureAwait(false);
 
-Console.WriteLine(response.RequestMessage.RequestUri);
+Console.WriteLine(response.RequestMessage!.RequestUri);

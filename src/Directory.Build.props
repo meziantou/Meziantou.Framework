@@ -3,7 +3,6 @@
 
   <PropertyGroup>
     <IsPackable>True</IsPackable>
-    <Nullable>enable</Nullable>
     <SkipLocalsInit>true</SkipLocalsInit>
     <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
   </PropertyGroup>

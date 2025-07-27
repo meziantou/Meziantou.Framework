@@ -9,47 +9,39 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
     private const int MaxSegmentSize = 8000;
 
     private readonly Lock _lock = new();
-    private AppendOnlyCollectionSegment<T>? _firstSegment;
-    private AppendOnlyCollectionSegment<T>? _lastSegment;
+    private readonly AppendOnlyCollectionSegment<T> _firstSegment;
+    private AppendOnlyCollectionSegment<T> _lastSegment;
+    private volatile int _count;
 
     public AppendOnlyCollection()
+        : this(16)
     {
     }
 
     public AppendOnlyCollection(int capacity)
     {
-        if (capacity < 0)
-            throw new ArgumentException("Capacity must be greater than or equal to 0", nameof(capacity));
+        if (capacity <= 0)
+            throw new ArgumentException("Capacity must be greater than 0", nameof(capacity));
 
-        if (capacity > 0)
-        {
-            _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(capacity);
-        }
+        _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(capacity);
     }
 
-    public int Count { get; private set; }
+    public int Count => _count;
 
     public void Add(T item)
     {
         lock (_lock)
         {
-            if (_lastSegment is null)
+            if (_lastSegment.IsFull)
             {
-                Debug.Assert(_firstSegment is null);
-                _firstSegment = _lastSegment = new AppendOnlyCollectionSegment<T>(16);
-            }
-
-            if (_lastSegment.Count == _lastSegment.Items.Length)
-            {
-                var newCapacity = Math.Min(MaxSegmentSize, _lastSegment.Count * 2);
+                var newCapacity = Math.Min(MaxSegmentSize, _lastSegment.Items.Length * 2);
                 var newSegment = new AppendOnlyCollectionSegment<T>(newCapacity);
                 _lastSegment.Next = newSegment;
                 _lastSegment = newSegment;
             }
 
-            _lastSegment.Items[_lastSegment.Count] = item;
-            _lastSegment.Count++;
-            Count++;
+            _lastSegment.AddItem(item);
+            _count++;
         }
     }
 
@@ -61,8 +53,6 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             var segment = _firstSegment;
-            if (segment is null)
-                throw new ArgumentOutOfRangeException(nameof(index));
 
             // The first assertion ensures that we'll find the item.
             // The collection is append-only, so items are never removed.
@@ -70,13 +60,15 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
             while (true)
             {
                 var segmentCount = segment.Count;
-                if (index < segmentCount)
-                    return segment.Items[index];
+                if (segment.TryGetItem(index, out var item))
+                    return item;
+
+                Debug.Assert(segment.IsFull);
+                Debug.Assert(segment.Next is not null);
 
                 index -= segmentCount;
-
                 Debug.Assert(index >= 0);
-                Debug.Assert(segment.Next is not null);
+
                 segment = segment.Next;
             }
         }
@@ -96,9 +88,10 @@ public sealed class AppendOnlyCollection<T> : IEnumerable<T>, IReadOnlyCollectio
         var segment = _firstSegment;
         while (segment is not null)
         {
-            for (var i = 0; i < segment.Count; i++)
+            var items = segment.Items;
+            for (var i = 0; i < items.Length; i++)
             {
-                var item = segment.Items[i];
+                var item = items[i];
                 if (predicate(item))
                     return item;
             }

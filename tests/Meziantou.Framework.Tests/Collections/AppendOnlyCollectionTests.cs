@@ -30,7 +30,7 @@ public sealed class AppendOnlyCollectionTests
     }
 
     [Theory]
-    [InlineData(0)]
+    [InlineData(1)]
     [InlineData(10)]
     [InlineData(100)]
     [InlineData(1000)]

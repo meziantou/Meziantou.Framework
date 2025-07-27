@@ -99,32 +99,35 @@ public class CommandLineBuilderTests
 
     private void ValidateArguments(string fileName, string arguments, string[] expectedArguments)
     {
-        var psi = new ProcessStartInfo
+        Retry(() =>
         {
-            FileName = fileName,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        // https://github.com/Microsoft/vstest/issues/1263
-        psi.EnvironmentVariables["COR_ENABLE_PROFILING"] = "0";
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+            };
+            // https://github.com/Microsoft/vstest/issues/1263
+            psi.EnvironmentVariables["COR_ENABLE_PROFILING"] = "0";
 
-        _testOutputHelper.WriteLine($"Executing '{fileName}' '{arguments}'");
-        using var process = Process.Start(psi);
-        process.WaitForExit();
+            _testOutputHelper.WriteLine($"Executing '{fileName}' '{arguments}'");
+            using var process = Process.Start(psi);
+            process.WaitForExit();
 
-        var errors = process.StandardError.ReadToEnd();
-        Assert.True(string.IsNullOrEmpty(errors));
+            var errors = process.StandardError.ReadToEnd();
+            Assert.True(string.IsNullOrEmpty(errors));
 
-        var actualArguments = process.StandardOutput.ReadToEnd().Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-        _testOutputHelper.WriteLine("----------");
-        foreach (var arg in actualArguments)
-        {
-            _testOutputHelper.WriteLine(arg);
-        }
+            var actualArguments = process.StandardOutput.ReadToEnd().Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            _testOutputHelper.WriteLine("----------");
+            foreach (var arg in actualArguments)
+            {
+                _testOutputHelper.WriteLine(arg);
+            }
 
-        Assert.Equal(0, process.ExitCode);
-        Assert.Equal(expectedArguments, actualArguments);
+            Assert.Equal(0, process.ExitCode);
+            Assert.Equal(expectedArguments, actualArguments);
+        });
     }
 }

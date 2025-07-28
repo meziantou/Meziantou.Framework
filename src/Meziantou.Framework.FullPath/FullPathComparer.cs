@@ -15,7 +15,7 @@ public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<Fu
 
     // You can configure case-sensitivity per folder or system-wide on Windows, so the comparer is not the perfect way to compare path.
     // However, this is an edge case so this class won't support it at the moment.
-    private static FullPathComparer GetDefaultComparer() => GetComparer(ignoreCase: IsWindows());
+    private static FullPathComparer GetDefaultComparer() => GetComparer(ignoreCase: IsCaseInsensitiveOperatingSystem);
 
     internal static FullPathComparer GetComparer(bool ignoreCase) => ignoreCase ? CaseInsensitive : CaseSensitive;
 
@@ -41,17 +41,20 @@ public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<Fu
         return _stringComparer.GetHashCode(obj._value);
     }
 
-    [SupportedOSPlatformGuard("windows")]
-    private static bool IsWindows()
+    // https://github.com/dotnet/runtime/blob/655836ed3b8363eb5088c63f388b327fb3f21cb5/src/libraries/Common/src/System/IO/PathInternal.CaseSensitivity.cs#L23-L30
+    // Note that this implementation is not perfect, as it does not take into account the case sensitivity of the file system and all the possible settings.
+    // However, it is a good approximation for most use cases.
+    private static bool IsCaseInsensitiveOperatingSystem
     {
+        get
+        {
 #if NET5_0_OR_GREATER
-        return OperatingSystem.IsWindows();
+            return OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS();
 #elif NETCOREAPP3_1 || NETSTANDARD2_0
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET472
-        return Environment.OSVersion.Platform == PlatformID.Win32NT;
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.iOS) || RuntimeInformation.IsOSPlatform(OSPlatform.tvOS);
 #else
-#error Platform notsupported
+            return Environment.OSVersion.Platform is PlatformID.Win32NT or PlatformID.MacOSX;
 #endif
+        }
     }
 }

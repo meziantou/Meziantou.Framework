@@ -22,7 +22,7 @@ public sealed class ProcessOutput
         return Type switch
         {
             ProcessOutputType.StandardError => "error: " + Text,
-            _ => Text
+            _ => Text,
         };
     }
 }

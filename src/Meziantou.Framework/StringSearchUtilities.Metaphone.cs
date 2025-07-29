@@ -14,10 +14,10 @@ public static partial class StringSearchUtilities
         const string Varson = "CSPTG";
         const int MaxCodeLen = 4;
 
-        if (s.Length == 0)
+        if (s.Length is 0)
             return string.Empty;
 
-        if (s.Length == 1)
+        if (s.Length is 1)
             return s.ToUpperInvariant();
 
         var inwd = s.ToUpperInvariant().ToCharArray();
@@ -104,7 +104,7 @@ public static partial class StringSearchUtilities
                     case 'I':
                     case 'O':
                     case 'U':
-                        if (n == 0)
+                        if (n is 0)
                         {
                             code.Append(symb);
                             mtsz++;
@@ -157,7 +157,7 @@ public static partial class StringSearchUtilities
                         if (tmpS.IndexOf("CH", n, StringComparison.Ordinal) == n)
                         {
                             // detect CH
-                            if ((n == 0) && (wdsz >= 3) && // CH consonant -> K consonant
+                            if ((n is 0) && (wdsz >= 3) && // CH consonant -> K consonant
                                 !Vowels.Contains(local[2], StringComparison.Ordinal))
                             {
                                 code.Append('K');

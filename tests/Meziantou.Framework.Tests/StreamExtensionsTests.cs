@@ -26,7 +26,7 @@ public sealed class StreamExtensionsTests
         using var stream = new MemoryStream();
         Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
         stream.Seek(0, SeekOrigin.Begin);
-        using var byteByByteStream = new CustomStream(stream, canSeek);
+        await using var byteByByteStream = new CustomStream(stream, canSeek);
 
         var result = await byteByByteStream.ReadToEndAsync();
         Assert.Equal([0, 1, 2, 3, 4], result);
@@ -55,7 +55,7 @@ public sealed class StreamExtensionsTests
         using var stream = new MemoryStream();
         Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
         stream.Seek(0, SeekOrigin.Begin);
-        using var byteByByteStream = new CustomStream(stream, canSeek);
+        await using var byteByByteStream = new CustomStream(stream, canSeek);
 
         var buffer = new byte[5];
         await byteByByteStream.TryReadAllAsync(buffer, 0, 5);
@@ -69,7 +69,7 @@ public sealed class StreamExtensionsTests
         Enumerable.Range(0, 5).ForEach(i => stream.WriteByte((byte)i));
         stream.Seek(1, SeekOrigin.Begin);
 
-        using var copy = await stream.ToMemoryStreamAsync();
+        await using var copy = await stream.ToMemoryStreamAsync();
         Assert.Equal([1, 2, 3, 4], copy.ToArray());
     }
 

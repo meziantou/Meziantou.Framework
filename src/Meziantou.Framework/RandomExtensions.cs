@@ -10,7 +10,7 @@ public static class RandomExtensions
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(array);
 
-        if (array.Length == 0)
+        if (array.Length is 0)
             throw new ArgumentException("Array is empty.", nameof(array));
 
         var index = random.NextInt32(0, array.Length);
@@ -22,7 +22,7 @@ public static class RandomExtensions
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(list);
 
-        if (list.Count == 0)
+        if (list.Count is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Count);
@@ -34,7 +34,7 @@ public static class RandomExtensions
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(list);
 
-        if (list.Count == 0)
+        if (list.Count is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Count);
@@ -45,7 +45,7 @@ public static class RandomExtensions
     {
         ArgumentNullException.ThrowIfNull(random);
 
-        if (list.Length == 0)
+        if (list.Length is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Length);
@@ -56,7 +56,7 @@ public static class RandomExtensions
     {
         ArgumentNullException.ThrowIfNull(random);
 
-        if (list.Length == 0)
+        if (list.Length is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Length);
@@ -68,7 +68,7 @@ public static class RandomExtensions
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(list);
 
-        if (list.Count == 0)
+        if (list.Count is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Count);
@@ -80,7 +80,7 @@ public static class RandomExtensions
         ArgumentNullException.ThrowIfNull(random);
         ArgumentNullException.ThrowIfNull(list);
 
-        if (list.Count == 0)
+        if (list.Count is 0)
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Count);

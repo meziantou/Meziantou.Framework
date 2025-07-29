@@ -54,7 +54,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
             }
         }
 
-        Exception? innerException = exceptions.Count == 0 ? null : new AggregateException(exceptions);
+        Exception? innerException = exceptions.Count is 0 ? null : new AggregateException(exceptions);
         throw new ArgumentException($"Cannot create an instance of {_typeCache.Type.FullName} with the provided parameters.", nameof(parameters), innerException);
     }
 

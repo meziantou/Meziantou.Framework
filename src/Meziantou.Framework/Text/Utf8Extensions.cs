@@ -32,7 +32,7 @@ public static class Utf8Extensions
         {
             var operationStatus = Rune.DecodeFromUtf8(_remaining, out _current, out var bytesConsumed);
             _remaining = _remaining[bytesConsumed..];
-            return operationStatus == OperationStatus.Done;
+            return operationStatus is OperationStatus.Done;
         }
     }
 }

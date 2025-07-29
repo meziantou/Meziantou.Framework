@@ -13,7 +13,7 @@ public static class StreamExtensions
         while (!buffer.IsEmpty)
         {
             var read = stream.Read(buffer);
-            if (read == 0)
+            if (read is 0)
                 return totalRead;
 
             totalRead += read;
@@ -34,7 +34,7 @@ public static class StreamExtensions
         while (!buffer.IsEmpty)
         {
             var read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            if (read == 0)
+            if (read is 0)
                 return totalRead;
 
             totalRead += read;

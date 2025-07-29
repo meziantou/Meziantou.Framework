@@ -82,13 +82,13 @@ public static class DeterministicGuid
 
         ReorderBytes(namespaceBytes);
 
-        Span<byte> hash = stackalloc byte[version == DeterministicGuidVersion.Version3 ? 16 : 20];
+        Span<byte> hash = stackalloc byte[version is DeterministicGuidVersion.Version3 ? 16 : 20];
 
         var combinedBytes = new byte[namespaceBytes.Length + name.Length];
         namespaceBytes.CopyTo(combinedBytes.AsSpan());
         name.CopyTo(combinedBytes.AsSpan()[namespaceBytes.Length..]);
 
-        if (version == DeterministicGuidVersion.Version3)
+        if (version is DeterministicGuidVersion.Version3)
         {
             if (!MD5.TryHashData(combinedBytes, hash, out _))
                 throw new InvalidOperationException("Cannot compute MD5 hash");

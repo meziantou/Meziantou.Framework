@@ -21,7 +21,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         if (capacity < 0)
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
 
-        _items = capacity == 0 ? [] : new T[capacity];
+        _items = capacity is 0 ? [] : new T[capacity];
         _comparer = Comparer<T>.Default;
     }
 
@@ -37,7 +37,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         if (capacity < 0)
             throw new ArgumentOutOfRangeException(nameof(capacity), capacity, "Non-negative number required.");
 
-        _items = capacity == 0 ? [] : new T[capacity];
+        _items = capacity is 0 ? [] : new T[capacity];
         Count = 0;
         _comparer = comparer ?? Comparer<T>.Default;
     }
@@ -224,7 +224,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
         while (index > 0)
         {
-            if (_comparer.Compare(_items[index - 1], item) == 0)
+            if (_comparer.Compare(_items[index - 1], item) is 0)
             {
                 index--;
             }
@@ -245,7 +245,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
         while (index < Count - 1)
         {
-            if (_comparer.Compare(_items[index + 1], item) == 0)
+            if (_comparer.Compare(_items[index + 1], item) is 0)
             {
                 index++;
             }
@@ -265,7 +265,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
 
     private void EnsureCapacity(int min)
     {
-        var newCapacity = _items.Length == 0 ? 4 : _items.Length * 2;
+        var newCapacity = _items.Length is 0 ? 4 : _items.Length * 2;
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
@@ -339,7 +339,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         {
             get
             {
-                if (_index == 0 || _index == _list.Count + 1)
+                if (_index is 0 || _index == _list.Count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                 return Current;

@@ -20,7 +20,7 @@ public static class DataBinder
         ArgumentNullException.ThrowIfNull(expression);
 
         expression = expression.Trim();
-        if (expression.Length == 0)
+        if (expression.Length is 0)
         {
             throw new ArgumentException("expression is empty or whitespaces", nameof(expression));
         }

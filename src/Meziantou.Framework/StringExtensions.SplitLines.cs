@@ -30,7 +30,7 @@ static partial class StringExtensions
 
         public bool MoveNext()
         {
-            if (_str.Length == 0)
+            if (_str.Length is 0)
                 return false;
 
             var span = _str;

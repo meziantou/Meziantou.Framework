@@ -24,7 +24,7 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
             KeyValueOperator.LessThanOrEqual => c <= 0,
             KeyValueOperator.GreaterThan => c > 0,
             KeyValueOperator.GreaterThanOrEqual => c >= 0,
-            _ => throw new InvalidOperationException($"Unexpected operator {Op}")
+            _ => throw new InvalidOperationException($"Unexpected operator {Op}"),
         };
     }
 
@@ -38,7 +38,7 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
             KeyValueOperator.LessThanOrEqual => $"<={Operand}",
             KeyValueOperator.GreaterThan => $">{Operand}",
             KeyValueOperator.GreaterThanOrEqual => $">={Operand}",
-            _ => throw new InvalidOperationException($"Unexpected operator {Op}")
+            _ => throw new InvalidOperationException($"Unexpected operator {Op}"),
         };
     }
 }

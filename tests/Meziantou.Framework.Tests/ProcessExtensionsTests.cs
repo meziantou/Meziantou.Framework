@@ -138,7 +138,7 @@ public class ProcessExtensionsTests
         {
             // We need to wait for the process to be started by cmd
             IReadOnlyCollection<Process> processes;
-            while ((processes = process.GetDescendantProcesses()).Count == 0)
+            while ((processes = process.GetDescendantProcesses()).Count is 0)
             {
                 Thread.Sleep(100);
                 continue;

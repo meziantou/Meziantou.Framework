@@ -8,7 +8,7 @@ public static partial class StringBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
 
-        if (stringBuilder.Length == 0)
+        if (stringBuilder.Length is 0)
             return false;
 
         return stringBuilder[0] == prefix;
@@ -35,7 +35,7 @@ public static partial class StringBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(stringBuilder);
 
-        if (stringBuilder.Length == 0)
+        if (stringBuilder.Length is 0)
             return false;
 
         return stringBuilder[^1] == suffix;

@@ -61,7 +61,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         }
         else
         {
-            if (Count == 0)
+            if (Count is 0)
             {
                 _items[0] = value;
                 _startIndex = 0;
@@ -92,7 +92,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         }
         else
         {
-            if (Count == 0)
+            if (Count is 0)
             {
                 _items[0] = value;
                 _startIndex = 0;
@@ -111,7 +111,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
     public T RemoveFirst()
     {
-        if (Count == 0)
+        if (Count is 0)
             throw new InvalidOperationException("The buffer is empty");
 
         ref var item = ref _items[_startIndex];
@@ -129,7 +129,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
     public T RemoveLast()
     {
-        if (Count == 0)
+        if (Count is 0)
             throw new InvalidOperationException("The buffer is empty");
 
         var index = (_startIndex + Count - 1) % Capacity;
@@ -190,7 +190,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 
     public int IndexOf(T item)
     {
-        if (Count == 0)
+        if (Count is 0)
             return -1;
 
         var comparer = EqualityComparer<T>.Default;
@@ -267,7 +267,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         {
             get
             {
-                if (_index == 0 || _index == _list.Count + 1)
+                if (_index is 0 || _index == _list.Count + 1)
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
 
                 return Current;

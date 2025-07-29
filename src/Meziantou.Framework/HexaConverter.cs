@@ -31,7 +31,7 @@ public static class HexaConverter
 #endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
     {
-        if (bytes.Length == 0)
+        if (bytes.Length is 0)
             return string.Empty;
 
         return options switch
@@ -88,13 +88,13 @@ public static class HexaConverter
             const int LowerCase = 'a' - 10;
             const int UpperCase = 'A' - 10;
 
-            if (c >= '0' && c <= '9')
+            if (c is >= '0' and <= '9')
                 return c - Digit;
 
-            if (c >= 'A' && c <= 'F') // Upper case
+            if (c is >= 'A' and <= 'F') // Upper case
                 return c - UpperCase;
 
-            if (c >= 'a' && c <= 'f') // Upper case
+            if (c is >= 'a' and <= 'f') // Upper case
                 return c - LowerCase;
 
             throw new ArgumentException($"Invalid character '{c}'", nameof(str));

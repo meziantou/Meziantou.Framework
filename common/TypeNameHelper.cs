@@ -23,22 +23,22 @@ internal static class TypeNameHelper
         { typeof(string), "string" },
         { typeof(uint), "uint" },
         { typeof(ulong), "ulong" },
-        { typeof(ushort), "ushort" }
+        { typeof(ushort), "ushort" },
     };
 
     [return: NotNullIfNotNull(nameof(item))]
     public static string? GetTypeDisplayName(object? item, bool fullName = true)
     {
-        return item == null ? null : GetTypeDisplayName(item.GetType(), fullName);
+        return item is null ? null : GetTypeDisplayName(item.GetType(), fullName);
     }
 
     /// <summary>
     /// Pretty print a type name.
     /// </summary>
     /// <param name="type">The <see cref="Type"/>.</param>
-    /// <param name="fullName"><c>true</c> to print a fully qualified name.</param>
-    /// <param name="includeGenericParameterNames"><c>true</c> to include generic parameter names.</param>
-    /// <param name="includeGenericParameters"><c>true</c> to include generic parameters.</param>
+    /// <param name="fullName"><see langword="true"/> to print a fully qualified name.</param>
+    /// <param name="includeGenericParameterNames"><see langword="true"/> to include generic parameter names.</param>
+    /// <param name="includeGenericParameters"><see langword="true"/> to include generic parameters.</param>
     /// <param name="nestedTypeDelimiter">Character to use as a delimiter in nested type names</param>
     /// <returns>The pretty printed type name.</returns>
     public static string GetTypeDisplayName(Type type, bool fullName = true, bool includeGenericParameterNames = false, bool includeGenericParameters = true, char nestedTypeDelimiter = DefaultNestedTypeDelimiter)

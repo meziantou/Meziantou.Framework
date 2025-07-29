@@ -68,7 +68,7 @@ static partial class IOUtilities
         var uri1 = new Uri(path1);
         var uri2 = new Uri(path2);
 
-        return Uri.Compare(uri1, uri2, UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) == 0;
+        return Uri.Compare(uri1, uri2, UriComponents.AbsoluteUri, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) is 0;
     }
 
     [Obsolete("Use FullPath struct instead")]

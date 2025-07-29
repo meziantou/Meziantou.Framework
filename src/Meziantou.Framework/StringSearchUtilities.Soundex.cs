@@ -19,7 +19,7 @@ public static partial class StringSearchUtilities
         ArgumentNullException.ThrowIfNull(dic);
 
         s = SoundexStringPrep(s, replace);
-        if (s.Length == 0)
+        if (s.Length is 0)
         {
             return "0000";
         }
@@ -99,12 +99,12 @@ public static partial class StringSearchUtilities
             }
         }
 
-        if (sb.Length == 0)
+        if (sb.Length is 0)
         {
             return "    ";
         }
 
-        if (sb.Length == 1)
+        if (sb.Length is 1)
         {
             sb.Append("   ");
             return sb.ToString();
@@ -150,7 +150,7 @@ public static partial class StringSearchUtilities
             if (sb[i] == 'H' && !cs)
             {
                 sb = sb.Remove(i, 1);
-                i = i == 0 ? 0 : i - 1;
+                i = i is 0 ? 0 : i - 1;
             }
 
             if (sb.Length > i)
@@ -166,7 +166,7 @@ public static partial class StringSearchUtilities
             if (sb[i] == 'Y' && !a)
             {
                 sb = sb.Remove(i, 1);
-                i = i == 0 ? 0 : i - 1;
+                i = i is 0 ? 0 : i - 1;
             }
 
             if (sb.Length > i)
@@ -308,7 +308,7 @@ public static partial class StringSearchUtilities
         }
 
         // Return empty string if string is empty
-        if (sb.Length == 0)
+        if (sb.Length is 0)
             return string.Empty;
 
         // Replace characters

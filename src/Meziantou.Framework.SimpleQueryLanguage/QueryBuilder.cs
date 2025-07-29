@@ -196,7 +196,7 @@ public sealed class QueryBuilder<T>
         {
             BoundTextQuery textQuery => CreatePredicate(textQuery),
             BoundKeyValueQuery keyValueQuery => CreatePredicate(keyValueQuery),
-            _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node: {node.GetType()}")
+            _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node: {node.GetType()}"),
         };
     }
 

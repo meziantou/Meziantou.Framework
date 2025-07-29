@@ -235,7 +235,7 @@ public static class AsyncEnumerableExtensions
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
             yield return item;
-            if (--count == 0)
+            if (--count is 0)
                 yield break;
         }
     }

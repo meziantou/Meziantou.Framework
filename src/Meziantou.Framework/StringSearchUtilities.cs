@@ -95,12 +95,12 @@ public static partial class StringSearchUtilities
         ArgumentNullException.ThrowIfNull(word1);
         ArgumentNullException.ThrowIfNull(word2);
 
-        if (word1.Length == 0)
+        if (word1.Length is 0)
         {
             return word2.Length;
         }
 
-        if (word2.Length == 0)
+        if (word2.Length is 0)
         {
             return word1.Length;
         }
@@ -116,9 +116,9 @@ public static partial class StringSearchUtilities
         {
             for (var i = 0; i < word2.Length; i++)
             {
-                var x = (i == 0 ? j : lastValue) + 1;
+                var x = (i is 0 ? j : lastValue) + 1;
                 var y = lastColumn[i] + 1;
-                var z = (i == 0 ? j - 1 : lastColumn[i - 1]) + (word1[j - 1] == word2[i] ? 0 : 1);
+                var z = (i is 0 ? j - 1 : lastColumn[i - 1]) + (word1[j - 1] == word2[i] ? 0 : 1);
 
                 var forLastValue = lastValue;
                 lastValue = Math.Min(Math.Min(x, y), z);

@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Diagnostics;
-using System.Text;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;

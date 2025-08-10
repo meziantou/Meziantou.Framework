@@ -6,7 +6,7 @@
 
     <Description>Microsoft.Extension.Logging.ILogger implementation for xunit.v3</Description>
     <PackageTags>xunit, xunit.v3, logger</PackageTags>
-    <Version>1.1.10</Version>
+    <Version>1.1.11</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -42,6 +42,11 @@ public static class MeziantouServiceDefaults
         {
             http.AddStandardResilienceHandler();
             http.AddServiceDiscovery();
+            http.ConfigureHttpClient((serviceProvider, client) =>
+            {
+                var hostEnvironment = serviceProvider.GetRequiredService<IHostEnvironment>();
+                client.DefaultRequestHeaders.UserAgent.Add(new System.Net.Http.Headers.ProductInfoHeaderValue(hostEnvironment.ApplicationName, Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown"));
+            });
         });
 
         builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options => ConfigureJsonOptions(options.JsonSerializerOptions));

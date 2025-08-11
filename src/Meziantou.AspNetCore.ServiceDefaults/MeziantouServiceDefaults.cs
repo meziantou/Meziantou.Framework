@@ -22,6 +22,7 @@ public static class MeziantouServiceDefaults
         var options = new MeziantouServiceDefaultsOptions();
         configure?.Invoke(options);
 
+        builder.Services.AddSingleton<IStartupFilter>(new ValidationStartupFilter());
         builder.Services.AddSingleton(options);
         if (options.AntiForgery.Enabled)
         {
@@ -124,6 +125,7 @@ public static class MeziantouServiceDefaults
     public static void MapMeziantouDefaultEndpoints(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
+        options.MapCalled = true;
 
         app.UseForwardedHeaders();
         if (options.Https.Enabled)

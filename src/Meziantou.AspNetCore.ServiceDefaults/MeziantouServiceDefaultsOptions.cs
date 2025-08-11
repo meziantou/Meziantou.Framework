@@ -4,6 +4,8 @@ namespace Meziantou.AspNetCore.ServiceDefaults;
 
 public sealed class MeziantouServiceDefaultsOptions
 {
+    internal bool MapCalled { get; set; }
+
     public MeziantouHttpsConfiguration Https { get; } = new();
     public MeziantouOpenApiConfiguration OpenApi { get; } = new();
     public MeziantouOpenTelemetryConfiguration OpenTelemetry { get; } = new();

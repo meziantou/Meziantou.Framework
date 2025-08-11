@@ -321,9 +321,9 @@ public sealed class FullPathTests
 
     [Fact]
     [RunIf(FactOperatingSystem.Windows)]
-    public void ShellFolderTest()
+    public void KnownFolderTest()
     {
-        var fullPath = FullPath.GetShellFolderPath(ShellFolder.Downloads);
+        var fullPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
         Assert.NotEmpty(fullPath.Value);
     }
 

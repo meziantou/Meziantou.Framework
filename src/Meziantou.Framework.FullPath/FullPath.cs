@@ -184,9 +184,9 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
 
     [SupportedOSPlatform("windows6.0.6000")]
-    public static unsafe FullPath GetShellFolderPath(ShellFolder shellFolder)
+    public static unsafe FullPath GetKnownFolderPath(KnownFolder knownFolder)
     {
-        var result = PInvoke.SHGetKnownFolderPath(shellFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
+        var result = PInvoke.SHGetKnownFolderPath(knownFolder.FolderId, Windows.Win32.UI.Shell.KNOWN_FOLDER_FLAG.KF_FLAG_DEFAULT, hToken: null, out var path);
         if (result.Succeeded)
         {
             var expandedValue = Environment.ExpandEnvironmentVariables(path.ToString());
@@ -195,7 +195,7 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
         }
 
         Marshal.FreeCoTaskMem((nint)path.Value);
-        throw new Win32Exception(result.Value, $"Failed to get shell folder path for {shellFolder}");
+        throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
     }
 
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);

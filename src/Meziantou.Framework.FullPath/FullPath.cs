@@ -9,7 +9,7 @@ using Windows.Win32;
 namespace Meziantou.Framework;
 
 [JsonConverter(typeof(FullPathJsonConverter))]
-public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
+public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 {
     internal readonly string? _value;
 
@@ -395,5 +395,25 @@ public readonly struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 
         result = null;
         return false;
+    }
+
+    [SupportedOSPlatform("windows5.1.2600")]
+    public unsafe void OpenInExplorer()
+    {
+        if (IsEmpty)
+            throw new InvalidOperationException("Path is empty");
+
+        var itemList = PInvoke.ILCreateFromPath(Value);
+        if (itemList != null)
+        {
+            try
+            {
+                PInvoke.SHOpenFolderAndSelectItems(itemList, 0u, apidl: null, 0u).ThrowOnFailure();
+            }
+            finally
+            {
+                PInvoke.ILFree(itemList);
+            }
+        }
     }
 }

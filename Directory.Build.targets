@@ -8,7 +8,7 @@
 
   <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">
     <PropertyGroup>
-      <MeziantouPolyfill_ExcludedPolyfills Condition="@(Analyzer->AnyHaveMetadataValue('NuGetPackageId', 'Microsoft.Windows.CsWin32'))">T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute</MeziantouPolyfill_ExcludedPolyfills>
+      <MeziantouPolyfill_ExcludedPolyfills Condition="@(Analyzer->AnyHaveMetadataValue('NuGetPackageId', 'Microsoft.Windows.CsWin32'))">T:System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute|T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
     </PropertyGroup>
   </Target>
 

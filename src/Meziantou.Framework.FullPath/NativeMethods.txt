@@ -1,1 +1,4 @@
 SHGetKnownFolderPath
+ILFree
+ILCreateFromPathW
+SHOpenFolderAndSelectItems

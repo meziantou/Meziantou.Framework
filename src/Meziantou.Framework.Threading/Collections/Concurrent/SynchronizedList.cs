@@ -4,7 +4,27 @@ namespace Meziantou.Framework.Collections.Concurrent;
 
 public sealed class SynchronizedList<T> : IList<T>, IReadOnlyList<T>
 {
-    private readonly List<T> _list = [];
+    private readonly List<T> _list;
+
+    public SynchronizedList()
+    {
+        _list = [];
+    }
+
+    public SynchronizedList(int capacity)
+    {
+        _list = new List<T>(capacity);
+    }
+
+    public SynchronizedList(IEnumerable<T>? items = null)
+    {
+        _list = items != null ? [.. items] : [];
+    }
+
+    public SynchronizedList(ReadOnlySpan<T> items)
+    {
+        _list = [.. items];
+    }
 
     public int Count
     {

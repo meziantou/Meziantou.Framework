@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework.NuGetPackageValidation.Rules;
+using Meziantou.Framework.NuGetPackageValidation.Rules;
 using Xunit;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
@@ -108,6 +108,13 @@ public sealed class NuGetPackageValidatorTests
     public async Task Validate_Icon_HasIcon()
     {
         var result = await ValidateAsync("Release_Icon.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
+        AssertNoErrors(result);
+    }
+
+    [Fact]
+    public async Task Validate_Icon_HasIcon_Backslash()
+    {
+        var result = await ValidateAsync("Release_Icon_Backslash.1.0.0.nupkg", NuGetPackageValidationRules.IconMustBeSet);
         AssertNoErrors(result);
     }
 

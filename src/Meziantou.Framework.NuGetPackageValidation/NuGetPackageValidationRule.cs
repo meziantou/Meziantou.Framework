@@ -9,15 +9,25 @@ public abstract partial class NuGetPackageValidationRule
 
     private protected static bool PackageFileExists(PackageReaderBase package, string path)
     {
-        try
+        return PackageFileExists(package, path, out _);
+    }
+
+    private protected static bool PackageFileExists(PackageReaderBase package, string path, [NotNullWhen(true)] out string? realPath)
+    {
+        path = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        var files = package.GetFiles();
+        foreach (var file in files)
         {
-            using var stream = package.GetStream(path);
-            return stream is not null;
+            var normalizedPath = file.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+            if (string.Equals(normalizedPath, path, StringComparison.Ordinal))
+            {
+                realPath = file;
+                return true;
+            }
         }
-        catch
-        {
-            return false;
-        }
+
+        realPath = null;
+        return false;
     }
 
     private protected static async Task<Stream> CreateSeekableStream(Stream stream, CancellationToken cancellationToken)

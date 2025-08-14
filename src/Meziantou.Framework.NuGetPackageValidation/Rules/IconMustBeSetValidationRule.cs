@@ -18,7 +18,7 @@ internal sealed class IconMustBeSetValidationRule : NuGetPackageValidationRule
                 context.ReportError(ErrorCodes.UseDeprecatedIconUrl, "The nuspec file use the deprecated iconUrl metadata");
             }
         }
-        else if (!PackageFileExists(context.Package, icon))
+        else if (!PackageFileExists(context.Package, icon, out var realPath))
         {
             context.ReportError(ErrorCodes.IconNotFound, "Icon file not found", fileName: icon);
         }
@@ -27,18 +27,18 @@ internal sealed class IconMustBeSetValidationRule : NuGetPackageValidationRule
             var extension = Path.GetExtension(icon);
             if (extension is ".png")
             {
-                await ValidateMagicNumber(context, icon, [0x89, 0x50, 0x4E, 0x47], extension, "PNG").ConfigureAwait(false);
+                await ValidateMagicNumber(context, realPath, [0x89, 0x50, 0x4E, 0x47], extension, "PNG").ConfigureAwait(false);
             }
             else if (extension is ".jpg" or ".jpeg")
             {
-                await ValidateMagicNumber(context, icon, [0xFF, 0xD8, 0xFF, 0xE0], extension, "JPEG").ConfigureAwait(false);
+                await ValidateMagicNumber(context, realPath, [0xFF, 0xD8, 0xFF, 0xE0], extension, "JPEG").ConfigureAwait(false);
             }
             else
             {
                 context.ReportError(ErrorCodes.IconFileFormatNotSupported, "Icon file must be PNG or JPG", fileName: icon);
             }
 
-            await ValidateFileSize(context, icon).ConfigureAwait(false);
+            await ValidateFileSize(context, realPath).ConfigureAwait(false);
         }
     }
 

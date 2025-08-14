@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1001
+#pragma warning disable CA1001
 #pragma warning disable CA2213
 #pragma warning disable CA2215
 using System.CommandLine;
@@ -25,7 +25,7 @@ internal sealed class ConsoleHelper
     public string Output => _outputWriter.ToString();
     public string Error => _errorWriter.ToString();
 
-    public void ConfigureConsole(CommandLineConfiguration configuration)
+    public void ConfigureConsole(InvocationConfiguration configuration)
     {
         configuration.Output = _teeOutputWriter;
         configuration.Error = _teeErrorWriter;

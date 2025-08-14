@@ -18,15 +18,15 @@ internal static class Program
         return MainImpl(args, configure: null);
     }
 
-    internal static Task<int> MainImpl(string[] args, Action<CommandLineConfiguration>? configure)
+    internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure)
     {
         var rootCommand = new RootCommand();
         AddReplaceValueCommand(rootCommand);
         AddAppendVersionCommand(rootCommand);
         InlineResourceCommand(rootCommand);
-        var commandLineConfiguration = new CommandLineConfiguration(rootCommand);
-        configure?.Invoke(commandLineConfiguration);
-        return commandLineConfiguration.InvokeAsync(args);
+        var invocationConfiguration = new InvocationConfiguration();
+        configure?.Invoke(invocationConfiguration);
+        return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
     }
 
     private static void AddReplaceValueCommand(RootCommand rootCommand)

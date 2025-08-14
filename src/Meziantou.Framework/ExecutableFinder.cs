@@ -19,7 +19,7 @@ static class ExecutableFinder
     // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/path
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
-        var separator = IsWindows() ? ';' : ':';
+        var separator = Path.PathSeparator;
         var extensions = IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 

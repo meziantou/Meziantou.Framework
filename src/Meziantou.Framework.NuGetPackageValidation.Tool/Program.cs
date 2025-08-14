@@ -20,7 +20,7 @@ internal static partial class Program
     }
 
     [SuppressMessage("Performance", "CA1869:Cache and reuse 'JsonSerializerOptions' instances", Justification = "Used only once")]
-    internal static Task<int> MainImpl(string[] args, Action<CommandLineConfiguration>? configure)
+    internal static Task<int> MainImpl(string[] args, Action<InvocationConfiguration>? configure)
     {
         var rootCommand = new RootCommand(description: "Validate a NuGet package");
         var pathsArgument = new Argument<string[]>("package-path") { Arity = ArgumentArity.OneOrMore, Description = "Paths to the NuGet packages to validate" };
@@ -106,7 +106,7 @@ internal static partial class Program
                 WriteIndented = true,
             };
             var json = JsonSerializer.Serialize(result, jsonOptions);
-            await parseResult.Configuration.Output.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
+            await parseResult.InvocationConfiguration.Output.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
             if (!result.IsValid)
             {
                 return 1;
@@ -115,9 +115,9 @@ internal static partial class Program
             return 0;
         });
 
-        var commandLineConfiguration = new CommandLineConfiguration(rootCommand);
-        configure?.Invoke(commandLineConfiguration);
-        return commandLineConfiguration.InvokeAsync(args);
+        var invocationConfiguration = new InvocationConfiguration();
+        configure?.Invoke(invocationConfiguration);
+        return rootCommand.Parse(args).InvokeAsync(invocationConfiguration);
     }
 
     private static string GetRulesDescription()

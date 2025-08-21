@@ -58,20 +58,118 @@ function GetCsproj($path) {
     return $null
 }
 
+function GetProjectReferences($csprojPath) {
+    try {
+        $doc = [xml]::new()
+        $doc.Load($csprojPath)
+        $projectReferences = @()
+
+        foreach ($itemGroup in $doc.Project.ItemGroup) {
+            if ($itemGroup.ProjectReference) {
+                foreach ($projRef in $itemGroup.ProjectReference) {
+                    if ($projRef.Include) {
+                        # Convert relative path to absolute path
+                        $relativePath = $projRef.Include
+                        $referencedProject = Join-Path (Split-Path $csprojPath -Parent) $relativePath -Resolve
+                        if (Test-Path $referencedProject) {
+                            # Only include references to projects under src/ folder
+                            $srcPath = Join-Path $RootPath "src"
+                            if ($referencedProject.StartsWith($srcPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+                                $projectReferences += $referencedProject
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return $projectReferences
+    }
+    catch {
+        return @()
+    }
+}
+
+function BuildDependencyGraph($csprojFiles) {
+    $dependencyGraph = @{}
+    $reverseDependencyGraph = @{}
+
+    foreach ($csproj in $csprojFiles) {
+        $dependencyGraph[$csproj] = GetProjectReferences($csproj)
+        $reverseDependencyGraph[$csproj] = @()
+    }
+
+    # Build reverse dependency graph (which projects depend on each project)
+    foreach ($csproj in $csprojFiles) {
+        foreach ($dependency in $dependencyGraph[$csproj]) {
+            if ($reverseDependencyGraph.ContainsKey($dependency)) {
+                $reverseDependencyGraph[$dependency] += $csproj
+            }
+        }
+    }
+
+    return @{
+        "Dependencies" = $dependencyGraph
+        "ReverseDependencies" = $reverseDependencyGraph
+    }
+}
+
+function GetTransitiveDependents($csproj, $reverseDependencyGraph, $visited = @{}) {
+    if ($visited.ContainsKey($csproj)) {
+        return @()
+    }
+
+    $visited[$csproj] = $true
+    $dependents = @()
+
+    if ($reverseDependencyGraph.ContainsKey($csproj)) {
+        foreach ($dependent in $reverseDependencyGraph[$csproj]) {
+            $dependents += $dependent
+            $dependents += GetTransitiveDependents $dependent $reverseDependencyGraph $visited
+        }
+    }
+
+    return $dependents | Select-Object -Unique
+}
+
 $RootPath = Join-Path $PSScriptRoot ".." -Resolve
 
 $commits = git log --pretty=format:'%H' -n $NumberOfCommits
 Write-Host "Commits loaded ($($commits.Length) commits)"
 
 $ChangesPerCsproj = @{}
+$allCsprojFiles = @()
 
-foreach ($file in Get-ChildItem -Path $RootPath -Recurse -Filter *.csproj) {
+$srcPath = Join-Path $RootPath "src"
+foreach ($file in Get-ChildItem -Path $srcPath -Recurse -Filter *.csproj) {
     Write-Host "Project file detected: $($file.FullName)"
+    $allCsprojFiles += $file.FullName
     $ChangesPerCsproj[$file.FullName] = @{
         "commits"        = @()
         "stopProcessing" = $false
+        "updatedDueToDependency" = $false
     }
 }
+
+# Build dependency graph
+Write-Host "Building dependency graph..."
+$dependencyInfo = BuildDependencyGraph($allCsprojFiles)
+$reverseDependencyGraph = $dependencyInfo.ReverseDependencies
+
+# Print dependency graph
+Write-Host "Dependency Graph:"
+foreach ($csproj in ($dependencyInfo.Dependencies.Keys | Sort-Object)) {
+    $projectName = [System.IO.Path]::GetFileNameWithoutExtension($csproj)
+    $dependencies = $dependencyInfo.Dependencies[$csproj]
+
+    if ($dependencies.Count -gt 0) {
+        foreach ($dependency in ($dependencies | Sort-Object)) {
+            $dependencyName = [System.IO.Path]::GetFileNameWithoutExtension($dependency)
+            Write-Host "$projectName -> $dependencyName"
+        }
+    }
+}
+Write-Host ""
 
 $i = 0;
 foreach ($commit in $commits) {
@@ -146,11 +244,35 @@ foreach ($commit in $commits) {
 
 $updated = $false
 $prMessage = ""
+$projectsToUpdate = @{}
+
+# First pass: identify projects that have direct changes
 foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
     $info = $ChangesPerCsproj[$csproj]
-    if ($info.commits.Count -eq 0) {
-        continue
+    if ($info.commits.Count -gt 0) {
+        $projectsToUpdate[$csproj] = $info
     }
+}
+
+# Second pass: identify projects that need to be updated due to dependencies
+foreach ($csproj in ($projectsToUpdate.Keys | ForEach-Object { $_ })) {
+    $dependents = GetTransitiveDependents $csproj $reverseDependencyGraph
+    foreach ($dependent in $dependents) {
+        if (-not $projectsToUpdate.ContainsKey($dependent)) {
+            Write-Host "Project $dependent will be updated due to dependency on $csproj"
+            $packageName = [System.IO.Path]::GetFileNameWithoutExtension($csproj)
+            $projectsToUpdate[$dependent] = @{
+                "commits" = @()
+                "stopProcessing" = $false
+                "updatedDueToDependency" = $true
+                "dependencySource" = $packageName
+            }
+        }
+    }
+}
+
+foreach ($csproj in $projectsToUpdate.Keys | Sort-Object) {
+    $info = $projectsToUpdate[$csproj]
 
     if (IncrementVersion($csproj)) {
         $updated = $true
@@ -161,13 +283,18 @@ foreach ($csproj in $ChangesPerCsproj.Keys | Sort-Object) {
 
         $packageName = [System.IO.Path]::GetFileNameWithoutExtension($csproj)
         $prMessage += "## $packageName`n"
-        foreach ($commit in ($info.commits | Select-Object -Unique)) {
-            $message = git log --format=%B -n 1 $commit
-            $message = $message -replace "\r?\n", "`n"
-            $message = $message -replace "\s+", " "
-            $message = $message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", [System.StringComparison]::OrdinalIgnoreCase)
-            $message = $message.Trim()
-            $prMessage += "- ${commit}: $message`n"
+
+        if ($info.updatedDueToDependency) {
+            $prMessage += "- Updated due to dependency on $($info.dependencySource)`n"
+        } else {
+            foreach ($commit in ($info.commits | Select-Object -Unique)) {
+                $message = git log --format=%B -n 1 $commit
+                $message = $message -replace "\r?\n", "`n"
+                $message = $message -replace "\s+", " "
+                $message = $message.Replace("Co-authored-by: renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>", "", [System.StringComparison]::OrdinalIgnoreCase)
+                $message = $message.Trim()
+                $prMessage += "- ${commit}: $message`n"
+            }
         }
     }
 }

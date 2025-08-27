@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+<Project Sdk="Meziantou.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows);net462</TargetFrameworks>

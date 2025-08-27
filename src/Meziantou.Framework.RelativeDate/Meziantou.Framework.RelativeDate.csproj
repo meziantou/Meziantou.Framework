@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462;net472</TargetFrameworks>
@@ -11,7 +11,7 @@
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
     <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="9.0.8" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <EmbeddedResource Update="RelativeDates.resx">
       <Generator></Generator>

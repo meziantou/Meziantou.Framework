@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -7,5 +7,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.Diagnostics.ContextSnapshot\Meziantou.Framework.Diagnostics.ContextSnapshot.csproj" />
   </ItemGroup>
-  
+
 </Project>

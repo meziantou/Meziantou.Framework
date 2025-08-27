@@ -155,7 +155,7 @@ jobs:
           # Attempt to reduce flakiness on x86 because of limited RAM
           TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }}
           AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --logger trx --results-directory "${{ env.TestResultsDirectory }}" --collect:"Code Coverage" --blame-hang --blame-hang-timeout 5min ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
+        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -164,8 +164,18 @@ jobs:
           if-no-files-found: error
           retention-days: 3
           path: |
+            !**/*.coverage
             **/*.binlog
             ${{ env.TestResultsDirectory }}/**/*
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
+          if-no-files-found: error
+          retention-days: 3
+          path: |
+            **/*.coverage
 
   test_trimming:
     runs-on: ubuntu-24.04
@@ -206,7 +216,7 @@ jobs:
       - name: Download test results
         uses: actions/download-artifact@v5
         with:
-          pattern: test-results-*
+          pattern: test-results-*-coverage
           path: test-results
       - name: Merge coverage files (format coverage)
         run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")

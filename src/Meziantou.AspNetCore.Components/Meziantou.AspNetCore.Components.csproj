@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Meziantou.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <ValidateProjectTargets>false</ValidateProjectTargets>
-    
+
     <Version>2.0.19</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Components and services for Blazor</Description>

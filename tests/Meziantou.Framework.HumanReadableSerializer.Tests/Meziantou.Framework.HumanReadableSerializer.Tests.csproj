@@ -1,9 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472</TargetFrameworks>
-    <CompatibilityRecord>true</CompatibilityRecord>
     <RootNamespace>Meziantou.Framework.HumanReadable.Tests</RootNamespace>
   </PropertyGroup>
 
@@ -16,7 +15,7 @@
   <ItemGroup>
     <Using Include="System.Net.Http" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Meziantou.Framework.HumanReadableSerializer\Meziantou.Framework.HumanReadableSerializer.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HumanReadableSerializer.FSharp.Tests\Meziantou.Framework.HumanReadableSerializer.FSharp.Tests.fsproj" />

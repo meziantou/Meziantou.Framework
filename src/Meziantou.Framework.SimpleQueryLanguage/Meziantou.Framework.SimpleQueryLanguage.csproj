@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
@@ -9,5 +9,5 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.SimpleQueryLanguage.Tests" />
   </ItemGroup>
-  
+
 </Project>

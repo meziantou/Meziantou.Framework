@@ -1,6 +1,4 @@
 <Project>
-  <Import Project="$(MSBuildThisFileDirectory)/eng/npm.targets" />
-
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
              Link="Properties/AssemblyInfo.common.cs" />
@@ -13,7 +11,7 @@
   </Target>
 
   <!-- Ensure the latest framework is a target of the project -->
-  <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(MSBuildProjectFile) != 'packages.proj'  AND $(ValidateProjectTargets) == true AND $(IsSampleProject) != false AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false">
+  <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="$(MSBuildProjectFile) != 'build.proj' AND $(MSBuildProjectFile) != 'packages.proj'  AND $(ValidateProjectTargets) == true AND '$(IsSampleProject)' != 'true' AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false AND $(TargetFramework.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />
   </Target>
 

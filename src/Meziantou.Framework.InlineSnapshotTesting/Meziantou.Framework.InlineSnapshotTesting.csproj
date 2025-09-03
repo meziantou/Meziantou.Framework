@@ -5,7 +5,7 @@
     <Description>Enables verification of objects using inline snapshots</Description>
     <DefineConstants Condition="'$(IsOfficialBuild)' != 'true'">$(DefineConstants);DEBUG_TaskDialogPrompt</DefineConstants>
 
-    <Version>3.3.19</Version>
+    <Version>3.3.20</Version>
     <NoWarn>$(NoWarn);NU5100</NoWarn>
 
     <!-- Buggy because of netstandard2.0 -->

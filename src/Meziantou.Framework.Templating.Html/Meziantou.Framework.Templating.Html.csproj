@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>2.0.11</Version>
+    <Version>2.0.12</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>HTML Template parser and evaluator. Provide a few syntax extensions to encode values or handle attached files for emails.</Description>
   </PropertyGroup>

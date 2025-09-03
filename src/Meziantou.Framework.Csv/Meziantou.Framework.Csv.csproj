@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>CSV reader and writer</Description>
-    <Version>4.0.4</Version>
+    <Version>4.0.5</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

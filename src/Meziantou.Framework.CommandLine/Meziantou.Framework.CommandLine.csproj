@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>3.0.4</Version>
+    <Version>3.0.5</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Basic command line parser</Description>
     <DefineConstants>$(DefineConstants);CommandLineBuilder_PUBLIC</DefineConstants>

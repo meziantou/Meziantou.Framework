@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Http</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Provide methods to ease work with http stuff</Description>
   </PropertyGroup>

@@ -16,6 +16,7 @@
     <ValidateProjectTargets Condition="$(ValidateProjectTargets) == ''">true</ValidateProjectTargets>
 
     <IsPackable>False</IsPackable>
+    <EnablePackageValidation>true</EnablePackageValidation>
 
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
 

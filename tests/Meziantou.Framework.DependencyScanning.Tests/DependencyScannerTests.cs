@@ -180,11 +180,93 @@ public sealed class DependencyScannerTests
         await Assert.ThrowsAsync<DependencyScannerException>(() => location.UpdateAsync("e", "b", XunitCancellationToken));
     }
 
-    private sealed class DummyScanner : DependencyScanner
+    [Fact]
+    public async Task DetectUnsupportedType()
     {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        {
+            foreach (var item in await DependencyScanner.ScanDirectoryAsync(directory.FullPath, new ScannerOptions { Scanners = [new ReportUnsupportedDependencyType()] }, XunitCancellationToken))
+            {
+            }
+        });
+    }
+
+    [Fact]
+    public async Task FilterIncludedTypes()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+        var options = new ScannerOptions
+        {
+            Scanners = [new ScannerWithTypes([DependencyType.NuGet, DependencyType.Npm])],
+            IncludedDependencyTypes = [DependencyType.NuGet],
+        };
+
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+        var item = Assert.Single(items);
+        Assert.Equal(DependencyType.NuGet, item.Type);
+    }
+
+    [Fact]
+    public async Task FilterExcludedTypes()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+        var options = new ScannerOptions
+        {
+            Scanners = [new ScannerWithTypes([DependencyType.NuGet, DependencyType.Npm])],
+            ExcludedDependencyTypes = [DependencyType.NuGet],
+        };
+
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+        var item = Assert.Single(items);
+        Assert.Equal(DependencyType.Npm, item.Type);
+    }
+
+    [Fact]
+    public async Task FilterIncludedExcludedTypes()
+    {
+        await using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory.GetFullPath($"text.txt"), "", XunitCancellationToken);
+        var options = new ScannerOptions
+        {
+            Scanners = [new ScannerWithTypes([DependencyType.NuGet, DependencyType.Npm, DependencyType.PyPi])],
+            IncludedDependencyTypes = [DependencyType.Npm],
+            ExcludedDependencyTypes = [DependencyType.NuGet],
+        };
+
+        var items = await DependencyScanner.ScanDirectoryAsync(directory.FullPath, options, XunitCancellationToken);
+        var item = Assert.Single(items);
+        Assert.Equal(DependencyType.Npm, item.Type);
+    }
+
+    private sealed class ScannerWithTypes(DependencyType[] types) : DependencyScanner
+    {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = types;
+
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            foreach (var type in types)
+            {
+                context.ReportDependency(this, "", "", type, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1));
+            }
+
+            return ValueTask.CompletedTask;
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
+    }
+
+    private sealed class DummyScanner : DependencyScanner
+    {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
+        public override ValueTask ScanAsync(ScanFileContext context)
+        {
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1));
             return ValueTask.CompletedTask;
         }
 
@@ -193,9 +275,11 @@ public sealed class DependencyScannerTests
 
     private sealed class DummyScannerNeverMatch : DependencyScanner
     {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1));
             return ValueTask.CompletedTask;
         }
 
@@ -204,6 +288,8 @@ public sealed class DependencyScannerTests
 
     private sealed class ScanThrowScanner : DependencyScanner
     {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
+
         public override ValueTask ScanAsync(ScanFileContext context)
         {
             throw new InvalidOperationException();
@@ -214,12 +300,27 @@ public sealed class DependencyScannerTests
 
     private sealed class ShouldScanThrowScanner : DependencyScanner
     {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [];
+
         public override ValueTask ScanAsync(ScanFileContext context)
         {
             return ValueTask.CompletedTask;
         }
 
         protected override bool ShouldScanFileCore(CandidateFileContext file) => throw new InvalidOperationException();
+    }
+
+    private sealed class ReportUnsupportedDependencyType : DependencyScanner
+    {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];
+
+        public override ValueTask ScanAsync(ScanFileContext context)
+        {
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1));
+            return ValueTask.CompletedTask;
+        }
+
+        protected override bool ShouldScanFileCore(CandidateFileContext file) => true;
     }
 
     private sealed class InMemoryFileSystem : IFileSystem

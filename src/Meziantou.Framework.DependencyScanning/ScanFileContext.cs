@@ -7,15 +7,17 @@ public readonly struct ScanFileContext : IAsyncDisposable
 {
     private readonly Lazy<Stream> _content;
     private readonly DependencyFound _onDependencyFound;
+    private readonly ScannerOptions _options;
 
-    internal ScanFileContext(string fullPath, DependencyFound onDependencyFound, IFileSystem fileSystem, CancellationToken cancellationToken)
+    internal ScanFileContext(string fullPath, DependencyFound onDependencyFound, ScannerOptions options, CancellationToken cancellationToken)
     {
         FullPath = fullPath;
         _onDependencyFound = onDependencyFound;
-        FileSystem = fileSystem;
+        _options = options;
+        FileSystem = options.FileSystem;
         CancellationToken = cancellationToken;
 
-        _content = new Lazy<Stream>(() => fileSystem.OpenRead(fullPath));
+        _content = new Lazy<Stream>(() => options.FileSystem.OpenRead(fullPath));
     }
 
     public string FullPath { get; }
@@ -23,22 +25,23 @@ public readonly struct ScanFileContext : IAsyncDisposable
     public CancellationToken CancellationToken { get; }
     public IFileSystem FileSystem { get; }
 
-    public void ReportDependency(Dependency dependency)
+    private void UnsafeReportDependency(Dependency dependency)
     {
         _onDependencyFound(dependency);
     }
 
-    public void ReportDependency<TScanner>(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)
-        where TScanner : DependencyScanner
+    public void ReportDependency(DependencyScanner scanner, string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)
     {
-        ReportDependency<TScanner>(name, version, type, nameLocation, versionLocation, [], []);
+        ReportDependency(scanner, name, version, type, nameLocation, versionLocation, [], []);
     }
 
-    public void ReportDependency<TScanner>(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
-        where TScanner : DependencyScanner
+    public void ReportDependency(DependencyScanner scanner, string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
     {
+        if (!ShouldReportDependency(scanner, type))
+            return;
+
         var dep = new Dependency(name, version, type, nameLocation, versionLocation);
-        dep.Tags.Add(typeof(TScanner).FullName);
+        dep.Tags.Add(scanner.GetType().FullName);
         foreach (var tag in tags)
         {
             dep.Tags.Add(tag);
@@ -49,7 +52,21 @@ public readonly struct ScanFileContext : IAsyncDisposable
             dep.Metadata[key] = value;
         }
 
-        ReportDependency(dep);
+        UnsafeReportDependency(dep);
+    }
+
+    private bool ShouldReportDependency(DependencyScanner scanner, DependencyType type)
+    {
+        if (scanner.SupportedDependencyTypes is null || !scanner.SupportedDependencyTypes.Contains(type))
+            throw new InvalidOperationException($"The scanner '{scanner.GetType().FullName}' does not support dependencies of type '{type}'. Supported types are: {string.Join(", ", scanner.SupportedDependencyTypes ?? [])}");
+
+        if (_options.IncludedDependencyTypes.Count > 0 && !_options.IncludedDependencyTypes.Contains(type))
+            return false;
+
+        if (_options.ExcludedDependencyTypes.Contains(type))
+            return false;
+
+        return true;
     }
 
     internal void ResetStream()

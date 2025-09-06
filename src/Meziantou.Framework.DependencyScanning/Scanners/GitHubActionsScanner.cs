@@ -7,6 +7,8 @@ public sealed class GitHubActionsScanner : DependencyScanner
 {
     private const string DockerPrefix = "docker://";
 
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.DockerImage, DependencyType.GitHubActions];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         // https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#about-yaml-syntax-for-workflows
@@ -60,7 +62,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                         if (containerNode is YamlMappingNode container)
                         {
                             var imageNode = GetProperty(container, "image", StringComparison.OrdinalIgnoreCase);
-                            ReportDependencyWithSeparator<GitHubActionsScanner>(context, imageNode, DependencyType.DockerImage, ':');
+                            ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
                         }
 
                         var servicesNode = GetProperty(jobNode, "services", StringComparison.OrdinalIgnoreCase);
@@ -71,7 +73,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                                 if (serviceNameNode.Value is YamlMappingNode serviceNode)
                                 {
                                     var imageNode = GetProperty(serviceNode, "image", StringComparison.Ordinal);
-                                    ReportDependencyWithSeparator<GitHubActionsScanner>(context, imageNode, DependencyType.DockerImage, ':');
+                                    ReportDependencyWithSeparator(this, context, imageNode, DependencyType.DockerImage, ':');
                                 }
                             }
                         }
@@ -83,7 +85,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
         return ValueTask.CompletedTask;
     }
 
-    private static void ExtractUsesProperty(ScanFileContext context, YamlNode node)
+    private void ExtractUsesProperty(ScanFileContext context, YamlNode node)
     {
         var uses = GetProperty(node, "uses", StringComparison.OrdinalIgnoreCase);
         if (uses is YamlScalarNode usesValue && usesValue.Value is { } value)
@@ -100,7 +102,7 @@ public sealed class GitHubActionsScanner : DependencyScanner
                     var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
                     var versionLocation = GetLocation(context, usesValue, start: DockerPrefix.Length + index + 1, length: version.Length);
 
-                    context.ReportDependency<GitHubActionsScanner>(name, version, DependencyType.DockerImage, nameLocation, versionLocation);
+                    context.ReportDependency(this, name, version, DependencyType.DockerImage, nameLocation, versionLocation);
                 }
                 else
                 {
@@ -108,14 +110,14 @@ public sealed class GitHubActionsScanner : DependencyScanner
                     var name = value[DockerPrefix.Length..];
                     var nameLocation = GetLocation(context, usesValue, start: DockerPrefix.Length, length: name.Length);
 
-                    context.ReportDependency<GitHubActionsScanner>(name, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null);
+                    context.ReportDependency(this, name, version: null, DependencyType.DockerImage, nameLocation, versionLocation: null);
 
                 }
             }
             // use: action@v1
             else
             {
-                ReportDependencyWithSeparator<GitHubActionsScanner>(context, usesValue, DependencyType.GitHubActions, '@');
+                ReportDependencyWithSeparator(this, context, usesValue, DependencyType.GitHubActions, '@');
             }
         }
     }

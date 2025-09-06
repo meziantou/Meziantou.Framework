@@ -35,18 +35,16 @@ internal static class YamlParserUtilities
         return null;
     }
 
-    public static void ReportDependency<T>(ScanFileContext context, YamlNode node, DependencyType dependencyType)
-        where T : DependencyScanner
+    public static void ReportDependency(DependencyScanner scanner, ScanFileContext context, YamlNode node, DependencyType dependencyType)
     {
         var value = GetScalarValue(node);
         if (value is null)
             return;
 
-        context.ReportDependency<T>(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
+        context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
     }
 
-    public static void ReportDependencyWithSeparator<T>(ScanFileContext context, YamlNode node, DependencyType dependencyType, char versionSeparator)
-        where T : DependencyScanner
+    public static void ReportDependencyWithSeparator(DependencyScanner scanner, ScanFileContext context, YamlNode node, DependencyType dependencyType, char versionSeparator)
     {
         var value = GetScalarValue(node);
         if (value is null)
@@ -55,11 +53,12 @@ internal static class YamlParserUtilities
         var index = value.IndexOf(versionSeparator, StringComparison.Ordinal);
         if (index < 0)
         {
-            context.ReportDependency<T>(name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
+            context.ReportDependency(scanner, name: value, version: null, dependencyType, nameLocation: GetLocation(context, node), versionLocation: null);
         }
         else
         {
-            context.ReportDependency<T>(
+            context.ReportDependency(
+                scanner,
                 name: value[..index],
                 version: value[(index + 1)..],
                 dependencyType,

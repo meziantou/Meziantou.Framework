@@ -27,6 +27,8 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
     private static readonly XName IdXName = XName.Get("id");
     private static readonly XName VersionXName = XName.Get("version");
 
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasExtension(".nuspec", ignoreCase: true);
@@ -46,7 +48,7 @@ public sealed class NuSpecDependencyScanner : DependencyScanner
             var version = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(version))
             {
-                context.ReportDependency<NuSpecDependencyScanner>(id, version, DependencyType.NuGet,
+                context.ReportDependency(this, id, version, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, idAttribute),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, dependency, versionAttribute));
             }

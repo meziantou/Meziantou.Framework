@@ -7,6 +7,8 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("dotnet-tools.json", ignoreCase: false);
@@ -46,7 +48,7 @@ public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 
                     if (version is not null)
                     {
-                        context.ReportDependency<DotNetToolManifestDependencyScanner>(packageName, version, DependencyType.NuGet,
+                        context.ReportDependency(this, packageName, version, DependencyType.NuGet,
                             nameLocation: new NonUpdatableLocation(context),
                             versionLocation: new JsonLocation(context, valueElement));
                     }

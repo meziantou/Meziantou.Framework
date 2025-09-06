@@ -7,6 +7,8 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("package.json", ignoreCase: false);
@@ -49,7 +51,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private static ValueTask ScanDependenciesAsync(ScanFileContext context, JObject deps)
+    private ValueTask ScanDependenciesAsync(ScanFileContext context, JObject deps)
     {
         foreach (var dep in deps.Properties())
         {
@@ -86,7 +88,7 @@ public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 
             if (dep.Value is not null)
             {
-                context.ReportDependency<NpmPackageJsonDependencyScanner>(packageName, version, DependencyType.Npm,
+                context.ReportDependency(this, packageName, version, DependencyType.Npm,
                     nameLocation: new NonUpdatableLocation(context),
                     versionLocation: new JsonLocation(context, dep.Value));
             }

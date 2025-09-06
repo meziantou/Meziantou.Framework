@@ -7,6 +7,8 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
 {
     private static readonly Regex PypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
 
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.PyPi];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("requirements.txt", ignoreCase: true);
@@ -31,7 +33,7 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
             var versionGroup = match.Groups["VERSION"];
             var version = versionGroup.Value;
 
-            context.ReportDependency<PythonRequirementsDependencyScanner>(packageName, version, DependencyType.PyPi,
+            context.ReportDependency(this, packageName, version, DependencyType.PyPi,
                 nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
                 versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length));
         }

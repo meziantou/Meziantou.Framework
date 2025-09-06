@@ -5,6 +5,8 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed partial class DockerfileDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.DockerImage];
+
     public override async ValueTask ScanAsync(ScanFileContext context)
     {
         using var sr = await StreamUtilities.CreateReaderAsync(context.Content, context.CancellationToken).ConfigureAwait(false);
@@ -21,7 +23,7 @@ public sealed partial class DockerfileDependencyScanner : DependencyScanner
             var packageName = packageNameGroup.Value;
             var versionGroup = match.Groups["Version"];
             var version = versionGroup.Value;
-            context.ReportDependency<DockerfileDependencyScanner>(packageName, version, DependencyType.DockerImage,
+            context.ReportDependency(this, packageName, version, DependencyType.DockerImage,
                 nameLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, packageNameGroup.Index + 1, packageNameGroup.Length),
                 versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length));
         }

@@ -7,6 +7,8 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class ProjectJsonDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("project.json", ignoreCase: true);
@@ -47,7 +49,7 @@ public sealed class ProjectJsonDependencyScanner : DependencyScanner
 
                     if (version is not null)
                     {
-                        context.ReportDependency<ProjectJsonDependencyScanner>(packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement));
+                        context.ReportDependency(this, packageName, version, DependencyType.NuGet, nameLocation: new NonUpdatableLocation(context), versionLocation: new JsonLocation(context, valueElement));
                     }
                 }
             }

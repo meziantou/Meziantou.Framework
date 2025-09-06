@@ -12,6 +12,13 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
     private static readonly XName SdkXName = XName.Get("Sdk");
     private static readonly XName NameXName = XName.Get("Name");
 
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } =
+        [
+            DependencyType.NuGet,
+            DependencyType.DotNetTargetFramework,
+            DependencyType.MSBuildProjectReference,
+        ];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasExtension([".csproj", ".props", ".targets"], ignoreCase: true);
@@ -38,7 +45,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             var versionAttributeValue = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(versionAttributeValue))
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionAttributeValue, DependencyType.NuGet,
+                context.ReportDependency(this, nameValue, versionAttributeValue, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute));
                 reported = true;
@@ -48,7 +55,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
                 var versionElement = package.Element(ns + "Version");
                 if (!string.IsNullOrEmpty(versionElement?.Value))
                 {
-                    context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionElement.Value, DependencyType.NuGet,
+                    context.ReportDependency(this, nameValue, versionElement.Value, DependencyType.NuGet,
                         nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionElement));
                     reported = true;
@@ -59,7 +66,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             var versionOverrideAttributeValue = versionOverrideAttribute?.Value;
             if (!string.IsNullOrEmpty(versionOverrideAttributeValue))
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionOverrideAttributeValue, DependencyType.NuGet,
+                context.ReportDependency(this, nameValue, versionOverrideAttributeValue, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionOverrideAttribute));
                 reported = true;
@@ -69,7 +76,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
                 var versionOverrideElement = package.Element(ns + "VersionOverride");
                 if (!string.IsNullOrEmpty(versionOverrideElement?.Value))
                 {
-                    context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, versionOverrideElement.Value, DependencyType.NuGet,
+                    context.ReportDependency(this, nameValue, versionOverrideElement.Value, DependencyType.NuGet,
                         nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionOverrideElement));
                     reported = true;
@@ -78,7 +85,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
 
             if (!reported)
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, version: null, DependencyType.NuGet,
+                context.ReportDependency(this, nameValue, version: null, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, nameAttribute),
                     versionLocation: null);
             }
@@ -95,7 +102,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             var versionAttributeValue = versionAttribute?.Value;
             if (!string.IsNullOrEmpty(versionAttributeValue))
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(packageName, versionAttributeValue, DependencyType.NuGet,
+                context.ReportDependency(this, packageName, versionAttributeValue, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, packageNameAttr),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, package, versionAttribute));
             }
@@ -104,7 +111,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
                 var versionElement = package.Element(ns + "Version");
                 if (!string.IsNullOrEmpty(versionElement?.Value))
                 {
-                    context.ReportDependency<MsBuildReferencesDependencyScanner>(packageName, versionElement.Value, DependencyType.NuGet,
+                    context.ReportDependency(this, packageName, versionElement.Value, DependencyType.NuGet,
                         nameLocation: new XmlLocation(context.FileSystem, context.FullPath, package, packageNameAttr),
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, versionElement));
                 }
@@ -123,7 +130,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             if (string.IsNullOrEmpty(version))
                 continue;
 
-            context.ReportDependency<MsBuildReferencesDependencyScanner>(name, version, DependencyType.NuGet,
+            context.ReportDependency(this, name, version, DependencyType.NuGet,
                 nameLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, nameAttribute),
                 versionLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, versionAttribute));
         }
@@ -141,7 +148,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
                 var packageName = value[..index];
                 var version = value[(index + 1)..];
 
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(packageName, version, DependencyType.NuGet,
+                context.ReportDependency(this, packageName, version, DependencyType.NuGet,
                     nameLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, sdkAttribute, column: 0, index),
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, sdk, sdkAttribute, column: index + 1, value.Length - index - 1));
             }
@@ -151,14 +158,14 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
         {
             foreach (var targetFrameworkElement in element.Elements("TargetFrameworkVersion"))
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                context.ReportDependency(this, name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
                     nameLocation: null,
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement));
             }
 
             foreach (var targetFrameworkElement in element.Elements("TargetFramework"))
             {
-                context.ReportDependency<MsBuildReferencesDependencyScanner>(name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
+                context.ReportDependency(this, name: null, targetFrameworkElement.Value.Trim(), DependencyType.DotNetTargetFramework,
                     nameLocation: null,
                     versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement));
             }
@@ -168,7 +175,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
                 foreach (Match match in TargetFrameworksRegex().Matches(targetFrameworkElement.Value))
                 {
                     var group = match.Groups["version"];
-                    context.ReportDependency<MsBuildReferencesDependencyScanner>(name: null, group.Value, DependencyType.DotNetTargetFramework,
+                    context.ReportDependency(this, name: null, group.Value, DependencyType.DotNetTargetFramework,
                         nameLocation: null,
                         versionLocation: new XmlLocation(context.FileSystem, context.FullPath, targetFrameworkElement, group.Index, group.Length));
                 }
@@ -182,7 +189,7 @@ public sealed partial class MsBuildReferencesDependencyScanner : DependencyScann
             if (string.IsNullOrEmpty(nameValue))
                 continue;
 
-            context.ReportDependency<MsBuildReferencesDependencyScanner>(nameValue, version: null, DependencyType.MSBuildProjectReference,
+            context.ReportDependency(this, nameValue, version: null, DependencyType.MSBuildProjectReference,
                 nameLocation: new XmlLocation(context.FileSystem, context.FullPath, projectReference, nameAttribute),
                 versionLocation: null);
         }

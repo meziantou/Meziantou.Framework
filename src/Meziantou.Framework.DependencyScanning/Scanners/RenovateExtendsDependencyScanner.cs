@@ -18,6 +18,8 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
         "renovaterc.json5",
     ];
 
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.RenovateConfiguration];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return IsInExpectedDirectory(context) && MatchFileName(context);
@@ -65,7 +67,7 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
         }
     }
 
-    private static void HandleExtendableElement(ScanFileContext context, JToken token)
+    private void HandleExtendableElement(ScanFileContext context, JToken token)
     {
         if (token is JObject obj && obj.TryGetValue("extends", StringComparison.Ordinal, out var extends))
         {
@@ -82,7 +84,8 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
                         {
                             var name = value[..index];
                             var version = value[(index + 1)..];
-                            context.ReportDependency<RenovateExtendsDependencyScanner>(
+                            context.ReportDependency(
+                                this,
                                 name: name,
                                 version: version,
                                 type: DependencyType.RenovateConfiguration,
@@ -91,7 +94,8 @@ public sealed class RenovateExtendsDependencyScanner : DependencyScanner
                         }
                         else
                         {
-                            context.ReportDependency<RenovateExtendsDependencyScanner>(
+                            context.ReportDependency(
+                                this,
                                 name: value,
                                 version: null,
                                 type: DependencyType.RenovateConfiguration,

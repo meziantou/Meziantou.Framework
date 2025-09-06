@@ -7,6 +7,8 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 
 public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet, DependencyType.DotNetSdk];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("global.json", ignoreCase: false);
@@ -28,7 +30,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private static void ExtractMsBuildSdks(ScanFileContext context, JToken doc)
+    private void ExtractMsBuildSdks(ScanFileContext context, JToken doc)
     {
         var sdksToken = doc.SelectToken("$.msbuild-sdks");
         if (sdksToken is JObject sdks)
@@ -38,7 +40,7 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
                 var sdkVersion = sdk.Value.Value<string>();
                 if (sdkVersion is not null)
                 {
-                    context.ReportDependency<DotNetGlobalJsonDependencyScanner>(sdk.Name, sdkVersion, DependencyType.NuGet,
+                    context.ReportDependency(this, sdk.Name, sdkVersion, DependencyType.NuGet,
                         nameLocation: new NonUpdatableLocation(context),
                         versionLocation: new JsonLocation(context, sdk.Value));
                 }
@@ -46,12 +48,12 @@ public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
         }
     }
 
-    private static void ExtractSdk(ScanFileContext context, JToken doc)
+    private void ExtractSdk(ScanFileContext context, JToken doc)
     {
         var token = doc.SelectToken("$.sdk.version");
         if (token?.Value<string>() is string version)
         {
-            context.ReportDependency<DotNetGlobalJsonDependencyScanner>(name: null, version, DependencyType.DotNetSdk,
+            context.ReportDependency(this, name: null, version, DependencyType.DotNetSdk,
                 nameLocation: null,
                 versionLocation: new JsonLocation(context, token));
         }

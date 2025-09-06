@@ -8,7 +8,6 @@ public enum DependencyType
     PyPi,
     DockerImage,
     GitReference,
-    GitSubmodule,
     DotNetSdk,
     DotNetTargetFramework,
     GitHubActions,

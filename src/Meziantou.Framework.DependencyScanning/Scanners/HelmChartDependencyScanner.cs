@@ -2,8 +2,11 @@ using YamlDotNet.RepresentationModel;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
+
 public sealed class HelmChartDependencyScanner : DependencyScanner
 {
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.HelmChart];
+
     protected override bool ShouldScanFileCore(CandidateFileContext context)
     {
         return context.HasFileName("Chart.yaml", ignoreCase: true) || context.HasFileName("Chart.yml", ignoreCase: true);
@@ -32,7 +35,7 @@ public sealed class HelmChartDependencyScanner : DependencyScanner
                     var repository = GetScalarValue(repositoryNode);
                     if (repository is not null)
                     {
-                        context.ReportDependency<HelmChartDependencyScanner>(repository, version, DependencyType.HelmChart, nameLocation: GetLocation(context, repositoryNode), versionLocation: GetLocation(context, versionNode));
+                        context.ReportDependency(this, repository, version, DependencyType.HelmChart, nameLocation: GetLocation(context, repositoryNode), versionLocation: GetLocation(context, versionNode));
                     }
                 }
             }

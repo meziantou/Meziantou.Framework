@@ -9,9 +9,31 @@ public sealed class RegexScanner : DependencyScanner
     private const string NameGroupName = "name";
     private const string VersionGroupName = "version";
 
+    private bool _frozen;
+
+    protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes
+    {
+        get
+        {
+            _frozen = true;
+            field ??= [DependencyType];
+            return field;
+        }
+    }
+
     public string? RegexPattern { get; set; }
 
-    public DependencyType DependencyType { get; set; }
+    public DependencyType DependencyType
+    {
+        get => field;
+        set
+        {
+            if (_frozen)
+                throw new InvalidOperationException("The scanner is already used and cannot be modified.");
+
+            field = value;
+        }
+    }
 
     public GlobCollection? FilePatterns { get; set; }
 
@@ -19,6 +41,8 @@ public sealed class RegexScanner : DependencyScanner
     {
         if (RegexPattern is null)
             return;
+
+        _frozen = true;
 
         using var sr = new StreamReader(context.Content);
         var text = await sr.ReadToEndAsync(context.CancellationToken).ConfigureAwait(false);
@@ -37,12 +61,12 @@ public sealed class RegexScanner : DependencyScanner
                     var version = versionGroup.Value;
                     var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
                     var versionLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, versionGroup.Index, versionGroup.Length);
-                    context.ReportDependency<RegexScanner>(name, version, DependencyType, nameLocation, versionLocation);
+                    context.ReportDependency(this, name, version, DependencyType, nameLocation, versionLocation);
                 }
                 else
                 {
                     var nameLocation = TextLocation.FromIndex(context.FileSystem, context.FullPath, text, nameGroup.Index, nameGroup.Length);
-                    context.ReportDependency<RegexScanner>(name, version: null, DependencyType, nameLocation, versionLocation: null);
+                    context.ReportDependency(this, name, version: null, DependencyType, nameLocation, versionLocation: null);
                 }
             }
         }

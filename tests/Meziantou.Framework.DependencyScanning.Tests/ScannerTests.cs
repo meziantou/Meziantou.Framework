@@ -1,4 +1,5 @@
 #pragma warning disable MA0101
+using System.Collections.Immutable;
 using System.Text;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
@@ -532,7 +533,7 @@ public sealed class ScannerTests(ITestOutputHelper testOutputHelper) : IDisposab
 
         // Assert
         var result = await GetDependencies<GitSubmoduleDependencyScanner>();
-        AssertContainDependency(result, (DependencyType.GitSubmodule, remote.FullPath, head, 0, 0));
+        AssertContainDependency(result, (DependencyType.GitReference, remote.FullPath, head, 0, 0));
 
         Assert.All(result, item => Assert.False(item.VersionLocation.IsUpdatable));
 
@@ -1137,12 +1138,12 @@ jobs:
             """, ignoreNewLines: true);
     }
 
-    private async Task<Dependency[]> GetDependencies<T>(DependencyScanner[]? scanners = null) where T : DependencyScanner
+    private async Task<Dependency[]> GetDependencies<T>(ImmutableArray<DependencyScanner>? scanners = null) where T : DependencyScanner
     {
         var options = new ScannerOptions { DegreeOfParallelism = 1 };
         if (scanners is not null)
         {
-            options.Scanners = scanners;
+            options.Scanners = scanners.Value;
         }
 
         var dependencies = await Scan(options);

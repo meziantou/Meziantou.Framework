@@ -130,11 +130,11 @@ public class DependencyScannerBenchmark
 
     private sealed class DummyScanner : DependencyScanner
     {
-        internal static readonly Dependency Dependency = new("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, "", 1, 1, 1));
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
 
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            context.ReportDependency(Dependency);
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, "", 1, 1, 1));
             return ValueTask.CompletedTask;
         }
 
@@ -143,9 +143,11 @@ public class DependencyScannerBenchmark
 
     private sealed class DummyScannerNeverMatch : DependencyScanner
     {
+        protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Unknown];
+
         public override ValueTask ScanAsync(ScanFileContext context)
         {
-            context.ReportDependency(new Dependency("", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1)));
+            context.ReportDependency(this, "", "", DependencyType.Unknown, nameLocation: null, new TextLocation(FileSystem.Instance, context.FullPath, 1, 1, 1));
             return ValueTask.CompletedTask;
         }
 

@@ -1,0 +1,11 @@
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.ServiceDefaults\Meziantou.AspNetCore.ServiceDefaults.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +22,11 @@ public static class MeziantouServiceDefaults
     {
         var options = new MeziantouServiceDefaultsOptions();
         configure?.Invoke(options);
+
+        builder.Services.Configure<KestrelServerOptions>(options =>
+        {
+            options.AddServerHeader = false;
+        });
 
         builder.Services.AddSingleton<IStartupFilter>(new ValidationStartupFilter());
         builder.Services.AddSingleton(options);
@@ -49,19 +55,20 @@ public static class MeziantouServiceDefaults
             });
         });
 
-        builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options => ConfigureJsonOptions(options.JsonSerializerOptions));
-        builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options => ConfigureJsonOptions(options.SerializerOptions));
+        builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(jsonOptions => ConfigureJsonOptions(jsonOptions.JsonSerializerOptions, options));
+        builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(jsonOptions => ConfigureJsonOptions(jsonOptions.SerializerOptions, options));
         return builder;
     }
 
-    private static void ConfigureJsonOptions(JsonSerializerOptions options)
+    private static void ConfigureJsonOptions(JsonSerializerOptions jsonOptions, MeziantouServiceDefaultsOptions options)
     {
-        options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-        options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        options.RespectNullableAnnotations = true;
-        options.RespectRequiredConstructorParameters = true;
-        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
+        jsonOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        jsonOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+        jsonOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        jsonOptions.RespectNullableAnnotations = true;
+        jsonOptions.RespectRequiredConstructorParameters = true;
+        jsonOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: true));
+        options.ConfigureJsonOptions?.Invoke(jsonOptions);
     }
 
     private static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder, MeziantouServiceDefaultsOptions options) where TBuilder : IHostApplicationBuilder
@@ -132,7 +139,7 @@ public static class MeziantouServiceDefaults
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
         options.MapCalled = true;
 
-        app.UseForwardedHeaders();
+        app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders });
         if (options.Https.Enabled)
         {
             app.UseHttpsRedirection();
@@ -160,7 +167,10 @@ public static class MeziantouServiceDefaults
             Predicate = r => r.Tags.Contains("live"),
         });
 
-        app.MapStaticAssets();
+        if (options.StaticAssets.Enabled)
+        {
+            app.MapStaticAssets();
+        }
 
         if (options.OpenApi.Enabled)
         {

@@ -137,6 +137,9 @@ public static class MeziantouServiceDefaults
     public static void MapMeziantouDefaultEndpoints(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
+        if (options.MapCalled)
+            return;
+
         options.MapCalled = true;
 
         app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders });
@@ -169,7 +172,17 @@ public static class MeziantouServiceDefaults
 
         if (options.StaticAssets.Enabled)
         {
-            app.MapStaticAssets();
+            // Check if the static web assets manifest exists
+            var staticAssetsManifestPath = $"{environment.ApplicationName}.staticwebassets.endpoints.json";
+
+            staticAssetsManifestPath = !Path.IsPathRooted(staticAssetsManifestPath) ?
+                Path.Combine(AppContext.BaseDirectory, staticAssetsManifestPath) :
+                staticAssetsManifestPath;
+
+            if (File.Exists(staticAssetsManifestPath))
+            {
+                app.MapStaticAssets();
+            }
         }
 
         if (options.OpenApi.Enabled)

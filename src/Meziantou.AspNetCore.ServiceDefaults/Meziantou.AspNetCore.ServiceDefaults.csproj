@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
-    <Version>1.0.10</Version>
+    <Version>1.0.11</Version>
     <Description>Default configuration for meziantou applications</Description>
   </PropertyGroup>
   <ItemGroup>

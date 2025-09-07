@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework);netstandard2.0</TargetFrameworks>
+    <Version>1.0.0</Version>
+    <Description>Auto register services and map routes</Description>
+
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Meziantou.AspNetCore.ServiceDefaults.AutoRegister.targets" Pack="true" PackagePath="build/" />
+    <None Include="$(OutputPath)\..\$(Configuration.ToLowerInvariant())_netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

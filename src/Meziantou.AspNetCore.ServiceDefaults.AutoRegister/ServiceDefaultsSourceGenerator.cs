@@ -41,65 +41,14 @@ public sealed class ServiceDefaultsSourceGenerator : IIncrementalGenerator
                 var index = 0;
                 foreach (var method in interceptionData.OrderBy(item => item.OrderKey, StringComparer.Ordinal))
                 {
-                    if (method.Kind is InterceptionMethodKind.CreateBuilder)
-                    {
-                        sb.AppendLine($$"""
-                                // Intercepted call at {{method.InterceptableLocation.GetDisplayLocation()}}
-                                [System.Runtime.CompilerServices.InterceptsLocationAttribute(version: {{method.InterceptableLocation.Version.ToString(CultureInfo.InvariantCulture)}}, data: "{{method.InterceptableLocation.Data}}")]
-                                public static Microsoft.AspNetCore.Builder.WebApplicationBuilder Intercept_CreateBuilder{{index.ToString(CultureInfo.InvariantCulture)}}()
-                                {
-                                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder();
-                                    builder.UseMeziantouConventions();
-                                    return builder;
-                                }
-                            """);
-                    }
-                    else if (method.Kind is InterceptionMethodKind.CreateBuilder_StringArray)
-                    {
-                        sb.AppendLine($$"""
-                                // Intercepted call at {{method.InterceptableLocation.GetDisplayLocation()}}
-                                [System.Runtime.CompilerServices.InterceptsLocationAttribute(version: {{method.InterceptableLocation.Version.ToString(CultureInfo.InvariantCulture)}}, data: "{{method.InterceptableLocation.Data}}")]
-                                public static Microsoft.AspNetCore.Builder.WebApplicationBuilder Intercept_CreateBuilder{{index.ToString(CultureInfo.InvariantCulture)}}(string[] args)
-                                {
-                                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
-                                    builder.UseMeziantouConventions();
-                                    return builder;
-                                }
-                            """);
-                    }
-                    else if (method.Kind is InterceptionMethodKind.CreateBuilderSlim)
-                    {
-                        sb.AppendLine($$"""
-                                // Intercepted call at {{method.InterceptableLocation.GetDisplayLocation()}}
-                                [System.Runtime.CompilerServices.InterceptsLocationAttribute(version: {{method.InterceptableLocation.Version.ToString(CultureInfo.InvariantCulture)}}, data: "{{method.InterceptableLocation.Data}}")]
-                                public static Microsoft.AspNetCore.Builder.WebApplicationBuilder Intercept_CreateBuilderSlim{{index.ToString(CultureInfo.InvariantCulture)}}()
-                                {
-                                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilderSlim();
-                                    builder.UseMeziantouConventions();
-                                    return builder;
-                                }
-                            """);
-                    }
-                    else if (method.Kind is InterceptionMethodKind.CreateBuilderSlim_StringArray)
-                    {
-                        sb.AppendLine($$"""
-                                // Intercepted call at {{method.InterceptableLocation.GetDisplayLocation()}}
-                                [System.Runtime.CompilerServices.InterceptsLocationAttribute(version: {{method.InterceptableLocation.Version.ToString(CultureInfo.InvariantCulture)}}, data: "{{method.InterceptableLocation.Data}}")]
-                                public static Microsoft.AspNetCore.Builder.WebApplicationBuilder Intercept_CreateBuilderSlim{{index.ToString(CultureInfo.InvariantCulture)}}(string[] args)
-                                {
-                                    var builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilderSlim(args);
-                                    builder.UseMeziantouConventions();
-                                    return builder;
-                                }
-                            """);
-                    }
-                    else if (method.Kind is InterceptionMethodKind.Build)
+                    if (method.Kind is InterceptionMethodKind.Build)
                     {
                         sb.AppendLine($$"""
                                 // Intercepted call at {{method.InterceptableLocation.GetDisplayLocation()}}
                                 [System.Runtime.CompilerServices.InterceptsLocationAttribute(version: {{method.InterceptableLocation.Version.ToString(CultureInfo.InvariantCulture)}}, data: "{{method.InterceptableLocation.Data}}")]
                                 public static Microsoft.AspNetCore.Builder.WebApplication Intercept_Build{{index.ToString(CultureInfo.InvariantCulture)}}(this Microsoft.AspNetCore.Builder.WebApplicationBuilder builder)
                                 {
+                                    builder.TryUseMeziantouConventions();
                                     var app = builder.Build();
                                     app.MapMeziantouDefaultEndpoints();
                                     return app;
@@ -144,55 +93,8 @@ public sealed class ServiceDefaultsSourceGenerator : IIncrementalGenerator
 
         static InterceptionData? Transform(GeneratorSyntaxContext context, CancellationToken cancellationToken)
         {
-            var invocation = context.SemanticModel.GetOperation(context.Node, cancellationToken) as IInvocationOperation;
-            if (invocation is null)
+            if (context.SemanticModel.GetOperation(context.Node, cancellationToken) is not IInvocationOperation invocation)
                 return null;
-
-            static string CreateOrderKey(SyntaxNode node)
-            {
-                var lineSpan = node.GetLocation().GetLineSpan();
-                return node.SyntaxTree.FilePath + ":" + lineSpan.StartLinePosition.Line + ":" + lineSpan.StartLinePosition.Character;
-            }
-
-            if (invocation.TargetMethod.Name is "CreateBuilder" && invocation.TargetMethod.Parameters.Length is 0 && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, context.SemanticModel.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Builder.WebApplication")))
-            {
-                return new InterceptionData
-                {
-                    OrderKey = CreateOrderKey(context.Node),
-                    Kind = InterceptionMethodKind.CreateBuilder,
-                    InterceptableLocation = context.SemanticModel.GetInterceptableLocation((InvocationExpressionSyntax)context.Node, cancellationToken),
-                };
-            }
-
-            if (invocation.TargetMethod.Name is "CreateBuilderSlim" && invocation.TargetMethod.Parameters.Length is 0 && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, context.SemanticModel.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Builder.WebApplication")))
-            {
-                return new InterceptionData
-                {
-                    OrderKey = CreateOrderKey(context.Node),
-                    Kind = InterceptionMethodKind.CreateBuilderSlim,
-                    InterceptableLocation = context.SemanticModel.GetInterceptableLocation((InvocationExpressionSyntax)context.Node, cancellationToken),
-                };
-            }
-
-            if (invocation.TargetMethod.Name is "CreateBuilder" && invocation.TargetMethod.Parameters.Length is 1 && invocation.TargetMethod.Parameters[0].Type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_String } && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, context.SemanticModel.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Builder.WebApplication")))
-            {
-                return new InterceptionData
-                {
-                    OrderKey = CreateOrderKey(context.Node),
-                    Kind = InterceptionMethodKind.CreateBuilder_StringArray,
-                    InterceptableLocation = context.SemanticModel.GetInterceptableLocation((InvocationExpressionSyntax)context.Node, cancellationToken),
-                };
-            }
-
-            if (invocation.TargetMethod.Name is "CreateBuilderSlim" && invocation.TargetMethod.Parameters.Length is 1 && invocation.TargetMethod.Parameters[0].Type is IArrayTypeSymbol { ElementType.SpecialType: SpecialType.System_String } && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, context.SemanticModel.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Builder.WebApplication")))
-            {
-                return new InterceptionData
-                {
-                    OrderKey = CreateOrderKey(context.Node),
-                    Kind = InterceptionMethodKind.CreateBuilderSlim_StringArray,
-                    InterceptableLocation = context.SemanticModel.GetInterceptableLocation((InvocationExpressionSyntax)context.Node, cancellationToken),
-                };
-            }
 
             if (invocation.TargetMethod.Name is "Build" && SymbolEqualityComparer.Default.Equals(invocation.TargetMethod.ContainingType, context.SemanticModel.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Builder.WebApplicationBuilder")))
             {
@@ -206,6 +108,11 @@ public sealed class ServiceDefaultsSourceGenerator : IIncrementalGenerator
 
             return null;
 
+            static string CreateOrderKey(SyntaxNode node)
+            {
+                var lineSpan = node.GetLocation().GetLineSpan();
+                return node.SyntaxTree.FilePath + ":" + lineSpan.StartLinePosition.Line + ":" + lineSpan.StartLinePosition.Character;
+            }
         }
     }
 }

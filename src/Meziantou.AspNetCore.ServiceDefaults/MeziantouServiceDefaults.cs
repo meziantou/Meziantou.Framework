@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -18,6 +20,17 @@ namespace Meziantou.AspNetCore.ServiceDefaults;
 
 public static class MeziantouServiceDefaults
 {
+    public static TBuilder TryUseMeziantouConventions<TBuilder>(this TBuilder builder, Action<MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : IHostApplicationBuilder
+    {
+        foreach (var service in builder.Services)
+        {
+            if (service.ServiceType == typeof(MeziantouServiceDefaultsOptions))
+                return builder;
+        }
+
+        return builder.UseMeziantouConventions(configure);
+    }
+
     public static TBuilder UseMeziantouConventions<TBuilder>(this TBuilder builder, Action<MeziantouServiceDefaultsOptions>? configure = null) where TBuilder : IHostApplicationBuilder
     {
         var options = new MeziantouServiceDefaultsOptions();
@@ -28,8 +41,8 @@ public static class MeziantouServiceDefaults
             options.AddServerHeader = false;
         });
 
-        builder.Services.AddSingleton<IStartupFilter>(new ValidationStartupFilter());
-        builder.Services.AddSingleton(options);
+        builder.Services.TryAddSingleton<IStartupFilter>(new ValidationStartupFilter());
+        builder.Services.TryAddSingleton(options);
         if (options.AntiForgery.Enabled)
         {
             builder.Services.AddAntiforgery();

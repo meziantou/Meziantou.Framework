@@ -30,6 +30,27 @@ public sealed class ServiceDefaultTests
         Assert.Equal("""{"sample":"value1"}""", await httpClient.GetStringAsync("/"));
     }
 
+    [Fact]
+    public async Task MultipleRegister()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.TryUseMeziantouConventions();
+        builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
+
+        await using var app = builder.Build();
+        app.MapMeziantouDefaultEndpoints();
+        app.MapGet("/", () => TypedResults.Ok(new { Sample = Sample.Value1 }));
+        var t = app.RunAsync();
+
+        var address = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses.First();
+        using var httpClient = new HttpClient() { BaseAddress = new Uri(address) };
+        Assert.Equal("Healthy", await httpClient.GetStringAsync("health", XunitCancellationToken));
+        Assert.Equal("Healthy", await httpClient.GetStringAsync("alive", XunitCancellationToken));
+
+        Assert.Equal("""{"sample":"value1"}""", await httpClient.GetStringAsync("/"));
+    }
+
     private enum Sample
     {
         Value1,

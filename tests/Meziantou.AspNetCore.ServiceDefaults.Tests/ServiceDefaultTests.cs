@@ -14,7 +14,7 @@ public sealed class ServiceDefaultTests
     public async Task Test1()
     {
         var builder = WebApplication.CreateBuilder();
-        builder.UseMeziantouConventions(options => options.StaticAssets.Enabled = false);
+        builder.UseMeziantouConventions();
         builder.WebHost.UseKestrel(conf => conf.Listen(IPAddress.Loopback, port: 0));
 
         await using var app = builder.Build();

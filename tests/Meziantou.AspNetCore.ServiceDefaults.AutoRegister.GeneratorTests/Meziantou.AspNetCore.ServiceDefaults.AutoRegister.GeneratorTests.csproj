@@ -1,0 +1,22 @@
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
+    <EmitCompilerGeneratedFiles>True</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.ServiceDefaults.AutoRegister\Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.ServiceDefaults\Meziantou.AspNetCore.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\..\src\Meziantou.AspNetCore.ServiceDefaults.AutoRegister\Meziantou.AspNetCore.ServiceDefaults.AutoRegister.targets" />
+
+</Project>

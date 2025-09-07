@@ -169,7 +169,17 @@ public static class MeziantouServiceDefaults
 
         if (options.StaticAssets.Enabled)
         {
-            app.MapStaticAssets();
+            // Check if the static web assets manifest exists
+            var staticAssetsManifestPath = $"{environment.ApplicationName}.staticwebassets.endpoints.json";
+
+            staticAssetsManifestPath = !Path.IsPathRooted(staticAssetsManifestPath) ?
+                Path.Combine(AppContext.BaseDirectory, staticAssetsManifestPath) :
+                staticAssetsManifestPath;
+
+            if (File.Exists(staticAssetsManifestPath))
+            {
+                app.MapStaticAssets();
+            }
         }
 
         if (options.OpenApi.Enabled)

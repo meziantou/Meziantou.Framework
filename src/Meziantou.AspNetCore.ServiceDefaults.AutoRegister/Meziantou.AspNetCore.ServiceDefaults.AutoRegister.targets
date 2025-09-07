@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>  
+	  <InterceptorsNamespaces>$(InterceptorsNamespaces);Meziantou.AspNetCore.ServiceDefaults.AutoRegister</InterceptorsNamespaces>
+  </PropertyGroup>
+</Project>

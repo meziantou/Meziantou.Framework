@@ -137,6 +137,9 @@ public static class MeziantouServiceDefaults
     public static void MapMeziantouDefaultEndpoints(this WebApplication app)
     {
         var options = app.Services.GetRequiredService<MeziantouServiceDefaultsOptions>();
+        if (options.MapCalled)
+            return;
+
         options.MapCalled = true;
 
         app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders });

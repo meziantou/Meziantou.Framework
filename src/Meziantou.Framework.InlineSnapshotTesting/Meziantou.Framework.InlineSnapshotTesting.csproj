@@ -35,7 +35,7 @@
     <PackageReference Include="System.Memory" Version="4.6.3" />
 
     <!-- This is required to generate csproj in the tests, even if the dependency is included transitively -->
-    <PackageReference Include="System.Text.Json" Version="9.0.8" />
+    <PackageReference Include="System.Text.Json" Version="9.0.9" />
   </ItemGroup>
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->

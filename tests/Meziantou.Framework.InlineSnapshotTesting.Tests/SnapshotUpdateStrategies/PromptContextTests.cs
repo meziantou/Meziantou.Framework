@@ -109,8 +109,8 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
 
-        var actual = File.ReadAllText(outputFilePath);
         Assert.Equal(0, process.ExitCode);
+        var actual = File.ReadAllText(outputFilePath);
         return actual;
 
         FullPath CreateTextFile(string path, string content)

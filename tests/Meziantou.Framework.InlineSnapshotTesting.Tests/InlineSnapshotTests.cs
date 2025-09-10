@@ -1199,6 +1199,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 #endif
             }
 
+            allPackages = allPackages.DistinctBy(p => p.Attribute("Include").Value).ToList();
             return string.Join("\n", allPackages.Select(item => item.ToString()));
         }
     }

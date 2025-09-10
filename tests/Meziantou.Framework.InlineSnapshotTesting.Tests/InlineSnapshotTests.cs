@@ -1106,7 +1106,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
         var mainPath = CreateTextFile("Program.cs", source);
 
-        var psi = new ProcessStartInfo("dotnet", $"run --project \"{projectPath}\"")
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
+        Assert.NotNull(dotnetPath);
+        var psi = new ProcessStartInfo(dotnetPath, $"run --project \"{projectPath}\"")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,

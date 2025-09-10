@@ -102,7 +102,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             RedirectStandardError = true,
         };
 
-        var process = Process.Start(psi);
+        using var process = Process.Start(psi);
         process.OutputDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.ErrorDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();

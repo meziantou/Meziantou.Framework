@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
+
 public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
@@ -94,7 +95,11 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 
         var mainPath = CreateTextFile("Program.cs", source);
 
-        var psi = new ProcessStartInfo("dotnet", $"test \"{projectPath}\" -p:UseSharedCompilation=false")
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
+        Assert.NotNull(dotnetPath);
+
+        var psi = new ProcessStartInfo(dotnetPath, $"test \"{projectPath}\" -p:UseSharedCompilation=false")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,

@@ -1148,6 +1148,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
+        Assert.Equal(0, process.ExitCode);
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

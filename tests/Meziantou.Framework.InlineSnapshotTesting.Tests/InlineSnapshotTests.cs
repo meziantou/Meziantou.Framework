@@ -1185,17 +1185,21 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
         static string GetPackageReferences()
         {
-            var names = typeof(InlineSnapshotTests).Assembly.GetManifestResourceNames();
-            using var stream = typeof(InlineSnapshotTests).Assembly.GetManifestResourceStream("Meziantou.Framework.InlineSnapshotTesting.Tests.Meziantou.Framework.InlineSnapshotTesting.csproj");
-            var doc = XDocument.Load(stream);
-            var items = doc.Root.Descendants("PackageReference");
+            var allPackages = new List<XElement>();
+            foreach (var project in new[] { "Meziantou.Framework.InlineSnapshotTesting.csproj", "Meziantou.Framework.HumanReadableSerializer.csproj" })
+            {
+                var names = typeof(InlineSnapshotTests).Assembly.GetManifestResourceNames();
+                using var stream = typeof(InlineSnapshotTests).Assembly.GetManifestResourceStream($"Meziantou.Framework.InlineSnapshotTesting.Tests.{project}");
+                var doc = XDocument.Load(stream);
+                var items = doc.Root.Descendants("PackageReference");
 
-            var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
+                var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
 #if NET472 || NET48
             packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
 #endif
+            }
 
-            return string.Join("\n", packages.Select(item => item.ToString()));
+            return string.Join("\n", allPackages.Select(item => item.ToString()));
         }
     }
 }

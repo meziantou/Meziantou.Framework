@@ -1059,6 +1059,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 <DefineConstants>{{string.Join(";", preprocessorSymbols ?? [])}}</DefineConstants>
               </PropertyGroup>
               <ItemGroup>
+                <PackageReference Include="System.Reflection.Metadata" Version="9.0.9" />
                 <ProjectReference Include="{{root / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "Meziantou.Framework.InlineSnapshotTesting.csproj"}}" />
                 <ProjectReference Include="{{root / "src" / "Meziantou.Framework.HumanReadableSerializer" / "Meziantou.Framework.HumanReadableSerializer.csproj"}}" />
               </ItemGroup>

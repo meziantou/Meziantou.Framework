@@ -1057,6 +1057,8 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             </Project>
             """);
 
+        testOutputHelper.WriteLine("Project:\n" + File.ReadAllText(projectPath));
+
         CreateTextFile("globals.cs", """
             global using System;
             global using System.Runtime.CompilerServices;

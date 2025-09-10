@@ -1173,6 +1173,8 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             return "net8.0";
 #elif NET9_0
             return "net9.0";
+#elif NET10_0
+            return "net10.0";
 #endif
         }
 

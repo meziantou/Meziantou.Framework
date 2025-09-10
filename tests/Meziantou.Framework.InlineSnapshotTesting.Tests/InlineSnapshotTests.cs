@@ -1060,6 +1060,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
               </PropertyGroup>
               <ItemGroup>
                 <PackageReference Include="System.Reflection.Metadata" Version="9.0.9" />
+                <PackageReference Include="System.Collections.Immutable" Version="9.0.9" />
                 <ProjectReference Include="{{root / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "Meziantou.Framework.InlineSnapshotTesting.csproj"}}" />
                 <ProjectReference Include="{{root / "src" / "Meziantou.Framework.HumanReadableSerializer" / "Meziantou.Framework.HumanReadableSerializer.csproj"}}" />
               </ItemGroup>

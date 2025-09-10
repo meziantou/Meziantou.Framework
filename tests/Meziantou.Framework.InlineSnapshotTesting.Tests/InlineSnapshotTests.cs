@@ -1026,7 +1026,15 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     public async Task DoNotUpdateOnCI(string key, string value)
     {
         await AssertSnapshot($$"""
-            InlineSnapshot.Validate(new object(), "");
+            try
+            {
+                InlineSnapshot.Validate(new object(), "");
+                return -1; // Should not happen
+            }
+            catch (InlineSnapshotException ex)
+            {
+                return 0;
+            }
             """,
             autoDetectCI: true,
             environmentVariables: new[] { new KeyValuePair<string, string>(key, value) });

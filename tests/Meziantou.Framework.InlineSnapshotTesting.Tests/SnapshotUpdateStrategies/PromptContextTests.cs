@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
+
 public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
@@ -94,7 +95,11 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 
         var mainPath = CreateTextFile("Program.cs", source);
 
-        var psi = new ProcessStartInfo("dotnet", $"test \"{projectPath}\" -p:UseSharedCompilation=false")
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
+        Assert.NotNull(dotnetPath);
+
+        var psi = new ProcessStartInfo(dotnetPath, $"test \"{projectPath}\" -p:UseSharedCompilation=false")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,
@@ -102,15 +107,15 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             RedirectStandardError = true,
         };
 
-        var process = Process.Start(psi);
+        using var process = Process.Start(psi);
         process.OutputDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.ErrorDataReceived += (sender, e) => testOutputHelper.WriteLine(e.Data ?? "");
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
 
-        var actual = File.ReadAllText(outputFilePath);
         Assert.Equal(0, process.ExitCode);
+        var actual = File.ReadAllText(outputFilePath);
         return actual;
 
         FullPath CreateTextFile(string path, string content)
@@ -126,12 +131,12 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             return "net472";
 #elif NET48
             return "net48";
-#elif NET6_0
-            return "net6.0";
 #elif NET8_0
             return "net8.0";
 #elif NET9_0
             return "net9.0";
+#elif NET10_0
+            return "net10.0";
 #endif
         }
     }

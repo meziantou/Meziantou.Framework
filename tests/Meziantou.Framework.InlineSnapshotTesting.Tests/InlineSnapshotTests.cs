@@ -1036,6 +1036,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
     [SuppressMessage("Performance", "CA1849:Call async methods when in an async method", Justification = "Not supported on .NET Framework")]
     private async Task AssertSnapshot([StringSyntax("c#-test")] string source, [StringSyntax("c#-test")] string expected = null, bool launchDebugger = false, string languageVersion = "11", bool autoDetectCI = false, bool forceUpdateSnapshots = false, IEnumerable<KeyValuePair<string, string>> environmentVariables = null, string[]? preprocessorSymbols = null)
     {
+        if (!FullPath.CurrentDirectory().TryFindFirstAncestorOrSelf(path => Directory.Exists(path / ".git"), out var root))
+            throw new InvalidOperationException("Cannot find git root from " + FullPath.CurrentDirectory());
+
         await using var directory = TemporaryDirectory.Create();
         var projectPath = CreateTextFile("Project.csproj", $$"""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -1048,14 +1051,13 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 <DefineConstants>{{string.Join(";", preprocessorSymbols ?? [])}}</DefineConstants>
               </PropertyGroup>
               <ItemGroup>
-                <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />
-                <Reference Include="{{typeof(InlineSnapshot).Assembly.Location}}" />
-              </ItemGroup>
-              <ItemGroup>
-                {{GetPackageReferences()}}
+                <ProjectReference Include="{{root / "src" / "Meziantou.Framework.InlineSnapshotTesting" / "Meziantou.Framework.InlineSnapshotTesting.csproj"}}" />
+                <ProjectReference Include="{{root / "src" / "Meziantou.Framework.HumanReadableSerializer" / "Meziantou.Framework.HumanReadableSerializer.csproj"}}" />
               </ItemGroup>
             </Project>
             """);
+
+        testOutputHelper.WriteLine("Project:\n" + File.ReadAllText(projectPath));
 
         CreateTextFile("globals.cs", """
             global using System;
@@ -1106,7 +1108,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 
         var mainPath = CreateTextFile("Program.cs", source);
 
-        var psi = new ProcessStartInfo("dotnet", $"run --project \"{projectPath}\"")
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
+        Assert.NotNull(dotnetPath);
+        var psi = new ProcessStartInfo(dotnetPath, $"run --project \"{projectPath}\"")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,
@@ -1173,22 +1178,9 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             return "net8.0";
 #elif NET9_0
             return "net9.0";
+#elif NET10_0
+            return "net10.0";
 #endif
-        }
-
-        static string GetPackageReferences()
-        {
-            var names = typeof(InlineSnapshotTests).Assembly.GetManifestResourceNames();
-            using var stream = typeof(InlineSnapshotTests).Assembly.GetManifestResourceStream("Meziantou.Framework.InlineSnapshotTesting.Tests.Meziantou.Framework.InlineSnapshotTesting.csproj");
-            var doc = XDocument.Load(stream);
-            var items = doc.Root.Descendants("PackageReference");
-
-            var packages = items.Where(item => item.Parent.Attribute("Condition") is null).ToList();
-#if NET472 || NET48
-            packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
-#endif
-
-            return string.Join("\n", packages.Select(item => item.ToString()));
         }
     }
 }

@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <TargetFrameworks Condition="$([MSBuild]::IsOsPlatform('Windows'))">$(TargetFrameworks);net472;net48</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon\Meziantou.Framework.InlineSnapshotTesting.Serializers.Argon.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.TemporaryDirectory\Meziantou.Framework.TemporaryDirectory.csproj" />
@@ -16,7 +16,4 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="..\..\src\Meziantou.Framework.InlineSnapshotTesting\Meziantou.Framework.InlineSnapshotTesting.csproj" Visible="False" />
-  </ItemGroup>
 </Project>

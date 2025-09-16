@@ -126,12 +126,12 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             return "net472";
 #elif NET48
             return "net48";
-#elif NET6_0
-            return "net6.0";
 #elif NET8_0
             return "net8.0";
 #elif NET9_0
             return "net9.0";
+#elif NET10_0
+            return "net10.0";
 #endif
         }
     }

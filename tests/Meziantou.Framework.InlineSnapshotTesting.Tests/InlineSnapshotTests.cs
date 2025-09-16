@@ -1056,6 +1056,8 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
               </ItemGroup>
             </Project>
             """);
+        
+        testOutputHelper.WriteLine("Project:\n" + File.ReadAllText(projectPath));
 
         CreateTextFile("globals.cs", """
             global using System;
@@ -1105,8 +1107,11 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 #endif
 
         var mainPath = CreateTextFile("Program.cs", source);
-
-        var psi = new ProcessStartInfo("dotnet", $"run --project \"{projectPath}\"")
+        
+        var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
+        testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
+        Assert.NotNull(dotnetPath);
+        var psi = new ProcessStartInfo(dotnetPath, $"run --project \"{projectPath}\"")
         {
             WorkingDirectory = directory.FullPath,
             UseShellExecute = false,

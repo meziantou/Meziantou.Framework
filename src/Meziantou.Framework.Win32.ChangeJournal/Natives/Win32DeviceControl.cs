@@ -10,36 +10,37 @@ namespace Meziantou.Framework.Win32.Natives;
 internal static class Win32DeviceControl
 {
     [SupportedOSPlatform("windows5.1.2600")]
-    internal static unsafe Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : struct
+    internal static unsafe Span<byte> ControlWithInput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure, int initialBufferLength) where TStructure : unmanaged
     {
         uint returnedSize;
         bool controlResult;
 
         var buffer = initialBufferLength is 0 ? Array.Empty<byte>() : new byte[initialBufferLength];
-        var structurePointer = Unsafe.AsPointer(ref structure);
-
-        fixed (void* bufferPointer = buffer)
+        fixed (void* structurePointer = &structure)
         {
-            controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-        }
-
-        if (!controlResult)
-        {
-            var errorCode = Marshal.GetLastWin32Error();
-            if (errorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA)
+            fixed (void* bufferPointer = buffer)
             {
-                buffer = new byte[returnedSize];
-                fixed (void* bufferPointer = buffer)
-                {
-                    controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
-                }
-
-                if (!controlResult)
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
             }
-            else
+
+            if (!controlResult)
             {
-                throw new Win32Exception(errorCode);
+                var errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA)
+                {
+                    buffer = new byte[returnedSize];
+                    fixed (void* bufferPointer = buffer)
+                    {
+                        controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                    }
+
+                    if (!controlResult)
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    throw new Win32Exception(errorCode);
+                }
             }
         }
 
@@ -47,13 +48,14 @@ internal static class Win32DeviceControl
     }
 
     [SupportedOSPlatform("windows5.1.2600")]
-    internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : struct
+    internal static unsafe void ControlWithOutput<TStructure>(SafeFileHandle handle, Win32ControlCode code, ref TStructure structure) where TStructure : unmanaged
     {
-        var structurePointer = Unsafe.AsPointer(ref structure);
-        uint returnedSize = 0;
-        var controlResult = PInvoke.DeviceIoControl(handle, (uint)code, lpInBuffer: null, 0u, structurePointer, (uint)Marshal.SizeOf(structure), &returnedSize, lpOverlapped: null);
-
-        if (!controlResult)
-            throw new Win32Exception(Marshal.GetLastWin32Error());
+        fixed (void* pStructure = &structure)
+        {
+            uint returnedSize = 0;
+            var controlResult = PInvoke.DeviceIoControl(handle, (uint)code, lpInBuffer: null, 0u, pStructure, (uint)Marshal.SizeOf<TStructure>(), &returnedSize, lpOverlapped: null);
+            if (!controlResult)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
     }
 }

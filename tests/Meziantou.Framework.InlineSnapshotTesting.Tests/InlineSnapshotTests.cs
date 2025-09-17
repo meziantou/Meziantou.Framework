@@ -1056,7 +1056,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
               </ItemGroup>
             </Project>
             """);
-        
+
         testOutputHelper.WriteLine("Project:\n" + File.ReadAllText(projectPath));
 
         CreateTextFile("globals.cs", """
@@ -1107,47 +1107,19 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 #endif
 
         var mainPath = CreateTextFile("Program.cs", source);
-        
+
         var dotnetPath = ExecutableFinder.GetFullExecutablePath("dotnet");
         testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
         Assert.NotNull(dotnetPath);
-        var psi = new ProcessStartInfo(dotnetPath, $"run --project \"{projectPath}\"")
-        {
-            WorkingDirectory = directory.FullPath,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        };
 
-        psi.EnvironmentVariables.Remove("CI");
-        foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
-        {
-            var key = (string)entry.Key;
-            if (key == "GITHUB_WORKSPACE")
-                continue;
+        testOutputHelper.WriteLine("Restoring project");
+        await ExecuteDotNet("restore", expectedExitCode: 0);
 
-            if (key.StartsWith("GITHUB", StringComparison.Ordinal))
-            {
-                psi.EnvironmentVariables.Remove(key);
-            }
-        }
+        testOutputHelper.WriteLine("Building project");
+        await ExecuteDotNet("build", expectedExitCode: 0);
 
-        psi.EnvironmentVariables.Add("DiffEngine_Disabled", "true");
-        psi.EnvironmentVariables.Add("MF_CurrentDirectory", Environment.CurrentDirectory);
-        if (environmentVariables is not null)
-        {
-            foreach (var variable in environmentVariables)
-            {
-                psi.EnvironmentVariables.Add(variable.Key, variable.Value);
-            }
-        }
-
-        using var process = Process.Start(psi);
-        process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
-        process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process!.WaitForExitAsync();
+        testOutputHelper.WriteLine("Running project");
+        await ExecuteDotNet($"run --project \"{projectPath}\"");
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;
@@ -1194,6 +1166,51 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
 #endif
 
             return string.Join("\n", packages.Select(item => item.ToString()));
+        }
+
+        async Task ExecuteDotNet(string command, int? expectedExitCode = null)
+        {
+            var psi = new ProcessStartInfo(dotnetPath, command)
+            {
+                WorkingDirectory = directory.FullPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            psi.EnvironmentVariables.Remove("CI");
+            foreach (var entry in psi.EnvironmentVariables.Cast<DictionaryEntry>().ToArray())
+            {
+                var key = (string)entry.Key;
+                if (key == "GITHUB_WORKSPACE")
+                    continue;
+
+                if (key.StartsWith("GITHUB", StringComparison.Ordinal))
+                {
+                    psi.EnvironmentVariables.Remove(key);
+                }
+            }
+
+            psi.EnvironmentVariables.Add("DiffEngine_Disabled", "true");
+            psi.EnvironmentVariables.Add("MF_CurrentDirectory", Environment.CurrentDirectory);
+            if (environmentVariables is not null)
+            {
+                foreach (var variable in environmentVariables)
+                {
+                    psi.EnvironmentVariables.Add(variable.Key, variable.Value);
+                }
+            }
+
+            using var process = Process.Start(psi);
+            process.OutputDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
+            process.ErrorDataReceived += (_, e) => testOutputHelper.WriteLine(e.Data ?? "");
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            await process!.WaitForExitAsync();
+            if (expectedExitCode.HasValue)
+            {
+                Assert.Equal(expectedExitCode.Value, process.ExitCode);
+            }
         }
     }
 }

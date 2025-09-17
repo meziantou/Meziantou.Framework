@@ -24,15 +24,15 @@ runs:
           Invoke-WebRequest 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'
 
           echo "::group::Install .NET 8.0"
-          ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet -NoPath
+          ./dotnet-install.ps1 -Channel 8.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet-x86 -NoPath
           echo "::endgroup::"
 
           echo "::group::Install .NET 9.0"
-          ./dotnet-install.ps1 -Channel 9.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet -NoPath
+          ./dotnet-install.ps1 -Channel 9.0 -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet-x86 -NoPath
           echo "::endgroup::"
 
           echo "::group::Install .NET (global.json)"
-          ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet
+          ./dotnet-install.ps1 -JSonFile ${{github.workspace}}/global.json -Architecture ${{ inputs.architecture }} -InstallDir ~/dotnet-x86
           echo "::endgroup::"
 
           echo "::group::Validating installation"

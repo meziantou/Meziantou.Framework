@@ -1,6 +1,8 @@
-using Xunit;
+#pragma warning disable MEZ_NET10 // Type or member is obsolete
+using Meziantou.Framework;
 
-namespace Meziantou.Framework.Tests;
+// Do not use Meziantou.Framework in this file, so it can validate the builtin extension methods (System.Linq) can be used in .NET 10+
+namespace Meziantou.Framework2.Tests;
 
 public sealed class AsyncEnumerableExtensionsTests
 {

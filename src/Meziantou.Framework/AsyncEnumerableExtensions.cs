@@ -1,10 +1,18 @@
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
 public static class AsyncEnumerableExtensions
 {
-    public static async ValueTask<bool> AnyAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.AnyAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<bool> AnyAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         await foreach (var _ in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -14,7 +22,14 @@ public static class AsyncEnumerableExtensions
         return false;
     }
 
-    public static async ValueTask<bool> AnyAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.AnyAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<bool> AnyAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+# endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -25,6 +40,9 @@ public static class AsyncEnumerableExtensions
         return false;
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Concat", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> ConcatAsync<T>(this IAsyncEnumerable<T> first, IAsyncEnumerable<T> second, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in first.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -34,12 +52,26 @@ public static class AsyncEnumerableExtensions
             yield return item;
     }
 
-    public static ValueTask<bool> ContainsAsync<T>(this IAsyncEnumerable<T> enumerable, T value, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.ContainsAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static ValueTask<bool> ContainsAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, T value, CancellationToken cancellationToken = default)
     {
         return ContainsAsync(enumerable, value, comparer: null, cancellationToken);
     }
 
-    public static async ValueTask<bool> ContainsAsync<T>(this IAsyncEnumerable<T> enumerable, T value, IEqualityComparer<T>? comparer, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.ContainsAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<bool> ContainsAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, T value, IEqualityComparer<T>? comparer, CancellationToken cancellationToken = default)
     {
         comparer ??= EqualityComparer<T>.Default;
 
@@ -54,7 +86,14 @@ public static class AsyncEnumerableExtensions
         return false;
     }
 
-    public static async ValueTask<int> CountAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.CountAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<int> CountAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         var result = 0;
         await foreach (var _ in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -65,7 +104,14 @@ public static class AsyncEnumerableExtensions
         return result;
     }
 
-    public static async ValueTask<int> CountAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.CountAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<int> CountAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+# endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         var result = 0;
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -79,11 +125,17 @@ public static class AsyncEnumerableExtensions
         return result;
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Distinct", DiagnosticId = "MEZ_NET10")]
+#endif
     public static IAsyncEnumerable<T> DistinctAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         return DistinctAsync(enumerable, comparer: null, cancellationToken);
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Distinct", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> DistinctAsync<T>(this IAsyncEnumerable<T> enumerable, IEqualityComparer<T>? comparer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var hashSet = new HashSet<T>(comparer);
@@ -94,11 +146,18 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.DistinctBy", DiagnosticId = "MEZ_NET10")]
+#endif
     public static IAsyncEnumerable<T> DistinctByAsync<T, TKey>(this IAsyncEnumerable<T> enumerable, Func<T, TKey> getKey, CancellationToken cancellationToken = default)
     {
         return DistinctByAsync(enumerable, getKey, comparer: null, cancellationToken);
     }
 
+
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.DistinctBy", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> DistinctByAsync<T, TKey>(this IAsyncEnumerable<T> enumerable, Func<T, TKey> getKey, IEqualityComparer<TKey>? comparer, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var hashSet = new HashSet<TKey>(comparer);
@@ -110,12 +169,26 @@ public static class AsyncEnumerableExtensions
         }
     }
 
-    public static ValueTask<T> FirstAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.FirstAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static ValueTask<T> FirstAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         return FirstAsync(enumerable, _ => true, cancellationToken);
     }
 
-    public static async ValueTask<T> FirstAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.FirstAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<T> FirstAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+# endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -126,12 +199,26 @@ public static class AsyncEnumerableExtensions
         throw new InvalidOperationException("The source sequence is empty");
     }
 
-    public static ValueTask<T?> FirstOrDefaultAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.FirstOrDefaultAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static ValueTask<T?> FirstOrDefaultAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         return FirstOrDefaultAsync(enumerable, _ => true, cancellationToken);
     }
 
-    public static async ValueTask<T?> FirstOrDefaultAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.FirstOrDefaultAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<T?> FirstOrDefaultAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
         {
@@ -142,12 +229,26 @@ public static class AsyncEnumerableExtensions
         return default;
     }
 
-    public static ValueTask<T> LastAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LastAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static ValueTask<T> LastAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         return LastAsync(enumerable, _ => true, cancellationToken);
     }
 
-    public static async ValueTask<T> LastAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LastAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<T> LastAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         var hasValue = false;
         T result = default!;
@@ -166,12 +267,26 @@ public static class AsyncEnumerableExtensions
         throw new InvalidOperationException("The source sequence is empty");
     }
 
-    public static ValueTask<T?> LastOrDefaultAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LastOrDefaultAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static ValueTask<T?> LastOrDefaultAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+# endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         return LastOrDefaultAsync(enumerable, _ => true, cancellationToken);
     }
 
-    public static async ValueTask<T?> LastOrDefaultAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LastOrDefaultAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<T?> LastOrDefaultAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         T? result = default;
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -185,7 +300,14 @@ public static class AsyncEnumerableExtensions
         return result;
     }
 
-    public static async ValueTask<long> LongCountAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LongCountAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<long> LongCountAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         var result = 0L;
         await foreach (var _ in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -196,7 +318,14 @@ public static class AsyncEnumerableExtensions
         return result;
     }
 
-    public static async ValueTask<long> LongCountAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.LongCountAsync", DiagnosticId = "MEZ_NET10")]
+#endif
+    public static async ValueTask<long> LongCountAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, Func<T, bool> predicate, CancellationToken cancellationToken = default)
     {
         var result = 0L;
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -210,6 +339,9 @@ public static class AsyncEnumerableExtensions
         return result;
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.OfType", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<TResult> OfTypeAsync<T, TResult>(this IAsyncEnumerable<T> enumerable, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -219,6 +351,9 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Select", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<TResult> SelectAsync<T, TResult>(this IAsyncEnumerable<T> enumerable, Func<T, TResult> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -227,6 +362,9 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Take", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> TakeAsync<T>(this IAsyncEnumerable<T> enumerable, int count, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (count <= 0)
@@ -240,6 +378,9 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.TakeWhile", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> TakeWhileAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -251,6 +392,9 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Skip", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> SkipAsync<T>(this IAsyncEnumerable<T> enumerable, int count, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         IAsyncEnumerator<T>? enumerator = null;
@@ -279,6 +423,9 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.SkipWhile", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> SkipWhileAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -290,8 +437,15 @@ public static class AsyncEnumerableExtensions
         }
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.FirstAsync", DiagnosticId = "MEZ_NET10")]
+#endif
     [SuppressMessage("Design", "MA0016:Prefer return collection abstraction instead of implementation", Justification = "Match Enumerable.ToList signature")]
-    public static async ValueTask<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
+    public static async ValueTask<List<T>> ToListAsync<T>(
+#if !NET10_0_OR_GREATER
+        this
+#endif
+        IAsyncEnumerable<T> enumerable, CancellationToken cancellationToken = default)
     {
         var list = new List<T>();
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -302,6 +456,9 @@ public static class AsyncEnumerableExtensions
         return list;
     }
 
+#if NET10_0_OR_GREATER
+    [Obsolete("Use System.Linq.AsyncEnumerable.Where", DiagnosticId = "MEZ_NET10")]
+#endif
     public static async IAsyncEnumerable<T> WhereAsync<T>(this IAsyncEnumerable<T> enumerable, Func<T, bool> selector, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var item in enumerable.WithCancellation(cancellationToken).ConfigureAwait(false))
@@ -311,18 +468,30 @@ public static class AsyncEnumerableExtensions
         }
     }
 
-    public static IAsyncEnumerable<T> WhereNotNull<T>(this IAsyncEnumerable<T?> enumerable, CancellationToken cancellationToken = default) where T : class
+    public static IAsyncEnumerable<T> WhereNotNull<T>(this IAsyncEnumerable<T?> enumerable) where T : class
     {
-        return enumerable.WhereAsync(item => item is not null, cancellationToken)!;
+#if NET10_0_OR_GREATER
+        return enumerable.Where(item => item is not null)!;
+#else
+        return enumerable.WhereAsync(item => item is not null)!;
+#endif
     }
 
-    public static IAsyncEnumerable<string> WhereNotNullOrEmpty(this IAsyncEnumerable<string?> source, CancellationToken cancellationToken = default)
+    public static IAsyncEnumerable<string> WhereNotNullOrEmpty(this IAsyncEnumerable<string?> source)
     {
-        return source.WhereAsync(item => !string.IsNullOrEmpty(item), cancellationToken)!;
+#if NET10_0_OR_GREATER
+        return source.Where(item => !string.IsNullOrEmpty(item))!;
+#else
+        return source.WhereAsync(item => !string.IsNullOrEmpty(item))!;
+#endif
     }
 
-    public static IAsyncEnumerable<string> WhereNotNullOrWhiteSpace(this IAsyncEnumerable<string?> source, CancellationToken cancellationToken = default)
+    public static IAsyncEnumerable<string> WhereNotNullOrWhiteSpace(this IAsyncEnumerable<string?> source)
     {
-        return source.WhereAsync(item => !string.IsNullOrWhiteSpace(item), cancellationToken)!;
+#if NET10_0_OR_GREATER
+        return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
+#else
+        return source.WhereAsync(item => !string.IsNullOrWhiteSpace(item))!;
+#endif
     }
 }

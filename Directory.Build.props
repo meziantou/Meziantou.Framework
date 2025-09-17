@@ -2,10 +2,10 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <LatestTargetFramework>net9.0</LatestTargetFramework>
+    <LatestTargetFramework>net10.0</LatestTargetFramework>
 
-    <LatestTargetFrameworks>net8.0;net9.0</LatestTargetFrameworks>
-    <LatestTargetFrameworksWindows>net8.0-windows;net9.0-windows</LatestTargetFrameworksWindows>
+    <LatestTargetFrameworks>net10.0;net9.0;net8.0</LatestTargetFrameworks>
+    <LatestTargetFrameworksWindows>net10.0-windows;net9.0-windows;net8.0-windows</LatestTargetFrameworksWindows>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>

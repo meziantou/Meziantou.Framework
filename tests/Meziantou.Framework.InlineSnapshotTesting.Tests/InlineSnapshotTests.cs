@@ -1112,9 +1112,6 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         testOutputHelper.WriteLine("Using dotnet: " + dotnetPath);
         Assert.NotNull(dotnetPath);
 
-        testOutputHelper.WriteLine("List runtimes");
-        await ExecuteDotNet("--list-runtimes", expectedExitCode: 0);
-
         testOutputHelper.WriteLine("Restoring project");
         await ExecuteDotNet("restore", expectedExitCode: 0);
 

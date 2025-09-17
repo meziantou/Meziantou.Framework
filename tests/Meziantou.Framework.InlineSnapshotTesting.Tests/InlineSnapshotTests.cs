@@ -1207,13 +1207,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
             await process!.WaitForExitAsync();
+            testOutputHelper.WriteLine("Exit code: " + process.ExitCode);
             if (expectedExitCode.HasValue)
             {
                 Assert.Equal(expectedExitCode.Value, process.ExitCode);
-            }
-            else
-            {
-                testOutputHelper.WriteLine("Exit code: " + process.ExitCode);
             }
         }
     }

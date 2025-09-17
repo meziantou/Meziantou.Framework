@@ -105,22 +105,6 @@ jobs:
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
         architecture: [""]
-        # x86
-        include:
-        - runs-on: windows-2025
-          configuration: Debug
-          architecture: x86
-        - runs-on: windows-2025
-          configuration: Debug
-          architecture: x86
-          additionalArguments: "/p:InvariantGlobalization=true"
-        - runs-on: windows-2025
-          configuration: Release
-          architecture: x86
-        - runs-on: windows-2025
-          configuration: Release
-          architecture: x86
-          additionalArguments: "/p:InvariantGlobalization=true"
       fail-fast: false
     steps:
       - id: compute-artifact-name
@@ -142,20 +126,13 @@ jobs:
         run: dotnet --info
 
       - name: Build
-        env:
-          # Attempt to reduce flakiness on x86 because of limited RAM
-          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
-        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
+        run: dotnet build eng/build.proj --configuration ${{ matrix.configuration }} /bl ${{ matrix.additionalArguments }}
 
       - name: List environment variables
         run: "Get-ChildItem env: | Sort-Object Name"
 
       - name: Run tests
-        env:
-          # Attempt to reduce flakiness on x86 because of limited RAM
-          TestTfmsInParallel: ${{ matrix.architecture == 'x86' && 'false' || 'true' }}
-          AdditionalArgs: ${{ matrix.architecture == 'x86' && '-maxcpucount:1' || '' }}
-        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ env.AdditionalArgs }} ${{ matrix.additionalArguments }}
+        run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ matrix.additionalArguments }}
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -183,7 +160,7 @@ jobs:
     strategy:
       matrix:
         # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        runtime: [ "win-x64", "win-x86", "linux-x64", "osx-x64" ]
+        runtime: [ "win-x64", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v5
@@ -196,7 +173,7 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        runtime: [ "win-x64", "win-x86" ]
+        runtime: [ "win-x64" ]
       fail-fast: false
     steps:
       - uses: actions/checkout@v5

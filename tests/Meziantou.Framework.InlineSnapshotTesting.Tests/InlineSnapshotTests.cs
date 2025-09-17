@@ -1211,6 +1211,10 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             {
                 Assert.Equal(expectedExitCode.Value, process.ExitCode);
             }
+            else
+            {
+                testOutputHelper.WriteLine("Exit code: " + process.ExitCode);
+            }
         }
     }
 }

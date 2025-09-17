@@ -1119,7 +1119,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
         await ExecuteDotNet("build", expectedExitCode: 0);
 
         testOutputHelper.WriteLine("Running project");
-        await ExecuteDotNet($"run --project \"{projectPath}\"");
+        await ExecuteDotNet("run");
 
         var actual = File.ReadAllText(mainPath);
         expected ??= source;

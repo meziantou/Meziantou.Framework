@@ -50,7 +50,11 @@ public static class NuGetHelpers
 
                 foreach (var entry in zip.Entries.Where(file => paths.Any(path => file.FullName.StartsWith(path, StringComparison.Ordinal))))
                 {
+#if NET10_0_OR_GREATER
+                    await entry.ExtractToFileAsync(Path.Combine(tempFolder, entry.Name), overwrite: true);
+#else
                     entry.ExtractToFile(Path.Combine(tempFolder, entry.Name), overwrite: true);
+#endif
                 }
 
                 try

@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
+
 public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
@@ -109,7 +110,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
 
-        var actual = File.ReadAllText(outputFilePath);
+        var actual = File.Exists(outputFilePath) ? File.ReadAllText(outputFilePath) : null;
         Assert.Equal(0, process.ExitCode);
         return actual;
 

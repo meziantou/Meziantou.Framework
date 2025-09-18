@@ -14,8 +14,4 @@
     <ProjectReference Remove="../Samples/Meziantou.Framework.WPF.EnumComboBox/Meziantou.Framework.WPF.EnumComboBox.csproj" />
     <ProjectReference Remove="../Samples/Trimmable.Wpf/Trimmable.Wpf.csproj" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <ProjectReference Remove="../tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
-  </ItemGroup>
 </Project>

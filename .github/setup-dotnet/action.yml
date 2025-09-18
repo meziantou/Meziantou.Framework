@@ -4,7 +4,6 @@ runs:
   using: "composite"
   steps:
     - name: Setup .NET
-      if: ${{ !inputs.architecture }}
       uses: actions/setup-dotnet@v5
       with:
         global-json-file: global.json

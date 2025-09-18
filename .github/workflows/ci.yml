@@ -104,20 +104,17 @@ jobs:
         runs-on: [ windows-2025, ubuntu-24.04, ubuntu-24.04-arm, macos-15 ]
         configuration: [ Debug, Release ]
         additionalArguments: [ "", "/p:InvariantGlobalization=true" ]
-        architecture: [""]
       fail-fast: false
     steps:
       - id: compute-artifact-name
         name: Compute artifact name
         run: |
-          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.architecture}}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
+          $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
       - uses: actions/checkout@v5
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-        with:
-          architecture: ${{ matrix.architecture }}
 
       - name: PATH
         run: echo $env:PATH

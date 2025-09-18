@@ -2,10 +2,10 @@
 
   <!-- Build options -->
   <PropertyGroup>
-    <LatestTargetFramework>net9.0</LatestTargetFramework>
+    <LatestTargetFramework>net10.0</LatestTargetFramework>
 
-    <LatestTargetFrameworks>net8.0;net9.0</LatestTargetFrameworks>
-    <LatestTargetFrameworksWindows>net8.0-windows;net9.0-windows</LatestTargetFrameworksWindows>
+    <LatestTargetFrameworks>net10.0;net9.0;net8.0</LatestTargetFrameworks>
+    <LatestTargetFrameworksWindows>net10.0-windows;net9.0-windows;net8.0-windows</LatestTargetFrameworksWindows>
 
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
@@ -20,7 +20,7 @@
     <DefineConstants Condition="$(InvariantGlobalization) == 'true'">$(DefineConstants);InvariantGlobalization</DefineConstants>
 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;NU5104</NoWarn>
   </PropertyGroup>
 
   <!-- disable the nullable warnings when compiling for target that haven't annotation -->
@@ -35,7 +35,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.49">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.52">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

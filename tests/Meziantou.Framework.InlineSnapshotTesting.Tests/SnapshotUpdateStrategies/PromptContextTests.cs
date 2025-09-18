@@ -1,8 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Xunit;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
+
 public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
@@ -109,7 +110,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
         process.BeginErrorReadLine();
         await process!.WaitForExitAsync();
 
-        var actual = File.ReadAllText(outputFilePath);
+        var actual = File.Exists(outputFilePath) ? File.ReadAllText(outputFilePath) : null;
         Assert.Equal(0, process.ExitCode);
         return actual;
 
@@ -126,12 +127,12 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
             return "net472";
 #elif NET48
             return "net48";
-#elif NET6_0
-            return "net6.0";
 #elif NET8_0
             return "net8.0";
 #elif NET9_0
             return "net9.0";
+#elif NET10_0
+            return "net10.0";
 #endif
         }
     }

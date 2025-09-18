@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <Description>CODEOWNERS file parser</Description>
-    <Version>3.0.9</Version>
+    <Version>3.0.10</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.9" />
   </ItemGroup>
 
 </Project>

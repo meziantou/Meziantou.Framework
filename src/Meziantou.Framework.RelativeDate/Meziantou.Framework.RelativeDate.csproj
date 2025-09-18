@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462;net472</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.8</Version>
+    <Version>2.1.9</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Format a DateTime or DateTimeOffset using a relative format (e.g. 5 minutes ago)</Description>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'netstandard2.0' OR $(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
-    <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Bcl.TimeProvider" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>

@@ -16,12 +16,12 @@ namespace Meziantou.Framework.StronglyTypedId.Tests;
 public sealed class StronglyTypedIdSourceGeneratorTests
 {
     private const string NetCoreVersion =
-#if NET7_0
-        "7.0.14"
-#elif NET8_0
+#if NET8_0
         "8.0.0"
 #elif NET9_0
         "9.0.0"
+#elif NET10_0
+        "10.0.0-rc.1.25451.107"
 #else
 #error Version not supported
 #endif

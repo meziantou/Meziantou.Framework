@@ -38,6 +38,7 @@
     <Project Path="src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj" />
     <Project Path="src/Meziantou.AspNetCore.Mvc/Meziantou.AspNetCore.Mvc.csproj" />
+    <Project Path="src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj" Id="997b1066-b521-4738-977a-b60cc01f15ed" />
     <Project Path="src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj" Id="75c124f1-5f21-47f5-b05b-7e1334290074" />
     <Project Path="src/Meziantou.Extensions.Logging.InMemory/Meziantou.Extensions.Logging.InMemory.csproj" />
     <Project Path="src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
@@ -109,6 +110,7 @@
     <Project Path="tests/ArgumentsPrinter/ArgumentsPrinter.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.LogViewer.Tests/Meziantou.AspNetCore.Components.LogViewer.Tests.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Components.Tests/Meziantou.AspNetCore.Components.Tests.csproj" />
+    <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.Tests/Meziantou.Extensions.Logging.Xunit.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/Meziantou.Extensions.Logging.Xunit.v3.Tests.csproj" />
@@ -167,6 +169,7 @@
     <Project Path="tests/TestUtilities/TestUtilities.csproj" />
   </Folder>
   <Folder Name="/tests/SourceGenerators/">
+    <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests/Meziantou.Framework.ResxSourceGenerator.GeneratorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.StronglyTypedId.GeneratorTests/Meziantou.Framework.StronglyTypedId.GeneratorTests.csproj" />
   </Folder>

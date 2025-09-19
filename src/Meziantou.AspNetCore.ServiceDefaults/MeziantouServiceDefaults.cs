@@ -155,7 +155,17 @@ public static class MeziantouServiceDefaults
 
         options.MapCalled = true;
 
-        app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders });
+        var forwardedHeadersOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = options.ForwardedHeaders.ForwardedHeaders,
+        };
+#pragma warning disable ASPDEPR005 // Type or member is obsolete
+        forwardedHeadersOptions.KnownNetworks.Clear();
+#pragma warning restore ASPDEPR005 // Type or member is obsolete
+        forwardedHeadersOptions.KnownIPNetworks.Clear();
+        forwardedHeadersOptions.KnownProxies.Clear();
+
+        app.UseForwardedHeaders(forwardedHeadersOptions);
         if (options.Https.Enabled)
         {
             app.UseHttpsRedirection();

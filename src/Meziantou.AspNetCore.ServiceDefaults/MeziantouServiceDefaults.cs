@@ -162,7 +162,9 @@ public static class MeziantouServiceDefaults
 #pragma warning disable ASPDEPR005 // Type or member is obsolete
         forwardedHeadersOptions.KnownNetworks.Clear();
 #pragma warning restore ASPDEPR005 // Type or member is obsolete
+#if NET10_0_OR_GREATER
         forwardedHeadersOptions.KnownIPNetworks.Clear();
+#endif
         forwardedHeadersOptions.KnownProxies.Clear();
 
         app.UseForwardedHeaders(forwardedHeadersOptions);

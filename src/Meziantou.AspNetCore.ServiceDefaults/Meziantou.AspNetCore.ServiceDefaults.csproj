@@ -1,8 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(LatestTargetFramework)</TargetFrameworks>
-    <Version>1.0.14</Version>
+    <TargetFrameworks>$(LatestTargetFramework);net9.0</TargetFrameworks>
+    <Version>1.0.15</Version>
     <Description>Default configuration for meziantou applications</Description>
   </PropertyGroup>
   <ItemGroup>

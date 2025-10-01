@@ -1,6 +1,3 @@
-![build](https://github.com/meziantou/Meziantou.Framework/workflows/publish/badge.svg)
-[![GitHub license](https://img.shields.io/github/license/meziantou/Meziantou.Framework.svg)](https://github.com/meziantou/Meziantou.Framework/blob/main/LICENSE.txt)
-
 # NuGet packages
 
 | Name | Version | Readme |

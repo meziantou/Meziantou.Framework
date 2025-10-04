@@ -202,6 +202,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             writer.WriteLine("// StringComparison: " + attribute.StringComparison);
         }
 
+        writer.WriteLine("#pragma warning disable RS0030");
         writer.WriteLine("#nullable enable");
 
         var baseTypes = $"global::System.IEquatable<{attribute.TypeName}>";

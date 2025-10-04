@@ -52,6 +52,7 @@ public sealed class SensitiveDataTests
     }
 
     [Fact]
+    [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
     public void NewtonsoftJsonDoesNotRevealValue()
     {
         using var data = Meziantou.Framework.SensitiveData.Create("foo");

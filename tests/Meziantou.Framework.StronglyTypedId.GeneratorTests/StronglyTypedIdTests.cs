@@ -1,3 +1,4 @@
+#pragma warning disable RS0030 // Do not use banned APIs
 #pragma warning disable IDE0250 // Make struct readonly
 using System.ComponentModel;
 using System.Globalization;

@@ -344,6 +344,48 @@ public class GlobTests
         ]);
     }
 
+    // Repro: https://github.com/meziantou/Meziantou.Framework/issues/923
+    [Fact]
+    public void GlobCollection2()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("f1.txt");
+        directory.CreateEmptyFile("System Volume Information/f2.txt");
+
+        var glob = new GlobCollection(
+            Glob.Parse("**/*.txt", GlobOptions.IgnoreCase),
+            Glob.Parse("!*/System Volume Information/", GlobOptions.IgnoreCase),
+            Glob.Parse("!*/System Volume Information/**/*", GlobOptions.IgnoreCase));
+
+        Assert.True(glob.IsMatch("System Volume Information/f1.txt"));
+        TestEvaluate(directory, glob,
+        [
+            "System Volume Information/f2.txt",
+            "f1.txt",
+        ]);
+    }
+
+    // Repro: https://github.com/meziantou/Meziantou.Framework/issues/923
+    [Fact]
+    public void GlobCollection3()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("f1.txt");
+        directory.CreateEmptyFile("System Volume Information/f2.txt");
+
+        var glob = new GlobCollection(
+            Glob.Parse("**/*.txt", GlobOptions.IgnoreCase),
+            Glob.Parse("!System Volume Information/", GlobOptions.IgnoreCase),
+            Glob.Parse("!System Volume Information/**/*", GlobOptions.IgnoreCase));
+
+        Assert.False(glob.IsMatch("System Volume Information/f1.txt"));
+
+        TestEvaluate(directory, glob,
+        [
+            "f1.txt",
+        ]);
+    }
+
     [Theory]
     [InlineData("readme.md", "readme.md")]
     [InlineData("readme.md", "a/readme.md")]

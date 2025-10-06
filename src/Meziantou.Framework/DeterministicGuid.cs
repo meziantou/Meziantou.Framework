@@ -59,10 +59,10 @@ namespace Meziantou.Framework;
  */
 public static class DeterministicGuid
 {
-    public static Guid DnsNamespace { get; } = Guid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
-    public static Guid UrlNamespace { get; } = Guid.Parse("6ba7b811-9dad-11d1-80b4-00c04fd430c8");
-    public static Guid OidNamespace { get; } = Guid.Parse("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
-    public static Guid X500Namespace { get; } = Guid.Parse("6ba7b814-9dad-11d1-80b4-00c04fd430c8");
+    public static Guid DnsNamespace { get; } = new Guid(0x6ba7b810, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */;
+    public static Guid UrlNamespace { get; } = new Guid(0x6ba7b811, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b811-9dad-11d1-80b4-00c04fd430c8 */;
+    public static Guid OidNamespace { get; } = new Guid(0x6ba7b812, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b812-9dad-11d1-80b4-00c04fd430c8 */;
+    public static Guid X500Namespace { get; } = new Guid(0x6ba7b814, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b814-9dad-11d1-80b4-00c04fd430c8 */;
 
     public static Guid Create(Guid @namespace, string name, DeterministicGuidVersion version)
     {

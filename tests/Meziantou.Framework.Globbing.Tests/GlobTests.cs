@@ -386,7 +386,7 @@ public class GlobTests
             Glob.Parse("**/*.txt", options),
             Glob.Parse("!d1/*.txt", options));
 
-        TestEvaluate(directory, glob,
+        AssertEnumerateFiles(directory, glob,
         [
             "d1/d2/f1.txt",
             "d1/d2/f2.txt",
@@ -408,7 +408,7 @@ public class GlobTests
             Glob.Parse("!*/System Volume Information/**/*", GlobOptions.IgnoreCase));
 
         Assert.True(glob.IsMatch("System Volume Information/f1.txt"));
-        TestEvaluate(directory, glob,
+        AssertEnumerateFiles(directory, glob,
         [
             "System Volume Information/f2.txt",
             "f1.txt",
@@ -430,12 +430,41 @@ public class GlobTests
 
         Assert.False(glob.IsMatch("System Volume Information/f1.txt"));
 
-        TestEvaluate(directory, glob,
+        AssertEnumerateFiles(directory, glob,
         [
             "f1.txt",
         ]);
     }
 
+    [Theory]
+    [InlineData(GlobOptions.None)]
+    [InlineData(GlobOptions.IgnoreCase)]
+    public void GlobCollection4(GlobOptions options)
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("d1/d1.1/f1.txt");
+        directory.CreateEmptyFile("d1/d1.1/f2.txt");
+        directory.CreateEmptyFile("d1/d1.2/f3.txt");
+        directory.CreateEmptyFile("d1/f4.txt");
+        directory.CreateEmptyFile("d3/f5.txt");
+
+        var glob = new GlobCollection(
+            Glob.Parse("**/*", options),
+            Glob.Parse("**/*/", options),
+            Glob.Parse("!d1/*.txt", options),
+            Glob.Parse("!d1/d1.2/", options));
+
+        AssertEnumerateFileSystemEntries(directory, glob,
+        [
+            "d1",
+            "d1/d1.1",
+            "d1/d1.1/f1.txt",
+            "d1/d1.1/f2.txt",
+            "d1/d1.2/f3.txt",
+            "d3",
+            "d3/f5.txt",
+        ]);
+    }
     [Theory]
     [InlineData("readme.md", "readme.md")]
     [InlineData("readme.md", "a/readme.md")]
@@ -489,7 +518,7 @@ public class GlobTests
         Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
-    private static void AssertEnumerateFiles(TemporaryDirectory directory, Glob glob, string[] expectedResult)
+    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlob glob, string[] expectedResult)
     {
         var items = glob.EnumerateFiles(directory.FullPath)
             .AsEnumerable()
@@ -499,19 +528,9 @@ public class GlobTests
         Assert.Equal(expectedResult, items);
     }
 
-    private static void AssertEnumerateFileSystemEntries(TemporaryDirectory directory, Glob glob, string[] expectedResult)
+    private static void AssertEnumerateFileSystemEntries(TemporaryDirectory directory, IGlob glob, string[] expectedResult)
     {
         var items = glob.EnumerateFileSystemEntries(directory.FullPath)
-            .AsEnumerable()
-            .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
-            .Order(StringComparer.Ordinal)
-            .ToList();
-        Assert.Equal(expectedResult, items);
-    }
-
-    private static void TestEvaluate(TemporaryDirectory directory, GlobCollection glob, string[] expectedResult)
-    {
-        var items = glob.EnumerateFiles(directory.FullPath)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)

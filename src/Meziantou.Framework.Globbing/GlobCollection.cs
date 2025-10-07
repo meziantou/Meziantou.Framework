@@ -14,9 +14,9 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     public static GlobCollection Create(ReadOnlySpan<IGlobEvaluatable> globs) => new(globs.ToArray());
 
     GlobMode IGlobEvaluatable.Mode => (_globs.Length == 0 || _globs.Any(g => g.Mode is GlobMode.Include)) ? GlobMode.Include : GlobMode.Exclude;
-    bool IGlobEvaluatable.CanMatchFiles => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).CanMatchFiles);
-    bool IGlobEvaluatable.CanMatchDirectories => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).CanMatchDirectories);
-    bool IGlobEvaluatable.IsMultiLevel => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).IsMultiLevel);
+    bool IGlobEvaluatable.CanMatchFiles => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchFiles);
+    bool IGlobEvaluatable.CanMatchDirectories => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchDirectories);
+    bool IGlobEvaluatable.TraverseDirectories => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).TraverseDirectories);
 
     public int Count => _globs.Length;
     public IGlobEvaluatable this[int index] => _globs[index];

@@ -28,9 +28,9 @@ public static class GlobExtensions
         if (!glob.CanMatchFiles)
             yield break;
 
-        if (options is null && glob.IsMultiLevel)
+        if (options is null && glob.TraverseDirectories)
         {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
+            options = DefaultEnumerationOptions;
         }
 
         using var enumerator = new GlobFileSystemEnumerator(glob, directory, options);
@@ -40,9 +40,9 @@ public static class GlobExtensions
 
     public static IEnumerable<string> EnumerateFileSystemEntries(this IGlobEvaluatable glob, string directory, EnumerationOptions? options = null)
     {
-        if (options is null && glob.IsMultiLevel)
+        if (options is null && glob.TraverseDirectories)
         {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
+            options = DefaultEnumerationOptions;
         }
 
         using var enumerator = new GlobFileSystemEnumerator(glob, directory, options);

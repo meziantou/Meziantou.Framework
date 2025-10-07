@@ -200,8 +200,8 @@ public sealed class Glob : IGlobEvaluatable
         return true;
     }
 
-    bool IGlobEvaluatable.IsMultiLevel => _segments.Length > 1 || ShouldRecurse(_segments[0]);
-    internal bool IsMultiLevel => ((IGlobEvaluatable)this).IsMultiLevel;
+    bool IGlobEvaluatable.TraverseDirectories => _segments.Length > 1 || ShouldRecurse(_segments[0]);
+    internal bool IsMultiLevel => ((IGlobEvaluatable)this).TraverseDirectories;
 
     private static bool ShouldRecurse(Segment patternSegment)
     {

@@ -8,5 +8,5 @@ public interface IGlobEvaluatable
     bool CanMatchFiles { get; }
     bool CanMatchDirectories { get; }
     GlobMode Mode { get; }
-    bool IsMultiLevel { get; } // TODO rename?
+    bool TraverseDirectories { get; }
 }

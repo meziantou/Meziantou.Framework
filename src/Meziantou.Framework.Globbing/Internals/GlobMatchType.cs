@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Globbing;
 
-public enum GlobMatchType
+internal enum GlobMatchType
 {
     Any,
     File,

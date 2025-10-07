@@ -1,13 +1,9 @@
 using Meziantou.Framework.Globbing.Internals;
 
 #if NET472
-using Microsoft.IO;
 using Microsoft.IO.Enumeration;
-using Path = System.IO.Path;
 #else
 using System.IO.Enumeration;
-using System.Runtime.CompilerServices;
-using static System.Reflection.Metadata.BlobBuilder;
 #endif
 
 namespace Meziantou.Framework.Globbing;
@@ -21,7 +17,7 @@ namespace Meziantou.Framework.Globbing;
 ///         </listheader>
 ///         <item>
 ///             <term>*</term>
-///             <description>matches any number of characters including none, excluding directory seperator</description>
+///             <description>matches any number of characters including none, excluding directory separator</description>
 ///         </item>
 ///         <item>
 ///             <term>?</term>
@@ -37,47 +33,49 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>[a-z]</term>
-///             <description>matches one character from the range given in the bracket. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
 ///         </item>
 ///         <item>
 ///             <term>[!a-z]</term>
-///             <description>matches one character that is not from the range given in the bracket. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character that is not from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
 ///         </item>
 ///         <item>
 ///             <term>{abc,123}</term>
-///             <description>comma delimited set of literals, matched 'abc' or '123'</description>
+///             <description>comma-delimited set of literals, matches 'abc' or '123'</description>
 ///         </item>
 ///         <item>
 ///             <term>**</term>
-///             <description>match zero or more directories</description>
+///             <description>matches zero or more directories</description>
 ///         </item>
 ///         <item>
 ///             <term>!pattern</term>
-///             <description>Leading '!' negates the pattern</description>
+///             <description>leading '!' negates the pattern</description>
 ///         </item>
 ///         <item>
 ///             <term>\x</term>
-///             <description>Escape the following character. For instance '\*' matches the character '*' instead of being the wildcard character.</description>
+///             <description>escapes the following character. For instance, '\*' matches the literal character '*' instead of being a wildcard.</description>
 ///         </item>
 ///     </list>
+///     <para>If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.</para>
 /// </summary>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
 public sealed class Glob : IGlobEvaluatable
 {
+    private readonly GlobMatchType _matchType;
     internal readonly Segment[] _segments;
 
     public GlobMode Mode { get; }
-    public GlobMatchType MatchItemType { get; }
 
-    bool IGlobEvaluatable.CanMatchFiles => MatchItemType is GlobMatchType.File or GlobMatchType.Any;
-    bool IGlobEvaluatable.CanMatchDirectories => MatchItemType is GlobMatchType.Directory or GlobMatchType.Any;
+    bool IGlobEvaluatable.CanMatchFiles => _matchType is GlobMatchType.File or GlobMatchType.Any;
+    bool IGlobEvaluatable.CanMatchDirectories => _matchType is GlobMatchType.Directory or GlobMatchType.Any;
+    bool IGlobEvaluatable.TraverseDirectories => _segments.Length > 1 || ShouldRecurse(_segments[0]);
 
     internal Glob(Segment[] segments, GlobMode mode, GlobMatchType matchType)
     {
         _segments = segments;
+        _matchType = matchType;
         Mode = mode;
-        MatchItemType = matchType;
     }
 
     public static Glob Parse(string pattern, GlobOptions options)
@@ -121,12 +119,12 @@ public sealed class Glob : IGlobEvaluatable
 
     private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
     {
-        if (MatchItemType is not GlobMatchType.Any)
+        if (_matchType is not GlobMatchType.Any)
         {
-            if (MatchItemType is GlobMatchType.File && pathReader.IsDirectory)
+            if (_matchType is GlobMatchType.File && pathReader.IsDirectory)
                 return false;
 
-            if (MatchItemType is GlobMatchType.Directory && !pathReader.IsDirectory)
+            if (_matchType is GlobMatchType.Directory && !pathReader.IsDirectory)
                 return false;
         }
 
@@ -199,9 +197,6 @@ public sealed class Glob : IGlobEvaluatable
 
         return true;
     }
-
-    bool IGlobEvaluatable.TraverseDirectories => _segments.Length > 1 || ShouldRecurse(_segments[0]);
-    internal bool IsMultiLevel => ((IGlobEvaluatable)this).TraverseDirectories;
 
     private static bool ShouldRecurse(Segment patternSegment)
     {

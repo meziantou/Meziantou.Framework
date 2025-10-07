@@ -9,9 +9,9 @@ namespace Meziantou.Framework.Globbing;
 
 public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
 {
-    private readonly Glob _glob;
+    private readonly IGlobEvaluatable _glob;
 
-    protected GlobFileSystemEnumerator(Glob glob, string directory, EnumerationOptions? options = null)
+    protected GlobFileSystemEnumerator(IGlobEvaluatable glob, string directory, EnumerationOptions? options = null)
         : base(directory, options)
     {
         _glob = glob;
@@ -24,13 +24,19 @@ public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
 
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
     {
-        return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _glob.IsMatch(ref entry);
+        if (entry.IsDirectory && !_glob.CanMatchDirectories)
+            return false;
+
+        if (!entry.IsDirectory && !_glob.CanMatchFiles)
+            return false;
+
+        return base.ShouldIncludeEntry(ref entry) && _glob.IsMatch(ref entry);
     }
 }
 
 public sealed class GlobFileSystemEnumerator : GlobFileSystemEnumerator<string>
 {
-    public GlobFileSystemEnumerator(Glob glob, string directory, EnumerationOptions? options = null)
+    public GlobFileSystemEnumerator(IGlobEvaluatable glob, string directory, EnumerationOptions? options = null)
         : base(glob, directory, options)
     {
     }

@@ -1,46 +1,37 @@
 using System.Collections;
 using System.ComponentModel;
 
-#if NET472
-using Microsoft.IO;
-using Microsoft.IO.Enumeration;
-#else
-using System.IO.Enumeration;
-#endif
-
 namespace Meziantou.Framework.Globbing;
 
 [System.Runtime.CompilerServices.CollectionBuilder(typeof(GlobCollection), nameof(Create))]
-public sealed class GlobCollection : IReadOnlyList<Glob>
+public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvaluatable
 {
-    private static readonly EnumerationOptions DefaultEnumerationOptions = new() { RecurseSubdirectories = true };
+    private readonly IGlobEvaluatable[] _globs;
 
-    private readonly Glob[] _globs;
-
-    public GlobCollection(params Glob[] globs) => _globs = globs;
+    public GlobCollection(params IGlobEvaluatable[] globs) => _globs = globs;
 
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public static GlobCollection Create(ReadOnlySpan<Glob> globs) => new(globs.ToArray());
+    public static GlobCollection Create(ReadOnlySpan<IGlobEvaluatable> globs) => new(globs.ToArray());
+
+    GlobMode IGlobEvaluatable.Mode => (_globs.Length == 0 || _globs.Any(g => g.Mode is GlobMode.Include)) ? GlobMode.Include : GlobMode.Exclude;
+    bool IGlobEvaluatable.CanMatchFiles => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchFiles);
+    bool IGlobEvaluatable.CanMatchDirectories => _globs.Any(g => g.Mode is GlobMode.Include && g.CanMatchDirectories);
+    bool IGlobEvaluatable.TraverseDirectories => _globs.Any(g => g.Mode is GlobMode.Include && ((IGlobEvaluatable)g).TraverseDirectories);
 
     public int Count => _globs.Length;
-    public Glob this[int index] => _globs[index];
+    public IGlobEvaluatable this[int index] => _globs[index];
 
-    public bool IsMatch(string path) => IsMatch(path.AsSpan());
-    public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, []);
-    public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
-    public bool IsMatch(ref FileSystemEntry entry) => IsMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
-
-    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
         var match = false;
         foreach (var glob in _globs)
         {
-            if (match && glob.Mode == GlobMode.Include)
+            if (match && glob.Mode is GlobMode.Include)
                 continue;
 
-            if (glob.IsMatchCore(directory, filename))
+            if (glob.IsMatch(directory, filename, itemType))
             {
-                if (glob.Mode == GlobMode.Exclude)
+                if (glob.Mode is GlobMode.Exclude)
                     return false;
 
                 match = true;
@@ -50,38 +41,20 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
         return match;
     }
 
-    public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
-    public bool IsPartialMatch(ReadOnlySpan<char> folderPath) => IsPartialMatch(folderPath, []);
-    public bool IsPartialMatch(ref FileSystemEntry entry) => IsPartialMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
-    public bool IsPartialMatch(string folderPath, string filename) => IsPartialMatch(folderPath.AsSpan(), filename.AsSpan());
-
     public bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
         foreach (var glob in _globs)
         {
-            if (glob.Mode == GlobMode.Exclude)
+            if (glob.Mode is GlobMode.Exclude)
                 continue;
 
-            if (glob.IsPartialMatchCore(folderPath, filename))
+            if (glob.IsPartialMatch(folderPath, filename))
                 return true;
         }
 
         return false;
     }
 
-    public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
-    {
-        if (options is null && _globs.Any(glob => glob.ShouldRecurseSubdirectories()))
-        {
-            options = DefaultEnumerationOptions;
-        }
-
-        using var enumerator = new GlobCollectionFileSystemEnumerator(this, directory, options);
-        while (enumerator.MoveNext())
-            yield return enumerator.Current;
-    }
-
-    public IEnumerator<Glob> GetEnumerator() => ((IEnumerable<Glob>)_globs).GetEnumerator();
-
+    public IEnumerator<IGlobEvaluatable> GetEnumerator() => ((IEnumerable<IGlobEvaluatable>)_globs).GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => _globs.GetEnumerator();
 }

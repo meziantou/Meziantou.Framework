@@ -19,6 +19,21 @@ public class GlobParserTests
         return ((RaggedSegment)glob._segments[0])._segments;
     }
 
+    [Theory]
+    [InlineData("*")]
+    public void ValidPatterns(string content)
+    {
+        Glob.Parse(content, GlobOptions.None);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void InvalidPatterns(string content)
+    {
+        Assert.Throws<ArgumentException>(() => Glob.Parse(content, GlobOptions.None));
+    }
+
     [Fact]
     public void OptimizeSegmentEndsWith()
     {

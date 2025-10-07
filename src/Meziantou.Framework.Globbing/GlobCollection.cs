@@ -79,6 +79,18 @@ public sealed class GlobCollection : IReadOnlyList<Glob>, IGlob
             yield return enumerator.Current;
     }
 
+    public IEnumerable<string> EnumerateFileSystemEntries(string directory, EnumerationOptions? options = null)
+    {
+        if (options is null && _globs.Any(glob => glob.ShouldRecurseSubdirectories()))
+        {
+            options = DefaultEnumerationOptions;
+        }
+
+        using var enumerator = new GlobCollectionFileSystemEnumerator(this, directory, options);
+        while (enumerator.MoveNext())
+            yield return enumerator.Current;
+    }
+
     public IEnumerator<Glob> GetEnumerator() => ((IEnumerable<Glob>)_globs).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _globs.GetEnumerator();

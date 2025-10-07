@@ -7,6 +7,7 @@ using Path = System.IO.Path;
 #else
 using System.IO.Enumeration;
 using System.Runtime.CompilerServices;
+using static System.Reflection.Metadata.BlobBuilder;
 #endif
 
 namespace Meziantou.Framework.Globbing;
@@ -198,7 +199,7 @@ public sealed class Glob : IGlob
 
     public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
     {
-        if (this.MatchItemType is GlobMatchType.Directory)
+        if (MatchItemType is GlobMatchType.Directory)
             yield break;
 
         if (options is null && ShouldRecurseSubdirectories())
@@ -210,6 +211,19 @@ public sealed class Glob : IGlob
         while (enumerator.MoveNext())
             yield return enumerator.Current;
     }
+
+    public IEnumerable<string> EnumerateFileSystemEntries(string directory, EnumerationOptions? options = null)
+    {
+        if (options is null && ShouldRecurseSubdirectories())
+        {
+            options = new EnumerationOptions { RecurseSubdirectories = true };
+        }
+
+        using var enumerator = new GlobFileSystemEnumerator(this, directory, options);
+        while (enumerator.MoveNext())
+            yield return enumerator.Current;
+    }
+
 
     internal bool ShouldRecurseSubdirectories()
     {

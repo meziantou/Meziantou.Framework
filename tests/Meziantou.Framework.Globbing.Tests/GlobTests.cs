@@ -315,7 +315,7 @@ public class GlobTests
     [Theory]
     [InlineData(GlobOptions.None)]
     [InlineData(GlobOptions.IgnoreCase)]
-    public void EnumerateFolder1(GlobOptions options)
+    public void EnumerateFiles1(GlobOptions options)
     {
         using var directory = TemporaryDirectory.Create();
         directory.CreateEmptyFile("d1/d2/f1.txt");
@@ -325,13 +325,13 @@ public class GlobTests
 
         var glob = Glob.Parse("**/*.txt", options);
 
-        TestEvaluate(directory, glob, ["d1/d2/f1.txt", "d1/d2/f2.txt", "d1/f3.txt"]);
+        AssertEnumerateFiles(directory, glob, ["d1/d2/f1.txt", "d1/d2/f2.txt", "d1/f3.txt"]);
     }
 
     [Theory]
     [InlineData(GlobOptions.None)]
     [InlineData(GlobOptions.IgnoreCase)]
-    public void EnumerateFolder2(GlobOptions options)
+    public void EnumerateFiles2(GlobOptions options)
     {
         using var directory = TemporaryDirectory.Create();
         directory.CreateEmptyFile("d1/d2/f1.txt");
@@ -339,7 +339,36 @@ public class GlobTests
         directory.CreateEmptyFile("d1/f3.txt");
 
         var glob = Glob.Parse("d1/*.txt", options);
-        TestEvaluate(directory, glob, ["d1/f3.txt"]);
+        AssertEnumerateFiles(directory, glob, ["d1/f3.txt"]);
+    }
+
+    [Theory]
+    [InlineData(GlobOptions.None)]
+    [InlineData(GlobOptions.IgnoreCase)]
+    public void EnumerateFileSystemEntries1(GlobOptions options)
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("d1/d2/f1.txt");
+        directory.CreateEmptyFile("d1/d2/f2.txt");
+        directory.CreateEmptyFile("d1/f3.txt");
+
+        var glob = Glob.Parse("d1/*.txt", options);
+        AssertEnumerateFileSystemEntries(directory, glob, ["d1/f3.txt"]);
+    }
+
+    [Theory]
+    [InlineData(GlobOptions.None)]
+    [InlineData(GlobOptions.IgnoreCase)]
+    public void EnumerateFileSystemEntries2(GlobOptions options)
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("d1/d2/f1.txt");
+        directory.CreateEmptyFile("d1/d2/f2.txt");
+        directory.CreateEmptyFile("d1/d3/f2.txt");
+        directory.CreateEmptyFile("d1/f3.txt");
+
+        var glob = Glob.Parse("d1/*/", options);
+        AssertEnumerateFileSystemEntries(directory, glob, ["d1/d2", "d1/d3"]);
     }
 
     [Theory]
@@ -460,9 +489,19 @@ public class GlobTests
         Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
-    private static void TestEvaluate(TemporaryDirectory directory, Glob glob, string[] expectedResult)
+    private static void AssertEnumerateFiles(TemporaryDirectory directory, Glob glob, string[] expectedResult)
     {
         var items = glob.EnumerateFiles(directory.FullPath)
+            .AsEnumerable()
+            .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        Assert.Equal(expectedResult, items);
+    }
+
+    private static void AssertEnumerateFileSystemEntries(TemporaryDirectory directory, Glob glob, string[] expectedResult)
+    {
+        var items = glob.EnumerateFileSystemEntries(directory.FullPath)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)

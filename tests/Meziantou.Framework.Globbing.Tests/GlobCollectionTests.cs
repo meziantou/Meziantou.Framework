@@ -1,6 +1,4 @@
-﻿using Xunit;
-
-namespace Meziantou.Framework.Globbing.Tests;
+﻿namespace Meziantou.Framework.Globbing.Tests;
 public sealed class GlobCollectionTests
 {
     [Fact]

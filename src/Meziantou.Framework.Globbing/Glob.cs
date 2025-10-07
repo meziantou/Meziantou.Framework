@@ -63,12 +63,15 @@ namespace Meziantou.Framework.Globbing;
 /// </summary>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
-public sealed class Glob : IGlob
+public sealed class Glob : IGlobEvaluatable
 {
     internal readonly Segment[] _segments;
 
     public GlobMode Mode { get; }
     public GlobMatchType MatchItemType { get; }
+
+    bool IGlobEvaluatable.CanMatchFiles => MatchItemType is GlobMatchType.File or GlobMatchType.Any;
+    bool IGlobEvaluatable.CanMatchDirectories => MatchItemType is GlobMatchType.Directory or GlobMatchType.Any;
 
     internal Glob(Segment[] segments, GlobMode mode, GlobMatchType matchType)
     {
@@ -197,38 +200,8 @@ public sealed class Glob : IGlob
         return true;
     }
 
-    public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
-    {
-        if (MatchItemType is GlobMatchType.Directory)
-            yield break;
-
-        if (options is null && ShouldRecurseSubdirectories())
-        {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
-        }
-
-        using var enumerator = new GlobFileSystemEnumerator(this, directory, options);
-        while (enumerator.MoveNext())
-            yield return enumerator.Current;
-    }
-
-    public IEnumerable<string> EnumerateFileSystemEntries(string directory, EnumerationOptions? options = null)
-    {
-        if (options is null && ShouldRecurseSubdirectories())
-        {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
-        }
-
-        using var enumerator = new GlobFileSystemEnumerator(this, directory, options);
-        while (enumerator.MoveNext())
-            yield return enumerator.Current;
-    }
-
-
-    internal bool ShouldRecurseSubdirectories()
-    {
-        return _segments.Length > 1 || ShouldRecurse(_segments[0]);
-    }
+    bool IGlobEvaluatable.IsMultiLevel => _segments.Length > 1 || ShouldRecurse(_segments[0]);
+    internal bool IsMultiLevel => ((IGlobEvaluatable)this).IsMultiLevel;
 
     private static bool ShouldRecurse(Segment patternSegment)
     {

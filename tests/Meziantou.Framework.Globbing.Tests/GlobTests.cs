@@ -518,7 +518,7 @@ public class GlobTests
         Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
     }
 
-    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlob glob, string[] expectedResult)
+    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
     {
         var items = glob.EnumerateFiles(directory.FullPath)
             .AsEnumerable()
@@ -528,7 +528,7 @@ public class GlobTests
         Assert.Equal(expectedResult, items);
     }
 
-    private static void AssertEnumerateFileSystemEntries(TemporaryDirectory directory, IGlob glob, string[] expectedResult)
+    private static void AssertEnumerateFileSystemEntries(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
     {
         var items = glob.EnumerateFileSystemEntries(directory.FullPath)
             .AsEnumerable()

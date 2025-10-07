@@ -153,16 +153,25 @@ public class GlobTests
     [InlineData("a/**/b", "a/b")]
     [InlineData("**/*", "a")]
     [InlineData("**/*", "a/b")]
+    [InlineData("**/*/", "a/b/")]
+    [InlineData("**/test/", "test/")]
+    [InlineData("**/test/", "a/test/")]
     public void Match(string pattern, string path)
     {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
         Assert.True(glob.IsMatch(path));
-        Assert.True(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.True(glob.IsMatch(directoryName, fileName, itemType));
         Assert.True(globi.IsMatch(path));
-        Assert.True(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
-        Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
-        Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
+        Assert.True(globi.IsMatch(directoryName, fileName, itemType));
+        Assert.True(glob.IsPartialMatch(directoryName));
+        Assert.True(globi.IsPartialMatch(directoryName));
 
 #if NET472
 #else
@@ -170,7 +179,7 @@ public class GlobTests
 #endif
         {
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
-            Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));
+            Assert.True(glob.IsMatch(directoryName.Replace('/', '\\'), fileName, itemType));
         }
     }
 
@@ -265,14 +274,26 @@ public class GlobTests
     [InlineData("abc/**", "abcd")]
     [InlineData("**/segment1/**/segment2/**", "test/segment1/src/segment2")]
     [InlineData("**/.*", "foobar.")]
+    [InlineData("**/*/", "a/b")]
+    [InlineData("**/test/", "test")]
+    [InlineData("**/test/", "a/test")]
+    [InlineData("**/*", "a/b/")]
+    [InlineData("**/test", "test/")]
+    [InlineData("**/test", "a/test/")]
     public void DoesNotMatch(string pattern, string path)
     {
+        var isDirectory = path.EndsWith('/');
+        var pathWithoutEndingSlash = isDirectory ? path.TrimEnd('/') : path;
+        var directoryName = Path.GetDirectoryName(pathWithoutEndingSlash);
+        var fileName = Path.GetFileName(pathWithoutEndingSlash);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
         var glob = Glob.Parse(pattern, GlobOptions.None);
         var globi = Glob.Parse(pattern, GlobOptions.IgnoreCase);
         Assert.False(glob.IsMatch(path));
-        Assert.False(glob.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(glob.IsMatch(directoryName, fileName, itemType));
         Assert.False(globi.IsMatch(path));
-        Assert.False(globi.IsMatch(Path.GetDirectoryName(path), Path.GetFileName(path)));
+        Assert.False(globi.IsMatch(directoryName, fileName, itemType));
     }
 
     [Theory]

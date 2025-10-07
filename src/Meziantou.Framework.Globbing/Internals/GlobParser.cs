@@ -38,6 +38,7 @@ internal static class GlobParser
 
         var escape = false;
         var parserContext = GlobParserContext.Segment;
+        var matchType = GlobMatchType.File;
 
         Span<char> sbSpan = stackalloc char[128];
         var currentLiteral = new ValueStringBuilder(sbSpan);
@@ -272,9 +273,16 @@ internal static class GlobParser
                     segments.Add(MatchAllSegment.Instance);
                 }
             }
+            else
+            {
+                if (pattern[^1] == '/')
+                {
+                    matchType = GlobMatchType.Directory;
+                }
+            }
 
             errorMessage = null;
-            result = CreateGlob(segments, exclude, ignoreCase);
+            result = CreateGlob(segments, exclude, ignoreCase, matchType);
             return true;
         }
         finally
@@ -318,7 +326,7 @@ internal static class GlobParser
         }
     }
 
-    private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase)
+    private static Glob CreateGlob(List<Segment> segments, bool exclude, bool ignoreCase, GlobMatchType matchType)
     {
         // Optimize segments
         if (segments.Count >= 2)
@@ -343,7 +351,7 @@ internal static class GlobParser
             }
         }
 
-        return new Glob(segments.ToArray(), exclude ? GlobMode.Exclude : GlobMode.Include);
+        return new Glob([.. segments], exclude ? GlobMode.Exclude : GlobMode.Include, matchType);
     }
 
     private static bool EndOfSegmentEqual(ReadOnlySpan<char> rest, string expected)

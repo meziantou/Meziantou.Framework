@@ -6,6 +6,7 @@ using Microsoft.IO.Enumeration;
 using Path = System.IO.Path;
 #else
 using System.IO.Enumeration;
+using System.Runtime.CompilerServices;
 #endif
 
 namespace Meziantou.Framework.Globbing;
@@ -61,16 +62,18 @@ namespace Meziantou.Framework.Globbing;
 /// </summary>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
-public sealed class Glob
+public sealed class Glob : IGlob
 {
     internal readonly Segment[] _segments;
 
     public GlobMode Mode { get; }
+    public GlobMatchType MatchItemType { get; }
 
-    internal Glob(Segment[] segments, GlobMode mode)
+    internal Glob(Segment[] segments, GlobMode mode, GlobMatchType matchType)
     {
         _segments = segments;
         Mode = mode;
+        MatchItemType = matchType;
     }
 
     public static Glob Parse(string pattern, GlobOptions options)
@@ -101,34 +104,28 @@ public sealed class Glob
         return GlobParser.TryParse(pattern, options, out result, out errorMessage);
     }
 
-    public bool IsMatch(string path) => IsMatch(path.AsSpan());
-
-    public bool IsMatch(ReadOnlySpan<char> path)
+    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        var pathEnumerator = new PathReader(path, []);
+        return IsMatchCore(directory, filename, itemType);
+    }
+
+    internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
+    {
+        var pathEnumerator = new PathReader(directory, filename, itemType);
         return IsMatchCore(pathEnumerator, _segments);
     }
 
-    public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
-
-    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+    private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
     {
-        if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
-            throw new ArgumentException("Filename contains a directory separator", nameof(filename));
+        if (MatchItemType is not GlobMatchType.Any)
+        {
+            if (MatchItemType is GlobMatchType.File && pathReader.IsDirectory)
+                return false;
 
-        return IsMatchCore(directory, filename);
-    }
+            if (MatchItemType is GlobMatchType.Directory && !pathReader.IsDirectory)
+                return false;
+        }
 
-    public bool IsMatch(ref FileSystemEntry entry) => IsMatch(GetRelativeDirectory(ref entry), entry.FileName);
-
-    internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
-    {
-        var pathEnumerator = new PathReader(directory, filename);
-        return IsMatchCore(pathEnumerator, _segments);
-    }
-
-    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
-    {
         for (var i = 0; i < patternSegments.Length; i++)
         {
             var patternSegment = patternSegments[i];
@@ -169,31 +166,14 @@ public sealed class Glob
         return pathReader.IsEndOfPath;
     }
 
-    public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
-
-    public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
+    public bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, []), _segments);
+        return IsPartialMatchCore(folderPath, filename);
     }
-
-    public bool IsPartialMatch(ref FileSystemEntry entry)
-    {
-        return IsPartialMatchCore(new PathReader(GetRelativeDirectory(ref entry), entry.FileName), _segments);
-    }
-
-    public bool IsPartialMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
-    {
-        if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
-            throw new ArgumentException("Filename contains a directory separator", nameof(filename));
-
-        return IsPartialMatchCore(directory, filename);
-    }
-
-    public bool IsPartialMatch(string directory, string filename) => IsPartialMatch(directory.AsSpan(), filename.AsSpan());
 
     internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, filename), _segments);
+        return IsPartialMatchCore(new PathReader(folderPath, filename, itemType: null), _segments);
     }
 
     private static bool IsPartialMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
@@ -218,6 +198,9 @@ public sealed class Glob
 
     public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
     {
+        if (this.MatchItemType is GlobMatchType.Directory)
+            yield break;
+
         if (options is null && ShouldRecurseSubdirectories())
         {
             options = new EnumerationOptions { RecurseSubdirectories = true };
@@ -241,7 +224,7 @@ public sealed class Glob
     public override string ToString()
     {
         using var sb = new ValueStringBuilder();
-        if (Mode == GlobMode.Exclude)
+        if (Mode is GlobMode.Exclude)
         {
             sb.Append('!');
         }

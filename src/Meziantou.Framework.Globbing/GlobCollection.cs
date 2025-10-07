@@ -11,7 +11,7 @@ using System.IO.Enumeration;
 namespace Meziantou.Framework.Globbing;
 
 [System.Runtime.CompilerServices.CollectionBuilder(typeof(GlobCollection), nameof(Create))]
-public sealed class GlobCollection : IReadOnlyList<Glob>
+public sealed class GlobCollection : IReadOnlyList<Glob>, IGlob
 {
     private static readonly EnumerationOptions DefaultEnumerationOptions = new() { RecurseSubdirectories = true };
 
@@ -25,22 +25,17 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     public int Count => _globs.Length;
     public Glob this[int index] => _globs[index];
 
-    public bool IsMatch(string path) => IsMatch(path.AsSpan());
-    public bool IsMatch(ReadOnlySpan<char> path) => IsMatch(path, []);
-    public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
-    public bool IsMatch(ref FileSystemEntry entry) => IsMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName);
-
-    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
         var match = false;
         foreach (var glob in _globs)
         {
-            if (match && glob.Mode == GlobMode.Include)
+            if (match && glob.Mode is GlobMode.Include)
                 continue;
 
-            if (glob.IsMatchCore(directory, filename))
+            if (glob.IsMatchCore(directory, filename, itemType))
             {
-                if (glob.Mode == GlobMode.Exclude)
+                if (glob.Mode is GlobMode.Exclude)
                     return false;
 
                 match = true;
@@ -59,7 +54,7 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
     {
         foreach (var glob in _globs)
         {
-            if (glob.Mode == GlobMode.Exclude)
+            if (glob.Mode is GlobMode.Exclude)
                 continue;
 
             if (glob.IsPartialMatchCore(folderPath, filename))
@@ -71,6 +66,9 @@ public sealed class GlobCollection : IReadOnlyList<Glob>
 
     public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
     {
+        if (!_globs.Any(g => g.Mode is GlobMode.Include && g.MatchItemType is GlobMatchType.File or GlobMatchType.Any))
+            yield break;
+
         if (options is null && _globs.Any(glob => glob.ShouldRecurseSubdirectories()))
         {
             options = DefaultEnumerationOptions;

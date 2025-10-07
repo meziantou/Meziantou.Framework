@@ -24,7 +24,16 @@ public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
 
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
     {
-        return base.ShouldIncludeEntry(ref entry) && !entry.IsDirectory && _glob.IsMatch(ref entry);
+        if (_glob.MatchItemType is not GlobMatchType.Any)
+        {
+            if (_glob.MatchItemType is GlobMatchType.Directory && !entry.IsDirectory)
+                return false;
+
+            if (_glob.MatchItemType is GlobMatchType.File && entry.IsDirectory)
+                return false;
+        }
+
+        return base.ShouldIncludeEntry(ref entry) && _glob.IsMatch(ref entry);
     }
 }
 

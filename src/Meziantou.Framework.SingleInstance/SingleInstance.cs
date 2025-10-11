@@ -11,12 +11,13 @@ namespace Meziantou.Framework;
 public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
+    private readonly int _sessionId = Process.GetCurrentProcess().SessionId;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    private string PipeName => "Local\\Pipe" + applicationId.ToString();
+    private string PipeName => $"Local\\Pipe_{applicationId}_{_sessionId}";
 
     public bool StartServer { get; set; } = true;
 

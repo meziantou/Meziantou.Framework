@@ -1,7 +1,8 @@
 <Project>
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <Compile Include="$(MSBuildThisFileDirectory)/common/AssemblyInfo.cs"
-             Link="Properties/AssemblyInfo.common.cs" />
+             Link="Properties/AssemblyInfo.common.cs"
+             Visible="false" />
   </ItemGroup>
 
   <Target Name="ConfigurePolyfill" AfterTargets="ResolveLockFileAnalyzers" BeforeTargets="CoreCompile">

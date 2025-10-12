@@ -6,6 +6,20 @@ namespace Meziantou.Framework.Win32;
 
 public static class MarkOfTheWeb
 {
+    public static void RemoveFileZone(string filePath)
+    {
+        ArgumentNullException.ThrowIfNull(filePath);
+        filePath = Path.GetFullPath(filePath);
+        var adsPath = filePath + ":Zone.Identifier";
+        try
+        {
+            File.Delete(adsPath);
+        }
+        catch (FileNotFoundException)
+        {
+        }
+    }
+
     [SupportedOSPlatform("windows")]
     public static UrlZone GetFileZone(string filePath)
     {
@@ -58,6 +72,7 @@ public static class MarkOfTheWeb
         return null;
     }
 
+    [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
         ArgumentNullException.ThrowIfNull(filePath);

@@ -42,7 +42,10 @@ foreach ($csproj in Get-ChildItem $SrcRootPath -Recurse -Filter "*.csproj") {
     }
 }
 
-if ($EditedFiles -gt 0) {
+if ($EditedFiles -gt 0) {    
     Write-Error "Some README files were not up-to-date"
+    
+    # Show the diff (useful in CI logs)
+    git diff
     exit 1
 }

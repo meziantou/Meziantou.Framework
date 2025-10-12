@@ -97,6 +97,7 @@
     <Project Path="src/Meziantou.Framework.Win32.Dialogs/Meziantou.Framework.Win32.Dialogs.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.Lsa/Meziantou.Framework.Win32.Lsa.csproj" />
+    <Project Path="src/Meziantou.Framework.Win32.MarkOfTheWeb/Meziantou.Framework.Win32.MarkOfTheWeb.csproj" Id="1088bc68-8566-4cd3-83e6-1adb6e720018" />
     <Project Path="src/Meziantou.Framework.Win32.PerceivedType/Meziantou.Framework.Win32.PerceivedType.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.ProjectedFileSystem/Meziantou.Framework.Win32.ProjectedFileSystem.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.RecentDocuments/Meziantou.Framework.Win32.RecentDocuments.csproj" />
@@ -162,6 +163,7 @@
     <Project Path="tests/Meziantou.Framework.Win32.CredentialManager.Tests/Meziantou.Framework.Win32.CredentialManager.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.Jobs.Tests/Meziantou.Framework.Win32.Jobs.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.Lsa.Tests/Meziantou.Framework.Win32.Lsa.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Win32.MarkOfTheWeb.Tests/Meziantou.Framework.Win32.MarkOfTheWeb.Tests.csproj" Id="32b027e9-ec12-4d92-81ba-21ee158a24ec" />
     <Project Path="tests/Meziantou.Framework.Win32.PerceivedType.Tests/Meziantou.Framework.Win32.PerceivedType.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests/Meziantou.Framework.Win32.ProjectedFileSystem.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.RestartManager.Tests/Meziantou.Framework.Win32.RestartManager.Tests.csproj" />

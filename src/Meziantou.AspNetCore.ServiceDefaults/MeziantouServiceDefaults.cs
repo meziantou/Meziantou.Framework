@@ -105,7 +105,8 @@ public static class MeziantouServiceDefaults
                 metrics
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter("Meziantou.*");
 
                 options.OpenTelemetry.ConfigureMetrics?.Invoke(metrics);
             })

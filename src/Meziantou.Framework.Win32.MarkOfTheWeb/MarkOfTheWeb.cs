@@ -92,4 +92,42 @@ public static class MarkOfTheWeb
             writer.WriteLine("HostUrl=" + hostUrl);
         }
     }
+
+    /// <summary>
+    /// Files outside of the Local Computer, Trusted, and Intranet Zones
+    /// are considered "Untrusted". Avoid connecting to the target
+    /// server unless the URL's Zone is trustworthy.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static bool IsUntrusted(string filePath)
+    {
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        if (!File.Exists(filePath))
+            return false;
+
+        filePath = Path.GetFullPath(filePath);
+
+        var hr = PInvoke.CoInternetCreateSecurityManager(pSP: null, out var securityManager, dwReserved: 0);
+        if (hr.Failed || securityManager is null)
+            return true;
+
+        try
+        {
+            securityManager.MapUrlToZone(filePath, out var zone, dwFlags: PInvoke.MUTZ_NOSAVEDFILECHECK);
+            if (zone >= (int)UrlZone.Internet)
+                return true;
+
+            // For files currently stored in trusted locations, ensure we also look for any MotW storing the original source location
+            securityManager.MapUrlToZone(filePath, out zone, dwFlags: PInvoke.MUTZ_REQUIRESAVEDFILECHECK);
+            if (zone >= (int)UrlZone.Internet)
+                return true;
+
+            return false;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(securityManager);
+        }
+    }
 }

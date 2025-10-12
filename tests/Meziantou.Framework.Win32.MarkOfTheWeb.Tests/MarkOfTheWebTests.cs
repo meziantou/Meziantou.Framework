@@ -10,6 +10,8 @@ public sealed class MarkOfTheWebTests
         var path = Path.GetTempFileName();
         File.WriteAllBytes(path, []);
         Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
+
+        Assert.False(MarkOfTheWeb.IsUntrusted(path));
         File.Delete(path);
     }
 
@@ -23,6 +25,7 @@ public sealed class MarkOfTheWebTests
 
         Assert.Equal("[ZoneTransfer]\nZoneId=3\n", MarkOfTheWeb.GetFileZoneContent(path).ReplaceLineEndings("\n"));
         Assert.Equal(UrlZone.Internet, MarkOfTheWeb.GetFileZone(path));
+        Assert.True(MarkOfTheWeb.IsUntrusted(path));
 
         File.Delete(path);
     }
@@ -39,6 +42,7 @@ public sealed class MarkOfTheWebTests
         MarkOfTheWeb.RemoveFileZone(path);
         Assert.Null(MarkOfTheWeb.GetFileZoneContent(path));
         Assert.Equal(UrlZone.LocalMachine, MarkOfTheWeb.GetFileZone(path));
+        Assert.False(MarkOfTheWeb.IsUntrusted(path));
 
         File.Delete(path);
     }

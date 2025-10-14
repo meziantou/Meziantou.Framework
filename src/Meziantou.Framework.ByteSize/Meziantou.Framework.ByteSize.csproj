@@ -8,10 +8,6 @@
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(TargetFramework) == 'net462' OR $(TargetFramework) == 'net472'">
-    <PackageReference Include="System.ValueTuple" Version="4.6.1" />
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Update="ByteSize.Generated.cs">
       <DependentUpon>ByteSize.Generated.tt</DependentUpon>

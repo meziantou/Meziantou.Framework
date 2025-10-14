@@ -51,5 +51,8 @@ if (($OriginalContent -join "`n") -ne $NewContent) {
     # This script is used in CI. exit 1 makes the CI fails
     Set-Content -Path $ReadmePath -Value $NewContent
     Write-Warning "README was not up-to-date"
+
+    # Show the diff (useful in CI logs)
+    git diff $ReadmePath
     exit 1
 }

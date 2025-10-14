@@ -128,7 +128,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                 foreach (var handle in metadataReader.GetCustomDebugInformation(EntityHandle.ModuleDefinition))
                 {
                     var customDebugInformation = metadataReader.GetCustomDebugInformation(handle);
-                    var compilationOptionsGuid = new Guid("B5FEEC05-8CD0-4A83-96DA-466284BB4BD8");
+                    var compilationOptionsGuid = new Guid(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8) /* B5FEEC05-8CD0-4A83-96DA-466284BB4BD8 */;
                     if (metadataReader.GetGuid(customDebugInformation.Kind) == compilationOptionsGuid)
                     {
                         var blobReader = metadataReader.GetBlobReader(customDebugInformation.Value);
@@ -242,7 +242,7 @@ internal record struct CallerContext(string FilePath, int LineNumber, int Column
                 foreach (var handle in metadataReader.GetCustomDebugInformation(EntityHandle.ModuleDefinition))
                 {
                     var customDebugInformation = metadataReader.GetCustomDebugInformation(handle);
-                    var compilationOptionsGuid = new Guid("B5FEEC05-8CD0-4A83-96DA-466284BB4BD8");
+                    var compilationOptionsGuid = new Guid(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8) /* B5FEEC05-8CD0-4A83-96DA-466284BB4BD8 */;
                     if (metadataReader.GetGuid(customDebugInformation.Kind) == compilationOptionsGuid)
                     {
                         var blobReader = metadataReader.GetBlobReader(customDebugInformation.Value);

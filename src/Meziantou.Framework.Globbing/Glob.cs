@@ -1,9 +1,7 @@
 using Meziantou.Framework.Globbing.Internals;
 
 #if NET472
-using Microsoft.IO;
 using Microsoft.IO.Enumeration;
-using Path = System.IO.Path;
 #else
 using System.IO.Enumeration;
 #endif
@@ -19,7 +17,7 @@ namespace Meziantou.Framework.Globbing;
 ///         </listheader>
 ///         <item>
 ///             <term>*</term>
-///             <description>matches any number of characters including none, excluding directory seperator</description>
+///             <description>matches any number of characters including none, excluding directory separator</description>
 ///         </item>
 ///         <item>
 ///             <term>?</term>
@@ -35,41 +33,48 @@ namespace Meziantou.Framework.Globbing;
 ///         </item>
 ///         <item>
 ///             <term>[a-z]</term>
-///             <description>matches one character from the range given in the bracket. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
 ///         </item>
 ///         <item>
 ///             <term>[!a-z]</term>
-///             <description>matches one character that is not from the range given in the bracket. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
+///             <description>matches one character that is not from the range given in the brackets. <c>GlobOptions.IgnoreCase</c> is only supported for ASCII letters.</description>
 ///         </item>
 ///         <item>
 ///             <term>{abc,123}</term>
-///             <description>comma delimited set of literals, matched 'abc' or '123'</description>
+///             <description>comma-delimited set of literals, matches 'abc' or '123'</description>
 ///         </item>
 ///         <item>
 ///             <term>**</term>
-///             <description>match zero or more directories</description>
+///             <description>matches zero or more directories</description>
 ///         </item>
 ///         <item>
 ///             <term>!pattern</term>
-///             <description>Leading '!' negates the pattern</description>
+///             <description>leading '!' negates the pattern</description>
 ///         </item>
 ///         <item>
 ///             <term>\x</term>
-///             <description>Escape the following character. For instance '\*' matches the character '*' instead of being the wildcard character.</description>
+///             <description>escapes the following character. For instance, '\*' matches the literal character '*' instead of being a wildcard.</description>
 ///         </item>
 ///     </list>
+///     <para>If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.</para>
 /// </summary>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
-public sealed class Glob
+public sealed class Glob : IGlobEvaluatable
 {
+    private readonly GlobMatchType _matchType;
     internal readonly Segment[] _segments;
 
     public GlobMode Mode { get; }
 
-    internal Glob(Segment[] segments, GlobMode mode)
+    bool IGlobEvaluatable.CanMatchFiles => _matchType is GlobMatchType.File or GlobMatchType.Any;
+    bool IGlobEvaluatable.CanMatchDirectories => _matchType is GlobMatchType.Directory or GlobMatchType.Any;
+    bool IGlobEvaluatable.TraverseDirectories => _segments.Length > 1 || ShouldRecurse(_segments[0]);
+
+    internal Glob(Segment[] segments, GlobMode mode, GlobMatchType matchType)
     {
         _segments = segments;
+        _matchType = matchType;
         Mode = mode;
     }
 
@@ -101,34 +106,28 @@ public sealed class Glob
         return GlobParser.TryParse(pattern, options, out result, out errorMessage);
     }
 
-    public bool IsMatch(string path) => IsMatch(path.AsSpan());
-
-    public bool IsMatch(ReadOnlySpan<char> path)
+    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
-        var pathEnumerator = new PathReader(path, []);
+        return IsMatchCore(directory, filename, itemType);
+    }
+
+    internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
+    {
+        var pathEnumerator = new PathReader(directory, filename, itemType);
         return IsMatchCore(pathEnumerator, _segments);
     }
 
-    public bool IsMatch(string directory, string filename) => IsMatch(directory.AsSpan(), filename.AsSpan());
-
-    public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
+    private bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
     {
-        if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
-            throw new ArgumentException("Filename contains a directory separator", nameof(filename));
+        if (_matchType is not GlobMatchType.Any)
+        {
+            if (_matchType is GlobMatchType.File && pathReader.IsDirectory)
+                return false;
 
-        return IsMatchCore(directory, filename);
-    }
+            if (_matchType is GlobMatchType.Directory && !pathReader.IsDirectory)
+                return false;
+        }
 
-    public bool IsMatch(ref FileSystemEntry entry) => IsMatch(GetRelativeDirectory(ref entry), entry.FileName);
-
-    internal bool IsMatchCore(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
-    {
-        var pathEnumerator = new PathReader(directory, filename);
-        return IsMatchCore(pathEnumerator, _segments);
-    }
-
-    private static bool IsMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
-    {
         for (var i = 0; i < patternSegments.Length; i++)
         {
             var patternSegment = patternSegments[i];
@@ -169,31 +168,14 @@ public sealed class Glob
         return pathReader.IsEndOfPath;
     }
 
-    public bool IsPartialMatch(string folderPath) => IsPartialMatch(folderPath.AsSpan());
-
-    public bool IsPartialMatch(ReadOnlySpan<char> folderPath)
+    public bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, []), _segments);
+        return IsPartialMatchCore(folderPath, filename);
     }
-
-    public bool IsPartialMatch(ref FileSystemEntry entry)
-    {
-        return IsPartialMatchCore(new PathReader(GetRelativeDirectory(ref entry), entry.FileName), _segments);
-    }
-
-    public bool IsPartialMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename)
-    {
-        if (filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
-            throw new ArgumentException("Filename contains a directory separator", nameof(filename));
-
-        return IsPartialMatchCore(directory, filename);
-    }
-
-    public bool IsPartialMatch(string directory, string filename) => IsPartialMatch(directory.AsSpan(), filename.AsSpan());
 
     internal bool IsPartialMatchCore(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
-        return IsPartialMatchCore(new PathReader(folderPath, filename), _segments);
+        return IsPartialMatchCore(new PathReader(folderPath, filename, itemType: null), _segments);
     }
 
     private static bool IsPartialMatchCore(PathReader pathReader, ReadOnlySpan<Segment> patternSegments)
@@ -216,23 +198,6 @@ public sealed class Glob
         return true;
     }
 
-    public IEnumerable<string> EnumerateFiles(string directory, EnumerationOptions? options = null)
-    {
-        if (options is null && ShouldRecurseSubdirectories())
-        {
-            options = new EnumerationOptions { RecurseSubdirectories = true };
-        }
-
-        using var enumerator = new GlobFileSystemEnumerator(this, directory, options);
-        while (enumerator.MoveNext())
-            yield return enumerator.Current;
-    }
-
-    internal bool ShouldRecurseSubdirectories()
-    {
-        return _segments.Length > 1 || ShouldRecurse(_segments[0]);
-    }
-
     private static bool ShouldRecurse(Segment patternSegment)
     {
         return patternSegment.IsRecursiveMatchAll;
@@ -241,7 +206,7 @@ public sealed class Glob
     public override string ToString()
     {
         using var sb = new ValueStringBuilder();
-        if (Mode == GlobMode.Exclude)
+        if (Mode is GlobMode.Exclude)
         {
             sb.Append('!');
         }

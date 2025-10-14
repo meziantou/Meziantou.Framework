@@ -13,7 +13,7 @@ internal ref struct PathReader
     private ReadOnlySpan<char> _filename;
     private int _currentSegmentLength;
 
-    public PathReader(ReadOnlySpan<char> path, ReadOnlySpan<char> filename)
+    public PathReader(ReadOnlySpan<char> path, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
         if (path.IsEmpty)
         {
@@ -27,7 +27,36 @@ internal ref struct PathReader
         }
 
         _currentSegmentLength = int.MinValue;
+
+        if (itemType is null)
+        {
+            if (!_filename.IsEmpty)
+            {
+                if (IsPathSeparator(_filename[^1]))
+                {
+                    _filename = _filename[..^1];
+                    IsDirectory = true;
+                }
+            }
+            else
+            {
+                if (!CurrentText.IsEmpty && IsPathSeparator(CurrentText[^1]))
+                {
+                    CurrentText = CurrentText[..^1];
+                    IsDirectory = true;
+                }
+            }
+        }
+        else
+        {
+            IsDirectory = itemType is PathItemType.Directory;
+        }
+
+        if (!_filename.IsEmpty && _filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
+            throw new ArgumentException("Filename contains a directory separator", nameof(filename));
     }
+
+    public bool IsDirectory { get; }
 
     public ReadOnlySpan<char> CurrentText { get; private set; }
     public ReadOnlySpan<char> CurrentSegment => CurrentText[..CurrentSegmentLength];

@@ -35,8 +35,7 @@ public sealed class ChangeJournal : IDisposable
 
     public static ChangeJournal Open(DriveInfo driveInfo, bool unprivileged)
     {
-        if (driveInfo is null)
-            throw new ArgumentNullException(nameof(driveInfo));
+        ArgumentNullException.ThrowIfNull(driveInfo);
 
         var volume = VolumeHelper.GetValidVolumePath(driveInfo);
         var fileAccessRights = FILE_ACCESS_RIGHTS.FILE_TRAVERSE;

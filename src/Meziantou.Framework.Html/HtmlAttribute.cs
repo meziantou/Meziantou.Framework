@@ -151,8 +151,7 @@ sealed class HtmlAttribute : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (NameQuoteChar != '\0')
         {
@@ -254,8 +253,7 @@ sealed class HtmlAttribute : HtmlNode
 
     public override void WriteContentTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         var eqc = EscapeQuoteChar;
         var s = GetValue();
@@ -279,8 +277,7 @@ sealed class HtmlAttribute : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (string.Equals(Prefix, XmlnsPrefix, StringComparison.Ordinal) || string.Equals(Name, XmlnsPrefix, StringComparison.Ordinal))
             return;
@@ -292,8 +289,7 @@ sealed class HtmlAttribute : HtmlNode
 
     public override void WriteContentTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         foreach (var node in ChildNodes)
         {

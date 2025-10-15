@@ -126,7 +126,7 @@ internal static partial class ProcessExtensions
         using var snapShotHandle = CreateToolhelp32Snapshot(SnapshotFlags.TH32CS_SNAPPROCESS, 0);
         var entry = new ProcessEntry32
         {
-            dwSize = (uint)Marshal.SizeOf(typeof(ProcessEntry32)),
+            dwSize = (uint)Marshal.SizeOf<ProcessEntry32>(),
         };
 
         var result = Process32First(snapShotHandle, ref entry);

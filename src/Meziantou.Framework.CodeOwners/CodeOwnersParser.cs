@@ -193,7 +193,7 @@ public static class CodeOwnersParser
                     }
 
                     c = _lexer.Consume();
-                    if (c == ' ' || c == '\t')
+                    if (c is ' ' or '\t')
                     {
                         AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
                         foundMember = true;

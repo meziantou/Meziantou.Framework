@@ -13,11 +13,9 @@ sealed class HtmlNodeDepthComparer : IComparer<HtmlNode>
 
     public int Compare(HtmlNode x, HtmlNode y)
     {
-        if (x is null)
-            throw new ArgumentNullException(nameof(x));
+        ArgumentNullException.ThrowIfNull(x);
 
-        if (y is null)
-            throw new ArgumentNullException(nameof(y));
+        ArgumentNullException.ThrowIfNull(y);
 
         if (ReferenceEquals(x, y))
             return 0;

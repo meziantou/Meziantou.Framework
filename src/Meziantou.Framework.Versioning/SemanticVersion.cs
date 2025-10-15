@@ -193,8 +193,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     public static SemanticVersion Parse(string versionString)
     {
-        if (versionString is null)
-            throw new ArgumentNullException(nameof(versionString));
+        ArgumentNullException.ThrowIfNull(versionString);
 
         if (TryParse(versionString, out var result))
             return result;

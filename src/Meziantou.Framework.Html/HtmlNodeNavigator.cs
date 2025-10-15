@@ -47,8 +47,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     private HtmlNodeNavigator(HtmlNodeNavigator other)
     {
-        if (other is null)
-            throw new ArgumentNullException(nameof(other));
+        ArgumentNullException.ThrowIfNull(other);
 
         CurrentNode = other.CurrentNode;
         BaseNode = other.BaseNode;

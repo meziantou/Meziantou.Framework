@@ -16,11 +16,9 @@ public static partial class EnumerableExtensions
 
     public static void AddRange<T>(this ICollection<T> collection, params T[] items)
     {
-        if (collection is null)
-            throw new ArgumentNullException(nameof(collection));
+        ArgumentNullException.ThrowIfNull(collection);
 
-        if (items is null)
-            throw new ArgumentNullException(nameof(items));
+        ArgumentNullException.ThrowIfNull(items);
 
         foreach (var item in items)
         {
@@ -30,8 +28,7 @@ public static partial class EnumerableExtensions
 
     public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T>? items)
     {
-        if (collection is null)
-            throw new ArgumentNullException(nameof(collection));
+        ArgumentNullException.ThrowIfNull(collection);
 
         if (items is not null)
         {
@@ -60,8 +57,7 @@ public static partial class EnumerableExtensions
 
     public static void Replace<T>(this IList<T> list, T oldItem, T newItem)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         var index = list.IndexOf(oldItem);
         if (index < 0)
@@ -72,8 +68,7 @@ public static partial class EnumerableExtensions
 
     public static void AddOrReplace<T>(this IList<T> list, T? oldItem, T newItem)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         var index = list.IndexOf(oldItem!);
         if (index < 0)
@@ -99,46 +94,39 @@ public static partial class EnumerableExtensions
     public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> source)
         where T : class
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         return source.Where(item => item is not null)!;
     }
 
     public static IEnumerable<string> WhereNotNullOrEmpty(this IEnumerable<string?> source)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         return source.Where(item => !string.IsNullOrEmpty(item))!;
     }
 
     public static IEnumerable<string> WhereNotNullOrWhiteSpace(this IEnumerable<string?> source)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         return source.Where(item => !string.IsNullOrWhiteSpace(item))!;
     }
 
     public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (keySelector is null)
-            throw new ArgumentNullException(nameof(keySelector));
+        ArgumentNullException.ThrowIfNull(keySelector);
 
         return IsDistinctBy(source, keySelector, EqualityComparer<TKey>.Default);
     }
 
     public static bool IsDistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? comparer)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (keySelector is null)
-            throw new ArgumentNullException(nameof(keySelector));
+        ArgumentNullException.ThrowIfNull(keySelector);
 
         var hash = new HashSet<TKey>(comparer);
         foreach (var item in source)
@@ -152,16 +140,14 @@ public static partial class EnumerableExtensions
 
     public static bool IsDistinct<TSource>(this IEnumerable<TSource> source)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         return IsDistinct(source, EqualityComparer<TSource>.Default);
     }
 
     public static bool IsDistinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource>? comparer)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         var hash = new HashSet<TSource>(comparer);
         foreach (var item in source)
@@ -186,24 +172,21 @@ public static partial class EnumerableExtensions
 #endif
     public static IEnumerable<T> Sort<T>(this IEnumerable<T> list, IComparer<T>? comparer)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         return list.Order(comparer);
     }
 
     public static int IndexOf<T>(this IEnumerable<T> list, T value)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         return list.IndexOf(value, comparer: null);
     }
 
     public static int IndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T>? comparer)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         comparer ??= EqualityComparer<T>.Default;
         var index = 0;
@@ -225,8 +208,7 @@ public static partial class EnumerableExtensions
 
     public static long LongIndexOf<T>(this IEnumerable<T> list, T value, IEqualityComparer<T>? comparer)
     {
-        if (list is null)
-            throw new ArgumentNullException(nameof(list));
+        ArgumentNullException.ThrowIfNull(list);
 
         comparer ??= EqualityComparer<T>.Default;
         var index = 0L;
@@ -246,16 +228,14 @@ public static partial class EnumerableExtensions
 
     public static bool ContainsIgnoreCase(this IEnumerable<string> str, string value)
     {
-        if (str is null)
-            throw new ArgumentNullException(nameof(str));
+        ArgumentNullException.ThrowIfNull(str);
 
         return str.Contains(value, StringComparer.OrdinalIgnoreCase);
     }
 
     public static void EnumerateAll<TSource>(this IEnumerable<TSource> source)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         using var enumerator = source.GetEnumerator();
         while (enumerator.MoveNext())
@@ -273,10 +253,8 @@ public static partial class EnumerableExtensions
 
     public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource> action)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(action);
 
         foreach (var item in source)
         {
@@ -286,10 +264,8 @@ public static partial class EnumerableExtensions
 
     public static void ForEach<TSource>(this IEnumerable<TSource> source, Action<TSource, int> action)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(action);
 
         var index = 0;
         foreach (var item in source)
@@ -304,8 +280,7 @@ public static partial class EnumerableExtensions
 
     public static TimeSpan Sum(this IEnumerable<TimeSpan> enumerable)
     {
-        if (enumerable is null)
-            throw new ArgumentNullException(nameof(enumerable));
+        ArgumentNullException.ThrowIfNull(enumerable);
 
         var result = TimeSpan.Zero;
         foreach (var item in enumerable)
@@ -318,8 +293,7 @@ public static partial class EnumerableExtensions
 
     public static TimeSpan Average(this IEnumerable<TimeSpan> enumerable)
     {
-        if (enumerable is null)
-            throw new ArgumentNullException(nameof(enumerable));
+        ArgumentNullException.ThrowIfNull(enumerable);
 
         var result = 0L;
         var count = 0;
@@ -346,8 +320,7 @@ public static partial class EnumerableExtensions
 
     public static IEnumerable<T> ToOnlyEnumerable<T>(this IEnumerable<T> enumerable)
     {
-        if (enumerable is null)
-            throw new ArgumentNullException(nameof(enumerable));
+        ArgumentNullException.ThrowIfNull(enumerable);
 
         return ToOnlyEnumerableImpl(enumerable);
 
@@ -360,16 +333,14 @@ public static partial class EnumerableExtensions
 
     public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         return new ReadOnlyCollection<T>(source.ToList());
     }
 
     public static ICollection<T> ToCollection<T>(this IEnumerable<T> sequence)
     {
-        if (sequence is null)
-            throw new ArgumentNullException(nameof(sequence));
+        ArgumentNullException.ThrowIfNull(sequence);
 
         return sequence is ICollection<T> collection ? collection : sequence.ToList();
     }
@@ -377,8 +348,7 @@ public static partial class EnumerableExtensions
     [SuppressMessage("Design", "MA0016:Prefer return collection abstraction instead of implementation", Justification = "Similar to Enumerable.ToList()")]
     public static async Task<List<T>> ToListAsync<T>(this Task<IEnumerable<T>> task)
     {
-        if (task is null)
-            throw new ArgumentNullException(nameof(task));
+        ArgumentNullException.ThrowIfNull(task);
 
         var result = await task.ConfigureAwait(false);
         return result.ToList();
@@ -386,8 +356,7 @@ public static partial class EnumerableExtensions
 
     public static async Task<T[]> ToArrayAsync<T>(this Task<IEnumerable<T>> task)
     {
-        if (task is null)
-            throw new ArgumentNullException(nameof(task));
+        ArgumentNullException.ThrowIfNull(task);
 
         var result = await task.ConfigureAwait(false);
         return result.ToArray();

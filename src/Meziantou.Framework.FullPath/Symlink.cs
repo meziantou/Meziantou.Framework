@@ -142,7 +142,7 @@ internal static class Symlink
                     var result = Interop.Kernel32.DeviceIoControl(handle, Interop.Kernel32.FSCTL_GET_REPARSE_POINT, inBuffer: null, cbInBuffer: 0, buffer, (uint)buffer.Length, out bytesRead, overlapped: IntPtr.Zero) ?
                         0 : Marshal.GetLastWin32Error();
 
-                    if (result != Interop.Errors.ERROR_SUCCESS && result != Interop.Errors.ERROR_INSUFFICIENT_BUFFER && result != Interop.Errors.ERROR_MORE_DATA)
+                    if (result is not Interop.Errors.ERROR_SUCCESS and not Interop.Errors.ERROR_INSUFFICIENT_BUFFER and not Interop.Errors.ERROR_MORE_DATA)
                     {
                         throw new Win32Exception(result);
                     }

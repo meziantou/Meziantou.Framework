@@ -232,7 +232,7 @@ namespace System.IO
         /// </summary>
         internal static bool IsValidDriveChar(char value)
         {
-            return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+            return value is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
         }
 
         private static bool EndsWithPeriodOrSpace(string path)
@@ -241,7 +241,7 @@ namespace System.IO
                 return false;
 
             var c = path[^1];
-            return c == ' ' || c == '.';
+            return c is ' ' or '.';
         }
 
         /// <summary>

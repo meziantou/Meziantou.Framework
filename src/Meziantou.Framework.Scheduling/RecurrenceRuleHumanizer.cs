@@ -40,8 +40,7 @@ public abstract class RecurrenceRuleHumanizer
 
     public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         cultureInfo ??= CultureInfo.CurrentUICulture;
 

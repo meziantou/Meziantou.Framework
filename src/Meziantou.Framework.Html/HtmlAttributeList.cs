@@ -37,11 +37,9 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute Add(string prefix, string localName, string namespaceURI, string value)
     {
-        if (prefix is null)
-            throw new ArgumentNullException(nameof(prefix));
+        ArgumentNullException.ThrowIfNull(prefix);
 
-        if (localName is null)
-            throw new ArgumentNullException(nameof(localName));
+        ArgumentNullException.ThrowIfNull(localName);
 
         if (Parent is null || Parent.OwnerDocument is null)
             throw new InvalidOperationException();
@@ -59,8 +57,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public HtmlAttribute Add(string name, string value)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         if (Parent is null || Parent.OwnerDocument is null)
             throw new InvalidOperationException();
@@ -78,8 +75,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public void Add(HtmlAttribute attribute, bool replace)
     {
-        if (attribute is null)
-            throw new ArgumentNullException(nameof(attribute));
+        ArgumentNullException.ThrowIfNull(attribute);
 
         if (attribute.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(attribute));
@@ -98,8 +94,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     internal void AddNoCheck(HtmlAttribute attribute)
     {
-        if (attribute is null)
-            throw new ArgumentNullException(nameof(attribute));
+        ArgumentNullException.ThrowIfNull(attribute);
 
         _attributes.Add(attribute);
         attribute.ParentNode = Parent;
@@ -109,8 +104,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public string GetNamespacePrefixIfDefined(string namespaceURI)
     {
-        if (namespaceURI is null)
-            throw new ArgumentNullException(nameof(namespaceURI));
+        ArgumentNullException.ThrowIfNull(namespaceURI);
 
         foreach (var att in _attributes)
         {
@@ -141,8 +135,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public void Insert(int index, HtmlAttribute item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
@@ -164,8 +157,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public int IndexOf(HtmlAttribute item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         return _attributes.IndexOf(item);
     }
@@ -217,10 +209,8 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public bool RemoveByPrefix(string prefix, string localName)
     {
-        if (prefix is null)
-            throw new ArgumentNullException(nameof(prefix));
-        if (localName is null)
-            throw new ArgumentNullException(nameof(localName));
+        ArgumentNullException.ThrowIfNull(prefix);
+        ArgumentNullException.ThrowIfNull(localName);
 
         var att = _attributes.Find(a => localName.EqualsIgnoreCase(a.LocalName) && string.Equals(prefix, a.Prefix, StringComparison.Ordinal));
         if (att is null)
@@ -232,11 +222,9 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public bool Remove(string localName, string namespaceURI)
     {
-        if (localName is null)
-            throw new ArgumentNullException(nameof(localName));
+        ArgumentNullException.ThrowIfNull(localName);
 
-        if (namespaceURI is null)
-            throw new ArgumentNullException(nameof(namespaceURI));
+        ArgumentNullException.ThrowIfNull(namespaceURI);
 
         var att = this[localName, namespaceURI];
         if (att is null)
@@ -247,8 +235,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public bool Remove(string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         var att = this[name];
         if (att is null)
@@ -259,8 +246,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
 
     public bool Remove(HtmlAttribute item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.ParentNode != Parent)
             throw new ArgumentException(message: null, nameof(item));
@@ -277,15 +263,13 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     {
         get
         {
-            if (name is null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return _attributes.Find(a => name.EqualsIgnoreCase(a.Name));
         }
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.ParentNode is not null)
                 throw new ArgumentException(message: null, nameof(value));
@@ -307,11 +291,9 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
     {
         get
         {
-            if (localName is null)
-                throw new ArgumentNullException(nameof(localName));
+            ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceURI is null)
-                throw new ArgumentNullException(nameof(namespaceURI));
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             return _attributes.Find(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
@@ -319,8 +301,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         }
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (value.ParentNode is not null)
                 throw new ArgumentException(message: null, nameof(value));
@@ -391,8 +372,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         get => this[index];
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             this[index] = (HtmlAttribute)value;
         }

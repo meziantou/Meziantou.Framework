@@ -157,8 +157,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     public bool NotifyFirstInstance(string[] args)
     {
-        if (args is null)
-            throw new ArgumentNullException(nameof(args));
+        ArgumentNullException.ThrowIfNull(args);
 
         using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
         try

@@ -43,7 +43,7 @@ internal sealed class UrlEncodedFormFormatter : ValueFormatter
 
         if (!_options.PrettyFormat)
         {
-            writer.WriteValue(string.Join("&", items.Select(item => $"{item.Key}={item.Value}")));
+            writer.WriteValue(string.Join('&', items.Select(item => $"{item.Key}={item.Value}")));
             return;
         }
 

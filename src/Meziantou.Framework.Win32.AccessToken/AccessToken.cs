@@ -204,16 +204,14 @@ public sealed class AccessToken : IDisposable
 
     public void EnablePrivilege(string privilegeName)
     {
-        if (privilegeName is null)
-            throw new ArgumentNullException(nameof(privilegeName));
+        ArgumentNullException.ThrowIfNull(privilegeName);
 
         AdjustPrivilege(privilegeName, PrivilegeOperation.Enable);
     }
 
     public void DisablePrivilege(string privilegeName)
     {
-        if (privilegeName is null)
-            throw new ArgumentNullException(nameof(privilegeName));
+        ArgumentNullException.ThrowIfNull(privilegeName);
 
         AdjustPrivilege(privilegeName, PrivilegeOperation.Disable);
     }
@@ -227,8 +225,7 @@ public sealed class AccessToken : IDisposable
 
     public void RemovePrivilege(string privilegeName)
     {
-        if (privilegeName is null)
-            throw new ArgumentNullException(nameof(privilegeName));
+        ArgumentNullException.ThrowIfNull(privilegeName);
 
         AdjustPrivilege(privilegeName, PrivilegeOperation.Remove);
     }
@@ -286,8 +283,7 @@ public sealed class AccessToken : IDisposable
 
     public static AccessToken OpenProcessToken(Process process, TokenAccessLevels accessLevels)
     {
-        if (process is null)
-            throw new ArgumentNullException(nameof(process));
+        ArgumentNullException.ThrowIfNull(process);
 
         if (!PInvoke.OpenProcessToken(process.SafeHandle, (TOKEN_ACCESS_MASK)accessLevels, out var tokenHandle))
             throw new Win32Exception(Marshal.GetLastWin32Error());

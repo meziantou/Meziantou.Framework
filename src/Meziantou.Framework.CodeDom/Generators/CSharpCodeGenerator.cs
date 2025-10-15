@@ -34,8 +34,7 @@ public partial class CSharpCodeGenerator
 
     public string Write(CodeObject codeObject)
     {
-        if (codeObject is null)
-            throw new ArgumentNullException(nameof(codeObject));
+        ArgumentNullException.ThrowIfNull(codeObject);
 
         using var sw = new StringWriter();
         Write(sw, codeObject);
@@ -44,11 +43,9 @@ public partial class CSharpCodeGenerator
 
     public void Write(TextWriter writer, CodeObject codeObject)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
-        if (codeObject is null)
-            throw new ArgumentNullException(nameof(codeObject));
+        ArgumentNullException.ThrowIfNull(codeObject);
 
         using var indentedTextWriter = new IndentedTextWriter(writer, IndentedTextWriter.DefaultTabString, closeWriter: false)
         {
@@ -60,11 +57,9 @@ public partial class CSharpCodeGenerator
 
     public void Write(IndentedTextWriter writer, CodeObject codeObject)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
-        if (codeObject is null)
-            throw new ArgumentNullException(nameof(codeObject));
+        ArgumentNullException.ThrowIfNull(codeObject);
 
         switch (codeObject)
         {

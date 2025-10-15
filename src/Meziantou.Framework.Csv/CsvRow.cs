@@ -31,8 +31,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (columnName is null)
-                throw new ArgumentNullException(nameof(columnName));
+            ArgumentNullException.ThrowIfNull(columnName);
 
             if (Columns is null)
                 throw new InvalidOperationException("Columns are not parsed");
@@ -49,8 +48,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (column is null)
-                throw new ArgumentNullException(nameof(column));
+            ArgumentNullException.ThrowIfNull(column);
 
             return this[column.Index];
         }

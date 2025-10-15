@@ -33,8 +33,7 @@ public static class ResultExtensions
 
     public static IResult ForwardToUpstream(this IResultExtensions _, HttpClient httpClient)
     {
-        if (httpClient is null)
-            throw new ArgumentNullException(nameof(httpClient));
+        ArgumentNullException.ThrowIfNull(httpClient);
 
         return new ForwardResult(httpClient);
     }

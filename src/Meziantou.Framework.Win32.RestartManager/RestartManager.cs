@@ -38,8 +38,7 @@ public sealed class RestartManager : IDisposable
 
     public void RegisterFile(string path)
     {
-        if (path is null)
-            throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(path);
 
         string[] resources = [path];
         var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)resources.Length, resources, 0, rgApplications: null, 0, rgsServiceNames: null);
@@ -49,8 +48,7 @@ public sealed class RestartManager : IDisposable
 
     public void RegisterFiles(string[] paths)
     {
-        if (paths is null)
-            throw new ArgumentNullException(nameof(paths));
+        ArgumentNullException.ThrowIfNull(paths);
 
         var result = NativeMethods.RmRegisterResources(SessionHandle, (uint)paths.LongLength, paths, 0, rgApplications: null, 0, rgsServiceNames: null);
         if (result != RmResult.ERROR_SUCCESS)

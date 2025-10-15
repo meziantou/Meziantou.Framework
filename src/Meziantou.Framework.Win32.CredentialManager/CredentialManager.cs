@@ -71,14 +71,11 @@ public static class CredentialManager
 
     public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
-        if (applicationName is null)
-            throw new ArgumentNullException(nameof(applicationName));
+        ArgumentNullException.ThrowIfNull(applicationName);
 
-        if (userName is null)
-            throw new ArgumentNullException(nameof(userName));
+        ArgumentNullException.ThrowIfNull(userName);
 
-        if (secret is null)
-            throw new ArgumentNullException(nameof(secret));
+        ArgumentNullException.ThrowIfNull(secret);
 
         // CRED_MAX_CREDENTIAL_BLOB_SIZE
         // XP and Vista: 512;
@@ -142,8 +139,7 @@ public static class CredentialManager
 
     public static void DeleteCredential(string applicationName, CredentialType type)
     {
-        if (applicationName is null)
-            throw new ArgumentNullException(nameof(applicationName));
+        ArgumentNullException.ThrowIfNull(applicationName);
 
         var success = PInvoke.CredDelete(applicationName, (CRED_TYPE)type);
         if (!success)

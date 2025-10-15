@@ -6,8 +6,7 @@ internal static class Extensions
 {
     public static string? GetValue(this IDictionary<string, string> dict, string key, string? defaultValue)
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (dict.TryGetValue(key, out var value))
             return value;
@@ -17,8 +16,7 @@ internal static class Extensions
 
     public static int GetValue(this IDictionary<string, string> dict, string key, int defaultValue)
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (dict.TryGetValue(key, out var value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
             return i;
@@ -28,8 +26,7 @@ internal static class Extensions
 
     public static int? GetValue(this IDictionary<string, string> dict, string key, int? defaultValue)
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (dict.TryGetValue(key, out var value) && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
             return i;
@@ -39,8 +36,7 @@ internal static class Extensions
 
     public static Frequency GetValue(this IDictionary<string, string> dict, string key, Frequency defaultValue)
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (dict.TryGetValue(key, out var value) && Enum.TryParse<Frequency>(value, ignoreCase: true, out var enumValue))
             return enumValue;

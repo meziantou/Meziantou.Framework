@@ -144,8 +144,7 @@ sealed class HtmlOptions
 
     public HtmlElementWriteOptions GetElementWriteOptions(string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         _writeOptions.TryGetValue(name, out var options);
         return options;
@@ -153,8 +152,7 @@ sealed class HtmlOptions
 
     public void SetElementWriteOptions(string name, HtmlElementWriteOptions options)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         _writeOptions[name] = options;
     }
@@ -169,8 +167,7 @@ sealed class HtmlOptions
 
     public HtmlElementReadOptions GetElementReadOptions(string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         _readOptions.TryGetValue(name, out var options);
         return options;
@@ -178,8 +175,7 @@ sealed class HtmlOptions
 
     public void SetElementReadOptions(string name, HtmlElementReadOptions options)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         _readOptions[name] = options;
     }

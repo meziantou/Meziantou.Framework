@@ -18,8 +18,7 @@ public sealed class Calendar
 
     public void ToIcs(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         /*
         BEGIN:VCALENDAR

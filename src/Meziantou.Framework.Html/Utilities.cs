@@ -108,8 +108,7 @@ internal static class Utilities
 
     public static string? GetAttributeFromHeader(string? header, string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         int index;
         if (header is null)
@@ -277,8 +276,7 @@ internal static class Utilities
 
     public static string? GetServerPath(string path, out string? serverName, out string? shareName, out string? sharePath)
     {
-        if (path is null)
-            throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(path);
 
         serverName = null;
         shareName = null;

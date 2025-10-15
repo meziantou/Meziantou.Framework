@@ -192,7 +192,7 @@ public abstract class RecurrenceRule
         var months = SplitToMonthList(str);
         foreach (var month in months)
         {
-            if (!Enum.IsDefined(typeof(Month), month))
+            if (!Enum.IsDefined(month))
             {
                 throw new FormatException("BYMONTH is invalid.");
             }
@@ -253,7 +253,7 @@ public abstract class RecurrenceRule
         for (var i = 0; i < str.Length; i++)
         {
             var c = str[i];
-            if ((c >= '0' && c <= '9') || c == '+' || c == '-')
+            if (c is (>= '0' and <= '9') or '+' or '-')
                 continue;
 
             if (i == 0)

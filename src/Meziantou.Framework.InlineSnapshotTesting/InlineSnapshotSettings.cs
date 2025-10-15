@@ -37,8 +37,7 @@ public sealed record InlineSnapshotSettings
         get => _snapshotUpdateStrategy;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _snapshotUpdateStrategy = value;
         }
@@ -49,8 +48,7 @@ public sealed record InlineSnapshotSettings
         get => _snapshotSerializer;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _snapshotSerializer = value;
         }
@@ -61,8 +59,7 @@ public sealed record InlineSnapshotSettings
         get => _snapshotComparer;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _snapshotComparer = value;
         }
@@ -73,8 +70,7 @@ public sealed record InlineSnapshotSettings
         get => _errorMessageFormatter;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _errorMessageFormatter = value;
         }
@@ -85,8 +81,7 @@ public sealed record InlineSnapshotSettings
         get => _assertionExceptionCreator;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _assertionExceptionCreator = value;
         }

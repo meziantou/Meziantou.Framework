@@ -120,11 +120,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
 
             var item = this[index];
             _list[index] = value;
-            if (item is not null)
-            {
-                item.Parent = null;
-            }
-
+            item?.Parent = null;
             value.Parent = Parent;
         }
     }

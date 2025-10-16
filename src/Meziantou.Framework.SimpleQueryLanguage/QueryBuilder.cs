@@ -38,7 +38,7 @@ public sealed class QueryBuilder<T>
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
         {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue<TValue>;
+            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
             if (tryParse(value, out var parsedValue))
                 return predicate(obj, op, parsedValue);
 
@@ -67,7 +67,7 @@ public sealed class QueryBuilder<T>
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
         {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue<TValue>;
+            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
             if (tryParse(value, out var parsedValue))
                 return predicate(obj, parsedValue);
 
@@ -81,7 +81,7 @@ public sealed class QueryBuilder<T>
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
         {
-            var tryParse = tryParseValue ?? ValueConverter.TryParseValue<TValue>;
+            var tryParse = tryParseValue ?? ValueConverter.TryParseValue;
             return ConvertRangePredicate(obj, op, value, predicate, tryParse);
         }
 

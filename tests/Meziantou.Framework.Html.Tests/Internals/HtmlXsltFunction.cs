@@ -48,7 +48,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             return defaultValue;
         }
 
-        if (argument is IEnumerable enumerable && (argument is not string))
+        if (argument is IEnumerable enumerable and not string)
         {
             foreach (var arg in enumerable)
             {

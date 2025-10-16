@@ -42,7 +42,7 @@ public sealed class CommandLineParser
                 continue;
             }
 
-            if (arg[0] == '-' || arg[0] == '/')
+            if (arg[0] is '-' or '/')
             {
                 arg = arg[1..];
                 var indexOfSeparator = arg.IndexOfAny(ValueDelimiters);

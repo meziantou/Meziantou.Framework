@@ -21,11 +21,7 @@ public abstract class CodeObject
     {
         ArgumentNullException.ThrowIfNull(parent);
 
-        if (field is not null)
-        {
-            field.Parent = null; // Detach previous value
-        }
-
+        field?.Parent = null; // Detach previous value
         if (value is not null)
         {
             if (value.Parent is not null && value.Parent != parent)

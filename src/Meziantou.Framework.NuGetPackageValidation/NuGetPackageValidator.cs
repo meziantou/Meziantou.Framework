@@ -24,10 +24,10 @@ public static class NuGetPackageValidator
     {
         if (!File.Exists(packagePath))
         {
-            return new NuGetPackageValidationResult(new NuGetPackageValidationError[]
-            {
+            return new NuGetPackageValidationResult(
+            [
                 new (ErrorCodes.FileNotFound, $"NuGet package '{packagePath}' not found", helpText: null),
-            });
+            ]);
         }
 
         using var context = new NuGetPackageValidationContext(packagePath, options, cancellationToken);

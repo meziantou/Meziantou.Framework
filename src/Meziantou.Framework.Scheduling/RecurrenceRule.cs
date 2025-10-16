@@ -171,7 +171,7 @@ public abstract class RecurrenceRule
         var monthDays = SplitToInt32List(str);
         foreach (var monthDay in monthDays)
         {
-            if ((monthDay >= 1 && monthDay <= 31) || (monthDay <= -1 && monthDay >= -31))
+            if (monthDay is (>= 1 and <= 31) or (<= -1 and >= -31))
                 continue;
 
             throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
@@ -209,7 +209,7 @@ public abstract class RecurrenceRule
         var yearDays = SplitToInt32List(str);
         foreach (var yearDay in yearDays)
         {
-            if ((yearDay >= 1 && yearDay <= 366) || (yearDay <= -1 && yearDay >= -366))
+            if (yearDay is (>= 1 and <= 366) or (<= -1 and >= -366))
                 continue;
             throw new FormatException($"Year day '{yearDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
         }

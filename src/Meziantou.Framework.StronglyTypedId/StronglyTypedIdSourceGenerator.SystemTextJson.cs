@@ -84,14 +84,12 @@ public partial class StronglyTypedIdSourceGenerator
 
                 bool CanUseWriteNumberValueWithCastToInt()
                 {
-                    return idType == IdType.System_Int16
-                        || idType == IdType.System_SByte;
+                    return idType is IdType.System_Int16 or IdType.System_SByte;
                 }
 
                 bool CanUseWriteNumberValueWithCastToUInt()
                 {
-                    return idType == IdType.System_Byte
-                        || idType == IdType.System_UInt16;
+                    return idType is IdType.System_Byte or IdType.System_UInt16;
                 }
 
                 bool CanUseWriteStringValue()

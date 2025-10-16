@@ -118,7 +118,7 @@ public class Template
             var iBacktick = friendlyName.IndexOf('`', StringComparison.Ordinal);
             if (iBacktick > 0)
             {
-                friendlyName = friendlyName.Remove(iBacktick);
+                friendlyName = friendlyName[..iBacktick];
             }
 
             friendlyName += "<";

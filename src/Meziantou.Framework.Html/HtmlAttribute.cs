@@ -186,20 +186,20 @@ sealed class HtmlAttribute : HtmlNode
 
             if (OwnerDocument?.IsXhtml == true)
             {
-                if (quoteChar != '\'' && quoteChar != '"')
+                if (quoteChar is not '\'' and not '"')
                 {
                     quoteChar = '\"';
                 }
             }
 
-            if (quoteChar != '\0')
+            if (quoteChar is not '\0')
             {
                 writer.Write(quoteChar);
             }
 
             WriteContentTo(writer);
 
-            if (quoteChar != '\0')
+            if (quoteChar is not '\0')
             {
                 writer.Write(quoteChar);
             }

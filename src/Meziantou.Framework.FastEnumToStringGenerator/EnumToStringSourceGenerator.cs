@@ -170,12 +170,8 @@ public sealed partial class EnumToStringSourceGenerator : IIncrementalGenerator
         if (symbol is null)
             return false;
 
-        if (symbol.DeclaredAccessibility != Accessibility.Public &&
-            symbol.DeclaredAccessibility != Accessibility.Protected &&
-            symbol.DeclaredAccessibility != Accessibility.ProtectedOrInternal)
-        {
+        if (symbol.DeclaredAccessibility is not Accessibility.Public and not Accessibility.Protected and not Accessibility.ProtectedOrInternal)
             return false;
-        }
 
         if (symbol.ContainingType is null)
             return true;

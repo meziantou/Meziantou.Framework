@@ -62,7 +62,7 @@ public sealed class RestartManager : IDisposable
         {
             var array = new RM_PROCESS_INFO[arraySize];
             var result = NativeMethods.RmGetList(SessionHandle, out var arrayCount, ref arraySize, array, out _);
-            if (result == RmResult.ERROR_SUCCESS || result == RmResult.ERROR_MORE_DATA)
+            if (result is RmResult.ERROR_SUCCESS or RmResult.ERROR_MORE_DATA)
             {
                 return arrayCount > 0;
             }

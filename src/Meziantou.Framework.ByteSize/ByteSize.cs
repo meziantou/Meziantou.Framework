@@ -96,7 +96,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < format.Length; i++)
         {
             var c = format[i];
-            if (c > '0' && c < '9')
+            if (c is > '0' and < '9')
             {
                 index = i;
                 break;
@@ -115,7 +115,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             {
                 unit = FindBestUnitI();
             }
-            else if (unitString == "g" || unitString == "f" || unitString == "G" || unitString == "F")
+            else if (unitString is "g" or "f" or "G" or "F")
             {
                 unit = FindBestUnit();
             }

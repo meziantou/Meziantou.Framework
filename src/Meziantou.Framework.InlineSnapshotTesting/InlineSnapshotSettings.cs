@@ -7,7 +7,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public sealed record InlineSnapshotSettings
 {
-    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create<MergeTool>(
+    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
         MergeTool.GitDiffTool,
@@ -140,7 +140,6 @@ public sealed record InlineSnapshotSettings
         Scrubbers = [];
     }
 
-    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private InlineSnapshotSettings(InlineSnapshotSettings? options)
     {
         Scrubbers = [];

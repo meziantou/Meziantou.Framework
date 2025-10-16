@@ -281,7 +281,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         OnPropertyChanged(nameof(Name));
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "Change the behavior of the method")]
     public string LocalName
     {
         get => _localName;

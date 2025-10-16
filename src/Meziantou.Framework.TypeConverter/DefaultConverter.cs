@@ -25,13 +25,13 @@ public class DefaultConverter : IConverter
 
     private static byte GetHexaByte(char c)
     {
-        if ((c >= '0') && (c <= '9'))
+        if (c is >= '0' and <= '9')
             return (byte)(c - '0');
 
-        if ((c >= 'A') && (c <= 'F'))
+        if (c is >= 'A' and <= 'F')
             return (byte)(c - 'A' + 10);
 
-        if ((c >= 'a') && (c <= 'f'))
+        if (c is >= 'a' and <= 'f')
             return (byte)(c - 'a' + 10);
 
         return 0xFF;
@@ -42,25 +42,18 @@ public class DefaultConverter : IConverter
         if (s is null)
             return false;
 
-        if (s.Length > 0)
+        switch (s)
         {
-            if (s[0] == 'x' || s[0] == 'X')
-            {
-                s = s[1..];
+            case ['x' or 'X', .. var rest]:
+                s = rest;
                 return true;
-            }
+            case ['0', 'x' or 'X', .. var rest]:
+                s = rest;
+                return true;
 
-            if (s.Length > 1)
-            {
-                if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
-                {
-                    s = s[2..];
-                    return true;
-                }
-            }
+            default:
+                return false;
         }
-
-        return false;
     }
 
     private static void GetBytes(decimal d, byte[] buffer)

@@ -163,7 +163,11 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
             Current = span.Length;
         }
 
-        public int Current { get => field == 0 ? 0 : (field + 1); private set; }
+        public int Current
+        {
+            readonly get => field == 0 ? 0 : (field + 1);
+            private set;
+        }
 
         public bool MoveNext()
         {

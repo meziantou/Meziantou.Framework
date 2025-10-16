@@ -182,7 +182,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             result = [];
             foreach (var month in ByMonths.Distinct().Order())
             {
-                if (month >= Month.January && month <= Month.December)
+                if (month is >= Month.January and <= Month.December)
                 {
                     for (var dt = startOfYear.AddMonths((int)month - 1); dt.Month == (int)month; dt = dt.AddDays(1))
                     {

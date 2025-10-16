@@ -103,7 +103,6 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         item.Parent = null;
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public T this[int index]
     {
         get => _list[index];
@@ -113,10 +112,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
 
             var item = this[index];
             _list[index] = value;
-            if (item is not null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
 
             value.Parent = Parent;
         }

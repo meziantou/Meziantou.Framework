@@ -482,7 +482,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new System.Collections.Specialized.ListDictionary() { ["a"] = 1, [2] = 3 },
+            Subject = new ListDictionary() { ["a"] = 1, [2] = 3 },
             Expected = """
                 - Key: a
                   Value: 1
@@ -1677,7 +1677,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Method = HttpMethod.Post,
             Headers =
             {
-                Accept = { new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/plain") },
+                Accept = { new MediaTypeWithQualityHeaderValue("text/plain") },
             },
             Version = new Version("1.1"),
             VersionPolicy = HttpVersionPolicy.RequestVersionExact,

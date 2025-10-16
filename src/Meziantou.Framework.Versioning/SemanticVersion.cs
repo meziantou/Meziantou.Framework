@@ -221,7 +221,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (versionString.IsEmpty)
             return false;
 
-        var index = versionString[0] == 'v' || versionString[0] == 'V' ? 1 : 0;
+        var index = versionString[0] is 'v' or 'V' ? 1 : 0;
         if (!TryReadNumber(versionString, ref index, out var major))
             return false;
 
@@ -435,12 +435,12 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     private static bool IsDigit(char c)
     {
-        return c >= '0' && c <= '9';
+        return c is >= '0' and <= '9';
     }
 
     private static bool IsLetter(char c)
     {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        return c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z');
     }
 
     private static bool IsDash(char c)

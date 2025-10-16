@@ -1150,10 +1150,10 @@ public partial class CSharpCodeGenerator
         static bool IsBlockStatement(Statement statement)
         {
             return statement is ConditionStatement
-                || statement is IterationStatement
-                || statement is TryCatchFinallyStatement
-                || statement is UsingStatement
-                || statement is WhileStatement;
+                             or IterationStatement
+                             or TryCatchFinallyStatement
+                             or UsingStatement
+                             or WhileStatement;
         }
     }
 
@@ -1163,7 +1163,7 @@ public partial class CSharpCodeGenerator
         // 2. base
         // 3. new()
         var orderedConstraints = new List<TypeParameterConstraint>(parameter.Constraints.Count);
-        orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ValueTypeTypeParameterConstraint || p is ClassTypeParameterConstraint || p is UnmanagedTypeParameterConstraint));
+        orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ValueTypeTypeParameterConstraint or ClassTypeParameterConstraint or UnmanagedTypeParameterConstraint));
         orderedConstraints.AddRange(parameter.Constraints.Where(p => p is BaseTypeParameterConstraint));
         orderedConstraints.AddRange(parameter.Constraints.Where(p => p is ConstructorParameterConstraint));
 

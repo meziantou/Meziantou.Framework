@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -107,7 +106,7 @@ internal sealed class JsonLocation : Location, ILocationLineInfo
         {
             var slicedCurrentValue = currentValue.AsSpan().Slice(StartPosition, Length);
             if (!slicedCurrentValue.Equals(oldValue, StringComparison.Ordinal))
-                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue.ToString()}'. The file was probably modified since last scan.");
+                throw new DependencyScannerException($"Expected value '{oldValue}' does not match the current value '{slicedCurrentValue}'. The file was probably modified since last scan.");
         }
 
         return currentValue

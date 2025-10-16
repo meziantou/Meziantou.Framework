@@ -4,7 +4,6 @@ namespace Meziantou.Framework.WPF;
 
 public sealed class LocalizedEnumValue
 {
-    private readonly string? _name;
     private readonly DisplayAttribute? _displayAttribute;
 
     public LocalizedEnumValue(Enum value)
@@ -15,7 +14,7 @@ public sealed class LocalizedEnumValue
     public LocalizedEnumValue(Enum value, string name)
     {
         Value = value;
-        _name = name;
+        Name = name;
     }
 
     public LocalizedEnumValue(Enum value, DisplayAttribute displayAttribute)
@@ -31,7 +30,7 @@ public sealed class LocalizedEnumValue
             if (_displayAttribute is not null)
                 return _displayAttribute.GetName();
 
-            return _name!;
+            return field!;
         }
     }
 

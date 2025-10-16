@@ -1,5 +1,4 @@
 using Meziantou.Framework.NuGetPackageValidation.Rules;
-using Xunit;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tests;
 

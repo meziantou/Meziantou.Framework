@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.HumanReadable.Converters;
-using Xunit;
+using Meziantou.Framework.HumanReadable.Converters;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 

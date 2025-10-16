@@ -49,8 +49,7 @@ public partial class QuerySyntax
 
         private QueryToken MatchTextOrQuotedText()
         {
-            var isText = Current.Kind == QuerySyntaxKind.TextToken ||
-                         Current.Kind == QuerySyntaxKind.QuotedTextToken;
+            var isText = Current.Kind is QuerySyntaxKind.TextToken or QuerySyntaxKind.QuotedTextToken;
             return isText ? Next() : Match(QuerySyntaxKind.TextToken);
         }
 
@@ -98,19 +97,15 @@ public partial class QuerySyntax
         private QuerySyntax ParseAndExpression()
         {
             var result = ParsePrimaryExpression();
-            while (Current.Kind != QuerySyntaxKind.EndOfFile &&
-                   Current.Kind != QuerySyntaxKind.OrKeyword &&
-                   Current.Kind != QuerySyntaxKind.CloseParenthesisToken)
+            while (Current.Kind is not QuerySyntaxKind.EndOfFile and not QuerySyntaxKind.OrKeyword and not QuerySyntaxKind.CloseParenthesisToken)
             {
                 QueryToken? op = null;
-                if (Current.Kind == QuerySyntaxKind.AndKeyword)
+                if (Current.Kind is QuerySyntaxKind.AndKeyword)
                 {
                     op = Match(QuerySyntaxKind.AndKeyword);
                 }
 
-                if (Current.Kind != QuerySyntaxKind.EndOfFile &&
-                    Current.Kind != QuerySyntaxKind.OrKeyword &&
-                    Current.Kind != QuerySyntaxKind.CloseParenthesisToken)
+                if (Current.Kind is not QuerySyntaxKind.EndOfFile and not QuerySyntaxKind.OrKeyword and not QuerySyntaxKind.CloseParenthesisToken)
                 {
                     var term = ParsePrimaryExpression();
                     result = new AndQuerySyntax(result, op, term);

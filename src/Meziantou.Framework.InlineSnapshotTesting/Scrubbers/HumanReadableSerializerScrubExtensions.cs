@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;
@@ -30,7 +29,7 @@ public static class HumanReadableSerializerScrubExtensions
     });
 
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options) => ScrubValue<T>(options, comparer: null);
-    public static void ScrubValue<T>(this HumanReadableSerializerOptions options, IEqualityComparer<T>? comparer) => ScrubValue<T>(options, (value, index) => typeof(T).Name + "_" + index.ToString(CultureInfo.InvariantCulture), comparer);
+    public static void ScrubValue<T>(this HumanReadableSerializerOptions options, IEqualityComparer<T>? comparer) => ScrubValue(options, (value, index) => typeof(T).Name + "_" + index.ToString(CultureInfo.InvariantCulture), comparer);
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, string> scrubber) => options.Converters.Add(new ValueScrubberConverter<T>(scrubber));
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber) => ScrubValue(options, scrubber, comparer: null);
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber, IEqualityComparer<T>? comparer)

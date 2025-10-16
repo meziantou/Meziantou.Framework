@@ -36,7 +36,7 @@ internal ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
     private int _startNext = 0;
 
     public SpanSplitEnumerator<T> GetEnumerator() => this;
-    public Range Current => new Range(_startCurrent, _endCurrent);
+    public Range Current => new(_startCurrent, _endCurrent);
 
     internal SpanSplitEnumerator(ReadOnlySpan<T> span, SearchValues<T> searchValues)
     {

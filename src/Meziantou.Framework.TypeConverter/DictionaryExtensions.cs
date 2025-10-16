@@ -7,8 +7,7 @@ public static class DictionaryExtensions
     public static TResult GetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue)
         where TKey : notnull
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (TryGetValueOrDefault(dict, key, out TResult? result))
             return result!;
@@ -19,8 +18,7 @@ public static class DictionaryExtensions
     public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, [MaybeNullWhen(returnValue: false)] out TResult value)
         where TKey : notnull
     {
-        if (dict is null)
-            throw new ArgumentNullException(nameof(dict));
+        ArgumentNullException.ThrowIfNull(dict);
 
         if (dict.TryGetValue(key, out var v))
         {

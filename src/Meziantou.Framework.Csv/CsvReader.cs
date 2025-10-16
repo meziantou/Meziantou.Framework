@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Csv;
 
 public class CsvReader

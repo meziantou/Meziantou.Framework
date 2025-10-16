@@ -58,8 +58,7 @@ sealed class HtmlComment : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         writer.Write("<!--");
         writer.Write(Value);
@@ -72,8 +71,7 @@ sealed class HtmlComment : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         writer.WriteComment(Value);
     }

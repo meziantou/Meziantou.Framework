@@ -1,5 +1,3 @@
-﻿using Xunit;
-
 namespace Meziantou.Framework.Tests;
 public sealed class DictionaryExtensionsTests
 {

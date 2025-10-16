@@ -2,9 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public abstract class EventHandlerStatement : Statement
 {
-    private Expression? _leftExpression;
-    private Expression? _rightExpression;
-
     protected EventHandlerStatement()
     {
     }
@@ -17,13 +14,13 @@ public abstract class EventHandlerStatement : Statement
 
     public Expression? LeftExpression
     {
-        get => _leftExpression;
-        set => SetParent(ref _leftExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public Expression? RightExpression
     {
-        get => _rightExpression;
-        set => SetParent(ref _rightExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

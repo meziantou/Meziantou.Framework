@@ -1,5 +1,4 @@
-﻿#pragma warning disable IDE1006 // Naming Styles
-using System.Globalization;
+#pragma warning disable IDE1006 // Naming Styles
 using Xunit;
 
 namespace Meziantou.Extensions.Logging.Xunit.v3.Tests;

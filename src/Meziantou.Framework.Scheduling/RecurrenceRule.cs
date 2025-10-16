@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Scheduling;
 
 public abstract class RecurrenceRule
@@ -173,7 +171,7 @@ public abstract class RecurrenceRule
         var monthDays = SplitToInt32List(str);
         foreach (var monthDay in monthDays)
         {
-            if ((monthDay >= 1 && monthDay <= 31) || (monthDay <= -1 && monthDay >= -31))
+            if (monthDay is (>= 1 and <= 31) or (<= -1 and >= -31))
                 continue;
 
             throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
@@ -192,7 +190,7 @@ public abstract class RecurrenceRule
         var months = SplitToMonthList(str);
         foreach (var month in months)
         {
-            if (!Enum.IsDefined(typeof(Month), month))
+            if (!Enum.IsDefined(month))
             {
                 throw new FormatException("BYMONTH is invalid.");
             }
@@ -211,7 +209,7 @@ public abstract class RecurrenceRule
         var yearDays = SplitToInt32List(str);
         foreach (var yearDay in yearDays)
         {
-            if ((yearDay >= 1 && yearDay <= 366) || (yearDay <= -1 && yearDay >= -366))
+            if (yearDay is (>= 1 and <= 366) or (<= -1 and >= -366))
                 continue;
             throw new FormatException($"Year day '{yearDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
         }
@@ -253,7 +251,7 @@ public abstract class RecurrenceRule
         for (var i = 0; i < str.Length; i++)
         {
             var c = str[i];
-            if ((c >= '0' && c <= '9') || c == '+' || c == '-')
+            if (c is (>= '0' and <= '9') or '+' or '-')
                 continue;
 
             if (i == 0)

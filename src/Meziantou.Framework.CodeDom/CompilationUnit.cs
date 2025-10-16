@@ -2,12 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable, INullableContext
 {
-    private CodeObjectCollection<TypeDeclaration>? _types;
-    private CodeObjectCollection<NamespaceDeclaration>? _namespaces;
-    private CodeObjectCollection<UsingDirective>? _usings;
-    private CommentCollection? _commentsAfter;
-    private CommentCollection? _commentsBefore;
-
     public CompilationUnit()
     {
     }
@@ -18,7 +12,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            return _types ??= new CodeObjectCollection<TypeDeclaration>(this);
+            return field ??= new CodeObjectCollection<TypeDeclaration>(this);
         }
     }
 
@@ -26,8 +20,8 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            _namespaces ??= new CodeObjectCollection<NamespaceDeclaration>(this);
-            return _namespaces;
+            field ??= new CodeObjectCollection<NamespaceDeclaration>(this);
+            return field;
         }
     }
 
@@ -35,11 +29,11 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
     {
         get
         {
-            return _usings ??= new CodeObjectCollection<UsingDirective>(this);
+            return field ??= new CodeObjectCollection<UsingDirective>(this);
         }
     }
 
-    public CommentCollection CommentsAfter => _commentsAfter ??= new CommentCollection(this);
+    public CommentCollection CommentsAfter => field ??= new CommentCollection(this);
 
-    public CommentCollection CommentsBefore => _commentsBefore ??= new CommentCollection(this);
+    public CommentCollection CommentsBefore { get => field ??= new CommentCollection(this); private set; }
 }

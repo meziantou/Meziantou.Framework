@@ -7,11 +7,8 @@ public readonly struct TextSpan
 {
     public TextSpan(int start, int length)
     {
-        if (start < 0)
-            throw new ArgumentOutOfRangeException(nameof(start));
-
-        if (length < 0)
-            throw new ArgumentOutOfRangeException(nameof(length));
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         Start = start;
         Length = length;
@@ -19,11 +16,8 @@ public readonly struct TextSpan
 
     public static TextSpan FromBounds(int start, int end)
     {
-        if (start < 0)
-            throw new ArgumentOutOfRangeException(nameof(start));
-
-        if (end < start)
-            throw new ArgumentOutOfRangeException(nameof(end));
+        ArgumentOutOfRangeException.ThrowIfNegative(start);
+        ArgumentOutOfRangeException.ThrowIfLessThan(end, start);
 
         var length = end - start;
         return new TextSpan(start, length);

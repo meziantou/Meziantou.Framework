@@ -1,6 +1,4 @@
 using System.Collections;
-using System.Globalization;
-using System.Text;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 
@@ -50,7 +48,7 @@ internal abstract class HtmlXsltFunction : IXsltContextFunction
             return defaultValue;
         }
 
-        if (argument is IEnumerable enumerable && (argument is not string))
+        if (argument is IEnumerable enumerable and not string)
         {
             foreach (var arg in enumerable)
             {

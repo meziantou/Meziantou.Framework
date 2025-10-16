@@ -296,14 +296,13 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
         private readonly SortedList<T> _list;
         private int _index;
         private readonly int _version;
-        private T? _current;
 
         internal Enumerator(SortedList<T> list)
         {
             _list = list;
             _index = 0;
             _version = list._version;
-            _current = default;
+            Current = default;
         }
 
         public readonly void Dispose()
@@ -315,7 +314,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
             var localList = _list;
             if (_version == localList._version && ((uint)_index < (uint)localList.Count))
             {
-                _current = localList._items[_index];
+                Current = localList._items[_index];
                 _index++;
                 return true;
             }
@@ -329,11 +328,11 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = _list.Count + 1;
-            _current = default;
+            Current = default;
             return false;
         }
 
-        public readonly T Current => _current!;
+        public T Current { readonly get => field!; private set; }
 
         readonly object? IEnumerator.Current
         {
@@ -354,7 +353,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
             }
 
             _index = 0;
-            _current = default;
+            Current = default;
         }
     }
 }

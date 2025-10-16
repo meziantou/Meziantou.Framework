@@ -1,5 +1,3 @@
-﻿using Xunit;
-
 namespace Meziantou.Framework.HumanReadable.Tests;
 
 [SuppressMessage("Design", "CA1052:Static holder types should be Static or NotInheritable")]

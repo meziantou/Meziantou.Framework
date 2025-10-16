@@ -1,7 +1,3 @@
-#if NET6_0
-#pragma warning disable CA2252 // This API requires opting into preview features
-#endif
-
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;

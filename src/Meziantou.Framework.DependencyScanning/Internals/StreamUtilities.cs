@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.DependencyScanning.Internals;
 
 internal static class StreamUtilities

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Text;
 using DiffEngine;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
@@ -8,7 +7,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public sealed record InlineSnapshotSettings
 {
-    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create<MergeTool>(
+    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
         MergeTool.GitDiffTool,
@@ -16,12 +15,6 @@ public sealed record InlineSnapshotSettings
         MergeTool.VisualStudioCodeIfCurrentProcess,
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
-
-    private SnapshotUpdateStrategy _snapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
-    private SnapshotSerializer _snapshotSerializer = HumanReadableSnapshotSerializer.DefaultInstance;
-    private SnapshotComparer _snapshotComparer = SnapshotComparer.Default;
-    private AssertionMessageFormatter _errorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
-    private AssertionExceptionBuilder _assertionExceptionCreator = AssertionExceptionBuilder.Default;
 
     public static InlineSnapshotSettings Default { get; set; } = new();
 
@@ -34,63 +27,58 @@ public sealed record InlineSnapshotSettings
 
     public SnapshotUpdateStrategy SnapshotUpdateStrategy
     {
-        get => _snapshotUpdateStrategy;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotUpdateStrategy = value;
+            field = value;
         }
-    }
+    } = SnapshotUpdateStrategy.Default;
 
     public SnapshotSerializer SnapshotSerializer
     {
-        get => _snapshotSerializer;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotSerializer = value;
+            field = value;
         }
-    }
+    } = HumanReadableSnapshotSerializer.DefaultInstance;
 
     public SnapshotComparer SnapshotComparer
     {
-        get => _snapshotComparer;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotComparer = value;
+            field = value;
         }
-    }
+    } = SnapshotComparer.Default;
 
     public AssertionMessageFormatter ErrorMessageFormatter
     {
-        get => _errorMessageFormatter;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _errorMessageFormatter = value;
+            field = value;
         }
-    }
+    } = InlineDiffAssertionMessageFormatter.Instance;
 
     public AssertionExceptionBuilder AssertionExceptionCreator
     {
-        get => _assertionExceptionCreator;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _assertionExceptionCreator = value;
+            field = value;
         }
-    }
+    } = AssertionExceptionBuilder.Default;
 
     public IList<Scrubber> Scrubbers { get; }
 
@@ -152,7 +140,6 @@ public sealed record InlineSnapshotSettings
         Scrubbers = [];
     }
 
-    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private InlineSnapshotSettings(InlineSnapshotSettings? options)
     {
         Scrubbers = [];

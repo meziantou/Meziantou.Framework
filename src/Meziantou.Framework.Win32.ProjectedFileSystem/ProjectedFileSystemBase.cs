@@ -27,8 +27,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
 
     protected ProjectedFileSystemBase(string rootFolder)
     {
-        if (rootFolder is null)
-            throw new ArgumentNullException(nameof(rootFolder));
+        ArgumentNullException.ThrowIfNull(rootFolder);
 
         if (!Environment.Is64BitProcess)
             throw new NotSupportedException("Projected File System is only supported on 64-bit process");

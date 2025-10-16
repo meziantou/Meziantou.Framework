@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.Unicode;
 
 namespace Meziantou.Framework;

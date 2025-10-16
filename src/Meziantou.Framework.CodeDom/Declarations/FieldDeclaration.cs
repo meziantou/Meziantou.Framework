@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class FieldDeclaration : MemberDeclaration, IModifiers
 {
-    private Expression? _initExpression;
-
     public FieldDeclaration()
         : this(name: null, type: null)
     {
@@ -29,8 +27,8 @@ public class FieldDeclaration : MemberDeclaration, IModifiers
 
     public Expression? InitExpression
     {
-        get => _initExpression;
-        set => SetParent(ref _initExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? Type { get; set; }

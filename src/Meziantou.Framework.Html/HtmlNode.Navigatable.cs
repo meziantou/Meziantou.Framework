@@ -61,8 +61,7 @@ partial class HtmlNode : IXPathNavigable
 
     public virtual IEnumerable<HtmlNode> SelectNodes(string xpath, XmlNamespaceManager namespaceManager, HtmlNodeNavigatorOptions options)
     {
-        if (xpath is null)
-            throw new ArgumentNullException(nameof(xpath));
+        ArgumentNullException.ThrowIfNull(xpath);
 
         if ((options & HtmlNodeNavigatorOptions.Dynamic) == HtmlNodeNavigatorOptions.Dynamic)
             return DoSelectNodes(xpath, namespaceManager, options);

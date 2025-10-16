@@ -1,5 +1,4 @@
-﻿using System.Text.Encodings.Web;
-using Xunit;
+using System.Text.Encodings.Web;
 
 namespace Meziantou.Framework.Tests;
 public sealed class MarkdownBuilderTests

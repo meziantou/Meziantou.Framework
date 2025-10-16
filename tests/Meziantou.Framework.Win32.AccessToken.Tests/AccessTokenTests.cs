@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 

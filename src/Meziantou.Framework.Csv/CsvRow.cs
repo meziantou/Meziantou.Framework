@@ -17,12 +17,8 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
-            if (index >= Values.Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Values.Count);
             return Values[index];
         }
     }
@@ -31,8 +27,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (columnName is null)
-                throw new ArgumentNullException(nameof(columnName));
+            ArgumentNullException.ThrowIfNull(columnName);
 
             if (Columns is null)
                 throw new InvalidOperationException("Columns are not parsed");
@@ -49,8 +44,7 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (column is null)
-                throw new ArgumentNullException(nameof(column));
+            ArgumentNullException.ThrowIfNull(column);
 
             return this[column.Index];
         }

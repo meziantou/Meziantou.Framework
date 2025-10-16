@@ -31,8 +31,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     {
         get
         {
-            if (name is null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return _list.Find(n => n.Name.EqualsIgnoreCase(name));
         }
@@ -43,11 +42,9 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
     {
         get
         {
-            if (localName is null)
-                throw new ArgumentNullException(nameof(localName));
+            ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceURI is null)
-                throw new ArgumentNullException(nameof(namespaceURI));
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             return _list.Find(a =>
                 localName.EqualsIgnoreCase(a.LocalName) &&
@@ -71,11 +68,9 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     public void Replace(HtmlNode newChild, HtmlNode oldChild)
     {
-        if (newChild is null)
-            throw new ArgumentNullException(nameof(newChild));
+        ArgumentNullException.ThrowIfNull(newChild);
 
-        if (oldChild is null)
-            throw new ArgumentNullException(nameof(oldChild));
+        ArgumentNullException.ThrowIfNull(oldChild);
 
         if (newChild.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(newChild));
@@ -122,8 +117,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     public void Insert(int index, HtmlNode item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
@@ -154,8 +148,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     public void Add(HtmlNode item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         if (item.ParentNode is not null)
             throw new ArgumentException(message: null, nameof(item));
@@ -181,8 +174,7 @@ sealed class HtmlNodeList : IList<HtmlNode>, INotifyCollectionChanged, IList, IR
 
     public bool Remove(HtmlNode item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         var index = _list.IndexOf(item);
         if (index < 0)

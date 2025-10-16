@@ -12,8 +12,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
 
     public CodeObjectCollection(CodeObject parent)
     {
-        if (parent is null)
-            throw new ArgumentNullException(nameof(parent));
+        ArgumentNullException.ThrowIfNull(parent);
 
         Parent = parent;
     }
@@ -41,8 +40,7 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
     public TCodeObject Add<TCodeObject>(TCodeObject item)
         where TCodeObject : T
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         _list.Add(item);
         item.Parent = Parent;
@@ -105,21 +103,16 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         item.Parent = null;
     }
 
-    [SuppressMessage("Style", "IDE0016:Use 'throw' expression", Justification = "It would change the behavior")]
     public T this[int index]
     {
         get => _list[index];
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             var item = this[index];
             _list[index] = value;
-            if (item is not null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
 
             value.Parent = Parent;
         }

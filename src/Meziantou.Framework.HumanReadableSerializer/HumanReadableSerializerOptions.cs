@@ -15,12 +15,6 @@ public sealed record HumanReadableSerializerOptions
     private readonly List<(Func<Type, bool>? Condition, HumanReadableAttribute Attribute)> _typeAttributes;
     private readonly List<(Func<MemberInfo, bool>? Condition, HumanReadableAttribute Attribute)> _memberAttributes;
     private readonly Dictionary<string, ValueFormatter> _valueFormatters;
-    private bool _includeFields;
-    private HumanReadableIgnoreCondition _defaultIgnoreCondition;
-    private IComparer<string>? _dictionaryKeyOrder;
-    private IComparer<string>? _propertyOrder;
-    private bool _includeObsoleteMembers;
-
     [ThreadStatic]
     private static SerializationContext s_currentContext;
 
@@ -86,51 +80,51 @@ public sealed record HumanReadableSerializerOptions
 
     public IComparer<string>? PropertyOrder
     {
-        get => _propertyOrder;
+        get;
         set
         {
             VerifyMutable();
-            _propertyOrder = value;
+            field = value;
         }
     }
 
     public IComparer<string>? DictionaryKeyOrder
     {
-        get => _dictionaryKeyOrder;
+        get;
         set
         {
             VerifyMutable();
-            _dictionaryKeyOrder = value;
+            field = value;
         }
     }
 
     public bool IncludeFields
     {
-        get => _includeFields;
+        get;
         set
         {
             VerifyMutable();
-            _includeFields = value;
+            field = value;
         }
     }
 
     public bool IncludeObsoleteMembers
     {
-        get => _includeObsoleteMembers;
+        get;
         set
         {
             VerifyMutable();
-            _includeObsoleteMembers = value;
+            field = value;
         }
     }
 
     public HumanReadableIgnoreCondition DefaultIgnoreCondition
     {
-        get => _defaultIgnoreCondition;
+        get;
         set
         {
             VerifyMutable();
-            _defaultIgnoreCondition = value;
+            field = value;
         }
     }
 
@@ -329,11 +323,7 @@ public sealed record HumanReadableSerializerOptions
 
     internal HumanReadableMemberInfo[] GetMembers(Type type)
     {
-#if NET6_0_OR_GREATER
         return _memberInfoCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
-#else
-        return _memberInfoCache.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
-#endif
     }
 
     public ValueFormatter? GetFormatter(string mediaType)

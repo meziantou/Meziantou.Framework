@@ -35,8 +35,7 @@ public sealed class ChangeJournal : IDisposable
 
     public static ChangeJournal Open(DriveInfo driveInfo, bool unprivileged)
     {
-        if (driveInfo is null)
-            throw new ArgumentNullException(nameof(driveInfo));
+        ArgumentNullException.ThrowIfNull(driveInfo);
 
         var volume = VolumeHelper.GetValidVolumePath(driveInfo);
         var fileAccessRights = FILE_ACCESS_RIGHTS.FILE_TRAVERSE;
@@ -117,7 +116,7 @@ public sealed class ChangeJournal : IDisposable
     {
         try
         {
-            var journalData = new Windows.Win32.System.Ioctl.USN_JOURNAL_DATA_V2();
+            var journalData = new USN_JOURNAL_DATA_V2();
             Win32DeviceControl.ControlWithOutput(ChangeJournalHandle, Win32ControlCode.QueryUsnJournal, ref journalData);
 
             return new JournalData(journalData);
@@ -134,7 +133,7 @@ public sealed class ChangeJournal : IDisposable
 
     public void Delete(bool waitForCompletion)
     {
-        var deletionData = new Windows.Win32.System.Ioctl.DELETE_USN_JOURNAL_DATA
+        var deletionData = new DELETE_USN_JOURNAL_DATA
         {
             UsnJournalID = Data.ID,
             DeleteFlags = waitForCompletion ? USN_DELETE_FLAGS.USN_DELETE_FLAG_NOTIFY : USN_DELETE_FLAGS.USN_DELETE_FLAG_DELETE,
@@ -146,7 +145,7 @@ public sealed class ChangeJournal : IDisposable
 
     public void Create(ulong maximumSize, ulong allocationDelta)
     {
-        var creationData = new Windows.Win32.System.Ioctl.CREATE_USN_JOURNAL_DATA
+        var creationData = new CREATE_USN_JOURNAL_DATA
         {
             AllocationDelta = allocationDelta,
             MaximumSize = maximumSize,
@@ -158,7 +157,7 @@ public sealed class ChangeJournal : IDisposable
 
     public void Create(long maximumSize, long allocationDelta)
     {
-        var creationData = new Windows.Win32.System.Ioctl.CREATE_USN_JOURNAL_DATA
+        var creationData = new CREATE_USN_JOURNAL_DATA
         {
             AllocationDelta = (ulong)allocationDelta,
             MaximumSize = (ulong)maximumSize,
@@ -170,7 +169,7 @@ public sealed class ChangeJournal : IDisposable
 
     public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)
     {
-        var trackData = new Windows.Win32.System.Ioctl.USN_TRACK_MODIFIED_RANGES
+        var trackData = new USN_TRACK_MODIFIED_RANGES
         {
             Flags = PInvoke.FLAG_USN_TRACK_MODIFIED_RANGES_ENABLE,
             ChunkSize = chunkSize,

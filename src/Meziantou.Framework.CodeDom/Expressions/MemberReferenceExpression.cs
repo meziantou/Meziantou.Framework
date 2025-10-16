@@ -3,8 +3,6 @@ namespace Meziantou.Framework.CodeDom;
 public class MemberReferenceExpression : Expression
 {
     private MemberDeclaration? _memberDeclaration;
-    private string? _name;
-    private Expression? _targetObject;
 
     public MemberReferenceExpression()
     {
@@ -41,18 +39,18 @@ public class MemberReferenceExpression : Expression
             if (_memberDeclaration is not null)
                 return _memberDeclaration.Name;
 
-            return _name;
+            return field;
         }
         set
         {
-            _name = value;
+            field = value;
             _memberDeclaration = null;
         }
     }
 
     public Expression? TargetObject
     {
-        get => _targetObject;
-        set => SetParent(ref _targetObject, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

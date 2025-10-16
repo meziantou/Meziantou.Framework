@@ -15,7 +15,6 @@ internal
 sealed class HtmlNodeNavigator : XPathNavigator
 {
     private readonly NameTable _nameTable = new();
-    private HtmlNode _currentNode;
     private readonly HtmlNode _rootNode;
 
     [Conditional("HTML_XPATH_TRACE")]
@@ -47,8 +46,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     private HtmlNodeNavigator(HtmlNodeNavigator other)
     {
-        if (other is null)
-            throw new ArgumentNullException(nameof(other));
+        ArgumentNullException.ThrowIfNull(other);
 
         CurrentNode = other.CurrentNode;
         BaseNode = other.BaseNode;
@@ -61,13 +59,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     public HtmlNode CurrentNode
     {
-        get => _currentNode;
+        get;
         set
         {
-            if (_currentNode != value)
+            if (field != value)
             {
-                Trace("old: " + _currentNode + " new: " + value);
-                _currentNode = value;
+                Trace("old: " + field + " new: " + value);
+                field = value;
             }
         }
     }

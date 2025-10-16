@@ -2,9 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class EventFieldDeclaration : MemberDeclaration, IModifiers
 {
-    private StatementCollection? _removeAccessor;
-    private StatementCollection? _addAccessor;
-
     public EventFieldDeclaration()
       : this(name: null, type: null)
     {
@@ -26,14 +23,14 @@ public class EventFieldDeclaration : MemberDeclaration, IModifiers
 
     public StatementCollection? AddAccessor
     {
-        get => _addAccessor;
-        set => SetParent(ref _addAccessor, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public StatementCollection? RemoveAccessor
     {
-        get => _removeAccessor;
-        set => SetParent(ref _removeAccessor, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? PrivateImplementationType { get; set; }

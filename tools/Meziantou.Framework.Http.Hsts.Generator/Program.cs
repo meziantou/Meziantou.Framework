@@ -5,11 +5,9 @@
 #pragma warning disable CA1849 // Call async methods when in an async method
 #pragma warning disable MA0042 // Do not use blocking calls in an async method
 using System.Diagnostics;
-using System.Globalization;
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml;

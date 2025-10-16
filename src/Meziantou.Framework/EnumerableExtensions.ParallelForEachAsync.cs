@@ -24,11 +24,9 @@ public static partial class EnumerableExtensions
 #if NET6_0_OR_GREATER
     public static Task ParallelForEachAsync<TSource>(this IEnumerable<TSource> source, int degreeOfParallelism, Func<TSource, Task> action, CancellationToken cancellationToken)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
+        ArgumentNullException.ThrowIfNull(action);
 
         return Parallel.ForEachAsync(source, new ParallelOptions { MaxDegreeOfParallelism = degreeOfParallelism, CancellationToken = cancellationToken }, (item, ct) => new ValueTask(action(item)));
     }

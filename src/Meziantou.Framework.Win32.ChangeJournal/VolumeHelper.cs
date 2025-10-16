@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Win32;
 
 internal static class VolumeHelper

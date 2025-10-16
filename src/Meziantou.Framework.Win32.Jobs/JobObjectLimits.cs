@@ -7,18 +7,6 @@ namespace Meziantou.Framework.Win32;
 /// </summary>
 public sealed class JobObjectLimits
 {
-    private long _perProcessUserTimeLimit;
-    private long _perJobUserTimeLimit;
-    private nuint _minimumWorkingSetSize;
-    private nuint _maximumWorkingSetSize;
-    private uint _activeProcessLimit;
-    private nuint _affinity;
-    private uint _priorityClass;
-    private uint _schedulingClass;
-    private nuint _processMemoryLimit;
-    private nuint _jobMemoryLimit;
-    private JobObjectLimitFlags _flags;
-
     internal JOB_OBJECT_LIMIT InternalFlags { get; set; }
 
     /// <summary>
@@ -29,11 +17,11 @@ public sealed class JobObjectLimits
     /// </value>
     public JobObjectLimitFlags Flags
     {
-        get => _flags;
+        get;
         set
         {
-            _flags = value;
-            InternalFlags |= (JOB_OBJECT_LIMIT)_flags;
+            field = value;
+            InternalFlags |= (JOB_OBJECT_LIMIT)field;
         }
     }
 
@@ -45,10 +33,10 @@ public sealed class JobObjectLimits
     /// </value>
     public long PerProcessUserTimeLimit
     {
-        get => _perProcessUserTimeLimit;
+        get;
         set
         {
-            _perProcessUserTimeLimit = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PROCESS_TIME;
         }
     }
@@ -61,10 +49,10 @@ public sealed class JobObjectLimits
     /// </value>
     public long PerJobUserTimeLimit
     {
-        get => _perJobUserTimeLimit;
+        get;
         set
         {
-            _perJobUserTimeLimit = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_JOB_TIME;
         }
     }
@@ -77,10 +65,10 @@ public sealed class JobObjectLimits
     /// </value>
     public nuint MinimumWorkingSetSize
     {
-        get => _minimumWorkingSetSize;
+        get;
         set
         {
-            _minimumWorkingSetSize = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_WORKINGSET;
         }
     }
@@ -93,10 +81,10 @@ public sealed class JobObjectLimits
     /// </value>
     public nuint MaximumWorkingSetSize
     {
-        get => _maximumWorkingSetSize;
+        get;
         set
         {
-            _maximumWorkingSetSize = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_WORKINGSET;
         }
     }
@@ -109,10 +97,10 @@ public sealed class JobObjectLimits
     /// </value>
     public uint ActiveProcessLimit
     {
-        get => _activeProcessLimit;
+        get;
         set
         {
-            _activeProcessLimit = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
         }
     }
@@ -125,10 +113,10 @@ public sealed class JobObjectLimits
     /// </value>
     public nuint Affinity
     {
-        get => _affinity;
+        get;
         set
         {
-            _affinity = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_AFFINITY;
         }
     }
@@ -141,10 +129,10 @@ public sealed class JobObjectLimits
     /// </value>
     public uint PriorityClass
     {
-        get => _priorityClass;
+        get;
         set
         {
-            _priorityClass = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PRIORITY_CLASS;
         }
     }
@@ -157,10 +145,10 @@ public sealed class JobObjectLimits
     /// </value>
     public uint SchedulingClass
     {
-        get => _schedulingClass;
+        get;
         set
         {
-            _schedulingClass = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_SCHEDULING_CLASS;
         }
     }
@@ -173,11 +161,11 @@ public sealed class JobObjectLimits
     /// </value>
     public nuint ProcessMemoryLimit
     {
-        get => _processMemoryLimit;
+        get;
         set
         {
 
-            _processMemoryLimit = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_PROCESS_MEMORY;
         }
     }
@@ -190,10 +178,10 @@ public sealed class JobObjectLimits
     /// </value>
     public nuint JobMemoryLimit
     {
-        get => _jobMemoryLimit;
+        get;
         set
         {
-            _jobMemoryLimit = value;
+            field = value;
             InternalFlags |= JOB_OBJECT_LIMIT.JOB_OBJECT_LIMIT_JOB_MEMORY;
         }
     }

@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class AwaitExpression : Expression
 {
-    private Expression? _expression;
-
     public AwaitExpression()
     {
     }
@@ -15,8 +13,8 @@ public class AwaitExpression : Expression
 
     public Expression? Expression
     {
-        get => _expression;
-        set => SetParent(ref _expression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public AwaitExpression ConfigureAwait(bool continueOnCapturedContext)

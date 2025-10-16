@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class MethodInvokeExpression : Expression
 {
-    private Expression? _method;
-
     public MethodInvokeExpression()
         : this(method: null)
     {
@@ -36,8 +34,8 @@ public class MethodInvokeExpression : Expression
 
     public Expression? Method
     {
-        get => _method;
-        set => SetParent(ref _method, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public CodeObjectCollection<Expression> Arguments { get; }

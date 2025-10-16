@@ -1,6 +1,4 @@
 #pragma warning disable MEZ_NET9
-using Xunit;
-
 namespace Meziantou.Framework.Tests;
 
 public class ByteArrayExtensionsTests

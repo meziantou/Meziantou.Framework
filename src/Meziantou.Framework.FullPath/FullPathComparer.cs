@@ -1,5 +1,3 @@
-using System.Runtime.Versioning;
-
 namespace Meziantou.Framework;
 
 public sealed class FullPathComparer : IComparer<FullPath>, IEqualityComparer<FullPath>

@@ -288,8 +288,7 @@ sealed class HtmlElement : HtmlNode
 
     public override void WriteContentTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (!NoChild)
         {
@@ -305,8 +304,7 @@ sealed class HtmlElement : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (IsDocumentType)
         {
@@ -339,8 +337,7 @@ sealed class HtmlElement : HtmlNode
 
     public override void WriteContentTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (Name.EqualsIgnoreCase("!doctype"))
             return;

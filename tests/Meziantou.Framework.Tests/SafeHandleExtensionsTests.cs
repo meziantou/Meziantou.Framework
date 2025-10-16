@@ -1,5 +1,4 @@
 using Microsoft.Win32.SafeHandles;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 public sealed class SafeHandleExtensionsTests

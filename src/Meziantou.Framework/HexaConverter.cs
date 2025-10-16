@@ -271,19 +271,19 @@ public static class HexaConverter
         const int LowerCase = 'a' - 10;
         const int UpperCase = 'A' - 10;
 
-        if (c >= '0' && c <= '9')
+        if (c is >= '0' and <= '9')
         {
             value = c - Digit;
             return true;
         }
 
-        if (c >= 'A' && c <= 'F') // Upper case
+        if (c is >= 'A' and <= 'F')
         {
             value = c - UpperCase;
             return true;
         }
 
-        if (c >= 'a' && c <= 'f') // Upper case
+        if (c is >= 'a' and <= 'f')
         {
             value = c - LowerCase;
             return true;

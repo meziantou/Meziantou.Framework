@@ -16,8 +16,7 @@ static partial class IOUtilities
     /// </returns>
     public static bool IsSharingViolation(IOException exception)
     {
-        if (exception is null)
-            throw new ArgumentNullException(nameof(exception));
+        ArgumentNullException.ThrowIfNull(exception);
 
         var hr = exception.HResult;
         return hr == -2147024864; // 0x80070020 ERROR_SHARING_VIOLATION

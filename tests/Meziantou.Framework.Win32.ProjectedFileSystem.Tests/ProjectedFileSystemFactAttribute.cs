@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Xunit;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 

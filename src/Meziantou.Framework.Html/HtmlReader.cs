@@ -1,6 +1,5 @@
 #nullable disable
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace Meziantou.Framework.Html;
 
@@ -117,12 +116,12 @@ sealed class HtmlReader
 
     public static bool IsAnyQuote(int character)
     {
-        return character == '"' || character == '\'';
+        return character is '"' or '\'';
     }
 
     public static bool IsWhiteSpace(int character)
     {
-        return character == 10 || character == 13 || character == 32 || character == 9;
+        return character is 10 or 13 or 32 or 9;
     }
 
     public HtmlReaderState CreateState(HtmlParserState rawParserState, string rawValue)
@@ -143,7 +142,7 @@ sealed class HtmlReader
                 state.Value.Equals("type", StringComparison.OrdinalIgnoreCase) &&
                 _currentElement.Equals("script", StringComparison.OrdinalIgnoreCase);
         }
-        else if (_attIsScriptType && state.ParserState == HtmlParserState.AttValue && state.Value is not null)
+        else if (_attIsScriptType && state.ParserState is HtmlParserState.AttValue && state.Value is not null)
         {
             _typeAttribute = state.Value;
         }

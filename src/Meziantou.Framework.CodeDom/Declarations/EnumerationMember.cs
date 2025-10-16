@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class EnumerationMember : MemberDeclaration
 {
-    private Expression? _value;
-
     public EnumerationMember()
     {
     }
@@ -21,7 +19,7 @@ public class EnumerationMember : MemberDeclaration
 
     public Expression? Value
     {
-        get => _value;
-        set => SetParent(ref _value, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;

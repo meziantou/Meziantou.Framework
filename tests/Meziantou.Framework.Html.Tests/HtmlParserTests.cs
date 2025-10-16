@@ -1,6 +1,3 @@
-using System.Text;
-using Xunit;
-
 namespace Meziantou.Framework.Html.Tests;
 
 public class HtmlParserTests
@@ -39,7 +36,7 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<div><p>sample1</p><p>sample2</p></div>");
-        document.BaseAddress = new System.Uri("https://www.meziantou.net");
+        document.BaseAddress = new Uri("https://www.meziantou.net");
         var absoluteUrl = document.MakeAbsoluteUrl("test.html");
         Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
     }
@@ -49,7 +46,7 @@ public class HtmlParserTests
     {
         var document = new HtmlDocument();
         document.LoadHtml("<base href='https://www.meziantou.net'>");
-        document.BaseAddress = new System.Uri("https://www.meziantou.net");
+        document.BaseAddress = new Uri("https://www.meziantou.net");
         var absoluteUrl = document.MakeAbsoluteUrl("test.html");
         Assert.Equal("https://www.meziantou.net/test.html", absoluteUrl);
     }

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Meziantou.Framework.Collections;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections;
 

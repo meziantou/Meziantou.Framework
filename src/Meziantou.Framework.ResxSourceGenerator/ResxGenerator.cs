@@ -1,8 +1,6 @@
 #pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Collections.Immutable;
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -61,7 +59,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
     private static bool ParseBoolean(string? value, bool defaultValue)
     {
-        if (bool.TryParse(value, out bool result))
+        if (bool.TryParse(value, out var result))
             return result;
         return defaultValue;
     }

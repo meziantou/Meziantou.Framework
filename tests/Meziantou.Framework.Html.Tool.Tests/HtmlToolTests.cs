@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Html.Tool.Tests;
 
 [Collection("Tool")] // Ensure tests run sequentially

@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Versioning;
 
 /// <summary>
@@ -193,8 +190,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     public static SemanticVersion Parse(string versionString)
     {
-        if (versionString is null)
-            throw new ArgumentNullException(nameof(versionString));
+        ArgumentNullException.ThrowIfNull(versionString);
 
         if (TryParse(versionString, out var result))
             return result;
@@ -225,7 +221,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
         if (versionString.IsEmpty)
             return false;
 
-        var index = versionString[0] == 'v' || versionString[0] == 'V' ? 1 : 0;
+        var index = versionString[0] is 'v' or 'V' ? 1 : 0;
         if (!TryReadNumber(versionString, ref index, out var major))
             return false;
 
@@ -421,11 +417,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 return true;
             }
 
-#if NET7_0_OR_GREATER
             if (str[0] != '0' && int.TryParse(str, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
-#else
-            if (str[0] != '0' && int.TryParse(str.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var n))
-#endif
             {
                 value = n;
                 index = last;
@@ -439,12 +431,12 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
 
     private static bool IsDigit(char c)
     {
-        return c >= '0' && c <= '9';
+        return c is >= '0' and <= '9';
     }
 
     private static bool IsLetter(char c)
     {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        return c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z');
     }
 
     private static bool IsDash(char c)

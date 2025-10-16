@@ -1,5 +1,4 @@
 #pragma warning disable CA1054 // URI-like parameters should not be strings
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 
@@ -87,7 +86,7 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
+        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
     /// <summary>
@@ -148,7 +147,7 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
+        return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
     /// <summary>

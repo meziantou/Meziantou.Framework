@@ -1,7 +1,6 @@
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
 using System.Security.Cryptography;
-using System.Text;
 
 namespace Meziantou.Framework;
 
@@ -72,7 +71,7 @@ public static class DeterministicGuid
 
     public static Guid Create(Guid @namespace, ReadOnlySpan<byte> name, DeterministicGuidVersion version)
     {
-        if (version != DeterministicGuidVersion.Version3 && version != DeterministicGuidVersion.Version5)
+        if (version is not DeterministicGuidVersion.Version3 and not DeterministicGuidVersion.Version5)
             throw new ArgumentOutOfRangeException(nameof(version), $"Version '{version}' is not valid.");
 
         // convert the namespace UUID to network order (step 3)

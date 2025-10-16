@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Scheduling;
 
 public static class RecurrenceRuleHumanizerExtensions

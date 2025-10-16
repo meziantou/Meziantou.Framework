@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class IsInstanceOfTypeExpression : Expression
 {
-    private Expression? _expression;
-
     public IsInstanceOfTypeExpression()
     {
     }
@@ -16,8 +14,8 @@ public class IsInstanceOfTypeExpression : Expression
 
     public Expression? Expression
     {
-        get => _expression;
-        set => SetParent(ref _expression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? Type { get; set; }

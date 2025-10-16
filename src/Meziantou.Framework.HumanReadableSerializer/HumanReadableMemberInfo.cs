@@ -151,7 +151,7 @@ internal sealed class HumanReadableMemberInfo
                 return Activator.CreateInstance(type);
 
             var defaultType = typeof(DefaultProvider<>).MakeGenericType(type);
-            return defaultType.InvokeMember(nameof(DefaultProvider<int>.Value), BindingFlags.Public | BindingFlags.Static | BindingFlags.GetProperty, binder: null, target: null, args: null, culture: null);
+            return defaultType.InvokeMember(nameof(DefaultProvider<>.Value), BindingFlags.Public | BindingFlags.Static | BindingFlags.GetProperty, binder: null, target: null, args: null, culture: null);
         }
 
         return null;

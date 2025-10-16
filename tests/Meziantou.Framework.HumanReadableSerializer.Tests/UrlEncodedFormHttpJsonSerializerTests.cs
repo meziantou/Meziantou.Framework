@@ -1,4 +1,3 @@
-﻿using System.Text;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Xunit;
 

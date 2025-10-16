@@ -1,5 +1,4 @@
 // https://github.com/dotnet/aspnetcore/blob/e43027e506f5b004e3c3609f588c3e31f41aebfc/src/Http/WebUtilities/src/QueryHelpers.cs
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 

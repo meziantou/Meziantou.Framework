@@ -1,4 +1,3 @@
-using System.Text;
 using Meziantou.Framework.Internals;
 using Microsoft.AspNetCore.Http;
 

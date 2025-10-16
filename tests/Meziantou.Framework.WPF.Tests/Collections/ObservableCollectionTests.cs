@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Globalization;
 using Meziantou.Framework.WPF.Collections;
 using Xunit;
 

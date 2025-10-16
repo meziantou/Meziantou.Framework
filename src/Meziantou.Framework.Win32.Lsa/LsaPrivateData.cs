@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Runtime.Versioning;
 using Windows.Win32;
 using Windows.Win32.Foundation;

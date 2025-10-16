@@ -6,7 +6,6 @@ using System.IO.Compression;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
-using System.Text;
 using Meziantou.Framework;
 
 #if NETFRAMEWORK

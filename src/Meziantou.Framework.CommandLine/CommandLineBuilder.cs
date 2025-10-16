@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework;
 
 // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/

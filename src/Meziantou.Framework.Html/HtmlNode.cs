@@ -2,9 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Xml;
 
 namespace Meziantou.Framework.Html;

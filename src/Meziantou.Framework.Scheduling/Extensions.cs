@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Scheduling;
 
 internal static class Extensions

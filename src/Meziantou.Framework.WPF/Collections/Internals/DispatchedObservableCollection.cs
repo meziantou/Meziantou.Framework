@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Globalization;
 using System.Windows.Threading;
 
 namespace Meziantou.Framework.WPF.Collections;

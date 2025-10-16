@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

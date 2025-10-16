@@ -1,10 +1,8 @@
 #pragma warning disable CA1034 // Nested types should not be visible
 #pragma warning disable CA1819 // Properties should not return arrays
 #pragma warning disable MA0101 // String contains an implicit end of line character
-using System;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
 using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;

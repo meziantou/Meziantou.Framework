@@ -1,4 +1,3 @@
-using System.Text;
 using TestUtilities;
 using Xunit;
 

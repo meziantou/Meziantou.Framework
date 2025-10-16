@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;

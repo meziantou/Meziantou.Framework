@@ -1,4 +1,3 @@
-﻿using System.Text;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using TestUtilities;

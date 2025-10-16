@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
 public sealed class CultureSnapshot

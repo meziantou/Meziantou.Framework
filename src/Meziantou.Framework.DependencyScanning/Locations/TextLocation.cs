@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning;

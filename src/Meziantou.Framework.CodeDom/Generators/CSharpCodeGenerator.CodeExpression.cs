@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.CodeDom;
 
 public partial class CSharpCodeGenerator

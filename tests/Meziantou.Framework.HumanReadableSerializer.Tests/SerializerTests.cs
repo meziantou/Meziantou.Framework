@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1720
+#pragma warning disable CA1720
 #pragma warning disable CA1814
 #pragma warning disable CA1822
 #pragma warning disable CA3075
@@ -12,14 +12,12 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
-using System.Globalization;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Numerics;
 using System.Reflection;
-using System.Text;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using NodaTime;

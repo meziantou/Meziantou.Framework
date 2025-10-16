@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Html;
 
 #if HTML_PUBLIC

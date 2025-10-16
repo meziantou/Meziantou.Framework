@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework;
 
 public static class NumberExtensions

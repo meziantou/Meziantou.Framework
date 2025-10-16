@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
 public sealed class Calendar

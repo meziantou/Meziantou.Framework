@@ -1,7 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
-using System.CommandLine.Parsing;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using Meziantou.Framework.Globbing;

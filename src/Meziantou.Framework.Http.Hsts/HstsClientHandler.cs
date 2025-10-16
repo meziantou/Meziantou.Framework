@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Http;
 
 public sealed class HstsClientHandler : DelegatingHandler

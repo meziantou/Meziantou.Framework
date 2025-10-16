@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Microsoft.Win32;

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 

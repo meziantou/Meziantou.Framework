@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 public partial class QuerySyntax

@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.CodeDom;
 
 public abstract class Expression : CodeObject, ICommentable

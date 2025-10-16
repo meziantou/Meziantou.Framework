@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Meziantou.Framework.DependencyScanning.Internals;

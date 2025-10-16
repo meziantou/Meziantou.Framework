@@ -1,4 +1,3 @@
-using System.Text;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;

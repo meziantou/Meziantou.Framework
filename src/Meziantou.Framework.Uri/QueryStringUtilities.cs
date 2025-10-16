@@ -1,5 +1,4 @@
 #pragma warning disable CA1054 // URI-like parameters should not be strings
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 

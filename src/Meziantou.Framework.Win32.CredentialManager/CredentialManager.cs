@@ -280,7 +280,7 @@ public static class CredentialManager
             BOOL save = saveCredential == CredentialSaveOption.Selected;
 
             // Setup the flags and variables
-            uint errorcode = error switch
+            var errorcode = error switch
             {
                 CredentialErrorCode.LogonFailure => (uint)WIN32_ERROR.ERROR_LOGON_FAILURE,
                 _ => 0u

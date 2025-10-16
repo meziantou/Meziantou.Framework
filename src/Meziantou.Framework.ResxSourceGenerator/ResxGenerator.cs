@@ -59,7 +59,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
     private static bool ParseBoolean(string? value, bool defaultValue)
     {
-        if (bool.TryParse(value, out bool result))
+        if (bool.TryParse(value, out var result))
             return result;
         return defaultValue;
     }

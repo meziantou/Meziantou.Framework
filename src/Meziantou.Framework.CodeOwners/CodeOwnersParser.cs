@@ -261,7 +261,7 @@ public static class CodeOwnersParser
             }
 
             var requiredReviewerCountString = StringBuilderPool.ToStringAndReturn(sb);
-            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out int requiredReviewerCount);
+            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
             return isParseValid ? requiredReviewerCount : 1;
         }
 

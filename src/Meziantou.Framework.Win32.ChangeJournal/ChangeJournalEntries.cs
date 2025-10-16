@@ -53,7 +53,7 @@ internal sealed class ChangeJournalEntries : IEnumerable<ChangeJournalEntry>
             var extendOffset = Marshal.OffsetOf<USN_RECORD_V4>(nameof(USN_RECORD_V4.Extents));
 
             var extents = new ChangeJournalEntryExtent[entry.NumberOfExtents];
-            for (int i = 0; i < entry.NumberOfExtents; i++)
+            for (var i = 0; i < entry.NumberOfExtents; i++)
             {
                 var extentPointer = bufferPointer + extendOffset + i * entry.ExtentSize;
                 var extent = Marshal.PtrToStructure<USN_RECORD_EXTENT>(extentPointer);

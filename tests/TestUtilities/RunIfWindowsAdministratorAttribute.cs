@@ -10,7 +10,7 @@ public sealed class RunIfWindowsAdministratorAttribute : BeforeAfterTestAttribut
 {
     public override void Before(MethodInfo methodUnderTest, IXunitTest test)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
             throw new Exception("$XunitDynamicSkip$Run only on Windows");
 
         var identity = WindowsIdentity.GetCurrent();

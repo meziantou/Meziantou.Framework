@@ -59,13 +59,13 @@ public sealed class RunIfAttribute : BeforeAfterTestAttribute
 
         static bool IsValidOperatingSystem(FactOperatingSystem operatingSystems)
         {
-            if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (operatingSystems.HasFlag(FactOperatingSystem.Windows) && OperatingSystem.IsWindows())
                 return true;
 
-            if (operatingSystems.HasFlag(FactOperatingSystem.Linux) && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            if (operatingSystems.HasFlag(FactOperatingSystem.Linux) && OperatingSystem.IsLinux())
                 return true;
 
-            if (operatingSystems.HasFlag(FactOperatingSystem.OSX) && RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (operatingSystems.HasFlag(FactOperatingSystem.OSX) && OperatingSystem.IsMacOS())
                 return true;
 
             return false;

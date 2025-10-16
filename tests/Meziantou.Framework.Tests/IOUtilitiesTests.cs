@@ -13,7 +13,7 @@ public class IOUtilitiesTests
     [InlineData(@"c:\dir1", @"c:\dir1", true)]
     public void IsChildPathOf(string parent, string child, bool expectedResult)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             var result = IOUtilities.IsChildPathOf(parent, child);
             Assert.Equal(expectedResult, result);
@@ -27,7 +27,7 @@ public class IOUtilitiesTests
     [InlineData(@"c:\a\", @"c:\dir1\..\a\", true)]
     public void ArePathEqual(string path1, string path2, bool expectedResult)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             var result = IOUtilities.ArePathEqual(path1, path2);
             Assert.Equal(expectedResult, result);
@@ -42,7 +42,7 @@ public class IOUtilitiesTests
     [InlineData(@"c:\a\b\c\", @"c:\a\dir2", @"..\..\dir2")]
     public void MakeRelativePath(string path1, string path2, string expectedResult)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             var result = IOUtilities.MakeRelativePath(path1, path2);
             Assert.Equal(expectedResult, result);

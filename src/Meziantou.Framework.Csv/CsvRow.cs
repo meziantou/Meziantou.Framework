@@ -17,12 +17,8 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
     {
         get
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
-            if (index >= Values.Count)
-                throw new ArgumentOutOfRangeException(nameof(index));
-
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Values.Count);
             return Values[index];
         }
     }

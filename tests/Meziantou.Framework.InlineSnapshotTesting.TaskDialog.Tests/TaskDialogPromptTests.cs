@@ -1,7 +1,6 @@
-﻿using System.Windows.Automation;
+using System.Windows.Automation;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.TaskDialog.Tests;
 

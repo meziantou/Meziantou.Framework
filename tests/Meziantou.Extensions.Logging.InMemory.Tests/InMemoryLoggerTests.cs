@@ -1,7 +1,6 @@
 #pragma warning disable CA1848 // Use the LoggerMessage delegates
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Xunit;
 
 namespace Meziantou.Extensions.Logging.InMemory.Tests;
 

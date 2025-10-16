@@ -296,9 +296,7 @@ internal sealed partial class SymbolsValidationRule : NuGetPackageValidationRule
                 }
                 finally
                 {
-#pragma warning disable CA1508 // Avoid dead conditional code
                     peReader?.Dispose();
-#pragma warning restore CA1508
 
                     metadataReaderProvider?.Dispose();
                     if (pdbStreamSeekable is not null)

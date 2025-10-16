@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Text;
-using Xunit;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class FileEditorTests

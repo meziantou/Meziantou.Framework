@@ -1,5 +1,4 @@
 using Bunit;
-using Xunit;
 using BunitTestContext = Bunit.TestContext;
 
 namespace Meziantou.AspNetCore.Components.Tests;

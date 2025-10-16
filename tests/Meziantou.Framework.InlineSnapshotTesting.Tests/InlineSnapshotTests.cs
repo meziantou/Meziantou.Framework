@@ -7,7 +7,6 @@ using System.Xml.Linq;
 using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
 using Microsoft.CodeAnalysis;
-using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 
@@ -1044,7 +1043,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
                 <LangVersion>{{languageVersion}}</LangVersion>
                 <Nullable>disable</Nullable>
                 <DebugType>portable</DebugType>
-                <DefineConstants>{{string.Join(";", preprocessorSymbols ?? [])}}</DefineConstants>
+                <DefineConstants>{{string.Join(';', preprocessorSymbols ?? [])}}</DefineConstants>
               </PropertyGroup>
               <ItemGroup>
                 <Reference Include="{{typeof(HumanReadableSerializer).Assembly.Location}}" />
@@ -1164,7 +1163,7 @@ public sealed class InlineSnapshotTests(ITestOutputHelper testOutputHelper)
             packages.AddRange(items.Where(item => item.Parent.Attribute("Condition") is not null));
 #endif
 
-            return string.Join("\n", packages.Select(item => item.ToString()));
+            return string.Join('\n', packages.Select(item => item.ToString()));
         }
 
         async Task ExecuteDotNet(string command, int? expectedExitCode = null)

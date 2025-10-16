@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.HumanReadable.ValueFormatters;
-using Xunit;
+using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 

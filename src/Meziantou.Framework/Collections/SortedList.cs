@@ -332,7 +332,7 @@ public sealed class SortedList<T> : ICollection<T>, ICollection, IReadOnlyList<T
             return false;
         }
 
-        public T Current { get => field!; private set; }
+        public T Current { readonly get => field!; private set; }
 
         readonly object? IEnumerator.Current
         {

@@ -1,6 +1,5 @@
-﻿#pragma warning disable CA2000 // Dispose objects before losing scope
+#pragma warning disable CA2000 // Dispose objects before losing scope
 using System.Net;
-using Xunit;
 
 namespace Meziantou.Framework.Http.Hsts.Tests;
 public sealed class HstsClientHandlerTests

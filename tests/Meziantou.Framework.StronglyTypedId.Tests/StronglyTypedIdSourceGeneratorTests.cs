@@ -7,7 +7,6 @@ using Meziantou.Framework.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.StronglyTypedId.Tests;
 

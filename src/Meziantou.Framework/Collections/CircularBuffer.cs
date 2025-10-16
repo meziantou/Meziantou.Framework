@@ -260,7 +260,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             return false;
         }
 
-        public T Current { get => field!; private set; }
+        public T Current { readonly get => field!; private set; }
 
         readonly object? IEnumerator.Current
         {

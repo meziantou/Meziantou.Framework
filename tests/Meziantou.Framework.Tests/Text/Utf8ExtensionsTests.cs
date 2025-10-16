@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Text.Tests;
 
 public sealed class Utf8ExtensionsTests

@@ -2,7 +2,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

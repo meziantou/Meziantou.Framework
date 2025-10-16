@@ -22,7 +22,6 @@ using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using NodaTime;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed partial class SerializerTests : SerializerTestsBase

@@ -4,7 +4,6 @@ using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 

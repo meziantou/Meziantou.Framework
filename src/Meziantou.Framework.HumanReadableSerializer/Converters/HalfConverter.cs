@@ -1,6 +1,4 @@
 #if NET5_0_OR_GREATER
-using System.Globalization;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class HalfConverter : HumanReadableConverter<Half>

@@ -3,7 +3,6 @@
 #pragma warning disable CA2215
 using System.CommandLine;
 using System.Diagnostics;
-using Xunit;
 
 namespace Meziantou.Framework;
 

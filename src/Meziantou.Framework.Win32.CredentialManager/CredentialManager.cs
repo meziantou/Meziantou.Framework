@@ -329,10 +329,11 @@ public static class CredentialManager
         {
             fixed (char* userPtr = user)
             fixed (char* passwordPtr = password ?? "")
+            fixed (uint* inCredSizePtr = &inCredSize)
             {
                 inCredSize = 1024;
                 inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);
-                if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, ref inCredSize))
+                if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, inCredSizePtr))
                     return;
             }
         }

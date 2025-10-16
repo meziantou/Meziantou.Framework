@@ -64,7 +64,7 @@ internal sealed class ConsoleHelper
         public BroadcastingTextWriter(TextWriter[] writers)
         {
             Debug.Assert(writers is { Length: > 0 });
-            foreach (TextWriter writer in writers)
+            foreach (var writer in writers)
             {
                 ArgumentNullException.ThrowIfNull(writer, nameof(writers));
             }
@@ -83,7 +83,7 @@ internal sealed class ConsoleHelper
             set
             {
                 base.NewLine = value;
-                foreach (TextWriter writer in _writers)
+                foreach (var writer in _writers)
                 {
                     writer.NewLine = value;
                 }
@@ -94,7 +94,7 @@ internal sealed class ConsoleHelper
         {
             if (disposing)
             {
-                foreach (TextWriter writer in _writers)
+                foreach (var writer in _writers)
                 {
                     writer.Dispose();
                 }
@@ -103,7 +103,7 @@ internal sealed class ConsoleHelper
 
         public override async ValueTask DisposeAsync()
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.DisposeAsync().ConfigureAwait(false);
             }
@@ -111,7 +111,7 @@ internal sealed class ConsoleHelper
 
         public override void Flush()
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Flush();
             }
@@ -119,7 +119,7 @@ internal sealed class ConsoleHelper
 
         public override async Task FlushAsync()
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.FlushAsync().ConfigureAwait(false);
             }
@@ -127,7 +127,7 @@ internal sealed class ConsoleHelper
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -135,7 +135,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(bool value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -143,7 +143,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(char value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -151,7 +151,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(char[] buffer, int index, int count)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(buffer, index, count);
             }
@@ -159,7 +159,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(char[]? buffer)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(buffer);
             }
@@ -167,7 +167,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(decimal value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -175,7 +175,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(double value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -183,7 +183,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(int value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -191,7 +191,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(long value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -199,7 +199,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(ReadOnlySpan<char> buffer)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(buffer);
             }
@@ -207,7 +207,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(uint value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -215,7 +215,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(ulong value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -223,7 +223,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(float value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -231,7 +231,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(string? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -239,7 +239,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(object? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -247,7 +247,7 @@ internal sealed class ConsoleHelper
 
         public override void Write(StringBuilder? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(value);
             }
@@ -255,7 +255,7 @@ internal sealed class ConsoleHelper
 
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(format, arg0);
             }
@@ -263,7 +263,7 @@ internal sealed class ConsoleHelper
 
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(format, arg0, arg1);
             }
@@ -271,7 +271,7 @@ internal sealed class ConsoleHelper
 
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(format, arg0, arg1, arg2);
             }
@@ -279,7 +279,7 @@ internal sealed class ConsoleHelper
 
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(format, arg);
             }
@@ -288,7 +288,7 @@ internal sealed class ConsoleHelper
 #if NET9_0_OR_GREATER
         public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.Write(format, arg);
             }
@@ -297,7 +297,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine()
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine();
             }
@@ -305,7 +305,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(char value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -313,7 +313,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(char[]? buffer)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(buffer);
             }
@@ -321,7 +321,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(char[] buffer, int index, int count)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(buffer, index, count);
             }
@@ -329,7 +329,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(ReadOnlySpan<char> buffer)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(buffer);
             }
@@ -337,7 +337,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(bool value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -345,7 +345,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(int value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -353,7 +353,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(uint value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -361,7 +361,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(long value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -369,7 +369,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(ulong value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -377,7 +377,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(float value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -385,7 +385,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(double value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -393,7 +393,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(decimal value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -401,7 +401,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(string? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -409,7 +409,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(StringBuilder? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -417,7 +417,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine(object? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(value);
             }
@@ -425,7 +425,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(format, arg0);
             }
@@ -433,7 +433,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(format, arg0, arg1);
             }
@@ -441,7 +441,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(format, arg0, arg1, arg2);
             }
@@ -449,7 +449,7 @@ internal sealed class ConsoleHelper
 
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(format, arg);
             }
@@ -458,7 +458,7 @@ internal sealed class ConsoleHelper
 #if NET9_0_OR_GREATER
         public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params ReadOnlySpan<object?> arg)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 writer.WriteLine(format, arg);
             }
@@ -466,7 +466,7 @@ internal sealed class ConsoleHelper
 #endif
         public override async Task WriteAsync(char value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteAsync(value).ConfigureAwait(false);
             }
@@ -474,7 +474,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteAsync(string? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteAsync(value).ConfigureAwait(false);
             }
@@ -482,7 +482,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteAsync(value, cancellationToken).ConfigureAwait(false);
             }
@@ -490,7 +490,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteAsync(char[] buffer, int index, int count)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteAsync(buffer, index, count).ConfigureAwait(false);
             }
@@ -498,7 +498,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
@@ -506,7 +506,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync(char value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync(value).ConfigureAwait(false);
             }
@@ -514,7 +514,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync(string? value)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync(value).ConfigureAwait(false);
             }
@@ -522,7 +522,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync(value, cancellationToken).ConfigureAwait(false);
             }
@@ -530,7 +530,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync(char[] buffer, int index, int count)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync(buffer, index, count).ConfigureAwait(false);
             }
@@ -538,7 +538,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync(buffer, cancellationToken).ConfigureAwait(false);
             }
@@ -546,7 +546,7 @@ internal sealed class ConsoleHelper
 
         public override async Task WriteLineAsync()
         {
-            foreach (TextWriter writer in _writers)
+            foreach (var writer in _writers)
             {
                 await writer.WriteLineAsync().ConfigureAwait(false);
             }

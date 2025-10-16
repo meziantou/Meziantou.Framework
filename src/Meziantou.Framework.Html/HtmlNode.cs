@@ -28,7 +28,6 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     private HtmlNodeList _childNodes;
     private HtmlAttributeList _attributes;
     private HtmlNode _parentNode;
-    private HtmlDocument _ownerDocument;
     private string _prefix;
     private string _localName;
     private object _tag;
@@ -303,9 +302,9 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             if (NodeType == HtmlNodeType.Document)
                 return (HtmlDocument)this;
 
-            return _ownerDocument;
+            return field;
         }
-        private set => _ownerDocument = value;
+        private set;
     }
 
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
@@ -390,7 +389,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
             }
 
             _parentNode = value;
-            _ownerDocument = _parentNode?.OwnerDocument;
+            OwnerDocument = _parentNode?.OwnerDocument;
         }
     }
 

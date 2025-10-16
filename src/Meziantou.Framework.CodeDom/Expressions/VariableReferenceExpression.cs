@@ -3,7 +3,6 @@ namespace Meziantou.Framework.CodeDom;
 public class VariableReferenceExpression : Expression
 {
     private VariableDeclarationStatement? _variableDeclarationStatement;
-    private string? _name;
 
     public VariableReferenceExpression()
     {
@@ -26,11 +25,11 @@ public class VariableReferenceExpression : Expression
             if (_variableDeclarationStatement is not null)
                 return _variableDeclarationStatement.Name;
 
-            return _name;
+            return field;
         }
         set
         {
-            _name = value;
+            field = value;
             _variableDeclarationStatement = null;
         }
     }

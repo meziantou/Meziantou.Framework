@@ -12,8 +12,6 @@ public sealed class GenericFormField<TModel>
     private static readonly MethodInfo EventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
 
     private readonly GenericForm<TModel> _form;
-    private RenderFragment? _editorTemplate;
-    private RenderFragment? _fieldValidationTemplate;
 
     public event EventHandler? ValueChanged;
 
@@ -150,8 +148,8 @@ public sealed class GenericFormField<TModel>
     {
         get
         {
-            if (_editorTemplate is not null)
-                return _editorTemplate;
+            if (field is not null)
+                return field;
 
             // () => Owner.Property
             var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
@@ -166,7 +164,7 @@ public sealed class GenericFormField<TModel>
             var changeHandlerLambda = Expression.Lambda(typeof(Action<>).MakeGenericType(PropertyType), body, changeHandlerParameter);
             var changeHandler = method.Invoke(EventCallback.Factory, [this, changeHandlerLambda.Compile()]);
 
-            return _editorTemplate ??= builder =>
+            return field ??= builder =>
             {
                 var (componentType, additonalAttributes) = GetEditorType(Property);
                 builder.OpenComponent(0, componentType);
@@ -189,7 +187,7 @@ public sealed class GenericFormField<TModel>
             if (!_form.EnableFieldValidation)
                 return null;
 
-            return _fieldValidationTemplate ??= builder =>
+            return field ??= builder =>
             {
                 // () => Owner.Property
                 var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);

@@ -14,9 +14,6 @@ public class Template
     private static readonly Lock BuildLock = new();
 
     private MethodInfo? _runMethodInfo;
-    private string? _className;
-    private string? _runMethodName;
-    private string? _writerParameterName;
     private readonly List<TemplateArgument> _arguments = [];
     private readonly List<string> _usings = [];
     private readonly List<string> _referencePaths = [];
@@ -24,22 +21,22 @@ public class Template
     [NotNull]
     private string? ClassName
     {
-        get => string.IsNullOrEmpty(_className) ? DefaultClassName : _className;
-        set => _className = value;
+        get => string.IsNullOrEmpty(field) ? DefaultClassName : field;
+        set;
     }
 
     [NotNull]
     private string? RunMethodName
     {
-        get => string.IsNullOrEmpty(_runMethodName) ? DefaultRunMethodName : _runMethodName;
-        set => _runMethodName = value;
+        get => string.IsNullOrEmpty(field) ? DefaultRunMethodName : field;
+        set;
     }
 
     [NotNull]
     public string? OutputParameterName
     {
-        get => string.IsNullOrEmpty(_writerParameterName) ? DefaultWriterParameterName : _writerParameterName;
-        set => _writerParameterName = value;
+        get => string.IsNullOrEmpty(field) ? DefaultWriterParameterName : field;
+        set;
     }
 
     public Type? OutputType { get; set; }

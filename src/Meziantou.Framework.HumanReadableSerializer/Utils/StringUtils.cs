@@ -37,20 +37,19 @@ internal static class StringUtils
     public ref struct SpanLineEnumerator
     {
         private ReadOnlySpan<char> _remaining;
-        private SpanLine _current;
         private bool _isEnumeratorActive;
 
         internal SpanLineEnumerator(ReadOnlySpan<char> buffer)
         {
             _remaining = buffer;
-            _current = default;
+            Current = default;
             _isEnumeratorActive = true;
         }
 
         /// <summary>
         /// Gets the line at the current position of the enumerator.
         /// </summary>
-        public readonly SpanLine Current => _current;
+        public SpanLine Current { get; private set; }
 
         /// <summary>
         /// Returns this instance as an enumerator.
@@ -72,7 +71,7 @@ internal static class StringUtils
             var idx = IndexOfNewlineChar(_remaining, out var stride);
             if (idx >= 0)
             {
-                _current = new SpanLine(_remaining.Slice(0, idx), _remaining.Slice(idx, stride));
+                Current = new SpanLine(_remaining.Slice(0, idx), _remaining.Slice(idx, stride));
                 _remaining = _remaining.Slice(idx + stride);
             }
             else
@@ -80,7 +79,7 @@ internal static class StringUtils
                 // We've reached EOF, but we still need to return 'true' for this final
                 // iteration so that the caller can query the Current property once more.
 
-                _current = new SpanLine(_remaining, []);
+                Current = new SpanLine(_remaining, []);
                 _remaining = default;
                 _isEnumeratorActive = false;
             }

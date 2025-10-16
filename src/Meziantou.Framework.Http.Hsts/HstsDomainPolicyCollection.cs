@@ -156,14 +156,14 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     private ref struct DomainSplitReverseEnumerator
     {
         private ReadOnlySpan<char> _span;
-        private int _index;
+
         public DomainSplitReverseEnumerator(ReadOnlySpan<char> span)
         {
             _span = span;
-            _index = span.Length;
+            Current = span.Length;
         }
 
-        public int Current => _index == 0 ? 0 : (_index + 1);
+        public int Current { get => field == 0 ? 0 : (field + 1); private set; }
 
         public bool MoveNext()
         {
@@ -173,12 +173,12 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
                 if (_span.IsEmpty)
                     return false;
 
-                _index = 0;
+                Current = 0;
                 _span = ReadOnlySpan<char>.Empty;
                 return true;
             }
 
-            _index = index;
+            Current = index;
             _span = _span.Slice(0, index);
             return true;
         }

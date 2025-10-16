@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class UnaryExpression : Expression
 {
-    private Expression? _expression;
-
     public UnaryExpression()
     {
     }
@@ -18,8 +16,8 @@ public class UnaryExpression : Expression
 
     public Expression? Expression
     {
-        get => _expression;
-        set => SetParent(ref _expression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public static UnaryExpression Not(Expression expression) => new(UnaryOperator.Not, expression);

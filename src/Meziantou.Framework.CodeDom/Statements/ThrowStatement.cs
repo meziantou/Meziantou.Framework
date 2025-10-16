@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class ThrowStatement : Statement
 {
-    private Expression? _expression;
-
     public ThrowStatement()
     {
     }
@@ -15,7 +13,7 @@ public class ThrowStatement : Statement
 
     public Expression? Expression
     {
-        get => _expression;
-        set => SetParent(ref _expression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

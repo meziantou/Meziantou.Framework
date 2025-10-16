@@ -2,7 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class IndentedTextWriter : TextWriter
 {
-    private int _indentLevel;
     private bool _tabsPending;
     public const string DefaultTabString = "    ";
 
@@ -17,7 +16,7 @@ public class IndentedTextWriter : TextWriter
 
     public int Indent
     {
-        get => _indentLevel;
+        get;
         set
         {
             if (value < 0)
@@ -25,7 +24,7 @@ public class IndentedTextWriter : TextWriter
                 value = 0;
             }
 
-            _indentLevel = value;
+            field = value;
         }
     }
 
@@ -70,7 +69,7 @@ public class IndentedTextWriter : TextWriter
         if (!_tabsPending)
             return;
 
-        for (var index = 0; index < _indentLevel; index++)
+        for (var index = 0; index < Indent; index++)
         {
             InnerWriter.Write(TabString);
         }

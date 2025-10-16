@@ -12,12 +12,10 @@ internal
 #endif
 sealed class HtmlDocument : HtmlNode
 {
-    private HtmlOptions _options = new();
     private string _filePath;
     private HtmlElement _baseElement;
     private bool _baseElementSearched;
     private bool? _xhtml;
-    private HtmlAttribute _namespaceXml;
     private Dictionary<string, string> _declaredNamespaces;
     private Dictionary<string, string> _declaredPrefixes;
 
@@ -80,13 +78,13 @@ sealed class HtmlDocument : HtmlNode
 
     public HtmlOptions Options
     {
-        get => _options;
+        get;
         set
         {
-            _options = value ?? throw new ArgumentNullException(nameof(value));
+            field = value ?? throw new ArgumentNullException(nameof(value));
             OnPropertyChanged();
         }
-    }
+    } = new();
 
     public void LoadHtml(string html)
     {
@@ -1147,14 +1145,16 @@ sealed class HtmlDocument : HtmlNode
     {
         get
         {
-            if (_namespaceXml is null)
+            if (field is null)
             {
-                _namespaceXml = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
-                _namespaceXml.Value = XmlNamespaceURI;
+                field = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
+                field.Value = XmlNamespaceURI;
             }
 
-            return _namespaceXml;
+            return field;
         }
+
+        private set;
     }
 
     public HtmlNode ImportNode(HtmlNode node)

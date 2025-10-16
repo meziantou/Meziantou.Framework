@@ -16,12 +16,6 @@ public sealed record InlineSnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
-    private SnapshotUpdateStrategy _snapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
-    private SnapshotSerializer _snapshotSerializer = HumanReadableSnapshotSerializer.DefaultInstance;
-    private SnapshotComparer _snapshotComparer = SnapshotComparer.Default;
-    private AssertionMessageFormatter _errorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
-    private AssertionExceptionBuilder _assertionExceptionCreator = AssertionExceptionBuilder.Default;
-
     public static InlineSnapshotSettings Default { get; set; } = new();
 
     public string? Indentation { get; set; }
@@ -33,58 +27,58 @@ public sealed record InlineSnapshotSettings
 
     public SnapshotUpdateStrategy SnapshotUpdateStrategy
     {
-        get => _snapshotUpdateStrategy;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotUpdateStrategy = value;
+            field = value;
         }
-    }
+    } = SnapshotUpdateStrategy.Default;
 
     public SnapshotSerializer SnapshotSerializer
     {
-        get => _snapshotSerializer;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotSerializer = value;
+            field = value;
         }
-    }
+    } = HumanReadableSnapshotSerializer.DefaultInstance;
 
     public SnapshotComparer SnapshotComparer
     {
-        get => _snapshotComparer;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotComparer = value;
+            field = value;
         }
-    }
+    } = SnapshotComparer.Default;
 
     public AssertionMessageFormatter ErrorMessageFormatter
     {
-        get => _errorMessageFormatter;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _errorMessageFormatter = value;
+            field = value;
         }
-    }
+    } = InlineDiffAssertionMessageFormatter.Instance;
 
     public AssertionExceptionBuilder AssertionExceptionCreator
     {
-        get => _assertionExceptionCreator;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            _assertionExceptionCreator = value;
+            field = value;
         }
-    }
+    } = AssertionExceptionBuilder.Default;
 
     public IList<Scrubber> Scrubbers { get; }
 

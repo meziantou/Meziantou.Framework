@@ -2,9 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class PropertyDeclaration : MemberDeclaration, IModifiers
 {
-    private PropertyAccessorDeclaration? _setter;
-    private PropertyAccessorDeclaration? _getter;
-
     public PropertyDeclaration()
         : this(name: null, type: null)
     {
@@ -22,14 +19,14 @@ public class PropertyDeclaration : MemberDeclaration, IModifiers
 
     public PropertyAccessorDeclaration? Getter
     {
-        get => _getter;
-        set => SetParent(ref _getter, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public PropertyAccessorDeclaration? Setter
     {
-        get => _setter;
-        set => SetParent(ref _setter, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? PrivateImplementationType { get; set; }

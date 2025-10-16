@@ -8,7 +8,7 @@ internal static class Symlink
 {
     public static bool IsSymbolicLink(string path)
     {
-        if (IsWindows())
+        if (OperatingSystem.IsWindows())
         {
             return WindowsSymlink.IsSymbolicLink(path);
         }
@@ -26,7 +26,7 @@ internal static class Symlink
 
     public static bool TryGetSymLinkTarget(string path, [NotNullWhen(true)] out string? target)
     {
-        if (IsWindows())
+        if (OperatingSystem.IsWindows())
         {
             return WindowsSymlink.TryGetSymLinkTarget(path, out target);
         }
@@ -40,19 +40,6 @@ internal static class Symlink
 #error Platform not supported
 #endif
         }
-    }
-
-    private static bool IsWindows()
-    {
-#if NET5_0_OR_GREATER
-        return OperatingSystem.IsWindows();
-#elif NETCOREAPP3_1 || NETSTANDARD2_0
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET472
-        return Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-#error Platform notsupported
-#endif
     }
 
 #if NETCOREAPP3_1_OR_GREATER
@@ -168,13 +155,7 @@ internal static class Symlink
                     if (bytesRead >= bufferSize)
                     {
                         // got entire payload with valid header.
-#if NETSTANDARD2_0 || NET472
-                        var target = Encoding.Unicode.GetString(validBuffer.Slice(sizeHeader + header.SubstituteNameOffset, header.SubstituteNameLength).ToArray());
-#elif NETCOREAPP3_1_OR_GREATER
                         var target = Encoding.Unicode.GetString(validBuffer.Slice(sizeHeader + header.SubstituteNameOffset, header.SubstituteNameLength));
-#else
-#error Platform not supported
-#endif
                         if ((header.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
                         {
                             if (PathInternal.IsExtended(path))
@@ -182,23 +163,11 @@ internal static class Symlink
                                 var rootPath = Path.GetDirectoryName(path[4..]);
                                 if (rootPath is not null)
                                 {
-#if NETSTANDARD2_0 || NET472
-                                    target = path[..4] + Path.GetFullPath(Path.Combine(rootPath, target));
-#elif NETCOREAPP3_1_OR_GREATER
                                     target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(Path.Combine(rootPath, target)));
-#else
-#error Platform not supported
-#endif
                                 }
                                 else
                                 {
-#if NETSTANDARD2_0 || NET472
-                                    target = path[..4] + Path.GetFullPath(target);
-#elif NETCOREAPP3_1_OR_GREATER
                                     target = string.Concat(path.AsSpan(0, 4), Path.GetFullPath(target));
-#else
-#error Platform not supported
-#endif
                                 }
                             }
                             else

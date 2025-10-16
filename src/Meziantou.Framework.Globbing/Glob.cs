@@ -88,7 +88,7 @@ public sealed class Glob : IGlobEvaluatable
         if (TryParse(pattern, options, out var result, out var errorMessage))
             return result;
 
-        throw new ArgumentException($"The pattern '{pattern}' is invalid: {errorMessage}", nameof(pattern));
+        throw new ArgumentException($"The pattern '{pattern.ToString()}' is invalid: {errorMessage}", nameof(pattern));
     }
 
     public static bool TryParse(string pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result)

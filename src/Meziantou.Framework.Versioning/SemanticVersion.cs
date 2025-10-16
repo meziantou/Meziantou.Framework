@@ -417,11 +417,7 @@ public sealed class SemanticVersion : IFormattable, IComparable, IComparable<Sem
                 return true;
             }
 
-#if NET7_0_OR_GREATER
             if (str[0] != '0' && int.TryParse(str, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
-#else
-            if (str[0] != '0' && int.TryParse(str.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var n))
-#endif
             {
                 value = n;
                 index = last;

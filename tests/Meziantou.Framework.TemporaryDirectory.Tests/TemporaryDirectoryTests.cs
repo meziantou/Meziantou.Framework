@@ -56,14 +56,7 @@ public class TemporaryDirectoryTests
         await using (var dir = TemporaryDirectory.Create())
         {
             path = dir.FullPath;
-
-#if NET461 || NET462 || NET472
-            File.WriteAllText(dir.GetFullPath("a.txt"), "content");
-#elif NETCOREAPP3_1_OR_GREATER
-            await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
-#else
-#error Platform not supported
-#endif
+            await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content".AsMemory());
         }
 
         Assert.False(Directory.Exists(path));

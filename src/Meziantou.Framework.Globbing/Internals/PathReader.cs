@@ -1,10 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-#if NET472
-using Path = System.IO.Path;
-#endif
-
 namespace Meziantou.Framework.Globbing.Internals;
 
 [StructLayout(LayoutKind.Auto)]

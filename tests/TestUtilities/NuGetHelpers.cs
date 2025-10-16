@@ -24,12 +24,7 @@ public static class NuGetHelpers
     public static async Task<string[]> GetNuGetReferences(string packageName, string version, params string[] paths)
     {
         var bytes = Encoding.UTF8.GetBytes(packageName + '@' + version + ':' + string.Join(',', paths));
-#if NET8_0_OR_GREATER
         var hash = SHA256.HashData(bytes);
-#else
-        using var sha256 = SHA256.Create();
-        var hash = sha256.ComputeHash(bytes);
-#endif
         var key = Convert.ToBase64String(hash).Replace('/', '_');
         var task = NuGetPackagesCache.GetOrAdd(key, _ => new Lazy<Task<string[]>>(Download));
         return await task.Value.ConfigureAwait(false);

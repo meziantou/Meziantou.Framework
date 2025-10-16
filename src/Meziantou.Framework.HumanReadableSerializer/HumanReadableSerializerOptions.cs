@@ -323,11 +323,7 @@ public sealed record HumanReadableSerializerOptions
 
     internal HumanReadableMemberInfo[] GetMembers(Type type)
     {
-#if NET6_0_OR_GREATER
         return _memberInfoCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
-#else
-        return _memberInfoCache.GetOrAdd(type, type => HumanReadableMemberInfo.Get(type, this));
-#endif
     }
 
     public ValueFormatter? GetFormatter(string mediaType)

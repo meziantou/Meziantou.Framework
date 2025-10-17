@@ -21,14 +21,6 @@ public sealed class ResxGenerator : IIncrementalGenerator
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    private static readonly DiagnosticDescriptor InvalidPropertiesForNamespace = new(
-        id: "MFRG0002",
-        title: "Couldn't compute namespace",
-        messageFormat: "Couldn't compute namespace for file '{0}'",
-        category: "ResxGenerator",
-        DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
     private static readonly DiagnosticDescriptor InvalidPropertiesForResourceName = new(
         id: "MFRG0003",
         title: "Couldn't compute resource name",
@@ -89,17 +81,12 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
-            var ns = namespaceConfiguration ?? defaultNamespace;
+            var ns = namespaceConfiguration ?? defaultNamespace ?? rootNamespace;
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
             var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroup.Key));
             var visibility = string.Equals(visibilityConfiguration, "public", StringComparison.OrdinalIgnoreCase) ? "public" : "internal";
             var generateKeyNames = ParseBoolean(generateKeyNamesConfiguration, defaultValue: true);
             var generateResources = ParseBoolean(generateResourcesConfiguration, defaultValue: true);
-
-            if (ns is null)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroup.First().Path));
-            }
 
             if (resourceName is null)
             {

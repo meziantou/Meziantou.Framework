@@ -70,6 +70,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var rootNamespaceConfiguration = GetMetadataValue(context, options, "RootNamespace", resxGroup);
             var projectDirConfiguration = GetMetadataValue(context, options, "ProjectDir", resxGroup);
             var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroup);
+            var defaultResourceNameConfiguration = GetMetadataValue(context, options, "DefaultResourceName", globalName: null, resxGroup);
             var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroup);
             var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroup);
             var visibilityConfiguration = GetMetadataValue(context, options, "Visibility", globalName: "DefaultResourcesVisibility", resxGroup);
@@ -78,7 +79,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
             var projectDir = projectDirConfiguration ?? assemblyName ?? "";
-            var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
+            var defaultResourceName = defaultResourceNameConfiguration ?? ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
             var ns = namespaceConfiguration ?? defaultNamespace ?? rootNamespace;
@@ -102,6 +103,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // RootNamespace (metadata): {rootNamespaceConfiguration}
 // ProjectDir (metadata): {projectDirConfiguration}
 // Namespace / DefaultResourcesNamespace (metadata): {namespaceConfiguration}
+// DefaultResourceName (metadata): {defaultResourceNameConfiguration}
 // ResourceName (metadata): {resourceNameConfiguration}
 // ClassName (metadata): {classNameConfiguration}
 // Visibility (metadata): {visibilityConfiguration}
@@ -425,7 +427,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             return rootNamespace + '.' + relativePath.Replace('/', '.').Replace('\\', '.');
         }
 
-        return null;
+        return Path.GetFileNameWithoutExtension(resourcePath);
     }
 
     private static string? ComputeNamespace(string rootNamespace, string projectDir, string resourcePath)

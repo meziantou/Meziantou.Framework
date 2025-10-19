@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>RecurrenceRule parser and evaluator (RFC5545)</Description>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

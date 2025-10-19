@@ -74,8 +74,8 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroup);
             var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroup);
             var visibilityConfiguration = GetMetadataValue(context, options, "Visibility", globalName: "DefaultResourcesVisibility", resxGroup);
-            var generateKeyNamesConfiguration = GetMetadataValue(context, options, "GenerateKeyNamesType", globalName: null, resxGroup);
-            var generateResourcesConfiguration = GetMetadataValue(context, options, "GenerateResourcesType", globalName: null, resxGroup);
+            var generateKeyNamesTypeConfiguration = GetMetadataValue(context, options, "GenerateKeyNamesType", globalName: null, resxGroup);
+            var generateResourcesTypeConfiguration = GetMetadataValue(context, options, "GenerateResourcesType", globalName: null, resxGroup);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
             var projectDir = projectDirConfiguration ?? assemblyName ?? "";
@@ -86,10 +86,10 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
             var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroup.Key));
             var visibility = string.Equals(visibilityConfiguration, "public", StringComparison.OrdinalIgnoreCase) ? "public" : "internal";
-            var generateKeyNames = ParseBoolean(generateKeyNamesConfiguration, defaultValue: true);
-            var generateResources = ParseBoolean(generateResourcesConfiguration, defaultValue: true);
+            var generateKeyNamesType = ParseBoolean(generateKeyNamesTypeConfiguration, defaultValue: true);
+            var generateResourcesType = ParseBoolean(generateResourcesTypeConfiguration, defaultValue: true);
 
-            if (resourceName is null)
+            if (resourceName is null && generateResourcesType)
             {
                 context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroup.First().Path));
             }
@@ -107,8 +107,8 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // ResourceName (metadata): {resourceNameConfiguration}
 // ClassName (metadata): {classNameConfiguration}
 // Visibility (metadata): {visibilityConfiguration}
-// GenerateKeyNames (metadata): {generateKeyNamesConfiguration}
-// GenerateResources (metadata): {generateResourcesConfiguration}
+// GenerateKeyNames (metadata): {generateKeyNamesTypeConfiguration}
+// GenerateResources (metadata): {generateResourcesTypeConfiguration}
 // AssemblyName: {assemblyName}
 // RootNamespace (computed): {rootNamespace}
 // ProjectDir (computed): {projectDir}
@@ -118,20 +118,19 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // ResourceName: {resourceName}
 // ClassName: {className}
 // visibility: {visibility}
-// generateKeyNames: {generateKeyNames}
-// generateResources: {generateResources}
+// generateKeyNames: {generateKeyNamesType}
+// generateResources: {generateResourcesType}
 ";
-
-            if (resourceName is not null && entries is not null)
+            if (entries is not null)
             {
-                content += GenerateCode(ns, className, resourceName, visibility, generateResources, generateKeyNames, entries, supportNullableReferenceTypes);
+                content += GenerateCode(ns, className, resourceName, visibility, generateResourcesType, generateKeyNamesType, entries, supportNullableReferenceTypes);
             }
 
             context.AddSource($"{Path.GetFileName(resxGroup.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
         }
     }
 
-    private static string GenerateCode(string? ns, string className, string resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
+    private static string GenerateCode(string? ns, string className, string? resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
     {
         var sb = new StringBuilder();
         sb.AppendLine();
@@ -143,7 +142,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             sb.AppendLine("{");
         }
 
-        if (generateResourcesType)
+        if (generateResourcesType && resourceName is not null)
         {
             sb.AppendLine($"    {visibility} partial class " + className);
             sb.AppendLine("    {");

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.Versioning;
 
@@ -11,17 +12,22 @@ namespace Meziantou.Framework;
 public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
-    private readonly int _sessionId = Process.GetCurrentProcess().SessionId;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    private string PipeName => $"Local\\Pipe_{applicationId}_{_sessionId}";
+    private string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
 
     public bool StartServer { get; set; } = true;
 
     public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
+
+    private static int GetSessionId()
+    {
+        using var currentProcess = Process.GetCurrentProcess();
+        return currentProcess.SessionId;
+    }
 
     public bool StartApplication()
     {

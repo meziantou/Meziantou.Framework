@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Templating.Tests;
 
 public class TemplateTest

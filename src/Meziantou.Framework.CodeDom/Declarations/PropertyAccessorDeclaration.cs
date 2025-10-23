@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class PropertyAccessorDeclaration : CodeObject
 {
-    private StatementCollection? _statements;
-
     public PropertyAccessorDeclaration()
         : this(statements: null)
     {
@@ -20,8 +18,8 @@ public class PropertyAccessorDeclaration : CodeObject
 
     public StatementCollection? Statements
     {
-        get => _statements;
-        set => SetParent(ref _statements, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public static implicit operator PropertyAccessorDeclaration(StatementCollection statements) => new(statements);

@@ -1,6 +1,4 @@
 #if NET6_0_OR_GREATER
-using System.Globalization;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class TimeOnlyConverter : HumanReadableConverter<TimeOnly>

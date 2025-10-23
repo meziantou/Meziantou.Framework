@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.Globalization;
 using System.Reflection;
 
 namespace Meziantou.Framework;

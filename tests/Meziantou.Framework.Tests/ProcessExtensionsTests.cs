@@ -1,9 +1,7 @@
 #pragma warning disable MEZ_NETCORE3_1
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 
@@ -15,7 +13,7 @@ public class ProcessExtensionsTests
     {
         static Task<ProcessResult> CreateProcess()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
                 return ProcessExtensions.RunAsTaskAsync("cmd", "/C echo test", CancellationToken.None);
 
             return ProcessExtensions.RunAsTaskAsync("echo", "test", CancellationToken.None);
@@ -32,7 +30,7 @@ public class ProcessExtensionsTests
     public async Task RunAsTask_RedirectOutput()
     {
         ProcessStartInfo psi;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             psi = new ProcessStartInfo
             {
@@ -60,7 +58,7 @@ public class ProcessExtensionsTests
     public async Task RunAsTask_DoNotRedirectOutput()
     {
         ProcessStartInfo psi;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             psi = new ProcessStartInfo
             {
@@ -96,7 +94,7 @@ public class ProcessExtensionsTests
 
         using var cts = new CancellationTokenSource();
         Task task;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             task = ProcessExtensions.RunAsTaskAsync("ping.exe", "127.0.0.1 -n 10", cts.Token);
         }

@@ -20,7 +20,7 @@ internal static partial class WindowsHeap
         // use-after-free elsewhere in the application accidentally pointing
         // to an address used by a shrouded buffer instance.
 
-        IntPtr hHeap = (IntPtr.Size == 8) ? Interop.HeapCreate(0, 0, 0) : Interop.GetProcessHeap();
+        var hHeap = (IntPtr.Size == 8) ? Interop.HeapCreate(0, 0, 0) : Interop.GetProcessHeap();
         if (hHeap == IntPtr.Zero)
         {
             Marshal.ThrowExceptionForHR(Marshal.GetHRForLastWin32Error());

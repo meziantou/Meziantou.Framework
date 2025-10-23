@@ -14,7 +14,7 @@ public class StatementCollection : CodeObjectCollection<Statement>
     public new TCodeObject Add<TCodeObject>(TCodeObject item)
         where TCodeObject : Statement
     {
-        return base.Add<TCodeObject>(item);
+        return base.Add(item);
     }
 
     public Expression Add(Expression expression)

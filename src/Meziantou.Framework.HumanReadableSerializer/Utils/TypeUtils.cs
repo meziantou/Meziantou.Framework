@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Meziantou.Framework.HumanReadable.Utils;
 internal static class TypeUtils

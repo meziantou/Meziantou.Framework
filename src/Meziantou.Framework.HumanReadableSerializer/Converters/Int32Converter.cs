@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class Int32Converter : HumanReadableConverter<int>

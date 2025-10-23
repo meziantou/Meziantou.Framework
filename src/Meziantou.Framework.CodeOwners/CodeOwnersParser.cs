@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Meziantou.Framework.CodeOwners;
@@ -129,7 +127,7 @@ public static class CodeOwnersParser
             while (!_lexer.EndOfFile)
             {
                 var c = _lexer.Peek();
-                if (c is null || c == '\r' || c == '\n')
+                if (c is null or '\r' or '\n')
                     return StringBuilderPool.ToStringAndReturn(sb);
 
                 c = _lexer.Consume();
@@ -193,7 +191,7 @@ public static class CodeOwnersParser
                     }
 
                     c = _lexer.Consume();
-                    if (c == ' ' || c == '\t')
+                    if (c is ' ' or '\t')
                     {
                         AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
                         foundMember = true;
@@ -263,7 +261,7 @@ public static class CodeOwnersParser
             }
 
             var requiredReviewerCountString = StringBuilderPool.ToStringAndReturn(sb);
-            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out int requiredReviewerCount);
+            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
             return isParseValid ? requiredReviewerCount : 1;
         }
 
@@ -398,7 +396,7 @@ public static class CodeOwnersParser
             while (_currentIndex + 1 < _content.Length)
             {
                 var next = _content[_currentIndex + 1];
-                if (next != ' ' && next != '\t')
+                if (next is not ' ' and not '\t')
                     return;
 
                 _currentIndex++;

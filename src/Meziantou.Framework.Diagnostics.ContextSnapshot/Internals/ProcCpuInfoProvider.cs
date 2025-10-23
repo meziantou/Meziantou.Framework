@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 /// <summary>

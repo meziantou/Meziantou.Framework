@@ -1,6 +1,4 @@
 #if NET7_0_OR_GREATER
-using System.Globalization;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class UInt128Converter : HumanReadableConverter<UInt128>

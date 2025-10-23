@@ -13,8 +13,7 @@ public static class ConvertUtilities
 
     public static bool TryChangeType<T>(this IConverter converter, object? input, IFormatProvider? provider, [MaybeNullWhen(returnValue: false)] out T value)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         var b = converter.TryChangeType(input, typeof(T), provider, out var v);
         if (!b)
@@ -23,7 +22,7 @@ public static class ConvertUtilities
             {
                 if (typeof(T).IsValueType)
                 {
-                    value = (T)Activator.CreateInstance(typeof(T))!;
+                    value = Activator.CreateInstance<T>()!;
                 }
                 else
                 {
@@ -49,8 +48,7 @@ public static class ConvertUtilities
 
     public static bool TryChangeType<T>(this IConverter converter, object? input, [MaybeNullWhen(returnValue: false)] out T value)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         return TryChangeType(converter, input, provider: null, out value);
     }
@@ -62,8 +60,7 @@ public static class ConvertUtilities
 
     public static bool TryChangeType(this IConverter converter, object? input, Type conversionType, out object? value)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         return TryChangeType(converter, input, conversionType, provider: null, out value);
     }
@@ -75,8 +72,7 @@ public static class ConvertUtilities
 
     public static bool TryChangeType(this IConverter converter, object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         return converter.TryChangeType(input, conversionType, provider, out value);
     }
@@ -88,11 +84,9 @@ public static class ConvertUtilities
 
     public static object? ChangeType(this IConverter converter, object? input, Type conversionType)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
-        if (conversionType is null)
-            throw new ArgumentNullException(nameof(conversionType));
+        ArgumentNullException.ThrowIfNull(conversionType);
 
         return ChangeType(converter, input, conversionType, defaultValue: null, provider: null);
     }
@@ -104,11 +98,9 @@ public static class ConvertUtilities
 
     public static object? ChangeType(this IConverter converter, object? input, Type conversionType, object? defaultValue)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
-        if (conversionType is null)
-            throw new ArgumentNullException(nameof(conversionType));
+        ArgumentNullException.ThrowIfNull(conversionType);
 
         return ChangeType(converter, input, conversionType, defaultValue, provider: null);
     }
@@ -120,11 +112,9 @@ public static class ConvertUtilities
 
     public static object? ChangeType(this IConverter converter, object? input, Type conversionType, object? defaultValue, IFormatProvider? provider)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
-        if (conversionType is null)
-            throw new ArgumentNullException(nameof(conversionType));
+        ArgumentNullException.ThrowIfNull(conversionType);
 
         if (defaultValue is null && conversionType.IsValueType)
         {
@@ -144,8 +134,7 @@ public static class ConvertUtilities
 
     public static T? ChangeType<T>(this IConverter converter, object? input)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         return ChangeType(converter, input, default(T)!);
     }
@@ -157,8 +146,7 @@ public static class ConvertUtilities
 
     public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         return ChangeType(converter, input, defaultValue, provider: null);
     }
@@ -170,8 +158,7 @@ public static class ConvertUtilities
 
     public static T? ChangeType<T>(this IConverter converter, object? input, T defaultValue, IFormatProvider? provider)
     {
-        if (converter is null)
-            throw new ArgumentNullException(nameof(converter));
+        ArgumentNullException.ThrowIfNull(converter);
 
         if (TryChangeType(converter, input, provider, out T? value))
             return value;

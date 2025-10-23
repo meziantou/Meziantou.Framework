@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -43,7 +42,7 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     public unsafe static FileIdentifier FromFile(SafeFileHandle handle)
     {
         var result = new FILE_ID_INFO();
-        FILE_ID_INFO* pointer = &result;
+        var pointer = &result;
         if (PInvoke.GetFileInformationByHandleEx(handle, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, pointer, (uint)sizeof(FILE_ID_INFO)))
         {
             return new FileIdentifier(result.FileId);

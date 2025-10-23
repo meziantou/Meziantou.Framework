@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.CodeOwners.Tests;
 
 public sealed class CodeOwnersParserTests

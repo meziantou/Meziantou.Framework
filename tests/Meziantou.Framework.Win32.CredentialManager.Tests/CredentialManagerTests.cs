@@ -1,5 +1,4 @@
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Win32.Tests;
 

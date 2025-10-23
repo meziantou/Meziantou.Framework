@@ -50,7 +50,7 @@ public sealed class JobObject : IDisposable
         {
             bInheritHandle = inheritHandle,
             lpSecurityDescriptor = IntPtr.Zero.ToPointer(),
-            nLength = (uint)Marshal.SizeOf(typeof(Windows.Win32.Security.SECURITY_ATTRIBUTES)),
+            nLength = (uint)Marshal.SizeOf<Windows.Win32.Security.SECURITY_ATTRIBUTES>(),
         };
 
         _jobHandle = Windows.Win32.PInvoke.CreateJobObject(atts, name);

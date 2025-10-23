@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class VariableDeclarationStatement : Statement
 {
-    private Expression? _initExpression;
-
     public VariableDeclarationStatement()
     {
     }
@@ -21,8 +19,8 @@ public class VariableDeclarationStatement : Statement
 
     public Expression? InitExpression
     {
-        get => _initExpression;
-        set => SetParent(ref _initExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }
 

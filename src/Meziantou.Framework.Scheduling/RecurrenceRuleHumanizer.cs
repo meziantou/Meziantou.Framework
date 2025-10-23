@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
 public abstract class RecurrenceRuleHumanizer
@@ -40,8 +37,7 @@ public abstract class RecurrenceRuleHumanizer
 
     public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         cultureInfo ??= CultureInfo.CurrentUICulture;
 

@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework;
 
 #if PUBLIC_STRING_EXTENSIONS

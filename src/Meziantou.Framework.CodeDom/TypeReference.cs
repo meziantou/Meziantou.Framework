@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.CodeDom;
 
 public class TypeReference

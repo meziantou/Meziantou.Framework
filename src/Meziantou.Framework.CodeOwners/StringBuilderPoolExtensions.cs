@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Meziantou.Framework.CodeOwners;

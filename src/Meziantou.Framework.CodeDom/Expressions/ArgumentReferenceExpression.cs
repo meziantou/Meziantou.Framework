@@ -3,7 +3,6 @@ namespace Meziantou.Framework.CodeDom;
 public class ArgumentReferenceExpression : Expression
 {
     private MethodArgumentDeclaration? _argumentDeclaration;
-    private string? _name;
 
     public ArgumentReferenceExpression()
     {
@@ -26,11 +25,11 @@ public class ArgumentReferenceExpression : Expression
             if (_argumentDeclaration is not null)
                 return _argumentDeclaration.Name;
 
-            return _name;
+            return field;
         }
         set
         {
-            _name = value;
+            field = value;
             _argumentDeclaration = null;
         }
     }

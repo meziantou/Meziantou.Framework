@@ -5,8 +5,7 @@ public sealed class HumanReadableConverterAttribute : HumanReadableAttribute
 {
     public HumanReadableConverterAttribute(HumanReadableConverter converterInstance)
     {
-        if (converterInstance is null)
-            throw new ArgumentNullException(nameof(converterInstance));
+        ArgumentNullException.ThrowIfNull(converterInstance);
 
         ConverterType = converterInstance.GetType();
         ConverterInstance = converterInstance;

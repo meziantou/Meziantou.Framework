@@ -1,5 +1,4 @@
 #nullable disable
-using System.Globalization;
 using System.Xml;
 
 namespace Meziantou.Framework.Html;

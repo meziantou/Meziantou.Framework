@@ -41,7 +41,7 @@ public readonly struct CodeOwnersSection : IEquatable<CodeOwnersSection>
 
         if (HasDefaultOwners)
         {
-            result += " " + string.Join(" ", DefaultOwners);
+            result += " " + string.Join(' ', DefaultOwners);
         }
 
         return result;

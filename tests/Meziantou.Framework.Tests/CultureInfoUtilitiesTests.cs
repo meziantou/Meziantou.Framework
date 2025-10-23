@@ -1,6 +1,4 @@
-using System.Globalization;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

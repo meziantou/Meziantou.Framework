@@ -5,10 +5,9 @@ namespace Meziantou.Extensions.Logging.InMemory;
 public sealed class InMemoryLoggerProvider : ILoggerProvider
 {
     private readonly IExternalScopeProvider _scopeProvider;
-    private readonly InMemoryLogCollection _logs;
     private readonly TimeProvider _timeProvider;
 
-    public InMemoryLogCollection Logs => _logs;
+    public InMemoryLogCollection Logs { get; }
 
     public InMemoryLoggerProvider()
         : this(logs: null, scopeProvider: null)
@@ -27,7 +26,7 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
 
     public InMemoryLoggerProvider(InMemoryLogCollection? logs, IExternalScopeProvider? scopeProvider)
     {
-        _logs = logs ?? [];
+        Logs = logs ?? [];
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
         _timeProvider = TimeProvider.System;
     }
@@ -50,18 +49,18 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
     public InMemoryLoggerProvider(TimeProvider? timeProvider, InMemoryLogCollection? logs, IExternalScopeProvider? scopeProvider)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _logs = logs ?? [];
+        Logs = logs ?? [];
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
     }
 
     public ILogger CreateLogger(string categoryName)
     {
-        return new InMemoryLogger(categoryName, _logs, _scopeProvider, _timeProvider);
+        return new InMemoryLogger(categoryName, Logs, _scopeProvider, _timeProvider);
     }
 
     public ILogger<T> CreateLogger<T>()
     {
-        return new InMemoryLogger<T>(_logs, _scopeProvider, _timeProvider);
+        return new InMemoryLogger<T>(Logs, _scopeProvider, _timeProvider);
     }
 
     public void Dispose()

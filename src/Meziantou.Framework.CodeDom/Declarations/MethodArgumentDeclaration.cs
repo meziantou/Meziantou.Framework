@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
 {
-    private Expression? _defaultValue;
-
     public MethodArgumentDeclaration()
         : this(type: null, name: null)
     {
@@ -28,8 +26,8 @@ public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, 
 
     public Expression? DefaultValue
     {
-        get => _defaultValue;
-        set => SetParent(ref _defaultValue, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public Direction Direction { get; set; }

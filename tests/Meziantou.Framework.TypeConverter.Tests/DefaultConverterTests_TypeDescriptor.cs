@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;

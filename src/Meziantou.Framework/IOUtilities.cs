@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework;
 
 #if PUBLIC_IO_UTILITIES
@@ -23,8 +20,7 @@ static partial class IOUtilities
     /// <param name="filePath">The file path. Note this is not to be confused with the directory path. May not be null.</param>
     public static void PathCreateDirectory(string filePath)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         if (!Path.IsPathRooted(filePath))
         {
@@ -44,8 +40,7 @@ static partial class IOUtilities
     /// <param name="path">The file path. May not be null.</param>
     public static void PathUnprotect(string path)
     {
-        if (path is null)
-            throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(path);
 
         var fi = new FileInfo(path);
         if (fi.Exists)
@@ -60,10 +55,8 @@ static partial class IOUtilities
     [Obsolete("Use FullPath struct instead")]
     public static bool ArePathEqual(string path1, string path2)
     {
-        if (path1 is null)
-            throw new ArgumentNullException(nameof(path1));
-        if (path2 is null)
-            throw new ArgumentNullException(nameof(path2));
+        ArgumentNullException.ThrowIfNull(path1);
+        ArgumentNullException.ThrowIfNull(path2);
 
         var uri1 = new Uri(path1);
         var uri2 = new Uri(path2);
@@ -74,10 +67,8 @@ static partial class IOUtilities
     [Obsolete("Use FullPath struct instead")]
     public static bool IsChildPathOf(string parent, string child)
     {
-        if (parent is null)
-            throw new ArgumentNullException(nameof(parent));
-        if (child is null)
-            throw new ArgumentNullException(nameof(child));
+        ArgumentNullException.ThrowIfNull(parent);
+        ArgumentNullException.ThrowIfNull(child);
 
         var parentUri = new Uri(parent);
         var childUri = new Uri(child);
@@ -88,10 +79,8 @@ static partial class IOUtilities
     [Obsolete("Use FullPath struct instead")]
     public static string MakeRelativePath(string root, string path)
     {
-        if (root is null)
-            throw new ArgumentNullException(nameof(root));
-        if (path is null)
-            throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(root);
+        ArgumentNullException.ThrowIfNull(path);
 
         var parentUri = new Uri(root);
         var childUri = new Uri(path);
@@ -111,14 +100,11 @@ static partial class IOUtilities
     /// </returns>
     public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_")
     {
-        if (fileName is null)
-            throw new ArgumentNullException(nameof(fileName));
+        ArgumentNullException.ThrowIfNull(fileName);
 
-        if (reservedNameFormat is null)
-            throw new ArgumentNullException(nameof(reservedNameFormat));
+        ArgumentNullException.ThrowIfNull(reservedNameFormat);
 
-        if (reservedCharFormat is null)
-            throw new ArgumentNullException(nameof(reservedCharFormat));
+        ArgumentNullException.ThrowIfNull(reservedCharFormat);
 
         if (ReservedFileNames.ContainsIgnoreCase(fileName) || IsAllDots(fileName))
         {
@@ -162,11 +148,9 @@ static partial class IOUtilities
 
     public static void CopyDirectory(string sourcePath, string destinationPath)
     {
-        if (sourcePath is null)
-            throw new ArgumentNullException(nameof(sourcePath));
+        ArgumentNullException.ThrowIfNull(sourcePath);
 
-        if (destinationPath is null)
-            throw new ArgumentNullException(nameof(destinationPath));
+        ArgumentNullException.ThrowIfNull(destinationPath);
 
         // Get the subdirectories for the specified directory.
         var dir = new DirectoryInfo(sourcePath);

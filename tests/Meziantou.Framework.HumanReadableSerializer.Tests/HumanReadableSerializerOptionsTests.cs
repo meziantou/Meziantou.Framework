@@ -1,5 +1,3 @@
-﻿using Xunit;
-
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed class HumanReadableSerializerOptionsTests
 {

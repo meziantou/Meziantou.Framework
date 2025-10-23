@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Versioning;
 
 internal sealed class SemanticVersionComparer : IComparer<SemanticVersion>, IEqualityComparer<SemanticVersion>

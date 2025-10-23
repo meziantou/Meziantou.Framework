@@ -1,5 +1,4 @@
-﻿using Xunit.Abstractions;
-using System.Globalization;
+using Xunit.Abstractions;
 
 namespace Meziantou.Extensions.Logging.Xunit.Tests;
 

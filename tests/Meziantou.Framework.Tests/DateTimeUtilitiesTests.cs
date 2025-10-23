@@ -1,7 +1,5 @@
 #pragma warning disable MEZ_NETCORE3_1
 
-using Xunit;
-
 namespace Meziantou.Framework.Tests;
 
 public class DateTimeUtilitiesTests

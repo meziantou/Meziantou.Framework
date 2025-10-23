@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Html;
 
 internal static class Utilities
@@ -108,8 +105,7 @@ internal static class Utilities
 
     public static string? GetAttributeFromHeader(string? header, string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         int index;
         if (header is null)
@@ -166,7 +162,7 @@ internal static class Utilities
         index = startIndex;
         while (index < header.Length)
         {
-            if (header[index] == ' ' || header[index] == ',')
+            if (header[index] is ' ' or ',')
                 break;
 
             index++;
@@ -220,10 +216,10 @@ internal static class Utilities
         if (c == '_')
             return true;
 
-        if ((c == 0x20DD) || (c == 0x20E0))
+        if (c is '\u20DD' or '\u20E0')
             return false;
 
-        if ((c > 0xF900) && (c < 0xFFFE))
+        if (c is > '\uF900' and < '\uFFFE')
             return false;
 
         var category = CharUnicodeInfo.GetUnicodeCategory(c);
@@ -238,16 +234,16 @@ internal static class Utilities
     [SuppressMessage("Style", "IDE0066:Convert switch statement to expression", Justification = "Better readability")]
     private static bool IsValidXmlNamePart(char c)
     {
-        if ((c == '_') || (c == '.'))
+        if (c is '_' or '.')
             return true;
 
-        if (c == 0x0387)
+        if (c == '\u0387')
             return true;
 
-        if ((c == 0x20DD) || (c == 0x20E0))
+        if (c is '\u20DD' or '\u20E0')
             return false;
 
-        if ((c > 0xF900) && (c < 0xFFFE))
+        if (c is > '\uF900' and < '\uFFFE')
             return false;
 
         var category = CharUnicodeInfo.GetUnicodeCategory(c);
@@ -277,8 +273,7 @@ internal static class Utilities
 
     public static string? GetServerPath(string path, out string? serverName, out string? shareName, out string? sharePath)
     {
-        if (path is null)
-            throw new ArgumentNullException(nameof(path));
+        ArgumentNullException.ThrowIfNull(path);
 
         serverName = null;
         shareName = null;

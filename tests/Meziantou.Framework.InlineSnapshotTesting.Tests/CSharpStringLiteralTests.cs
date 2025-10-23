@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.InlineSnapshotTesting.Utils;
-using Xunit;
+using Meziantou.Framework.InlineSnapshotTesting.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class CSharpStringLiteralTests

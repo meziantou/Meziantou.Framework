@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Reflection;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -16,9 +14,6 @@ public class Template
     private static readonly Lock BuildLock = new();
 
     private MethodInfo? _runMethodInfo;
-    private string? _className;
-    private string? _runMethodName;
-    private string? _writerParameterName;
     private readonly List<TemplateArgument> _arguments = [];
     private readonly List<string> _usings = [];
     private readonly List<string> _referencePaths = [];
@@ -26,22 +21,22 @@ public class Template
     [NotNull]
     private string? ClassName
     {
-        get => string.IsNullOrEmpty(_className) ? DefaultClassName : _className;
-        set => _className = value;
+        get => string.IsNullOrEmpty(field) ? DefaultClassName : field;
+        set;
     }
 
     [NotNull]
     private string? RunMethodName
     {
-        get => string.IsNullOrEmpty(_runMethodName) ? DefaultRunMethodName : _runMethodName;
-        set => _runMethodName = value;
+        get => string.IsNullOrEmpty(field) ? DefaultRunMethodName : field;
+        set;
     }
 
     [NotNull]
     public string? OutputParameterName
     {
-        get => string.IsNullOrEmpty(_writerParameterName) ? DefaultWriterParameterName : _writerParameterName;
-        set => _writerParameterName = value;
+        get => string.IsNullOrEmpty(field) ? DefaultWriterParameterName : field;
+        set;
     }
 
     public Type? OutputType { get; set; }
@@ -62,8 +57,7 @@ public class Template
 
     public void AddReference(Type type)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
 
         if (type.Assembly.Location is null)
             throw new ArgumentException("Assembly has no location.", nameof(type));
@@ -78,8 +72,7 @@ public class Template
 
     public void AddUsing(string @namespace, string? alias)
     {
-        if (@namespace is null)
-            throw new ArgumentNullException(nameof(@namespace));
+        ArgumentNullException.ThrowIfNull(@namespace);
 
         if (!string.IsNullOrEmpty(alias))
         {
@@ -98,8 +91,7 @@ public class Template
 
     public void AddUsing(Type type, string? alias)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
 
         if (!string.IsNullOrEmpty(alias))
         {
@@ -118,8 +110,7 @@ public class Template
 
     private static string GetFriendlyTypeName(Type type)
     {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
+        ArgumentNullException.ThrowIfNull(type);
 
         var friendlyName = type.Name;
         if (type.IsGenericType)
@@ -127,7 +118,7 @@ public class Template
             var iBacktick = friendlyName.IndexOf('`', StringComparison.Ordinal);
             if (iBacktick > 0)
             {
-                friendlyName = friendlyName.Remove(iBacktick);
+                friendlyName = friendlyName[..iBacktick];
             }
 
             friendlyName += "<";
@@ -164,8 +155,7 @@ public class Template
 
     public void AddArgument(string name, Type? type)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         _arguments.Add(new TemplateArgument(name, type));
         if (type != null)
@@ -176,8 +166,7 @@ public class Template
 
     public void AddArguments(IReadOnlyDictionary<string, object?> arguments)
     {
-        if (arguments is null)
-            throw new ArgumentNullException(nameof(arguments));
+        ArgumentNullException.ThrowIfNull(arguments);
 
         foreach (var argument in arguments)
         {
@@ -195,8 +184,7 @@ public class Template
 
     public void Load(string text)
     {
-        if (text is null)
-            throw new ArgumentNullException(nameof(text));
+        ArgumentNullException.ThrowIfNull(text);
 
         using var reader = new StringReader(text);
         Load(reader);
@@ -204,8 +192,7 @@ public class Template
 
     public void Load(TextReader reader)
     {
-        if (reader is null)
-            throw new ArgumentNullException(nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         using var r = new TextReaderWithPosition(reader);
         Load(r);
@@ -213,8 +200,7 @@ public class Template
 
     private void Load(TextReaderWithPosition reader)
     {
-        if (reader is null)
-            throw new ArgumentNullException(nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         if (IsBuilt)
             throw new InvalidOperationException("Template is already built.");
@@ -376,8 +362,7 @@ public class Template
 
     protected virtual SyntaxTree CreateSyntaxTree(string source, CancellationToken cancellationToken)
     {
-        if (source is null)
-            throw new ArgumentNullException(nameof(source));
+        ArgumentNullException.ThrowIfNull(source);
 
         var options = CSharpParseOptions.Default
             .WithLanguageVersion(LanguageVersion.Latest)
@@ -423,8 +408,7 @@ public class Template
 
     protected virtual CSharpCompilation CreateCompilation(SyntaxTree syntaxTree)
     {
-        if (syntaxTree is null)
-            throw new ArgumentNullException(nameof(syntaxTree));
+        ArgumentNullException.ThrowIfNull(syntaxTree);
 
         var assemblyName = "Template_" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + Guid.NewGuid().ToString("N");
         var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
@@ -525,8 +509,7 @@ public class Template
 
     public string Run(IReadOnlyDictionary<string, object?> parameters)
     {
-        if (parameters is null)
-            throw new ArgumentNullException(nameof(parameters));
+        ArgumentNullException.ThrowIfNull(parameters);
 
         using var writer = new StringWriter();
         Run(writer, parameters);
@@ -535,11 +518,9 @@ public class Template
 
     public virtual void Run(TextWriter writer, IReadOnlyDictionary<string, object?> parameters)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
-        if (parameters is null)
-            throw new ArgumentNullException(nameof(parameters));
+        ArgumentNullException.ThrowIfNull(parameters);
 
         var p = CreateMethodParameters(writer, parameters);
         InvokeRunMethod(p);

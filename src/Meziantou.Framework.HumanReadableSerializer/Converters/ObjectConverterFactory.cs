@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Globalization;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 

@@ -1,7 +1,6 @@
 #pragma warning disable CS1718 // Comparison made to same variable
 using System.Collections.Immutable;
 using Meziantou.Framework.Collections;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections;
 public sealed class ImmutableEquatableArrayTests

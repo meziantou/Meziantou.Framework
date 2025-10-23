@@ -1,8 +1,8 @@
 namespace Meziantou.Framework.Annotations;
 
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]
-[System.AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = false)]
-public sealed class StronglyTypedIdAttribute : System.Attribute
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = false)]
+public sealed class StronglyTypedIdAttribute : Attribute
 {
     /// <summary>
     /// Indicate the type is a strongly-typed id
@@ -13,7 +13,7 @@ public sealed class StronglyTypedIdAttribute : System.Attribute
     /// <param name="generateSystemComponentModelTypeConverter">Specify if the System.ComponentModel.TypeConverter should be generated</param>
     /// <param name="generateMongoDBBsonSerialization">Specify if the MongoDB.Bson.Serialization.Serializers.SerializerBase{T} should be generated</param>
     /// <param name="addCodeGeneratedAttribute">Add <see cref="System.CodeDom.Compiler.GeneratedCodeAttribute"/> to the generated members</param>
-    public StronglyTypedIdAttribute(System.Type idType,
+    public StronglyTypedIdAttribute(Type idType,
                                     bool generateSystemTextJsonConverter = true,
                                     bool generateNewtonsoftJsonConverter = true,
                                     bool generateSystemComponentModelTypeConverter = true,
@@ -44,8 +44,8 @@ public sealed class StronglyTypedIdAttribute : System.Attribute
 /// </summary>
 /// <typeparam name="T">Type of the generated Value</typeparam>
 [System.Diagnostics.Conditional("StronglyTypedId_Attributes")]
-[System.AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = false)]
-public sealed class StronglyTypedIdAttribute<T> : System.Attribute
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class, AllowMultiple = false)]
+public sealed class StronglyTypedIdAttribute<T> : Attribute
 {
     /// <param name="generateSystemTextJsonConverter">Specify if the System.Text.Json.Serialization.JsonConverter should be generated</param>
     /// <param name="generateNewtonsoftJsonConverter">Specify if the Newtonsoft.Json.JsonConverter should be generated</param>

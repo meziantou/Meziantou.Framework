@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Resources;
 
 namespace Meziantou.Framework;

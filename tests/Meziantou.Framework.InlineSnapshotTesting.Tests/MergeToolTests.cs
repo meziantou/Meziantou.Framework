@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
-using Xunit;
+using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class MergeToolTests
@@ -7,7 +6,7 @@ public sealed class MergeToolTests
     [Fact]
     public void ValidateEnumMembers()
     {
-        var diffToolNames = Enum.GetNames(typeof(DiffEngine.DiffTool));
+        var diffToolNames = Enum.GetNames<DiffEngine.DiffTool>();
         var inlineSnapshotPreferredDiffToolNames =
             typeof(MergeTool)
             .GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)

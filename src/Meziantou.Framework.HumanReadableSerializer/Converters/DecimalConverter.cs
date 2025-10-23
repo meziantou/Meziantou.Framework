@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.HumanReadable.Converters;
 
 internal sealed class DecimalConverter : HumanReadableConverter<decimal>

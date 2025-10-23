@@ -18,11 +18,7 @@ internal sealed partial record ProcessInfo
 
     private static ProcessInfo? GetContextProcessImpl()
     {
-#if NETSTANDARD2_0 || NET472 || NET48
-        if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-#else
         if (OperatingSystem.IsWindows())
-#endif
         {
             var contextProcess = Process.GetCurrentProcess().GetAncestorProcesses()
                 .FirstOrDefault(p => IdeProcessNames.Contains(p.ProcessName));

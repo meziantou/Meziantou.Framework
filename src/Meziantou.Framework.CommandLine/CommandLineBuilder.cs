@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework;
 
 // https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
@@ -65,11 +63,7 @@ static class CommandLineBuilder
 
     public static string WindowsQuotedArguments(params string[] values)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return string.Join(' ', values.Select(WindowsQuotedArgument));
-#else
-        return string.Join(" ", values.Select(WindowsQuotedArgument));
-#endif
     }
 
     [return: NotNullIfNotNull(parameterName: nameof(value))]
@@ -100,10 +94,6 @@ static class CommandLineBuilder
 
     public static string WindowsCmdArguments(params string[] values)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return string.Join(' ', values.Select(WindowsCmdArgument));
-#else
-        return string.Join(" ", values.Select(WindowsCmdArgument));
-#endif
     }
 }

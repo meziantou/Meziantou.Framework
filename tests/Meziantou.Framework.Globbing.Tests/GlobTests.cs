@@ -173,10 +173,7 @@ public class GlobTests
         Assert.True(glob.IsPartialMatch(directoryName));
         Assert.True(globi.IsPartialMatch(directoryName));
 
-#if NET472
-#else
         if (OperatingSystem.IsWindows())
-#endif
         {
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
             Assert.True(glob.IsMatch(directoryName.Replace('/', '\\'), fileName, itemType));
@@ -488,12 +485,7 @@ public class GlobTests
         Assert.True(glob.IsPartialMatch(Path.GetDirectoryName(path)));
         Assert.True(globi.IsPartialMatch(Path.GetDirectoryName(path)));
 
-#if NET472
-#elif NETCOREAPP3_1
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-#else
         if (OperatingSystem.IsWindows())
-#endif
         {
             Assert.True(glob.IsMatch(path.Replace('/', '\\')));
             Assert.True(glob.IsMatch(Path.GetDirectoryName(path).Replace('/', '\\'), Path.GetFileName(path)));

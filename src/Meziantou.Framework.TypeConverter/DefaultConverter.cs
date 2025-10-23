@@ -1,7 +1,5 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Reflection;
-using System.Text;
 
 namespace Meziantou.Framework;
 
@@ -27,13 +25,13 @@ public class DefaultConverter : IConverter
 
     private static byte GetHexaByte(char c)
     {
-        if ((c >= '0') && (c <= '9'))
+        if (c is >= '0' and <= '9')
             return (byte)(c - '0');
 
-        if ((c >= 'A') && (c <= 'F'))
+        if (c is >= 'A' and <= 'F')
             return (byte)(c - 'A' + 10);
 
-        if ((c >= 'a') && (c <= 'f'))
+        if (c is >= 'a' and <= 'f')
             return (byte)(c - 'a' + 10);
 
         return 0xFF;
@@ -44,25 +42,18 @@ public class DefaultConverter : IConverter
         if (s is null)
             return false;
 
-        if (s.Length > 0)
+        switch (s)
         {
-            if (s[0] == 'x' || s[0] == 'X')
-            {
-                s = s[1..];
+            case ['x' or 'X', .. var rest]:
+                s = rest;
                 return true;
-            }
+            case ['0', 'x' or 'X', .. var rest]:
+                s = rest;
+                return true;
 
-            if (s.Length > 1)
-            {
-                if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
-                {
-                    s = s[2..];
-                    return true;
-                }
-            }
+            default:
+                return false;
         }
-
-        return false;
     }
 
     private static void GetBytes(decimal d, byte[] buffer)
@@ -903,8 +894,7 @@ public class DefaultConverter : IConverter
 
     protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
-        if (conversionType is null)
-            throw new ArgumentNullException(nameof(conversionType));
+        ArgumentNullException.ThrowIfNull(conversionType);
 
         if (conversionType == typeof(object))
         {
@@ -970,8 +960,7 @@ public class DefaultConverter : IConverter
         switch (conversionCode)
         {
             case TypeCode.Boolean:
-                bool boolValue;
-                if (TryConvert(input, provider, out boolValue))
+                if (TryConvert(input, provider, out bool boolValue))
                 {
                     value = boolValue;
                     return true;
@@ -980,8 +969,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Byte:
-                byte byteValue;
-                if (TryConvert(input, provider, out byteValue))
+                if (TryConvert(input, provider, out byte byteValue))
                 {
                     value = byteValue;
                     return true;
@@ -990,8 +978,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Char:
-                char charValue;
-                if (TryConvert(input, provider, out charValue))
+                if (TryConvert(input, provider, out char charValue))
                 {
                     value = charValue;
                     return true;
@@ -1000,8 +987,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.DateTime:
-                DateTime dtValue;
-                if (TryConvert(input, provider, out dtValue))
+                if (TryConvert(input, provider, out DateTime dtValue))
                 {
                     value = dtValue;
                     return true;
@@ -1010,8 +996,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Decimal:
-                decimal decValue;
-                if (TryConvert(input, provider, out decValue))
+                if (TryConvert(input, provider, out decimal decValue))
                 {
                     value = decValue;
                     return true;
@@ -1020,8 +1005,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Double:
-                double dblValue;
-                if (TryConvert(input, provider, out dblValue))
+                if (TryConvert(input, provider, out double dblValue))
                 {
                     value = dblValue;
                     return true;
@@ -1030,8 +1014,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int16:
-                short i16Value;
-                if (TryConvert(input, provider, out i16Value))
+                if (TryConvert(input, provider, out short i16Value))
                 {
                     value = i16Value;
                     return true;
@@ -1040,8 +1023,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int32:
-                int i32Value;
-                if (TryConvert(input, provider, out i32Value))
+                if (TryConvert(input, provider, out int i32Value))
                 {
                     value = i32Value;
                     return true;
@@ -1050,8 +1032,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int64:
-                long i64Value;
-                if (TryConvert(input, provider, out i64Value))
+                if (TryConvert(input, provider, out long i64Value))
                 {
                     value = i64Value;
                     return true;
@@ -1060,8 +1041,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.SByte:
-                sbyte sbyteValue;
-                if (TryConvert(input, provider, out sbyteValue))
+                if (TryConvert(input, provider, out sbyte sbyteValue))
                 {
                     value = sbyteValue;
                     return true;
@@ -1070,8 +1050,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Single:
-                float fltValue;
-                if (TryConvert(input, provider, out fltValue))
+                if (TryConvert(input, provider, out float fltValue))
                 {
                     value = fltValue;
                     return true;
@@ -1109,8 +1088,7 @@ public class DefaultConverter : IConverter
                 return true;
 
             case TypeCode.UInt16:
-                ushort u16Value;
-                if (TryConvert(input, provider, out u16Value))
+                if (TryConvert(input, provider, out ushort u16Value))
                 {
                     value = u16Value;
                     return true;
@@ -1119,8 +1097,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.UInt32:
-                uint u32Value;
-                if (TryConvert(input, provider, out u32Value))
+                if (TryConvert(input, provider, out uint u32Value))
                 {
                     value = u32Value;
                     return true;
@@ -1129,8 +1106,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.UInt64:
-                ulong u64Value;
-                if (TryConvert(input, provider, out u64Value))
+                if (TryConvert(input, provider, out ulong u64Value))
                 {
                     value = u64Value;
                     return true;

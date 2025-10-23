@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text.Json;
 using Microsoft.Win32;
@@ -27,11 +26,7 @@ internal sealed class TaskDialogPrompt : Prompt
 
         static bool IsWindowsVistaOrAbove()
         {
-#if NETSTANDARD2_0 || NET472 || NET48
-            return Environment.OSVersion.Platform == PlatformID.Win32NT && Environment.OSVersion.Version.Major >= 6;
-#else
             return OperatingSystem.IsWindowsVersionAtLeast(6);
-#endif
         }
     }
 

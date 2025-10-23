@@ -2,8 +2,6 @@ namespace Meziantou.Framework.CodeDom;
 
 public class MethodInvokeArgumentExpression : Expression
 {
-    private Expression? _value;
-
     public MethodInvokeArgumentExpression()
     {
     }
@@ -37,8 +35,8 @@ public class MethodInvokeArgumentExpression : Expression
 
     public Expression? Value
     {
-        get => _value;
-        set => SetParent(ref _value, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public static implicit operator MethodInvokeArgumentExpression(MethodArgumentDeclaration argument) => new(new ArgumentReferenceExpression(argument));

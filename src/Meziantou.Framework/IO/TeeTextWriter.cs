@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Meziantou.Framework.IO;
 
 #if NET9_0_OR_GREATER

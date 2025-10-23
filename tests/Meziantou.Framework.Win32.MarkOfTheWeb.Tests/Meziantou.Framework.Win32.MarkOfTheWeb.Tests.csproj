@@ -1,0 +1,13 @@
+﻿<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Win32.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.MarkOfTheWeb\Meziantou.Framework.Win32.MarkOfTheWeb.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

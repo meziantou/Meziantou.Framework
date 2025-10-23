@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace TestUtilities;
 
 internal static class XUnitStaticHelpers

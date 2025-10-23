@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
@@ -97,7 +96,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < format.Length; i++)
         {
             var c = format[i];
-            if (c > '0' && c < '9')
+            if (c is > '0' and < '9')
             {
                 index = i;
                 break;
@@ -116,7 +115,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             {
                 unit = FindBestUnitI();
             }
-            else if (unitString == "g" || unitString == "f" || unitString == "G" || unitString == "F")
+            else if (unitString is "g" or "f" or "G" or "F")
             {
                 unit = FindBestUnit();
             }
@@ -236,8 +235,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
     {
-        var last = unit[^1];
-        if (last != 'b' && last != 'B')
+        if (unit[^1] is not 'b' and not 'B')
         {
             result = default;
             parsedLength = 0;
@@ -249,7 +247,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             parsedLength = 2;
             var isI = false;
             var c = char.ToUpperInvariant(unit[^2]);
-            if (c == 'i' || c == 'I')
+            if (c is 'i' or 'I')
             {
                 parsedLength = 3;
                 if (unit.Length > 2)

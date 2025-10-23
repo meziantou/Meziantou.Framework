@@ -138,7 +138,7 @@ public sealed class EnumToStringSourceGeneratorTests
             .OrderBy(m => m.GetParameters()[0].ParameterType.FullName, StringComparer.Ordinal);
 
         Assert.True(ns4Type.IsPublic);
-        Assert.Collection(methods4,
-            m => Assert.True(m.IsPublic));
+        var m = Assert.Single(methods4);
+        Assert.True(m.IsPublic);
     }
 }

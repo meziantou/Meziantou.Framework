@@ -1,5 +1,4 @@
-﻿using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
-using Xunit;
+using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
 public sealed class PromptTest

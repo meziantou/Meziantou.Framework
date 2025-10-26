@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>3.4.6</Version>
+    <Version>3.4.7</Version>
     <Description>.NET wrapper for Windows Job Objects</Description>
 
     <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>

@@ -489,7 +489,9 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
 
             SupportReadOnlySpanChar = readOnlySpanCharSymbol is not null;
-            SupportIStronglyTypedId = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") is not null;
+            var stronglyTypedIdSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId");
+            SupportIStronglyTypedId = stronglyTypedIdSymbol is not null;
+            SupportIStronglyTypedId_UnderlyingType = stronglyTypedIdSymbol is not null && stronglyTypedIdSymbol.GetMembers("UnderlyingType").Length > 0;
             SupportIStronglyTypedIdOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
             SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") is not null;
             SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") is not null;
@@ -617,6 +619,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool SupportNotNullWhenAttribute { get; }
         public bool SupportReadOnlySpanChar { get; }
         public bool SupportIStronglyTypedId { get; }
+        public bool SupportIStronglyTypedId_UnderlyingType { get; }
         public bool SupportIStronglyTypedIdOfT { get; }
 
         public bool SupportDisallowNullAttribute { get; }

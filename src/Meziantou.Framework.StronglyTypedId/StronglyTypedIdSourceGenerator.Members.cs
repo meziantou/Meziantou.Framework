@@ -65,7 +65,7 @@ public partial class StronglyTypedIdSourceGenerator
         }
 
         // UnderlyingType
-        if (context.SupportIStronglyTypedId)
+        if (context.SupportIStronglyTypedId_UnderlyingType)
         {
             WriteNewMember(
                 XmlSummary("Gets the underlying type of the strongly typed ID."),

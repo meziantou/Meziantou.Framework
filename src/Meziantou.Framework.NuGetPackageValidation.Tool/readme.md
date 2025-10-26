@@ -3,6 +3,8 @@
 `Meziantou.Framework.NuGetPackageValidation.Tool` is a tool to validate local `nupkg` file before pushing them to a server such as nuget.org.
 It helps you producing valuable the NuGet package. Best practices for NuGet packages are explained [in this post](https://www.meziantou.net/ensuring-best-practices-for-nuget-packages.htm).
 
+The list of rules applied by the tool is the same as the ones provided by the [Meziantou.Framework.NuGetPackageValidation](https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.NuGetPackageValidation/readme.md) library.
+
 # How to use it
 
 1. Install the tool

@@ -107,12 +107,12 @@ public sealed class RestartManager : IDisposable
         }
     }
 
-    public void Shutdown(RmShutdownType action)
+    public void Shutdown(RestartManagerShutdownType action)
     {
         Shutdown(action, statusCallback: null);
     }
 
-    public void Shutdown(RmShutdownType action, RmWriteStatusCallback? statusCallback)
+    public void Shutdown(RestartManagerShutdownType action, RestartManagerWriteStatusCallback? statusCallback)
     {
         var result = NativeMethods.RmShutdown(SessionHandle, action, statusCallback);
         if (result != RmResult.ERROR_SUCCESS)
@@ -124,7 +124,7 @@ public sealed class RestartManager : IDisposable
         Restart(statusCallback: null);
     }
 
-    public void Restart(RmWriteStatusCallback? statusCallback)
+    public void Restart(RestartManagerWriteStatusCallback? statusCallback)
     {
         var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
         if (result != RmResult.ERROR_SUCCESS)

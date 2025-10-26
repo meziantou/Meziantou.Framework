@@ -64,6 +64,15 @@ public partial class StronglyTypedIdSourceGenerator
             }
         }
 
+        // UnderlyingType
+        if (!context.SupportIStronglyTyped)
+        {
+            WriteNewMember(
+                XmlSummary("Gets the underlying type of the strongly typed ID."),
+                XmlReturn("The underlying type of the strongly typed ID."));
+            writer.WriteLine($"global::System.Type IStronglyTypedId.UnderlyingType => typeof({context.ValueTypeCSharpTypeName});");
+        }
+
         // ctor
         if (!context.IsCtorDefined)
         {

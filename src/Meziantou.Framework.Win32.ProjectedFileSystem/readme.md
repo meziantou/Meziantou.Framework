@@ -155,5 +155,5 @@ States:
 
 # Additional Resources
 
-- [Windows Projected File System Documentation](https://docs.microsoft.com/en-us/windows/desktop/projfs/projected-file-system)
-- [Microsoft ProjFS Sample](https://github.com/Microsoft/Windows-classic-samples/tree/master/Samples/ProjectedFileSystem)
+- [Windows Projected File System Documentation](https://docs.microsoft.com/en-us/windows/desktop/projfs/projected-file-system?WT.mc_id=DT-MVP-5003978)
+- [Microsoft ProjFS Sample](https://github.com/Microsoft/Windows-classic-samples/tree/master/Samples/ProjectedFileSystem?WT.mc_id=DT-MVP-5003978)

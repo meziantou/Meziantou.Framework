@@ -68,7 +68,7 @@ internal static class NativeMethods
     /// Ends the Restart Manager session.
     /// This function should be called by the primary installer that has previously started the session by calling the RmStartSession function.
     /// The RmEndSession function can be called by a secondary installer that is joined to the session once no more resources need to be registered
-    /// by the secondary installer. 
+    /// by the secondary installer.
     /// </summary>
     /// <param name="dwSessionHandle">A handle to an existing Restart Manager session.</param>
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
@@ -109,7 +109,7 @@ internal static class NativeMethods
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmShutdown(int pSessionHandle, RmShutdownType lActionFlags, RmWriteStatusCallback? fnStatus);
+    public static extern RmResult RmShutdown(int pSessionHandle, RestartManagerShutdownType lActionFlags, RestartManagerWriteStatusCallback? fnStatus);
 
     /// <summary>
     /// Restarts applications and services that have been shut down by the RmShutdown function and that have been registered to be restarted using the RegisterApplicationRestart function. This function can only be called by the primary installer that called the RmStartSession function to start the Restart Manager session.
@@ -120,7 +120,7 @@ internal static class NativeMethods
     /// <returns>This is the most recent error received. The function can return one of the system error codes that are defined in Winerror.h.</returns>
     [DllImport("rstrtmgr.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RmWriteStatusCallback? fnStatus);
+    public static extern RmResult RmRestart(int pSessionHandle, int dwRestartFlags, RestartManagerWriteStatusCallback? fnStatus);
 
     [DllImport("kernel32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

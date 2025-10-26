@@ -216,12 +216,12 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             baseTypes += $", global::System.ISpanParsable<{attribute.TypeName}>";
         }
 
-        if (attribute.SupportIStronglyTyped)
+        if (attribute.SupportIStronglyTypedId)
         {
             baseTypes += $", global::Meziantou.Framework.IStronglyTypedId";
         }
 
-        if (attribute.SupportIStronglyTypedOfT)
+        if (attribute.SupportIStronglyTypedIdOfT)
         {
             baseTypes += $", global::Meziantou.Framework.IStronglyTypedId<{attribute.ValueTypeCSharpTypeName}>";
         }
@@ -489,8 +489,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             }
 
             SupportReadOnlySpanChar = readOnlySpanCharSymbol is not null;
-            SupportIStronglyTyped = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") is not null;
-            SupportIStronglyTypedOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
+            SupportIStronglyTypedId = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId") is not null;
+            SupportIStronglyTypedIdOfT = compilation.GetTypeByMetadataName("Meziantou.Framework.IStronglyTypedId`1") is not null;
             SupportIParsable = compilation.GetTypeByMetadataName("System.IParsable`1") is not null;
             SupportISpanParsable = compilation.GetTypeByMetadataName("System.ISpanParsable`1") is not null;
             SupportTypeConverter = compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter") is not null;
@@ -616,8 +616,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         public bool SupportMongoDbConverter { get; }
         public bool SupportNotNullWhenAttribute { get; }
         public bool SupportReadOnlySpanChar { get; }
-        public bool SupportIStronglyTyped { get; }
-        public bool SupportIStronglyTypedOfT { get; }
+        public bool SupportIStronglyTypedId { get; }
+        public bool SupportIStronglyTypedIdOfT { get; }
 
         public bool SupportDisallowNullAttribute { get; }
 
@@ -664,8 +664,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 && IsParseDefined_String == other.IsParseDefined_String
                 && IsParseDefined_ReadOnlySpan == other.IsParseDefined_ReadOnlySpan
                 && SupportStaticInterfaces == other.SupportStaticInterfaces
-                && SupportIStronglyTyped == other.SupportIStronglyTyped
-                && SupportIStronglyTypedOfT == other.SupportIStronglyTypedOfT
+                && SupportIStronglyTypedId == other.SupportIStronglyTypedId
+                && SupportIStronglyTypedIdOfT == other.SupportIStronglyTypedIdOfT
                 && SupportIParsable == other.SupportIParsable
                 && SupportISpanParsable == other.SupportISpanParsable
                 && SupportTypeConverter == other.SupportTypeConverter
@@ -711,8 +711,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             hash = (hash * 397) ^ IsTryParseDefined_ReadOnlySpan.GetHashCode();
             hash = (hash * 397) ^ IsParseDefined_String.GetHashCode();
             hash = (hash * 397) ^ IsParseDefined_ReadOnlySpan.GetHashCode();
-            hash = (hash * 397) ^ SupportIStronglyTyped.GetHashCode();
-            hash = (hash * 397) ^ SupportIStronglyTypedOfT.GetHashCode();
+            hash = (hash * 397) ^ SupportIStronglyTypedId.GetHashCode();
+            hash = (hash * 397) ^ SupportIStronglyTypedIdOfT.GetHashCode();
             hash = (hash * 397) ^ SupportStaticInterfaces.GetHashCode();
             hash = (hash * 397) ^ SupportIParsable.GetHashCode();
             hash = (hash * 397) ^ SupportISpanParsable.GetHashCode();

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Classes to generate a tracing file that can be opened by Chromium browsers and other tools</Description>
   </PropertyGroup>

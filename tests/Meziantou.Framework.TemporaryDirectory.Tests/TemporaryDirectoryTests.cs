@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -60,5 +61,26 @@ public class TemporaryDirectoryTests
         }
 
         Assert.False(Directory.Exists(path));
+    }
+
+    [Fact]
+    public async Task ImplicitConversions()
+    {
+        await using var dir = TemporaryDirectory.Create();
+        FullPath path = dir;
+        string pathStr = dir;
+        DirectoryInfo di = dir;
+
+        Assert.Equal(dir.FullPath.Value, path.Value);
+        Assert.Equal(dir.FullPath.Value, pathStr);
+        Assert.Equal(dir.FullPath.Value, di.FullName);
+    }
+
+    [Fact]
+    public async Task SlashOperator()
+    {
+        await using var dir = TemporaryDirectory.Create();
+        var path = dir / "subdir" / "file.txt";
+        Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
     }
 }

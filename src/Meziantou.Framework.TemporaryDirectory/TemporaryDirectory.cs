@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace Meziantou.Framework;
@@ -155,4 +156,32 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 #endif
         await IOUtilities.DeleteAsync(new DirectoryInfo(_path), CancellationToken.None).ConfigureAwait(false);
     }
+
+    public static FullPath operator /(TemporaryDirectory temporaryDirectory, string path)
+    {
+        ArgumentNullException.ThrowIfNull(temporaryDirectory);
+        return temporaryDirectory.GetFullPath(path);
+    }
+
+    public static implicit operator FullPath(TemporaryDirectory temporaryDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(temporaryDirectory);
+        return temporaryDirectory.FullPath;
+    }
+
+    public static implicit operator string(TemporaryDirectory temporaryDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(temporaryDirectory);
+        return temporaryDirectory.FullPath;
+    }
+
+    public static implicit operator DirectoryInfo(TemporaryDirectory temporaryDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(temporaryDirectory);
+        return new DirectoryInfo(temporaryDirectory.FullPath);
+    }
+
+    [EditorBrowsable(EditorBrowsableState.Advanced)]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
+    public void OpenInExplorer() => FullPath.OpenInExplorer();
 }

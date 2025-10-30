@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Unix.ControlGroups;
 /// Represents a cgroup v2 control group for managing and limiting resource usage of processes.
 /// </summary>
 [SupportedOSPlatform("linux")]
-public sealed class CGroup2
+public sealed partial class CGroup2
 {
     private const string CGroupV2MountPoint = "/sys/fs/cgroup";
 
@@ -212,7 +212,7 @@ public sealed class CGroup2
     /// Enables multiple controllers in the subtree.
     /// </summary>
     /// <param name="controllers">The controller names.</param>
-    public void EnableControllers(params string[] controllers)
+    public void EnableControllers(params ReadOnlySpan<string> controllers)
     {
         var sb = new StringBuilder();
         foreach (var controller in controllers)

@@ -5,44 +5,36 @@ namespace Meziantou.Framework.Unix.ControlGroups;
 /// <summary>
 /// Extension methods for HugeTLB controller on CGroup2.
 /// </summary>
-[SupportedOSPlatform("linux")]
-public static class CGroup2HugeTlbExtensions
+public partial class CGroup2
 {
     /// <summary>
     /// Sets the HugeTLB usage limit for a specific page size.
     /// </summary>
-    /// <param name="cgroup">The cgroup.</param>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <param name="bytes">Maximum usage in bytes, or null for no limit.</param>
-    public static void SetHugeTlbMax(this CGroup2 cgroup, string pageSize, long? bytes)
+    public void SetHugeTlbMax(string pageSize, long? bytes)
     {
-        ArgumentNullException.ThrowIfNull(cgroup);
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
         if (bytes.HasValue && bytes.Value < 0)
             throw new ArgumentOutOfRangeException(nameof(bytes), "Limit must be non-negative.");
 
-        var value = bytes.HasValue
-       ? bytes.Value.ToString(CultureInfo.InvariantCulture)
-                 : "max";
-
+        var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         var fileName = $"hugetlb.{pageSize}.max";
-        CGroup2CpusetExtensions.WriteFileDirect(cgroup, fileName, value);
+        WriteFile(fileName, value);
     }
 
     /// <summary>
     /// Gets the HugeTLB usage limit for a specific page size.
     /// </summary>
-    /// <param name="cgroup">The cgroup.</param>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>The limit in bytes, or null if set to max.</returns>
-    public static long? GetHugeTlbMax(this CGroup2 cgroup, string pageSize)
+    public long? GetHugeTlbMax(string pageSize)
     {
-        ArgumentNullException.ThrowIfNull(cgroup);
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
         var fileName = $"hugetlb.{pageSize}.max";
-        var content = CGroup2CpusetExtensions.ReadFileDirect(cgroup, fileName);
+        var content = ReadFile(fileName);
 
         if (string.IsNullOrWhiteSpace(content))
             return null;
@@ -60,16 +52,14 @@ public static class CGroup2HugeTlbExtensions
     /// <summary>
     /// Gets the current HugeTLB usage for a specific page size.
     /// </summary>
-    /// <param name="cgroup">The cgroup.</param>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>Current usage in bytes.</returns>
-    public static long? GetHugeTlbCurrent(this CGroup2 cgroup, string pageSize)
+    public long? GetHugeTlbCurrent(string pageSize)
     {
-        ArgumentNullException.ThrowIfNull(cgroup);
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
         var fileName = $"hugetlb.{pageSize}.current";
-        var content = CGroup2CpusetExtensions.ReadFileDirect(cgroup, fileName);
+        var content = ReadFile(fileName);
 
         if (string.IsNullOrWhiteSpace(content))
             return null;
@@ -83,16 +73,14 @@ public static class CGroup2HugeTlbExtensions
     /// <summary>
     /// Gets the number of times the HugeTLB limit was hit.
     /// </summary>
-    /// <param name="cgroup">The cgroup.</param>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>Number of limit hits.</returns>
-    public static long? GetHugeTlbEventsMax(this CGroup2 cgroup, string pageSize)
+    public long? GetHugeTlbEventsMax(string pageSize)
     {
-        ArgumentNullException.ThrowIfNull(cgroup);
         ArgumentException.ThrowIfNullOrWhiteSpace(pageSize);
 
         var fileName = $"hugetlb.{pageSize}.events";
-        var content = CGroup2CpusetExtensions.ReadFileDirect(cgroup, fileName);
+        var content = ReadFile(fileName);
 
         if (string.IsNullOrWhiteSpace(content))
             return null;

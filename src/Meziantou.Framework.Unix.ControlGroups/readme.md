@@ -150,7 +150,7 @@ var maxPids = myGroup.GetPidsMax();
 Console.WriteLine($"Max processes: {maxPids}");
 ```
 
-### Cpuset Control
+### CPU Affinity (Cpuset)
 
 ```csharp
 // Enable cpuset controller
@@ -168,6 +168,27 @@ myGroup.SetCpusetMems(0, 1);
 // Get effective CPUs (actually granted)
 var effectiveCpus = myGroup.GetCpusetCpusEffective();
 Console.WriteLine($"Effective CPUs: {string.Join(", ", effectiveCpus ?? [])}");
+
+// Set partition type
+myGroup.SetCpusetPartition("isolated");
+```
+
+### HugeTLB Control
+
+```csharp
+// Enable hugetlb controller (if available)
+// Note: HugeTLB support depends on kernel configuration
+
+// Set HugeTLB limit for 2MB pages
+myGroup.SetHugeTlbMax("2MB", 100 * 1024 * 1024); // 100 MB
+
+// Get current HugeTLB usage
+var current = myGroup.GetHugeTlbCurrent("2MB");
+Console.WriteLine($"Current 2MB HugeTLB usage: {current} bytes");
+
+// Get limit hit count
+var limitHits = myGroup.GetHugeTlbEventsMax("2MB");
+Console.WriteLine($"HugeTLB limit hits: {limitHits}");
 ```
 
 ### Process Management

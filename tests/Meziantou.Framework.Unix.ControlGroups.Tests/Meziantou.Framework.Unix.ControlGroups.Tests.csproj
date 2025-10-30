@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <PredefinedCulturesOnly>false</PredefinedCulturesOnly>
+    <RootNamespace>Meziantou.Framework.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Unix.ControlGroups\Meziantou.Framework.Unix.ControlGroups.csproj" />
+    <ProjectReference Include="..\TestUtilities\TestUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -2,6 +2,8 @@ using System.Collections;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a collection of code objects that automatically manages parent-child relationships.</summary>
+/// <typeparam name="T">The type of code objects in the collection.</typeparam>
 public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> where T : CodeObject
 {
     private readonly List<T> _list = [];
@@ -10,6 +12,8 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="CodeObjectCollection{T}"/> class with the specified parent.</summary>
+    /// <param name="parent">The parent code object.</param>
     public CodeObjectCollection(CodeObject parent)
     {
         ArgumentNullException.ThrowIfNull(parent);
@@ -27,6 +31,8 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         return ((IEnumerable)_list).GetEnumerator();
     }
 
+    /// <summary>Adds a range of items to the collection.</summary>
+    /// <param name="items">The items to add.</param>
     public void AddRange(IEnumerable<T> items)
     {
         foreach (var item in items)
@@ -37,6 +43,10 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
 
     void ICollection<T>.Add(T item) => Add(item);
 
+    /// <summary>Adds an item to the collection and returns it.</summary>
+    /// <typeparam name="TCodeObject">The type of the code object to add.</typeparam>
+    /// <param name="item">The item to add.</param>
+    /// <returns>The added item.</returns>
     public TCodeObject Add<TCodeObject>(TCodeObject item)
         where TCodeObject : T
     {
@@ -78,8 +88,10 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         return remove;
     }
 
+    /// <summary>Gets the number of items in the collection.</summary>
     public int Count => _list.Count;
 
+    /// <summary>Gets a value indicating whether the collection is read-only.</summary>
     public bool IsReadOnly => ((IList<T>)_list).IsReadOnly;
 
     public int IndexOf(T item)
@@ -103,6 +115,8 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         item.Parent = null;
     }
 
+    /// <summary>Gets or sets the item at the specified index.</summary>
+    /// <param name="index">The zero-based index of the item.</param>
     public T this[int index]
     {
         get => _list[index];
@@ -118,6 +132,8 @@ public class CodeObjectCollection<T> : CodeObject, IList<T>, IReadOnlyList<T> wh
         }
     }
 
+    /// <summary>Sorts the elements in the collection using the specified comparer.</summary>
+    /// <param name="comparer">The comparer to use for sorting.</param>
     public void Sort(IComparer<T> comparer)
     {
         _list.Sort(comparer);

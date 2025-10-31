@@ -255,6 +255,7 @@ Console.WriteLine($"Enabled: {string.Join(", ", enabled)}");
 myGroup.SetControllers("cpu", "memory", "io");
 
 // Disable a controller
+// Prefixing a controller name with '-' disables that controller. For example, "-io" disables the IO controller.
 myGroup.SetControllers("-io");
 ```
 

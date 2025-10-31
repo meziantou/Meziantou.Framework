@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a type conversion expression (as operator).</summary>
 public class ConvertExpression : Expression
 {
     public ConvertExpression()

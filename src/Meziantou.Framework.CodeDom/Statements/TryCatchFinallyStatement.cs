@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a try-catch-finally statement for exception handling.</summary>
 public class TryCatchFinallyStatement : Statement
 {
     public StatementCollection? Try

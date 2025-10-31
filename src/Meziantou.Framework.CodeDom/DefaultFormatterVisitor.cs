@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>A visitor that formats code with default formatting rules.</summary>
 public class DefaultFormatterVisitor : Visitor
 {
     public static DefaultFormatterVisitor Instance { get; } = new DefaultFormatterVisitor();

@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a code snippet expression for injecting raw code.</summary>
 public class SnippetExpression : Expression
 {
     public SnippetExpression()

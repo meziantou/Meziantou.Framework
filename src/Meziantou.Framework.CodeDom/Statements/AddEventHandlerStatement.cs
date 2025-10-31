@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a statement that adds an event handler (+=).</summary>
 public class AddEventHandlerStatement : EventHandlerStatement
 {
     public AddEventHandlerStatement()

@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an event field declaration.</summary>
 public class EventFieldDeclaration : MemberDeclaration, IModifiers
 {
     public EventFieldDeclaration()

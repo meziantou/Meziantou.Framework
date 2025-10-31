@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a using statement for automatic resource disposal.</summary>
 public class UsingStatement : Statement
 {
     public Statement? Statement

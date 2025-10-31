@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a collection of comments.</summary>
 public class CommentCollection : CodeObjectCollection<Comment>
 {
     private readonly CommentType _defaultCommentType;

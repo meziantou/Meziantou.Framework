@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a catch clause in a try-catch statement.</summary>
 public class CatchClause : CodeObject, ICommentable
 {
     public CatchClause()

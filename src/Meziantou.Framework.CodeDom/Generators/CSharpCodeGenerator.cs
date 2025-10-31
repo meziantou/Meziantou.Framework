@@ -1,5 +1,13 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Generates C# code from a CodeDOM tree.</summary>
+/// <example>
+/// <code>
+/// var unit = new CompilationUnit();
+/// var generator = new CSharpCodeGenerator();
+/// string code = generator.Write(unit);
+/// </code>
+/// </example>
 public partial class CSharpCodeGenerator
 {
     private static readonly Dictionary<string, string> PredefinedTypes = new(StringComparer.Ordinal)

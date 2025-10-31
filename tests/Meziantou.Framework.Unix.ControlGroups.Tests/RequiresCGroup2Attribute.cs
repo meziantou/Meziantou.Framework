@@ -21,5 +21,10 @@ public sealed class RequiresCGroup2Attribute : BeforeAfterTestAttribute
         {
             throw new Exception("$XunitDynamicSkip$Test requires elevated privileges");
         }
+
+        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+        {
+            throw new Exception("$XunitDynamicSkip$Test cannot run in GitHub Actions");
+        }
     }
 }

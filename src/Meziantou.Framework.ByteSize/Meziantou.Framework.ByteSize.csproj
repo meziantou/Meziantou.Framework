@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="ByteSize.Generated.cs">
       <DependentUpon>ByteSize.Generated.tt</DependentUpon>
       <DesignTime>True</DesignTime>

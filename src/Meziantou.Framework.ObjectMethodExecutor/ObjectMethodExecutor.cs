@@ -16,10 +16,10 @@ namespace Meziantou.Framework;
 /// <example>
 /// Basic usage with synchronous and asynchronous methods:
 /// <code>
-/// var methodInfo = typeof(Sample).GetMethod("AsyncMethod");
+/// var methodInfo = typeof(MyClass).GetMethod("MyMethod");
 /// var executor = ObjectMethodExecutor.Create(methodInfo);
 /// 
-/// var instance = new Sample();
+/// var instance = new MyClass();
 /// var parameters = new object?[] { param1, param2 };
 /// if (executor.IsMethodAsync)
 /// {

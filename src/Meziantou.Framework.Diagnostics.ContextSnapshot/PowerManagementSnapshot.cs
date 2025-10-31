@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of power management settings at a specific point in time.</summary>
 public sealed class PowerManagementSnapshot
 {
     private PowerManagementSnapshot(Guid id, string? friendlyName)
@@ -10,7 +11,9 @@ public sealed class PowerManagementSnapshot
         FriendlyName = friendlyName;
     }
 
+    /// <summary>Gets the unique identifier of the active power plan.</summary>
     public Guid Id { get; }
+    /// <summary>Gets the friendly name of the active power plan.</summary>
     public string? FriendlyName { get; }
 
     internal static unsafe PowerManagementSnapshot? Get()

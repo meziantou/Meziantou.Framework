@@ -3,6 +3,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of hypervisor information at a specific point in time.</summary>
 public sealed class HypervisorSnapshot
 {
     private HypervisorSnapshot(string hypervisor)
@@ -10,6 +11,7 @@ public sealed class HypervisorSnapshot
         Hypervisor = hypervisor;
     }
 
+    /// <summary>Gets the name of the detected hypervisor.</summary>
     public string Hypervisor { get; }
 
     internal static HypervisorSnapshot? Get()

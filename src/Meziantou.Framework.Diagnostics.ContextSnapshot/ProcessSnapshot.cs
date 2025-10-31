@@ -3,6 +3,7 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a process at a specific point in time.</summary>
 public class ProcessSnapshot
 {
     internal ProcessSnapshot(Process process)
@@ -33,23 +34,42 @@ public class ProcessSnapshot
         PriorityClass = process.PriorityClass;
     }
 
+    /// <summary>Gets the unique identifier of the process.</summary>
     public int Id { get; }
+    /// <summary>Gets the name of the process.</summary>
     public string ProcessName { get; }
+    /// <summary>Gets the time when the process was started.</summary>
     public DateTime StartTime { get; }
+    /// <summary>Gets the main module of the process.</summary>
     public ProcessModuleSnapshot? MainModule { get; }
+    /// <summary>Gets the collection of modules loaded by the process.</summary>
     public ImmutableArray<ProcessModuleSnapshot> Modules { get; }
+    /// <summary>Gets the amount of time the process has spent in user mode.</summary>
     public TimeSpan UserProcessorTime { get; }
+    /// <summary>Gets the total processor time used by the process.</summary>
     public TimeSpan TotalProcessorTime { get; }
+    /// <summary>Gets the amount of time the process has spent in privileged mode.</summary>
     public TimeSpan PrivilegedProcessorTime { get; }
+    /// <summary>Gets the number of handles opened by the process.</summary>
     public int HandleCount { get; }
+    /// <summary>Gets the amount of physical memory allocated for the process in bytes.</summary>
     public long WorkingSet64 { get; }
+    /// <summary>Gets the amount of virtual memory allocated for the process in bytes.</summary>
     public long VirtualMemorySize64 { get; }
+    /// <summary>Gets the amount of private memory allocated for the process in bytes.</summary>
     public long PrivateMemorySize64 { get; }
+    /// <summary>Gets the amount of paged memory allocated for the process in bytes.</summary>
     public long PagedMemorySize64 { get; }
+    /// <summary>Gets the amount of paged system memory allocated for the process in bytes.</summary>
     public long PagedSystemMemorySize64 { get; }
+    /// <summary>Gets the amount of non-paged system memory allocated for the process in bytes.</summary>
     public long NonpagedSystemMemorySize64 { get; }
+    /// <summary>Gets the peak working set size of the process in bytes.</summary>
     public long PeakWorkingSet64 { get; }
+    /// <summary>Gets the peak virtual memory size of the process in bytes.</summary>
     public long PeakVirtualMemorySize64 { get; }
+    /// <summary>Gets the peak paged memory size of the process in bytes.</summary>
     public long PeakPagedMemorySize64 { get; }
+    /// <summary>Gets the priority class of the process.</summary>
     public ProcessPriorityClass PriorityClass { get; }
 }

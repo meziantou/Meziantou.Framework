@@ -4,6 +4,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of security providers at a specific point in time.</summary>
 public sealed class SecurityProvidersSnapshot
 {
     private static readonly Guid CLSID_WSCProductList = new(0x17072F7B, 0x9ABE, 0x4A74, 0xA2, 0x61, 0x1E, 0xB7, 0x6B, 0x55, 0x10, 0x7A) /* 17072F7B-9ABE-4A74-A261-1EB76B55107A */;
@@ -12,9 +13,13 @@ public sealed class SecurityProvidersSnapshot
     {
     }
 
+    /// <summary>Gets the overall health status of security providers.</summary>
     public string? HealthStatus { get; } = Utils.SafeGet(GetHealthStatus);
+    /// <summary>Gets the collection of antivirus providers.</summary>
     public ImmutableArray<SecurityProviderSnapshot> Antivirus { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTIVIRUS);
+    /// <summary>Gets the collection of firewall providers.</summary>
     public ImmutableArray<SecurityProviderSnapshot> Firewall { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_FIREWALL);
+    /// <summary>Gets the collection of anti-spyware providers.</summary>
     public ImmutableArray<SecurityProviderSnapshot> AntiSpyware { get; } = Get(WSC_SECURITY_PROVIDER.WSC_SECURITY_PROVIDER_ANTISPYWARE);
 
     private static ImmutableArray<SecurityProviderSnapshot> Get(WSC_SECURITY_PROVIDER provider)

@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of culture settings at a specific point in time.</summary>
 public sealed class CultureSnapshot
 {
     internal CultureSnapshot()
@@ -16,11 +17,17 @@ public sealed class CultureSnapshot
         DefaultThreadCurrentUICulture = CultureInfoSnapshot.Get(CultureInfo.DefaultThreadCurrentUICulture);
     }
 
+    /// <summary>Gets a value indicating whether globalization invariant mode is enabled.</summary>
     public bool GlobalizationInvariant { get; }
+    /// <summary>Gets a value indicating whether only predefined cultures are used.</summary>
     public bool? UsePredefinedCulturesOnly { get; }
+    /// <summary>Gets the current culture used for formatting and parsing.</summary>
     public CultureInfoSnapshot? CurrentCulture { get; }
+    /// <summary>Gets the current UI culture used for resource lookup.</summary>
     public CultureInfoSnapshot? CurrentUICulture { get; }
+    /// <summary>Gets the default culture for new threads.</summary>
     public CultureInfoSnapshot? DefaultThreadCurrentCulture { get; }
+    /// <summary>Gets the default UI culture for new threads.</summary>
     public CultureInfoSnapshot? DefaultThreadCurrentUICulture { get; }
 
     private static bool IsGlobalizationInvariant()

@@ -2,6 +2,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of CPU information at a specific point in time.</summary>
 public sealed class CpuSnapshot
 {
     private CpuSnapshot(CpuInfo info)
@@ -18,13 +19,21 @@ public sealed class CpuSnapshot
         }
     }
 
+    /// <summary>Gets the processor name.</summary>
     public string? ProcessorName { get; }
+    /// <summary>Gets the number of physical processors.</summary>
     public int? PhysicalProcessorCount { get; }
+    /// <summary>Gets the number of physical CPU cores.</summary>
     public int? PhysicalCoreCount { get; }
+    /// <summary>Gets the number of logical CPU cores.</summary>
     public int? LogicalCoreCount { get; }
+    /// <summary>Gets the nominal frequency of the CPU in MHz.</summary>
     public double? NominalFrequency { get; }
+    /// <summary>Gets the minimum frequency of the CPU in MHz.</summary>
     public double? MinFrequency { get; }
+    /// <summary>Gets the maximum frequency of the CPU in MHz.</summary>
     public double? MaxFrequency { get; }
+    /// <summary>Gets hardware intrinsics support information for the CPU.</summary>
     public HardwareIntrinsicsSnapshot? HardwareIntrinsics { get; } = new HardwareIntrinsicsSnapshot();
 
     internal static CpuSnapshot Get()

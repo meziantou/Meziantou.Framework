@@ -4,6 +4,7 @@ using Microsoft.Win32;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of operating system information at a specific point in time.</summary>
 public sealed class OperatingSystemSnapshot
 {
     private static readonly char[] CommaSeparator = ['='];
@@ -12,21 +13,37 @@ public sealed class OperatingSystemSnapshot
     {
     }
 
+    /// <summary>Gets the processor architecture of the operating system.</summary>
     public Architecture OSArchitecture { get; } = RuntimeInformation.OSArchitecture;
+    /// <summary>Gets the platform identifier for the operating system.</summary>
     public PlatformID Platform { get; } = Environment.OSVersion.Platform;
+    /// <summary>Gets the version of the operating system.</summary>
     public Version? Version { get; } = Environment.OSVersion.Version;
+    /// <summary>Gets the service pack version of the operating system.</summary>
     public string? ServicePack { get; } = Environment.OSVersion.ServicePack;
+    /// <summary>Gets the Windows update build revision (UBR) number.</summary>
     public int? WindowsUpdateBuildRevision { get; } = GetWindowsUbr();
+    /// <summary>Gets the Linux operating system version string.</summary>
     public string? LinuxOsVersion { get; } = GetLinuxOsVersion();
+    /// <summary>Gets a value indicating whether the operating system is Windows.</summary>
     public bool IsWindows { get; } = OperatingSystem.IsWindows();
+    /// <summary>Gets a value indicating whether the operating system is Android.</summary>
     public bool IsAndroid { get; } = OperatingSystem.IsAndroid();
+    /// <summary>Gets a value indicating whether the operating system is a browser.</summary>
     public bool IsBrowser { get; } = OperatingSystem.IsBrowser();
+    /// <summary>Gets a value indicating whether the operating system is FreeBSD.</summary>
     public bool IsFreeBSD { get; } = OperatingSystem.IsFreeBSD();
+    /// <summary>Gets a value indicating whether the operating system is iOS.</summary>
     public bool IsIOS { get; } = OperatingSystem.IsIOS();
+    /// <summary>Gets a value indicating whether the operating system is Linux.</summary>
     public bool IsLinux { get; } = OperatingSystem.IsLinux();
+    /// <summary>Gets a value indicating whether the operating system is Mac Catalyst.</summary>
     public bool IsMacCatalyst { get; } = OperatingSystem.IsMacCatalyst();
+    /// <summary>Gets a value indicating whether the operating system is tvOS.</summary>
     public bool IsTvOS { get; } = OperatingSystem.IsTvOS();
+    /// <summary>Gets a value indicating whether the operating system is watchOS.</summary>
     public bool IsWatchOS { get; } = OperatingSystem.IsWatchOS();
+    /// <summary>Gets a value indicating whether the operating system is WASI.</summary>
     public bool IsWasi { get; } = OperatingSystem.IsWasi();
 
     private static int? GetWindowsUbr()

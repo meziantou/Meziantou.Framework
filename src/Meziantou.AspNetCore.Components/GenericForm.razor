@@ -1,5 +1,33 @@
 ﻿@typeparam TModel
 
+@*
+/// <summary>
+/// A component that automatically generates a form based on a model's properties using reflection and data annotations.
+/// </summary>
+/// <typeparam name="TModel">The type of the model to create a form for.</typeparam>
+/// <remarks>
+/// <para>
+/// This component uses reflection to discover properties and creates appropriate input controls based on property types.
+/// It respects data annotations such as <see cref="System.ComponentModel.DataAnnotations.DisplayAttribute"/>,
+/// <see cref="System.ComponentModel.DataAnnotations.EditableAttribute"/>, and <see cref="System.ComponentModel.EditorAttribute"/>.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// &lt;GenericForm Model="@model" ModelChanged="@OnModelChanged" /&gt;
+///
+/// @code {
+///     private MyModel model = new();
+///
+///     private void OnModelChanged(MyModel updatedModel)
+///     {
+///         // Handle model changes
+///     }
+/// }
+/// </code>
+/// </example>
+*@
+
 @if (fields != null)
 {
     foreach (var field in fields.OrderBy(p => p.DisplayOrder)) 
@@ -23,18 +51,23 @@
     internal string BaseEditorId { get; } = "form-" + Guid.NewGuid().ToString();
     private List<GenericFormField<TModel>>? fields;
 
+    /// <summary>Gets or sets the model instance to edit in the form.</summary>
     [Parameter]
     public TModel? Model { get; set; }
 
+    /// <summary>Gets or sets the callback invoked when any field value changes.</summary>
     [Parameter]
     public EventCallback<TModel> ModelChanged { get; set; }
 
+    /// <summary>Gets or sets whether to display field validation messages. Default is <c>true</c>.</summary>
     [Parameter]
     public bool EnableFieldValidation { get; set; } = true;
 
+    /// <summary>Gets or sets the CSS class to apply to editor elements.</summary>
     [Parameter]
     public string? EditorClass { get; set; }
 
+    /// <summary>Gets or sets a custom template for rendering each field. If not specified, a default template is used.</summary>
     [Parameter]
     public RenderFragment<GenericFormField<TModel>>? FieldTemplate { get; set; }
 

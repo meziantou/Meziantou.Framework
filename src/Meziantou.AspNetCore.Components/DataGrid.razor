@@ -1,4 +1,26 @@
 ﻿@typeparam TRowData
+
+@*
+/// <summary>
+/// A component that displays data in a table with customizable columns.
+/// </summary>
+/// <typeparam name="TRowData">The type of data for each row.</typeparam>
+/// <remarks>
+/// <para>
+/// This component works with <see cref="DataGridColumn{TRowData}"/> components to define columns.
+/// Column definitions should be provided as child content.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// &lt;DataGrid Items="@users" class="table"&gt;
+///     &lt;DataGridColumn TRowData="User" Title="Name" Property="@(u => u.Name)" /&gt;
+///     &lt;DataGridColumn TRowData="User" Title="Email" Property="@(u => u.Email)" /&gt;
+/// &lt;/DataGrid&gt;
+/// </code>
+/// </example>
+*@
+
 @*
     <CascadingValue> allows descendant components (defined in ChildContent) to receive the specified value.
     Child components need to declare a cascading parameter with the same type as "Value" (i.e. Grid<TRowData>).
@@ -42,16 +64,19 @@
 </table>
 
 @code {
+    /// <summary>Gets or sets additional attributes to apply to the table element.</summary>
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? TableAttributes { get; set; }
 
+    /// <summary>Gets or sets the collection of items to display in the grid.</summary>
     [Parameter]
     public IEnumerable<TRowData>? Items { get; set; }
 
-    // This fragment should contains all the GridColumn
+    /// <summary>Gets or sets the child content, which should contain <see cref="DataGridColumn{TRowData}"/> components.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>Gets or sets a function to determine the CSS class for each row based on the row data and index.</summary>
     [Parameter]
     public Func<TRowData, int, string>? RowClass { get; set; }
 

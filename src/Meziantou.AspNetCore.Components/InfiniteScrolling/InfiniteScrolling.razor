@@ -6,6 +6,34 @@
 @implements IAsyncDisposable
 @namespace Meziantou.AspNetCore.Components
 
+@*
+/// <summary>
+/// A component that implements infinite scrolling by automatically loading more items when the user scrolls near the end of the content.
+/// </summary>
+/// <typeparam name="T">The type of items to display.</typeparam>
+/// <remarks>
+/// <para>
+/// This component uses Intersection Observer API to detect when the last item becomes visible and triggers loading of additional items.
+/// Items are loaded progressively using the provided <see cref="ItemsProvider"/> delegate.
+/// </para>
+/// </remarks>
+/// <example>
+/// <code>
+/// &lt;InfiniteScrolling ItemsProvider="@LoadItems"
+///                    ItemTemplate="@(item => <div>@item.Name</div>)"
+///                    LoadingTemplate="<p>Loading more items...</p>" /&gt;
+///
+/// @code {
+///     private async Task&lt;IEnumerable&lt;Item&gt;&gt; LoadItems(InfiniteScrollingItemsProviderRequest request)
+///     {
+///         // Load items starting from request.StartIndex
+///         return await GetItemsAsync(request.StartIndex, pageSize: 20, request.CancellationToken);
+///     }
+/// }
+/// </code>
+/// </example>
+*@
+
 @foreach (var item in _items)
 {
     @if (ItemTemplate != null)
@@ -32,12 +60,15 @@
 
     private bool IsLoading => _loadItemsCts != null;
 
+    /// <summary>Gets or sets the delegate that provides items to display. This delegate is called when more items need to be loaded.</summary>
     [Parameter]
     public InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get; set; }
 
+    /// <summary>Gets or sets the template for rendering each item.</summary>
     [Parameter]
     public RenderFragment<T>? ItemTemplate { get; set; }
 
+    /// <summary>Gets or sets the template to display while loading more items.</summary>
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
 

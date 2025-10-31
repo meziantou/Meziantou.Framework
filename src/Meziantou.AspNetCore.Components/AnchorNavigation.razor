@@ -1,4 +1,27 @@
-﻿@* See https://www.meziantou.net/anchor-navigation-in-a-blazor-application.htm *@
+﻿@*
+/// <summary>
+/// A component that enables anchor-based navigation within a Blazor application.
+/// When the URL contains a fragment identifier (e.g., #section1), this component automatically scrolls to the element with that ID.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This component handles both standard anchor navigation and text fragments (e.g., #section:~:text=foo).
+/// Add this component once to your layout or main page to enable anchor navigation throughout your application.
+/// </para>
+/// </remarks>
+/// <example>
+/// <para>Add the component to your layout:</para>
+/// <code>
+/// &lt;AnchorNavigation /&gt;
+/// </code>
+/// <para>Then use anchors in your content:</para>
+/// <code>
+/// &lt;a href="#section1"&gt;Go to Section 1&lt;/a&gt;
+/// &lt;div id="section1"&gt;Section 1 Content&lt;/div&gt;
+/// </code>
+/// </example>
+/// <seealso href="https://www.meziantou.net/anchor-navigation-in-a-blazor-application.htm"/>
+*@
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime

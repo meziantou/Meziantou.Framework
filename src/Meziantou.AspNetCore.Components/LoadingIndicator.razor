@@ -1,4 +1,18 @@
-﻿@if (IsLoading)
+﻿@*
+/// <summary>
+/// A component that displays a loading indicator or the child content based on the loading state.
+/// </summary>
+/// <example>
+/// <code>
+/// &lt;LoadingIndicator IsLoading="@isLoading"
+///                   LoadingText="Please wait..."&gt;
+///     &lt;div&gt;Content to display when loaded&lt;/div&gt;
+/// &lt;/LoadingIndicator&gt;
+/// </code>
+/// </example>
+*@
+
+@if (IsLoading)
 {
     if (LoadingTemplate != null)
     {
@@ -15,15 +29,19 @@ else
 }
 
 @code{
+    /// <summary>Gets or sets whether the component is in a loading state.</summary>
     [Parameter]
     public bool IsLoading { get; set; }
 
+    /// <summary>Gets or sets the text to display while loading. Default is "Loading...".</summary>
     [Parameter]
     public string LoadingText { get; set; } = "Loading...";
 
+    /// <summary>Gets or sets a custom template to display while loading. Takes precedence over <see cref="LoadingText"/>.</summary>
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
 
+    /// <summary>Gets or sets the content to display when not loading.</summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 }

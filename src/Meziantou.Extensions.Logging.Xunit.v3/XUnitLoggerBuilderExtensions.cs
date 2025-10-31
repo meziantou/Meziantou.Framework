@@ -9,6 +9,8 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 /// <summary>Provides extension methods for <see cref="ILoggingBuilder"/> to add xUnit.net logging support.</summary>
 /// <example>
 /// <code>
+/// using Microsoft.Extensions.Hosting;
+///
 /// var host = new HostBuilder()
 ///     .ConfigureLogging(builder =>
 ///     {

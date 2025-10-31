@@ -8,6 +8,9 @@ namespace Meziantou.Extensions.Logging.Xunit.v3;
 /// <summary>Provides an implementation of <see cref="ILoggerProvider"/> that creates loggers writing to xUnit.net's <see cref="ITestOutputHelper"/>.</summary>
 /// <example>
 /// <code>
+/// using Microsoft.Extensions.Hosting;
+/// using Microsoft.Extensions.Logging;
+///
 /// using var provider = new XUnitLoggerProvider(testOutputHelper);
 /// var host = new HostBuilder()
 ///     .ConfigureLogging(builder =>

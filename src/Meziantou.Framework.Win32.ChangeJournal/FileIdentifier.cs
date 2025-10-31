@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework.Win32;
@@ -42,8 +43,8 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     public unsafe static FileIdentifier FromFile(SafeFileHandle handle)
     {
         var result = new FILE_ID_INFO();
-        var pointer = &result;
-        if (PInvoke.GetFileInformationByHandleEx(handle, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, pointer, (uint)sizeof(FILE_ID_INFO)))
+        using var handleScope = new SafeHandleValue(handle);
+        if (PInvoke.GetFileInformationByHandleEx((HANDLE)handleScope.Value, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, &result, (uint)sizeof(FILE_ID_INFO)))
         {
             return new FileIdentifier(result.FileId);
         }

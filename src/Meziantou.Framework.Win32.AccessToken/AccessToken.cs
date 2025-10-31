@@ -27,7 +27,9 @@ public sealed class AccessToken : IDisposable
     public unsafe TokenType GetTokenType()
     {
         TokenType result;
-        if (!PInvoke.GetTokenInformation(_token, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)IntPtr.Size, out _))
+        uint returnedLength;
+        using var safeHandleValue = new SafeHandleValue(_token);
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenType, &result, (uint)IntPtr.Size, &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -36,7 +38,9 @@ public sealed class AccessToken : IDisposable
     public unsafe TokenElevationType GetElevationType()
     {
         TokenElevationType result;
-        if (!PInvoke.GetTokenInformation(_token, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)IntPtr.Size, out _))
+        uint returnedLength;
+        using var safeHandleValue = new SafeHandleValue(_token);
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, TOKEN_INFORMATION_CLASS.TokenElevationType, &result, (uint)IntPtr.Size, &returnedLength))
             throw new Win32Exception(Marshal.GetLastWin32Error());
 
         return result;
@@ -165,7 +169,9 @@ public sealed class AccessToken : IDisposable
     private unsafe TResult? GetTokenInformation<T, TResult>(TOKEN_INFORMATION_CLASS type, Func<IntPtr, T, TResult> func)
         where T : unmanaged
     {
-        if (!PInvoke.GetTokenInformation(_token, type, TokenInformation: null, 0u, out var dwLength))
+        uint returnedLength;
+        using var safeHandleValue = new SafeHandleValue(_token);
+        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, TokenInformation: null, 0u, &returnedLength))
         {
             var errorCode = Marshal.GetLastWin32Error();
             switch (errorCode)
@@ -173,10 +179,10 @@ public sealed class AccessToken : IDisposable
                 case (int)WIN32_ERROR.ERROR_BAD_LENGTH:
                 // special case for TokenSessionId. Falling through
                 case (int)WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
-                    var handle = Marshal.AllocHGlobal((int)dwLength);
+                    var handle = Marshal.AllocHGlobal((int)returnedLength);
                     try
                     {
-                        if (!PInvoke.GetTokenInformation(_token, type, (void*)handle, dwLength, out _))
+                        if (!PInvoke.GetTokenInformation((HANDLE)safeHandleValue.Value, type, (void*)handle, returnedLength, &returnedLength))
                             throw new Win32Exception(Marshal.GetLastWin32Error());
 
                         var s = Marshal.PtrToStructure<T>(handle);
@@ -218,7 +224,8 @@ public sealed class AccessToken : IDisposable
     public unsafe void DisableAllPrivileges()
     {
         uint returnSize = 0;
-        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
+        using var safeHandleValue = new SafeHandleValue(_token);
+        if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: true, NewState: null, BufferLength: 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 
@@ -253,7 +260,8 @@ public sealed class AccessToken : IDisposable
         };
 
         uint returnSize = 0;
-        if (!PInvoke.AdjustTokenPrivileges(_token, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
+        using var safeHandleValue = new SafeHandleValue(_token);
+        if (!PInvoke.AdjustTokenPrivileges((HANDLE)safeHandleValue.Value, DisableAllPrivileges: false, &tp, 0, PreviousState: null, &returnSize))
             throw new Win32Exception(Marshal.GetLastWin32Error());
     }
 

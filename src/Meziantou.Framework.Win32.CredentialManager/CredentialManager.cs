@@ -353,44 +353,49 @@ public static class CredentialManager
         Span<char> domainBuf = new char[maxPassword];
         try
         {
-            if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, &maxDomain, passwordBuf, ref maxPassword))
+            fixed (char* usernamePtr = usernameBuf)
+            fixed (char* passwordPtr = passwordBuf)
+            fixed (char* domainPtr = domainBuf)
             {
-                userName = ToString(usernameBuf, maxUserName);
-                password = ToString(passwordBuf, maxPassword);
-                domain = ToString(domainBuf, maxDomain);
-
-                if (string.IsNullOrWhiteSpace(domain))
+                if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, new PWSTR(usernamePtr), &maxUserName, new PWSTR(domainPtr), &maxDomain, new PWSTR(passwordPtr), &maxPassword))
                 {
-                    var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
-                    switch (returnCode)
+                    userName = ToString(usernameBuf, maxUserName);
+                    password = ToString(passwordBuf, maxPassword);
+                    domain = ToString(domainBuf, maxDomain);
+
+                    if (string.IsNullOrWhiteSpace(domain))
                     {
-                        case WIN32_ERROR.NO_ERROR:
-                            userName = ToStringZero(usernameBuf);
-                            domain = ToStringZero(domainBuf);
-                            break;
+                        var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
+                        switch (returnCode)
+                        {
+                            case WIN32_ERROR.NO_ERROR:
+                                userName = ToStringZero(usernameBuf);
+                                domain = ToStringZero(domainBuf);
+                                break;
 
-                        case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
-                            break;
+                            case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
+                                break;
 
-                        case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
-                            throw new Win32Exception((int)returnCode, "Insufficient buffer");
+                            case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
+                                throw new Win32Exception((int)returnCode, "Insufficient buffer");
 
-                        case WIN32_ERROR.ERROR_INVALID_PARAMETER:
-                            throw new Win32Exception((int)returnCode, "Invalid parameter");
+                            case WIN32_ERROR.ERROR_INVALID_PARAMETER:
+                                throw new Win32Exception((int)returnCode, "Invalid parameter");
 
-                        default:
-                            throw new Win32Exception((int)returnCode);
+                            default:
+                                throw new Win32Exception((int)returnCode);
+                        }
                     }
-                }
 
-                return true;
-            }
-            else
-            {
-                userName = null;
-                password = null;
-                domain = null;
-                return false;
+                    return true;
+                }
+                else
+                {
+                    userName = null;
+                    password = null;
+                    domain = null;
+                    return false;
+                }
             }
         }
         finally

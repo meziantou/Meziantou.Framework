@@ -4,6 +4,7 @@ using System.Runtime.Versioning;
 using Meziantou.Framework.Win32.Natives;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 using Windows.Win32.Storage.FileSystem;
 using Windows.Win32.System.Ioctl;
 
@@ -78,15 +79,16 @@ public sealed class ChangeJournal : IDisposable
         var buffer = new byte[USN_RECORD_V3.SizeOf(512)];
         fixed (void* bufferPtr = buffer)
         {
+            using var handleScope = new SafeHandleValue(handle);
             uint returnedSize;
-            var controlResult = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
             if (!controlResult)
             {
                 var errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA)
+                if (errorCode == (int)WIN32_ERROR.ERROR_MORE_DATA)
                 {
                     buffer = new byte[returnedSize];
-                    controlResult = PInvoke.DeviceIoControl(handle, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                    controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, PInvoke.FSCTL_READ_FILE_USN_DATA, lpInBuffer: null, 0, bufferPtr, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
                     if (!controlResult)
                         throw new Win32Exception(Marshal.GetLastWin32Error());
                 }
@@ -121,7 +123,7 @@ public sealed class ChangeJournal : IDisposable
 
             return new JournalData(journalData);
         }
-        catch (Win32Exception ex) when (ex.NativeErrorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_JOURNAL_NOT_ACTIVE)
+        catch (Win32Exception ex) when (ex.NativeErrorCode == (int)WIN32_ERROR.ERROR_JOURNAL_NOT_ACTIVE)
         {
             return new JournalData();
         }

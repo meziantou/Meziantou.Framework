@@ -178,7 +178,8 @@ public sealed class JobObject : IDisposable
             JobMemoryLimit = limits.JobMemoryLimit,
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -192,7 +193,8 @@ public sealed class JobObject : IDisposable
             UIRestrictionsClass = (JOB_OBJECT_UILIMIT)limits,
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicUIRestrictions, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_UI_RESTRICTIONS>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -220,7 +222,8 @@ public sealed class JobObject : IDisposable
             },
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -235,7 +238,8 @@ public sealed class JobObject : IDisposable
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
 
-        if (!Windows.Win32.PInvoke.QueryInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>(), null))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>(), null))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -257,7 +261,8 @@ public sealed class JobObject : IDisposable
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -282,7 +287,8 @@ public sealed class JobObject : IDisposable
             },
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -317,7 +323,8 @@ public sealed class JobObject : IDisposable
             },
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectCpuRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -336,7 +343,8 @@ public sealed class JobObject : IDisposable
             MaxBandwidth = maxBandwidth,
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectNetRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_NET_RATE_CONTROL_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectNetRateControlInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_NET_RATE_CONTROL_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);
@@ -353,7 +361,8 @@ public sealed class JobObject : IDisposable
             SecurityLimitFlags = (JOB_OBJECT_SECURITY)securityLimit,
         };
 
-        if (!Windows.Win32.PInvoke.SetInformationJobObject(_jobHandle, JOBOBJECTINFOCLASS.JobObjectSecurityLimitInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_SECURITY_LIMIT_INFORMATION>()))
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.SetInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectSecurityLimitInformation, &restriction, (uint)Marshal.SizeOf<JOBOBJECT_SECURITY_LIMIT_INFORMATION>()))
         {
             var err = Marshal.GetLastWin32Error();
             throw new Win32Exception(err);

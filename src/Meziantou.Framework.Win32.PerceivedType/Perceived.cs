@@ -135,8 +135,7 @@ public sealed class Perceived
             if (!PerceivedTypes.TryGetValue(extension, out ptype))
             {
                 source = PerceivedTypeSource.Undefined;
-                PWSTR text = default;
-                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, &text);
+                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, out _);
                 if (hr.Failed)
                 {
                     type = PerceivedType.Unspecified;

@@ -2,7 +2,12 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
-public struct SafeHandleValue : IDisposable
+#if PUBLIC_SAFEHANDLEVALUE
+public
+#else
+internal
+#endif
+struct SafeHandleValue : IDisposable
 {
     private bool _hasValue;
     private SafeHandle _safeHandle;

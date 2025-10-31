@@ -22,4 +22,4 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - Do not update `global.json` file
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
 - There should be no trailing whitespace in any lines.
-- There should be an empty line before the beginning of XML documentation comments if there is code before them.
+- Add a blank line before XML documentation comments (`///`) when they follow other code (methods, properties, fields, etc.).

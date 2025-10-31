@@ -1,11 +1,10 @@
 namespace Meziantou.Framework.HumanReadable;
 
+/// <summary>Specifies the default value of a property or field used for comparison when serializing.</summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
 public sealed class HumanReadableDefaultValueAttribute : HumanReadableAttribute
 {
-    /// <summary>
-    /// Specifies the condition that must be met before a property or field will be ignored.
-    /// </summary>
+    /// <summary>Gets the default value.</summary>
     public object? DefaultValue { get; }
 
     /// <summary>

@@ -6,6 +6,17 @@ using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable;
 
+/// <summary>Provides options for controlling the behavior of <see cref="HumanReadableSerializer"/>.</summary>
+/// <example>
+/// <code>
+/// var options = new HumanReadableSerializerOptions
+/// {
+///     IncludeFields = true,
+///     DefaultIgnoreCondition = HumanReadableIgnoreCondition.WhenWritingNull,
+/// };
+/// var output = HumanReadableSerializer.Serialize(obj, options);
+/// </code>
+/// </example>
 public sealed record HumanReadableSerializerOptions
 {
     // Cache
@@ -60,6 +71,11 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets serialization data for the current serialization scope.</summary>
+    /// <typeparam name="T">The type of the data.</typeparam>
+    /// <param name="name">The name of the data.</param>
+    /// <param name="addValue">A factory function to create the value if it doesn't exist.</param>
+    /// <returns>The value associated with the specified name.</returns>
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "'By design")]
     public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
     {
@@ -73,11 +89,19 @@ public sealed record HumanReadableSerializerOptions
         return s_currentContext.BeginScope();
     }
 
+    /// <summary>Gets whether this instance is read-only.</summary>
     public bool IsReadOnly { get; private set; }
+
+    /// <summary>Gets or sets the maximum depth allowed when serializing nested objects.</summary>
     public int MaxDepth { get; set; } = 64;
+
+    /// <summary>Gets or sets whether to show invisible characters (like newlines and tabs) in values using Unicode control pictures.</summary>
     public bool ShowInvisibleCharactersInValues { get; set; }
+
+    /// <summary>Gets the list of converters used for serialization.</summary>
     public IList<HumanReadableConverter> Converters { get; }
 
+    /// <summary>Gets or sets the comparer used to sort property names when serializing objects.</summary>
     public IComparer<string>? PropertyOrder
     {
         get;
@@ -88,6 +112,7 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets the comparer used to sort dictionary keys when serializing dictionaries.</summary>
     public IComparer<string>? DictionaryKeyOrder
     {
         get;
@@ -98,6 +123,7 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets whether to include public fields during serialization.</summary>
     public bool IncludeFields
     {
         get;
@@ -108,6 +134,7 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets whether to include members marked with the Obsolete attribute.</summary>
     public bool IncludeObsoleteMembers
     {
         get;
@@ -118,6 +145,7 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Gets or sets the default ignore condition for properties and fields.</summary>
     public HumanReadableIgnoreCondition DefaultIgnoreCondition
     {
         get;
@@ -128,18 +156,28 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Adds a value formatter for the specified media type.</summary>
+    /// <param name="mediaType">The media type (e.g., "application/json", "text/xml").</param>
+    /// <param name="formatter">The formatter to use for the media type.</param>
     public void AddFormatter(string mediaType, ValueFormatter formatter)
     {
         VerifyMutable();
         _valueFormatters[mediaType] = formatter;
     }
 
+    /// <summary>Adds an attribute to the specified type.</summary>
+    /// <param name="type">The type to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _typeAttributes.Add((t => t == type, attribute));
     }
 
+    /// <summary>Adds an attribute to a member of the specified type.</summary>
+    /// <param name="type">The type containing the member.</param>
+    /// <param name="memberName">The name of the member.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -166,16 +204,29 @@ public sealed record HumanReadableSerializerOptions
         _memberAttributes.Add((m => m == member, attribute));
     }
 
+    /// <summary>Adds an attribute to the specified field.</summary>
+    /// <param name="member">The field to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>Adds an attribute to the specified property.</summary>
+    /// <param name="member">The property to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>Adds an attribute to all properties matching the specified condition.</summary>
+    /// <param name="condition">A function that determines which properties to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddPropertyAttribute(Func<PropertyInfo, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
     }
 
+    /// <summary>Adds an attribute to a member identified by an expression.</summary>
+    /// <typeparam name="T">The type containing the member.</typeparam>
+    /// <param name="member">An expression identifying the member.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute<T>(Expression<Func<T, object>> member, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -201,12 +252,18 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>Adds an attribute to all fields matching the specified condition.</summary>
+    /// <param name="condition">A function that determines which fields to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddFieldAttribute(Func<FieldInfo, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is FieldInfo field && condition(field), attribute));
     }
 
+    /// <summary>Adds an attribute to all types matching the specified condition.</summary>
+    /// <param name="condition">A function that determines which types to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddTypeAttribute(Func<Type, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -383,6 +440,7 @@ public sealed record HumanReadableSerializerOptions
             throw new InvalidOperationException("HumanReadableSerializerOptions instance is marked as read-only");
     }
 
+    /// <summary>Makes this instance read-only, preventing further modifications.</summary>
     public void MakeReadOnly() => IsReadOnly = true;
 
     private sealed class ConverterList : ConfigurationList<HumanReadableConverter>

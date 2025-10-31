@@ -7,6 +7,9 @@ using Windows.Win32;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Represents a fully qualified file system path.
+/// </summary>
 [JsonConverter(typeof(FullPathJsonConverter))]
 public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<FullPath>
 {
@@ -27,11 +30,20 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         _value = path;
     }
 
+    /// <summary>
+    /// Gets an empty <see cref="FullPath"/> value.
+    /// </summary>
     public static FullPath Empty => default;
 
+    /// <summary>
+    /// Gets a value indicating whether this path is empty.
+    /// </summary>
     [MemberNotNullWhen(returnValue: false, nameof(_value))]
     public bool IsEmpty => _value is null;
 
+    /// <summary>
+    /// Gets the string representation of the path.
+    /// </summary>
     public string Value => _value ?? "";
 
     public static implicit operator string(FullPath fullPath) => fullPath.ToString();
@@ -43,8 +55,14 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public static bool operator <=(FullPath path1, FullPath path2) => path1.CompareTo(path2) <= 0;
     public static bool operator >=(FullPath path1, FullPath path2) => path1.CompareTo(path2) >= 0;
 
+    /// <summary>
+    /// Combines a root path with a relative path.
+    /// </summary>
     public static FullPath operator /(FullPath rootPath, string relativePath) => Combine(rootPath, relativePath);
 
+    /// <summary>
+    /// Gets the parent directory of the current path.
+    /// </summary>
     public FullPath Parent
     {
         get
@@ -57,24 +75,55 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         }
     }
 
+    /// <summary>
+    /// Gets the file or directory name.
+    /// </summary>
     public string Name => Path.GetFileName(_value) ?? "";
 
+    /// <summary>
+    /// Gets the file or directory name without extension.
+    /// </summary>
     public string NameWithoutExtension => Path.GetFileNameWithoutExtension(_value) ?? "";
 
+    /// <summary>
+    /// Gets the file extension including the period.
+    /// </summary>
     public string Extension => Path.GetExtension(_value) ?? "";
 
     public int CompareTo(FullPath other) => FullPathComparer.Default.Compare(this, other);
+
+    /// <summary>
+    /// Compares this path to another path.
+    /// </summary>
+    /// <param name="other">The path to compare to.</param>
+    /// <param name="ignoreCase">Whether to ignore case when comparing paths.</param>
     public int CompareTo(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Compare(this, other);
 
     public override bool Equals(object? obj) => obj is FullPath path && Equals(path);
     public bool Equals(FullPath other) => FullPathComparer.Default.Equals(this, other);
+
+    /// <summary>
+    /// Determines whether this path is equal to another path.
+    /// </summary>
+    /// <param name="other">The path to compare to.</param>
+    /// <param name="ignoreCase">Whether to ignore case when comparing paths.</param>
     public bool Equals(FullPath other, bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).Equals(this, other);
 
     public override int GetHashCode() => FullPathComparer.Default.GetHashCode(this);
+
+    /// <summary>
+    /// Gets the hash code for this path.
+    /// </summary>
+    /// <param name="ignoreCase">Whether to ignore case when computing the hash code.</param>
     public int GetHashCode(bool ignoreCase) => FullPathComparer.GetComparer(ignoreCase).GetHashCode(this);
 
     public override string ToString() => Value;
 
+    /// <summary>
+    /// Makes this path relative to the specified root path.
+    /// </summary>
+    /// <param name="rootPath">The root path.</param>
+    /// <returns>A relative path from <paramref name="rootPath"/> to this path.</returns>
     public string MakePathRelativeTo(FullPath rootPath)
     {
         if (IsEmpty)
@@ -173,15 +222,29 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         return new FullPath(Path.ChangeExtension(Value, extension));
     }
 
+    /// <summary>
+    /// Gets the path to the system temporary directory.
+    /// </summary>
     public static FullPath GetTempPath() => FromPath(Path.GetTempPath());
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static FullPath GetTempFileName() => FromPath(Path.GetTempFileName());
 
+    /// <summary>
+    /// Creates a temporary file and returns its path.
+    /// </summary>
     public static FullPath CreateTempFile() => FromPath(Path.GetTempFileName());
 
+    /// <summary>
+    /// Gets the path to a special folder.
+    /// </summary>
+    /// <param name="folder">The special folder to get the path for.</param>
     public static FullPath GetFolderPath(Environment.SpecialFolder folder) => FromPath(Environment.GetFolderPath(folder));
 
+    /// <summary>
+    /// Gets the path to a known folder on Windows.
+    /// </summary>
+    /// <param name="knownFolder">The known folder to get the path for.</param>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe FullPath GetKnownFolderPath(KnownFolder knownFolder)
     {
@@ -197,8 +260,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
         throw new Win32Exception(result.Value, $"Failed to get shell folder path for {knownFolder}");
     }
 
+    /// <summary>
+    /// Gets the current working directory.
+    /// </summary>
     public static FullPath CurrentDirectory() => FromPath(Environment.CurrentDirectory);
 
+    /// <summary>
+    /// Creates a <see cref="FullPath"/> from a string path by resolving it to an absolute path.
+    /// </summary>
+    /// <param name="path">The path to convert.</param>
     public static FullPath FromPath(string path)
     {
         if (PathInternal.IsExtended(path))
@@ -231,11 +301,29 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 #endif
     }
 
+    /// <summary>
+    /// Combines two path components.
+    /// </summary>
     public static FullPath Combine(string rootPath, string relativePath) => FromPath(Path.Combine(rootPath, relativePath));
+
+    /// <summary>
+    /// Combines three path components.
+    /// </summary>
     public static FullPath Combine(string rootPath, string path1, string path2) => FromPath(Path.Combine(rootPath, path1, path2));
+
+    /// <summary>
+    /// Combines four path components.
+    /// </summary>
     public static FullPath Combine(string rootPath, string path1, string path2, string path3) => FromPath(Path.Combine(rootPath, path1, path2, path3));
+
+    /// <summary>
+    /// Combines multiple path components.
+    /// </summary>
     public static FullPath Combine(params string[] paths) => FromPath(Path.Combine(paths));
 
+    /// <summary>
+    /// Combines a full path with a relative path.
+    /// </summary>
     public static FullPath Combine(FullPath rootPath, string relativePath)
     {
         if (rootPath.IsEmpty)

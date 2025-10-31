@@ -2,6 +2,9 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.CodeOwners;
 
+/// <summary>
+/// Represents an entry in a CODEOWNERS file.
+/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
@@ -14,16 +17,34 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
         EntryType = entryType;
     }
 
+    /// <summary>
+    /// Gets the index of the pattern in the CODEOWNERS file.
+    /// </summary>
     public int PatternIndex { get; }
 
+    /// <summary>
+    /// Gets the file path pattern for this entry.
+    /// </summary>
     public string Pattern { get; }
 
+    /// <summary>
+    /// Gets the type of this entry.
+    /// </summary>
     public CodeOwnersEntryType EntryType { get; }
 
+    /// <summary>
+    /// Gets the owner member (username or email address).
+    /// </summary>
     public string? Member { get; }
 
+    /// <summary>
+    /// Gets the section this entry belongs to.
+    /// </summary>
     public CodeOwnersSection? Section { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether this entry is optional (does not require approval).
+    /// </summary>
     public bool IsOptional => Section?.IsOptional ?? false;
 
     public override string ToString()

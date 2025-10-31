@@ -3,21 +3,38 @@ using System.Collections.Immutable;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>
+/// A builder for creating diagnostic snapshots of the current execution context. Use this to gather system, runtime, and process information for troubleshooting.
+/// </summary>
+/// <example>
+/// Capture comprehensive system diagnostics:
+/// <code>
+/// var builder = new ContextSnapshotBuilder();
+/// builder.AddDefault();
+/// var snapshot = builder.BuildSnapshot();
+/// 
+/// // Serialize for logging
+/// var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
+/// </code>
+/// </example>
 public sealed class ContextSnapshotBuilder
 {
     private readonly Dictionary<string, object?> _contextSnapshot = new(StringComparer.Ordinal);
 
+    /// <summary>Adds a custom key-value pair to the snapshot.</summary>
     public ContextSnapshotBuilder AddValue(string key, object? value)
     {
         _contextSnapshot[key] = value;
         return this;
     }
 
+    /// <summary>Builds and returns the snapshot as a sorted dictionary of key-value pairs.</summary>
     public IReadOnlyDictionary<string, object?> BuildSnapshot()
     {
         return _contextSnapshot.OrderBy(kvp => kvp.Key, StringComparer.Ordinal).ToImmutableSortedDictionary();
     }
 
+    /// <summary>Adds all available diagnostic information including environment variables, GC, drives, processes, OS details, and more.</summary>
     public ContextSnapshotBuilder AddDefault()
     {
         AddEnvironmentVariables(EnvironmentVariableTarget.Process);
@@ -47,28 +64,50 @@ public sealed class ContextSnapshotBuilder
         return this;
     }
 
+    /// <summary>Adds information about the current process including command line, memory usage, and processor time.</summary>
     public ContextSnapshotBuilder AddCurrentProcess() => AddValue("Process", new CurrentProcessSnapshot());
+    /// <summary>Adds CPU information including processor name, core count, and hardware intrinsics support.</summary>
     public ContextSnapshotBuilder AddCpu() => AddValue("CPU", CpuSnapshot.Get());
+    /// <summary>Adds the number of logical processors available to the current process.</summary>
     public ContextSnapshotBuilder AddProcessorCount() => AddValue("ProcessorCount", Environment.ProcessorCount);
+    /// <summary>Adds security provider information including antivirus, firewall, and anti-spyware status (Windows only).</summary>
     public ContextSnapshotBuilder AddSecurityProviders() => AddValue("Antivirus", new SecurityProvidersSnapshot());
+    /// <summary>Adds the active power management scheme (Windows only).</summary>
     public ContextSnapshotBuilder AddPowerManagement() => AddValue("PowerManagement", PowerManagementSnapshot.Get());
+    /// <summary>Adds hypervisor information when running in a virtualized environment (Windows only).</summary>
     public ContextSnapshotBuilder AddHypervisor() => AddValue("Hypervisor", HypervisorSnapshot.Get());
+    /// <summary>Adds local time zone information including UTC offset and daylight saving time support.</summary>
     public ContextSnapshotBuilder AddLocalTimeZone() => AddValue("LocalTimeZone", TimeZoneSnapshot.Get());
+    /// <summary>Adds operating system information including platform, version, and architecture.</summary>
     public ContextSnapshotBuilder AddOperatingSystem() => AddValue("OperatingSystem", new OperatingSystemSnapshot());
+    /// <summary>Adds .NET runtime information including runtime identifier and framework description.</summary>
     public ContextSnapshotBuilder AddDotnetRuntime() => AddValue("Dotnet", new DotnetRuntimeSnapshot());
+    /// <summary>Adds current user information including username and domain.</summary>
     public ContextSnapshotBuilder AddUser() => AddValue("User", new UserSnapshot());
+    /// <summary>Adds the current working directory path.</summary>
     public ContextSnapshotBuilder AddCurrentDirectory() => AddValue("CurrentDirectory", Environment.CurrentDirectory);
+    /// <summary>Adds the newline string for the current platform.</summary>
     public ContextSnapshotBuilder AddNewLine() => AddValue("NewLine", Environment.NewLine);
+    /// <summary>Adds the machine name.</summary>
     public ContextSnapshotBuilder AddMachineName() => AddValue("MachineName", Environment.MachineName);
+    /// <summary>Adds garbage collector information including generation count and memory usage.</summary>
     public ContextSnapshotBuilder AddGarbageCollector() => AddValue("GC", new GarbageCollectorSnapshot());
+    /// <summary>Adds information about all available drives including free space and drive type.</summary>
     public ContextSnapshotBuilder AddDrives() => AddValue("Drives", DriveSnapshot.Get());
+    /// <summary>Adds paths to special system folders.</summary>
     public ContextSnapshotBuilder AddSpecialFolderPaths() => AddValue("SpecialFolders", new SpecialFolderSnapshot());
+    /// <summary>Adds console information including encoding, buffer size, and colors.</summary>
     public ContextSnapshotBuilder AddConsole() => AddValue("Console", new ConsoleSnapshot());
+    /// <summary>Adds information about loaded assembly load contexts and their assemblies.</summary>
     public ContextSnapshotBuilder AddAssemblyLoadContexts() => AddValue("AssemblyLoadContexts", AssemblyLoadContextSnapshot.Get());
+    /// <summary>Adds thread pool configuration including worker thread and completion port thread counts.</summary>
     public ContextSnapshotBuilder AddThreadPool() => AddValue("ThreadPool", new ThreadPoolSnapshot());
+    /// <summary>Adds culture and globalization settings.</summary>
     public ContextSnapshotBuilder AddCulture() => AddValue("Culture", new CultureSnapshot());
+    /// <summary>Adds supported .NET runtime features.</summary>
     public ContextSnapshotBuilder AddRuntimeFeatures() => AddValue("RuntimeFeatures", new RuntimeFeaturesSnapshot());
 
+    /// <summary>Adds commonly used AppContext switches and data values related to runtime configuration.</summary>
     public ContextSnapshotBuilder AddCommonAppContext()
     {
         AddContextData("APP_CONTEXT_BASE_DIRECTORY");
@@ -223,6 +262,7 @@ public sealed class ContextSnapshotBuilder
         }
     }
 
+    /// <summary>Adds all AppContext data and switches using reflection to access internal stores.</summary>
     public ContextSnapshotBuilder AddAppContextData()
     {
         if (typeof(AppContext).GetField("s_dataStore", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)?.GetValue(null) is Dictionary<string, object?> data)
@@ -250,6 +290,7 @@ public sealed class ContextSnapshotBuilder
         return this;
     }
 
+    /// <summary>Adds environment variables for the specified target scope.</summary>
     public void AddEnvironmentVariables(EnvironmentVariableTarget target = EnvironmentVariableTarget.Process)
     {
         AddValue("EnvironmentVariables." + target, GetEnvironmentVariables(target));

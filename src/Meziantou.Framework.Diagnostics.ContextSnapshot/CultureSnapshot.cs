@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the current culture settings including current culture, UI culture, and globalization mode.</summary>
 public sealed class CultureSnapshot
 {
     internal CultureSnapshot()

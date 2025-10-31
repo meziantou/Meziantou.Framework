@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the current user including username, domain name, and interactive status.</summary>
 public sealed class UserSnapshot
 {
     internal UserSnapshot() { }

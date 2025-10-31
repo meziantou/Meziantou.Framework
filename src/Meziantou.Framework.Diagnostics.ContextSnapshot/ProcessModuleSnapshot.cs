@@ -3,6 +3,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a process module including file name, product version, and file version.</summary>
 public sealed class ProcessModuleSnapshot
 {
     internal ProcessModuleSnapshot(ProcessModule module)

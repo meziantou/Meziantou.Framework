@@ -4,6 +4,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of all security providers on the system including antivirus, firewall, and anti-spyware (Windows only).</summary>
 public sealed class SecurityProvidersSnapshot
 {
     private static readonly Guid CLSID_WSCProductList = new(0x17072F7B, 0x9ABE, 0x4A74, 0xA2, 0x61, 0x1E, 0xB7, 0x6B, 0x55, 0x10, 0x7A) /* 17072F7B-9ABE-4A74-A261-1EB76B55107A */;

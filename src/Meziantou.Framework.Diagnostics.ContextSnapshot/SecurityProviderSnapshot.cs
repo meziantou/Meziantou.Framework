@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a security provider (antivirus, firewall, or anti-spyware) including name, path, status, and state.</summary>
 public sealed class SecurityProviderSnapshot
 {
     internal SecurityProviderSnapshot(string? name, string? path, string? status, string? state, string? stateTimestamp)

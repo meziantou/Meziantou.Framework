@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the current process including command line, process path, architecture, and privilege status.</summary>
 public sealed class CurrentProcessSnapshot : ProcessSnapshot
 {
     internal CurrentProcessSnapshot()

@@ -2,6 +2,18 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>
+/// Represents a snapshot of CPU information including processor name, core counts, frequencies, and hardware intrinsics support.
+/// </summary>
+/// <example>
+/// Get CPU information:
+/// <code>
+/// var cpuInfo = CpuSnapshot.Get();
+/// Console.WriteLine($"Processor: {cpuInfo.ProcessorName}");
+/// Console.WriteLine($"Cores: {cpuInfo.PhysicalCoreCount} physical, {cpuInfo.LogicalCoreCount} logical");
+/// Console.WriteLine($"Max Frequency: {cpuInfo.MaxFrequency} MHz");
+/// </code>
+/// </example>
 public sealed class CpuSnapshot
 {
     private CpuSnapshot(CpuInfo info)

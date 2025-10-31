@@ -2,6 +2,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the console state including redirection status, encoding, buffer size, and colors.</summary>
 public sealed class ConsoleSnapshot
 {
     public bool IsOutputRedirected { get; } = Console.IsOutputRedirected;

@@ -195,8 +195,8 @@ public sealed class ByteSizeTests
     public void Parse_Utf8(string str, long expectedValue)
     {
         var utf8Bytes = System.Text.Encoding.UTF8.GetBytes(str);
-        var actual = ByteSize.Parse(utf8Bytes.AsSpan(), CultureInfo.InvariantCulture);
-        var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), CultureInfo.InvariantCulture, out var actualTry);
+        var actual = ByteSize.Parse(utf8Bytes.AsSpan());
+        var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), out var actualTry);
 
         Assert.Equal(expectedValue, actual.Value);
         Assert.Equal(expectedValue, actualTry.Value);
@@ -209,9 +209,9 @@ public sealed class ByteSizeTests
     public void Parse_Utf8_Invalid(string str)
     {
         var utf8Bytes = System.Text.Encoding.UTF8.GetBytes(str);
-        Assert.Throws<FormatException>(() => ByteSize.Parse(utf8Bytes.AsSpan(), CultureInfo.InvariantCulture));
+        Assert.Throws<FormatException>(() => ByteSize.Parse(utf8Bytes.AsSpan()));
 
-        var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), CultureInfo.InvariantCulture, out var actualTry);
+        var parsed = ByteSize.TryParse(utf8Bytes.AsSpan(), out var actualTry);
         Assert.False(parsed);
     }
 #endif

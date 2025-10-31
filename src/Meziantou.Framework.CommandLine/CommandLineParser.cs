@@ -19,8 +19,8 @@ namespace Meziantou.Framework;
 /// // Get named argument value
 /// var name = parser.GetArgument("name"); // Returns "John"
 ///
-/// // Get positional argument
-/// var inputFile = parser.GetArgument(2); // Returns "input.txt"
+/// // Get argument at position (zero-based array index)
+/// var inputFile = parser.GetArgument(2); // Returns "input.txt" from position 2
 ///
 /// // Check if help was requested (detects -?, /?, -help, /help, --help)
 /// if (parser.HelpRequested)

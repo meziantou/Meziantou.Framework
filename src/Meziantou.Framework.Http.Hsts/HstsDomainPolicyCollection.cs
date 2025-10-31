@@ -155,9 +155,7 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         return false;
     }
 
-    /// <summary>Counts the number of segments in a domain name.</summary>
-    /// <param name="host">The domain host name.</param>
-    /// <returns>The number of segments in the domain name.</returns>
+    // internal for tests
     internal static int CountSegments(string host)
     {
         // foo.bar.com -> 3

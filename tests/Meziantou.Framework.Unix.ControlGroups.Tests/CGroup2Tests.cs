@@ -1,8 +1,7 @@
-using Xunit;
+using TestUtilities;
 
 namespace Meziantou.Framework.Unix.ControlGroups.Tests;
 
-[RequiresCGroup2]
 public sealed class CGroup2Tests : IDisposable
 {
     private readonly CGroup2 _testRoot;
@@ -11,6 +10,26 @@ public sealed class CGroup2Tests : IDisposable
 
     public CGroup2Tests(ITestOutputHelper testOutputHelper)
     {
+        if (!OperatingSystem.IsLinux())
+        {
+            throw new Exception("$XunitDynamicSkip$Test runs only on Linux");
+        }
+
+        if (!Directory.Exists("/sys/fs/cgroup"))
+        {
+            throw new Exception("$XunitDynamicSkip$cgroup v2 not available");
+        }
+
+        if (!Environment.IsPrivilegedProcess)
+        {
+            throw new Exception("$XunitDynamicSkip$Test requires elevated privileges");
+        }
+
+        if (SkipOnGitHubActionsAttribute.IsOnGitHubActions())
+        {
+            throw new Exception("$XunitDynamicSkip$Test cannot run in GitHub Actions");
+        }
+
         // Create a unique test group name
         _testOutputHelper = testOutputHelper;
         _testGroupName = $"test_cgroup_{Guid.NewGuid():N}";
@@ -27,7 +46,7 @@ public sealed class CGroup2Tests : IDisposable
         // Cleanup: remove test cgroup
         try
         {
-            if (_testRoot.Exists())
+            if (_testRoot is not null && _testRoot.Exists())
             {
                 _testRoot.Delete();
             }

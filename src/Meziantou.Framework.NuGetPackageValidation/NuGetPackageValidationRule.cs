@@ -3,8 +3,12 @@ using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;
 
+/// <summary>Represents the base class for NuGet package validation rules.</summary>
 public abstract partial class NuGetPackageValidationRule
 {
+    /// <summary>Executes the validation rule against the specified package context.</summary>
+    /// <param name="context">The validation context containing the package to validate and methods to report errors.</param>
+    /// <returns>A task that represents the asynchronous validation operation.</returns>
     public abstract Task ExecuteAsync(NuGetPackageValidationContext context);
 
     private protected static bool PackageFileExists(PackageReaderBase package, string path)

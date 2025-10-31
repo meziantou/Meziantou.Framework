@@ -2,14 +2,35 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
+/// <summary>
+/// Provides an in-memory logger implementation that captures log entries for testing purposes.
+/// </summary>
+/// <example>
+/// <code>
+/// // Create a logger directly
+/// var logger = InMemoryLogger.CreateLogger("MyCategory");
+/// logger.LogInformation("Test message");
+/// 
+/// // Access captured logs
+/// Assert.Single(logger.Logs.Informations);
+/// Assert.Contains(logger.Logs, log => log.Message == "Test message");
+/// </code>
+/// </example>
 public class InMemoryLogger : IInMemoryLogger
 {
     private readonly string? _category;
     private readonly IExternalScopeProvider _scopeProvider;
     private readonly TimeProvider _timeProvider;
 
+    /// <summary>Gets the collection of log entries captured by this logger.</summary>
     public InMemoryLogCollection Logs { get; }
 
+    /// <summary>Creates a new in-memory logger instance with the specified category name.</summary>
+    /// <param name="category">The logger category name.</param>
+    /// <param name="logs">The log collection to use, or <see langword="null"/> to create a new collection.</param>
+    /// <param name="scopeProvider">The external scope provider to use, or <see langword="null"/> to create a new instance.</param>
+    /// <param name="timeProvider">The time provider to use for timestamping log entries, or <see langword="null"/> to use the system time provider.</param>
+    /// <returns>A new instance of <see cref="IInMemoryLogger"/>.</returns>
     public static IInMemoryLogger CreateLogger(string category, InMemoryLogCollection? logs = null, IExternalScopeProvider? scopeProvider = null, TimeProvider? timeProvider = null)
     {
         logs ??= [];
@@ -18,6 +39,12 @@ public class InMemoryLogger : IInMemoryLogger
         return new InMemoryLogger(category, logs, scopeProvider, timeProvider);
     }
 
+    /// <summary>Creates a new generic in-memory logger instance.</summary>
+    /// <typeparam name="T">The type whose name is used for the logger category name.</typeparam>
+    /// <param name="logs">The log collection to use, or <see langword="null"/> to create a new collection.</param>
+    /// <param name="scopeProvider">The external scope provider to use, or <see langword="null"/> to create a new instance.</param>
+    /// <param name="timeProvider">The time provider to use for timestamping log entries, or <see langword="null"/> to use the system time provider.</param>
+    /// <returns>A new instance of <see cref="IInMemoryLogger{T}"/>.</returns>
     public static IInMemoryLogger<T> CreateLogger<T>(InMemoryLogCollection? logs = null, IExternalScopeProvider? scopeProvider = null, TimeProvider? timeProvider = null)
     {
         logs ??= [];

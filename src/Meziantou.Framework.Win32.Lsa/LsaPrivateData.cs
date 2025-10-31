@@ -7,7 +7,8 @@ using Windows.Win32.Security.Authentication.Identity;
 namespace Meziantou.Framework.Win32;
 
 /// <summary>
-/// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows. LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
+/// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows.
+/// LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
 /// </summary>
 /// <example>
 /// Store and retrieve a secret value:

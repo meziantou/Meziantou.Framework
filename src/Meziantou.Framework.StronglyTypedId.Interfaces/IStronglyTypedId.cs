@@ -21,7 +21,7 @@ public interface IStronglyTypedId
     string ValueAsString { get; }
 
     /// <summary>Gets the underlying type of the strongly-typed ID value.</summary>
-    Type UnderlyingType { get;  }
+    Type UnderlyingType { get; }
 }
 
 /// <summary>

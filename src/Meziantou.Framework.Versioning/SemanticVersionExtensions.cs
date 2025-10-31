@@ -1,7 +1,21 @@
 namespace Meziantou.Framework.Versioning;
 
+/// <summary>Provides extension methods for <see cref="SemanticVersion"/>.</summary>
+/// <example>
+/// <code>
+/// var version = new SemanticVersion(1, 2, 3);
+/// var nextPatch = version.NextPatchVersion(); // 1.2.4
+/// var nextMinor = version.NextMinorVersion(); // 1.3.0
+/// var nextMajor = version.NextMajorVersion(); // 2.0.0
+/// 
+/// // For prerelease versions, next version removes the prerelease tag
+/// var prerelease = new SemanticVersion(1, 2, 3, "alpha");
+/// var stable = prerelease.NextPatchVersion(); // 1.2.3
+/// </code>
+/// </example>
 public static class SemanticVersionExtensions
 {
+    /// <summary>Gets the next patch version. For prerelease versions, returns the version without the prerelease tag. For stable versions, increments the patch number.</summary>
     public static SemanticVersion NextPatchVersion(this SemanticVersion semanticVersion)
     {
         if (semanticVersion.IsPrerelease)
@@ -12,6 +26,7 @@ public static class SemanticVersionExtensions
         return new SemanticVersion(semanticVersion.Major, semanticVersion.Minor, semanticVersion.Patch + 1);
     }
 
+    /// <summary>Gets the next minor version. For prerelease versions, returns the version without the prerelease tag. For stable versions, increments the minor number and resets the patch number to zero.</summary>
     public static SemanticVersion NextMinorVersion(this SemanticVersion semanticVersion)
     {
         if (semanticVersion.IsPrerelease)
@@ -22,6 +37,7 @@ public static class SemanticVersionExtensions
         return new SemanticVersion(semanticVersion.Major, semanticVersion.Minor + 1, 0);
     }
 
+    /// <summary>Gets the next major version. For prerelease versions, returns the version without the prerelease tag. For stable versions, increments the major number and resets the minor and patch numbers to zero.</summary>
     public static SemanticVersion NextMajorVersion(this SemanticVersion semanticVersion)
     {
         if (semanticVersion.IsPrerelease)

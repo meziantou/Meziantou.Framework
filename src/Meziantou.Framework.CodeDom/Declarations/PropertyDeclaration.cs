@@ -1,5 +1,14 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a property declaration.</summary>
+/// <example>
+/// <code>
+/// var prop = new PropertyDeclaration("Name", typeof(string));
+/// prop.Modifiers = Modifiers.Public;
+/// prop.Getter = new PropertyAccessorDeclaration();
+/// prop.Setter = new PropertyAccessorDeclaration();
+/// </code>
+/// </example>
 public class PropertyDeclaration : MemberDeclaration, IModifiers
 {
     public PropertyDeclaration()
@@ -7,6 +16,9 @@ public class PropertyDeclaration : MemberDeclaration, IModifiers
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="PropertyDeclaration"/> class with the specified name and type.</summary>
+    /// <param name="name">The property name.</param>
+    /// <param name="type">The property type.</param>
     public PropertyDeclaration(string? name, TypeReference? type)
     {
         Name = name;

@@ -1,8 +1,5 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Specifies how symbolic links should be resolved.
-/// </summary>
 public enum SymbolicLinkResolutionMode
 {
     /// <summary>

@@ -1,8 +1,5 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a known folder on Windows systems.
-/// </summary>
 public sealed class KnownFolder
 {
     private KnownFolder(string name, string folderType, Guid knownFolderId, string defaultPath)
@@ -12,25 +9,9 @@ public sealed class KnownFolder
         FolderId = knownFolderId;
         DefaultPath = defaultPath;
     }
-
-    /// <summary>
-    /// Gets the display name of the folder.
-    /// </summary>
     public string Name { get; }
-
-    /// <summary>
-    /// Gets the type of the folder (PERUSER, FIXED, or VIRTUAL).
-    /// </summary>
     public string FolderType { get; }
-
-    /// <summary>
-    /// Gets the unique identifier for this known folder.
-    /// </summary>
     public Guid FolderId { get; }
-
-    /// <summary>
-    /// Gets the default path for this folder.
-    /// </summary>
     public string DefaultPath { get; }
 
     public override string ToString() => $"{Name} ({FolderId})";

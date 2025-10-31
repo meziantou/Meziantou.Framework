@@ -3,9 +3,6 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a temporary directory that is automatically deleted when disposed.
-/// </summary>
 [DebuggerDisplay("{FullPath}")]
 public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
 {
@@ -15,9 +12,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     private readonly FullPath _path;
     private readonly Stream _lockFile;
 
-    /// <summary>
-    /// Gets the full path to the temporary directory.
-    /// </summary>
     public FullPath FullPath { get; }
 
     private TemporaryDirectory(FullPath path, FullPath innerPath, Stream lockFile)
@@ -27,20 +21,11 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         _lockFile = lockFile;
     }
 
-    /// <summary>
-    /// Creates a new temporary directory in the default temporary directory location.
-    /// </summary>
-    /// <returns>A new <see cref="TemporaryDirectory"/> instance.</returns>
     public static TemporaryDirectory Create()
     {
         return Create(FullPath.Combine(Path.GetTempPath(), "MezTD"));
     }
 
-    /// <summary>
-    /// Creates a new temporary directory in the specified root directory.
-    /// </summary>
-    /// <param name="rootDirectory">The root directory where the temporary directory should be created.</param>
-    /// <returns>A new <see cref="TemporaryDirectory"/> instance.</returns>
     public static TemporaryDirectory Create(FullPath rootDirectory)
     {
         var folderName = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + "_" + Guid.NewGuid().ToString("N");
@@ -48,21 +33,11 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return new TemporaryDirectory(path, innerPath, lockFile);
     }
 
-    /// <summary>
-    /// Gets the full path for a relative path within the temporary directory.
-    /// </summary>
-    /// <param name="relativePath">The relative path.</param>
-    /// <returns>The full path.</returns>
     public FullPath GetFullPath(string relativePath)
     {
         return FullPath.Combine(FullPath, relativePath);
     }
 
-    /// <summary>
-    /// Creates an empty file at the specified relative path.
-    /// </summary>
-    /// <param name="relativePath">The relative path where the file should be created.</param>
-    /// <returns>The full path to the created file.</returns>
     public FullPath CreateEmptyFile(string relativePath)
     {
         var path = GetFullPath(relativePath);
@@ -71,12 +46,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return path;
     }
 
-    /// <summary>
-    /// Creates a text file at the specified relative path with the given content.
-    /// </summary>
-    /// <param name="relativePath">The relative path where the file should be created.</param>
-    /// <param name="content">The content to write to the file.</param>
-    /// <returns>The full path to the created file.</returns>
     public FullPath CreateTextFile(string relativePath, string content)
     {
         var path = GetFullPath(relativePath);
@@ -86,13 +55,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     }
 
 #if NETCOREAPP2_0_OR_GREATER
-    /// <summary>
-    /// Asynchronously creates a text file at the specified relative path with the given content.
-    /// </summary>
-    /// <param name="relativePath">The relative path where the file should be created.</param>
-    /// <param name="content">The content to write to the file.</param>
-    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the full path to the created file.</returns>
     public async Task<FullPath> CreateTextFileAsync(string relativePath, string content, CancellationToken cancellationToken = default)
     {
         var path = GetFullPath(relativePath);
@@ -102,11 +64,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
     }
 #endif
 
-    /// <summary>
-    /// Creates a directory at the specified relative path.
-    /// </summary>
-    /// <param name="relativePath">The relative path where the directory should be created.</param>
-    /// <returns>The full path to the created directory.</returns>
     public FullPath CreateDirectory(string relativePath)
     {
         var path = GetFullPath(relativePath);
@@ -224,9 +181,6 @@ public sealed class TemporaryDirectory : IDisposable, IAsyncDisposable
         return new DirectoryInfo(temporaryDirectory.FullPath);
     }
 
-    /// <summary>
-    /// Opens the temporary directory in Windows Explorer.
-    /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     [System.Runtime.Versioning.SupportedOSPlatform("windows5.1.2600")]
     public void OpenInExplorer() => FullPath.OpenInExplorer();

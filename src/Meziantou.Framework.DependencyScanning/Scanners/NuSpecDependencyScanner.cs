@@ -3,7 +3,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-// https://docs.microsoft.com/en-us/nuget/reference/nuspec
+/// <summary>Scans NuGet .nuspec files for package dependencies.</summary>
 public sealed class NuSpecDependencyScanner : DependencyScanner
 {
     // https://github.com/NuGet/NuGet.Client/blob/cabdb9886f3bc99c7a342ccc1661d393b14a0d1d/src/NuGet.Core/NuGet.Packaging/PackageCreation/Authoring/ManifestSchemaUtility.cs#L23

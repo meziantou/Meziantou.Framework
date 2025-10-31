@@ -3,6 +3,7 @@ using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilitie
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans Helm Chart.yaml files for chart dependencies.</summary>
 public sealed class HelmChartDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.HelmChart];

@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans npm package.json files for JavaScript package dependencies.</summary>
 public sealed class NpmPackageJsonDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.Npm];

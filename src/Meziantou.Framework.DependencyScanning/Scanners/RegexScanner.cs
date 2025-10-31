@@ -4,6 +4,21 @@ using Meziantou.Framework.Globbing;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>
+/// A configurable scanner that uses regular expressions to extract dependencies from files.
+/// <example>
+/// <code>
+/// var scanner = new RegexScanner
+/// {
+///     FilePatterns = [Glob.Parse("**/*.custom", GlobOptions.IgnoreCase)],
+///     DependencyType = DependencyType.DockerImage,
+///     RegexPattern = @"image:\s*(?&lt;name&gt;[a-z/]+)(:(?&lt;version&gt;[0-9.]+))?"
+/// };
+/// var options = new ScannerOptions { Scanners = [scanner] };
+/// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
+/// </code>
+/// </example>
+/// </summary>
 public sealed class RegexScanner : DependencyScanner
 {
     private const string NameGroupName = "name";
@@ -21,8 +36,10 @@ public sealed class RegexScanner : DependencyScanner
         }
     }
 
+    /// <summary>Gets or sets the regular expression pattern to match dependencies. The pattern must include named groups 'name' and optionally 'version'.</summary>
     public string? RegexPattern { get; set; }
 
+    /// <summary>Gets or sets the type of dependency to report when a match is found.</summary>
     public DependencyType DependencyType
     {
         get => field;
@@ -35,6 +52,7 @@ public sealed class RegexScanner : DependencyScanner
         }
     }
 
+    /// <summary>Gets or sets the glob patterns specifying which files to scan. If <see langword="null"/>, all files are scanned.</summary>
     public GlobCollection? FilePatterns { get; set; }
 
     public override async ValueTask ScanAsync(ScanFileContext context)

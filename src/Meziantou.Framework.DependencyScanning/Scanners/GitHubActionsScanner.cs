@@ -3,6 +3,7 @@ using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilitie
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans GitHub Actions workflow YAML files for action references and Docker images.</summary>
 public sealed class GitHubActionsScanner : DependencyScanner
 {
     private const string DockerPrefix = "docker://";

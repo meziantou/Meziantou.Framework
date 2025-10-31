@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans .NET tool manifest files (dotnet-tools.json) for local tool dependencies.</summary>
 public sealed class DotNetToolManifestDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];

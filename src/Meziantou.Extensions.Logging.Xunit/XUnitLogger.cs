@@ -7,7 +7,7 @@ namespace Meziantou.Extensions.Logging.Xunit;
 /// <example>
 /// <code>
 /// public class MyTests(ITestOutputHelper output)
-/// {///
+/// {
 ///     [Fact]
 ///     public void MyTest()
 ///     {

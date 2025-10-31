@@ -5,7 +5,7 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides utility methods for converting values between types with more flexibility than System.Convert.
 /// <example>
-/// <code>
+/// <code><![CDATA[
 /// // Using TryChangeType
 /// if (ConvertUtilities.TryChangeType("42", out int value))
 /// {
@@ -13,12 +13,12 @@ namespace Meziantou.Framework;
 /// }
 ///
 /// // Using ChangeType with default value
-/// var result = ConvertUtilities.ChangeType&lt;int&gt;("invalid", defaultValue: 0);
+/// var result = ConvertUtilities.ChangeType<int>("invalid", defaultValue: 0);
 ///
 /// // Convert with culture-specific formatting
 /// var cultureInfo = CultureInfo.GetCultureInfo("fr-FR");
-/// var number = ConvertUtilities.ChangeType&lt;decimal&gt;("1234,56", provider: cultureInfo);
-/// </code>
+/// var number = ConvertUtilities.ChangeType<decimal>("1234,56", provider: cultureInfo);
+/// ]]></code>
 /// </example>
 /// </summary>
 public static class ConvertUtilities

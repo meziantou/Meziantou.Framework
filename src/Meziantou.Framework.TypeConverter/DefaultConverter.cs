@@ -6,7 +6,7 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides a powerful type converter that extends the capabilities of System.Convert with support for culture-specific formatting, byte arrays, enums, nullable types, and custom TypeConverters.
 /// <example>
-/// <code>
+/// <code><![CDATA[
 /// var converter = new DefaultConverter();
 ///
 /// // Convert string to int
@@ -22,7 +22,7 @@ namespace Meziantou.Framework;
 ///
 /// // Parse enum with flags
 /// converter.TryChangeType("Option1, Option2", typeof(MyEnum), null, out var enumValue);
-/// </code>
+/// ]]></code>
 /// </example>
 /// </summary>
 public class DefaultConverter : IConverter

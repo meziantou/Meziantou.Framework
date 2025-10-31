@@ -5,8 +5,8 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for retrieving and converting dictionary values.
 /// <example>
-/// <code>
-/// var dictionary = new Dictionary&lt;string, object&gt;
+/// <code><![CDATA[
+/// var dictionary = new Dictionary<string, object>
 /// {
 ///     ["age"] = "25",
 ///     ["active"] = true
@@ -21,7 +21,7 @@ namespace Meziantou.Framework;
 /// {
 ///     Console.WriteLine($"Age: {ageValue}");
 /// }
-/// </code>
+/// ]]></code>
 /// </example>
 /// </summary>
 public static class DictionaryExtensions

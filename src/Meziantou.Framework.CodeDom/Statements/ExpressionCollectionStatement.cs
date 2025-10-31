@@ -2,6 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a statement containing a collection of expressions.</summary>
 public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
 {
     private readonly List<Expression> _expressions = [];

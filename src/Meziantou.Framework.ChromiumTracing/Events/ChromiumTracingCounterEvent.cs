@@ -11,7 +11,7 @@ namespace Meziantou.Framework.ChromiumTracing;
 ///     Category = "system",
 ///     Timestamp = DateTimeOffset.UtcNow,
 ///     ProcessId = Environment.ProcessId,
-///     Arguments = new Dictionary&lt;string, object?&gt;
+///     Arguments = new Dictionary<![CDATA[<string, object?>]]>
 ///     {
 ///         ["bytes"] = 1024 * 1024 * 500
 ///     }

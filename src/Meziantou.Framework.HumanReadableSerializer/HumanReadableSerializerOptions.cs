@@ -71,11 +71,11 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
-    /// <summary>Gets or sets serialization data for the current serialization scope.</summary>
+    /// <summary>Gets or creates serialization data for the current serialization scope.</summary>
     /// <typeparam name="T">The type of the data.</typeparam>
     /// <param name="name">The name of the data.</param>
     /// <param name="addValue">A factory function to create the value if it doesn't exist.</param>
-    /// <returns>The value associated with the specified name.</returns>
+    /// <returns>The value associated with the specified name, creating it if necessary.</returns>
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "'By design")]
     public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
     {

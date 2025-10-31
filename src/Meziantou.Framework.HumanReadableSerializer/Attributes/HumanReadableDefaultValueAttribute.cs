@@ -4,7 +4,7 @@ namespace Meziantou.Framework.HumanReadable;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
 public sealed class HumanReadableDefaultValueAttribute : HumanReadableAttribute
 {
-    /// <summary>Gets the default value.</summary>
+    /// <summary>Gets the default value used for comparison when determining whether to serialize a property or field based on the DefaultIgnoreCondition setting.</summary>
     public object? DefaultValue { get; }
 
     /// <summary>

@@ -348,12 +348,12 @@ public static class CredentialManager
         var maxUserName = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
         var maxDomain = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
         var maxPassword = PInvoke.CREDUI_MAX_USERNAME_LENGTH;
-        Span<char> usernameBuf = new char[maxUserName];
-        Span<char> passwordBuf = new char[maxDomain];
-        Span<char> domainBuf = new char[maxPassword];
+        var usernameBuf = stackalloc char[(int)maxUserName];
+        var passwordBuf = stackalloc char[(int)maxDomain];
+        var domainBuf = stackalloc char[(int)maxPassword];
         try
         {
-            if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, &maxDomain, passwordBuf, ref maxPassword))
+            if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, &maxUserName, domainBuf, &maxDomain, passwordBuf, &maxPassword))
             {
                 userName = ToString(usernameBuf, maxUserName);
                 password = ToString(passwordBuf, maxPassword);
@@ -361,7 +361,9 @@ public static class CredentialManager
 
                 if (string.IsNullOrWhiteSpace(domain))
                 {
-                    var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
+                    var usernameSpan = new Span<char>(usernameBuf, (int)maxUserName);
+                    var domainSpan = new Span<char>(domainBuf, (int)maxDomain);
+                    var returnCode = PInvoke.CredUIParseUserName(userName, usernameSpan, domainSpan);
                     switch (returnCode)
                     {
                         case WIN32_ERROR.NO_ERROR:
@@ -401,20 +403,19 @@ public static class CredentialManager
             FreeCoTaskMem((nint)outCredBuffer);
         }
 
-        static string ToString(ReadOnlySpan<char> buffer, uint length)
+        static string ToString(char* buffer, uint length)
         {
             if (length == 0)
                 return "";
 
             // Remove trailing \0
-            Debug.Assert(buffer[(int)length] == '\0');
-            return buffer.Slice(0, (int)length - 1).ToString();
+            Debug.Assert(buffer[length] == '\0');
+            return new string(buffer, 0, (int)length - 1);
         }
 
-        static string ToStringZero(ReadOnlySpan<char> buffer)
+        static string ToStringZero(char* buffer)
         {
-            var index = buffer.IndexOf('\0');
-            return index >= 0 ? buffer.Slice(0, index).ToString() : buffer.ToString();
+            return new string(buffer);
         }
     }
 

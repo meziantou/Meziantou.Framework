@@ -69,6 +69,12 @@ public readonly struct ObjectMethodExecutorAwaitable
         private readonly Action<object, Action> _onCompletedMethod;
         private readonly Action<object, Action> _unsafeOnCompletedMethod;
 
+        /// <summary>Initializes a new instance of the <see cref="Awaiter"/> struct.</summary>
+        /// <param name="customAwaiter">The custom awaiter to wrap.</param>
+        /// <param name="isCompletedMethod">The method to check if the operation is completed.</param>
+        /// <param name="getResultMethod">The method to retrieve the result.</param>
+        /// <param name="onCompletedMethod">The method to schedule continuations.</param>
+        /// <param name="unsafeOnCompletedMethod">The method to schedule continuations without capturing context.</param>
         public Awaiter(
             object customAwaiter,
             Func<object, bool> isCompletedMethod,

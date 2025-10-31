@@ -7,16 +7,16 @@ namespace Meziantou.Framework.DependencyScanning.Scanners;
 /// <summary>
 /// A configurable scanner that uses regular expressions to extract dependencies from files.
 /// <example>
-/// <code>
+/// <code><![CDATA[
 /// var scanner = new RegexScanner
 /// {
 ///     FilePatterns = [Glob.Parse("**/*.custom", GlobOptions.IgnoreCase)],
 ///     DependencyType = DependencyType.DockerImage,
-///     RegexPattern = @"image:\s*(?&lt;name&gt;[a-z/]+)(:(?&lt;version&gt;[0-9.]+))?"
+///     RegexPattern = @"image:\s*(?<name>[a-z/]+)(:(?<version>[0-9.]+))?"
 /// };
 /// var options = new ScannerOptions { Scanners = [scanner] };
 /// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
-/// </code>
+/// ]]></code>
 /// </example>
 /// </summary>
 public sealed class RegexScanner : DependencyScanner

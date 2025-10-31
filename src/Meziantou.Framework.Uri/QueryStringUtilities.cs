@@ -288,7 +288,6 @@ public static class QueryStringUtilities
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, string name, string? value)
     {
         ArgumentNullException.ThrowIfNull(uri);

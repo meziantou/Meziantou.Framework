@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using Meziantou.Framework.NuGetPackageValidation.Rules;
 
 namespace Meziantou.Framework.NuGetPackageValidation;

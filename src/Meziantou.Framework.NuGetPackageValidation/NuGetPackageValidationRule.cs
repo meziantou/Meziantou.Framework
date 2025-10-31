@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation;

@@ -2,21 +2,12 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a date that can be formatted as a relative time string (e.g., "2 hours ago", "in 3 days").
-/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IEquatable<RelativeDate>, IFormattable
 {
     private TimeProvider TimeProvider { get; }
     private DateTime DateTime { get; }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date and time provider.
-    /// </summary>
-    /// <param name="dateTime">The date and time. Must have a DateTimeKind of Local or Utc.</param>
-    /// <param name="timeProvider">The time provider to use for getting the current time. If <see langword="null"/>, uses <see cref="TimeProvider.System"/>.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="dateTime"/> has a DateTimeKind of Unspecified.</exception>
     public RelativeDate(DateTime dateTime, TimeProvider? timeProvider)
     {
         if (dateTime.Kind == DateTimeKind.Unspecified)
@@ -26,39 +17,17 @@ public readonly struct RelativeDate : IComparable, IComparable<RelativeDate>, IE
         TimeProvider = timeProvider ?? TimeProvider.System;
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RelativeDate"/> struct with the specified date.
-    /// </summary>
-    /// <param name="dateTime">The date and time. Must have a DateTimeKind of Local or Utc.</param>
     public RelativeDate(DateTime dateTime)
         : this(dateTime, timeProvider: null)
     {
     }
 
-    /// <summary>
-    /// Creates a new <see cref="RelativeDate"/> from the specified date.
-    /// </summary>
-    /// <param name="dateTime">The date and time.</param>
     public static RelativeDate Get(DateTime dateTime) => new(dateTime);
 
-    /// <summary>
-    /// Creates a new <see cref="RelativeDate"/> from the specified date and time offset.
-    /// </summary>
-    /// <param name="dateTime">The date and time offset.</param>
     public static RelativeDate Get(DateTimeOffset dateTime) => new(dateTime.UtcDateTime);
 
-    /// <summary>
-    /// Creates a new <see cref="RelativeDate"/> from the specified date and time provider.
-    /// </summary>
-    /// <param name="dateTime">The date and time.</param>
-    /// <param name="timeProvider">The time provider to use for getting the current time.</param>
     public static RelativeDate Get(DateTime dateTime, TimeProvider? timeProvider) => new(dateTime, timeProvider);
 
-    /// <summary>
-    /// Creates a new <see cref="RelativeDate"/> from the specified date, time offset, and time provider.
-    /// </summary>
-    /// <param name="dateTime">The date and time offset.</param>
-    /// <param name="timeProvider">The time provider to use for getting the current time.</param>
     public static RelativeDate Get(DateTimeOffset dateTime, TimeProvider? timeProvider) => new(dateTime.UtcDateTime, timeProvider);
 
     public override string ToString() => ToString(format: null, formatProvider: null);

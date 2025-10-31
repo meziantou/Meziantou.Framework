@@ -2,39 +2,18 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a byte size value with support for various units and formatting options.
-/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, IComparable<ByteSize>, IFormattable
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ByteSize"/> struct with the specified byte value.
-    /// </summary>
-    /// <param name="length">The size in bytes.</param>
     public ByteSize(long length)
     {
         Value = length;
     }
 
-    /// <summary>
-    /// Gets the size value in bytes.
-    /// </summary>
     public long Value { get; }
 
-    /// <summary>
-    /// Gets a <see cref="ByteSize"/> value representing zero bytes.
-    /// </summary>
     public static ByteSize Zero => new(0L);
-
-    /// <summary>
-    /// Gets a <see cref="ByteSize"/> value representing the maximum possible byte size.
-    /// </summary>
     public static ByteSize MaxValue => new(long.MaxValue);
-
-    /// <summary>
-    /// Gets a <see cref="ByteSize"/> value representing the minimum possible byte size.
-    /// </summary>
     public static ByteSize MinValue => new(long.MinValue);
 
     public override bool Equals(object? obj) => obj is ByteSize byteSize && Equals(byteSize);
@@ -56,17 +35,8 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public override string ToString() => ToString(format: null, formatProvider: null);
 
-    /// <summary>
-    /// Converts the byte size to its string representation using the specified unit.
-    /// </summary>
-    /// <param name="unit">The unit to use for conversion.</param>
     public string ToString(ByteSizeUnit unit) => ToString(unit, formatProvider: null);
 
-    /// <summary>
-    /// Converts the byte size to its string representation using the specified unit and format provider.
-    /// </summary>
-    /// <param name="unit">The unit to use for conversion.</param>
-    /// <param name="formatProvider">The format provider to use for formatting numbers.</param>
     public string ToString(ByteSizeUnit unit, IFormatProvider? formatProvider) => GetValue(unit).ToString(formatProvider) + UnitToString(unit);
 
     public string ToString(IFormatProvider? formatProvider)
@@ -213,11 +183,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return ByteSizeUnit.Byte;
     }
 
-    /// <summary>
-    /// Gets the byte size value converted to the specified unit.
-    /// </summary>
-    /// <param name="unit">The unit to convert to.</param>
-    /// <returns>The value in the specified unit.</returns>
     public double GetValue(ByteSizeUnit unit)
     {
         return (double)Value / (long)unit;
@@ -263,32 +228,9 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public static implicit operator ByteSize(long value) => new(value);
 
-    /// <summary>
-    /// Adds two byte sizes together.
-    /// </summary>
-    /// <param name="other">The byte size to add.</param>
-    /// <returns>The sum of the two byte sizes.</returns>
     public ByteSize Add(ByteSize other) => this + other;
-
-    /// <summary>
-    /// Subtracts a byte size from this byte size.
-    /// </summary>
-    /// <param name="other">The byte size to subtract.</param>
-    /// <returns>The difference of the two byte sizes.</returns>
     public ByteSize Substract(ByteSize other) => this - other;
-
-    /// <summary>
-    /// Multiplies two byte sizes together.
-    /// </summary>
-    /// <param name="other">The byte size to multiply by.</param>
-    /// <returns>The product of the two byte sizes.</returns>
     public ByteSize Multiply(ByteSize other) => this * other;
-
-    /// <summary>
-    /// Divides this byte size by another byte size.
-    /// </summary>
-    /// <param name="other">The byte size to divide by.</param>
-    /// <returns>The quotient of the two byte sizes.</returns>
     public ByteSize Divide(ByteSize other) => this / other;
 
     private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
@@ -349,13 +291,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return true;
     }
 
-    /// <summary>
-    /// Converts the string representation of a byte size to its <see cref="ByteSize"/> equivalent.
-    /// </summary>
-    /// <param name="text">A string containing a byte size to convert.</param>
-    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
-    /// <returns>A <see cref="ByteSize"/> equivalent to the byte size contained in <paramref name="text"/>.</returns>
-    /// <exception cref="FormatException">The string is not a valid byte size representation.</exception>
     public static ByteSize Parse(string text, IFormatProvider? formatProvider)
     {
         if (TryParse(text, formatProvider, out var result))
@@ -364,24 +299,11 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         throw new FormatException($"The value '{text}' is not valid");
     }
 
-    /// <summary>
-    /// Tries to convert the string representation of a byte size to its <see cref="ByteSize"/> equivalent.
-    /// </summary>
-    /// <param name="text">A string containing a byte size to convert.</param>
-    /// <param name="result">When this method returns, contains the <see cref="ByteSize"/> value equivalent to the byte size contained in <paramref name="text"/>, if the conversion succeeded, or default if the conversion failed.</param>
-    /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string text, out ByteSize result)
     {
         return TryParse(text, formatProvider: null, out result);
     }
 
-    /// <summary>
-    /// Tries to convert the string representation of a byte size to its <see cref="ByteSize"/> equivalent using the specified format provider.
-    /// </summary>
-    /// <param name="text">A string containing a byte size to convert.</param>
-    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
-    /// <param name="result">When this method returns, contains the <see cref="ByteSize"/> value equivalent to the byte size contained in <paramref name="text"/>, if the conversion succeeded, or default if the conversion failed.</param>
-    /// <returns><see langword="true"/> if the conversion was successful; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
     {
         text = text.Trim();
@@ -413,57 +335,13 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return false;
     }
 
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a byte value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a short value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(short value, ByteSizeUnit unit) => new(value * (long)unit);
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from an int value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(int value, ByteSizeUnit unit) => new(value * (long)unit);
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a long value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(long value, ByteSizeUnit unit) => new(value * (long)unit);
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a float value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(float value, ByteSizeUnit unit) => new((long)(value * (long)unit));
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a double value and unit.
-    /// </summary>
-    /// <param name="value">The numeric value.</param>
-    /// <param name="unit">The unit of the value.</param>
     public static ByteSize From(double value, ByteSizeUnit unit) => new((long)(value * (long)unit));
 
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a file's length.
-    /// </summary>
-    /// <param name="fileInfo">The file information.</param>
     public static ByteSize FromFileLength(FileInfo fileInfo) => new(fileInfo.Length);
-
-    /// <summary>
-    /// Creates a <see cref="ByteSize"/> from a file's length.
-    /// </summary>
-    /// <param name="filePath">The path to the file.</param>
     public static ByteSize FromFileLength(string filePath) => FromFileLength(new FileInfo(filePath));
 }

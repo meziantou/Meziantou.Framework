@@ -1,4 +1,17 @@
 namespace Meziantou.Framework.Win32;
+
+/// <summary>Defines I/O rate limits for a job object.</summary>
+/// <example>
+/// <code>
+/// var limits = new JobIoRateLimits
+/// {
+///     ControlFlags = JobIoRateFlags.Enable,
+///     MaxBandwidth = 1024 * 1024, // 1 MB/s
+///     MaxIops = 1000
+/// };
+/// job.SetIoLimits(limits);
+/// </code>
+/// </example>
 public sealed class JobIoRateLimits
 {
     /// <summary>

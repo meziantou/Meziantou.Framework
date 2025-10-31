@@ -477,7 +477,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
     {
         // Determine the format and unit
-        var formatString = format.IsEmpty ? "g" : format.ToString();
+        var formatString = format.IsEmpty ? "g" : format;
 
         var index = -1;
         for (var i = 0; i < formatString.Length; i++)
@@ -498,7 +498,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
         {
-            if (string.Equals(unitString, "gi", StringComparison.OrdinalIgnoreCase) || string.Equals(unitString, "fi", StringComparison.OrdinalIgnoreCase))
+            if (unitString.Equals("gi", StringComparison.OrdinalIgnoreCase) || unitString.Equals("fi", StringComparison.OrdinalIgnoreCase))
             {
                 unit = FindBestUnitI();
             }

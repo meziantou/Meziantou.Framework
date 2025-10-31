@@ -21,9 +21,9 @@ namespace Meziantou.Extensions.Logging.Xunit;
 ///         using var provider = new XUnitLoggerProvider(_output);
 ///         var loggerFactory = LoggerFactory.Create(builder =>
 ///         {
-///             builder.Services.AddSingleton&lt;ILoggerProvider&gt;(provider);
+///             builder.Services.AddSingleton{ILoggerProvider}(provider);
 ///         });
-///         var logger = loggerFactory.CreateLogger&lt;MyTests&gt;();
+///         var logger = loggerFactory.CreateLogger{MyTests}();
 ///         logger.LogInformation("This message will appear in the test output");
 ///     }
 /// }

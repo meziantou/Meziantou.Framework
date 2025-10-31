@@ -2,6 +2,12 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>Represents an awaitable wrapper that can be used with the await pattern.</summary>
+/// <remarks>
+/// This type wraps an arbitrary awaitable object and provides a uniform way to await it.
+/// It is designed to work with any type that implements the awaitable pattern, including
+/// Task, ValueTask, and custom awaitable types.
+/// </remarks>
 public readonly struct ObjectMethodExecutorAwaitable
 {
     private readonly object _customAwaitable;
@@ -45,12 +51,15 @@ public readonly struct ObjectMethodExecutorAwaitable
         _unsafeOnCompletedMethod = unsafeOnCompletedMethod;
     }
 
+    /// <summary>Returns the awaiter for this awaitable.</summary>
+    /// <returns>An awaiter that can be used to await this awaitable.</returns>
     public Awaiter GetAwaiter()
     {
         var customAwaiter = _getAwaiterMethod(_customAwaitable);
         return new Awaiter(customAwaiter, _isCompletedMethod, _getResultMethod, _onCompletedMethod, _unsafeOnCompletedMethod);
     }
 
+    /// <summary>Provides an awaiter that supports the await pattern.</summary>
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "")]
     public readonly struct Awaiter : ICriticalNotifyCompletion
     {
@@ -74,15 +83,22 @@ public readonly struct ObjectMethodExecutorAwaitable
             _unsafeOnCompletedMethod = unsafeOnCompletedMethod;
         }
 
+        /// <summary>Gets a value indicating whether the asynchronous operation has completed.</summary>
         public bool IsCompleted => _isCompletedMethod(_customAwaiter);
 
+        /// <summary>Retrieves the result of the asynchronous operation.</summary>
+        /// <returns>The result of the asynchronous operation.</returns>
         public object? GetResult() => _getResultMethod(_customAwaiter);
 
+        /// <summary>Schedules the continuation action to be invoked when the asynchronous operation completes.</summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
         public void OnCompleted(Action continuation)
         {
             _onCompletedMethod(_customAwaiter, continuation);
         }
 
+        /// <summary>Schedules the continuation action without capturing the execution context.</summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
         public void UnsafeOnCompleted(Action continuation)
         {
             // If the underlying awaitable implements ICriticalNotifyCompletion, use its UnsafeOnCompleted.

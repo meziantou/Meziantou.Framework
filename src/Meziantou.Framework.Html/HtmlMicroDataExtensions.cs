@@ -111,7 +111,7 @@ static class HtmlMicroDataExtensions
     public static string GetItemValue(this HtmlNode node)
     {
         if (node is null)
-            return string.Empty;
+            return "";
 
         string value;
         var name = node.Name.ToUpperInvariant();
@@ -155,6 +155,6 @@ static class HtmlMicroDataExtensions
                 break;
         }
 
-        return value ?? string.Empty;
+        return value ?? "";
     }
 }

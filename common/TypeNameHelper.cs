@@ -44,7 +44,7 @@ internal static class TypeNameHelper
     {
         StringBuilder? builder = null;
         var name = ProcessType(ref builder, type, new DisplayNameOptions(fullName, includeGenericParameterNames, includeGenericParameters, nestedTypeDelimiter));
-        return name ?? builder?.ToString() ?? string.Empty;
+        return name ?? builder?.ToString() ?? "";
     }
 
     private static string? ProcessType(ref StringBuilder? builder, Type type, in DisplayNameOptions options)

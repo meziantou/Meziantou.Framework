@@ -79,7 +79,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return _nameTable.Get(array) ?? _nameTable.Add(array);
     }
 
-    public override string BaseURI => GetOrAdd(string.Empty);
+    public override string BaseURI => GetOrAdd("");
 
     public override XPathNavigator Clone() => new HtmlNodeNavigator(this);
 
@@ -439,7 +439,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     return name.ToLowerInvariant();
             }
 
-            return name ?? string.Empty;
+            return name ?? "";
         }
     }
 
@@ -459,7 +459,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     return name.ToLowerInvariant();
             }
 
-            return name ?? string.Empty;
+            return name ?? "";
         }
     }
 
@@ -472,7 +472,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         {
             var ns = CurrentNode.NamespaceURI;
             if (Document?.Options.EmptyNamespacesForXPath.Contains(ns) == true)
-                return string.Empty;
+                return "";
 
             Debug.Assert(ns is not null);
             if ((Options & HtmlNodeNavigatorOptions.UppercasedNamespaceURIs) == HtmlNodeNavigatorOptions.UppercasedNamespaceURIs)
@@ -518,7 +518,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
             if ((Options & HtmlNodeNavigatorOptions.LowercasedPrefixes) == HtmlNodeNavigatorOptions.LowercasedPrefixes)
                 return prefix.ToLowerInvariant();
 
-            return prefix ?? string.Empty;
+            return prefix ?? "";
         }
     }
 

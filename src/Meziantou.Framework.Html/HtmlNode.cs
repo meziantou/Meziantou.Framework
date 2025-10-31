@@ -235,7 +235,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         var pos = name.IndexOf(':', StringComparison.Ordinal);
         if (pos < 0)
         {
-            prefix = string.Empty;
+            prefix = "";
             localName = name;
             return;
         }
@@ -244,7 +244,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         localName = Utilities.Nullify(name[(pos + 1)..], trim: true);
         if (prefix is null || localName is null)
         {
-            prefix = string.Empty;
+            prefix = "";
             localName = name;
         }
     }
@@ -382,7 +382,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
                         if (IsHtmlNs(ns.Value))
                             continue;
 
-                        Attributes.Add(XmlnsPrefix, ns.Key, string.Empty, ns.Value);
+                        Attributes.Add(XmlnsPrefix, ns.Key, "", ns.Value);
                     }
                 }
             }
@@ -579,7 +579,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute SetAttribute(string localName, string namespaceURI, string value)
     {
-        return SetAttribute(string.Empty, localName, namespaceURI, value);
+        return SetAttribute("", localName, namespaceURI, value);
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
@@ -986,7 +986,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (OwnerDocument is not null && OwnerDocument != this)
             return OwnerDocument.GetNamespaceOfPrefix(prefix);
 
-        return string.Empty;
+        return "";
     }
 
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
@@ -1009,7 +1009,7 @@ abstract partial class HtmlNode : INotifyPropertyChanged, IXmlNamespaceResolver
         if (OwnerDocument is not null && OwnerDocument != this)
             return OwnerDocument.GetPrefixOfNamespace(namespaceURI);
 
-        return string.Empty;
+        return "";
     }
 
     public virtual HtmlNode GetParent(Func<HtmlNode, bool> func)

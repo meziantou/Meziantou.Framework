@@ -17,7 +17,7 @@ sealed class HtmlText : HtmlNode
     private bool _cData;
 
     internal HtmlText(HtmlDocument ownerDocument)
-        : base(string.Empty, "#text", string.Empty, ownerDocument)
+        : base("", "#text", "", ownerDocument)
     {
     }
 

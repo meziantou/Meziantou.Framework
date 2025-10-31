@@ -34,7 +34,7 @@ public partial class QuerySyntax
             if (Current.Kind == kind)
                 return Next();
 
-            var token = new QueryToken(kind, Current.QueryText, new TextSpan(Current.Span.End, 0), string.Empty);
+            var token = new QueryToken(kind, Current.QueryText, new TextSpan(Current.Span.End, 0), "");
             return token;
         }
 
@@ -43,7 +43,7 @@ public partial class QuerySyntax
             if (Current.Kind is QuerySyntaxKind.ColonToken or QuerySyntaxKind.EqualOperatorToken or QuerySyntaxKind.NotEqualOperatorToken or QuerySyntaxKind.LessThanOperatorToken or QuerySyntaxKind.LessThanOrEqualOperatorToken or QuerySyntaxKind.GreaterThanOperatorToken or QuerySyntaxKind.GreaterThanOrEqualOperatorToken)
                 return Next();
 
-            var token = new QueryToken(QuerySyntaxKind.ColonToken, Current.QueryText, new TextSpan(Current.Span.End, 0), string.Empty);
+            var token = new QueryToken(QuerySyntaxKind.ColonToken, Current.QueryText, new TextSpan(Current.Span.End, 0), "");
             return token;
         }
 
@@ -191,7 +191,7 @@ public partial class QuerySyntax
         private QueryToken ReadKeyValueArgument(QueryToken operatorToken)
         {
             if (Current.Span.Start > operatorToken.Span.End)
-                return new QueryToken(QuerySyntaxKind.TextToken, operatorToken.QueryText, new TextSpan(operatorToken.Span.End, 0), string.Empty);
+                return new QueryToken(QuerySyntaxKind.TextToken, operatorToken.QueryText, new TextSpan(operatorToken.Span.End, 0), "");
 
             if (Current.Kind == QuerySyntaxKind.QuotedTextToken)
                 return Match(QuerySyntaxKind.QuotedTextToken);

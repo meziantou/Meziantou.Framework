@@ -408,7 +408,7 @@ public static class QueryStringUtilities
             {
                 if (delimiterIndex > scanIndex)
                 {
-                    result.Append(queryString[scanIndex..delimiterIndex], string.Empty);
+                    result.Append(queryString[scanIndex..delimiterIndex], "");
                 }
             }
 

@@ -62,7 +62,7 @@ sealed class HtmlAttributeList : INotifyCollectionChanged, IList<HtmlAttribute>,
         if (Parent is null || Parent.OwnerDocument is null)
             throw new InvalidOperationException();
 
-        var att = Parent.OwnerDocument.CreateAttribute(string.Empty, name, string.Empty);
+        var att = Parent.OwnerDocument.CreateAttribute("", name, "");
         att.Value = value;
         Add(att);
         return att;

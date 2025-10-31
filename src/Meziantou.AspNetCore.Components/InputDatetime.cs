@@ -28,7 +28,7 @@ public class InputDateTime<TValue> : InputDate<TValue>
         {
             DateTime dateTimeValue => BindConverter.FormatValue(dateTimeValue, DateFormat, CultureInfo.InvariantCulture),
             DateTimeOffset dateTimeOffsetValue => BindConverter.FormatValue(dateTimeOffsetValue, DateFormat, CultureInfo.InvariantCulture),
-            _ => string.Empty,// Handles null for Nullable<DateTime>, etc.
+            _ => "",// Handles null for Nullable<DateTime>, etc.
         };
     }
 

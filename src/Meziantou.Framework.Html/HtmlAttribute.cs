@@ -26,7 +26,7 @@ sealed class HtmlAttribute : HtmlNode
         get
         {
             if (string.IsNullOrWhiteSpace(Prefix))
-                return string.Empty;
+                return "";
 
             return base.NamespaceURI;
         }

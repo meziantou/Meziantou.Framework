@@ -7,7 +7,7 @@ namespace Meziantou.AspNetCore.Components;
 
 public class InputGuid<TValue> : InputBase<TValue>
 {
-    [Parameter] public string ParsingErrorMessage { get; set; } = string.Empty;
+    [Parameter] public string ParsingErrorMessage { get; set; } = "";
     [DisallowNull] public ElementReference? Element { get; protected set; }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -28,7 +28,7 @@ public class InputGuid<TValue> : InputBase<TValue>
         return value switch
         {
             Guid guid => guid.ToString(),
-            _ => string.Empty,// Handles null for Nullable<DateTime>, etc.
+            _ => "",// Handles null for Nullable<DateTime>, etc.
         };
     }
 

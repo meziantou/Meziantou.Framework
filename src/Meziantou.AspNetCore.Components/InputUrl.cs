@@ -7,7 +7,7 @@ namespace Meziantou.AspNetCore.Components;
 
 public class InputUrl<TValue> : InputBase<TValue>
 {
-    [Parameter] public string ParsingErrorMessage { get; set; } = string.Empty;
+    [Parameter] public string ParsingErrorMessage { get; set; } = "";
     [DisallowNull] public ElementReference? Element { get; protected set; }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)
@@ -29,7 +29,7 @@ public class InputUrl<TValue> : InputBase<TValue>
         {
             string str => str,
             Uri uri => uri.ToString(),
-            _ => string.Empty,// Handles null for Nullable<DateTime>, etc.
+            _ => "",// Handles null for Nullable<DateTime>, etc.
         };
     }
 

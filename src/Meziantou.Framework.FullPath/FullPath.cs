@@ -113,7 +113,7 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             return path2;
 
         if ((i == path1.Length + 1) && (i == path2.Length))
-            return string.Empty;
+            return "";
 
         var relPath = new StringBuilder();
         // Walk down several dirs

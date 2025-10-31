@@ -23,7 +23,7 @@ sealed class HtmlDocument : HtmlNode
     public event EventHandler<HtmlDocumentParseEventArgs> Parsed;
 
     public HtmlDocument()
-        : base(string.Empty, "#document", string.Empty, ownerDocument: null)
+        : base("", "#document", "", ownerDocument: null)
     {
     }
 
@@ -390,23 +390,23 @@ sealed class HtmlDocument : HtmlNode
     public override string GetNamespaceOfPrefix(string prefix)
     {
         if (_declaredPrefixes is null)
-            return string.Empty;
+            return "";
 
         if (_declaredPrefixes.TryGetValue(prefix, out var namespaceURI))
             return namespaceURI;
 
-        return string.Empty;
+        return "";
     }
 
     public override string GetPrefixOfNamespace(string namespaceURI)
     {
         if (_declaredNamespaces is null)
-            return string.Empty;
+            return "";
 
         if (_declaredNamespaces.TryGetValue(namespaceURI, out var prefix))
             return prefix;
 
-        return string.Empty;
+        return "";
     }
 
     protected override void GetNamespaceAttributes(IDictionary<string, string> namespaces)

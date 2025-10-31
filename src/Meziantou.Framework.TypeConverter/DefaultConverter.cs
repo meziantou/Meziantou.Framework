@@ -111,7 +111,7 @@ public class DefaultConverter : IConverter
     private static string ToHexa(byte[]? bytes)
     {
         if (bytes is null)
-            return string.Empty;
+            return "";
 
         return ToHexa(bytes, 0, bytes.Length);
     }
@@ -119,7 +119,7 @@ public class DefaultConverter : IConverter
     private static string ToHexa(byte[]? bytes, int offset, int count)
     {
         if (bytes is null)
-            return string.Empty;
+            return "";
 
         if (offset < 0)
             throw new ArgumentOutOfRangeException(nameof(offset), offset, message: null);
@@ -128,7 +128,7 @@ public class DefaultConverter : IConverter
             throw new ArgumentOutOfRangeException(nameof(count), count, message: null);
 
         if (offset >= bytes.Length)
-            return string.Empty;
+            return "";
 
         count = Math.Min(count, bytes.Length - offset);
 

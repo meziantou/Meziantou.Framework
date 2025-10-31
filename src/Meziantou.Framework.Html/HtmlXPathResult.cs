@@ -12,7 +12,7 @@ internal
 sealed class HtmlXPathResult : HtmlNode
 {
     internal HtmlXPathResult(HtmlDocument ownerDocument, object result)
-        : base(string.Empty, "#result", string.Empty, ownerDocument)
+        : base("", "#result", "", ownerDocument)
     {
         Result = result;
     }

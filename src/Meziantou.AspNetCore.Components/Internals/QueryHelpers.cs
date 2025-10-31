@@ -178,7 +178,7 @@ internal static class QueryHelpers
             {
                 if (delimiterIndex > scanIndex)
                 {
-                    accumulator.Append(queryString[scanIndex..delimiterIndex], string.Empty);
+                    accumulator.Append(queryString[scanIndex..delimiterIndex], "");
                 }
             }
 

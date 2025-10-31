@@ -306,7 +306,7 @@ public static partial class StringSearchUtilities
 
         // Return empty string if string is empty
         if (sb.Length is 0)
-            return string.Empty;
+            return "";
 
         // Replace characters
         if (replace is not null)

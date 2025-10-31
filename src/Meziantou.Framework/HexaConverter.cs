@@ -32,7 +32,7 @@ public static class HexaConverter
     public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
     {
         if (bytes.Length is 0)
-            return string.Empty;
+            return "";
 
         return options switch
         {

@@ -51,7 +51,7 @@ internal sealed class HtmlXsltContext : XsltContext
             ns = Resolver.LookupNamespace(prefix);
         }
 
-        return ns ?? string.Empty;
+        return ns ?? "";
     }
 
     public override string LookupPrefix(string uri)
@@ -62,7 +62,7 @@ internal sealed class HtmlXsltContext : XsltContext
             prefix = Resolver.LookupPrefix(prefix);
         }
 
-        return prefix ?? string.Empty;
+        return prefix ?? "";
     }
 
     public override bool Whitespace => true;

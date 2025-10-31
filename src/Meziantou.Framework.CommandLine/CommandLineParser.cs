@@ -48,7 +48,7 @@ public sealed class CommandLineParser
                 var indexOfSeparator = arg.IndexOfAny(ValueDelimiters);
 
                 var name = arg;
-                var value = string.Empty;
+                var value = "";
                 if (indexOfSeparator >= 0)
                 {
                     name = arg[..indexOfSeparator].Trim();

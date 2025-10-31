@@ -15,7 +15,7 @@ sealed class HtmlComment : HtmlNode
     private string _value;
 
     internal HtmlComment(HtmlDocument ownerDocument)
-        : base(string.Empty, "#comment", string.Empty, ownerDocument)
+        : base("", "#comment", "", ownerDocument)
     {
     }
 

@@ -2,14 +2,26 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>Provides factory methods for creating typed range instances.</summary>
 public static class Range
 {
+    /// <summary>Creates a range with the specified start and end values.</summary>
     public static Range<T> Create<T>(T from, T to) where T : IComparable<T>
     {
         return new Range<T>(from, to);
     }
 }
 
+/// <summary>
+/// Represents a range of comparable values with support for various inclusion/exclusion boundary checks.
+/// </summary>
+/// <example>
+/// <code>
+/// var range = new Range&lt;int&gt;(1, 10);
+/// bool isInRange = range.IsInRangeInclusive(5); // true
+/// bool isOutOfRange = range.IsInRangeInclusive(15); // false
+/// </code>
+/// </example>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct Range<T> : IEquatable<Range<T>>
     where T : IComparable<T>
@@ -20,9 +32,13 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         To = to;
     }
 
+    /// <summary>Gets the start value of the range.</summary>
     public T From { get; }
+
+    /// <summary>Gets the end value of the range.</summary>
     public T To { get; }
 
+    /// <summary>Determines whether the specified value is within this range, inclusive of boundaries.</summary>
     public bool IsInRangeInclusive(T value)
     {
         if (From is not null && From.CompareTo(value) > 0)
@@ -34,6 +50,7 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return true;
     }
 
+    /// <summary>Determines whether the specified value is within this range, exclusive of boundaries.</summary>
     public bool IsInRangeExclusive(T value)
     {
         if (From is not null && From.CompareTo(value) >= 0)
@@ -45,6 +62,7 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return true;
     }
 
+    /// <summary>Determines whether the specified value is within this range, inclusive of the lower bound and exclusive of the upper bound.</summary>
     public bool IsInRangeLowerInclusive(T value)
     {
         if (From is not null && From.CompareTo(value) > 0)
@@ -56,6 +74,7 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return true;
     }
 
+    /// <summary>Determines whether the specified value is within this range, exclusive of the lower bound and inclusive of the upper bound.</summary>
     public bool IsInRangeUpperInclusive(T value)
     {
         if (From is not null && From.CompareTo(value) >= 0)
@@ -67,21 +86,25 @@ public readonly struct Range<T> : IEquatable<Range<T>>
         return true;
     }
 
+    /// <summary>Determines whether the specified range is fully contained within this range, inclusive of boundaries.</summary>
     public bool IsInRangeInclusive(Range<T> range)
     {
         return IsInRangeInclusive(range.From) && IsInRangeInclusive(range.To);
     }
 
+    /// <summary>Determines whether the specified range is fully contained within this range, exclusive of boundaries.</summary>
     public bool IsInRangeExclusive(Range<T> range)
     {
         return IsInRangeExclusive(range.From) && IsInRangeExclusive(range.To);
     }
 
+    /// <summary>Determines whether the specified range is fully contained within this range, inclusive of the lower bound and exclusive of the upper bound.</summary>
     public bool IsInRangeLowerInclusive(Range<T> range)
     {
         return IsInRangeLowerInclusive(range.From) && IsInRangeLowerInclusive(range.To);
     }
 
+    /// <summary>Determines whether the specified range is fully contained within this range, exclusive of the lower bound and inclusive of the upper bound.</summary>
     public bool IsInRangeUpperInclusive(Range<T> range)
     {
         return IsInRangeUpperInclusive(range.From) && IsInRangeUpperInclusive(range.To);

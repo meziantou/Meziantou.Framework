@@ -56,19 +56,41 @@ namespace Meziantou.Framework;
       through 15 of the hash.
    -  Convert the resulting UUID to local byte order.
  */
+
+/// <summary>
+/// Provides methods for generating deterministic (version 3 and version 5) GUIDs according to RFC 4122.
+/// </summary>
+/// <example>
+/// <code>
+/// // Generate a GUID from a DNS name
+/// var guid = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "example.com", DeterministicGuidVersion.Version5);
+/// // The same input will always generate the same GUID
+/// var guid2 = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "example.com", DeterministicGuidVersion.Version5);
+/// Assert.Equal(guid, guid2);
+/// </code>
+/// </example>
 public static class DeterministicGuid
 {
+    /// <summary>Gets the DNS namespace UUID as defined in RFC 4122.</summary>
     public static Guid DnsNamespace { get; } = new Guid(0x6ba7b810, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>Gets the URL namespace UUID as defined in RFC 4122.</summary>
     public static Guid UrlNamespace { get; } = new Guid(0x6ba7b811, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b811-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>Gets the ISO OID namespace UUID as defined in RFC 4122.</summary>
     public static Guid OidNamespace { get; } = new Guid(0x6ba7b812, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b812-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>Gets the X.500 Distinguished Name namespace UUID as defined in RFC 4122.</summary>
     public static Guid X500Namespace { get; } = new Guid(0x6ba7b814, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b814-9dad-11d1-80b4-00c04fd430c8 */;
 
+    /// <summary>Creates a deterministic GUID from a namespace and name using the specified version.</summary>
     public static Guid Create(Guid @namespace, string name, DeterministicGuidVersion version)
     {
         var nameBytes = Encoding.UTF8.GetBytes(name);
         return Create(@namespace, nameBytes, version);
     }
 
+    /// <summary>Creates a deterministic GUID from a namespace and name bytes using the specified version.</summary>
     public static Guid Create(Guid @namespace, ReadOnlySpan<byte> name, DeterministicGuidVersion version)
     {
         if (version is not DeterministicGuidVersion.Version3 and not DeterministicGuidVersion.Version5)

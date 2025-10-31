@@ -6,19 +6,12 @@ namespace Meziantou.Extensions.Logging.Xunit;
 /// <summary>An <see cref="ILoggerProvider"/> implementation that creates loggers that write to xUnit's <see cref="ITestOutputHelper"/>.</summary>
 /// <example>
 /// <code>
-/// public class MyTests
+/// public class MyTests(ITestOutputHelper output)
 /// {
-///     private readonly ITestOutputHelper _output;
-///
-///     public MyTests(ITestOutputHelper output)
-///     {
-///         _output = output;
-///     }
-///
 ///     [Fact]
 ///     public void MyTest()
 ///     {
-///         using var provider = new XUnitLoggerProvider(_output);
+///         using var provider = new XUnitLoggerProvider(output);
 ///         var loggerFactory = LoggerFactory.Create(builder =>
 ///         {
 ///             builder.Services.AddSingleton{ILoggerProvider}(provider);

@@ -92,6 +92,9 @@ public sealed class InMemoryLoggerProvider : ILoggerProvider
         _scopeProvider = scopeProvider ?? new LoggerExternalScopeProvider();
     }
 
+    /// <summary>Creates a new logger instance with the specified category name.</summary>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <returns>A new instance of <see cref="ILogger"/>.</returns>
     public ILogger CreateLogger(string categoryName)
     {
         return new InMemoryLogger(categoryName, Logs, _scopeProvider, _timeProvider);

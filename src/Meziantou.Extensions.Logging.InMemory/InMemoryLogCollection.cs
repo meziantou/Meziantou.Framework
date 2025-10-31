@@ -134,6 +134,7 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
         }
     }
 
+    /// <summary>Enumerates the elements of a <see cref="InMemoryLogCollection"/>.</summary>
     public struct Enumerator : IEnumerator<InMemoryLogEntry>
     {
         private Chunk<InMemoryLogEntry>? _chunk;

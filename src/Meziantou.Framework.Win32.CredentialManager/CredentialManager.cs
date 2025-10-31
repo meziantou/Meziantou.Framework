@@ -117,7 +117,7 @@ public static class CredentialManager
     /// <param name="persistence">The persistence option for the credential.</param>
     /// <param name="type">The type of the credential.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/>, <paramref name="userName"/>, or <paramref name="secret"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds the maximum size or <paramref name="comment"/> exceeds 255 characters.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds 512 bytes (on Windows XP/Vista) or 2560 bytes (on Windows 7 and later), or <paramref name="comment"/> exceeds 255 characters.</exception>
     public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
         ArgumentNullException.ThrowIfNull(applicationName);

@@ -21,9 +21,9 @@ public enum CredentialType
     /// <summary>An extended domain credential.</summary>
     DomainExtended,
 
-    /// <summary>The maximum number of supported credential types.</summary>
+    /// <summary>A sentinel value indicating the maximum number of supported credential types. This is used internally by the Windows API and should not be used as an actual credential type.</summary>
     Maximum,
 
-    /// <summary>The maximum number of supported credential types including extended types.</summary>
+    /// <summary>A sentinel value indicating the maximum number of supported credential types including extended types. This is used internally by the Windows API and should not be used as an actual credential type.</summary>
     MaximumEx = Maximum + 1000,
 }

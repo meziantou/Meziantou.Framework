@@ -4,6 +4,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
+/// <summary>
+/// Represents a thread-safe collection of log entries captured by in-memory loggers.
+/// </summary>
+/// <example>
+/// <code>
+/// var logger = InMemoryLogger.CreateLogger("sample");
+/// logger.LogInformation("Info message");
+/// logger.LogError("Error message");
+/// 
+/// // Filter by log level
+/// var errors = logger.Logs.Errors;
+/// var infos = logger.Logs.Informations;
+/// 
+/// // Search for specific entries
+/// var entry = logger.Logs.Find(log => log.Message.Contains("Error"));
+/// </code>
+/// </example>
 public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
 {
     private const int MaxChunkSize = 8000;
@@ -54,18 +71,35 @@ public sealed class InMemoryLogCollection : IEnumerable<InMemoryLogEntry>
     IEnumerator<InMemoryLogEntry> IEnumerable<InMemoryLogEntry>.GetEnumerator() => new Enumerator(this);
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Debug"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Debugs => GetByLogLevel(LogLevel.Debug);
+
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Trace"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Traces => GetByLogLevel(LogLevel.Trace);
+
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Information"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Informations => GetByLogLevel(LogLevel.Information);
+
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Warning"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Warnings => GetByLogLevel(LogLevel.Warning);
+
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Error"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Errors => GetByLogLevel(LogLevel.Error);
+
+    /// <summary>Gets all log entries with log level <see cref="LogLevel.Critical"/>.</summary>
     public IEnumerable<InMemoryLogEntry> Criticals => GetByLogLevel(LogLevel.Critical);
 
+    /// <summary>Determines whether the collection contains any log entry that matches the specified predicate.</summary>
+    /// <param name="predicate">The function to test each log entry for a condition.</param>
+    /// <returns><see langword="true"/> if any log entry matches the predicate; otherwise, <see langword="false"/>.</returns>
     public bool Contains(Func<InMemoryLogEntry, bool> predicate)
     {
         return Find(predicate) is not null;
     }
 
+    /// <summary>Searches for the first log entry that matches the specified predicate.</summary>
+    /// <param name="predicate">The function to test each log entry for a condition.</param>
+    /// <returns>The first log entry that matches the predicate, or <see langword="null"/> if no match is found.</returns>
     public InMemoryLogEntry? Find(Func<InMemoryLogEntry, bool> predicate)
     {
         var chunk = _firstChunk;

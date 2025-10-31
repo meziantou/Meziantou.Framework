@@ -189,7 +189,7 @@ public sealed class RestartManager : IDisposable
     {
         var result = NativeMethods.RmRestart(SessionHandle, 0, statusCallback);
         if (result != RmResult.ERROR_SUCCESS)
-            throw new Win32Exception((int)result, $"RmShutdown failed ({result})");
+            throw new Win32Exception((int)result, $"RmRestart failed ({result})");
     }
 
     /// <summary>Ends the Restart Manager session and releases all resources.</summary>

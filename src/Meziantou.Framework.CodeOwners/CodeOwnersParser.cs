@@ -7,9 +7,11 @@ namespace Meziantou.Framework.CodeOwners;
 /// Parses CODEOWNERS files used by GitHub and GitLab to define code ownership.
 /// <example>
 /// <code>
-/// var content = @"* @user1 @user2
-/// *.js @js-owner
-/// docs/* docs@example.com";
+/// var content = """
+///     * @user1 @user2
+///     *.js @js-owner
+///     docs/* docs@example.com
+///     """;
 /// var entries = CodeOwnersParser.Parse(content).ToArray();
 /// // entries[0]: Pattern="*", Member="user1", EntryType=Username
 /// // entries[1]: Pattern="*", Member="user2", EntryType=Username

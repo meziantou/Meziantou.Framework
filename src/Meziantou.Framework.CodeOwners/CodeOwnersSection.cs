@@ -7,11 +7,13 @@ namespace Meziantou.Framework.CodeOwners;
 /// <example>
 /// <code>
 /// // Parse a CODEOWNERS file with sections
-/// var content = @"[Backend][2] @backend-team
-/// *.cs @csharp-owner
-/// 
-/// ^[Optional]
-/// docs/* @docs-owner";
+/// var content = """
+///     [Backend][2] @backend-team
+///     *.cs @csharp-owner
+///     
+///     ^[Optional]
+///     docs/* @docs-owner
+///     """;
 /// var entries = CodeOwnersParser.Parse(content).ToArray();
 /// // entries[0].Section: Name="Backend", RequiredReviewerCount=2
 /// // entries[1].Section: Name="Optional", IsOptional=true

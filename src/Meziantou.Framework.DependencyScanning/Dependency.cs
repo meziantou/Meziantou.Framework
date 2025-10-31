@@ -2,19 +2,6 @@ namespace Meziantou.Framework.DependencyScanning;
 
 /// <summary>
 /// Represents a dependency discovered during scanning, including its name, version, type, and location information.
-/// <example>
-/// <code>
-/// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", null, cancellationToken);
-/// foreach (var dependency in dependencies)
-/// {
-///     Console.WriteLine($"{dependency.Type}: {dependency.Name}@{dependency.Version}");
-///     if (dependency.VersionLocation?.IsUpdatable == true)
-///     {
-///         await dependency.UpdateVersionAsync("2.0.0", cancellationToken);
-///     }
-/// }
-/// </code>
-/// </example>
 /// </summary>
 public sealed class Dependency
 {

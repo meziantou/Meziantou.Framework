@@ -160,7 +160,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     {
         // Determine the format and unit
         var formatString = format.IsEmpty ? "g" : format.ToString();
-        
+
         var index = -1;
         for (var i = 0; i < formatString.Length; i++)
         {
@@ -211,7 +211,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         // Format the value
         var value = GetValue(unit);
         var unitStr = UnitToString(unit);
-        
+
         // Try to format the number part
         if (!value.TryFormat(destination, out var numberCharsWritten, numberFormat, provider))
         {
@@ -329,69 +329,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     public ByteSize Multiply(ByteSize other) => this * other;
     public ByteSize Divide(ByteSize other) => this / other;
 
-    private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
-    {
-#if NET7_0_OR_GREATER
-        return TryParseUnit(unit.AsSpan(), out result, out parsedLength);
-#else
-        if (unit[^1] is not 'b' and not 'B')
-        {
-            result = default;
-            parsedLength = 0;
-            return false;
-        }
-
-        if (unit.Length > 1)
-        {
-            parsedLength = 2;
-            var isI = false;
-            var c = char.ToUpperInvariant(unit[^2]);
-            if (c is 'i' or 'I')
-            {
-                parsedLength = 3;
-                if (unit.Length > 2)
-                {
-                    c = char.ToUpperInvariant(unit[^3]);
-                    isI = true;
-                }
-                else
-                {
-                    result = default;
-                    return false;
-                }
-            }
-
-            switch (c)
-            {
-                case 'K':
-                    result = isI ? ByteSizeUnit.KibiByte : ByteSizeUnit.KiloByte;
-                    return true;
-
-                case 'M':
-                    result = isI ? ByteSizeUnit.MebiByte : ByteSizeUnit.MegaByte;
-                    return true;
-
-                case 'G':
-                    result = isI ? ByteSizeUnit.GibiByte : ByteSizeUnit.GigaByte;
-                    return true;
-
-                case 'T':
-                    result = isI ? ByteSizeUnit.TebiByte : ByteSizeUnit.TeraByte;
-                    return true;
-
-                case 'P':
-                    result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
-                    return true;
-            }
-        }
-
-        parsedLength = 1;
-        result = ByteSizeUnit.Byte;
-        return true;
-#endif
-    }
-
-#if NET7_0_OR_GREATER
     private static bool TryParseUnit(ReadOnlySpan<char> unit, out ByteSizeUnit result, out int parsedLength)
     {
         if (unit.IsEmpty || unit[^1] is not 'b' and not 'B')
@@ -449,12 +386,9 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         result = ByteSizeUnit.Byte;
         return true;
     }
-#endif
 
-    // Suppress CA1725: Parameter names cannot be changed as this is a shipped public API
-#pragma warning disable CA1725
+    [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Would be a breaking change")]
     public static ByteSize Parse(string text, IFormatProvider? formatProvider)
-#pragma warning restore CA1725
     {
         if (TryParse(text, formatProvider, out var result))
             return result;
@@ -467,41 +401,12 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return TryParse(text, formatProvider: null, out result);
     }
 
-    // Suppress CA1725: Parameter names cannot be changed as this is a shipped public API
-#pragma warning disable CA1725
+    [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Would be a breaking change")]
     public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
-#pragma warning restore CA1725
     {
-        text = text.Trim();
-
-        // Find unit
-        if (TryParseUnit(text, out var unit, out var unitLength))
-        {
-            text = text[..^unitLength];
-        }
-        else
-        {
-            unit = ByteSizeUnit.Byte;
-        }
-
-        // Convert number
-        if (long.TryParse(text, NumberStyles.Integer, formatProvider, out var resultLong))
-        {
-            result = From(resultLong, unit);
-            return true;
-        }
-
-        if (double.TryParse(text, NumberStyles.Float, formatProvider, out var resultDouble))
-        {
-            result = From(resultDouble, unit);
-            return true;
-        }
-
-        result = default;
-        return false;
+        return TryParse(text.AsSpan(), formatProvider, out result);
     }
 
-#if NET7_0_OR_GREATER
     /// <summary>
     /// Parses a span of characters into a ByteSize value.
     /// </summary>
@@ -540,13 +445,18 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Convert number
-        if (long.TryParse(s, NumberStyles.Integer, provider, out var resultLong))
+#if NET7_0_OR_GREATER
+        var valueToParse = s;
+#else
+        var valueToParse = s.ToString();
+#endif
+        if (long.TryParse(valueToParse, NumberStyles.Integer, provider, out var resultLong))
         {
             result = From(resultLong, unit);
             return true;
         }
 
-        if (double.TryParse(s, NumberStyles.Float, provider, out var resultDouble))
+        if (double.TryParse(valueToParse, NumberStyles.Float, provider, out var resultDouble))
         {
             result = From(resultDouble, unit);
             return true;
@@ -555,11 +465,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         result = default;
         return false;
     }
-
-    // Explicit interface implementations for ISpanParsable<ByteSize>
-    static ByteSize ISpanParsable<ByteSize>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider);
-    static bool ISpanParsable<ByteSize>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ByteSize result) => TryParse(s, provider, out result);
-#endif
 
 #if NET8_0_OR_GREATER
     /// <summary>
@@ -574,7 +479,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     {
         // Determine the format and unit
         var formatString = format.IsEmpty ? "g" : format.ToString();
-        
+
         var index = -1;
         for (var i = 0; i < formatString.Length; i++)
         {
@@ -592,8 +497,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             unitString = formatString[..index];
         }
 
-        ByteSizeUnit unit;
-        if (!TryParseUnit(unitString, out unit, out var parsedLength) || unitString.Length != parsedLength)
+        if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
         {
             if (string.Equals(unitString, "gi", StringComparison.OrdinalIgnoreCase) || string.Equals(unitString, "fi", StringComparison.OrdinalIgnoreCase))
             {
@@ -625,7 +529,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         // Format the value
         var value = GetValue(unit);
         var unitStr = UnitToString(unit);
-        
+
         // Try to format the number part as UTF-8
         if (!value.TryFormat(utf8Destination, out var numberBytesWritten, numberFormat, provider))
         {
@@ -645,7 +549,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         {
             utf8Destination[numberBytesWritten + i] = (byte)unitStr[i];
         }
-        
+
         bytesWritten = numberBytesWritten + unitStr.Length;
         return true;
     }
@@ -676,7 +580,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     {
         // UTF-8 parsing is culture-invariant, so provider is not used
         _ = provider;
-        
+
         // Trim leading and trailing whitespace
         while (utf8Text.Length > 0 && IsWhitespace(utf8Text[0]))
         {
@@ -688,11 +592,10 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Find unit by checking from the end
-        ByteSizeUnit unit;
-        if (TryParseUtf8Unit(utf8Text, out unit, out var unitLength))
+        if (TryParseUtf8Unit(utf8Text, out var unit, out var unitLength))
         {
             utf8Text = utf8Text[..^unitLength];
-            
+
             // Trim trailing whitespace after removing unit
             while (utf8Text.Length > 0 && IsWhitespace(utf8Text[^1]))
             {
@@ -785,10 +688,6 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         result = ByteSizeUnit.Byte;
         return true;
     }
-
-    // Explicit interface implementations for IUtf8SpanParsable<ByteSize>
-    static ByteSize IUtf8SpanParsable<ByteSize>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, provider);
-    static bool IUtf8SpanParsable<ByteSize>.TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out ByteSize result) => TryParse(utf8Text, provider, out result);
 #endif
 
     public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);

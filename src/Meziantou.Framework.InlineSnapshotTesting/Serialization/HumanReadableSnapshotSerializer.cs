@@ -4,6 +4,9 @@ using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
+/// <summary>
+/// Serializes objects to human-readable string representations suitable for snapshot testing.
+/// </summary>
 public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
 {
     internal HumanReadableSerializerOptions? Options { get; }
@@ -37,6 +40,7 @@ public sealed class HumanReadableSnapshotSerializer : SnapshotSerializer
         Options = options;
     }
 
+    /// <inheritdoc/>
     public override string Serialize(object? value)
     {
         return HumanReadableSerializer.Serialize(value, Options);

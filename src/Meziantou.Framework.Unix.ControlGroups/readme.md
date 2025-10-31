@@ -34,20 +34,20 @@ using Meziantou.Framework.Unix.ControlGroups;
 var root = CGroup2.Root;
 
 // Create a new cgroup
-var myGroup = root.CreateChild("myapp");
+var myGroup = root.CreateOrGetChild("myapp");
 
 // Add the current process to the cgroup
-myGroup.AddProcess(Environment.ProcessId);
+myGroup.AssociateProcess(Environment.ProcessId);
 
 // Create nested cgroups
-var subGroup = myGroup.CreateChild("worker1");
+var subGroup = myGroup.CreateOrGetChild("worker1");
 ```
 
 ### CPU Control
 
 ```csharp
 // Enable CPU controller
-myGroup.EnableController("cpu");
+myGroup.SetControllers("cpu");
 
 // Set CPU weight (relative share, 1-10000, default 100)
 myGroup.SetCpuWeight(200); // 2x the default share
@@ -72,7 +72,7 @@ if (cpuStat != null)
 
 ```csharp
 // Enable memory controller
-myGroup.EnableController("memory");
+myGroup.SetControllers("memory");
 
 // Set hard memory limit (1 GB)
 myGroup.SetMemoryMax(1024L * 1024 * 1024);
@@ -104,7 +104,7 @@ if (memoryStat != null)
 
 ```csharp
 // Enable IO controller
-myGroup.EnableController("io");
+myGroup.SetControllers("io");
 
 // Set default IO weight
 myGroup.SetDefaultIoWeight(200);
@@ -136,7 +136,7 @@ myGroup.RemoveIoMax(8, 0);
 
 ```csharp
 // Enable PIDs controller
-myGroup.EnableController("pids");
+myGroup.SetControllers("pids");
 
 // Limit to 100 processes
 myGroup.SetPidsMax(100);
@@ -154,7 +154,7 @@ Console.WriteLine($"Max processes: {maxPids}");
 
 ```csharp
 // Enable cpuset controller
-myGroup.EnableController("cpuset");
+myGroup.SetControllers("cpuset");
 
 // Restrict to CPUs 0, 1, 2
 myGroup.SetCpusetCpus(0, 1, 2);
@@ -194,15 +194,15 @@ Console.WriteLine($"HugeTLB limit hits: {limitHits}");
 ### Process Management
 
 ```csharp
-// Add a process
+// Associate a process
 using var process = Process.Start("myapp");
-myGroup.AddProcess(process);
+myGroup.AssociateProcess(process);
 
 // Or by PID
-myGroup.AddProcess(1234);
+myGroup.AssociateProcess(1234);
 
 // Add a thread by TID
-myGroup.AddThread(5678);
+myGroup.AssociateThread(5678);
 
 // Get all processes in the cgroup
 foreach (var pid in myGroup.GetProcesses())
@@ -252,10 +252,10 @@ var enabled = myGroup.GetEnabledControllers();
 Console.WriteLine($"Enabled: {string.Join(", ", enabled)}");
 
 // Enable multiple controllers at once
-myGroup.EnableControllers("cpu", "memory", "io");
+myGroup.SetControllers("cpu", "memory", "io");
 
 // Disable a controller
-myGroup.DisableController("io");
+myGroup.SetControllers("-io");
 ```
 
 ### Cleanup
@@ -290,7 +290,7 @@ using System.Diagnostics;
 var appGroup = CGroup2.Root.CreateOrGetChild("myapp");
 
 // Enable controllers
-appGroup.EnableControllers("cpu", "memory", "io", "pids");
+appGroup.SetControllers("cpu", "memory", "io", "pids");
 
 // Configure limits
 appGroup.SetCpuWeight(100);       // Normal priority
@@ -301,12 +301,12 @@ appGroup.SetPidsMax(200);       // Max 200 processes
 
 // Start your application
 var process = Process.Start("myapp");
-appGroup.AddProcess(process);
+appGroup.AssociateProcess(process);
 
 // Monitor
 while (!process.HasExited)
 {
-  var cpuStat = appGroup.GetCpuStat();
+    var cpuStat = appGroup.GetCpuStat();
     var memCurrent = appGroup.GetMemoryCurrent();
     var pidsCurrent = appGroup.GetPidsCurrent();
     

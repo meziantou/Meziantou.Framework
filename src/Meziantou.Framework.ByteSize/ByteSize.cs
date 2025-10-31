@@ -343,7 +343,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             parsedLength = 2;
             var isI = false;
             var c = char.ToUpperInvariant(unit[^2]);
-            if (c is 'i' or 'I')
+            if (c is 'I')
             {
                 parsedLength = 3;
                 if (unit.Length > 2)
@@ -644,7 +644,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             var isI = false;
             var c = (char)unit[^2];
             c = char.ToUpperInvariant(c);
-            if (c is 'i' or 'I')
+            if (c is 'I')
             {
                 parsedLength = 3;
                 if (unit.Length > 2)

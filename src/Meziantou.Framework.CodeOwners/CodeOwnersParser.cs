@@ -3,8 +3,26 @@ using Microsoft.Extensions.ObjectPool;
 
 namespace Meziantou.Framework.CodeOwners;
 
+/// <summary>
+/// Parses CODEOWNERS files used by GitHub and GitLab to define code ownership.
+/// <example>
+/// <code>
+/// var content = @"* @user1 @user2
+/// *.js @js-owner
+/// docs/* docs@example.com";
+/// var entries = CodeOwnersParser.Parse(content).ToArray();
+/// // entries[0]: Pattern="*", Member="user1", EntryType=Username
+/// // entries[1]: Pattern="*", Member="user2", EntryType=Username
+/// // entries[2]: Pattern="*.js", Member="js-owner", EntryType=Username
+/// // entries[3]: Pattern="docs/*", Member="docs@example.com", EntryType=EmailAddress
+/// </code>
+/// </example>
+/// </summary>
 public static class CodeOwnersParser
 {
+    /// <summary>Parses the content of a CODEOWNERS file and returns the code owner entries.</summary>
+    /// <param name="content">The content of the CODEOWNERS file.</param>
+    /// <returns>An enumerable collection of <see cref="CodeOwnersEntry"/> representing the parsed code owners.</returns>
     public static IEnumerable<CodeOwnersEntry> Parse(string content)
     {
         var context = new CodeOwnersParserContext(content);

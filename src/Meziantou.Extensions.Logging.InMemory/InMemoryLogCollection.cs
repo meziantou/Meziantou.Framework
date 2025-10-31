@@ -10,8 +10,6 @@ namespace Meziantou.Extensions.Logging.InMemory;
 /// <example>
 /// <code>
 /// var logger = InMemoryLogger.CreateLogger("sample");
-/// logger.LogInformation("Info message");
-/// logger.LogError("Error message");
 /// 
 /// // Filter by log level
 /// var errors = logger.Logs.Errors;

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the active power management scheme (Windows only).</summary>
 public sealed class PowerManagementSnapshot
 {
     private PowerManagementSnapshot(Guid id, string? friendlyName)

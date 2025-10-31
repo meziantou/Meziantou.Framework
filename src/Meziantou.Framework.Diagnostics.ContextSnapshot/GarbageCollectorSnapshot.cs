@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the garbage collector state including generation count, total allocated bytes, and configuration.</summary>
 public sealed class GarbageCollectorSnapshot
 {
     internal GarbageCollectorSnapshot()

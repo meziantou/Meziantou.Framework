@@ -3,6 +3,7 @@ using System.Runtime.Loader;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of an assembly load context including its name, collectibility, and loaded assemblies.</summary>
 public sealed class AssemblyLoadContextSnapshot
 {
     public string? Name { get; }

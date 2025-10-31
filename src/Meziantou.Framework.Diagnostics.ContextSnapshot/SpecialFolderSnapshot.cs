@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of all special system folder paths such as Desktop, Program Files, and Application Data.</summary>
 public sealed class SpecialFolderSnapshot
 {
     public string AdminTools { get; } = Environment.GetFolderPath(Environment.SpecialFolder.AdminTools);

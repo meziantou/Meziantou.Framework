@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the thread pool state including available, minimum, and maximum thread counts.</summary>
 public sealed class ThreadPoolSnapshot
 {
     internal ThreadPoolSnapshot()

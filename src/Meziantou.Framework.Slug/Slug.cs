@@ -1,13 +1,27 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides methods for creating URL-friendly slugs from text.
+/// </summary>
 public static class Slug
 {
+    /// <summary>
+    /// Creates a URL-friendly slug from the specified text using default options.
+    /// </summary>
+    /// <param name="text">The text to convert to a slug.</param>
+    /// <returns>A URL-friendly slug, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text)
     {
         return Create(text, options: null);
     }
 
+    /// <summary>
+    /// Creates a URL-friendly slug from the specified text using the provided options.
+    /// </summary>
+    /// <param name="text">The text to convert to a slug.</param>
+    /// <param name="options">The options to use for slug creation. If <see langword="null"/>, default options are used.</param>
+    /// <returns>A URL-friendly slug, or <see langword="null"/> if <paramref name="text"/> is <see langword="null"/>.</returns>
     [return: NotNullIfNotNull(parameterName: nameof(text))]
     public static string? Create(string? text, SlugOptions? options)
     {

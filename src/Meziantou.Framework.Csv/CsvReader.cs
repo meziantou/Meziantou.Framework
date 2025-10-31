@@ -1,22 +1,61 @@
 namespace Meziantou.Framework.Csv;
 
+/// <summary>
+/// Provides methods for reading CSV data.
+/// </summary>
 public class CsvReader
 {
+    /// <summary>
+    /// The default separator character (comma).
+    /// </summary>
     public const char DefaultSeparatorCharacter = ',';
+
+    /// <summary>
+    /// The default quote character (double quote).
+    /// </summary>
     public const char DefaultQuoteCharacter = '"';
 
     private CsvColumn[]? _columns;
     private readonly char[] _readBuffer = new char[1];
 
+    /// <summary>
+    /// Gets or sets the column separator character.
+    /// </summary>
     public char Separator { get; set; } = DefaultSeparatorCharacter;
+
+    /// <summary>
+    /// Gets or sets the quote character used to escape values containing separators or newlines.
+    /// </summary>
     public char? Quote { get; set; } = DefaultQuoteCharacter;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the CSV data has a header row.
+    /// </summary>
     public bool HasHeaderRow { get; set; }
 
+    /// <summary>
+    /// Gets the current column number being read.
+    /// </summary>
     public int ColumnNumber { get; private set; }
+
+    /// <summary>
+    /// Gets the current line number being read.
+    /// </summary>
     public int LineNumber { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the current row number.
+    /// </summary>
     public int RowNumber { get; set; }
+
+    /// <summary>
+    /// Gets the underlying text reader.
+    /// </summary>
     public TextReader BaseReader { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the end of the stream has been reached.
+    /// </summary>
     public bool EndOfStream
     {
         get
@@ -28,6 +67,10 @@ public class CsvReader
         }
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CsvReader"/> class.
+    /// </summary>
+    /// <param name="textReader">The text reader to read CSV data from.</param>
     public CsvReader(TextReader textReader)
     {
         BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
@@ -43,6 +86,10 @@ public class CsvReader
         return buffer[0];
     }
 
+    /// <summary>
+    /// Asynchronously reads the next row from the CSV data.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the next row, or <see langword="null"/> if the end of the stream has been reached.</returns>
     public async Task<CsvRow?> ReadRowAsync()
     {
         var endOfStream = false;

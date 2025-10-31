@@ -75,10 +75,7 @@ public sealed partial class CGroup2
     public CGroup2 CreateOrGetChild(string name)
     {
         var child = new CGroup2(name, this);
-        if (!Directory.Exists(child._path))
-        {
-            Directory.CreateDirectory(child._path);
-        }
+        Directory.CreateDirectory(child._path);
         return child;
     }
 
@@ -102,17 +99,17 @@ public sealed partial class CGroup2
     /// Adds a process to this cgroup.
     /// </summary>
     /// <param name="process">The process to add.</param>
-    public void AddProcess(Process process)
+    public void AssociateProcess(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);
-        AddProcess(process.Id);
+        AssociateProcess(process.Id);
     }
 
     /// <summary>
     /// Adds a process to this cgroup by its PID.
     /// </summary>
     /// <param name="pid">The process ID.</param>
-    public void AddProcess(int pid)
+    public void AssociateProcess(int pid)
     {
         WriteFile("cgroup.procs", pid.ToString(CultureInfo.InvariantCulture));
     }
@@ -121,7 +118,7 @@ public sealed partial class CGroup2
     /// Adds a thread to this cgroup by its TID.
     /// </summary>
     /// <param name="tid">The thread ID.</param>
-    public void AddThread(int tid)
+    public void AssociateThread(int tid)
     {
         WriteFile("cgroup.threads", tid.ToString(CultureInfo.InvariantCulture));
     }
@@ -187,40 +184,29 @@ public sealed partial class CGroup2
         if (string.IsNullOrWhiteSpace(content))
             return [];
 
-        return content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return content.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
     /// <summary>
-    /// Enables a controller in the subtree.
-    /// </summary>
-    /// <param name="controller">The controller name (e.g., "cpu", "memory", "io").</param>
-    public void EnableController(string controller)
-    {
-        WriteFile("cgroup.subtree_control", $"+{controller}");
-    }
-
-    /// <summary>
-    /// Disables a controller in the subtree.
-    /// </summary>
-    /// <param name="controller">The controller name.</param>
-    public void DisableController(string controller)
-    {
-        WriteFile("cgroup.subtree_control", $"-{controller}");
-    }
-
-    /// <summary>
-    /// Enables multiple controllers in the subtree.
+    /// Set multiple controllers in the subtree.
     /// </summary>
     /// <param name="controllers">The controller names.</param>
-    public void EnableControllers(params ReadOnlySpan<string> controllers)
+    public void SetControllers(params ReadOnlySpan<string> controllers)
     {
         var sb = new StringBuilder();
         foreach (var controller in controllers)
         {
             if (sb.Length > 0)
                 sb.Append(' ');
-            sb.Append('+').Append(controller);
+
+            if (!controller.StartsWith('+') && !controller.StartsWith('-'))
+            {
+                sb.Append('+');
+            }
+
+            sb.Append(controller);
         }
+
         WriteFile("cgroup.subtree_control", sb.ToString());
     }
 
@@ -234,7 +220,7 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetCpuWeight(int weight)
     {
-        if (weight < 1 || weight > 10000)
+        if (weight is < 1 or > 10000)
             throw new ArgumentOutOfRangeException(nameof(weight), "CPU weight must be between 1 and 10000.");
 
         WriteFile("cpu.weight", weight.ToString(CultureInfo.InvariantCulture));
@@ -265,10 +251,7 @@ public sealed partial class CGroup2
         if (periodMicroseconds <= 0)
             throw new ArgumentOutOfRangeException(nameof(periodMicroseconds), "Period must be positive.");
 
-        var maxStr = maxMicroseconds.HasValue
-      ? maxMicroseconds.Value.ToString(CultureInfo.InvariantCulture)
-      : "max";
-
+        var maxStr = maxMicroseconds.HasValue ? maxMicroseconds.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
     }
 
@@ -294,7 +277,6 @@ public sealed partial class CGroup2
             throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
-
         WriteFile("memory.max", value);
     }
 
@@ -326,10 +308,7 @@ public sealed partial class CGroup2
         if (bytes.HasValue && bytes.Value < 0)
             throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
 
-        var value = bytes.HasValue
-           ? bytes.Value.ToString(CultureInfo.InvariantCulture)
-               : "max";
-
+        var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("memory.high", value);
     }
 
@@ -342,10 +321,7 @@ public sealed partial class CGroup2
         if (bytes.HasValue && bytes.Value < 0)
             throw new ArgumentOutOfRangeException(nameof(bytes), "Memory limit must be non-negative.");
 
-        var value = bytes.HasValue
-     ? bytes.Value.ToString(CultureInfo.InvariantCulture)
-            : "0";
-
+        var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "0";
         WriteFile("memory.low", value);
     }
 
@@ -387,7 +363,6 @@ public sealed partial class CGroup2
             throw new ArgumentOutOfRangeException(nameof(bytes), "Swap limit must be non-negative.");
 
         var value = bytes.HasValue ? bytes.Value.ToString(CultureInfo.InvariantCulture) : "max";
-
         WriteFile("memory.swap.max", value);
     }
 
@@ -403,7 +378,7 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetIoWeight(int major, int minor, int weight)
     {
-        if (weight < 1 || weight > 10000)
+        if (weight is < 1 or > 10000)
             throw new ArgumentOutOfRangeException(nameof(weight), "IO weight must be between 1 and 10000.");
 
         WriteFile("io.weight", $"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)} {weight.ToString(CultureInfo.InvariantCulture)}");
@@ -415,7 +390,7 @@ public sealed partial class CGroup2
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetDefaultIoWeight(int weight)
     {
-        if (weight < 1 || weight > 10000)
+        if (weight is < 1 or > 10000)
             throw new ArgumentOutOfRangeException(nameof(weight), "IO weight must be between 1 and 10000.");
 
         WriteFile("io.weight", $"default {weight.ToString(CultureInfo.InvariantCulture)}");
@@ -430,27 +405,32 @@ public sealed partial class CGroup2
     /// <param name="writeBytesPerSecond">Write bandwidth limit in bytes per second, or null for no limit.</param>
     /// <param name="readIopsPerSecond">Read IOPS limit, or null for no limit.</param>
     /// <param name="writeIopsPerSecond">Write IOPS limit, or null for no limit.</param>
-    public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null,
-long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
+    public void SetIoMax(int major, int minor, long? readBytesPerSecond = null, long? writeBytesPerSecond = null, long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
     {
-        var parts = new List<string>
-        {
-            $"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)}",
-        };
+        var sb = new StringBuilder();
+        sb.Append($"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)}");
 
         if (readBytesPerSecond.HasValue)
-            parts.Add($"rbps={readBytesPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        {
+            sb.Append($" rbps={readBytesPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        }
 
         if (writeBytesPerSecond.HasValue)
-            parts.Add($"wbps={writeBytesPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        {
+            sb.Append($" wbps={writeBytesPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        }
 
         if (readIopsPerSecond.HasValue)
-            parts.Add($"riops={readIopsPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        {
+            sb.Append($" riops={readIopsPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        }
 
         if (writeIopsPerSecond.HasValue)
-            parts.Add($"wiops={writeIopsPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        {
+            sb.Append($" wiops={writeIopsPerSecond.Value.ToString(CultureInfo.InvariantCulture)}");
+        }
 
-        WriteFile("io.max", string.Join(" ", parts));
+        WriteFile("io.max", sb.ToString());
     }
 
     /// <summary>
@@ -476,10 +456,7 @@ long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
         if (max.HasValue && max.Value < 0)
             throw new ArgumentOutOfRangeException(nameof(max), "PIDs limit must be non-negative.");
 
-        var value = max.HasValue
-              ? max.Value.ToString(CultureInfo.InvariantCulture)
-    : "max";
-
+        var value = max.HasValue ? max.Value.ToString(CultureInfo.InvariantCulture) : "max";
         WriteFile("pids.max", value);
     }
 
@@ -549,9 +526,9 @@ long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
         foreach (var line in events.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 2 && parts[0] == "frozen")
+            if (parts.Length is 2 && parts[0] is "frozen")
             {
-                return parts[1] == "1";
+                return parts[1] is "1";
             }
         }
 
@@ -584,11 +561,11 @@ long? readIopsPerSecond = null, long? writeIopsPerSecond = null)
         }
         catch (FileNotFoundException)
         {
-            return string.Empty;
+            return "";
         }
         catch (DirectoryNotFoundException)
         {
-            return string.Empty;
+            return "";
         }
     }
 

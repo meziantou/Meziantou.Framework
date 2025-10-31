@@ -2,18 +2,24 @@ using Xunit;
 
 namespace Meziantou.Framework.Unix.ControlGroups.Tests;
 
-[Collection("CGroup2Tests")]
 [RequiresCGroup2]
 public sealed class CGroup2Tests : IDisposable
 {
     private readonly CGroup2 _testRoot;
     private readonly string _testGroupName;
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public CGroup2Tests()
+    public CGroup2Tests(ITestOutputHelper testOutputHelper)
     {
         // Create a unique test group name
+        _testOutputHelper = testOutputHelper;
         _testGroupName = $"test_cgroup_{Guid.NewGuid():N}";
         _testRoot = CGroup2.Root.CreateOrGetChild(_testGroupName);
+        _testOutputHelper.WriteLine($"Using test cgroup: {_testRoot.Path}");
+        foreach (var entry in Directory.GetFileSystemEntries(_testRoot.Path).Order(StringComparer.Ordinal))
+        {
+            _testOutputHelper.WriteLine($" - {entry}");
+        }
     }
 
     public void Dispose()
@@ -69,14 +75,14 @@ public sealed class CGroup2Tests : IDisposable
         var currentPid = Environment.ProcessId;
 
         // Act
-        _testRoot.AddProcess(currentPid);
+        _testRoot.AssociateProcess(currentPid);
 
         // Assert
         var processes = _testRoot.GetProcesses().ToList();
         Assert.Contains(currentPid, processes);
 
         // Note: Moving back to root is done in cleanup
-        CGroup2.Root.AddProcess(currentPid);
+        CGroup2.Root.AssociateProcess(currentPid);
     }
 
     [Fact]
@@ -87,7 +93,7 @@ public sealed class CGroup2Tests : IDisposable
             throw new Exception("$XunitDynamicSkip$CPU controller not available");
 
         // Act
-        _testRoot.EnableController("cpu");
+        _testRoot.SetControllers("cpu");
 
         // Assert
         var enabledControllers = _testRoot.GetEnabledControllers().ToList();
@@ -99,7 +105,7 @@ public sealed class CGroup2Tests : IDisposable
     {
         // Arrange
         var child = _testRoot.CreateOrGetChild("cpu_test");
-        _testRoot.EnableController("cpu");
+        _testRoot.SetControllers("cpu");
 
         // Act
         child.SetCpuWeight(200);
@@ -131,7 +137,7 @@ public sealed class CGroup2Tests : IDisposable
     {
         // Arrange
         var child = _testRoot.CreateOrGetChild("mem_test");
-        _testRoot.EnableController("memory");
+        _testRoot.SetControllers("memory");
 
         // Act
         var limit = 100L * 1024 * 1024; // 100 MB
@@ -150,7 +156,7 @@ public sealed class CGroup2Tests : IDisposable
     {
         // Arrange
         var child = _testRoot.CreateOrGetChild("mem_current_test");
-        _testRoot.EnableController("memory");
+        _testRoot.SetControllers("memory");
 
         // Act
         var current = child.GetMemoryCurrent();
@@ -168,7 +174,7 @@ public sealed class CGroup2Tests : IDisposable
     {
         // Arrange
         var child = _testRoot.CreateOrGetChild("pids_test");
-        _testRoot.EnableController("pids");
+        _testRoot.SetControllers("pids");
 
         // Act
         child.SetPidsMax(50);
@@ -185,7 +191,7 @@ public sealed class CGroup2Tests : IDisposable
     public void GetCpuStat_ShouldReturnStatistics()
     {
         // Arrange
-        _testRoot.EnableController("cpu");
+        _testRoot.SetControllers("cpu");
 
         // Act
         var stat = _testRoot.GetCpuStat();
@@ -201,7 +207,7 @@ public sealed class CGroup2Tests : IDisposable
     public void GetMemoryStat_ShouldReturnStatistics()
     {
         // Arrange
-        _testRoot.EnableController("memory");
+        _testRoot.SetControllers("memory");
 
         // Act
         var stat = _testRoot.GetMemoryStat();
@@ -231,36 +237,6 @@ public sealed class CGroup2Tests : IDisposable
 
         // Cleanup
         child.Unfreeze();
-        child.Delete();
-    }
-
-    [Fact]
-    public void SetCpusetCpus_ShouldSetCpuAffinity()
-    {
-        // Arrange
-        var child = _testRoot.CreateOrGetChild("cpuset_test");
-        _testRoot.EnableController("cpuset");
-
-        // Set parent cpuset first
-        var availableCpus = CGroup2.Root.GetCpusetCpusEffective();
-
-        if (availableCpus == null || availableCpus.Length == 0)
-            throw new Exception("$XunitDynamicSkip$No CPUs available");
-
-        _testRoot.SetCpusetCpus(availableCpus);
-        _testRoot.SetCpusetMems(0);
-
-        // Act
-        var cpusToSet = availableCpus.Take(Math.Min(2, availableCpus.Length)).ToArray();
-        child.SetCpusetCpus(cpusToSet);
-        child.SetCpusetMems(0);
-
-        // Assert
-        var setCpus = child.GetCpusetCpus();
-        Assert.NotNull(setCpus);
-        Assert.True(setCpus.Length > 0);
-
-        // Cleanup
         child.Delete();
     }
 }

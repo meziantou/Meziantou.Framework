@@ -16,5 +16,10 @@ public sealed class RequiresCGroup2Attribute : BeforeAfterTestAttribute
         {
             throw new Exception("$XunitDynamicSkip$cgroup v2 not available");
         }
+
+        if (!Environment.IsPrivilegedProcess)
+        {
+            throw new Exception("$XunitDynamicSkip$Test requires elevated privileges");
+        }
     }
 }

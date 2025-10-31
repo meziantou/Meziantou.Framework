@@ -1,5 +1,3 @@
-using System.Runtime.Versioning;
-
 namespace Meziantou.Framework.Unix.ControlGroups;
 
 /// <summary>

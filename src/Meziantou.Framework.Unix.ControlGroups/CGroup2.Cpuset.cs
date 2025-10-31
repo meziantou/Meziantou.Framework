@@ -16,7 +16,7 @@ public partial class CGroup2
     {
         if (cpus.Length == 0)
         {
-            SetCpusetCpusRaw(string.Empty);
+            SetCpusetCpusRaw("");
             return;
         }
 
@@ -30,7 +30,7 @@ public partial class CGroup2
     /// <param name="cpuList">CPU list in cgroup format.</param>
     public void SetCpusetCpusRaw(string cpuList)
     {
-        WriteFile("cpuset.cpus", cpuList ?? string.Empty);
+        WriteFile("cpuset.cpus", cpuList ?? "");
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public partial class CGroup2
 
         if (nodes.Length == 0)
         {
-            SetCpusetMemsRaw(string.Empty);
+            SetCpusetMemsRaw("");
             return;
         }
 
@@ -83,7 +83,7 @@ public partial class CGroup2
     /// <param name="nodeList">Memory node list in cgroup format.</param>
     public void SetCpusetMemsRaw(string nodeList)
     {
-        WriteFile("cpuset.mems", nodeList ?? string.Empty);
+        WriteFile("cpuset.mems", nodeList ?? "");
     }
 
     /// <summary>
@@ -136,7 +136,7 @@ public partial class CGroup2
     private static string ConvertToRanges(ReadOnlySpan<int> numbers)
     {
         if (numbers.IsEmpty)
-            return string.Empty;
+            return "";
 
         var orderedNumbers = numbers.ToArray();
         Array.Sort(orderedNumbers);

@@ -106,7 +106,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < format.Length; i++)
         {
             var c = format[i];
-            if (c is > '0' and < '9')
+            if (c is >= '0' and <= '9')
             {
                 index = i;
                 break;
@@ -165,7 +165,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < formatString.Length; i++)
         {
             var c = formatString[i];
-            if (c is > '0' and < '9')
+            if (c is >= '0' and <= '9')
             {
                 index = i;
                 break;
@@ -331,6 +331,9 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
     {
+#if NET7_0_OR_GREATER
+        return TryParseUnit(unit.AsSpan(), out result, out parsedLength);
+#else
         if (unit[^1] is not 'b' and not 'B')
         {
             result = default;
@@ -385,6 +388,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         parsedLength = 1;
         result = ByteSizeUnit.Byte;
         return true;
+#endif
     }
 
 #if NET7_0_OR_GREATER
@@ -575,7 +579,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < formatString.Length; i++)
         {
             var c = formatString[i];
-            if (c is > '0' and < '9')
+            if (c is >= '0' and <= '9')
             {
                 index = i;
                 break;

@@ -2,8 +2,12 @@ using System.CodeDom.Compiler;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
+/// <summary>Represents a query syntax node in the abstract syntax tree.</summary>
 public abstract partial class QuerySyntax : QueryNodeOrToken
 {
+    /// <summary>Parses a query string into a syntax tree.</summary>
+    /// <param name="text">The query string to parse.</param>
+    /// <returns>The root node of the parsed syntax tree.</returns>
     public static QuerySyntax Parse(string text)
     {
         ArgumentNullException.ThrowIfNull(text);

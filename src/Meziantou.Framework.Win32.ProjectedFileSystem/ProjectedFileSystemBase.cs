@@ -5,6 +5,36 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
+/// <summary>Base class for creating a virtual file system using Windows Projected File System (ProjFS).</summary>
+/// <example>
+/// <code>
+/// public class MyVirtualFileSystem : ProjectedFileSystemBase
+/// {
+///     public MyVirtualFileSystem(string rootFolder) : base(rootFolder) { }
+///
+///     protected override IEnumerable&lt;ProjectedFileSystemEntry&gt; GetEntries(string path)
+///     {
+///         if (string.IsNullOrEmpty(path))
+///         {
+///             yield return ProjectedFileSystemEntry.File("file.txt", length: 100);
+///             yield return ProjectedFileSystemEntry.Directory("folder");
+///         }
+///     }
+///
+///     protected override Stream OpenRead(string path)
+///     {
+///         if (AreFileNamesEqual(path, "file.txt"))
+///             return new MemoryStream(Encoding.UTF8.GetBytes("Hello, World!"));
+///         return null;
+///     }
+/// }
+///
+/// var rootPath = @"C:\MyVirtualFS";
+/// Directory.CreateDirectory(rootPath);
+/// using var vfs = new MyVirtualFileSystem(rootPath);
+/// vfs.Start(options: null);
+/// </code>
+/// </example>
 // https://github.com/Microsoft/Windows-classic-samples/blob/master/Samples/ProjectedFileSystem/regfsProvider.cpp
 [SupportedOSPlatform("windows")]
 public abstract class ProjectedFileSystemBase : IDisposable
@@ -21,10 +51,16 @@ public abstract class ProjectedFileSystemBase : IDisposable
     private readonly ConcurrentDictionary<Guid, DirectoryEnumerationSession> _activeEnumerations = new();
     private long _context;
 
+    /// <summary>Gets the root folder path where the virtual file system is mounted.</summary>
     public string RootFolder { get; }
 
+    /// <summary>Gets or sets the buffer size used for reading file data. Default is 4096 bytes.</summary>
     protected int BufferSize { get; set; } = 4096; // 4kB
 
+    /// <summary>Initializes a new instance of the <see cref="ProjectedFileSystemBase"/> class.</summary>
+    /// <param name="rootFolder">The root folder path where the virtual file system will be mounted.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="rootFolder"/> is null.</exception>
+    /// <exception cref="NotSupportedException">Thrown when running in a 32-bit process.</exception>
     protected ProjectedFileSystemBase(string rootFolder)
     {
         ArgumentNullException.ThrowIfNull(rootFolder);
@@ -36,6 +72,9 @@ public abstract class ProjectedFileSystemBase : IDisposable
         _virtualizationInstanceId = Guid.NewGuid();
     }
 
+    /// <summary>Starts the virtual file system with the specified options.</summary>
+    /// <param name="options">Configuration options for the virtual file system. Can be null to use default settings.</param>
+    /// <exception cref="NotSupportedException">Thrown when the Projected File System Windows feature is not installed.</exception>
     public void Start(ProjectedFileSystemStartOptions? options)
     {
         if (_instanceHandle is not null)
@@ -103,6 +142,9 @@ public abstract class ProjectedFileSystemBase : IDisposable
         }
     }
 
+    /// <summary>Gets the on-disk state of a file or directory in a virtual file system.</summary>
+    /// <param name="path">The full path to the file or directory.</param>
+    /// <returns>The on-disk state of the specified file or directory.</returns>
     public static PRJ_FILE_STATE GetOnDiskFileState(string path)
     {
         var hr = NativeMethods.PrjGetOnDiskFileState(path, out var state);
@@ -110,6 +152,8 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return state;
     }
 
+    /// <summary>Clears the negative path cache, which stores queries for non-existent paths.</summary>
+    /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected void ClearNegativePathCache()
     {
         if (_instanceHandle is null)
@@ -119,6 +163,12 @@ public abstract class ProjectedFileSystemBase : IDisposable
         result.EnsureSuccess();
     }
 
+    /// <summary>Deletes a file from the virtual file system projection.</summary>
+    /// <param name="relativePath">The relative path of the file to delete.</param>
+    /// <param name="updateFlags">Flags controlling which file states are allowed to be deleted.</param>
+    /// <param name="failureReason">When the method returns false, contains the reason for the failure.</param>
+    /// <returns><see langword="true"/> if the file was deleted; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the virtual file system is not started.</exception>
     protected bool DeleteFile(string relativePath, PRJ_UPDATE_TYPES updateFlags, out PRJ_UPDATE_FAILURE_CAUSES failureReason)
     {
         if (_instanceHandle is null)
@@ -132,6 +182,7 @@ public abstract class ProjectedFileSystemBase : IDisposable
         return true;
     }
 
+    /// <summary>Stops the virtual file system.</summary>
     public void Stop()
     {
         if (_instanceHandle is null)
@@ -142,29 +193,50 @@ public abstract class ProjectedFileSystemBase : IDisposable
         _instanceHandle = null;
     }
 
+    /// <summary>Determines whether a file name matches a pattern using Windows file name matching rules.</summary>
+    /// <param name="fileName">The file name to test.</param>
+    /// <param name="pattern">The pattern to match against. Supports wildcards (* and ?).</param>
+    /// <returns><see langword="true"/> if the file name matches the pattern; otherwise, <see langword="false"/>.</returns>
     protected static bool FileNameMatch(string fileName, string pattern)
     {
         return NativeMethods.PrjFileNameMatch(fileName, pattern);
     }
 
+    /// <summary>Compares two file names for equality using case-insensitive Windows file name comparison rules.</summary>
+    /// <param name="fileName1">The first file name to compare.</param>
+    /// <param name="fileName2">The second file name to compare.</param>
+    /// <returns><see langword="true"/> if the file names are equal; otherwise, <see langword="false"/>.</returns>
     protected static bool AreFileNamesEqual(string fileName1, string fileName2)
     {
         return CompareFileName(fileName1, fileName2) == 0;
     }
 
+    /// <summary>Compares two file names using Windows file name comparison rules.</summary>
+    /// <param name="fileName1">The first file name to compare.</param>
+    /// <param name="fileName2">The second file name to compare.</param>
+    /// <returns>A value less than zero if <paramref name="fileName1"/> is less than <paramref name="fileName2"/>, zero if they are equal, or a value greater than zero if <paramref name="fileName1"/> is greater than <paramref name="fileName2"/>.</returns>
     protected static int CompareFileName(string fileName1, string fileName2)
     {
         return FileNameComparer.Instance.Compare(fileName1, fileName2);
     }
 
+    /// <summary>When overridden in a derived class, returns the list of files and directories for the specified path.</summary>
+    /// <param name="path">The relative path of the directory to enumerate. Empty string represents the root directory.</param>
+    /// <returns>An enumerable collection of <see cref="ProjectedFileSystemEntry"/> objects representing the files and directories.</returns>
     protected abstract IEnumerable<ProjectedFileSystemEntry> GetEntries(string path);
 
+    /// <summary>Gets metadata for a specific file or directory at the specified path.</summary>
+    /// <param name="path">The relative path of the file or directory.</param>
+    /// <returns>The <see cref="ProjectedFileSystemEntry"/> for the specified path, or <see langword="null"/> if not found.</returns>
     protected virtual ProjectedFileSystemEntry? GetEntry(string path)
     {
         var directory = Path.GetDirectoryName(path);
         return GetEntries(directory ?? "").FirstOrDefault(entry => CompareFileName(entry.Name, path) == 0);
     }
 
+    /// <summary>When overridden in a derived class, opens a stream to read the content of a file at the specified path.</summary>
+    /// <param name="path">The relative path of the file to read.</param>
+    /// <returns>A <see cref="Stream"/> to read the file content, or <see langword="null"/> if the file does not exist.</returns>
     protected abstract Stream OpenRead(string path);
 
     public void Dispose()

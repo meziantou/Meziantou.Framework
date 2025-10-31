@@ -3,6 +3,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans Python requirements.txt files for PyPI package dependencies.</summary>
 public sealed partial class PythonRequirementsDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.PyPi];

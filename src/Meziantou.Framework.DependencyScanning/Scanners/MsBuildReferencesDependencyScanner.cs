@@ -4,6 +4,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans MSBuild project files (.csproj, .props, .targets) for NuGet package references, target frameworks, and project references.</summary>
 public sealed partial class MsBuildReferencesDependencyScanner : DependencyScanner
 {
     private static readonly XName IncludeXName = XName.Get("Include");

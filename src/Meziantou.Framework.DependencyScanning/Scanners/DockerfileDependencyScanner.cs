@@ -3,6 +3,7 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans Dockerfile and Containerfile for Docker image dependencies in FROM instructions.</summary>
 public sealed partial class DockerfileDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.DockerImage];

@@ -6,6 +6,7 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans legacy packages.config files for NuGet package dependencies.</summary>
 public sealed partial class PackagesConfigDependencyScanner : DependencyScanner
 {
     private static readonly Version VersionZero = new(0, 0, 0, 0);

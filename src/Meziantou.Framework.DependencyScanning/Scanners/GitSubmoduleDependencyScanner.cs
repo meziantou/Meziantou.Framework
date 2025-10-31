@@ -3,6 +3,7 @@ using Meziantou.Framework.DependencyScanning.Locations;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans Git .gitmodules files for submodule references.</summary>
 public sealed class GitSubmoduleDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.GitReference];

@@ -12,7 +12,7 @@ namespace Meziantou.Framework.SimpleQueryLanguage;
 /// var collection = new List&lt;Person&gt;();
 /// var queryBuilder = new QueryBuilder&lt;Person&gt;();
 /// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
-/// queryBuilder.AddRangeHandler&lt;int&gt;("age", (obj, value) => value.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+/// queryBuilder.AddRangeHandler&lt;int&gt;("age", (obj, range) => range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
 /// var query = queryBuilder.Build("name:john AND age>=21");
 /// var result = query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1)));
 /// </code>

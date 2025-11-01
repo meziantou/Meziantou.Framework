@@ -3,6 +3,7 @@ using System.Net.Http;
 #endif
 
 namespace Meziantou.Framework;
+
 internal static class SharedHttpClient
 {
     public static HttpClient Instance { get; } = CreateHttpClient();

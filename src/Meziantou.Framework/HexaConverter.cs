@@ -1,7 +1,15 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides methods for converting between byte arrays and hexadecimal strings.
+/// </summary>
 public static class HexaConverter
 {
+    /// <summary>
+    /// Converts a byte array to a hexadecimal string using uppercase characters.
+    /// </summary>
+    /// <param name="bytes">The byte array to convert.</param>
+    /// <returns>A hexadecimal string representation of the byte array.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -10,6 +18,12 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>
+    /// Converts a byte array to a hexadecimal string with the specified casing options.
+    /// </summary>
+    /// <param name="bytes">The byte array to convert.</param>
+    /// <param name="options">The casing options for the hexadecimal output.</param>
+    /// <returns>A hexadecimal string representation of the byte array.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -18,6 +32,11 @@ public static class HexaConverter
         return ToHexaString(bytes.AsSpan(), options);
     }
 
+    /// <summary>
+    /// Converts a byte span to a hexadecimal string using uppercase characters.
+    /// </summary>
+    /// <param name="bytes">The byte span to convert.</param>
+    /// <returns>A hexadecimal string representation of the byte span.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -26,6 +45,13 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>
+    /// Converts a byte span to a hexadecimal string with the specified casing options.
+    /// </summary>
+    /// <param name="bytes">The byte span to convert.</param>
+    /// <param name="options">The casing options for the hexadecimal output.</param>
+    /// <returns>A hexadecimal string representation of the byte span.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the options value is invalid.</exception>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -42,6 +68,12 @@ public static class HexaConverter
         };
     }
 
+    /// <summary>
+    /// Parses a hexadecimal string and converts it to a byte array. Supports optional "0x" or "0X" prefix.
+    /// </summary>
+    /// <param name="str">The hexadecimal string to parse.</param>
+    /// <returns>A byte array representation of the hexadecimal string.</returns>
+    /// <exception cref="ArgumentException">Thrown when the string length is invalid or contains invalid characters.</exception>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -101,6 +133,12 @@ public static class HexaConverter
         }
     }
 
+    /// <summary>
+    /// Tries to parse a hexadecimal string and convert it to a byte array. Supports optional "0x" or "0X" prefix.
+    /// </summary>
+    /// <param name="str">The hexadecimal string to parse.</param>
+    /// <param name="result">When this method returns, contains the byte array representation if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the string was successfully parsed; otherwise, <see langword="false"/>.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -115,6 +153,12 @@ public static class HexaConverter
         return TryParseHexaString(str.AsSpan(), out result);
     }
 
+    /// <summary>
+    /// Tries to parse a hexadecimal character span and convert it to a byte array. Supports optional "0x" or "0X" prefix.
+    /// </summary>
+    /// <param name="str">The hexadecimal character span to parse.</param>
+    /// <param name="result">When this method returns, contains the byte array representation if successful; otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/> if the span was successfully parsed; otherwise, <see langword="false"/>.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -166,6 +210,13 @@ public static class HexaConverter
         }
     }
 
+    /// <summary>
+    /// Tries to parse a hexadecimal string and write the result to a byte span. Supports optional "0x" or "0X" prefix.
+    /// </summary>
+    /// <param name="str">The hexadecimal string to parse.</param>
+    /// <param name="bytes">The destination byte span.</param>
+    /// <param name="writtenBytes">When this method returns, contains the number of bytes written to the destination span.</param>
+    /// <returns><see langword="true"/> if the string was successfully parsed and written; otherwise, <see langword="false"/>.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif

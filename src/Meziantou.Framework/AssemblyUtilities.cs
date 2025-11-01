@@ -81,6 +81,13 @@ public static class AssemblyUtilities
         }
     }
 
+    /// <summary>
+    /// Gets a required manifest resource stream from the assembly, throwing an exception if not found.
+    /// </summary>
+    /// <param name="assembly">The assembly containing the resource.</param>
+    /// <param name="name">The case-sensitive name of the manifest resource being requested.</param>
+    /// <returns>A stream representing the manifest resource.</returns>
+    /// <exception cref="ArgumentException">Thrown when the resource is not found in the assembly.</exception>
     public static Stream GetRequiredManifestResourceStream(this Assembly assembly, string name)
     {
         var stream = assembly.GetManifestResourceStream(name);
@@ -93,6 +100,14 @@ public static class AssemblyUtilities
         return stream;
     }
 
+    /// <summary>
+    /// Gets a required manifest resource stream scoped by the namespace of the specified type, throwing an exception if not found.
+    /// </summary>
+    /// <param name="assembly">The assembly containing the resource.</param>
+    /// <param name="type">The type whose namespace is used to scope the manifest resource name.</param>
+    /// <param name="name">The case-sensitive name of the manifest resource being requested.</param>
+    /// <returns>A stream representing the manifest resource.</returns>
+    /// <exception cref="ArgumentException">Thrown when the resource is not found in the assembly.</exception>
     public static Stream GetRequiredManifestResourceStream(this Assembly assembly, Type type, string name)
     {
         var stream = assembly.GetManifestResourceStream(type, name);

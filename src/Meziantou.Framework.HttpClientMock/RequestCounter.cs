@@ -4,13 +4,19 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Tracks the number of requests made to the mock server and individual endpoints.
+/// </summary>
 public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
 {
     private long _totalCount;
     private readonly ConcurrentDictionary<Key, long> _endpointCounter = [];
 
+    /// <summary>Gets the total number of requests made to the mock server.</summary>
     public long TotalCount => _totalCount;
 
+    /// <summary>Gets the number of requests made to the current endpoint.</summary>
+    /// <returns>The number of requests made to the current endpoint.</returns>
     public long Get()
     {
         var httpContext = httpContextAccessor.HttpContext;
@@ -20,7 +26,14 @@ public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
         return Get(httpContext);
     }
 
+    /// <summary>Gets the number of requests made to the endpoint associated with the specified <see cref="HttpContext"/>.</summary>
+    /// <param name="httpContext">The HTTP context containing the endpoint.</param>
+    /// <returns>The number of requests made to the endpoint.</returns>
     public long Get(HttpContext httpContext) => Get(httpContext.GetEndpoint());
+
+    /// <summary>Gets the number of requests made to the specified endpoint.</summary>
+    /// <param name="endpoint">The endpoint to get the request count for.</param>
+    /// <returns>The number of requests made to the endpoint.</returns>
     public long Get(Endpoint endpoint) => _endpointCounter.GetValueOrDefault(GetKey(endpoint));
 
     internal void IncrementTotal()

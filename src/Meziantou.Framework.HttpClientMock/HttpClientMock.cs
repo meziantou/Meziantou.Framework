@@ -10,40 +10,68 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// A mock HTTP server for testing HTTP clients. Use this to simulate HTTP endpoints without requiring a real server.
+/// </summary>
+/// <example>
+/// Create a mock server with a simple endpoint:
+/// <code>
+/// using var mock = new HttpClientMock();
+/// mock.MapGet("/api/users", () => Results.Ok(new { name = "John" }));
+/// using var httpClient = mock.CreateHttpClient();
+/// var response = await httpClient.GetAsync("/api/users");
+/// </code>
+/// </example>
 public sealed partial class HttpClientMock : IAsyncDisposable
 {
     private bool _running;
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class.</summary>
     public HttpClientMock()
         : this(loggerProvider: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with a logger provider.</summary>
+    /// <param name="loggerProvider">The logger provider to use for logging HTTP requests and responses.</param>
     public HttpClientMock(ILoggerProvider? loggerProvider)
         : this(loggerProvider is null ? null : builder => builder.AddProvider(loggerProvider))
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with a logger.</summary>
+    /// <param name="logger">The logger to use for logging HTTP requests and responses.</param>
     public HttpClientMock(ILogger? logger)
         : this(logger is null ? null : builder => builder.AddProvider(new SingletonLogger(logger)))
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with custom logging configuration.</summary>
+    /// <param name="configureLogging">An action to configure logging.</param>
     public HttpClientMock(Action<ILoggingBuilder>? configureLogging)
         : this(configureLogging, configureServices: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with a logger and custom services.</summary>
+    /// <param name="logger">The logger to use for logging HTTP requests and responses.</param>
+    /// <param name="configureServices">An action to configure services.</param>
     public HttpClientMock(ILogger? logger, Action<IServiceCollection>? configureServices)
         : this(logger is null ? null : builder => builder.AddProvider(new SingletonLogger(logger)), configureServices)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with a logger provider and custom services.</summary>
+    /// <param name="loggerProvider">The logger provider to use for logging HTTP requests and responses.</param>
+    /// <param name="configureServices">An action to configure services.</param>
     public HttpClientMock(ILoggerProvider? loggerProvider, Action<IServiceCollection>? configureServices)
         : this(loggerProvider is null ? null : builder => builder.AddProvider(loggerProvider), configureServices)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HttpClientMock"/> class with custom logging and service configuration.</summary>
+    /// <param name="configureLogging">An action to configure logging.</param>
+    /// <param name="configureServices">An action to configure services.</param>
     public HttpClientMock(Action<ILoggingBuilder>? configureLogging, Action<IServiceCollection>? configureServices)
     {
         var builder = WebApplication.CreateBuilder();
@@ -68,14 +96,20 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         });
     }
 
+    /// <summary>Gets the underlying <see cref="WebApplication"/> instance.</summary>
+    /// <summary>Gets the underlying <see cref="WebApplication"/> instance.</summary>
     public WebApplication Application { get; }
 
+    /// <summary>Creates an <see cref="HttpClient"/> that sends requests to the mock server.</summary>
+    /// <returns>An <see cref="HttpClient"/> configured to send requests to the mock server.</returns>
     public HttpClient CreateHttpClient()
     {
         StartServer();
         return Application.GetTestClient();
     }
 
+    /// <summary>Creates an <see cref="HttpMessageHandler"/> that sends requests to the mock server.</summary>
+    /// <returns>An <see cref="HttpMessageHandler"/> configured to send requests to the mock server.</returns>
     public HttpMessageHandler CreateHttpMessageHandler()
     {
         StartServer();
@@ -91,13 +125,18 @@ public sealed partial class HttpClientMock : IAsyncDisposable
         }
     }
 
+    /// <summary>Disposes the mock server asynchronously.</summary>
+    /// <returns>A <see cref="ValueTask"/> representing the asynchronous dispose operation.</returns>
     public ValueTask DisposeAsync() => Application.DisposeAsync();
 
+    /// <summary>Configures the mock to forward unmatched requests to the actual upstream server.</summary>
     public void ForwardUnknownRequestsToUpstream()
     {
         Application.Map(RoutePatternFactory.Parse("{**catchAll}"), () => Results.Extensions.ForwardToUpstream());
     }
 
+    /// <summary>Configures the mock to forward unmatched requests to the actual upstream server using the specified <see cref="HttpClient"/>.</summary>
+    /// <param name="httpClient">The <see cref="HttpClient"/> to use for forwarding requests.</param>
     public void ForwardUnknownRequestsToUpstream(HttpClient httpClient)
     {
         Application.Map(RoutePatternFactory.Parse("{**catchAll}"), () => Results.Extensions.ForwardToUpstream(httpClient));

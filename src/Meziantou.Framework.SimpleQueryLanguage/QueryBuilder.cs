@@ -5,6 +5,18 @@ using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 namespace Meziantou.Framework.SimpleQueryLanguage;
 
+/// <summary>Builds query objects from query strings with custom property handlers.</summary>
+/// <typeparam name="T">The type of object to query against.</typeparam>
+/// <example>
+/// <code>
+/// var collection = new List&lt;Person&gt;();
+/// var queryBuilder = new QueryBuilder&lt;Person&gt;();
+/// queryBuilder.AddHandler&lt;string&gt;("name", (obj, value) => obj.FullName.Contains(value, StringComparison.OrdinalIgnoreCase));
+/// queryBuilder.AddRangeHandler&lt;int&gt;("age", (obj, range) => range.IsInRange((int)(DateTime.UtcNow - obj.DateOfBirth).TotalDays / 365));
+/// var query = queryBuilder.Build("name:john AND age>=21");
+/// var result = query.Evaluate(new Person("John Doe", new DateTime(2000, 1, 1)));
+/// </code>
+/// </example>
 public sealed class QueryBuilder<T>
 {
     private static readonly Predicate<T> AlwaysFalsePredicate = _ => false;
@@ -19,21 +31,37 @@ public sealed class QueryBuilder<T>
         _filters.Add(new FilterKeyValue(key.ToLowerInvariant(), value?.ToLowerInvariant()), handler);
     }
 
+    /// <summary>Registers a handler for a key-value pair that evaluates based on the operator.</summary>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="value">The specific value to match, or null to match any value.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, string? value, Func<T, KeyValueOperator, bool> predicate)
     {
         AddHandler(key, value, (T obj, KeyValueOperator op, string value) => predicate(obj, op));
     }
 
+    /// <summary>Registers a handler for a property key.</summary>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, Func<T, KeyValueOperator, string, bool> predicate)
     {
         AddHandler(key, value: null, predicate);
     }
 
+    /// <summary>Registers a handler for a property key with automatic value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate)
     {
         AddHandler(key, predicate, tryParseValue: null);
     }
 
+    /// <summary>Registers a handler for a property key with custom value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
+    /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, KeyValueOperator, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
@@ -48,21 +76,37 @@ public sealed class QueryBuilder<T>
         AddHandler(key, value: null, CreatePredicate);
     }
 
+    /// <summary>Registers a handler for a specific key-value pair.</summary>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="value">The specific value to match, or null to match any value.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, string? value, Func<T, bool> predicate)
     {
         AddHandler(key, value, ApplyEqualOperator((T obj, string value) => predicate(obj)));
     }
 
+    /// <summary>Registers a handler for a property key with string value.</summary>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler(string key, Func<T, string, bool> predicate)
     {
         AddHandler(key, value: null, ApplyEqualOperator((T obj, string value) => predicate(obj, value)));
     }
 
+    /// <summary>Registers a handler for a property key with automatic value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate)
     {
         AddHandler(key, predicate, tryParseValue: null);
     }
 
+    /// <summary>Registers a handler for a property key with custom value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the query.</param>
+    /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddHandler<TValue>(string key, Func<T, TValue, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
@@ -77,6 +121,11 @@ public sealed class QueryBuilder<T>
         AddHandler(key, value: null, CreatePredicate);
     }
 
+    /// <summary>Registers a range handler for a property key with custom value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the range query.</param>
+    /// <param name="tryParseValue">Custom parser for the value, or null to use the default parser.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate, ScalarParser<TValue>? tryParseValue)
     {
         bool CreatePredicate(T obj, KeyValueOperator op, string value)
@@ -88,6 +137,10 @@ public sealed class QueryBuilder<T>
         AddHandler(key, value: null, CreatePredicate);
     }
 
+    /// <summary>Registers a range handler for a property key with automatic value parsing.</summary>
+    /// <typeparam name="TValue">The type to parse the value as.</typeparam>
+    /// <param name="key">The property key to handle.</param>
+    /// <param name="predicate">The function to evaluate the range query.</param>
     public void AddRangeHandler<TValue>(string key, Func<T, RangeSyntax<TValue>, bool> predicate)
     {
         AddRangeHandler(key, predicate, tryParseValue: null);
@@ -138,16 +191,23 @@ public sealed class QueryBuilder<T>
         });
     }
 
+    /// <summary>Sets the handler for free-text search terms without a property key.</summary>
+    /// <param name="predicate">The function to evaluate free-text queries.</param>
     public void SetTextFilterHandler(Func<T, string, bool> predicate)
     {
         _freeTextFilter = predicate;
     }
 
+    /// <summary>Sets the handler for property keys that don't have a registered handler.</summary>
+    /// <param name="predicate">The function to evaluate unhandled properties, or null to use default behavior.</param>
     public void SetUnhandledPropertyHandler(UnhandledPropertyDelegate<T>? predicate)
     {
         _unhandledPropertyFilter = predicate;
     }
 
+    /// <summary>Builds a query from a query string.</summary>
+    /// <param name="query">The query string to parse.</param>
+    /// <returns>A compiled query that can be evaluated against objects.</returns>
     public Query<T> Build(string query)
     {
         var predicate = CreatePredicate(query);

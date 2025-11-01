@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
+/// <summary>Specifies the kind of a syntax element in the query syntax tree.</summary>
 public enum QuerySyntaxKind
 {
     None,

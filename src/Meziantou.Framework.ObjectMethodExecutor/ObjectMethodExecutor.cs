@@ -5,6 +5,32 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>Provides a unified way to invoke synchronous and asynchronous methods via reflection.</summary>
+/// <remarks>
+/// <para>
+/// This class creates optimized delegates for method invocation, avoiding repeated reflection overhead.
+/// It supports both synchronous and asynchronous methods, including those returning Task, ValueTask, 
+/// or any custom awaitable type that implements the awaitable pattern.
+/// </para>
+/// </remarks>
+/// <example>
+/// Basic usage with synchronous and asynchronous methods:
+/// <code>
+/// var methodInfo = typeof(MyClass).GetMethod("MyMethod");
+/// var executor = ObjectMethodExecutor.Create(methodInfo);
+/// 
+/// var instance = new MyClass();
+/// var parameters = new object?[] { param1, param2 };
+/// if (executor.IsMethodAsync)
+/// {
+///     var result = await executor.ExecuteAsync(instance, parameters);
+/// }
+/// else
+/// {
+///     var result = executor.Execute(instance, parameters);
+/// }
+/// </code>
+/// </example>
 [RequiresUnreferencedCode("ObjectMethodExecutor performs reflection on arbitrary types.")]
 public sealed class ObjectMethodExecutor
 {
@@ -61,8 +87,12 @@ public sealed class ObjectMethodExecutor
 
     private Type MethodReturnType { get; set; }
 
+    /// <summary>Gets a value indicating whether the method returns an awaitable type.</summary>
     public bool IsMethodAsync { get; }
 
+    /// <summary>Creates an executor for the specified method.</summary>
+    /// <param name="methodInfo">The method to be invoked.</param>
+    /// <returns>An <see cref="ObjectMethodExecutor"/> that can invoke the specified method.</returns>
     public static ObjectMethodExecutor Create(MethodInfo methodInfo)
     {
         ArgumentNullException.ThrowIfNull(methodInfo);
@@ -70,6 +100,10 @@ public sealed class ObjectMethodExecutor
         return Create(methodInfo, parameterDefaultValues: null);
     }
 
+    /// <summary>Creates an executor for the specified method with parameter default values.</summary>
+    /// <param name="methodInfo">The method to be invoked.</param>
+    /// <param name="parameterDefaultValues">The default values for the method parameters.</param>
+    /// <returns>An <see cref="ObjectMethodExecutor"/> that can invoke the specified method.</returns>
     public static ObjectMethodExecutor Create(MethodInfo methodInfo, object?[]? parameterDefaultValues)
     {
         ArgumentNullException.ThrowIfNull(methodInfo);

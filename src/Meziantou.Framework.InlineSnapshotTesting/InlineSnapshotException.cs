@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>Represents errors that occur during inline snapshot operations.</summary>
 public class InlineSnapshotException : Exception
 {
     public InlineSnapshotException()

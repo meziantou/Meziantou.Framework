@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a base class constructor initializer (: base()).</summary>
 public class ConstructorBaseInitializer : ConstructorInitializer
 {
     public ConstructorBaseInitializer()

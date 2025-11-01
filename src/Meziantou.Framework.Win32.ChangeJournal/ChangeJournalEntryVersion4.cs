@@ -2,6 +2,9 @@ using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a change journal entry in version 4 format, which includes extent information for modified ranges.
+/// </summary>
 public sealed class ChangeJournalEntryVersion4 : ChangeJournalEntry
 {
     internal ChangeJournalEntryVersion4(USN_RECORD_V4 nativeEntry, ChangeJournalEntryExtent[] extents)

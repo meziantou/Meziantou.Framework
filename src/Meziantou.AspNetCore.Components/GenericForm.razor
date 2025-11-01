@@ -23,18 +23,23 @@
     internal string BaseEditorId { get; } = "form-" + Guid.NewGuid().ToString();
     private List<GenericFormField<TModel>>? fields;
 
+    /// <summary>Gets or sets the model instance to edit in the form.</summary>
     [Parameter]
     public TModel? Model { get; set; }
 
+    /// <summary>Gets or sets the callback invoked when any field value changes.</summary>
     [Parameter]
     public EventCallback<TModel> ModelChanged { get; set; }
 
+    /// <summary>Gets or sets whether to display field validation messages. Default is <c>true</c>.</summary>
     [Parameter]
     public bool EnableFieldValidation { get; set; } = true;
 
+    /// <summary>Gets or sets the CSS class to apply to editor elements.</summary>
     [Parameter]
     public string? EditorClass { get; set; }
 
+    /// <summary>Gets or sets a custom template for rendering each field. If not specified, a default template is used.</summary>
     [Parameter]
     public RenderFragment<GenericFormField<TModel>>? FieldTemplate { get; set; }
 

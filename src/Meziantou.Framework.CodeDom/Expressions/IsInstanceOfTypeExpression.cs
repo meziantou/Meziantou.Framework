@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a type check expression (is operator).</summary>
 public class IsInstanceOfTypeExpression : Expression
 {
     public IsInstanceOfTypeExpression()

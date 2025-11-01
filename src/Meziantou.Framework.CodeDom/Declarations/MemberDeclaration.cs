@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for all member declarations (methods, properties, fields, etc.).</summary>
 public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable, INullableContext
 {
     protected MemberDeclaration()
@@ -7,6 +8,8 @@ public abstract class MemberDeclaration : CodeObject, ICustomAttributeContainer,
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="MemberDeclaration"/> class with the specified name.</summary>
+    /// <param name="name">The member name.</param>
     protected MemberDeclaration(string? name)
     {
         CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);

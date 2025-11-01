@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a conditional statement (if-else).</summary>
 public class ConditionStatement : Statement
 {
     public Expression? Condition

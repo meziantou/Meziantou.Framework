@@ -2,11 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework.ChromiumTracing;
 
+/// <summary>Represents a clock synchronization event used to align timestamps across different trace sources.</summary>
 public sealed class ChromiumTracingClockSyncEvent : ChromiumTracingEvent
 {
     [JsonPropertyName("ph")]
     public override string Type => "c";
 
+    /// <summary>Gets the event name, which is always "clock_sync" and cannot be changed.</summary>
     [JsonPropertyName("name")]
     public override string? Name
     {

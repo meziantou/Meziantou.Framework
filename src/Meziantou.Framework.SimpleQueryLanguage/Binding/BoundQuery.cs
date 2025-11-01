@@ -4,8 +4,12 @@ using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 
 namespace Meziantou.Framework.SimpleQueryLanguage.Binding;
 
+/// <summary>Represents a bound query node in the query tree after semantic analysis.</summary>
 public abstract class BoundQuery
 {
+    /// <summary>Creates a disjunctive normal form representation of the query syntax tree.</summary>
+    /// <param name="syntax">The query syntax tree to bind.</param>
+    /// <returns>A list of disjunctions, where each disjunction is a list of conjunctions.</returns>
     public static IReadOnlyList<IReadOnlyList<BoundQuery>> Create(QuerySyntax syntax)
     {
         ArgumentNullException.ThrowIfNull(syntax);

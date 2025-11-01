@@ -4,6 +4,7 @@ using Meziantou.Framework.HumanReadable.Converters;
 
 namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
+/// <summary>Formats JSON values for human-readable output.</summary>
 public sealed class JsonFormatter : ValueFormatter
 {
     private static readonly JsonSerializerOptions NonIndentedOptions = new()
@@ -20,11 +21,14 @@ public sealed class JsonFormatter : ValueFormatter
 
     private readonly JsonFormatterOptions _options;
 
+    /// <summary>Initializes a new instance of the <see cref="JsonFormatter"/> class with default options.</summary>
     public JsonFormatter()
         : this(options: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="JsonFormatter"/> class with the specified options.</summary>
+    /// <param name="options">The formatting options.</param>
     public JsonFormatter(JsonFormatterOptions? options)
     {
         _options = options ?? new();

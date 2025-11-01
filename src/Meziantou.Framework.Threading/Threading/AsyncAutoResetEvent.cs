@@ -2,6 +2,19 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework.Threading;
 
+/// <summary>Represents an asynchronous auto-reset event that signals a single waiting task when set.</summary>
+/// <example>
+/// <code><![CDATA[
+/// var autoResetEvent = new AsyncAutoResetEvent(initialState: false);
+/// 
+/// // In one task
+/// await autoResetEvent.WaitAsync();
+/// Console.WriteLine("Event was set!");
+/// 
+/// // In another task
+/// autoResetEvent.Set();
+/// ]]></code>
+/// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncAutoResetEvent
 {
@@ -10,11 +23,16 @@ public sealed class AsyncAutoResetEvent
     internal readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled;
 
+    /// <summary>Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class with a Boolean value indicating whether to set the initial state to signaled.</summary>
+    /// <param name="initialState"><see langword="true"/> to set the initial state to signaled; <see langword="false"/> to set the initial state to non-signaled.</param>
     public AsyncAutoResetEvent(bool initialState)
         : this(initialState, allowInliningAwaiters: false)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="AsyncAutoResetEvent"/> class with a Boolean value indicating whether to set the initial state to signaled and whether to allow inlining of continuations.</summary>
+    /// <param name="initialState"><see langword="true"/> to set the initial state to signaled; <see langword="false"/> to set the initial state to non-signaled.</param>
+    /// <param name="allowInliningAwaiters"><see langword="true"/> to allow continuations to be executed synchronously on the thread that calls <see cref="Set"/>; <see langword="false"/> to execute continuations asynchronously.</param>
     public AsyncAutoResetEvent(bool initialState, bool allowInliningAwaiters)
     {
         _signaled = initialState;
@@ -22,11 +40,16 @@ public sealed class AsyncAutoResetEvent
         _onCancellationRequestHandler = OnCancellationRequest;
     }
 
+    /// <summary>Asynchronously waits for the event to be set.</summary>
+    /// <returns>A task that completes when the event is set.</returns>
     public Task WaitAsync()
     {
         return WaitAsync(CancellationToken.None);
     }
 
+    /// <summary>Asynchronously waits for the event to be set.</summary>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting.</param>
+    /// <returns>A task that completes when the event is set.</returns>
     public Task WaitAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -56,6 +79,7 @@ public sealed class AsyncAutoResetEvent
         }
     }
 
+    /// <summary>Sets the state of the event to signaled, allowing one waiting task to proceed.</summary>
     public void Set()
     {
         WaiterCompletionSource? toRelease = null;

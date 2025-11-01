@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a this constructor initializer (: this()).</summary>
 public class ConstructorThisInitializer : ConstructorInitializer
 {
     public ConstructorThisInitializer()

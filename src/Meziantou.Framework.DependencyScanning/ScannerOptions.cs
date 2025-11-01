@@ -3,6 +3,20 @@ using Meziantou.Framework.DependencyScanning.Scanners;
 
 namespace Meziantou.Framework.DependencyScanning;
 
+/// <summary>
+/// Provides configuration options for dependency scanning operations.
+/// <example>
+/// <code>
+/// var options = new ScannerOptions
+/// {
+///     DegreeOfParallelism = 8,
+///     RecurseSubdirectories = true,
+///     IncludedDependencyTypes = [DependencyType.NuGet, DependencyType.Npm].ToImmutableHashSet()
+/// };
+/// var dependencies = await DependencyScanner.ScanDirectoryAsync("C:\\MyProject", options, cancellationToken);
+/// </code>
+/// </example>
+/// </summary>
 public sealed class ScannerOptions
 {
     private static readonly ImmutableArray<DependencyScanner> DefaultScanners =
@@ -27,6 +41,7 @@ public sealed class ScannerOptions
 
     private DependencyScanner[] _enabledScanners;
 
+    /// <summary>Gets or sets the collection of scanners to use. Defaults to all built-in scanners.</summary>
     public ImmutableArray<DependencyScanner> Scanners
     {
         get => field; set
@@ -35,12 +50,22 @@ public sealed class ScannerOptions
         }
     } = DefaultScanners;
 
+    /// <summary>Gets or sets a value indicating whether to recurse into subdirectories. Default is <see langword="true"/>.</summary>
     public bool RecurseSubdirectories { get; set; } = true;
+
+    /// <summary>Gets or sets a predicate to filter which subdirectories to recurse into.</summary>
     public FileSystemEntryPredicate? ShouldRecursePredicate { get; set; }
+
+    /// <summary>Gets or sets a predicate to filter which files to scan.</summary>
     public FileSystemEntryPredicate? ShouldScanFilePredicate { get; set; }
+
+    /// <summary>Gets or sets the maximum number of parallel scanning tasks. Default is 16.</summary>
     public int DegreeOfParallelism { get; set; } = 16;
+
+    /// <summary>Gets or sets the file system implementation to use for file access.</summary>
     public IFileSystem FileSystem { get; set; } = Internals.FileSystem.Instance;
 
+    /// <summary>Gets or sets the set of dependency types to include. When set, only these types will be scanned. Default is empty (all types included).</summary>
     public ImmutableHashSet<DependencyType> IncludedDependencyTypes
     {
         get => field;
@@ -51,6 +76,7 @@ public sealed class ScannerOptions
         }
     } = [];
 
+    /// <summary>Gets or sets the set of dependency types to exclude from scanning. Default is empty (no types excluded).</summary>
     public ImmutableHashSet<DependencyType> ExcludedDependencyTypes
     {
         get => field;

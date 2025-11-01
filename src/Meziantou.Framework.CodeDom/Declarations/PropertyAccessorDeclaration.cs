@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a property accessor (get or set).</summary>
 public class PropertyAccessorDeclaration : CodeObject
 {
     public PropertyAccessorDeclaration()

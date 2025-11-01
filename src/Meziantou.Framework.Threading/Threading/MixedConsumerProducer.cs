@@ -2,8 +2,31 @@ using System.Threading.Channels;
 
 namespace Meziantou.Framework.Threading;
 
+/// <summary>Provides a parallel processing utility that allows consumers to dynamically add new items to be processed.</summary>
 public static class MixedConsumerProducer
 {
+    /// <summary>Processes items in parallel, where each processing action can enqueue additional items to be processed.</summary>
+    /// <typeparam name="T">The type of items to process.</typeparam>
+    /// <param name="initialItems">The initial collection of items to process.</param>
+    /// <param name="options">Options that configure the parallel processing.</param>
+    /// <param name="action">The action to perform on each item. The action receives a context to enqueue new items, the current item, and a cancellation token.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <example>
+    /// <code><![CDATA[
+    /// var initialUrls = new[] { "https://example.com" };
+    /// await MixedConsumerProducer.Process(
+    ///     initialUrls,
+    ///     new ParallelOptions { MaxDegreeOfParallelism = 4 },
+    ///     async (context, url, ct) =>
+    ///     {
+    ///         var links = await CrawlPageAsync(url, ct);
+    ///         foreach (var link in links)
+    ///         {
+    ///             context.Enqueue(link);
+    ///         }
+    ///     });
+    /// ]]></code>
+    /// </example>
     public static async Task Process<T>(IEnumerable<T> initialItems, ParallelOptions options, Func<MixedConsumerProducerContext<T>, T, CancellationToken, ValueTask> action)
     {
         if (Enumerable.TryGetNonEnumeratedCount(initialItems, out var count) && count == 0)

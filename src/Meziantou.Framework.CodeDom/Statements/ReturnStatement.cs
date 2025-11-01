@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a return statement with an optional value.</summary>
 public class ReturnStatement : Statement
 {
     public ReturnStatement()

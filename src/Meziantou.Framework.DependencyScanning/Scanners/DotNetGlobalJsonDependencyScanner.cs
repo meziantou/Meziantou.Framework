@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans .NET global.json files for SDK versions and MSBuild SDK package references.</summary>
 public sealed class DotNetGlobalJsonDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet, DependencyType.DotNetSdk];

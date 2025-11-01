@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a method argument declaration.</summary>
 public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, ICommentable
 {
     public MethodArgumentDeclaration()
@@ -7,6 +8,9 @@ public class MethodArgumentDeclaration : CodeObject, ICustomAttributeContainer, 
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="MethodArgumentDeclaration"/> class with the specified type and name.</summary>
+    /// <param name="type">The argument type.</param>
+    /// <param name="name">The argument name.</param>
     public MethodArgumentDeclaration(TypeReference? type, string? name)
     {
         CustomAttributes = new CodeObjectCollection<CustomAttribute>(this);

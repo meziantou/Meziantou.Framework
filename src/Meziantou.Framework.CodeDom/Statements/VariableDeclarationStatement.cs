@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a local variable declaration statement.</summary>
 public class VariableDeclarationStatement : Statement
 {
     public VariableDeclarationStatement()

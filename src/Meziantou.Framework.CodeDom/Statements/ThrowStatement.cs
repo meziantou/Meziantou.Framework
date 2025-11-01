@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a throw statement to raise an exception.</summary>
 public class ThrowStatement : Statement
 {
     public ThrowStatement()

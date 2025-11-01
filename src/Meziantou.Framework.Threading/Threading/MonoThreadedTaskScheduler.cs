@@ -2,17 +2,32 @@ using System.Collections.Concurrent;
 
 namespace Meziantou.Framework.Threading;
 
+/// <summary>Provides a task scheduler that executes tasks on a single dedicated thread.</summary>
+/// <example>
+/// <code><![CDATA[
+/// using var scheduler = new MonoThreadedTaskScheduler("MyWorkerThread");
+/// var task = Task.Factory.StartNew(
+///     () => Console.WriteLine($"Running on thread: {Thread.CurrentThread.Name}"),
+///     CancellationToken.None,
+///     TaskCreationOptions.None,
+///     scheduler);
+/// await task;
+/// ]]></code>
+/// </example>
 public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 {
     private readonly ConcurrentQueue<Task> _tasks = new();
     private readonly AutoResetEvent _stop = new(initialState: false);
     private readonly AutoResetEvent _dequeue = new(initialState: false);
 
+    /// <summary>Initializes a new instance of the <see cref="MonoThreadedTaskScheduler"/> class.</summary>
     public MonoThreadedTaskScheduler()
         : this(threadName: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="MonoThreadedTaskScheduler"/> class with the specified thread name.</summary>
+    /// <param name="threadName">The name of the worker thread.</param>
     public MonoThreadedTaskScheduler(string? threadName)
     {
         Thread = new Thread(SafeThreadExecute)
@@ -28,11 +43,20 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
     }
 
     private Thread? Thread { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether to dequeue remaining tasks when the scheduler is disposed.</summary>
     public bool DequeueOnDispose { get; set; }
+
+    /// <summary>Gets or sets the timeout to wait for the worker thread to complete when disposing.</summary>
     public TimeSpan DisposeThreadJoinTimeout { get; set; }
+
+    /// <summary>Gets or sets the timeout for waiting on the event handle.</summary>
     public TimeSpan WaitTimeout { get; set; }
+
+    /// <summary>Gets or sets the timeout for dequeueing tasks.</summary>
     public TimeSpan DequeueTimeout { get; set; }
 
+    /// <summary>Gets the number of tasks currently queued to the scheduler.</summary>
     public int QueueCount => _tasks.Count;
 
     public void Dispose()

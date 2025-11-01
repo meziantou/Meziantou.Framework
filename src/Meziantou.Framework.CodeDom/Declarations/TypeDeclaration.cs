@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for all type declarations (classes, interfaces, structs, records, enums, delegates).</summary>
 public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, ICommentable, IXmlCommentable, INullableContext
 {
     public string? Name { get; set; }
@@ -18,6 +19,7 @@ public abstract class TypeDeclaration : CodeObject, ICustomAttributeContainer, I
         XmlComments = new XmlCommentCollection(this);
     }
 
+    /// <summary>Gets the fully qualified namespace containing this type declaration.</summary>
     public string? Namespace
     {
         get

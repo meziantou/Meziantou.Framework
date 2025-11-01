@@ -1,8 +1,12 @@
 namespace Meziantou.Framework.HumanReadable.Converters;
 
+/// <summary>Provides options for serializing HTTP messages.</summary>
 public record HumanReadableHttpMessageOptions
 {
+    /// <summary>Gets the set of header names to exclude from serialization.</summary>
     public ISet<string> ExcludedHeaderNames { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Gets the list of header value formatters used to transform header values during serialization.</summary>
     public IList<HttpHeaderValueFormatter> HeaderValueTransformer { get; } = new List<HttpHeaderValueFormatter>();
 
 #if NET5_0_OR_GREATER

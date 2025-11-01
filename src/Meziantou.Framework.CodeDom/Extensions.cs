@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Provides extension methods for CodeDOM types.</summary>
 public static class Extensions
 {
     public static T? SelfOrAnscestorOfType<T>(this CodeObject? codeObject) where T : CodeObject

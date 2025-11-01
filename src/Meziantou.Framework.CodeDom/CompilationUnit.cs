@@ -1,13 +1,25 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a compilation unit (source file) containing namespaces, types, and using directives.</summary>
+/// <example>
+/// <code>
+/// var unit = new CompilationUnit();
+/// unit.Usings.Add(new UsingDirective("System"));
+/// var ns = unit.AddNamespace("MyNamespace");
+/// var cls = ns.AddType(new ClassDeclaration("MyClass"));
+/// var code = unit.ToCsharpString();
+/// </code>
+/// </example>
 public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespaceDeclarationContainer, IUsingDirectiveContainer, ICommentable, INullableContext
 {
     public CompilationUnit()
     {
     }
 
+    /// <summary>Gets or sets the nullable reference types context for this compilation unit.</summary>
     public NullableContext NullableContext { get; set; }
 
+    /// <summary>Gets the collection of top-level type declarations in this compilation unit.</summary>
     public CodeObjectCollection<TypeDeclaration> Types
     {
         get
@@ -16,6 +28,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
         }
     }
 
+    /// <summary>Gets the collection of namespace declarations in this compilation unit.</summary>
     public CodeObjectCollection<NamespaceDeclaration> Namespaces
     {
         get
@@ -25,6 +38,7 @@ public class CompilationUnit : CodeObject, ITypeDeclarationContainer, INamespace
         }
     }
 
+    /// <summary>Gets the collection of using directives in this compilation unit.</summary>
     public CodeObjectCollection<UsingDirective> Usings
     {
         get

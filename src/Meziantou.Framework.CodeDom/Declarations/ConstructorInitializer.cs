@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for constructor initializers (this, base).</summary>
 public abstract class ConstructorInitializer : CodeObject, ICommentable
 {
     protected ConstructorInitializer()

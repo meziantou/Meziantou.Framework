@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a default value expression (default(T) or default).</summary>
 public class DefaultValueExpression : Expression
 {
     public DefaultValueExpression()

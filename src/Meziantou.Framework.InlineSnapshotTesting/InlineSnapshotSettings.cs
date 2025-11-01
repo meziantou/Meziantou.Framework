@@ -5,6 +5,9 @@ using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>
+/// Provides configuration settings for inline snapshot testing.
+/// </summary>
 public sealed record InlineSnapshotSettings
 {
     private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
@@ -16,15 +19,25 @@ public sealed record InlineSnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
+    /// <summary>Gets or sets the default settings used for snapshot validation.</summary>
     public static InlineSnapshotSettings Default { get; set; } = new();
 
+    /// <summary>Gets or sets the indentation string to use when writing snapshots. If null, the indentation is detected from the PDB file.</summary>
     public string? Indentation { get; set; }
+
+    /// <summary>Gets or sets the end-of-line string to use when writing snapshots. If null, the end-of-line is detected from the source file.</summary>
     public string? EndOfLine { get; set; }
+
+    /// <summary>Gets or sets the file encoding to use when writing snapshots. If null, the encoding is detected from the source file.</summary>
     public Encoding? FileEncoding { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether to automatically detect CI environments and disable snapshot updates.</summary>
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
+
+    /// <summary>Gets or sets the allowed C# string formats for writing snapshots (quoted, verbatim, raw, etc.).</summary>
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
 
+    /// <summary>Gets or sets the strategy for updating snapshots when they don't match.</summary>
     public SnapshotUpdateStrategy SnapshotUpdateStrategy
     {
         get;
@@ -36,6 +49,7 @@ public sealed record InlineSnapshotSettings
         }
     } = SnapshotUpdateStrategy.Default;
 
+    /// <summary>Gets or sets the serializer used to convert objects to snapshot strings.</summary>
     public SnapshotSerializer SnapshotSerializer
     {
         get;
@@ -47,6 +61,7 @@ public sealed record InlineSnapshotSettings
         }
     } = HumanReadableSnapshotSerializer.DefaultInstance;
 
+    /// <summary>Gets or sets the comparer used to determine if two snapshots are equal.</summary>
     public SnapshotComparer SnapshotComparer
     {
         get;
@@ -58,6 +73,7 @@ public sealed record InlineSnapshotSettings
         }
     } = SnapshotComparer.Default;
 
+    /// <summary>Gets or sets the formatter used to create error messages when snapshots don't match.</summary>
     public AssertionMessageFormatter ErrorMessageFormatter
     {
         get;
@@ -69,6 +85,7 @@ public sealed record InlineSnapshotSettings
         }
     } = InlineDiffAssertionMessageFormatter.Instance;
 
+    /// <summary>Gets or sets the builder used to create assertion exceptions when snapshots don't match.</summary>
     public AssertionExceptionBuilder AssertionExceptionCreator
     {
         get;
@@ -80,6 +97,7 @@ public sealed record InlineSnapshotSettings
         }
     } = AssertionExceptionBuilder.Default;
 
+    /// <summary>Gets the list of scrubbers applied to snapshots after serialization.</summary>
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>

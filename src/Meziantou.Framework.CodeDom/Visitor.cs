@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for implementing the visitor pattern to traverse the CodeDOM tree.</summary>
 public class Visitor
 {
     public virtual void Visit(CodeObject? codeObject)

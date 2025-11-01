@@ -3,8 +3,12 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for <see cref="Regex"/>.
+/// </summary>
 public static class RegexExtensions
 {
+    /// <summary>Replaces all matches in the input string using an asynchronous replacement function.</summary>
     [SuppressMessage("Style", "IDE0220:Add explicit cast", Justification = "Not needed for older API")]
     public static async Task<string> ReplaceAsync(this Regex regex, string input, Func<Match, Task<string>> replacementFn)
     {

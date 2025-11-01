@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>A text writer that supports indentation for generating formatted code.</summary>
 public class IndentedTextWriter : TextWriter
 {
     private bool _tabsPending;

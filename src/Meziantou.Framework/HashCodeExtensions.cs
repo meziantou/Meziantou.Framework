@@ -1,6 +1,11 @@
 namespace Meziantou.Framework;
+
+/// <summary>
+/// Provides extension methods for <see cref="HashCode"/> to efficiently add multiple values.
+/// </summary>
 public static class HashCodeExtensions
 {
+    /// <summary>Adds all values from an array to the hash code.</summary>
     public static void AddValues<T>(this HashCode hashCode, T[] values, IEqualityComparer<T>? equalityComparer = null)
     {
         if (values is null)
@@ -13,6 +18,7 @@ public static class HashCodeExtensions
         }
     }
 
+    /// <summary>Adds all values from a span to the hash code.</summary>
     public static void AddValues<T>(this HashCode hashCode, ReadOnlySpan<T> values, IEqualityComparer<T>? equalityComparer = null)
     {
         foreach (var value in values)
@@ -21,6 +27,7 @@ public static class HashCodeExtensions
         }
     }
 
+    /// <summary>Adds all values from an enumerable to the hash code.</summary>
     public static void AddValues<T>(this HashCode hashCode, IEnumerable<T> values, IEqualityComparer<T>? equalityComparer = null)
     {
         foreach (var value in values)

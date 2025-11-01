@@ -1,5 +1,15 @@
 namespace Meziantou.Framework.IO;
 
+/// <summary>
+/// A text writer that writes to two underlying text writers simultaneously.
+/// </summary>
+/// <example>
+/// <code>
+/// using var file = new StreamWriter("log.txt");
+/// using var tee = new TeeTextWriter(Console.Out, file);
+/// tee.WriteLine("This goes to both console and file");
+/// </code>
+/// </example>
 #if NET9_0_OR_GREATER
 [Obsolete("Use TextWriter.CreateBroadcasting", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -7,7 +17,10 @@ public sealed class TeeTextWriter : TextWriter
 {
     private readonly Lock _lock = new();
 
+    /// <summary>Gets the first text writer.</summary>
     public TextWriter Stream1 { get; }
+
+    /// <summary>Gets the second text writer.</summary>
     public TextWriter Stream2 { get; }
 
     public TeeTextWriter(TextWriter stream1, TextWriter stream2)

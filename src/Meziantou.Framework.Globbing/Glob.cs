@@ -58,6 +58,24 @@ namespace Meziantou.Framework.Globbing;
 ///     </list>
 ///     <para>If the pattern ends with a <c>/</c>, only directories are matched. Otherwise, only files are matched.</para>
 /// </summary>
+/// <example>
+/// Parse a glob pattern and check if a path matches:
+/// <code>
+/// var glob = Glob.Parse("src/**/*.txt", GlobOptions.None);
+/// if (glob.IsMatch("src/folder/file.txt"))
+/// {
+///     Console.WriteLine("File matches!");
+/// }
+/// </code>
+/// Enumerate files that match a glob pattern:
+/// <code>
+/// var glob = Glob.Parse("**/*.cs", GlobOptions.IgnoreCase);
+/// foreach (var file in glob.EnumerateFiles("C:/MyProject"))
+/// {
+///     Console.WriteLine(file);
+/// }
+/// </code>
+/// </example>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
 public sealed class Glob : IGlobEvaluatable
@@ -65,6 +83,7 @@ public sealed class Glob : IGlobEvaluatable
     private readonly GlobMatchType _matchType;
     internal readonly Segment[] _segments;
 
+    /// <summary>Gets the glob mode indicating whether this pattern includes or excludes matches.</summary>
     public GlobMode Mode { get; }
 
     bool IGlobEvaluatable.CanMatchFiles => _matchType is GlobMatchType.File or GlobMatchType.Any;
@@ -78,11 +97,21 @@ public sealed class Glob : IGlobEvaluatable
         Mode = mode;
     }
 
+    /// <summary>Parses a glob pattern string.</summary>
+    /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="options">Options for controlling pattern parsing behavior.</param>
+    /// <returns>A <see cref="Glob"/> object representing the parsed pattern.</returns>
+    /// <exception cref="ArgumentException">The pattern is invalid.</exception>
     public static Glob Parse(string pattern, GlobOptions options)
     {
         return Parse(pattern.AsSpan(), options);
     }
 
+    /// <summary>Parses a glob pattern string.</summary>
+    /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="options">Options for controlling pattern parsing behavior.</param>
+    /// <returns>A <see cref="Glob"/> object representing the parsed pattern.</returns>
+    /// <exception cref="ArgumentException">The pattern is invalid.</exception>
     public static Glob Parse(ReadOnlySpan<char> pattern, GlobOptions options)
     {
         if (TryParse(pattern, options, out var result, out var errorMessage))
@@ -91,11 +120,21 @@ public sealed class Glob : IGlobEvaluatable
         throw new ArgumentException($"The pattern '{pattern.ToString()}' is invalid: {errorMessage}", nameof(pattern));
     }
 
+    /// <summary>Attempts to parse a glob pattern string.</summary>
+    /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="options">Options for controlling pattern parsing behavior.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="Glob"/> if parsing succeeded, or <see langword="null"/> if parsing failed.</param>
+    /// <returns><see langword="true"/> if the pattern was parsed successfully; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result)
     {
         return TryParse(pattern.AsSpan(), options, out result);
     }
 
+    /// <summary>Attempts to parse a glob pattern string.</summary>
+    /// <param name="pattern">The glob pattern to parse.</param>
+    /// <param name="options">Options for controlling pattern parsing behavior.</param>
+    /// <param name="result">When this method returns, contains the parsed <see cref="Glob"/> if parsing succeeded, or <see langword="null"/> if parsing failed.</param>
+    /// <returns><see langword="true"/> if the pattern was parsed successfully; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobOptions options, [NotNullWhen(true)] out Glob? result)
     {
         return TryParse(pattern, options, out result, out _);
@@ -106,6 +145,11 @@ public sealed class Glob : IGlobEvaluatable
         return GlobParser.TryParse(pattern, options, out result, out errorMessage);
     }
 
+    /// <summary>Determines whether the specified path matches this glob pattern.</summary>
+    /// <param name="directory">The directory part of the path to match.</param>
+    /// <param name="filename">The filename part of the path to match.</param>
+    /// <param name="itemType">The type of the path item (file or directory), or <see langword="null"/> if unknown.</param>
+    /// <returns><see langword="true"/> if the path matches the pattern; otherwise, <see langword="false"/>.</returns>
     public bool IsMatch(ReadOnlySpan<char> directory, ReadOnlySpan<char> filename, PathItemType? itemType)
     {
         return IsMatchCore(directory, filename, itemType);
@@ -168,6 +212,10 @@ public sealed class Glob : IGlobEvaluatable
         return pathReader.IsEndOfPath;
     }
 
+    /// <summary>Determines whether a directory should be recursed into when enumerating files.</summary>
+    /// <param name="folderPath">The folder path to check.</param>
+    /// <param name="filename">The filename part of the path to check.</param>
+    /// <returns><see langword="true"/> if the directory could contain matches; otherwise, <see langword="false"/>.</returns>
     public bool IsPartialMatch(ReadOnlySpan<char> folderPath, ReadOnlySpan<char> filename)
     {
         return IsPartialMatchCore(folderPath, filename);

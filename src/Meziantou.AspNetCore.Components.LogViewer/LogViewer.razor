@@ -68,21 +68,39 @@
     private HashSet<LogEntry> _openedEntries = new HashSet<LogEntry>();
     private HashSet<LogEntry> _selectedEntries = new HashSet<LogEntry>();
 
+    /// <summary>
+    /// Gets or sets the collection of log entries to display.
+    /// </summary>
     [Parameter]
     public IEnumerable<LogEntry>? Entries { get; set; }
 
+    /// <summary>
+    /// Gets or sets the format for displaying timestamps. Default is <see cref="TimestampDisplayFormat.FullDateTime"/>.
+    /// </summary>
     [Parameter]
     public TimestampDisplayFormat TimestampDisplayFormat { get; set; } = TimestampDisplayFormat.FullDateTime;
 
+    /// <summary>
+    /// Gets or sets the format string for displaying time spans. If not specified, uses the default format "G".
+    /// </summary>
     [Parameter]
     public string? TimeSpanStringFormat { get; set; }
 
+    /// <summary>
+    /// Gets or sets the format string for displaying date and time values. If not specified, uses the default format "R".
+    /// </summary>
     [Parameter]
     public string? DateTimeStringFormat { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether to display line numbers. Default is <c>true</c>.
+    /// </summary>
     [Parameter]
     public bool ShowLineNumbers { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the collection of log highlighters to apply to log messages. Default includes <see cref="UrlLogHighlighter"/>.
+    /// </summary>
     [Parameter]
     public IEnumerable<ILogHighlighter> LogHighlighters { get; set; } = new[] { new UrlLogHighlighter() };
 

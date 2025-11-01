@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Meziantou.Framework;
 
+/// <summary>Converts a <see cref="FullPath"/> to and from JSON.</summary>
 public sealed class FullPathJsonConverter : JsonConverter<FullPath>
 {
     public override FullPath Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

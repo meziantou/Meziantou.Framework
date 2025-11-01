@@ -1,5 +1,13 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an interface declaration.</summary>
+/// <example>
+/// <code>
+/// var iface = new InterfaceDeclaration("IRepository");
+/// iface.Parameters.Add(new TypeParameter("T"));
+/// iface.Members.Add(new MethodDeclaration("Get") { ReturnType = new TypeReference("T") });
+/// </code>
+/// </example>
 public class InterfaceDeclaration : TypeDeclaration, IParametrableType, IInheritanceParameters, ITypeDeclarationContainer, IMemberContainer
 {
     public InterfaceDeclaration()
@@ -7,6 +15,8 @@ public class InterfaceDeclaration : TypeDeclaration, IParametrableType, IInherit
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="InterfaceDeclaration"/> class with the specified name.</summary>
+    /// <param name="name">The interface name.</param>
     public InterfaceDeclaration(string? name)
     {
         Name = name;

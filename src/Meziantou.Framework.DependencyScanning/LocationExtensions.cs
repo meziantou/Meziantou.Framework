@@ -1,6 +1,11 @@
 namespace Meziantou.Framework.DependencyScanning;
+
+/// <summary>Provides extension methods for ordering dependencies by their location in source files.</summary>
 public static class LocationExtensions
 {
+    /// <summary>Orders dependencies by their version location in ascending order (by file path, line number, and line position).</summary>
+    /// <param name="dependencies">The dependencies to order.</param>
+    /// <returns>The ordered dependencies.</returns>
     public static IEnumerable<Dependency> OrderByVersionLocation(this IEnumerable<Dependency> dependencies)
     {
         return dependencies
@@ -17,6 +22,9 @@ public static class LocationExtensions
             .Select(item => item.Dependency);
     }
 
+    /// <summary>Orders dependencies by their version location in descending order (by file path, line number, and line position).</summary>
+    /// <param name="dependencies">The dependencies to order.</param>
+    /// <returns>The ordered dependencies.</returns>
     public static IEnumerable<Dependency> OrderByVersionLocationDescending(this IEnumerable<Dependency> dependencies)
     {
         return dependencies

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.DependencyScanning;
 
+/// <summary>Provides context information and methods for scanning a file and reporting discovered dependencies.</summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct ScanFileContext : IAsyncDisposable
 {
@@ -20,9 +21,16 @@ public readonly struct ScanFileContext : IAsyncDisposable
         _content = new Lazy<Stream>(() => options.FileSystem.OpenRead(fullPath));
     }
 
+    /// <summary>Gets the full path of the file being scanned.</summary>
     public string FullPath { get; }
+
+    /// <summary>Gets a stream containing the file content. The stream is lazily opened on first access.</summary>
     public Stream Content => _content.Value;
+
+    /// <summary>Gets the cancellation token for the scanning operation.</summary>
     public CancellationToken CancellationToken { get; }
+
+    /// <summary>Gets the file system implementation for accessing files.</summary>
     public IFileSystem FileSystem { get; }
 
     private void UnsafeReportDependency(Dependency dependency)
@@ -30,11 +38,27 @@ public readonly struct ScanFileContext : IAsyncDisposable
         _onDependencyFound(dependency);
     }
 
+    /// <summary>Reports a discovered dependency to the scanning framework.</summary>
+    /// <param name="scanner">The scanner that discovered the dependency.</param>
+    /// <param name="name">The name of the dependency.</param>
+    /// <param name="version">The version of the dependency.</param>
+    /// <param name="type">The type of the dependency.</param>
+    /// <param name="nameLocation">The location of the dependency name in the source file.</param>
+    /// <param name="versionLocation">The location of the dependency version in the source file.</param>
     public void ReportDependency(DependencyScanner scanner, string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)
     {
         ReportDependency(scanner, name, version, type, nameLocation, versionLocation, [], []);
     }
 
+    /// <summary>Reports a discovered dependency with additional tags and metadata to the scanning framework.</summary>
+    /// <param name="scanner">The scanner that discovered the dependency.</param>
+    /// <param name="name">The name of the dependency.</param>
+    /// <param name="version">The version of the dependency.</param>
+    /// <param name="type">The type of the dependency.</param>
+    /// <param name="nameLocation">The location of the dependency name in the source file.</param>
+    /// <param name="versionLocation">The location of the dependency version in the source file.</param>
+    /// <param name="tags">Additional tags to associate with the dependency.</param>
+    /// <param name="metadata">Additional metadata to associate with the dependency.</param>
     public void ReportDependency(DependencyScanner scanner, string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation, ReadOnlySpan<string> tags, ReadOnlySpan<KeyValuePair<string, object?>> metadata)
     {
         if (!ShouldReportDependency(scanner, type))

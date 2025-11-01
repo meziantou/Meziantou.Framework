@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an assignment statement (=).</summary>
 public class AssignStatement : Statement
 {
     public AssignStatement()

@@ -2,6 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a collection of method arguments.</summary>
 public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclaration>, IReadOnlyList<MethodArgumentDeclaration>
 {
     private readonly List<MethodArgumentDeclaration> _list = [];

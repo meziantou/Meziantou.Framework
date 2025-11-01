@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 namespace Meziantou.Framework.Http;
 
 /// <summary>
-/// Represents a Link header value as defined in RFC 8288.
+/// Represents a Link header value as defined in <see href="https://datatracker.ietf.org/doc/html/rfc8288">RFC 8288</see>.
 /// </summary>
 public sealed class LinkHeaderValue
 {

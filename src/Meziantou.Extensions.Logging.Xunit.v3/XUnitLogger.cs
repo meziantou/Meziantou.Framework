@@ -5,6 +5,20 @@ using Xunit;
 namespace Meziantou.Extensions.Logging.Xunit.v3;
 #pragma warning restore IDE1006 // Naming Styles
 
+/// <summary>Provides an implementation of <see cref="ILogger"/> that writes logs to xUnit.net's <see cref="ITestOutputHelper"/>.</summary>
+/// <example>
+/// <code>
+/// public class MyTests(ITestOutputHelper testOutputHelper)
+/// {
+///     [Fact]
+///     public void MyTest()
+///     {
+///         var logger = XUnitLogger.CreateLogger(testOutputHelper);
+///         logger.LogInformation("This message will appear in the test output");
+///     }
+/// }
+/// </code>
+/// </example>
 public class XUnitLogger : ILogger
 {
     private readonly ITestOutputHelper? _testOutputHelper;
@@ -12,21 +26,50 @@ public class XUnitLogger : ILogger
     private readonly XUnitLoggerOptions _options;
     private readonly LoggerExternalScopeProvider _scopeProvider;
 
+    /// <summary>Creates a new logger instance without a test output helper.</summary>
+    /// <returns>A new <see cref="ILogger"/> instance.</returns>
     public static ILogger CreateLogger() => new XUnitLogger(testOutputHelper: null, new LoggerExternalScopeProvider(), categoryName: "");
+
+    /// <summary>Creates a new logger instance with the specified test output helper.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <returns>A new <see cref="ILogger"/> instance.</returns>
     public static ILogger CreateLogger(ITestOutputHelper? testOutputHelper) => new XUnitLogger(testOutputHelper, new LoggerExternalScopeProvider(), "");
+
+    /// <summary>Creates a new typed logger instance without a test output helper.</summary>
+    /// <typeparam name="T">The type whose name is used for the logger category.</typeparam>
+    /// <returns>A new <see cref="ILogger{T}"/> instance.</returns>
     public static ILogger<T> CreateLogger<T>() => new XUnitLogger<T>(testOutputHelper: null, new LoggerExternalScopeProvider());
+
+    /// <summary>Creates a new typed logger instance with the specified test output helper.</summary>
+    /// <typeparam name="T">The type whose name is used for the logger category.</typeparam>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <returns>A new <see cref="ILogger{T}"/> instance.</returns>
     public static ILogger<T> CreateLogger<T>(ITestOutputHelper? testOutputHelper) => new XUnitLogger<T>(testOutputHelper, new LoggerExternalScopeProvider());
 
+    /// <summary>Initializes a new instance of the <see cref="XUnitLogger"/> class.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <param name="scopeProvider">The scope provider.</param>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName)
         : this(testOutputHelper, scopeProvider, categoryName, appendScope: true)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="XUnitLogger"/> class.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <param name="scopeProvider">The scope provider.</param>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <param name="appendScope">Whether to include scopes when logging.</param>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, bool appendScope)
         : this(testOutputHelper, scopeProvider, categoryName, options: new XUnitLoggerOptions { IncludeScopes = appendScope })
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="XUnitLogger"/> class.</summary>
+    /// <param name="testOutputHelper">The xUnit.net test output helper.</param>
+    /// <param name="scopeProvider">The scope provider.</param>
+    /// <param name="categoryName">The category name for messages produced by the logger.</param>
+    /// <param name="options">The logger options.</param>
     public XUnitLogger(ITestOutputHelper? testOutputHelper, LoggerExternalScopeProvider scopeProvider, string? categoryName, XUnitLoggerOptions? options)
     {
         _testOutputHelper = testOutputHelper;
@@ -35,10 +78,13 @@ public class XUnitLogger : ILogger
         _options = options ?? new();
     }
 
+    /// <inheritdoc/>
     public bool IsEnabled(LogLevel logLevel) => logLevel is not LogLevel.None;
 
+    /// <inheritdoc/>
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => _scopeProvider.Push(state);
 
+    /// <inheritdoc/>
     [SuppressMessage("ApiDesign", "RS0030:Do not use banned APIs")]
     [SuppressMessage("Usage", "MA0011:IFormatProvider is missing")]
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)

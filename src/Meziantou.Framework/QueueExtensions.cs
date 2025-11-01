@@ -3,12 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="Queue{T}"/>.
 /// </summary>
-/// <example>
-/// <code>
-/// var queue = new Queue&lt;int&gt;();
-/// queue.EnqueueRange(1, 2, 3, 4, 5);
-/// </code>
-/// </example>
 public static class QueueExtensions
 {
     /// <summary>Enqueues multiple items to the queue.</summary>

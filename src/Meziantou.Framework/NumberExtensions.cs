@@ -3,14 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for numeric types.
 /// </summary>
-/// <example>
-/// <code>
-/// int value = -5;
-/// int result = value.MakeSameSignAs(10); // result = 5
-/// string ordinal = NumberExtensions.ToEnglishOrdinal(21); // "21st"
-/// string invariant = 1234.ToStringInvariant(); // "1234"
-/// </code>
-/// </example>
 public static class NumberExtensions
 {
     /// <summary>Returns the number with the same sign as the specified value.</summary>

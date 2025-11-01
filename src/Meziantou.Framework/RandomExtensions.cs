@@ -4,15 +4,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="Random"/> to generate various types of random values.
 /// </summary>
-/// <example>
-/// <code>
-/// var random = new Random();
-/// int value = random.NextInt32(1, 100);
-/// bool flag = random.NextBoolean();
-/// string text = random.NextString(10, "ABC123");
-/// int item = random.NextFromList(new[] { 1, 2, 3, 4, 5 });
-/// </code>
-/// </example>
 public static class RandomExtensions
 {
     /// <summary>Returns a random element from an array.</summary>

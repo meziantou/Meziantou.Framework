@@ -3,13 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides methods for converting between byte arrays and hexadecimal string representations.
 /// </summary>
-/// <example>
-/// <code>
-/// byte[] bytes = { 0x01, 0x2F, 0xAB };
-/// string hex = bytes.ToHexaString(HexaOptions.UpperCase); // "012FAB"
-/// byte[] parsed = HexaConverter.ParseHexaString(hex);
-/// </code>
-/// </example>
 public static class HexaConverter
 {
     /// <summary>Converts a byte array to its hexadecimal string representation using uppercase letters.</summary>

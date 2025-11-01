@@ -3,12 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="Environment"/>.
 /// </summary>
-/// <example>
-/// <code>
-/// string required = Environment.GetRequiredEnvironmentVariable("PATH");
-/// string optional = Environment.GetEnvironmentVariableOrDefault("CUSTOM_VAR", "default");
-/// </code>
-/// </example>
 public static class EnvironmentExtensions
 {
     extension(Environment)

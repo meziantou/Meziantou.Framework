@@ -6,17 +6,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="Regex"/>.
 /// </summary>
-/// <example>
-/// <code>
-/// var regex = new Regex(@"\d+");
-/// string result = await regex.ReplaceAsync("abc 123 def 456", async match =>
-/// {
-///     await Task.Delay(10);
-///     return (int.Parse(match.Value) * 2).ToString();
-/// });
-/// // result: "abc 246 def 912"
-/// </code>
-/// </example>
 public static class RegexExtensions
 {
     /// <summary>Replaces all matches in the input string using an asynchronous replacement function.</summary>

@@ -5,13 +5,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="IEnumerator{T}"/>.
 /// </summary>
-/// <example>
-/// <code>
-/// IEnumerator&lt;int&gt; enumerator = GetEnumerator();
-/// List&lt;int&gt; list = enumerator.ToList();
-/// IEnumerable&lt;int&gt; enumerable = enumerator.AsEnumerable();
-/// </code>
-/// </example>
 public static class EnumeratorExtensions
 {
     /// <summary>Creates a <see cref="List{T}"/> from the remaining elements in an enumerator.</summary>

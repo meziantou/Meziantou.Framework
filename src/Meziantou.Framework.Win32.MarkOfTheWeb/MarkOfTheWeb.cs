@@ -127,7 +127,7 @@ public static class MarkOfTheWeb
 
     /// <summary>
     /// Determines whether a file is from an untrusted source based on its security zone.
-    /// Files outside of the Local Computer, Trusted, and Intranet zones are considered untrusted.
+    /// Files outside of the Local Machine, Trusted, and Intranet zones are considered untrusted.
     /// </summary>
     /// <param name="filePath">The path to the file to check.</param>
     /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>

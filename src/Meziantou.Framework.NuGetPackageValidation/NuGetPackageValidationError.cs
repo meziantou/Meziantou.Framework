@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.NuGetPackageValidation;
+namespace Meziantou.Framework.NuGetPackageValidation;
 
 /// <summary>Represents a validation error found during NuGet package validation.</summary>
 public sealed class NuGetPackageValidationError

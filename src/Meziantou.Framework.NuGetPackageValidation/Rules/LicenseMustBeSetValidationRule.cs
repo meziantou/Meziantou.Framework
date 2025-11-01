@@ -1,4 +1,4 @@
-﻿using NuGet.Packaging;
+using NuGet.Packaging;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Rules;
 

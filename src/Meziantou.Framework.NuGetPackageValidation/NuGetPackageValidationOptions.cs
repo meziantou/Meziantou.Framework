@@ -1,4 +1,4 @@
-﻿namespace Meziantou.Framework.NuGetPackageValidation;
+namespace Meziantou.Framework.NuGetPackageValidation;
 
 /// <summary>Provides configuration options for NuGet package validation.</summary>
 public sealed class NuGetPackageValidationOptions

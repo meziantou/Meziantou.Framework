@@ -3,14 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for <see cref="DateTime"/> to perform common date manipulations.
 /// </summary>
-/// <example>
-/// <code>
-/// var date = DateTime.Now;
-/// DateTime startOfWeek = date.StartOfWeek();
-/// DateTime startOfMonth = date.StartOfMonth();
-/// DateTime endOfMonth = date.EndOfMonth();
-/// </code>
-/// </example>
 public static class DateTimeExtensions
 {
     /// <summary>Gets the first date of a specific ISO 8601 week.</summary>

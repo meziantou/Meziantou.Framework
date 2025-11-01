@@ -1,12 +1,25 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for <see cref="Stream"/>.
+/// </summary>
+/// <example>
+/// <code>
+/// using var stream = File.OpenRead("file.bin");
+/// byte[] buffer = new byte[1024];
+/// int bytesRead = stream.TryReadAll(buffer, 0, buffer.Length);
+/// byte[] allBytes = stream.ReadToEnd();
+/// </code>
+/// </example>
 public static class StreamExtensions
 {
+    /// <summary>Attempts to read all requested bytes from the stream into the buffer.</summary>
     public static int TryReadAll(this Stream stream, byte[] buffer, int offset, int count)
     {
         return TryReadAll(stream, buffer.AsSpan(offset, count));
     }
 
+    /// <summary>Attempts to read all requested bytes from the stream into the buffer span.</summary>
     public static int TryReadAll(this Stream stream, Span<byte> buffer)
     {
         var totalRead = 0;
@@ -23,11 +36,13 @@ public static class StreamExtensions
         return totalRead;
     }
 
+    /// <summary>Asynchronously attempts to read all requested bytes from the stream into the buffer.</summary>
     public static Task<int> TryReadAllAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         return TryReadAllAsync(stream, buffer.AsMemory(offset, count), cancellationToken);
     }
 
+    /// <summary>Asynchronously attempts to read all requested bytes from the stream into the buffer memory.</summary>
     public static async Task<int> TryReadAllAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var totalRead = 0;
@@ -44,6 +59,7 @@ public static class StreamExtensions
         return totalRead;
     }
 
+    /// <summary>Reads all remaining bytes from the stream.</summary>
     public static byte[] ReadToEnd(this Stream stream)
     {
         if (stream.CanSeek)

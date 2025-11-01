@@ -1,19 +1,5 @@
 ﻿@typeparam TRowData
 @using System.Linq.Expressions
-
-@*
-/// <summary>
-/// Defines a column in a <see cref="DataGrid{TRowData}"/> component.
-/// </summary>
-/// <typeparam name="TRowData">The type of data for each row.</typeparam>
-/// <remarks>
-/// <para>
-/// This component must be used as a child of a <see cref="DataGrid{TRowData}"/> component.
-/// The column can display data using an expression or custom child content.
-/// </para>
-/// </remarks>
-*@
-
 @code {
     /// <summary>Gets or sets the parent <see cref="DataGrid{TRowData}"/> component. This is set automatically via cascading parameter.</summary>
     [CascadingParameter]

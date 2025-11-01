@@ -1,33 +1,5 @@
 ﻿@typeparam TModel
 
-@*
-/// <summary>
-/// A component that automatically generates a form based on a model's properties using reflection and data annotations.
-/// </summary>
-/// <typeparam name="TModel">The type of the model to create a form for.</typeparam>
-/// <remarks>
-/// <para>
-/// This component uses reflection to discover properties and creates appropriate input controls based on property types.
-/// It respects data annotations such as <see cref="System.ComponentModel.DataAnnotations.DisplayAttribute"/>,
-/// <see cref="System.ComponentModel.DataAnnotations.EditableAttribute"/>, and <see cref="System.ComponentModel.EditorAttribute"/>.
-/// </para>
-/// </remarks>
-/// <example>
-/// <code>
-/// &lt;GenericForm Model="@model" ModelChanged="@OnModelChanged" /&gt;
-///
-/// @code {
-///     private MyModel model = new();
-///
-///     private void OnModelChanged(MyModel updatedModel)
-///     {
-///         // Handle model changes
-///     }
-/// }
-/// </code>
-/// </example>
-*@
-
 @if (fields != null)
 {
     foreach (var field in fields.OrderBy(p => p.DisplayOrder)) 

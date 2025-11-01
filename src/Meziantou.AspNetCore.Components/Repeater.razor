@@ -3,22 +3,6 @@
 @* You can specify it manually by using <Repeater T=Person /> *@
 @typeparam T
 
-@*
-/// <summary>
-/// A component that renders a collection of items with customizable templates for items, separators, empty state, and loading state.
-/// </summary>
-/// <typeparam name="T">The type of items in the collection.</typeparam>
-/// <example>
-/// <code>
-/// &lt;Repeater Items="@users"
-///           ItemTemplate="@(user => <div>@user.Name</div>)"
-///           ItemSeparatorTemplate="<hr />"
-///           EmptyTemplate="<p>No users found</p>"
-///           LoadingTemplate="<p>Loading users...</p>" /&gt;
-/// </code>
-/// </example>
-*@
-
 @if (Items == null)
 {
     @LoadingTemplate

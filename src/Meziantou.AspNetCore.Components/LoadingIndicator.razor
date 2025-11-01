@@ -1,18 +1,4 @@
-﻿@*
-/// <summary>
-/// A component that displays a loading indicator or the child content based on the loading state.
-/// </summary>
-/// <example>
-/// <code>
-/// &lt;LoadingIndicator IsLoading="@isLoading"
-///                   LoadingText="Please wait..."&gt;
-///     &lt;div&gt;Content to display when loaded&lt;/div&gt;
-/// &lt;/LoadingIndicator&gt;
-/// </code>
-/// </example>
-*@
-
-@if (IsLoading)
+﻿@if (IsLoading)
 {
     if (LoadingTemplate != null)
     {

@@ -1,6 +1,7 @@
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Defines the access rights for job objects.</summary>
+/// <seealso href="https://docs.microsoft.com/en-us/windows/win32/procthread/job-object-security-and-access-rights"/>
 [Flags]
 public enum JobObjectAccessRights
 {

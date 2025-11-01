@@ -3,6 +3,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.DataAnnotations;
 
+/// <summary>
+/// Validates each item in a collection by running validation on each item.
+/// </summary>
+/// <example>
+/// <code>
+/// public class MyModel
+/// {
+///     [ValidateCollectionItems]
+///     public List&lt;ChildModel&gt;? Items { get; set; }
+/// }
+/// </code>
+/// </example>
 [AttributeUsage(AttributeTargets.Property)]
 [RequiresUnreferencedCode("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
 public sealed class ValidateCollectionItemsAttribute : ValidationAttribute

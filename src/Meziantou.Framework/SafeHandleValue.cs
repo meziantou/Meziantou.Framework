@@ -2,6 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// A disposable struct that safely holds a reference to a <see cref="SafeHandle"/> and its underlying handle value.
+/// Automatically increments the reference count on creation and decrements it on disposal.
+/// </summary>
 #if PUBLIC_SAFEHANDLEVALUE
 public
 #else
@@ -12,8 +16,10 @@ struct SafeHandleValue : IDisposable
     private bool _hasValue;
     private SafeHandle _safeHandle;
 
+    /// <summary>Gets a value indicating whether the handle has a valid value.</summary>
     public readonly bool HasValue => _safeHandle is not null && _hasValue && !_safeHandle.IsClosed;
 
+    /// <summary>Gets the underlying handle value.</summary>
     public nint Value
     {
         readonly get

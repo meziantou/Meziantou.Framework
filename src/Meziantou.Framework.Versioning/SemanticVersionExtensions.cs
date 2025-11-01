@@ -1,18 +1,6 @@
 namespace Meziantou.Framework.Versioning;
 
 /// <summary>Provides extension methods for <see cref="SemanticVersion"/>.</summary>
-/// <example>
-/// <code>
-/// var version = new SemanticVersion(1, 2, 3);
-/// var nextPatch = version.NextPatchVersion(); // 1.2.4
-/// var nextMinor = version.NextMinorVersion(); // 1.3.0
-/// var nextMajor = version.NextMajorVersion(); // 2.0.0
-/// 
-/// // For prerelease versions, next version removes the prerelease tag
-/// var prerelease = new SemanticVersion(1, 2, 3, "alpha");
-/// var stable = prerelease.NextPatchVersion(); // 1.2.3
-/// </code>
-/// </example>
 public static class SemanticVersionExtensions
 {
     /// <summary>Gets the next patch version. For prerelease versions, returns the version without the prerelease tag. For stable versions, increments the patch number.</summary>

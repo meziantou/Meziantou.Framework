@@ -1,6 +1,15 @@
 namespace Meziantou.Framework;
 
 /// <summary>Parses command-line arguments with support for named and positional arguments.</summary>
+/// <remarks>
+/// Named arguments support the following formats:
+/// <list type="bullet">
+/// <item><description><c>-name=value</c> or <c>/name=value</c> - Named argument with equals separator</description></item>
+/// <item><description><c>-name:value</c> or <c>/name:value</c> - Named argument with colon separator</description></item>
+/// <item><description><c>-name</c> or <c>/name</c> - Named argument without value (empty string value)</description></item>
+/// </list>
+/// Argument names are case-insensitive.
+/// </remarks>
 /// <example>
 /// <code>
 /// // Parse current process arguments

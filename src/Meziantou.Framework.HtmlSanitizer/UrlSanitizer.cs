@@ -2,6 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Sanitizers;
 
+/// <summary>
+/// Provides URL sanitization to determine if URLs are safe for use in HTML content.
+/// </summary>
 public static partial class UrlSanitizer
 {
     // https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/url_sanitizer.ts
@@ -40,12 +43,22 @@ public static partial class UrlSanitizer
 
     private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];
 
+    /// <summary>
+    /// Determines whether the specified URL is safe to use in HTML content.
+    /// </summary>
+    /// <param name="url">The URL to validate.</param>
+    /// <returns><see langword="true"/> if the URL is safe; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)
     {
         return SafeUrlRegex().IsMatch(url) || DataUrlPattern().IsMatch(url);
     }
 
+    /// <summary>
+    /// Determines whether the specified srcset value is safe to use in HTML content.
+    /// </summary>
+    /// <param name="url">The srcset value to validate.</param>
+    /// <returns><see langword="true"/> if all URLs in the srcset are safe; otherwise, <see langword="false"/>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeSrcset(string url)
     {

@@ -4,6 +4,9 @@ using AngleSharp.Html.Parser;
 
 namespace Meziantou.Framework.Sanitizers;
 
+/// <summary>
+/// Provides HTML sanitization to remove potentially unsafe elements and attributes from HTML content.
+/// </summary>
 public sealed class HtmlSanitizer
 {
     // Inspiration: https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/html_sanitizer.ts
@@ -37,10 +40,29 @@ public sealed class HtmlSanitizer
 
     private const string DefaulValidAttrs = DefaulUriAttrs + "," + DefaulSrcsetAttrs + "," + DefaultHtmlAttrs;
 
+    /// <summary>
+    /// Gets the set of valid HTML element names that are allowed in the sanitized output.
+    /// </summary>
     public ISet<string> ValidElements { get; } = SplitToHashSet(DefaulValidElements);
+
+    /// <summary>
+    /// Gets the set of valid HTML attribute names that are allowed in the sanitized output.
+    /// </summary>
     public ISet<string> ValidAttributes { get; } = SplitToHashSet(DefaulValidAttrs);
+
+    /// <summary>
+    /// Gets the set of HTML element names that should be blocked and removed from the sanitized output.
+    /// </summary>
     public ISet<string> BlockedElements { get; } = SplitToHashSet(DefaulBlockedElements);
+
+    /// <summary>
+    /// Gets the set of attribute names that contain URIs and require URL sanitization.
+    /// </summary>
     public ISet<string> UriAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
+
+    /// <summary>
+    /// Gets the set of attribute names that contain srcset values and require srcset sanitization.
+    /// </summary>
     public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulSrcsetAttrs);
 
     private static HashSet<string> SplitToHashSet(string text)
@@ -81,6 +103,11 @@ public sealed class HtmlSanitizer
         return true;
     }
 
+    /// <summary>
+    /// Sanitizes an HTML fragment by removing unsafe elements and attributes.
+    /// </summary>
+    /// <param name="html">The HTML content to sanitize.</param>
+    /// <returns>The sanitized HTML content.</returns>
     public string SanitizeHtmlFragment(string html)
     {
         var element = ParseHtmlFragment(html);

@@ -2,17 +2,34 @@ using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.Http;
 
+/// <summary>
+/// Represents a parsed Link HTTP header value as defined in RFC 8288.
+/// </summary>
 public sealed class LinkHeaderValue
 {
     private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '=', ';', ','];
 
+    /// <summary>
+    /// Gets the URL specified in the Link header.
+    /// </summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
     public string Url { get; }
 
+    /// <summary>
+    /// Gets the relationship type (rel parameter) of the link.
+    /// </summary>
     public string Rel => GetParameterValue("rel") ?? "";
 
+    /// <summary>
+    /// Gets the value of a parameter by name.
+    /// </summary>
+    /// <param name="parameterName">The name of the parameter to retrieve.</param>
+    /// <returns>The parameter value, or <see langword="null"/> if the parameter is not found.</returns>
     public string? GetParameterValue(string parameterName) => Parameters.FirstOrDefault(p => p.Key == parameterName).Value;
 
+    /// <summary>
+    /// Gets the parameters associated with the link.
+    /// </summary>
     public IReadOnlyList<KeyValuePair<string, string>> Parameters { get; }
 
     private LinkHeaderValue(string url, IReadOnlyList<KeyValuePair<string, string>> parameters)
@@ -24,10 +41,21 @@ public sealed class LinkHeaderValue
         Parameters = parameters;
     }
 
-    // https://httpwg.org/specs/rfc8288.html
-    // https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
+    /// <summary>
+    /// Parses Link headers from an HTTP response message.
+    /// </summary>
+    /// <param name="httpResponse">The HTTP response message containing Link headers.</param>
+    /// <returns>A collection of parsed <see cref="LinkHeaderValue"/> instances.</returns>
+    /// <remarks>
+    /// Based on <see href="https://httpwg.org/specs/rfc8288.html">RFC 8288</see> and <see href="https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3">RFC 7230 Section 3.2.3</see>.
+    /// </remarks>
     public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse) => Parse(httpResponse.Headers);
 
+    /// <summary>
+    /// Parses Link headers from HTTP headers.
+    /// </summary>
+    /// <param name="headers">The HTTP headers containing Link headers.</param>
+    /// <returns>A collection of parsed <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(HttpHeaders headers)
     {
         if (!headers.TryGetValues("Link", out var values))
@@ -36,8 +64,18 @@ public sealed class LinkHeaderValue
         return values.SelectMany(Parse);
     }
 
+    /// <summary>
+    /// Parses a Link header value string.
+    /// </summary>
+    /// <param name="value">The Link header value to parse.</param>
+    /// <returns>A collection of parsed <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(string value) => Parse(value.AsSpan());
 
+    /// <summary>
+    /// Parses a Link header value from a character span.
+    /// </summary>
+    /// <param name="value">The Link header value to parse.</param>
+    /// <returns>A collection of parsed <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(ReadOnlySpan<char> value)
     {
         var result = new List<LinkHeaderValue>();

@@ -2,6 +2,9 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Provides methods to interact with the Windows Recent Documents list.
+/// </summary>
 public static class RecentDocuments
 {
     /// <summary>

@@ -1,5 +1,15 @@
 namespace Meziantou.Framework;
 
+/// <summary>Represents a Windows known folder with its unique identifier and default path.</summary>
+/// <example>
+/// <code>
+/// // Get path to Downloads folder
+/// FullPath downloadsPath = FullPath.GetKnownFolderPath(KnownFolder.Downloads);
+///
+/// // Get path to Documents folder
+/// FullPath documentsPath = FullPath.GetKnownFolderPath(KnownFolder.Documents);
+/// </code>
+/// </example>
 public sealed class KnownFolder
 {
     private KnownFolder(string name, string folderType, Guid knownFolderId, string defaultPath)
@@ -9,9 +19,16 @@ public sealed class KnownFolder
         FolderId = knownFolderId;
         DefaultPath = defaultPath;
     }
+    /// <summary>Gets the display name of the known folder.</summary>
     public string Name { get; }
+
+    /// <summary>Gets the type of the folder (e.g., PERUSER, COMMON, FIXED, VIRTUAL).</summary>
     public string FolderType { get; }
+
+    /// <summary>Gets the unique GUID identifier for this known folder.</summary>
     public Guid FolderId { get; }
+
+    /// <summary>Gets the default path for this known folder, possibly containing environment variables.</summary>
     public string DefaultPath { get; }
 
     public override string ToString() => $"{Name} ({FolderId})";

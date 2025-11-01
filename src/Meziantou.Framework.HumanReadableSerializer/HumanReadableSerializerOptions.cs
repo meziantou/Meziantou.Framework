@@ -6,6 +6,9 @@ using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.HumanReadable;
 
+/// <summary>
+/// Provides options for configuring the behavior of the human-readable serializer.
+/// </summary>
 public sealed record HumanReadableSerializerOptions
 {
     // Cache
@@ -18,6 +21,9 @@ public sealed record HumanReadableSerializerOptions
     [ThreadStatic]
     private static SerializationContext s_currentContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HumanReadableSerializerOptions"/> class with default settings.
+    /// </summary>
     public HumanReadableSerializerOptions()
     {
         _memberAttributes = [];
@@ -60,6 +66,13 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets serialization data associated with the specified name for the current serialization context.
+    /// </summary>
+    /// <typeparam name="T">The type of the data.</typeparam>
+    /// <param name="name">The name of the data.</param>
+    /// <param name="addValue">A function to create the value if it doesn't exist.</param>
+    /// <returns>The data associated with the specified name.</returns>
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "'By design")]
     public T GetOrSetSerializationData<T>(string name, Func<T> addValue)
     {
@@ -73,11 +86,29 @@ public sealed record HumanReadableSerializerOptions
         return s_currentContext.BeginScope();
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the options instance is read-only.
+    /// </summary>
     public bool IsReadOnly { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the maximum depth allowed when serializing nested objects. The default value is 64.
+    /// </summary>
     public int MaxDepth { get; set; } = 64;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether invisible characters (such as control characters) should be shown in serialized string values.
+    /// </summary>
     public bool ShowInvisibleCharactersInValues { get; set; }
+
+    /// <summary>
+    /// Gets the list of converters used to serialize types.
+    /// </summary>
     public IList<HumanReadableConverter> Converters { get; }
 
+    /// <summary>
+    /// Gets or sets a comparer to determine the order in which properties are serialized.
+    /// </summary>
     public IComparer<string>? PropertyOrder
     {
         get;
@@ -88,6 +119,9 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets a comparer to determine the order in which dictionary keys are serialized.
+    /// </summary>
     public IComparer<string>? DictionaryKeyOrder
     {
         get;
@@ -98,6 +132,9 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether fields should be included during serialization.
+    /// </summary>
     public bool IncludeFields
     {
         get;
@@ -108,6 +145,9 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether members marked with the ObsoleteAttribute should be included during serialization.
+    /// </summary>
     public bool IncludeObsoleteMembers
     {
         get;
@@ -118,6 +158,9 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Gets or sets the default condition for ignoring properties during serialization.
+    /// </summary>
     public HumanReadableIgnoreCondition DefaultIgnoreCondition
     {
         get;
@@ -128,18 +171,35 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Adds a value formatter for the specified media type.
+    /// </summary>
+    /// <param name="mediaType">The media type (e.g., "application/json").</param>
+    /// <param name="formatter">The formatter to use for the media type.</param>
     public void AddFormatter(string mediaType, ValueFormatter formatter)
     {
         VerifyMutable();
         _valueFormatters[mediaType] = formatter;
     }
 
+    /// <summary>
+    /// Adds an attribute to the specified type for serialization purposes.
+    /// </summary>
+    /// <param name="type">The type to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(Type type, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _typeAttributes.Add((t => t == type, attribute));
     }
 
+    /// <summary>
+    /// Adds an attribute to the specified member of a type for serialization purposes.
+    /// </summary>
+    /// <param name="type">The type containing the member.</param>
+    /// <param name="memberName">The name of the member.</param>
+    /// <param name="attribute">The attribute to add.</param>
+    /// <exception cref="ArgumentException">Thrown when the member is not found in the type.</exception>
     public void AddAttribute(Type type, string memberName, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -166,16 +226,38 @@ public sealed record HumanReadableSerializerOptions
         _memberAttributes.Add((m => m == member, attribute));
     }
 
+    /// <summary>
+    /// Adds an attribute to the specified field for serialization purposes.
+    /// </summary>
+    /// <param name="member">The field to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(FieldInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>
+    /// Adds an attribute to the specified property for serialization purposes.
+    /// </summary>
+    /// <param name="member">The property to add the attribute to.</param>
+    /// <param name="attribute">The attribute to add.</param>
     public void AddAttribute(PropertyInfo member, HumanReadableAttribute attribute) => AddAttribute((MemberInfo)member, attribute);
 
+    /// <summary>
+    /// Adds an attribute to all properties that match the specified condition.
+    /// </summary>
+    /// <param name="condition">A function to test each property.</param>
+    /// <param name="attribute">The attribute to add to matching properties.</param>
     public void AddPropertyAttribute(Func<PropertyInfo, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is PropertyInfo property && condition(property), attribute));
     }
 
+    /// <summary>
+    /// Adds an attribute to the member specified by the expression.
+    /// </summary>
+    /// <typeparam name="T">The type containing the member.</typeparam>
+    /// <param name="member">An expression that identifies the member.</param>
+    /// <param name="attribute">The attribute to add.</param>
+    /// <exception cref="ArgumentException">Thrown when the expression does not refer to a field or property.</exception>
     public void AddAttribute<T>(Expression<Func<T, object>> member, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -201,12 +283,22 @@ public sealed record HumanReadableSerializerOptions
         }
     }
 
+    /// <summary>
+    /// Adds an attribute to all fields that match the specified condition.
+    /// </summary>
+    /// <param name="condition">A function to test each field.</param>
+    /// <param name="attribute">The attribute to add to matching fields.</param>
     public void AddFieldAttribute(Func<FieldInfo, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
         _memberAttributes.Add((Condition: member => member is FieldInfo field && condition(field), attribute));
     }
 
+    /// <summary>
+    /// Adds an attribute to all types that match the specified condition.
+    /// </summary>
+    /// <param name="condition">A function to test each type.</param>
+    /// <param name="attribute">The attribute to add to matching types.</param>
     public void AddTypeAttribute(Func<Type, bool> condition, HumanReadableAttribute attribute)
     {
         VerifyMutable();
@@ -326,6 +418,11 @@ public sealed record HumanReadableSerializerOptions
         return _memberInfoCache.GetOrAdd(type, static (type, options) => HumanReadableMemberInfo.Get(type, options), this);
     }
 
+    /// <summary>
+    /// Gets the value formatter for the specified media type.
+    /// </summary>
+    /// <param name="mediaType">The media type to get the formatter for.</param>
+    /// <returns>The formatter for the media type, or <see langword="null"/> if no formatter is registered.</returns>
     public ValueFormatter? GetFormatter(string mediaType)
     {
         if (mediaType is not null)
@@ -383,6 +480,9 @@ public sealed record HumanReadableSerializerOptions
             throw new InvalidOperationException("HumanReadableSerializerOptions instance is marked as read-only");
     }
 
+    /// <summary>
+    /// Makes the options instance read-only, preventing further modifications.
+    /// </summary>
     public void MakeReadOnly() => IsReadOnly = true;
 
     private sealed class ConverterList : ConfigurationList<HumanReadableConverter>

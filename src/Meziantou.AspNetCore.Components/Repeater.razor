@@ -39,21 +39,27 @@ else
 @code {
     private static RenderFragment<RenderFragment> s_defaultContainerTemplate = new RenderFragment<RenderFragment>(fragment => fragment);
 
+    /// <summary>Gets or sets the collection of items to render. When <c>null</c>, the <see cref="LoadingTemplate"/> is displayed.</summary>
     [Parameter]
     public IEnumerable<T>? Items { get; set; }
 
+    /// <summary>Gets or sets the template to display while the items are being loaded (when <see cref="Items"/> is <c>null</c>).</summary>
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
 
+    /// <summary>Gets or sets the container template that wraps all items. The default template renders items directly without a container.</summary>
     [Parameter]
     public RenderFragment<RenderFragment> RepeaterContainerTemplate { get; set; } = s_defaultContainerTemplate;
 
+    /// <summary>Gets or sets the template for rendering each item in the collection.</summary>
     [Parameter]
     public RenderFragment<T>? ItemTemplate { get; set; }
 
+    /// <summary>Gets or sets the template to render between each item in the collection.</summary>
     [Parameter]
     public RenderFragment? ItemSeparatorTemplate { get; set; }
 
+    /// <summary>Gets or sets the template to display when the collection is empty.</summary>
     [Parameter]
     public RenderFragment? EmptyTemplate { get; set; }
 

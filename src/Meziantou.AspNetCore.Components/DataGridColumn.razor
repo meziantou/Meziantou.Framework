@@ -1,18 +1,23 @@
 ﻿@typeparam TRowData
 @using System.Linq.Expressions
 @code {
+    /// <summary>Gets or sets the parent <see cref="DataGrid{TRowData}"/> component. This is set automatically via cascading parameter.</summary>
     [CascadingParameter]
     public DataGrid<TRowData>? OwnerGrid { get; set; }
 
+    /// <summary>Gets or sets the column header title. If not specified, the property name from <see cref="Expression"/> is used.</summary>
     [Parameter]
     public string? Title { get; set; }
 
+    /// <summary>Gets or sets an expression to extract the cell value from the row data.</summary>
     [Parameter]
     public Expression<Func<TRowData, object>>? Expression { get; set; }
 
+    /// <summary>Gets or sets a format string to apply to the cell value (e.g., "0.00" for numbers or "yyyy-MM-dd" for dates).</summary>
     [Parameter]
     public string? Format { get; set; }
 
+    /// <summary>Gets or sets custom content for the cell. Takes precedence over <see cref="Expression"/>.</summary>
     [Parameter]
     public RenderFragment<TRowData>? ChildContent { get; set; }
 

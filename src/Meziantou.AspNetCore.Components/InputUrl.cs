@@ -5,9 +5,14 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
+/// <summary>An input component for editing URL values.</summary>
+/// <typeparam name="TValue">The type of the value. Supported types are <see cref="string"/> and <see cref="Uri"/>.</typeparam>
 public class InputUrl<TValue> : InputBase<TValue>
 {
+    /// <summary>Gets or sets the error message to display when the input value cannot be parsed.</summary>
     [Parameter] public string ParsingErrorMessage { get; set; } = "";
+
+    /// <summary>Gets a reference to the rendered input element.</summary>
     [DisallowNull] public ElementReference? Element { get; protected set; }
 
     protected override void BuildRenderTree(RenderTreeBuilder builder)

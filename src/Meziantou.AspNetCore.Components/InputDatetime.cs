@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
+/// <summary>An input component for editing date and time values using the HTML datetime-local input type.</summary>
+/// <typeparam name="TValue">The type of the value. Supported types are <see cref="DateTime"/>, <see cref="DateTimeOffset"/>, and their nullable variants.</typeparam>
 public class InputDateTime<TValue> : InputDate<TValue>
 {
     private const string DateFormat = "yyyy-MM-ddTHH:mm";

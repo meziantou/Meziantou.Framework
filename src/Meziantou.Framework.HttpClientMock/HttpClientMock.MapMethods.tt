@@ -24,8 +24,8 @@ partial class HttpClientMock
 <# foreach(var verb in methods) { #>
     private static readonly string[] <#= verb #>Verb = ["<#= verb.ToUpperInvariant() #>"];
 <# } #>
-<# foreach(var verb in methods) { #>
 
+<# foreach(var verb in methods) { #>
     /// <summary>Maps a <#= verb.ToUpperInvariant() #> request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>

@@ -17,19 +17,12 @@ namespace Meziantou.Framework;
 
 partial class HttpClientMock
 {
-
     private static readonly string[] GetVerb = ["GET"];
-
     private static readonly string[] PostVerb = ["POST"];
-
     private static readonly string[] PutVerb = ["PUT"];
-
     private static readonly string[] PatchVerb = ["PATCH"];
-
     private static readonly string[] DeleteVerb = ["DELETE"];
-
     private static readonly string[] HeadVerb = ["HEAD"];
-
     private static readonly string[] OptionsVerb = ["OPTIONS"];
 
 
@@ -44,7 +37,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapGet(string url, Delegate handler) => Map(GetVerb, url, handler);
-
     /// <summary>Maps a POST request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
@@ -56,7 +48,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapPost(string url, Delegate handler) => Map(PostVerb, url, handler);
-
     /// <summary>Maps a PUT request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
@@ -68,7 +59,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapPut(string url, Delegate handler) => Map(PutVerb, url, handler);
-
     /// <summary>Maps a PATCH request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
@@ -80,7 +70,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapPatch(string url, Delegate handler) => Map(PatchVerb, url, handler);
-
     /// <summary>Maps a DELETE request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
@@ -92,7 +81,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapDelete(string url, Delegate handler) => Map(DeleteVerb, url, handler);
-
     /// <summary>Maps a HEAD request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
@@ -104,7 +92,6 @@ partial class HttpClientMock
     /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
     /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder MapHead(string url, Delegate handler) => Map(HeadVerb, url, handler);
-
     /// <summary>Maps a OPTIONS request to the specified URL pattern.</summary>
     /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
     /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>

@@ -2,9 +2,19 @@ using System.Collections;
 
 namespace Meziantou.Framework.Csv;
 
+/// <summary>
+/// Represents a row in a CSV file.
+/// </summary>
 public class CsvRow : IReadOnlyDictionary<string, string?>
 {
+    /// <summary>
+    /// Gets the columns for this row.
+    /// </summary>
     public IReadOnlyList<CsvColumn>? Columns { get; }
+
+    /// <summary>
+    /// Gets the values for this row.
+    /// </summary>
     public IReadOnlyList<string> Values { get; }
 
     internal CsvRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
@@ -13,6 +23,11 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
         Columns = columns;
     }
 
+    /// <summary>
+    /// Gets the value at the specified column index.
+    /// </summary>
+    /// <param name="index">The zero-based index of the column.</param>
+    /// <returns>The value at the specified index.</returns>
     public virtual string? this[int index]
     {
         get
@@ -23,6 +38,11 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
         }
     }
 
+    /// <summary>
+    /// Gets the value in the column with the specified name.
+    /// </summary>
+    /// <param name="columnName">The name of the column.</param>
+    /// <returns>The value in the specified column, or <see langword="null"/> if the column is not found.</returns>
     public virtual string? this[string columnName]
     {
         get
@@ -40,6 +60,11 @@ public class CsvRow : IReadOnlyDictionary<string, string?>
         }
     }
 
+    /// <summary>
+    /// Gets the value in the specified column.
+    /// </summary>
+    /// <param name="column">The column to get the value from.</param>
+    /// <returns>The value in the specified column.</returns>
     public virtual string? this[CsvColumn column]
     {
         get

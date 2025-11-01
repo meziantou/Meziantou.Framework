@@ -81,6 +81,7 @@ public static class AssemblyUtilities
         }
     }
 
+    /// <summary>Gets a manifest resource stream, throwing an exception if not found.</summary>
     public static Stream GetRequiredManifestResourceStream(this Assembly assembly, string name)
     {
         var stream = assembly.GetManifestResourceStream(name);
@@ -93,6 +94,7 @@ public static class AssemblyUtilities
         return stream;
     }
 
+    /// <summary>Gets a manifest resource stream scoped to the specified type's namespace, throwing an exception if not found.</summary>
     public static Stream GetRequiredManifestResourceStream(this Assembly assembly, Type type, string name)
     {
         var stream = assembly.GetManifestResourceStream(type, name);

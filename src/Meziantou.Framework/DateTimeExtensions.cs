@@ -1,7 +1,19 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for <see cref="DateTime"/> to perform common date manipulations.
+/// </summary>
+/// <example>
+/// <code>
+/// var date = DateTime.Now;
+/// DateTime startOfWeek = date.StartOfWeek();
+/// DateTime startOfMonth = date.StartOfMonth();
+/// DateTime endOfMonth = date.EndOfMonth();
+/// </code>
+/// </example>
 public static class DateTimeExtensions
 {
+    /// <summary>Gets the first date of a specific ISO 8601 week.</summary>
     [Obsolete("Use System.Globalization.ISOWeek", DiagnosticId = "MEZ_NETCORE3_1")]
     public static DateTime FirstDateOfWeekIso8601(int year, int weekOfYear, DayOfWeek weekStart = DayOfWeek.Monday)
     {
@@ -23,11 +35,13 @@ public static class DateTimeExtensions
         return result.AddDays(-3);
     }
 
+    /// <summary>Returns the start of the week for the specified date using the current culture's first day of week.</summary>
     public static DateTime StartOfWeek(this DateTime dt)
     {
         return StartOfWeek(dt, CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek);
     }
 
+    /// <summary>Returns the start of the week for the specified date using the specified first day of week.</summary>
     public static DateTime StartOfWeek(this DateTime dt, DayOfWeek startOfWeek)
     {
         var diff = dt.DayOfWeek - startOfWeek;
@@ -39,11 +53,13 @@ public static class DateTimeExtensions
         return dt.AddDays(-1 * diff);
     }
 
+    /// <summary>Returns the first day of the month for the specified date at midnight.</summary>
     public static DateTime StartOfMonth(this DateTime dt)
     {
         return StartOfMonth(dt, keepTime: false);
     }
 
+    /// <summary>Returns the first day of the month for the specified date, optionally keeping the time component.</summary>
     public static DateTime StartOfMonth(this DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -54,6 +70,7 @@ public static class DateTimeExtensions
         return new DateTime(dt.Year, dt.Month, 1);
     }
 
+    /// <summary>Returns the last day of the month for the specified date at midnight.</summary>
     public static DateTime EndOfMonth(this DateTime dt)
     {
         return new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month));

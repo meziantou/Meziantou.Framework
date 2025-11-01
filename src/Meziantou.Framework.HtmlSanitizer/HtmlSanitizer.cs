@@ -4,6 +4,15 @@ using AngleSharp.Html.Parser;
 
 namespace Meziantou.Framework.Sanitizers;
 
+/// <summary>Sanitizes HTML fragments to prevent XSS attacks by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
+/// <example>
+/// Basic HTML sanitization:
+/// <code>
+/// var sanitizer = new HtmlSanitizer();
+/// var safeHtml = sanitizer.SanitizeHtmlFragment("&lt;p&gt;Hello &lt;script&gt;alert('xss')&lt;/script&gt;World&lt;/p&gt;");
+/// // Result: "&lt;p&gt;Hello World&lt;/p&gt;"
+/// </code>
+/// </example>
 public sealed class HtmlSanitizer
 {
     // Inspiration: https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/html_sanitizer.ts
@@ -37,10 +46,19 @@ public sealed class HtmlSanitizer
 
     private const string DefaulValidAttrs = DefaulUriAttrs + "," + DefaulSrcsetAttrs + "," + DefaultHtmlAttrs;
 
+    /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set will be removed unless they are in the BlockedElements set.</summary>
     public ISet<string> ValidElements { get; } = SplitToHashSet(DefaulValidElements);
+
+    /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
     public ISet<string> ValidAttributes { get; } = SplitToHashSet(DefaulValidAttrs);
+
+    /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
     public ISet<string> BlockedElements { get; } = SplitToHashSet(DefaulBlockedElements);
+
+    /// <summary>Gets the set of attribute names that contain URLs and should be validated for safety. Unsafe URLs will be replaced with empty strings.</summary>
     public ISet<string> UriAttributes { get; } = SplitToHashSet(DefaulUriAttrs);
+
+    /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
     public ISet<string> SrcsetAttributes { get; } = SplitToHashSet(DefaulSrcsetAttrs);
 
     private static HashSet<string> SplitToHashSet(string text)
@@ -81,6 +99,9 @@ public sealed class HtmlSanitizer
         return true;
     }
 
+    /// <summary>Sanitizes an HTML fragment by removing dangerous elements, attributes, and URLs while preserving safe HTML structure.</summary>
+    /// <param name="html">The HTML fragment to sanitize.</param>
+    /// <returns>A sanitized HTML fragment safe for rendering.</returns>
     public string SanitizeHtmlFragment(string html)
     {
         var element = ParseHtmlFragment(html);

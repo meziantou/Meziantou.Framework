@@ -2,6 +2,14 @@ using System.Text.RegularExpressions;
 
 namespace Meziantou.Framework.Sanitizers;
 
+/// <summary>Validates URLs to prevent XSS attacks by checking for dangerous protocols and patterns.</summary>
+/// <example>
+/// Check if a URL is safe:
+/// <code>
+/// bool isSafe = UrlSanitizer.IsSafeUrl("https://example.com"); // true
+/// bool isUnsafe = UrlSanitizer.IsSafeUrl("javascript:alert('xss')"); // false
+/// </code>
+/// </example>
 public static partial class UrlSanitizer
 {
     // https://github.com/angular/angular/blob/4d36b2f6e9a1a7673b3f233752895c96ca7dba1e/packages/core/src/sanitization/url_sanitizer.ts
@@ -40,12 +48,18 @@ public static partial class UrlSanitizer
 
     private static readonly char[] Whitespaces = ['\t', '\r', '\n', ' ', '\f'];
 
+    /// <summary>Determines whether a URL is safe by checking if it uses an allowed protocol (http, https, mailto, ftp, tel, file) or is a relative URL, or a safe data URL.</summary>
+    /// <param name="url">The URL to validate.</param>
+    /// <returns><c>true</c> if the URL is safe; otherwise, <c>false</c>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeUrl(string url)
     {
         return SafeUrlRegex().IsMatch(url) || DataUrlPattern().IsMatch(url);
     }
 
+    /// <summary>Determines whether a srcset value (used for responsive images) is safe by validating all URLs in the comma-separated list.</summary>
+    /// <param name="url">The srcset value to validate.</param>
+    /// <returns><c>true</c> if all URLs in the srcset are safe; otherwise, <c>false</c>.</returns>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public static bool IsSafeSrcset(string url)
     {

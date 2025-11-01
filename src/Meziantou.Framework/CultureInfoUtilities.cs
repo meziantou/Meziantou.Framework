@@ -1,7 +1,19 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides utility methods for working with <see cref="CultureInfo"/>.
+/// </summary>
+/// <example>
+/// <code>
+/// CultureInfoUtilities.UseCulture("fr-FR", () =>
+/// {
+///     Console.WriteLine(DateTime.Now.ToString("D"));
+/// });
+/// </code>
+/// </example>
 public static class CultureInfoUtilities
 {
+    /// <summary>Sets the current thread's culture and UI culture.</summary>
     public static void SetCurrentThreadCulture(CultureInfo cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(cultureInfo);
@@ -11,6 +23,7 @@ public static class CultureInfoUtilities
         currentThread.CurrentUICulture = cultureInfo;
     }
 
+    /// <summary>Executes an action with a temporary culture, then restores the original culture.</summary>
     public static void UseCulture(CultureInfo cultureInfo, Action action)
     {
         ArgumentNullException.ThrowIfNull(cultureInfo);
@@ -34,6 +47,7 @@ public static class CultureInfoUtilities
         }
     }
 
+    /// <summary>Executes an action with a temporary culture specified by name, then restores the original culture.</summary>
     public static void UseCulture(string cultureName, Action action)
     {
         ArgumentNullException.ThrowIfNull(cultureName);
@@ -43,6 +57,7 @@ public static class CultureInfoUtilities
         UseCulture(culture, action);
     }
 
+    /// <summary>Executes a function with a temporary culture, then restores the original culture and returns the result.</summary>
     public static T UseCulture<T>(CultureInfo cultureInfo, Func<T> action)
     {
         ArgumentNullException.ThrowIfNull(cultureInfo);
@@ -66,6 +81,7 @@ public static class CultureInfoUtilities
         }
     }
 
+    /// <summary>Executes a function with a temporary culture specified by name, then restores the original culture and returns the result.</summary>
     public static T UseCulture<T>(string cultureName, Func<T> action)
     {
         ArgumentNullException.ThrowIfNull(cultureName);
@@ -76,6 +92,7 @@ public static class CultureInfoUtilities
         return UseCulture(culture, action);
     }
 
+    /// <summary>Gets a culture by name or LCID, returning null if not found.</summary>
     public static CultureInfo? GetCulture(string? name)
     {
         if (name is null)
@@ -95,6 +112,7 @@ public static class CultureInfoUtilities
         return null;
     }
 
+    /// <summary>Gets the neutral culture for a specific culture (e.g., "en" for "en-US").</summary>
     public static CultureInfo GetNeutralCulture(this CultureInfo cultureInfo)
     {
         ArgumentNullException.ThrowIfNull(cultureInfo);
@@ -105,6 +123,7 @@ public static class CultureInfoUtilities
         return cultureInfo.Parent;
     }
 
+    /// <summary>Determines whether two cultures have the same neutral culture.</summary>
     public static bool NeutralEquals(this CultureInfo a, CultureInfo b)
     {
         if (a is null && b is null)

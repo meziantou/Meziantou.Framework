@@ -1,8 +1,18 @@
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents a weekly recurrence rule.</summary>
+/// <example>
+/// <code>
+/// var rrule = new WeeklyRecurrenceRule { Interval = 2, ByWeekDays = { DayOfWeek.Monday, DayOfWeek.Wednesday } };
+/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// </code>
+/// </example>
 public sealed class WeeklyRecurrenceRule : RecurrenceRule
 {
+    /// <summary>Limits occurrences to specific months.</summary>
     public IList<Month> ByMonths { get; set; } = new List<Month>();
+
+    /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = new List<DayOfWeek>();
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
@@ -41,6 +51,7 @@ public sealed class WeeklyRecurrenceRule : RecurrenceRule
         }
     }
 
+    /// <inheritdoc />
     public override string Text
     {
         get

@@ -1,12 +1,31 @@
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents an iCalendar calendar containing events.</summary>
+/// <example>
+/// <code>
+/// var calendar = new Calendar();
+/// calendar.Events.Add(new Event
+/// {
+///     Start = DateTime.Now,
+///     End = DateTime.Now.AddHours(1),
+///     Summary = "Meeting"
+/// });
+/// var icsContent = calendar.ToIcs();
+/// </code>
+/// </example>
 public sealed class Calendar
 {
+    /// <summary>Gets additional custom properties for the calendar.</summary>
     public IDictionary<string, string> AdditionalProperties { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Gets the events in this calendar.</summary>
     public IList<Event> Events { get; } = new List<Event>();
+
+    /// <summary>Gets or sets the iCalendar version.</summary>
     public string Version { get; set; } = "2.0";
 
+    /// <summary>Writes the calendar to a stream in iCalendar format.</summary>
+    /// <param name="stream">The stream to write to.</param>
     public void ToIcs(Stream stream)
     {
         var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -14,6 +33,8 @@ public sealed class Calendar
         ToIcs(writer);
     }
 
+    /// <summary>Writes the calendar to a text writer in iCalendar format.</summary>
+    /// <param name="writer">The text writer to write to.</param>
     public void ToIcs(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -104,6 +125,8 @@ public sealed class Calendar
         writer.WriteLine("END:VCALENDAR");
     }
 
+    /// <summary>Converts the calendar to an iCalendar format string.</summary>
+    /// <returns>The iCalendar format string representation of this calendar.</returns>
     public string ToIcs()
     {
         using var writer = new StringWriter();

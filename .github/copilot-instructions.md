@@ -3,6 +3,13 @@
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
 Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
+Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
+
+In addition to building and testing your changes, you MUST run the following scripts:
+- `./eng/update-bom.ps1`
+- `./eng/update-readme.ps1`
+- `./eng/update-tool-readme.ps1`
+- `./eng/validate-testprojects-configuration.ps1`
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
 

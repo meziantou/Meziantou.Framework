@@ -5,6 +5,9 @@ using System.Reflection;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides data-binding evaluation services for expressions.
+/// </summary>
 // https://referencesource.microsoft.com/#System.Web/UI/DataBinder.cs,bc4362a9cfc4c370,references
 public static class DataBinder
 {
@@ -13,6 +16,13 @@ public static class DataBinder
     private static readonly char[] IndexExprEndChars = [']', ')'];
     private static readonly ConcurrentDictionary<Type, PropertyDescriptorCollection> PropertyCache = new();
 
+    /// <summary>
+    /// Evaluates a data-binding expression at runtime.
+    /// </summary>
+    /// <param name="container">The object reference against which the expression is evaluated.</param>
+    /// <param name="expression">The navigation path from the container to the property value (e.g., "Property.SubProperty[0]").</param>
+    /// <returns>The result of evaluating the expression; or <see langword="null"/> if the container is <see langword="null"/> or any part of the expression evaluates to <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown when the expression is empty or contains only whitespace.</exception>
     [RequiresUnreferencedCode("TypeDescriptor use reflection")]
     public static object? Eval(object? container, string expression)
     {

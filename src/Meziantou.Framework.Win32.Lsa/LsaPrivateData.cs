@@ -6,14 +6,29 @@ using Windows.Win32.Security.Authentication.Identity;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Provides methods to store and retrieve private data using the Windows Local Security Authority (LSA).
+/// </summary>
 [SupportedOSPlatform("windows5.1.2600")]
 public static class LsaPrivateData
 {
+    /// <summary>
+    /// Removes the private data associated with the specified key.
+    /// </summary>
+    /// <param name="key">The key identifying the private data to remove.</param>
     public static void RemoveValue(string key)
     {
         SetValue(key, value: null);
     }
 
+    /// <summary>
+    /// Sets the private data for the specified key.
+    /// </summary>
+    /// <param name="key">The key identifying the private data.</param>
+    /// <param name="value">The value to store. If <see langword="null"/>, the private data is removed.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is empty.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static unsafe void SetValue(string key, string? value)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -51,6 +66,14 @@ public static class LsaPrivateData
         }
     }
 
+    /// <summary>
+    /// Gets the private data associated with the specified key.
+    /// </summary>
+    /// <param name="key">The key identifying the private data to retrieve.</param>
+    /// <returns>The value associated with the key, or <see langword="null"/> if the key does not exist.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="key"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="key"/> is empty.</exception>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     public static unsafe string? GetValue(string key)
     {
         ArgumentNullException.ThrowIfNull(key);

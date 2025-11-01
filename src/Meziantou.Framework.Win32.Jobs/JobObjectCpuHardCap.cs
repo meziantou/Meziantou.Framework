@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>Represents the CPU rate hard cap settings for a job object.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct JobObjectCpuHardCap
 {

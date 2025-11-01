@@ -12,6 +12,19 @@ namespace Meziantou.Framework.Win32;
 /// <summary>
 /// A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.
 /// </summary>
+/// <example>
+/// <code>
+/// using var job = new JobObject();
+/// job.SetLimits(new JobObjectLimits
+/// {
+///     Flags = JobObjectLimitFlags.KillOnJobClose
+/// });
+/// job.AssignProcess(Process.GetCurrentProcess());
+/// 
+/// // Start a child process that will be terminated when the job is disposed
+/// var childProcess = Process.Start("child.exe");
+/// </code>
+/// </example>
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class JobObject : IDisposable
 {
@@ -62,6 +75,12 @@ public sealed class JobObject : IDisposable
         }
     }
 
+    /// <summary>Opens an existing job object.</summary>
+    /// <param name="desiredAccess">The access rights for the job object.</param>
+    /// <param name="inherited">If this value is true, processes created by this process will inherit the handle. Otherwise, the processes do not inherit this handle.</param>
+    /// <param name="name">The name of the job object to be opened.</param>
+    /// <returns>A <see cref="JobObject"/> instance representing the opened job object.</returns>
+    /// <exception cref="Win32Exception">The job object could not be opened.</exception>
     public static JobObject Open(JobObjectAccessRights desiredAccess, bool inherited, string name)
     {
         var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
@@ -75,6 +94,13 @@ public sealed class JobObject : IDisposable
         return new JobObject(handle);
     }
 
+    /// <summary>Attempts to open an existing job object.</summary>
+    /// <param name="desiredAccess">The access rights for the job object.</param>
+    /// <param name="inherited">If this value is true, processes created by this process will inherit the handle. Otherwise, the processes do not inherit this handle.</param>
+    /// <param name="name">The name of the job object to be opened.</param>
+    /// <param name="jobObject">When this method returns, contains the opened job object if the operation succeeded, or null if the job object was not found.</param>
+    /// <returns><see langword="true"/> if the job object was successfully opened; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="Win32Exception">An error occurred while attempting to open the job object (other than the job object not being found).</exception>
     public static bool TryOpen(JobObjectAccessRights desiredAccess, bool inherited, string name, out JobObject jobObject)
     {
         var handle = Windows.Win32.PInvoke.OpenJobObject((uint)desiredAccess, inherited, name);
@@ -186,6 +212,9 @@ public sealed class JobObject : IDisposable
         }
     }
 
+    /// <summary>Sets UI restrictions for processes in the job.</summary>
+    /// <param name="limits">The UI restrictions to apply to the job.</param>
+    /// <exception cref="Win32Exception">The UI restrictions could not be set.</exception>
     public unsafe void SetUIRestrictions(JobObjectUILimit limits)
     {
         var restriction = new JOBOBJECT_BASIC_UI_RESTRICTIONS
@@ -394,6 +423,11 @@ public sealed class JobObject : IDisposable
         }
     }
 
+    /// <summary>Determines whether the specified process is assigned to this job object.</summary>
+    /// <param name="process">The process to check.</param>
+    /// <returns><see langword="true"/> if the process is assigned to the job object; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="process"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
     public unsafe bool IsAssignedToProcess(Process process)
     {
         ArgumentNullException.ThrowIfNull(process);

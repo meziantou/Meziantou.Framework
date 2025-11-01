@@ -5,6 +5,17 @@ namespace Meziantou.Framework.Win32;
 /// <summary>
 /// Defines a job object limits.
 /// </summary>
+/// <example>
+/// <code>
+/// var limits = new JobObjectLimits
+/// {
+///     Flags = JobObjectLimitFlags.KillOnJobClose,
+///     ActiveProcessLimit = 10,
+///     ProcessMemoryLimit = 100 * 1024 * 1024 // 100 MB
+/// };
+/// job.SetLimits(limits);
+/// </code>
+/// </example>
 public sealed class JobObjectLimits
 {
     internal JOB_OBJECT_LIMIT InternalFlags { get; set; }

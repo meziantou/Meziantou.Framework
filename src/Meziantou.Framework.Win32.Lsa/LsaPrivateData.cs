@@ -6,14 +6,36 @@ using Windows.Win32.Security.Authentication.Identity;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Provides methods to interact with Local Security Authority (LSA) private data storage on Windows.
+/// LSA private data storage is a secure storage area for sensitive information like credentials and secrets.
+/// </summary>
+/// <example>
+/// Store and retrieve a secret value:
+/// <code>
+/// // Store a secret value (requires administrator privileges)
+/// LsaPrivateData.SetValue("MySecretKey", "MySecretValue");
+/// 
+/// // Retrieve the value
+/// string? value = LsaPrivateData.GetValue("MySecretKey");
+/// 
+/// // Remove the value (requires administrator privileges)
+/// LsaPrivateData.RemoveValue("MySecretKey");
+/// </code>
+/// </example>
 [SupportedOSPlatform("windows5.1.2600")]
 public static class LsaPrivateData
 {
+    /// <summary>Removes a value from LSA private data storage. Requires administrator privileges.</summary>
+    /// <param name="key">The key of the value to remove.</param>
     public static void RemoveValue(string key)
     {
         SetValue(key, value: null);
     }
 
+    /// <summary>Stores a value in LSA private data storage. Requires administrator privileges.</summary>
+    /// <param name="key">The key under which to store the value. Cannot be null or empty.</param>
+    /// <param name="value">The value to store. If null, the key will be removed.</param>
     public static unsafe void SetValue(string key, string? value)
     {
         ArgumentNullException.ThrowIfNull(key);
@@ -51,6 +73,9 @@ public static class LsaPrivateData
         }
     }
 
+    /// <summary>Retrieves a value from LSA private data storage.</summary>
+    /// <param name="key">The key of the value to retrieve. Cannot be null or empty.</param>
+    /// <returns>The value associated with the key, or null if the key does not exist.</returns>
     public static unsafe string? GetValue(string key)
     {
         ArgumentNullException.ThrowIfNull(key);

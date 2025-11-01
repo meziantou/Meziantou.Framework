@@ -1,9 +1,16 @@
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>
+/// Creates assertion exceptions for snapshot test failures. The default implementation attempts to use the exception
+/// type from the current test framework (xUnit, NUnit, MSTest) for better integration with test runners.
+/// </summary>
 public class AssertionExceptionBuilder
 {
     internal static AssertionExceptionBuilder Default { get; } = new AssertionExceptionBuilder();
 
+    /// <summary>Creates an assertion exception with the specified error message.</summary>
+    /// <param name="message">The error message describing the snapshot mismatch.</param>
+    /// <returns>An exception appropriate for the current test framework.</returns>
     public virtual Exception CreateException(string message)
     {
         // Try to find the current runner exception.

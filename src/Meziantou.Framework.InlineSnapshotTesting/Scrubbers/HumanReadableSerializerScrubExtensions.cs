@@ -8,8 +8,12 @@ using Meziantou.Framework.HumanReadable.ValueFormatters;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>
+/// Provides extension methods for scrubbing values during serialization with <see cref="HumanReadableSerializerOptions"/>.
+/// </summary>
 public static class HumanReadableSerializerScrubExtensions
 {
+    /// <summary>Scrubs GUID values by replacing them with deterministic values based on their order of appearance.</summary>
     public static void ScrubGuid(this HumanReadableSerializerOptions options) => ScrubValue<Guid>(options, (value, index) =>
     {
         if (value == Guid.Empty)
@@ -28,29 +32,42 @@ public static class HumanReadableSerializerScrubExtensions
 #endif
     });
 
+    /// <summary>Scrubs values of type T by replacing them with deterministic values like "TypeName_0", "TypeName_1", etc.</summary>
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options) => ScrubValue<T>(options, comparer: null);
+
+    /// <summary>Scrubs values of type T by replacing them with deterministic values, using the specified comparer to determine uniqueness.</summary>
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, IEqualityComparer<T>? comparer) => ScrubValue(options, (value, index) => typeof(T).Name + "_" + index.ToString(CultureInfo.InvariantCulture), comparer);
+
+    /// <summary>Scrubs values of type T by replacing them with the result of the specified scrubber function.</summary>
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, string> scrubber) => options.Converters.Add(new ValueScrubberConverter<T>(scrubber));
+
+    /// <summary>Scrubs values of type T by replacing them with the result of the specified scrubber function that receives the value and its index.</summary>
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber) => ScrubValue(options, scrubber, comparer: null);
+
+    /// <summary>Scrubs values of type T by replacing them with the result of the specified scrubber function, using the specified comparer to determine uniqueness.</summary>
     public static void ScrubValue<T>(this HumanReadableSerializerOptions options, Func<T, int, string> scrubber, IEqualityComparer<T>? comparer)
         => options.Converters.Add(new ScrubValueIncrementalConverter<T>((value, index) => scrubber(value, index), comparer ?? EqualityComparer<T>.Default));
 
+    /// <summary>Scrubs XML attributes matching the specified XPath expression.</summary>
     public static void ScrubXmlAttribute(this HumanReadableSerializerOptions options, string xpath, Func<XAttribute, string?> scrubber)
     {
         ScrubXmlAttribute(options, xpath, nsResolver: null, scrubber);
     }
 
+    /// <summary>Scrubs XML attributes matching the specified XPath expression with namespace resolution.</summary>
     public static void ScrubXmlAttribute(this HumanReadableSerializerOptions options, string xpath, IXmlNamespaceResolver? nsResolver, Func<XAttribute, string?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.XmlMediaTypeName);
         options.AddFormatter(ValueFormatter.XmlMediaTypeName, new ScrubXmlAttributeFormatter(xpath, nsResolver, scrubber, existingFormatter));
     }
 
+    /// <summary>Scrubs XML nodes matching the specified XPath expression.</summary>
     public static void ScrubXmlNode(this HumanReadableSerializerOptions options, string xpath, Func<XNode, XNode?> scrubber)
     {
         ScrubXmlNode(options, xpath, nsResolver: null, scrubber);
     }
 
+    /// <summary>Scrubs XML nodes matching the specified XPath expression using an action.</summary>
     public static void ScrubXmlNode(this HumanReadableSerializerOptions options, string xpath, Action<XNode> scrubber)
     {
         ScrubXmlNode(options, xpath, nsResolver: null, node =>
@@ -60,26 +77,34 @@ public static class HumanReadableSerializerScrubExtensions
         });
     }
 
+    /// <summary>Scrubs XML nodes matching the specified XPath expression with namespace resolution.</summary>
     public static void ScrubXmlNode(this HumanReadableSerializerOptions options, string xpath, IXmlNamespaceResolver? nsResolver, Func<XNode, XNode?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.XmlMediaTypeName);
         options.AddFormatter(ValueFormatter.XmlMediaTypeName, new ScrubXmlNodeFormatter(xpath, nsResolver, scrubber, existingFormatter));
     }
 
+    /// <summary>Scrubs JSON values matching the specified JSONPath expression, returning a string value.</summary>
     public static void ScrubJsonValue(this HumanReadableSerializerOptions options, string jsonPath, Func<JsonNode, string?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.JsonMediaTypeName);
         options.AddFormatter(ValueFormatter.JsonMediaTypeName, new ScrubJsonFormatter(jsonPath, node => scrubber(node) is { } result ? JsonValue.Create(result) : null, existingFormatter));
     }
 
+    /// <summary>Scrubs JSON values matching the specified JSONPath expression, returning a JSON node.</summary>
     public static void ScrubJsonValue(this HumanReadableSerializerOptions options, string jsonPath, Func<JsonNode, JsonNode?> scrubber)
     {
         var existingFormatter = options.GetFormatter(ValueFormatter.JsonMediaTypeName);
         options.AddFormatter(ValueFormatter.JsonMediaTypeName, new ScrubJsonFormatter(jsonPath, scrubber, existingFormatter));
     }
 
+    /// <summary>Serializes TimeSpan values relative to the specified origin.</summary>
     public static void UseRelativeTimeSpan(this HumanReadableSerializerOptions options, TimeSpan origin) => options.Converters.Add(new RelativeTimeSpanConverter(origin));
+
+    /// <summary>Serializes DateTime values relative to the specified origin.</summary>
     public static void UseRelativeDateTime(this HumanReadableSerializerOptions options, DateTime origin) => options.Converters.Add(new RelativeDateTimeConverter(origin));
+
+    /// <summary>Serializes DateTimeOffset values relative to the specified origin.</summary>
     public static void UseRelativeDateTimeOffset(this HumanReadableSerializerOptions options, DateTimeOffset origin) => options.Converters.Add(new RelativeDateTimeOffsetConverter(origin));
 
     private sealed class ValueScrubberConverter<T>(Func<T, string> scrubber) : HumanReadableConverter<T>

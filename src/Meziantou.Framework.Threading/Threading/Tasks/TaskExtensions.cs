@@ -7,7 +7,7 @@ public static partial class TaskExtensions
     /// <param name="task">The task to forget.</param>
     /// <remarks>
     /// This method ensures that exceptions in the task are observed to prevent unobserved task exceptions.
-    /// See https://www.meziantou.net/fire-and-forget-a-task-in-dotnet.htm for more information.
+    /// See <see href="https://www.meziantou.net/fire-and-forget-a-task-in-dotnet.htm" /> for more information.
     /// </remarks>
     public static void Forget(this Task task)
     {

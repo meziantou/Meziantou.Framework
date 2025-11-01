@@ -1,5 +1,8 @@
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Contains information about the change journal on a volume.
+/// </summary>
 public sealed class JournalData
 {
     internal JournalData()

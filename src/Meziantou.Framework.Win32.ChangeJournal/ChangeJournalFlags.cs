@@ -1,5 +1,8 @@
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Specifies flags for the change journal.
+/// </summary>
 [Flags]
 public enum ChangeJournalFlags : uint
 {

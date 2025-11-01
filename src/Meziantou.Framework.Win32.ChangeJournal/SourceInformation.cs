@@ -1,8 +1,14 @@
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Specifies additional information about the source of a file or directory change.
+/// </summary>
 [Flags]
 public enum SourceInformation
 {
+    /// <summary>
+    /// No source information is specified.
+    /// </summary>
     SourceInfoNotSpecified = 0x0000000,
 
     /// <summary>

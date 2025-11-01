@@ -2,11 +2,20 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a Update Sequence Number (USN), which is a 64-bit value that uniquely identifies a change journal record.
+/// </summary>
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct Usn : IEquatable<Usn>
 {
+    /// <summary>
+    /// Gets a <see cref="Usn"/> value representing zero.
+    /// </summary>
     public static Usn Zero => new(0);
 
+    /// <summary>
+    /// Gets the USN value.
+    /// </summary>
     public long Value { get; }
 
     public Usn(long value) => Value = value;

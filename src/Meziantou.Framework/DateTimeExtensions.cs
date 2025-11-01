@@ -68,11 +68,13 @@ public static class DateTimeExtensions
         return new DateTime(dt.Year, dt.Month, DateTime.DaysInMonth(dt.Year, dt.Month));
     }
 
+    /// <summary>Returns the first day of the year for the specified date at midnight.</summary>
     public static DateTime StartOfYear(this DateTime dt)
     {
         return StartOfYear(dt, keepTime: false);
     }
 
+    /// <summary>Returns the first day of the year for the specified date, optionally keeping the time component.</summary>
     public static DateTime StartOfYear(this DateTime dt, bool keepTime)
     {
         if (keepTime)
@@ -85,6 +87,7 @@ public static class DateTimeExtensions
         }
     }
 
+    /// <summary>Returns a new DateTime with the milliseconds component set to zero.</summary>
     public static DateTime TruncateMilliseconds(this DateTime dt)
     {
         return new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, dt.Kind);

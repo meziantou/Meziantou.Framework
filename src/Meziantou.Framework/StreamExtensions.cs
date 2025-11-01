@@ -71,6 +71,7 @@ public static class StreamExtensions
         return memoryStream.ToArray();
     }
 
+    /// <summary>Asynchronously reads all remaining bytes from the stream.</summary>
     public static async Task<byte[]> ReadToEndAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
         if (stream.CanSeek)
@@ -90,6 +91,7 @@ public static class StreamExtensions
         return memoryStream.ToArray();
     }
 
+    /// <summary>Asynchronously copies the stream to a new <see cref="MemoryStream"/> and returns it positioned at the beginning.</summary>
     public static async Task<MemoryStream> ToMemoryStreamAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
         var ms = new MemoryStream();

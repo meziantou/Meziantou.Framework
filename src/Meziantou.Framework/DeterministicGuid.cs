@@ -58,7 +58,7 @@ namespace Meziantou.Framework;
  */
 
 /// <summary>
-/// Provides methods for generating deterministic (version 3 and version 5) GUIDs according to RFC 4122.
+/// Provides methods for generating deterministic (version 3 and version 5) GUIDs according to <see href="https://www.ietf.org/rfc/rfc4122.txt">RFC 4122</see>.
 /// </summary>
 /// <example>
 /// <code>

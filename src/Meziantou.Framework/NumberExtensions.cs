@@ -85,6 +85,7 @@ public static class NumberExtensions
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this byte number, string? format)
     {
         if (format is not null)
@@ -93,11 +94,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this sbyte number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this sbyte number, string? format)
     {
         if (format is not null)
@@ -106,11 +109,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this short number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this short number, string? format)
     {
         if (format is not null)
@@ -119,11 +124,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this ushort number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this ushort number, string? format)
     {
         if (format is not null)
@@ -132,11 +139,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this int number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this int number, string? format)
     {
         if (format is not null)
@@ -145,11 +154,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this uint number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this uint number, string? format)
     {
         if (format is not null)
@@ -158,11 +169,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this long number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this long number, string? format)
     {
         if (format is not null)
@@ -171,11 +184,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this ulong number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this ulong number, string? format)
     {
         if (format is not null)
@@ -184,11 +199,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this Half number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this Half number, string? format)
     {
         if (format is not null)
@@ -197,11 +214,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this float number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this float number, string? format)
     {
         if (format is not null)
@@ -210,11 +229,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this double number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this double number, string? format)
     {
         if (format is not null)
@@ -223,11 +244,13 @@ public static class NumberExtensions
         return number.ToString(CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture.</summary>
     public static string ToStringInvariant(this decimal number)
     {
         return ToStringInvariant(number, format: null);
     }
 
+    /// <summary>Converts the number to its string representation using the invariant culture and the specified format.</summary>
     public static string ToStringInvariant(this decimal number, string? format)
     {
         if (format is not null)

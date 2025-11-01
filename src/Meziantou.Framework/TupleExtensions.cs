@@ -5,15 +5,17 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides extension methods for tuple types.
 /// </summary>
-/// <example>
-/// <code>
-/// var tuple = (1, "hello", true);
-/// object?[] array = tuple.ToArray(); // [1, "hello", true]
-/// </code>
-/// </example>
 public static class TupleExtensions
 {
-    /// <summary>Converts a tuple to an array of objects.</summary>
+    /// <summary>
+    /// Converts a tuple to an array of objects.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var tuple = (1, "hello", true);
+    /// object?[] array = tuple.ToArray(); // [1, "hello", true]
+    /// </code>
+    /// </example>
     public static object?[] ToArray<T>(this T tuple)
         where T : notnull, ITuple
     {

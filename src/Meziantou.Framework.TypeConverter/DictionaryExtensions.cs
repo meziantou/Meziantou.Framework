@@ -4,25 +4,6 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Provides extension methods for retrieving and converting dictionary values.
-/// <example>
-/// <code><![CDATA[
-/// var dictionary = new Dictionary<string, object>
-/// {
-///     ["age"] = "25",
-///     ["active"] = true
-/// };
-///
-/// // Get and convert values with type safety
-/// var age = dictionary.GetValueOrDefault("age", 0);
-/// Console.WriteLine(age); // 25 (as int)
-///
-/// // TryGetValueOrDefault for better control
-/// if (dictionary.TryGetValueOrDefault("age", out int ageValue))
-/// {
-///     Console.WriteLine($"Age: {ageValue}");
-/// }
-/// ]]></code>
-/// </example>
 /// </summary>
 public static class DictionaryExtensions
 {

@@ -2,8 +2,20 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
+
+/// <summary>
+/// Provides extension methods for <see cref="Dictionary{TKey, TValue}"/>.
+/// </summary>
+/// <example>
+/// <code>
+/// var dict = new Dictionary&lt;string, int&gt;();
+/// int value = dict.GetOrAdd("key", 42);
+/// bool updated = dict.TryUpdate("key", 100);
+/// </code>
+/// </example>
 public static class DictionaryExtensions
 {
+    /// <summary>Gets the value associated with the specified key or adds it if it doesn't exist.</summary>
     public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue value)
         where TKey : notnull
     {
@@ -15,6 +27,7 @@ public static class DictionaryExtensions
         return value;
     }
 
+    /// <summary>Gets the value associated with the specified key or adds it using the factory function if it doesn't exist.</summary>
     public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> valueFactory)
         where TKey : notnull
     {
@@ -26,6 +39,7 @@ public static class DictionaryExtensions
         return dictionaryValue;
     }
 
+    /// <summary>Attempts to update the value associated with the specified key.</summary>
     public static bool TryUpdate<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue value)
         where TKey : notnull
     {
@@ -39,6 +53,7 @@ public static class DictionaryExtensions
         return false;
     }
 
+    /// <summary>Attempts to update the value associated with the specified key using the factory function.</summary>
     public static bool TryUpdate<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue, TValue> valueFactory)
         where TKey : notnull
     {

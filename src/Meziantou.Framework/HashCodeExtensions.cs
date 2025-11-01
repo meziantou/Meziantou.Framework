@@ -34,6 +34,7 @@ public static class HashCodeExtensions
         }
     }
 
+    /// <summary>Adds all values from an enumerable to the hash code.</summary>
     public static void AddValues<T>(this HashCode hashCode, IEnumerable<T> values, IEqualityComparer<T>? equalityComparer = null)
     {
         foreach (var value in values)

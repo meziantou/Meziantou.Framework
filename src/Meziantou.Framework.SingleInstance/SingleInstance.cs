@@ -9,18 +9,31 @@ using System.Security.Principal;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides single-instance application functionality by ensuring only one instance of an application can run at a time.
+/// </summary>
+/// <param name="applicationId">A unique identifier for the application.</param>
 public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
+    /// <summary>
+    /// Occurs when a new instance of the application attempts to start.
+    /// </summary>
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
     private string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether to start the named pipe server for inter-process communication.
+    /// </summary>
     public bool StartServer { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the timeout duration for client connections when notifying the first instance.
+    /// </summary>
     public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
     private static int GetSessionId()
@@ -29,6 +42,10 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         return currentProcess.SessionId;
     }
 
+    /// <summary>
+    /// Attempts to start the application as the first instance.
+    /// </summary>
+    /// <returns><see langword="true"/> if this is the first instance and the application can start; otherwise, <see langword="false"/>.</returns>
     public bool StartApplication()
     {
         if (TryAcquireMutex())
@@ -146,6 +163,11 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
     }
 
+    /// <summary>
+    /// Notifies the first instance of the application with the specified arguments.
+    /// </summary>
+    /// <param name="args">The arguments to pass to the first instance.</param>
+    /// <returns><see langword="true"/> if the first instance was successfully notified; otherwise, <see langword="false"/>.</returns>
     public bool NotifyFirstInstance(string[] args)
     {
         ArgumentNullException.ThrowIfNull(args);

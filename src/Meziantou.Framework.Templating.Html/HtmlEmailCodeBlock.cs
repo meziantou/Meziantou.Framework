@@ -2,6 +2,16 @@ using System.Net;
 
 namespace Meziantou.Framework.Templating;
 
+/// <summary>Represents a code block in an HTML email template that supports HTML encoding, URL encoding, sections, and content identifiers.</summary>
+/// <example>
+/// <code>
+/// // HTML encoding: {{#html value}}
+/// // URL encoding: {{#url value}}
+/// // Attribute encoding: {{#attr value}}
+/// // Content identifier: {{cid image.png}}
+/// // Section: {{@begin section title}}...{{@end section}}
+/// </code>
+/// </example>
 public class HtmlEmailCodeBlock : CodeBlock
 {
     private const string BeginSectionPrefixString = "@begin section";
@@ -18,6 +28,7 @@ public class HtmlEmailCodeBlock : CodeBlock
         EvalPrefixString = "#"; // Visual Studio colorizes "{{# Name }}" in HTML file in html file :)
     }
 
+    /// <summary>Decodes HTML-encoded text.</summary>
     [return: NotNullIfNotNull(parameterName: nameof(html))]
     protected virtual string? HtmlDecode(string? html)
     {
@@ -27,6 +38,7 @@ public class HtmlEmailCodeBlock : CodeBlock
         return WebUtility.HtmlDecode(html);
     }
 
+    /// <summary>Builds the C# code for this code block by parsing HTML-specific directives.</summary>
     public override string BuildCode()
     {
         var text = Text.Trim();

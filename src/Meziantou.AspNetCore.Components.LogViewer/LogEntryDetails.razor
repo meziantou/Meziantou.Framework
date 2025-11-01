@@ -45,12 +45,21 @@
 		Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
 	};
 
+	/// <summary>
+	/// Gets or sets the data object to display. This can be any object that will be rendered as a table or JSON.
+	/// </summary>
 	[Parameter]
 	public object? Data { get; set; }
 
+	/// <summary>
+	/// Gets or sets the format for displaying log entry details.
+	/// </summary>
 	[Parameter]
 	public LogDetailsDisplayFormat Format { get; set; }
 
+	/// <summary>
+	/// Gets or sets a value indicating whether the user can change the display format. Default is <c>true</c>.
+	/// </summary>
 	[Parameter]
 	public bool CanChangeDisplayFormat { get; set; } = true;
 

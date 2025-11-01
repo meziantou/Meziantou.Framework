@@ -7,17 +7,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Represents a collection of query string parameters that preserves insertion order and allows duplicate keys with multiple values.
 /// </summary>
-/// <example>
-/// <code>
-/// var parameters = new QueryStringParameterCollection();
-/// parameters.Append("category", "books");
-/// parameters.Append("category", "electronics");
-/// parameters.Append("sort", "price");
-/// 
-/// var uri = QueryStringUtilities.AddQueryString("https://example.com", parameters);
-/// // Result: https://example.com?category=books&amp;category=electronics&amp;sort=price
-/// </code>
-/// </example>
 public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<string, StringValues>>
 {
     // The number of parameters is often small, so we use a List instead of a Dictionary.

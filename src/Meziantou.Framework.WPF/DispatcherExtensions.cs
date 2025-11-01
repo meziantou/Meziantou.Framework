@@ -6,12 +6,6 @@ namespace Meziantou.Framework.WPF;
 /// <summary>
 /// Extension methods for <see cref="Dispatcher"/> to enable async/await patterns.
 /// </summary>
-/// <example>
-/// <code>
-/// await dispatcher.SwitchToDispatcherThread();
-/// // Code here runs on the UI thread
-/// </code>
-/// </example>
 public static class DispatcherExtensions
 {
     /// <summary>Returns an awaitable that switches execution to the dispatcher thread.</summary>

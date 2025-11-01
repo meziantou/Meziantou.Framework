@@ -2,8 +2,19 @@
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for retrieving and converting dictionary values.
+/// </summary>
 public static class DictionaryExtensions
 {
+    /// <summary>Gets a value from the dictionary and converts it to the specified type, or returns a default value if the key is not found or conversion fails.</summary>
+    /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
+    /// <typeparam name="TResult">The target type to convert the value to.</typeparam>
+    /// <param name="dict">The dictionary to retrieve the value from.</param>
+    /// <param name="key">The key of the value to retrieve.</param>
+    /// <param name="defaultValue">The value to return if the key is not found or conversion fails.</param>
+    /// <returns>The converted value if found and conversion succeeded; otherwise, <paramref name="defaultValue"/>.</returns>
     public static TResult GetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, TResult defaultValue)
         where TKey : notnull
     {
@@ -15,6 +26,14 @@ public static class DictionaryExtensions
         return defaultValue;
     }
 
+    /// <summary>Attempts to get a value from the dictionary and convert it to the specified type.</summary>
+    /// <typeparam name="TKey">The type of keys in the dictionary.</typeparam>
+    /// <typeparam name="TValue">The type of values in the dictionary.</typeparam>
+    /// <typeparam name="TResult">The target type to convert the value to.</typeparam>
+    /// <param name="dict">The dictionary to retrieve the value from.</param>
+    /// <param name="key">The key of the value to retrieve.</param>
+    /// <param name="value">When this method returns, contains the converted value if the key was found and conversion succeeded, or the default value if the key was not found or conversion failed.</param>
+    /// <returns><see langword="true"/> if the key was found and conversion succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryGetValueOrDefault<TKey, TValue, TResult>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, [MaybeNullWhen(returnValue: false)] out TResult value)
         where TKey : notnull
     {

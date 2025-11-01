@@ -1,7 +1,15 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for converting byte arrays to hexadecimal strings.
+/// </summary>
 public static class HexaConverter
 {
+    /// <summary>
+    /// Converts a byte array to a hexadecimal string.
+    /// </summary>
+    /// <param name="bytes">The byte array to convert.</param>
+    /// <returns>A hexadecimal string representation of the byte array.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -10,6 +18,12 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>
+    /// Converts a byte array to a hexadecimal string with the specified casing options.
+    /// </summary>
+    /// <param name="bytes">The byte array to convert.</param>
+    /// <param name="options">The casing options for the hexadecimal string.</param>
+    /// <returns>A hexadecimal string representation of the byte array.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -18,6 +32,11 @@ public static class HexaConverter
         return ToHexaString(bytes.AsSpan(), options);
     }
 
+    /// <summary>
+    /// Converts a byte span to a hexadecimal string.
+    /// </summary>
+    /// <param name="bytes">The byte span to convert.</param>
+    /// <returns>A hexadecimal string representation of the byte span.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -26,6 +45,12 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>
+    /// Converts a byte span to a hexadecimal string with the specified casing options.
+    /// </summary>
+    /// <param name="bytes">The byte span to convert.</param>
+    /// <param name="options">The casing options for the hexadecimal string.</param>
+    /// <returns>A hexadecimal string representation of the byte span.</returns>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif

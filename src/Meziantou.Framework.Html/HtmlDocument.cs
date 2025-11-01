@@ -4,6 +4,31 @@ using System.Xml;
 
 namespace Meziantou.Framework.Html;
 
+/// <summary>
+/// Represents an HTML document that can be loaded, parsed, and manipulated programmatically.
+/// </summary>
+/// <example>
+/// <code>
+/// // Load from file
+/// var doc = new HtmlDocument();
+/// doc.Load("page.html");
+/// 
+/// // Load from string
+/// doc.LoadHtml("&lt;html&gt;&lt;body&gt;Hello&lt;/body&gt;&lt;/html&gt;");
+/// 
+/// // Query elements using XPath
+/// var title = doc.SelectSingleNode("//title")?.InnerText;
+/// var links = doc.SelectNodes("//a[@href]");
+/// 
+/// // Modify and save
+/// doc.HtmlElement.SetAttributeValue("lang", "en");
+/// doc.Save("modified.html");
+/// </code>
+/// </example>
+/// <remarks>
+/// This class provides a DOM-like API for parsing and manipulating HTML documents.
+/// It supports encoding detection, XPath queries, and can handle malformed HTML.
+/// </remarks>
 [DebuggerDisplay("{Name}")]
 #if HTML_PUBLIC
 public
@@ -19,21 +44,53 @@ sealed class HtmlDocument : HtmlNode
     private Dictionary<string, string> _declaredNamespaces;
     private Dictionary<string, string> _declaredPrefixes;
 
+    /// <summary>Occurs when the document is being parsed.</summary>
+    /// <remarks>This event can be used to customize the parsing process or track progress.</remarks>
     public event EventHandler<HtmlDocumentParseEventArgs> Parsing;
+
+    /// <summary>Occurs after the document has been parsed.</summary>
     public event EventHandler<HtmlDocumentParseEventArgs> Parsed;
 
+    /// <summary>Initializes a new instance of the <see cref="HtmlDocument"/> class.</summary>
     public HtmlDocument()
-        : base("", "#document", "", ownerDocument: null)
+ : base("", "#document", "", ownerDocument: null)
     {
     }
 
+    /// <summary>Gets the encoding used to read the document stream.</summary>
+    /// <value>The stream encoding, or <see langword="null"/> if the document was not loaded from a stream.</value>
     public Encoding StreamEncoding { get; private set; }
+
+    /// <summary>Gets the encoding detected from the HTML meta tags.</summary>
+    /// <value>The detected encoding, or <see langword="null"/> if no encoding was detected.</value>
+    /// <remarks>
+    /// The encoding is detected from meta tags like &lt;meta charset="utf-8"&gt; or 
+    /// &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8"&gt;.
+    /// </remarks>
     public Encoding DetectedEncoding { get; private set; }
+
+    /// <summary>Gets or sets the base URI of the document.</summary>
+    /// <value>The base URI used to resolve relative URLs.</value>
     public new Uri BaseAddress { get; set; }
+
+    /// <summary>Gets a value indicating whether the reader was restarted during parsing due to encoding detection.</summary>
+    /// <value><see langword="true"/> if the reader was restarted; otherwise, <see langword="false"/>.</value>
     public bool ReaderWasRestarted { get; private set; }
+
+    /// <summary>Gets the document type declaration element (&lt;!DOCTYPE&gt;).</summary>
+    /// <value>The document type element, or <see langword="null"/> if no DOCTYPE was found.</value>
     public HtmlElement DocumentType { get; private set; }
+
+    /// <summary>Gets the root &lt;html&gt; element of the document.</summary>
+    /// <value>The html element, or <see langword="null"/> if no html element was found.</value>
     public HtmlElement HtmlElement { get; private set; }
+
+    /// <summary>Gets the &lt;body&gt; element of the document.</summary>
+    /// <value>The body element, or <see langword="null"/> if no body element was found.</value>
     public HtmlElement BodyElement { get; private set; }
+
+    /// <summary>Gets the &lt;head&gt; element of the document.</summary>
+    /// <value>The head element, or <see langword="null"/> if no head element was found.</value>
     public HtmlElement HeadElement { get; private set; }
 
     internal static void RemoveIntrinsicElement(HtmlDocument doc, HtmlElement element)
@@ -66,6 +123,8 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Gets the file path from which the document was loaded.</summary>
+    /// <value>The file path, or <see langword="null"/> if the document was not loaded from a file.</value>
     public string FilePath
     {
         get => _filePath;
@@ -76,6 +135,9 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Gets or sets the parsing and serialization options for the document.</summary>
+    /// <value>The HTML options. The default is a new <see cref="HtmlOptions"/> instance.</value>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public HtmlOptions Options
     {
         get;
@@ -906,6 +968,9 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Saves the document to the specified text writer.</summary>
+    /// <param name="writer">The text writer.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void Save(TextWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -913,6 +978,9 @@ sealed class HtmlDocument : HtmlNode
         WriteTo(writer);
     }
 
+    /// <summary>Saves the document to the specified XML writer.</summary>
+    /// <param name="writer">The XML writer.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void Save(XmlWriter writer)
     {
         ArgumentNullException.ThrowIfNull(writer);
@@ -920,6 +988,15 @@ sealed class HtmlDocument : HtmlNode
         WriteTo(writer);
     }
 
+    /// <summary>
+    /// Saves the document to the specified file.
+    /// </summary>
+    /// <param name="filePath">
+    /// The file path. The file will be overwritten if it exists.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="filePath"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -950,6 +1027,18 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified file with the given encoding.
+    /// </summary>
+    /// <param name="filePath">
+    /// The file path. The file will be overwritten if it exists.
+    /// </param>
+    /// <param name="encoding">
+    /// The encoding to use. If <see langword="null"/>, UTF-8 encoding will be used.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="filePath"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(string filePath, Encoding encoding)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -976,6 +1065,15 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified output stream.
+    /// </summary>
+    /// <param name="outStream">
+    /// The output stream.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="outStream"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(Stream outStream)
     {
         ArgumentNullException.ThrowIfNull(outStream);
@@ -992,6 +1090,18 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified output stream with the given encoding.
+    /// </summary>
+    /// <param name="outStream">
+    /// The output stream.
+    /// </param>
+    /// <param name="encoding">
+    /// The encoding to use.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="outStream"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(Stream outStream, Encoding encoding)
     {
         ArgumentNullException.ThrowIfNull(outStream);

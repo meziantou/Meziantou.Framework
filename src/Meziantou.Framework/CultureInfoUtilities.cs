@@ -3,14 +3,6 @@ namespace Meziantou.Framework;
 /// <summary>
 /// Provides utility methods for working with <see cref="CultureInfo"/>.
 /// </summary>
-/// <example>
-/// <code>
-/// CultureInfoUtilities.UseCulture("fr-FR", () =>
-/// {
-///     Console.WriteLine(DateTime.Now.ToString("D"));
-/// });
-/// </code>
-/// </example>
 public static class CultureInfoUtilities
 {
     /// <summary>Sets the current thread's culture and UI culture.</summary>

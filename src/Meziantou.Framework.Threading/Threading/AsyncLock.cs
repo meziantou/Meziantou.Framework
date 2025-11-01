@@ -3,6 +3,21 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Threading;
 
+/// <summary>Provides an asynchronous lock that can be awaited to ensure exclusive access to a resource.</summary>
+/// <example>
+/// <code><![CDATA[
+/// var asyncLock = new AsyncLock();
+/// 
+/// async Task AccessResourceAsync()
+/// {
+///     using (await asyncLock.LockAsync())
+///     {
+///         // Critical section - only one task can execute this at a time
+///         await DoWorkAsync();
+///     }
+/// }
+/// ]]></code>
+/// </example>
 [DebuggerDisplay("Signaled: {_signaled}")]
 public sealed class AsyncLock
 {
@@ -11,22 +26,30 @@ public sealed class AsyncLock
     private readonly Action<object> _onCancellationRequestHandler;
     private bool _signaled = true;
 
+    /// <summary>Initializes a new instance of the <see cref="AsyncLock"/> class.</summary>
     public AsyncLock()
         : this(allowInliningAwaiters: false)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="AsyncLock"/> class with a Boolean value indicating whether to allow inlining of continuations.</summary>
+    /// <param name="allowInliningAwaiters"><see langword="true"/> to allow continuations to be executed synchronously on the thread that releases the lock; <see langword="false"/> to execute continuations asynchronously.</param>
     public AsyncLock(bool allowInliningAwaiters)
     {
         _allowInliningAwaiters = allowInliningAwaiters;
         _onCancellationRequestHandler = OnCancellationRequest;
     }
 
+    /// <summary>Asynchronously acquires the lock.</summary>
+    /// <returns>A task that returns a disposable lease. Disposing the lease releases the lock.</returns>
     public ValueTask<AsyncLockLease> LockAsync()
     {
         return LockAsync(CancellationToken.None);
     }
 
+    /// <summary>Asynchronously acquires the lock.</summary>
+    /// <param name="cancellationToken">A cancellation token to observe while waiting for the lock.</param>
+    /// <returns>A task that returns a disposable lease. Disposing the lease releases the lock.</returns>
     public ValueTask<AsyncLockLease> LockAsync(CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested)
@@ -56,6 +79,9 @@ public sealed class AsyncLock
         }
     }
 
+    /// <summary>Attempts to acquire the lock synchronously without blocking.</summary>
+    /// <param name="lockObject">When this method returns, contains a disposable lease if the lock was acquired; otherwise, an empty lease.</param>
+    /// <returns><see langword="true"/> if the lock was acquired; otherwise, <see langword="false"/>.</returns>
     public bool TryLock(out AsyncLockLease lockObject)
     {
         if (_signaled)
@@ -140,6 +166,7 @@ public sealed class AsyncLock
         return found;
     }
 
+    /// <summary>Represents a disposable lease for an <see cref="AsyncLock"/>. Disposing the lease releases the lock.</summary>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Not meant to be used directly")]
     public readonly struct AsyncLockLease : IDisposable

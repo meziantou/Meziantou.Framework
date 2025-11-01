@@ -1,6 +1,9 @@
 namespace Meziantou.Framework;
 
 /// <summary>Provides methods for properly escaping and quoting command-line arguments for Windows applications.</summary>
+/// <remarks>
+/// The implementation is based on the article: <see href="https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/">Everyone quotes command line arguments the wrong way</see>.
+/// </remarks>
 /// <example>
 /// <code>
 /// // Quote a single argument for standard Windows applications
@@ -16,7 +19,6 @@ namespace Meziantou.Framework;
 /// // Returns properly escaped argument safe for cmd.exe
 /// </code>
 /// </example>
-// https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
 #if CommandLineBuilder_PUBLIC
 public
 #else

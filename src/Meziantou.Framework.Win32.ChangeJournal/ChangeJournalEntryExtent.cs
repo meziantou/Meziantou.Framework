@@ -3,6 +3,9 @@ using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a modified extent (range) in a version 4 change journal entry.
+/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct ChangeJournalEntryExtent
 {

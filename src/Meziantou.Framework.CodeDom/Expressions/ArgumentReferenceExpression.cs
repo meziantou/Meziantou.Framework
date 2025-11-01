@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a reference to a method or constructor argument.</summary>
 public class ArgumentReferenceExpression : Expression
 {
     private MethodArgumentDeclaration? _argumentDeclaration;
@@ -8,11 +9,15 @@ public class ArgumentReferenceExpression : Expression
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="ArgumentReferenceExpression"/> class referencing an argument declaration.</summary>
+    /// <param name="argumentDeclaration">The argument declaration to reference.</param>
     public ArgumentReferenceExpression(MethodArgumentDeclaration argumentDeclaration)
     {
         _argumentDeclaration = argumentDeclaration;
     }
 
+    /// <summary>Initializes a new instance of the <see cref="ArgumentReferenceExpression"/> class with the specified argument name.</summary>
+    /// <param name="name">The argument name.</param>
     public ArgumentReferenceExpression(string name)
     {
         Name = name;

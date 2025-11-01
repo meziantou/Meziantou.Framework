@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a foreach iteration statement.</summary>
 public class IterationStatement : Statement
 {
     public Statement? Initialization

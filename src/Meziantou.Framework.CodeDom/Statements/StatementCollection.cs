@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a collection of statements.</summary>
 public class StatementCollection : CodeObjectCollection<Statement>
 {
     public StatementCollection()

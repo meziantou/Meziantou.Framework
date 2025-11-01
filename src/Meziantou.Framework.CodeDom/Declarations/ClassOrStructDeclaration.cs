@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for class and struct declarations.</summary>
 public abstract class ClassOrStructDeclaration : TypeDeclaration, IParametrableType, ITypeDeclarationContainer, IMemberContainer
 {
     protected ClassOrStructDeclaration()

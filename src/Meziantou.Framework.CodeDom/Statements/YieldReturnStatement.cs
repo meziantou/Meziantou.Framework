@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a yield return statement in an iterator.</summary>
 public class YieldReturnStatement : Statement
 {
     public YieldReturnStatement()

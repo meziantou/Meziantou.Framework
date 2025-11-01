@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Specifies the target of a custom attribute.</summary>
 public enum CustomAttributeTarget
 {
     Assembly,

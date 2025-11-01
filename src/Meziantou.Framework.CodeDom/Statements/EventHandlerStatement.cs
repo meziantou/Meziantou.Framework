@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for event handler statements.</summary>
 public abstract class EventHandlerStatement : Statement
 {
     protected EventHandlerStatement()

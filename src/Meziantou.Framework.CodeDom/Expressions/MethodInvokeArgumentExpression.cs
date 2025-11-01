@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a method invocation argument with optional name.</summary>
 public class MethodInvokeArgumentExpression : Expression
 {
     public MethodInvokeArgumentExpression()

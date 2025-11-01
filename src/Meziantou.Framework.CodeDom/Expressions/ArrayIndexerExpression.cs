@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an array indexer expression (e.g., array[index]).</summary>
 public class ArrayIndexerExpression : Expression
 {
     public ArrayIndexerExpression()

@@ -1,28 +1,6 @@
 namespace Meziantou.Framework;
 
 /// <summary>Provides methods for creating interactive yes/no prompts in console applications.</summary>
-/// <example>
-/// <code>
-/// // Simple yes/no prompt with default value
-/// var proceed = Prompt.YesNo("Do you want to continue?", defaultValue: true);
-/// // Displays: Do you want to continue? [Y/n]
-/// // User can press Enter to use default (true)
-///
-/// // Without default value
-/// var confirm = Prompt.YesNo("Are you sure?", defaultValue: null);
-/// // Displays: Are you sure? [y/n]
-/// // User must enter y or n
-///
-/// // Custom yes/no labels
-/// var delete = Prompt.YesNo("Delete file?", "Yes", "No", defaultValue: false);
-/// // Displays: Delete file? [y/N]
-///
-/// if (proceed)
-/// {
-///     Console.WriteLine("Proceeding...");
-/// }
-/// </code>
-/// </example>
 public static class Prompt
 {
     /// <summary>Prompts the user with a yes/no question using standard Y/N labels.</summary>

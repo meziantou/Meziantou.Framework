@@ -56,19 +56,55 @@ namespace Meziantou.Framework;
       through 15 of the hash.
    -  Convert the resulting UUID to local byte order.
  */
+
+/// <summary>
+/// Provides methods for creating deterministic GUIDs (version 3 and 5 UUIDs) from names and namespaces as defined in RFC 4122.
+/// </summary>
 public static class DeterministicGuid
 {
+    /// <summary>
+    /// Gets the namespace UUID for DNS names (6ba7b810-9dad-11d1-80b4-00c04fd430c8).
+    /// </summary>
     public static Guid DnsNamespace { get; } = new Guid(0x6ba7b810, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>
+    /// Gets the namespace UUID for URLs (6ba7b811-9dad-11d1-80b4-00c04fd430c8).
+    /// </summary>
     public static Guid UrlNamespace { get; } = new Guid(0x6ba7b811, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b811-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>
+    /// Gets the namespace UUID for ISO OIDs (6ba7b812-9dad-11d1-80b4-00c04fd430c8).
+    /// </summary>
     public static Guid OidNamespace { get; } = new Guid(0x6ba7b812, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b812-9dad-11d1-80b4-00c04fd430c8 */;
+
+    /// <summary>
+    /// Gets the namespace UUID for X.500 Distinguished Names (6ba7b814-9dad-11d1-80b4-00c04fd430c8).
+    /// </summary>
     public static Guid X500Namespace { get; } = new Guid(0x6ba7b814, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b814-9dad-11d1-80b4-00c04fd430c8 */;
 
+    /// <summary>
+    /// Creates a deterministic GUID from a namespace and name using the specified version.
+    /// </summary>
+    /// <param name="namespace">The namespace UUID.</param>
+    /// <param name="name">The name to convert to a GUID, which will be encoded as UTF-8.</param>
+    /// <param name="version">The UUID version (3 for MD5, 5 for SHA-1).</param>
+    /// <returns>A deterministic GUID generated from the namespace and name.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the version is not 3 or 5.</exception>
     public static Guid Create(Guid @namespace, string name, DeterministicGuidVersion version)
     {
         var nameBytes = Encoding.UTF8.GetBytes(name);
         return Create(@namespace, nameBytes, version);
     }
 
+    /// <summary>
+    /// Creates a deterministic GUID from a namespace and name bytes using the specified version.
+    /// </summary>
+    /// <param name="namespace">The namespace UUID.</param>
+    /// <param name="name">The name bytes to convert to a GUID.</param>
+    /// <param name="version">The UUID version (3 for MD5, 5 for SHA-1).</param>
+    /// <returns>A deterministic GUID generated from the namespace and name.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the version is not 3 or 5.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when GUID or hash operations fail.</exception>
     public static Guid Create(Guid @namespace, ReadOnlySpan<byte> name, DeterministicGuidVersion version)
     {
         if (version is not DeterministicGuidVersion.Version3 and not DeterministicGuidVersion.Version5)

@@ -1,7 +1,15 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides utility methods for country and region operations.
+/// </summary>
 public static class Country
 {
+    /// <summary>
+    /// Gets the Unicode flag emoji for the specified region.
+    /// </summary>
+    /// <param name="region">The region information.</param>
+    /// <returns>A Unicode string representing the flag emoji for the region.</returns>
     public static string GetUnicodeFlag(RegionInfo region)
     {
         ArgumentNullException.ThrowIfNull(region);
@@ -9,6 +17,11 @@ public static class Country
         return GetUnicodeFlag(region.TwoLetterISORegionName);
     }
 
+    /// <summary>
+    /// Gets the Unicode flag emoji for the specified two-letter ISO region code.
+    /// </summary>
+    /// <param name="twoLetterISORegionName">The two-letter ISO region code (e.g., "US", "FR", "JP").</param>
+    /// <returns>A Unicode string representing the flag emoji for the region.</returns>
     public static string GetUnicodeFlag(string twoLetterISORegionName)
     {
         ArgumentNullException.ThrowIfNull(twoLetterISORegionName);

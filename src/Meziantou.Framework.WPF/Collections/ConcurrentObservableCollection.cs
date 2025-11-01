@@ -8,6 +8,16 @@ namespace Meziantou.Framework.WPF.Collections;
 /// <summary>
 /// Thread-safe collection. You can safely bind it to a WPF control using the property <see cref="AsObservable"/>.
 /// </summary>
+/// <typeparam name="T">The type of elements in the collection.</typeparam>
+/// <example>
+/// <code>
+/// var collection = new ConcurrentObservableCollection&lt;string&gt;();
+/// myListBox.ItemsSource = collection.AsObservable;
+/// 
+/// // Safe to call from any thread
+/// await Task.Run(() => collection.Add("Item 1"));
+/// </code>
+/// </example>
 public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<T>, IList
 {
     private readonly Dispatcher _dispatcher;
@@ -16,11 +26,14 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     private ImmutableList<T> _items = ImmutableList<T>.Empty;
     private DispatchedObservableCollection<T>? _observableCollection;
 
+    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class using the current dispatcher.</summary>
     public ConcurrentObservableCollection()
         : this(GetCurrentDispatcher())
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="ConcurrentObservableCollection{T}"/> class with the specified dispatcher.</summary>
+    /// <param name="dispatcher">The dispatcher to use for raising collection change notifications.</param>
     public ConcurrentObservableCollection(Dispatcher dispatcher)
     {
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -37,6 +50,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
     /// <remarks>Most WPF controls doesn't support batch modifications</remarks>
     public bool SupportRangeNotifications { get; set; }
 
+    /// <summary>Gets an observable collection that can be bound to WPF controls.</summary>
     public IReadOnlyObservableCollection<T> AsObservable
     {
         get
@@ -55,6 +69,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
 
     bool ICollection<T>.IsReadOnly => false;
 
+    /// <summary>Gets the number of elements in the collection.</summary>
     public int Count => _items.Count;
 
     bool IList.IsReadOnly => false;
@@ -85,6 +100,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Gets or sets the element at the specified index.</summary>
     public T this[int index]
     {
         get => _items[index];
@@ -98,6 +114,8 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Adds an item to the collection.</summary>
+    /// <param name="item">The item to add.</param>
     public void Add(T item)
     {
         lock (_lock)
@@ -107,11 +125,15 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Adds multiple items to the collection.</summary>
+    /// <param name="items">The items to add.</param>
     public void AddRange(params T[] items)
     {
         AddRange((IEnumerable<T>)items);
     }
 
+    /// <summary>Adds multiple items to the collection.</summary>
+    /// <param name="items">The items to add.</param>
     public void AddRange(IEnumerable<T> items)
     {
         lock (_lock)
@@ -135,6 +157,9 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Inserts multiple items into the collection at the specified index.</summary>
+    /// <param name="index">The zero-based index at which items should be inserted.</param>
+    /// <param name="items">The items to insert.</param>
     public void InsertRange(int index, IEnumerable<T> items)
     {
         lock (_lock)
@@ -159,6 +184,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Removes all items from the collection.</summary>
     public void Clear()
     {
         lock (_lock)
@@ -168,6 +194,9 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Inserts an item into the collection at the specified index.</summary>
+    /// <param name="index">The zero-based index at which the item should be inserted.</param>
+    /// <param name="item">The item to insert.</param>
     public void Insert(int index, T item)
     {
         lock (_lock)
@@ -177,6 +206,9 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Removes the first occurrence of a specific item from the collection.</summary>
+    /// <param name="item">The item to remove.</param>
+    /// <returns><see langword="true"/> if the item was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(T item)
     {
         lock (_lock)
@@ -193,6 +225,8 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Removes the item at the specified index.</summary>
+    /// <param name="index">The zero-based index of the item to remove.</param>
     public void RemoveAt(int index)
     {
         lock (_lock)
@@ -202,6 +236,7 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Returns an enumerator that iterates through the collection.</summary>
     public IEnumerator<T> GetEnumerator()
     {
         return _items.GetEnumerator();
@@ -212,26 +247,38 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         return GetEnumerator();
     }
 
+    /// <summary>Determines the index of a specific item in the collection.</summary>
+    /// <param name="item">The item to locate.</param>
+    /// <returns>The index of the item if found; otherwise, -1.</returns>
     public int IndexOf(T item)
     {
         return _items.IndexOf(item);
     }
 
+    /// <summary>Determines whether the collection contains a specific item.</summary>
+    /// <param name="item">The item to locate.</param>
+    /// <returns><see langword="true"/> if the item is found; otherwise, <see langword="false"/>.</returns>
     public bool Contains(T item)
     {
         return _items.Contains(item);
     }
 
+    /// <summary>Copies the elements of the collection to an array, starting at a particular array index.</summary>
+    /// <param name="array">The destination array.</param>
+    /// <param name="arrayIndex">The zero-based index in the array at which copying begins.</param>
     public void CopyTo(T[] array, int arrayIndex)
     {
         _items.CopyTo(array, arrayIndex);
     }
 
+    /// <summary>Sorts the elements in the collection using the default comparer.</summary>
     public void Sort()
     {
         Sort(comparer: null);
     }
 
+    /// <summary>Sorts the elements in the collection using the specified comparer.</summary>
+    /// <param name="comparer">The comparer to use when comparing elements.</param>
     public void Sort(IComparer<T>? comparer)
     {
         lock (_lock)
@@ -241,11 +288,14 @@ public sealed class ConcurrentObservableCollection<T> : IList<T>, IReadOnlyList<
         }
     }
 
+    /// <summary>Performs a stable sort on the collection using the default comparer.</summary>
     public void StableSort()
     {
         StableSort(comparer: null);
     }
 
+    /// <summary>Performs a stable sort on the collection using the specified comparer.</summary>
+    /// <param name="comparer">The comparer to use when comparing elements.</param>
     public void StableSort(IComparer<T>? comparer)
     {
         lock (_lock)

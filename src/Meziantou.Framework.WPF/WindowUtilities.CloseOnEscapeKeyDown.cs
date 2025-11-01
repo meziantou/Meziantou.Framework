@@ -3,22 +3,36 @@ using System.Windows.Input;
 
 namespace Meziantou.Framework.WPF;
 
+/// <summary>
+/// Provides utility methods and attached properties for WPF windows.
+/// </summary>
+/// <example>
+/// <code>
+/// &lt;Window xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"
+///         wpf:WindowUtilities.CloseOnEscapeKeyDown="True"&gt;
+/// &lt;/Window&gt;
+/// </code>
+/// </example>
 public static partial class WindowUtilities
 {
-    /// <summary>
-    /// Usage <code>&lt;Window xmlns:utilities=&quot;clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF&quot; utilities:WindowUtilities.CloseOnEscapeKeyDown=&quot;True&quot;&gt;</code>
-    /// </summary>
+    /// <summary>Identifies the CloseOnEscapeKeyDown attached property.</summary>
     public static readonly DependencyProperty CloseOnEscapeProperty = DependencyProperty.RegisterAttached(
        "CloseOnEscapeKeyDown",
        typeof(bool),
        typeof(WindowUtilities),
        new FrameworkPropertyMetadata(defaultValue: false, CloseOnEscapeKeyDownChanged));
 
+    /// <summary>Gets the value of the CloseOnEscapeKeyDown attached property for a specified dependency object.</summary>
+    /// <param name="d">The dependency object.</param>
+    /// <returns><see langword="true"/> if the window closes on Escape key down; otherwise, <see langword="false"/>.</returns>
     public static bool GetCloseOnEscapeKeyDown(DependencyObject d)
     {
         return (bool)d.GetValue(CloseOnEscapeProperty);
     }
 
+    /// <summary>Sets the value of the CloseOnEscapeKeyDown attached property for a specified dependency object.</summary>
+    /// <param name="d">The dependency object.</param>
+    /// <param name="value"><see langword="true"/> to close the window on Escape key down; otherwise, <see langword="false"/>.</param>
     public static void SetCloseOnEscapeKeyDown(DependencyObject d, bool value)
     {
         d.SetValue(CloseOnEscapeProperty, value);

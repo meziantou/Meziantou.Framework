@@ -4,8 +4,29 @@ using Windows.Win32;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Provides methods to interact with the Mark of the Web (MOTW) security feature in Windows.
+/// MOTW helps protect users from potentially unsafe content downloaded from the internet by storing
+/// the origin zone information in an Alternate Data Stream (ADS) named "Zone.Identifier".
+/// </summary>
+/// <example>
+/// Add the Mark of the Web to a file:
+/// <code>
+/// MarkOfTheWeb.SetFileZone(path, UrlZone.Internet);
+/// </code>
+/// Get the zone of a file:
+/// <code>
+/// var zone = MarkOfTheWeb.GetFileZone(path);
+/// </code>
+/// Remove the Mark of the Web from a file:
+/// <code>
+/// MarkOfTheWeb.RemoveFileZone(path);
+/// </code>
+/// </example>
 public static class MarkOfTheWeb
 {
+    /// <summary>Removes the Mark of the Web zone information from a file by deleting the Zone.Identifier alternate data stream.</summary>
+    /// <param name="filePath">The path to the file from which to remove the zone information.</param>
     public static void RemoveFileZone(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -20,6 +41,9 @@ public static class MarkOfTheWeb
         }
     }
 
+    /// <summary>Gets the security zone of a file using the Windows Security Manager COM API.</summary>
+    /// <param name="filePath">The path to the file to query.</param>
+    /// <returns>The <see cref="UrlZone"/> of the file, or <see cref="UrlZone.Invalid"/> if the zone cannot be determined.</returns>
     [SupportedOSPlatform("windows")]
     public static UrlZone GetFileZone(string filePath)
     {
@@ -54,6 +78,9 @@ public static class MarkOfTheWeb
         return UrlZone.Invalid;
     }
 
+    /// <summary>Gets the raw content of the Zone.Identifier alternate data stream from a file.</summary>
+    /// <param name="filePath">The path to the file to read.</param>
+    /// <returns>The content of the Zone.Identifier stream, or <see langword="null"/> if the file does not have zone information.</returns>
     public static string GetFileZoneContent(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);
@@ -72,6 +99,11 @@ public static class MarkOfTheWeb
         return null;
     }
 
+    /// <summary>Sets the Mark of the Web zone information for a file by writing to the Zone.Identifier alternate data stream.</summary>
+    /// <param name="filePath">The path to the file to mark.</param>
+    /// <param name="zone">The security zone to assign to the file.</param>
+    /// <param name="referrerUrl">Optional URL of the page that linked to the file.</param>
+    /// <param name="hostUrl">Optional URL of the host from which the file was downloaded.</param>
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings")]
     public static void SetFileZone(string filePath, UrlZone zone, string? referrerUrl = null, string? hostUrl = null)
     {
@@ -94,10 +126,11 @@ public static class MarkOfTheWeb
     }
 
     /// <summary>
-    /// Files outside of the Local Computer, Trusted, and Intranet Zones
-    /// are considered "Untrusted". Avoid connecting to the target
-    /// server unless the URL's Zone is trustworthy.
+    /// Determines whether a file is from an untrusted source based on its security zone.
+    /// Files outside of the Local Machine, Trusted, and Intranet zones are considered untrusted.
     /// </summary>
+    /// <param name="filePath">The path to the file to check.</param>
+    /// <returns><see langword="true"/> if the file is from an untrusted zone (Internet or Restricted); otherwise, <see langword="false"/>.</returns>
     [SupportedOSPlatform("windows")]
     public static bool IsUntrusted(string filePath)
     {

@@ -78,6 +78,6 @@ public sealed class ServiceDefaultTests
         Value2,
     }
 
-    private sealed class FooService(BarService _);
+    private sealed class FooService(BarService bar) { public BarService Bar { get; } = bar; }
     private sealed class BarService;
 }

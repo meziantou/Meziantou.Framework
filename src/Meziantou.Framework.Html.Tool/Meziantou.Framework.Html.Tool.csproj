@@ -7,7 +7,7 @@
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.html</ToolCommandName>
-    <Version>1.0.14</Version>
+    <Version>1.0.15</Version>
     <Description>CLI to edit HTML files</Description>
   </PropertyGroup>
 

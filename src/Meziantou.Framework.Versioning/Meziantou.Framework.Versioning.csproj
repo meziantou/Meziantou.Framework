@@ -11,4 +11,7 @@
     <PackageReference Include="System.Memory" Version="4.6.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\common\CultureInsensitiveTypeAttribute.cs" />
+  </ItemGroup>
 </Project>

@@ -28,6 +28,7 @@ namespace Meziantou.Framework.Versioning;
 /// </example>
 // https://github.com/semver/semver/blob/master/semver.md
 // https://github.com/semver/semver/blob/master/semver.svg
+[Meziantou.Analyzer.Annotations.CultureInsensitiveType]
 public sealed class SemanticVersion : IFormattable, IComparable, IComparable<SemanticVersion>, IEquatable<SemanticVersion>
 #if NET7_0_OR_GREATER
     , IParsable<SemanticVersion>

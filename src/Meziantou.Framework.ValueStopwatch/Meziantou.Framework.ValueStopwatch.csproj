@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Stopwatch without any allocation</Description>
   </PropertyGroup>

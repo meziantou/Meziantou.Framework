@@ -1,3 +1,4 @@
+#pragma warning disable MA0011 // IFormatProvider is missing
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.Tests;

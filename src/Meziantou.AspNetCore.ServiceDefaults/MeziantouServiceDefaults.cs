@@ -35,6 +35,11 @@ public static class MeziantouServiceDefaults
         var options = new MeziantouServiceDefaultsOptions();
         configure?.Invoke(options);
 
+        if (options.ValidateDependencyContainersOnStartup)
+        {
+            builder.ConfigureContainer(new DefaultServiceProviderFactory(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+        }
+
         builder.Services.Configure<KestrelServerOptions>(options =>
         {
             options.AddServerHeader = false;

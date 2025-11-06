@@ -1,4 +1,7 @@
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 
 namespace Meziantou.Framework;
 
@@ -63,6 +66,89 @@ static class ReflectionUtilities
                 return false;
 
             return true;
+        }
+    }
+
+    /// <summary>Retrieves the source file path and the first sequence point for the specified method using portable PDB information if available.</summary>
+    /// <remarks>This method requires that the target assembly has an accessible portable PDBs (embedded or next to the dll). If the method
+    /// or its assembly does not meet this requirement, an exception is thrown. The returned sequence point typically
+    /// corresponds to the first executable line of the method in the source file.</remarks>
+    /// <param name="methodInfo">The reflection metadata for the method whose source location is to be determined.</param>
+    /// <returns>A tuple containing the source file path and the first sequence point for the method, or null if the assembly location is unavailable.</returns>
+    public static (string FilePath, SequencePoint SequencePoint)? GetMethodLocation(this MethodInfo methodInfo)
+    {
+        ArgumentNullException.ThrowIfNull(methodInfo);
+
+        var location = methodInfo.DeclaringType?.Assembly.Location;
+        if (string.IsNullOrEmpty(location))
+            return null;
+
+        using var fs = File.OpenRead(location);
+        return GetMethodLocation(methodInfo, location, fs);
+    }
+
+    /// <summary>Retrieves the source file path and the first sequence point for the specified method using portable PDB information if available.</summary>
+    /// <remarks>This method requires that the target assembly has an accessible portable PDBs (embedded or next to the dll). If the method
+    /// or its assembly does not meet this requirement, an exception is thrown. The returned sequence point typically
+    /// corresponds to the first executable line of the method in the source file.</remarks>
+    /// <param name="methodInfo">The reflection metadata for the method whose source location is to be determined.</param>
+    /// <returns>A tuple containing the source file path and the first sequence point for the method, or null if the assembly location is unavailable.</returns>
+    public static async Task<(string FilePath, SequencePoint SequencePoint)?> GetMethodLocationAsync(this MethodInfo methodInfo)
+    {
+        ArgumentNullException.ThrowIfNull(methodInfo);
+
+        var location = methodInfo.DeclaringType?.Assembly.Location;
+        if (string.IsNullOrEmpty(location))
+            return null;
+
+        await using var fs = File.OpenRead(location);
+        return GetMethodLocation(methodInfo, location, fs);
+    }
+
+    private static (string FilePath, SequencePoint SequencePoint)? GetMethodLocation(MethodInfo methodInfo, string location, FileStream fs)
+    {
+        using var reader = new PEReader(fs);
+
+        // Get the embedded PDB reader if available
+        var pdbReaderProvider = reader.ReadDebugDirectory()
+            .Where(entry => entry.Type == DebugDirectoryEntryType.EmbeddedPortablePdb)
+            .Select(entry => reader.ReadEmbeddedPortablePdbDebugDirectoryData(entry))
+            .FirstOrDefault();
+        try
+        {
+            if (pdbReaderProvider is null)
+            {
+                // Try to open the associated PDB file
+                if (!reader.TryOpenAssociatedPortablePdb(location, File.OpenRead, out pdbReaderProvider, out _))
+                {
+                    pdbReaderProvider?.Dispose();
+                    return null;
+                }
+
+                if (pdbReaderProvider is null)
+                    return null;
+            }
+
+            var pdbReader = pdbReaderProvider.GetMetadataReader();
+            var methodHandle = MetadataTokens.MethodDefinitionHandle(methodInfo.MetadataToken);
+            var methodDebugInfo = pdbReader.GetMethodDebugInformation(methodHandle);
+            if (!methodDebugInfo.SequencePointsBlob.IsNil)
+            {
+                var sequencePoints = methodDebugInfo.GetSequencePoints();
+                var firstSequencePoint = sequencePoints.FirstOrDefault();
+                if (firstSequencePoint.Document.IsNil == false)
+                {
+                    var document = pdbReader.GetDocument(firstSequencePoint.Document);
+                    var filePath = pdbReader.GetString(document.Name);
+                    return (filePath, firstSequencePoint);
+                }
+            }
+
+            return null;
+        }
+        finally
+        {
+            pdbReaderProvider?.Dispose();
         }
     }
 }

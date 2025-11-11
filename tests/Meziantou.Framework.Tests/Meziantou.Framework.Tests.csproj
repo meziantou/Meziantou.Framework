@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.43.0" />
-    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="9.10.0" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>

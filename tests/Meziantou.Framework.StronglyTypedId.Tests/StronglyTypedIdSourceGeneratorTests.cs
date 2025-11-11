@@ -18,7 +18,7 @@ public sealed class StronglyTypedIdSourceGeneratorTests
 #elif NET9_0
         "9.0.0"
 #elif NET10_0
-        "10.0.0-rc.2.25502.107"
+        "10.0.0"
 #else
 #error Version not supported
 #endif

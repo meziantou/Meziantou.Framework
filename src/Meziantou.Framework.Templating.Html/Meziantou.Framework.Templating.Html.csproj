@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Encodings.Web" Version="9.0.10" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup>

@@ -20,12 +20,14 @@
         "Microsoft.AspNetCore.Components.Web",
         "Microsoft.AspNetCore.Components.WebAssembly",
         "Microsoft.AspNetCore.Mvc.Testing",
-        "Microsoft.AspNetCore.TestHost"
+        "Microsoft.AspNetCore.TestHost",
+        "Microsoft.AspNetCore.OpenApi"
       ],
       "matchFileNames": [
         "src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj",
         "src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj",
         "src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj",
+        "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj",
         "src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj",
         "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj"
       ],

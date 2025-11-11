@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Meziantou.Framework.Tests;
@@ -56,16 +57,30 @@ public class TemporaryDirectoryTests
         await using (var dir = TemporaryDirectory.Create())
         {
             path = dir.FullPath;
-
-#if NET461 || NET462 || NET472
-            File.WriteAllText(dir.GetFullPath("a.txt"), "content");
-#elif NETCOREAPP3_1_OR_GREATER
-            await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content");
-#else
-#error Platform not supported
-#endif
+            await File.WriteAllTextAsync(dir.GetFullPath("a.txt"), "content".AsMemory());
         }
 
         Assert.False(Directory.Exists(path));
+    }
+
+    [Fact]
+    public async Task ImplicitConversions()
+    {
+        await using var dir = TemporaryDirectory.Create();
+        FullPath path = dir;
+        string pathStr = dir;
+        DirectoryInfo di = dir;
+
+        Assert.Equal(dir.FullPath.Value, path.Value);
+        Assert.Equal(dir.FullPath.Value, pathStr);
+        Assert.Equal(dir.FullPath.Value, di.FullName);
+    }
+
+    [Fact]
+    public async Task SlashOperator()
+    {
+        await using var dir = TemporaryDirectory.Create();
+        var path = dir / "subdir" / "file.txt";
+        Assert.Equal(dir.GetFullPath("subdir/file.txt"), path);
     }
 }

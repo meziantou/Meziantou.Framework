@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>true</IsTrimmable>
     <Description>Types and extension methods to help with threading</Description>
-    <Version>2.0.2</Version>
+    <Version>2.0.3</Version>
     <RootNamespace>Meziantou.Framework</RootNamespace>
   </PropertyGroup>
 

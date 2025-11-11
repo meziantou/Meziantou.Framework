@@ -15,7 +15,6 @@ internal
 sealed class HtmlNodeNavigator : XPathNavigator
 {
     private readonly NameTable _nameTable = new();
-    private HtmlNode _currentNode;
     private readonly HtmlNode _rootNode;
 
     [Conditional("HTML_XPATH_TRACE")]
@@ -47,8 +46,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     private HtmlNodeNavigator(HtmlNodeNavigator other)
     {
-        if (other is null)
-            throw new ArgumentNullException(nameof(other));
+        ArgumentNullException.ThrowIfNull(other);
 
         CurrentNode = other.CurrentNode;
         BaseNode = other.BaseNode;
@@ -61,13 +59,13 @@ sealed class HtmlNodeNavigator : XPathNavigator
 
     public HtmlNode CurrentNode
     {
-        get => _currentNode;
+        get;
         set
         {
-            if (_currentNode != value)
+            if (field != value)
             {
-                Trace("old: " + _currentNode + " new: " + value);
-                _currentNode = value;
+                Trace("old: " + field + " new: " + value);
+                field = value;
             }
         }
     }
@@ -81,7 +79,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         return _nameTable.Get(array) ?? _nameTable.Add(array);
     }
 
-    public override string BaseURI => GetOrAdd(string.Empty);
+    public override string BaseURI => GetOrAdd("");
 
     public override XPathNavigator Clone() => new HtmlNodeNavigator(this);
 
@@ -441,7 +439,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     return name.ToLowerInvariant();
             }
 
-            return name ?? string.Empty;
+            return name ?? "";
         }
     }
 
@@ -461,7 +459,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
                     return name.ToLowerInvariant();
             }
 
-            return name ?? string.Empty;
+            return name ?? "";
         }
     }
 
@@ -474,7 +472,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
         {
             var ns = CurrentNode.NamespaceURI;
             if (Document?.Options.EmptyNamespacesForXPath.Contains(ns) == true)
-                return string.Empty;
+                return "";
 
             Debug.Assert(ns is not null);
             if ((Options & HtmlNodeNavigatorOptions.UppercasedNamespaceURIs) == HtmlNodeNavigatorOptions.UppercasedNamespaceURIs)
@@ -520,7 +518,7 @@ sealed class HtmlNodeNavigator : XPathNavigator
             if ((Options & HtmlNodeNavigatorOptions.LowercasedPrefixes) == HtmlNodeNavigatorOptions.LowercasedPrefixes)
                 return prefix.ToLowerInvariant();
 
-            return prefix ?? string.Empty;
+            return prefix ?? "";
         }
     }
 

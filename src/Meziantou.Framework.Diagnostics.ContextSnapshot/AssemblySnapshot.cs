@@ -3,6 +3,7 @@ using System.Reflection;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a .NET assembly including its name, version, location, and culture information.</summary>
 public sealed class AssemblySnapshot
 {
     public string? Name { get; }

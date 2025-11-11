@@ -1,6 +1,5 @@
-using System.Globalization;
+#pragma warning disable MA0011 // IFormatProvider is missing
 using Microsoft.Extensions.Time.Testing;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

@@ -2,6 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a statement containing a collection of expressions.</summary>
 public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
 {
     private readonly List<Expression> _expressions = [];
@@ -30,8 +31,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
 
     public void Add(Expression item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         _expressions.Add(item);
         SetParent(item);
@@ -79,8 +79,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
 
     public void Insert(int index, Expression item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
 
         _expressions.Insert(index, item);
         SetParent(item);
@@ -102,8 +101,7 @@ public class ExpressionCollectionStatement : Statement, IEnumerable<Expression>
         get => _expressions[index];
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             var item = _expressions[index];
             item.Parent = null;

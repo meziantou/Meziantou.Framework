@@ -1,14 +1,16 @@
 using System.Collections.Immutable;
-using System.Text;
 using DiffEngine;
 using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>
+/// Provides configuration settings for inline snapshot testing.
+/// </summary>
 public sealed record InlineSnapshotSettings
 {
-    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create<MergeTool>(
+    private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
         MergeTool.DiffToolFromEnvironmentVariable,
         MergeTool.GitMergeTool,
         MergeTool.GitDiffTool,
@@ -17,81 +19,85 @@ public sealed record InlineSnapshotSettings
         MergeTool.RiderIfCurrentProcess,
         new AutoDiffEngineTool());
 
-    private SnapshotUpdateStrategy _snapshotUpdateStrategy = SnapshotUpdateStrategy.Default;
-    private SnapshotSerializer _snapshotSerializer = HumanReadableSnapshotSerializer.DefaultInstance;
-    private SnapshotComparer _snapshotComparer = SnapshotComparer.Default;
-    private AssertionMessageFormatter _errorMessageFormatter = InlineDiffAssertionMessageFormatter.Instance;
-    private AssertionExceptionBuilder _assertionExceptionCreator = AssertionExceptionBuilder.Default;
-
+    /// <summary>Gets or sets the default settings used for snapshot validation.</summary>
     public static InlineSnapshotSettings Default { get; set; } = new();
 
+    /// <summary>Gets or sets the indentation string to use when writing snapshots. If null, the indentation is detected from the PDB file.</summary>
     public string? Indentation { get; set; }
+
+    /// <summary>Gets or sets the end-of-line string to use when writing snapshots. If null, the end-of-line is detected from the source file.</summary>
     public string? EndOfLine { get; set; }
+
+    /// <summary>Gets or sets the file encoding to use when writing snapshots. If null, the encoding is detected from the source file.</summary>
     public Encoding? FileEncoding { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether to automatically detect CI environments and disable snapshot updates.</summary>
     public bool AutoDetectContinuousEnvironment { get; set; } = true;
+
+    /// <summary>Gets or sets the allowed C# string formats for writing snapshots (quoted, verbatim, raw, etc.).</summary>
     public CSharpStringFormats AllowedStringFormats { get; set; } = CSharpStringFormats.Default;
 
+    /// <summary>Gets or sets the strategy for updating snapshots when they don't match.</summary>
     public SnapshotUpdateStrategy SnapshotUpdateStrategy
     {
-        get => _snapshotUpdateStrategy;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotUpdateStrategy = value;
+            field = value;
         }
-    }
+    } = SnapshotUpdateStrategy.Default;
 
+    /// <summary>Gets or sets the serializer used to convert objects to snapshot strings.</summary>
     public SnapshotSerializer SnapshotSerializer
     {
-        get => _snapshotSerializer;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotSerializer = value;
+            field = value;
         }
-    }
+    } = HumanReadableSnapshotSerializer.DefaultInstance;
 
+    /// <summary>Gets or sets the comparer used to determine if two snapshots are equal.</summary>
     public SnapshotComparer SnapshotComparer
     {
-        get => _snapshotComparer;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _snapshotComparer = value;
+            field = value;
         }
-    }
+    } = SnapshotComparer.Default;
 
+    /// <summary>Gets or sets the formatter used to create error messages when snapshots don't match.</summary>
     public AssertionMessageFormatter ErrorMessageFormatter
     {
-        get => _errorMessageFormatter;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _errorMessageFormatter = value;
+            field = value;
         }
-    }
+    } = InlineDiffAssertionMessageFormatter.Instance;
 
+    /// <summary>Gets or sets the builder used to create assertion exceptions when snapshots don't match.</summary>
     public AssertionExceptionBuilder AssertionExceptionCreator
     {
-        get => _assertionExceptionCreator;
+        get;
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            _assertionExceptionCreator = value;
+            field = value;
         }
-    }
+    } = AssertionExceptionBuilder.Default;
 
+    /// <summary>Gets the list of scrubbers applied to snapshots after serialization.</summary>
     public IList<Scrubber> Scrubbers { get; }
 
     /// <summary>
@@ -152,7 +158,6 @@ public sealed record InlineSnapshotSettings
         Scrubbers = [];
     }
 
-    [SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "Clone constructor (use by the with keyword)")]
     private InlineSnapshotSettings(InlineSnapshotSettings? options)
     {
         Scrubbers = [];

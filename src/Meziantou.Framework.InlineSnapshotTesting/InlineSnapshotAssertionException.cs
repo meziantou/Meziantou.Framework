@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>Represents assertion errors that occur when a snapshot doesn't match the expected value.</summary>
 public sealed class InlineSnapshotAssertionException : InlineSnapshotException
 {
     public InlineSnapshotAssertionException()

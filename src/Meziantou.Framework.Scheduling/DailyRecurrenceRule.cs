@@ -1,11 +1,21 @@
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents a daily recurrence rule.</summary>
+/// <example>
+/// <code>
+/// var rrule = new DailyRecurrenceRule { Interval = 2, Occurrences = 10 };
+/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// </code>
+/// </example>
 public sealed class DailyRecurrenceRule : RecurrenceRule
 {
+    /// <summary>Limits occurrences to specific months.</summary>
     public IList<Month> ByMonths { get; set; } = new List<Month>();
+
+    /// <summary>Limits occurrences to specific days of the month.</summary>
     public IList<int> ByMonthDays { get; set; } = new List<int>();
+
+    /// <summary>Limits occurrences to specific days of the week.</summary>
     public IList<DayOfWeek> ByWeekDays { get; set; } = new List<DayOfWeek>();
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
@@ -49,6 +59,7 @@ public sealed class DailyRecurrenceRule : RecurrenceRule
         // ReSharper disable once FunctionNeverReturns (UNTIL & COUNT are handled by GetNextOccurrences)
     }
 
+    /// <inheritdoc />
     public override string Text
     {
         get

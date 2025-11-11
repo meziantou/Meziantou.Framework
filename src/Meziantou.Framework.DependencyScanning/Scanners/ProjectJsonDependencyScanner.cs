@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans legacy project.json files for NuGet package dependencies.</summary>
 public sealed class ProjectJsonDependencyScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.NuGet];

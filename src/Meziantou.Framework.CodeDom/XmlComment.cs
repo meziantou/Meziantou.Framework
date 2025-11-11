@@ -2,6 +2,7 @@ using System.Xml.Linq;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an XML documentation comment element.</summary>
 public class XmlComment : CodeObject
 {
     public XmlComment()

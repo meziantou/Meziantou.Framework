@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.Globalization;
 using System.Reflection;
 
 namespace Meziantou.Framework;
@@ -65,13 +64,13 @@ public static class DataBinder
 
         if ((value is null) || (value == DBNull.Value))
         {
-            return string.Empty;
+            return "";
         }
         else
         {
             if (string.IsNullOrEmpty(format))
             {
-                return value.ToString() ?? string.Empty;
+                return value.ToString() ?? "";
             }
             else
             {
@@ -124,13 +123,13 @@ public static class DataBinder
         var value = GetPropertyValue(container, propertyName);
         if (value is null || value == DBNull.Value)
         {
-            return string.Empty;
+            return "";
         }
         else
         {
             if (string.IsNullOrEmpty(format))
             {
-                return value.ToString() ?? string.Empty;
+                return value.ToString() ?? "";
             }
             else
             {
@@ -236,7 +235,7 @@ public static class DataBinder
         var value = GetIndexedPropertyValue(container, propertyName);
         if (value is null || Convert.IsDBNull(value))
         {
-            return string.Empty;
+            return "";
         }
         else
         {

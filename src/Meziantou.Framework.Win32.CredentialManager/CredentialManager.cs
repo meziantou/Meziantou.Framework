@@ -1,10 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Text;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
@@ -12,14 +9,40 @@ using Windows.Win32.Security.Credentials;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>Provides methods to manage credentials in the Windows Credential Manager.</summary>
+/// <example>
+/// <code>
+/// // Save a credential
+/// CredentialManager.WriteCredential(
+///     applicationName: "MyApp",
+///     userName: "user@example.com",
+///     secret: "password123",
+///     comment: "Application credentials",
+///     persistence: CredentialPersistence.LocalMachine);
+///
+/// // Read a credential
+/// var credential = CredentialManager.ReadCredential("MyApp");
+/// Console.WriteLine(credential?.UserName);
+///
+/// // Delete a credential
+/// CredentialManager.DeleteCredential("MyApp");
+/// </code>
+/// </example>
 [SupportedOSPlatform("windows5.1.2600")]
 public static class CredentialManager
 {
+    /// <summary>Reads a credential from the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <returns>The credential if found; otherwise, <c>null</c>.</returns>
     public static Credential? ReadCredential(string applicationName)
     {
         return ReadCredential(applicationName, CredentialType.Generic);
     }
 
+    /// <summary>Reads a credential from the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="type">The type of the credential.</param>
+    /// <returns>The credential if found; otherwise, <c>null</c>.</returns>
     public static unsafe Credential? ReadCredential(string applicationName, CredentialType type)
     {
         var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
@@ -54,31 +77,54 @@ public static class CredentialManager
         return new Credential((CredentialType)credential->Type, applicationName, userName, secret, comment);
     }
 
+    /// <summary>Writes a credential to the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="userName">The username.</param>
+    /// <param name="secret">The password or secret.</param>
+    /// <param name="persistence">The persistence option for the credential.</param>
     public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence)
     {
         WriteCredential(applicationName, userName, secret, comment: null, persistence, CredentialType.Generic);
     }
 
+    /// <summary>Writes a credential to the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="userName">The username.</param>
+    /// <param name="secret">The password or secret.</param>
+    /// <param name="persistence">The persistence option for the credential.</param>
+    /// <param name="type">The type of the credential.</param>
     public static void WriteCredential(string applicationName, string userName, string secret, CredentialPersistence persistence, CredentialType type)
     {
         WriteCredential(applicationName, userName, secret, comment: null, persistence, type);
     }
 
+    /// <summary>Writes a credential to the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="userName">The username.</param>
+    /// <param name="secret">The password or secret.</param>
+    /// <param name="comment">An optional comment describing the credential.</param>
+    /// <param name="persistence">The persistence option for the credential.</param>
     public static void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence)
     {
         WriteCredential(applicationName, userName, secret, comment, persistence, CredentialType.Generic);
     }
 
+    /// <summary>Writes a credential to the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="userName">The username.</param>
+    /// <param name="secret">The password or secret.</param>
+    /// <param name="comment">An optional comment describing the credential.</param>
+    /// <param name="persistence">The persistence option for the credential.</param>
+    /// <param name="type">The type of the credential.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/>, <paramref name="userName"/>, or <paramref name="secret"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="secret"/> exceeds 512 bytes (on Windows XP/Vista) or 2560 bytes (on Windows 7 and later), or <paramref name="comment"/> exceeds 255 characters.</exception>
     public static unsafe void WriteCredential(string applicationName, string userName, string secret, string? comment, CredentialPersistence persistence, CredentialType type)
     {
-        if (applicationName is null)
-            throw new ArgumentNullException(nameof(applicationName));
+        ArgumentNullException.ThrowIfNull(applicationName);
 
-        if (userName is null)
-            throw new ArgumentNullException(nameof(userName));
+        ArgumentNullException.ThrowIfNull(userName);
 
-        if (secret is null)
-            throw new ArgumentNullException(nameof(secret));
+        ArgumentNullException.ThrowIfNull(secret);
 
         // CRED_MAX_CREDENTIAL_BLOB_SIZE
         // XP and Vista: 512;
@@ -135,15 +181,20 @@ public static class CredentialManager
         }
     }
 
+    /// <summary>Deletes a credential from the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
     public static void DeleteCredential(string applicationName)
     {
         DeleteCredential(applicationName, CredentialType.Generic);
     }
 
+    /// <summary>Deletes a credential from the Windows Credential Manager.</summary>
+    /// <param name="applicationName">The name that identifies the credential.</param>
+    /// <param name="type">The type of the credential.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="applicationName"/> is <c>null</c>.</exception>
     public static void DeleteCredential(string applicationName, CredentialType type)
     {
-        if (applicationName is null)
-            throw new ArgumentNullException(nameof(applicationName));
+        ArgumentNullException.ThrowIfNull(applicationName);
 
         var success = PInvoke.CredDelete(applicationName, (CRED_TYPE)type);
         if (!success)
@@ -157,6 +208,8 @@ public static class CredentialManager
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static IReadOnlyList<Credential> EnumerateCrendentials() => EnumerateCredentials();
 
+    /// <summary>Enumerates all credentials from the Windows Credential Manager.</summary>
+    /// <returns>A read-only list of credentials.</returns>
     public static IReadOnlyList<Credential> EnumerateCredentials()
     {
         return EnumerateCredentials(filter: null);
@@ -166,6 +219,9 @@ public static class CredentialManager
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static IReadOnlyList<Credential> EnumerateCrendentials(string? filter) => EnumerateCredentials(filter);
 
+    /// <summary>Enumerates credentials from the Windows Credential Manager that match the specified filter.</summary>
+    /// <param name="filter">A filter string that supports wildcards. Pass <c>null</c> or "*" to enumerate all credentials.</param>
+    /// <returns>A read-only list of credentials matching the filter.</returns>
     public static unsafe IReadOnlyList<Credential> EnumerateCredentials(string? filter)
     {
         var count = 0u;
@@ -200,6 +256,11 @@ public static class CredentialManager
         }
     }
 
+    /// <summary>Prompts the user for credentials using a console-based interface.</summary>
+    /// <param name="target">The name of the target for the credentials.</param>
+    /// <param name="userName">An optional default username.</param>
+    /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
+    /// <returns>A <see cref="CredentialResult"/> containing the entered credentials.</returns>
     public static unsafe CredentialResult PromptForCredentialsConsole(string target, string? userName = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected)
     {
         var userId = new char[(int)PInvoke.CREDUI_MAX_USERNAME_LENGTH + 1]; // Include the null-terminating character
@@ -257,18 +318,42 @@ public static class CredentialManager
         }
     }
 
+    /// <summary>Prompts the user for credentials using a Windows dialog.</summary>
+    /// <param name="owner">The handle of the parent window.</param>
+    /// <param name="messageText">The message text to display in the dialog.</param>
+    /// <param name="captionText">The caption text to display in the dialog.</param>
+    /// <param name="userName">An optional default username.</param>
+    /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, CredentialSaveOption saveCredential)
     {
         return PromptForCredentials(owner, messageText, captionText, userName, password: null, saveCredential, CredentialErrorCode.None);
     }
 
+    /// <summary>Prompts the user for credentials using a Windows dialog.</summary>
+    /// <param name="owner">The handle of the parent window.</param>
+    /// <param name="messageText">The message text to display in the dialog.</param>
+    /// <param name="captionText">The caption text to display in the dialog.</param>
+    /// <param name="userName">An optional default username.</param>
+    /// <param name="password">An optional default password.</param>
+    /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner, string? messageText, string? captionText, string? userName, string? password, CredentialSaveOption saveCredential)
     {
         return PromptForCredentials(owner, messageText, captionText, userName, password, saveCredential, CredentialErrorCode.None);
     }
 
+    /// <summary>Prompts the user for credentials using a Windows dialog.</summary>
+    /// <param name="owner">The handle of the parent window.</param>
+    /// <param name="messageText">The message text to display in the dialog.</param>
+    /// <param name="captionText">The caption text to display in the dialog.</param>
+    /// <param name="userName">An optional default username.</param>
+    /// <param name="password">An optional default password.</param>
+    /// <param name="saveCredential">Specifies whether the save checkbox should be displayed and its default state.</param>
+    /// <param name="error">Specifies an error code to display an error message.</param>
+    /// <returns>A <see cref="CredentialResult"/> if the user entered credentials; otherwise, <c>null</c>.</returns>
     [SupportedOSPlatform("windows6.0.6000")]
     public static unsafe CredentialResult? PromptForCredentials(IntPtr owner = default, string? messageText = null, string? captionText = null, string? userName = null, string? password = null, CredentialSaveOption saveCredential = CredentialSaveOption.Unselected, CredentialErrorCode error = CredentialErrorCode.None)
     {
@@ -287,7 +372,7 @@ public static class CredentialManager
             BOOL save = saveCredential == CredentialSaveOption.Selected;
 
             // Setup the flags and variables
-            uint errorcode = error switch
+            var errorcode = error switch
             {
                 CredentialErrorCode.LogonFailure => (uint)WIN32_ERROR.ERROR_LOGON_FAILURE,
                 _ => 0u
@@ -336,10 +421,11 @@ public static class CredentialManager
         {
             fixed (char* userPtr = user)
             fixed (char* passwordPtr = password ?? "")
+            fixed (uint* inCredSizePtr = &inCredSize)
             {
                 inCredSize = 1024;
                 inCredBuffer = (byte*)Marshal.AllocCoTaskMem((int)inCredSize);
-                if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, ref inCredSize))
+                if (PInvoke.CredPackAuthenticationBuffer(default, userPtr, passwordPtr, inCredBuffer, inCredSizePtr))
                     return;
             }
         }
@@ -359,44 +445,49 @@ public static class CredentialManager
         Span<char> domainBuf = new char[maxPassword];
         try
         {
-            if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, usernameBuf, ref maxUserName, domainBuf, &maxDomain, passwordBuf, ref maxPassword))
+            fixed (char* usernamePtr = usernameBuf)
+            fixed (char* passwordPtr = passwordBuf)
+            fixed (char* domainPtr = domainBuf)
             {
-                userName = ToString(usernameBuf, maxUserName);
-                password = ToString(passwordBuf, maxPassword);
-                domain = ToString(domainBuf, maxDomain);
-
-                if (string.IsNullOrWhiteSpace(domain))
+                if (PInvoke.CredUnPackAuthenticationBuffer(default, outCredBuffer, outCredSize, new PWSTR(usernamePtr), &maxUserName, new PWSTR(domainPtr), &maxDomain, new PWSTR(passwordPtr), &maxPassword))
                 {
-                    var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
-                    switch (returnCode)
+                    userName = ToString(usernameBuf, maxUserName);
+                    password = ToString(passwordBuf, maxPassword);
+                    domain = ToString(domainBuf, maxDomain);
+
+                    if (string.IsNullOrWhiteSpace(domain))
                     {
-                        case WIN32_ERROR.NO_ERROR:
-                            userName = ToStringZero(usernameBuf);
-                            domain = ToStringZero(domainBuf);
-                            break;
+                        var returnCode = PInvoke.CredUIParseUserName(userName, usernameBuf, domainBuf);
+                        switch (returnCode)
+                        {
+                            case WIN32_ERROR.NO_ERROR:
+                                userName = ToStringZero(usernameBuf);
+                                domain = ToStringZero(domainBuf);
+                                break;
 
-                        case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
-                            break;
+                            case WIN32_ERROR.ERROR_INVALID_ACCOUNT_NAME:
+                                break;
 
-                        case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
-                            throw new Win32Exception((int)returnCode, "Insufficient buffer");
+                            case WIN32_ERROR.ERROR_INSUFFICIENT_BUFFER:
+                                throw new Win32Exception((int)returnCode, "Insufficient buffer");
 
-                        case WIN32_ERROR.ERROR_INVALID_PARAMETER:
-                            throw new Win32Exception((int)returnCode, "Invalid parameter");
+                            case WIN32_ERROR.ERROR_INVALID_PARAMETER:
+                                throw new Win32Exception((int)returnCode, "Invalid parameter");
 
-                        default:
-                            throw new Win32Exception((int)returnCode);
+                            default:
+                                throw new Win32Exception((int)returnCode);
+                        }
                     }
-                }
 
-                return true;
-            }
-            else
-            {
-                userName = null;
-                password = null;
-                domain = null;
-                return false;
+                    return true;
+                }
+                else
+                {
+                    userName = null;
+                    password = null;
+                    domain = null;
+                    return false;
+                }
             }
         }
         finally

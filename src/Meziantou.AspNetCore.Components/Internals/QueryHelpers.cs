@@ -1,5 +1,4 @@
 // https://github.com/dotnet/aspnetcore/blob/e43027e506f5b004e3c3609f588c3e31f41aebfc/src/Http/WebUtilities/src/QueryHelpers.cs
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 
@@ -57,7 +56,7 @@ internal static class QueryHelpers
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
+        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
     /// <summary>
@@ -179,7 +178,7 @@ internal static class QueryHelpers
             {
                 if (delimiterIndex > scanIndex)
                 {
-                    accumulator.Append(queryString[scanIndex..delimiterIndex], string.Empty);
+                    accumulator.Append(queryString[scanIndex..delimiterIndex], "");
                 }
             }
 

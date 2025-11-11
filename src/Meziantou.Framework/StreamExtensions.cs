@@ -1,12 +1,17 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides extension methods for <see cref="Stream"/>.
+/// </summary>
 public static class StreamExtensions
 {
+    /// <summary>Attempts to read all requested bytes from the stream into the buffer.</summary>
     public static int TryReadAll(this Stream stream, byte[] buffer, int offset, int count)
     {
         return TryReadAll(stream, buffer.AsSpan(offset, count));
     }
 
+    /// <summary>Attempts to read all requested bytes from the stream into the buffer span.</summary>
     public static int TryReadAll(this Stream stream, Span<byte> buffer)
     {
         var totalRead = 0;
@@ -23,11 +28,13 @@ public static class StreamExtensions
         return totalRead;
     }
 
+    /// <summary>Asynchronously attempts to read all requested bytes from the stream into the buffer.</summary>
     public static Task<int> TryReadAllAsync(this Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
     {
         return TryReadAllAsync(stream, buffer.AsMemory(offset, count), cancellationToken);
     }
 
+    /// <summary>Asynchronously attempts to read all requested bytes from the stream into the buffer memory.</summary>
     public static async Task<int> TryReadAllAsync(this Stream stream, Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         var totalRead = 0;
@@ -44,6 +51,7 @@ public static class StreamExtensions
         return totalRead;
     }
 
+    /// <summary>Reads all remaining bytes from the stream.</summary>
     public static byte[] ReadToEnd(this Stream stream)
     {
         if (stream.CanSeek)
@@ -63,6 +71,7 @@ public static class StreamExtensions
         return memoryStream.ToArray();
     }
 
+    /// <summary>Asynchronously reads all remaining bytes from the stream.</summary>
     public static async Task<byte[]> ReadToEndAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
         if (stream.CanSeek)
@@ -82,6 +91,7 @@ public static class StreamExtensions
         return memoryStream.ToArray();
     }
 
+    /// <summary>Asynchronously copies the stream to a new <see cref="MemoryStream"/> and returns it positioned at the beginning.</summary>
     public static async Task<MemoryStream> ToMemoryStreamAsync(this Stream stream, CancellationToken cancellationToken = default)
     {
         var ms = new MemoryStream();

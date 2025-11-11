@@ -3,6 +3,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the hypervisor when running in a virtualized environment (Windows only).</summary>
 public sealed class HypervisorSnapshot
 {
     private HypervisorSnapshot(string hypervisor)

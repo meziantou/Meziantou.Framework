@@ -1,7 +1,13 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for all expressions (literals, operators, method calls, etc.).</summary>
+/// <example>
+/// <code>
+/// Expression expr1 = new LiteralExpression(42);
+/// Expression expr2 = new BinaryExpression(BinaryOperator.Add, expr1, 10);
+/// Expression expr3 = new MethodInvokeExpression(new MemberReferenceExpression(typeof(Console), "WriteLine"), expr2);
+/// </code>
+/// </example>
 public abstract class Expression : CodeObject, ICommentable
 {
     public CommentCollection CommentsAfter { get; }
@@ -65,10 +71,19 @@ public abstract class Expression : CodeObject, ICommentable
     public static implicit operator Expression(string value) => new LiteralExpression(value);
     public static implicit operator Expression(bool value) => new LiteralExpression(value);
 
+    /// <summary>Creates a null literal expression.</summary>
     public static LiteralExpression Null() => new(value: null);
+
+    /// <summary>Creates a true literal expression.</summary>
     public static LiteralExpression True() => new(value: true);
+
+    /// <summary>Creates a false literal expression.</summary>
     public static LiteralExpression False() => new(value: false);
 
+    /// <summary>Creates a member reference expression for a static member.</summary>
+    /// <param name="type">The type containing the member.</param>
+    /// <param name="name">The member name.</param>
+    /// <param name="names">Additional nested member names.</param>
     public static MemberReferenceExpression Member(Type type, string name, params string[] names) => new TypeReferenceExpression(type).Member(name, names);
 
     public static BinaryExpression ReferenceEqualsNull(Expression expression) => new(BinaryOperator.Equals, new TypeReferenceExpression(typeof(object)).Member(nameof(object.ReferenceEquals)).InvokeMethod(expression, Null()), new LiteralExpression(value: true));

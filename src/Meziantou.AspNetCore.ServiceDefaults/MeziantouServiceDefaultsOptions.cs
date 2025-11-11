@@ -6,6 +6,8 @@ public sealed class MeziantouServiceDefaultsOptions
 {
     internal bool MapCalled { get; set; }
 
+    public bool ValidateDependencyContainersOnStartup { get; set; } = true;
+
     public MeziantouHttpsConfiguration Https { get; } = new();
     public MeziantouOpenApiConfiguration OpenApi { get; } = new();
     public MeziantouOpenTelemetryConfiguration OpenTelemetry { get; } = new();

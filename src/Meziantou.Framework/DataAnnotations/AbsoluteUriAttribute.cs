@@ -2,6 +2,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.DataAnnotations;
 
+/// <summary>
+/// Validates that a string property contains an absolute URI.
+/// </summary>
+/// <example>
+/// <code>
+/// public class MyModel
+/// {
+///     [AbsoluteUri]
+///     public string? Url { get; set; }
+/// }
+/// </code>
+/// </example>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class AbsoluteUriAttribute : ValidationAttribute
 {

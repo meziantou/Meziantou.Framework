@@ -34,7 +34,7 @@ public partial class QuerySyntax
             if (Current.Kind == kind)
                 return Next();
 
-            var token = new QueryToken(kind, Current.QueryText, new TextSpan(Current.Span.End, 0), string.Empty);
+            var token = new QueryToken(kind, Current.QueryText, new TextSpan(Current.Span.End, 0), "");
             return token;
         }
 
@@ -43,14 +43,13 @@ public partial class QuerySyntax
             if (Current.Kind is QuerySyntaxKind.ColonToken or QuerySyntaxKind.EqualOperatorToken or QuerySyntaxKind.NotEqualOperatorToken or QuerySyntaxKind.LessThanOperatorToken or QuerySyntaxKind.LessThanOrEqualOperatorToken or QuerySyntaxKind.GreaterThanOperatorToken or QuerySyntaxKind.GreaterThanOrEqualOperatorToken)
                 return Next();
 
-            var token = new QueryToken(QuerySyntaxKind.ColonToken, Current.QueryText, new TextSpan(Current.Span.End, 0), string.Empty);
+            var token = new QueryToken(QuerySyntaxKind.ColonToken, Current.QueryText, new TextSpan(Current.Span.End, 0), "");
             return token;
         }
 
         private QueryToken MatchTextOrQuotedText()
         {
-            var isText = Current.Kind == QuerySyntaxKind.TextToken ||
-                         Current.Kind == QuerySyntaxKind.QuotedTextToken;
+            var isText = Current.Kind is QuerySyntaxKind.TextToken or QuerySyntaxKind.QuotedTextToken;
             return isText ? Next() : Match(QuerySyntaxKind.TextToken);
         }
 
@@ -98,19 +97,15 @@ public partial class QuerySyntax
         private QuerySyntax ParseAndExpression()
         {
             var result = ParsePrimaryExpression();
-            while (Current.Kind != QuerySyntaxKind.EndOfFile &&
-                   Current.Kind != QuerySyntaxKind.OrKeyword &&
-                   Current.Kind != QuerySyntaxKind.CloseParenthesisToken)
+            while (Current.Kind is not QuerySyntaxKind.EndOfFile and not QuerySyntaxKind.OrKeyword and not QuerySyntaxKind.CloseParenthesisToken)
             {
                 QueryToken? op = null;
-                if (Current.Kind == QuerySyntaxKind.AndKeyword)
+                if (Current.Kind is QuerySyntaxKind.AndKeyword)
                 {
                     op = Match(QuerySyntaxKind.AndKeyword);
                 }
 
-                if (Current.Kind != QuerySyntaxKind.EndOfFile &&
-                    Current.Kind != QuerySyntaxKind.OrKeyword &&
-                    Current.Kind != QuerySyntaxKind.CloseParenthesisToken)
+                if (Current.Kind is not QuerySyntaxKind.EndOfFile and not QuerySyntaxKind.OrKeyword and not QuerySyntaxKind.CloseParenthesisToken)
                 {
                     var term = ParsePrimaryExpression();
                     result = new AndQuerySyntax(result, op, term);
@@ -196,7 +191,7 @@ public partial class QuerySyntax
         private QueryToken ReadKeyValueArgument(QueryToken operatorToken)
         {
             if (Current.Span.Start > operatorToken.Span.End)
-                return new QueryToken(QuerySyntaxKind.TextToken, operatorToken.QueryText, new TextSpan(operatorToken.Span.End, 0), string.Empty);
+                return new QueryToken(QuerySyntaxKind.TextToken, operatorToken.QueryText, new TextSpan(operatorToken.Span.End, 0), "");
 
             if (Current.Kind == QuerySyntaxKind.QuotedTextToken)
                 return Match(QuerySyntaxKind.QuotedTextToken);

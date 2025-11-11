@@ -1,7 +1,11 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides methods for converting between byte arrays and hexadecimal string representations.
+/// </summary>
 public static class HexaConverter
 {
+    /// <summary>Converts a byte array to its hexadecimal string representation using uppercase letters.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -10,6 +14,7 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>Converts a byte array to its hexadecimal string representation with the specified casing.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -18,6 +23,7 @@ public static class HexaConverter
         return ToHexaString(bytes.AsSpan(), options);
     }
 
+    /// <summary>Converts a span of bytes to its hexadecimal string representation using uppercase letters.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -26,13 +32,14 @@ public static class HexaConverter
         return ToHexaString(bytes, default);
     }
 
+    /// <summary>Converts a span of bytes to its hexadecimal string representation with the specified casing.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.ToHexString or System.Convert.ToHexStringLower", DiagnosticId = "MEZ_NET9")]
 #endif
     public static string ToHexaString(this ReadOnlySpan<byte> bytes, HexaOptions options)
     {
         if (bytes.Length is 0)
-            return string.Empty;
+            return "";
 
         return options switch
         {
@@ -42,6 +49,7 @@ public static class HexaConverter
         };
     }
 
+    /// <summary>Parses a hexadecimal string into a byte array. Supports 0x or 0X prefix notation.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -101,6 +109,7 @@ public static class HexaConverter
         }
     }
 
+    /// <summary>Attempts to parse a hexadecimal string into a byte array.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -115,6 +124,7 @@ public static class HexaConverter
         return TryParseHexaString(str.AsSpan(), out result);
     }
 
+    /// <summary>Attempts to parse a hexadecimal character span into a byte array.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -166,6 +176,7 @@ public static class HexaConverter
         }
     }
 
+    /// <summary>Attempts to parse a hexadecimal string into a destination span of bytes.</summary>
 #if NET9_0_OR_GREATER
     [Obsolete("Use System.Convert.FromHexString", DiagnosticId = "MEZ_NET9")]
 #endif
@@ -271,19 +282,19 @@ public static class HexaConverter
         const int LowerCase = 'a' - 10;
         const int UpperCase = 'A' - 10;
 
-        if (c >= '0' && c <= '9')
+        if (c is >= '0' and <= '9')
         {
             value = c - Digit;
             return true;
         }
 
-        if (c >= 'A' && c <= 'F') // Upper case
+        if (c is >= 'A' and <= 'F')
         {
             value = c - UpperCase;
             return true;
         }
 
-        if (c >= 'a' && c <= 'f') // Upper case
+        if (c is >= 'a' and <= 'f')
         {
             value = c - LowerCase;
             return true;

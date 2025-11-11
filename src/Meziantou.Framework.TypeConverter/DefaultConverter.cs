@@ -1,15 +1,36 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Reflection;
-using System.Text;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides a powerful type converter that extends the capabilities of System.Convert with support for culture-specific formatting, byte arrays, enums, nullable types, and custom TypeConverters.
+/// <example>
+/// <code><![CDATA[
+/// var converter = new DefaultConverter();
+///
+/// // Convert string to int
+/// converter.TryChangeType("42", typeof(int), null, out var result);
+///
+/// // Convert byte array to hex string
+/// converter.ByteArrayToStringFormat = ByteArrayToStringFormat.Base16Prefixed;
+/// converter.TryChangeType(new byte[] { 1, 2, 3, 4 }, typeof(string), null, out var hex);
+/// Console.WriteLine(hex); // "0x01020304"
+///
+/// // Convert hex string to byte array
+/// converter.TryChangeType("0x01020304", typeof(byte[]), null, out var bytes);
+///
+/// // Parse enum with flags
+/// converter.TryChangeType("Option1, Option2", typeof(MyEnum), null, out var enumValue);
+/// ]]></code>
+/// </example>
+/// </summary>
 public class DefaultConverter : IConverter
 {
     private const string HexaChars = "0123456789ABCDEF";
     private static readonly MethodInfo EnumTryParseMethodInfo = GetEnumTryParseMethodInfo();
 
+    /// <summary>Gets or sets the format to use when converting byte arrays to strings.</summary>
     public ByteArrayToStringFormat ByteArrayToStringFormat { get; set; } = ByteArrayToStringFormat.Base64;
 
     private static MethodInfo GetEnumTryParseMethodInfo()
@@ -20,6 +41,12 @@ public class DefaultConverter : IConverter
             .First(m => string.Equals(m.Name, nameof(Enum.TryParse), StringComparison.Ordinal) && m.IsGenericMethod && m.GetParameters().Length == 3);
     }
 
+    /// <summary>Attempts to convert an input value to the specified type.</summary>
+    /// <param name="input">The value to convert.</param>
+    /// <param name="conversionType">The type to convert to.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the converted value if the conversion succeeded, or null if the conversion failed.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     public virtual bool TryChangeType(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
         return TryConvert(input, conversionType, provider, out value);
@@ -27,13 +54,13 @@ public class DefaultConverter : IConverter
 
     private static byte GetHexaByte(char c)
     {
-        if ((c >= '0') && (c <= '9'))
+        if (c is >= '0' and <= '9')
             return (byte)(c - '0');
 
-        if ((c >= 'A') && (c <= 'F'))
+        if (c is >= 'A' and <= 'F')
             return (byte)(c - 'A' + 10);
 
-        if ((c >= 'a') && (c <= 'f'))
+        if (c is >= 'a' and <= 'f')
             return (byte)(c - 'a' + 10);
 
         return 0xFF;
@@ -44,25 +71,18 @@ public class DefaultConverter : IConverter
         if (s is null)
             return false;
 
-        if (s.Length > 0)
+        switch (s)
         {
-            if (s[0] == 'x' || s[0] == 'X')
-            {
-                s = s[1..];
+            case ['x' or 'X', .. var rest]:
+                s = rest;
                 return true;
-            }
+            case ['0', 'x' or 'X', .. var rest]:
+                s = rest;
+                return true;
 
-            if (s.Length > 1)
-            {
-                if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
-                {
-                    s = s[2..];
-                    return true;
-                }
-            }
+            default:
+                return false;
         }
-
-        return false;
     }
 
     private static void GetBytes(decimal d, byte[] buffer)
@@ -120,7 +140,7 @@ public class DefaultConverter : IConverter
     private static string ToHexa(byte[]? bytes)
     {
         if (bytes is null)
-            return string.Empty;
+            return "";
 
         return ToHexa(bytes, 0, bytes.Length);
     }
@@ -128,7 +148,7 @@ public class DefaultConverter : IConverter
     private static string ToHexa(byte[]? bytes, int offset, int count)
     {
         if (bytes is null)
-            return string.Empty;
+            return "";
 
         if (offset < 0)
             throw new ArgumentOutOfRangeException(nameof(offset), offset, message: null);
@@ -137,7 +157,7 @@ public class DefaultConverter : IConverter
             throw new ArgumentOutOfRangeException(nameof(count), count, message: null);
 
         if (offset >= bytes.Length)
-            return string.Empty;
+            return "";
 
         count = Math.Min(count, bytes.Length - offset);
 
@@ -183,6 +203,11 @@ public class DefaultConverter : IConverter
         return list.ToArray();
     }
 
+    /// <summary>Converts a byte array to a string using the configured <see cref="ByteArrayToStringFormat"/>.</summary>
+    /// <param name="input">The byte array to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the string representation of the byte array.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(byte[] input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out string? value)
     {
         switch (ByteArrayToStringFormat)
@@ -204,24 +229,44 @@ public class DefaultConverter : IConverter
         return false;
     }
 
+    /// <summary>Converts a TimeSpan to its binary representation as a byte array.</summary>
+    /// <param name="input">The TimeSpan to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array representation of the TimeSpan.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(TimeSpan input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
     {
         value = BitConverter.GetBytes(input.Ticks);
         return true;
     }
 
+    /// <summary>Converts a Guid to its binary representation as a byte array.</summary>
+    /// <param name="input">The Guid to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array representation of the Guid.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(Guid input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
     {
         value = input.ToByteArray();
         return true;
     }
 
+    /// <summary>Converts a DateTime to its binary representation as a byte array.</summary>
+    /// <param name="input">The DateTime to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array representation of the DateTime.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(DateTime input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
     {
         value = BitConverter.GetBytes(input.ToBinary());
         return true;
     }
 
+    /// <summary>Converts a decimal to its binary representation as a byte array.</summary>
+    /// <param name="input">The decimal to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array representation of the decimal.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(decimal input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
     {
         var decBytes = new byte[16];
@@ -230,6 +275,11 @@ public class DefaultConverter : IConverter
         return true;
     }
 
+    /// <summary>Converts various types (Guid, DateTimeOffset, TimeSpan) to byte arrays.</summary>
+    /// <param name="input">The value to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array representation if conversion succeeded.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out byte[]? value)
     {
         byte[]? bytes;
@@ -267,11 +317,22 @@ public class DefaultConverter : IConverter
         return false;
     }
 
+    /// <summary>Converts a string to an enum value.</summary>
+    /// <param name="input">The value to convert.</param>
+    /// <param name="conversionType">The enum type to convert to.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the enum value if conversion succeeded.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvertEnum(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
         return EnumTryParse(conversionType, Convert.ToString(input, provider), out value);
     }
 
+    /// <summary>Converts a string to a byte array, supporting Base64 and hexadecimal formats.</summary>
+    /// <param name="text">The string to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the byte array if conversion succeeded.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(string? text, IFormatProvider? provider, out byte[]? value)
     {
         if (text is null)
@@ -309,6 +370,11 @@ public class DefaultConverter : IConverter
         return text.Length >= 2 && text[0] == '0' && (text[1] == 'x' || text[1] == 'X');
     }
 
+    /// <summary>Converts a string or integer to a CultureInfo instance.</summary>
+    /// <param name="input">The value to convert (culture name or LCID).</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the CultureInfo instance if conversion succeeded.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(object? input, IFormatProvider? provider, out CultureInfo? value)
     {
         if (input is null)
@@ -343,6 +409,11 @@ public class DefaultConverter : IConverter
         return false;
     }
 
+    /// <summary>Converts a locale identifier (LCID) to a CultureInfo instance.</summary>
+    /// <param name="lcid">The LCID to convert.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the CultureInfo instance if conversion succeeded.</param>
+    /// <returns><see langword="true"/> if the conversion succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvert(int lcid, IFormatProvider? provider, [NotNullWhen(returnValue: true)] out CultureInfo? value)
     {
         if (OperatingSystem.IsWindows())
@@ -903,8 +974,7 @@ public class DefaultConverter : IConverter
 
     protected virtual bool TryConvert(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
-        if (conversionType is null)
-            throw new ArgumentNullException(nameof(conversionType));
+        ArgumentNullException.ThrowIfNull(conversionType);
 
         if (conversionType == typeof(object))
         {
@@ -970,8 +1040,7 @@ public class DefaultConverter : IConverter
         switch (conversionCode)
         {
             case TypeCode.Boolean:
-                bool boolValue;
-                if (TryConvert(input, provider, out boolValue))
+                if (TryConvert(input, provider, out bool boolValue))
                 {
                     value = boolValue;
                     return true;
@@ -980,8 +1049,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Byte:
-                byte byteValue;
-                if (TryConvert(input, provider, out byteValue))
+                if (TryConvert(input, provider, out byte byteValue))
                 {
                     value = byteValue;
                     return true;
@@ -990,8 +1058,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Char:
-                char charValue;
-                if (TryConvert(input, provider, out charValue))
+                if (TryConvert(input, provider, out char charValue))
                 {
                     value = charValue;
                     return true;
@@ -1000,8 +1067,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.DateTime:
-                DateTime dtValue;
-                if (TryConvert(input, provider, out dtValue))
+                if (TryConvert(input, provider, out DateTime dtValue))
                 {
                     value = dtValue;
                     return true;
@@ -1010,8 +1076,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Decimal:
-                decimal decValue;
-                if (TryConvert(input, provider, out decValue))
+                if (TryConvert(input, provider, out decimal decValue))
                 {
                     value = decValue;
                     return true;
@@ -1020,8 +1085,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Double:
-                double dblValue;
-                if (TryConvert(input, provider, out dblValue))
+                if (TryConvert(input, provider, out double dblValue))
                 {
                     value = dblValue;
                     return true;
@@ -1030,8 +1094,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int16:
-                short i16Value;
-                if (TryConvert(input, provider, out i16Value))
+                if (TryConvert(input, provider, out short i16Value))
                 {
                     value = i16Value;
                     return true;
@@ -1040,8 +1103,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int32:
-                int i32Value;
-                if (TryConvert(input, provider, out i32Value))
+                if (TryConvert(input, provider, out int i32Value))
                 {
                     value = i32Value;
                     return true;
@@ -1050,8 +1112,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Int64:
-                long i64Value;
-                if (TryConvert(input, provider, out i64Value))
+                if (TryConvert(input, provider, out long i64Value))
                 {
                     value = i64Value;
                     return true;
@@ -1060,8 +1121,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.SByte:
-                sbyte sbyteValue;
-                if (TryConvert(input, provider, out sbyteValue))
+                if (TryConvert(input, provider, out sbyte sbyteValue))
                 {
                     value = sbyteValue;
                     return true;
@@ -1070,8 +1130,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.Single:
-                float fltValue;
-                if (TryConvert(input, provider, out fltValue))
+                if (TryConvert(input, provider, out float fltValue))
                 {
                     value = fltValue;
                     return true;
@@ -1109,8 +1168,7 @@ public class DefaultConverter : IConverter
                 return true;
 
             case TypeCode.UInt16:
-                ushort u16Value;
-                if (TryConvert(input, provider, out u16Value))
+                if (TryConvert(input, provider, out ushort u16Value))
                 {
                     value = u16Value;
                     return true;
@@ -1119,8 +1177,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.UInt32:
-                uint u32Value;
-                if (TryConvert(input, provider, out u32Value))
+                if (TryConvert(input, provider, out uint u32Value))
                 {
                     value = u32Value;
                     return true;
@@ -1129,8 +1186,7 @@ public class DefaultConverter : IConverter
                 break;
 
             case TypeCode.UInt64:
-                ulong u64Value;
-                if (TryConvert(input, provider, out u64Value))
+                if (TryConvert(input, provider, out ulong u64Value))
                 {
                     value = u64Value;
                     return true;
@@ -1341,6 +1397,12 @@ public class DefaultConverter : IConverter
         return false;
     }
 
+    /// <summary>Attempts to convert a value using implicit conversion operators defined on the types.</summary>
+    /// <param name="input">The value to convert.</param>
+    /// <param name="conversionType">The type to convert to.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information.</param>
+    /// <param name="value">When this method returns, contains the converted value if an implicit conversion operator was found and succeeded.</param>
+    /// <returns><see langword="true"/> if an implicit conversion operator was found and succeeded; otherwise, <see langword="false"/>.</returns>
     protected virtual bool TryConvertUsingImplicitConverter(object? input, Type conversionType, IFormatProvider? provider, out object? value)
     {
         var op = ReflectionUtilities.GetImplicitConversion(input, conversionType);

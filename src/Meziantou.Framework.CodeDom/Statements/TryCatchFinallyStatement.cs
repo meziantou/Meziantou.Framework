@@ -1,26 +1,23 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a try-catch-finally statement for exception handling.</summary>
 public class TryCatchFinallyStatement : Statement
 {
-    private StatementCollection? _try;
-    private CatchClauseCollection? _catch;
-    private StatementCollection? _finally;
-
     public StatementCollection? Try
     {
-        get => _try;
-        set => SetParent(ref _try, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public CatchClauseCollection? Catch
     {
-        get => _catch;
-        set => SetParent(ref _catch, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public StatementCollection? Finally
     {
-        get => _finally;
-        set => SetParent(ref _finally, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

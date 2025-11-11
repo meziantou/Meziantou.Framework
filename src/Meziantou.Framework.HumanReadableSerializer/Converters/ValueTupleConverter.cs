@@ -1,6 +1,5 @@
 #if NETCOREAPP2_0_OR_GREATER || NET471_OR_GREATER
 using System.Diagnostics;
-using System.Globalization;
 
 namespace Meziantou.Framework.HumanReadable.Converters;
 

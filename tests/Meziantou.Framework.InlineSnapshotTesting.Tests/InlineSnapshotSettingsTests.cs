@@ -1,8 +1,6 @@
-﻿using System.Text;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 using Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategies;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class InlineSnapshotSettingsTests

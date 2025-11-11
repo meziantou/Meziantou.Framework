@@ -1,11 +1,12 @@
 using System.Diagnostics;
-using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
+/// <summary>An input component for editing date and time values using the HTML datetime-local input type.</summary>
+/// <typeparam name="TValue">The type of the value. Supported types are <see cref="DateTime"/>, <see cref="DateTimeOffset"/>, and their nullable variants.</typeparam>
 public class InputDateTime<TValue> : InputDate<TValue>
 {
     private const string DateFormat = "yyyy-MM-ddTHH:mm";
@@ -29,7 +30,7 @@ public class InputDateTime<TValue> : InputDate<TValue>
         {
             DateTime dateTimeValue => BindConverter.FormatValue(dateTimeValue, DateFormat, CultureInfo.InvariantCulture),
             DateTimeOffset dateTimeOffsetValue => BindConverter.FormatValue(dateTimeOffsetValue, DateFormat, CultureInfo.InvariantCulture),
-            _ => string.Empty,// Handles null for Nullable<DateTime>, etc.
+            _ => "",// Handles null for Nullable<DateTime>, etc.
         };
     }
 

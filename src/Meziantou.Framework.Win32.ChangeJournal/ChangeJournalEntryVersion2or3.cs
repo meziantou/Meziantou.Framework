@@ -3,6 +3,9 @@ using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a change journal entry in version 2 or version 3 format.
+/// </summary>
 public sealed class ChangeJournalEntryVersion2or3 : ChangeJournalEntry
 {
     /// <summary>

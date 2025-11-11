@@ -3,10 +3,14 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);netstandard2.0;net462</TargetFrameworks>
     <RootNamespace>Meziantou.Framework</RootNamespace>
-    <Version>2.1.6</Version>
+    <Version>2.1.7</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Class to parse and displaying values, such as file size, in Bytes</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="ByteSize.Generated.cs">

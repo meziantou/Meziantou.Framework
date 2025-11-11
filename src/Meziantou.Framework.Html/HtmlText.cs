@@ -17,7 +17,7 @@ sealed class HtmlText : HtmlNode
     private bool _cData;
 
     internal HtmlText(HtmlDocument ownerDocument)
-        : base(string.Empty, "#text", string.Empty, ownerDocument)
+        : base("", "#text", "", ownerDocument)
     {
     }
 
@@ -95,8 +95,7 @@ sealed class HtmlText : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (IsCData)
         {
@@ -116,8 +115,7 @@ sealed class HtmlText : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (IsCData)
         {

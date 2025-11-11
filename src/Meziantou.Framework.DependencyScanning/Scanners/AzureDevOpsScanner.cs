@@ -3,6 +3,7 @@ using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilitie
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
+/// <summary>Scans Azure DevOps pipeline YAML files for VM pool images, tasks, templates, and repository references.</summary>
 public sealed class AzureDevOpsScanner : DependencyScanner
 {
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } =

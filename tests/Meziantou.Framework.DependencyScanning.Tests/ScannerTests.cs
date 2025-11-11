@@ -1,11 +1,9 @@
 #pragma warning disable MA0101
 using System.Collections.Immutable;
-using System.Text;
 using LibGit2Sharp;
 using Meziantou.Framework.DependencyScanning.Scanners;
 using Meziantou.Framework.Globbing;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.DependencyScanning.Tests;
 

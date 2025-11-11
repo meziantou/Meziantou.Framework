@@ -1,13 +1,15 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Provides functionality to convert recurrence rules to human-readable text.</summary>
 public abstract class RecurrenceRuleHumanizer
 {
+    /// <summary>The English culture information.</summary>
     protected static readonly CultureInfo EnglishCultureInfo = GetCulture("en");
+
+    /// <summary>The French culture information.</summary>
     protected static readonly CultureInfo FrenchCultureInfo = GetCulture("fr");
 
+    /// <summary>Gets the supported humanizers by culture.</summary>
     public static IDictionary<CultureInfo, RecurrenceRuleHumanizer> SupportedHumanizers { get; }
 
     static RecurrenceRuleHumanizer()
@@ -33,15 +35,21 @@ public abstract class RecurrenceRuleHumanizer
         }
     }
 
+    /// <summary>Converts a recurrence rule to human-readable text using the current UI culture.</summary>
+    /// <param name="rrule">The recurrence rule to convert.</param>
+    /// <returns>A human-readable string representation of the recurrence rule.</returns>
     public static string? GetText(RecurrenceRule rrule)
     {
         return GetText(rrule, cultureInfo: null);
     }
 
+    /// <summary>Converts a recurrence rule to human-readable text using the specified culture.</summary>
+    /// <param name="rrule">The recurrence rule to convert.</param>
+    /// <param name="cultureInfo">The culture to use for formatting, or <see langword="null"/> to use the current UI culture.</param>
+    /// <returns>A human-readable string representation of the recurrence rule.</returns>
     public static string? GetText(RecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         cultureInfo ??= CultureInfo.CurrentUICulture;
 
@@ -71,9 +79,28 @@ public abstract class RecurrenceRuleHumanizer
         return null;
     }
 
+    /// <summary>Converts a daily recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The daily recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
     protected abstract string GetText(DailyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    /// <summary>Converts a weekly recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The weekly recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
     protected abstract string GetText(WeeklyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    /// <summary>Converts a monthly recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The monthly recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
     protected abstract string GetText(MonthlyRecurrenceRule rrule, CultureInfo cultureInfo);
+
+    /// <summary>Converts a yearly recurrence rule to human-readable text.</summary>
+    /// <param name="rrule">The yearly recurrence rule.</param>
+    /// <param name="cultureInfo">The culture to use for formatting.</param>
+    /// <returns>A human-readable string representation.</returns>
     protected abstract string GetText(YearlyRecurrenceRule rrule, CultureInfo cultureInfo);
 
     protected static void ListToHumanText<T>(StringBuilder sb, CultureInfo cultureInfo, IList<T> list, string separator, string lastSeparator)

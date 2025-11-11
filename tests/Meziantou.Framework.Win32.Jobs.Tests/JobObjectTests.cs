@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.Win32.Jobs.Tests;
 
@@ -95,7 +94,7 @@ public class JobObjectTests
         {
 
             Assert.Throws<Win32Exception>(() => JobObject.Open(JobObjectAccessRights.Query, false, "JobObjectTests"));
-            Assert.False(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out JobObject? testObject));
+            Assert.False(JobObject.TryOpen(JobObjectAccessRights.Query, false, "JobObjectTests", out var testObject));
             Assert.Null(testObject);
             testObject?.Dispose();
 

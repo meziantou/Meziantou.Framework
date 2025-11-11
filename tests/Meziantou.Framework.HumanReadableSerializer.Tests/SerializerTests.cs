@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1720
+#pragma warning disable CA1720
 #pragma warning disable CA1814
 #pragma warning disable CA1822
 #pragma warning disable CA3075
@@ -12,19 +12,16 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
 using System.Dynamic;
-using System.Globalization;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Numerics;
 using System.Reflection;
-using System.Text;
 using System.Xml;
 using Meziantou.Framework.HumanReadableSerializer.FSharp.Tests;
 using NodaTime;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed partial class SerializerTests : SerializerTestsBase
@@ -485,7 +482,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
     {
         AssertSerialization(new Validation
         {
-            Subject = new System.Collections.Specialized.ListDictionary() { ["a"] = 1, [2] = 3 },
+            Subject = new ListDictionary() { ["a"] = 1, [2] = 3 },
             Expected = """
                 - Key: a
                   Value: 1
@@ -1680,7 +1677,7 @@ public sealed partial class SerializerTests : SerializerTestsBase
             Method = HttpMethod.Post,
             Headers =
             {
-                Accept = { new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("text/plain") },
+                Accept = { new MediaTypeWithQualityHeaderValue("text/plain") },
             },
             Version = new Version("1.1"),
             VersionPolicy = HttpVersionPolicy.RequestVersionExact,

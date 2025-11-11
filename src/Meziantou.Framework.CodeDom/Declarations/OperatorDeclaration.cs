@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an operator overload declaration.</summary>
 public class OperatorDeclaration : MemberDeclaration, IModifiers
 {
     public TypeReference? ReturnType { get; set; }

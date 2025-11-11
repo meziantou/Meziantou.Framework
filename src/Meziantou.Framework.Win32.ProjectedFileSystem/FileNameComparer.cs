@@ -2,6 +2,7 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32.ProjectedFileSystem;
 
+/// <summary>Compares file names using Windows file name comparison rules.</summary>
 [SupportedOSPlatform("windows")]
 public sealed class FileNameComparer : IComparer<string?>
 {
@@ -9,6 +10,7 @@ public sealed class FileNameComparer : IComparer<string?>
     {
     }
 
+    /// <summary>Gets a singleton instance of the <see cref="FileNameComparer"/> class.</summary>
     public static IComparer<string> Instance { get; } = new FileNameComparer();
 
     public int Compare(string? x, string? y)

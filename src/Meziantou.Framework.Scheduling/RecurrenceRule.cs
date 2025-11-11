@@ -1,23 +1,42 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents a recurrence rule as defined in RFC 5545 for recurring events.</summary>
+/// <example>
+/// <code>
+/// var rrule = RecurrenceRule.Parse("FREQ=DAILY;UNTIL=20000131T140000Z;BYMONTH=1");
+/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).Take(50).ToArray();
+/// </code>
+/// </example>
 public abstract class RecurrenceRule
 {
+    /// <summary>The default first day of the week (Monday).</summary>
     public static readonly DayOfWeek DefaultFirstDayOfWeek = DayOfWeek.Monday;
+
+    /// <summary>The string representation of the default first day of the week.</summary>
     public const string DefaultFirstDayOfWeekString = "MO";
 
-    /// <summary>
-    /// End date (inclusive)
-    /// </summary>
+    /// <summary>End date (inclusive)</summary>
     public DateTime? EndDate { get; set; }
+
+    /// <summary>The number of occurrences before the recurrence ends.</summary>
     public int? Occurrences { get; set; }
+
+    /// <summary>The interval between occurrences.</summary>
     public int Interval { get; set; } = 1;
+
+    /// <summary>The first day of the week for the recurrence rule.</summary>
     public DayOfWeek WeekStart { get; set; } = DefaultFirstDayOfWeek;
+
+    /// <summary>Limits occurrences to specific positions in the recurrence set.</summary>
     public IList<int>? BySetPositions { get; set; }
 
+    /// <summary>Gets a value indicating whether the recurrence rule has an end condition.</summary>
     public bool IsForever => Occurrences.HasValue || EndDate.HasValue;
 
+    /// <summary>Parses a recurrence rule string according to RFC 5545 format.</summary>
+    /// <param name="rrule">The recurrence rule string to parse.</param>
+    /// <returns>A <see cref="RecurrenceRule"/> instance representing the parsed rule.</returns>
+    /// <exception cref="FormatException">Thrown when the recurrence rule format is invalid.</exception>
     public static RecurrenceRule Parse(string rrule)
     {
         if (!TryParse(rrule, out var recurrenceRule, out var error))
@@ -26,11 +45,20 @@ public abstract class RecurrenceRule
         return recurrenceRule;
     }
 
+    /// <summary>Attempts to parse a recurrence rule string.</summary>
+    /// <param name="rrule">The recurrence rule string to parse.</param>
+    /// <param name="recurrenceRule">When successful, contains the parsed recurrence rule.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)] out RecurrenceRule? recurrenceRule)
     {
         return TryParse(rrule, out recurrenceRule, out _);
     }
 
+    /// <summary>Attempts to parse a recurrence rule string.</summary>
+    /// <param name="rrule">The recurrence rule string to parse.</param>
+    /// <param name="recurrenceRule">When successful, contains the parsed recurrence rule.</param>
+    /// <param name="error">When parsing fails, contains the error message.</param>
+    /// <returns><see langword="true"/> if parsing succeeded; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse([NotNullWhen(returnValue: true)] string? rrule, [NotNullWhen(returnValue: true)] out RecurrenceRule? recurrenceRule, out string? error)
     {
         recurrenceRule = null;
@@ -173,7 +201,7 @@ public abstract class RecurrenceRule
         var monthDays = SplitToInt32List(str);
         foreach (var monthDay in monthDays)
         {
-            if ((monthDay >= 1 && monthDay <= 31) || (monthDay <= -1 && monthDay >= -31))
+            if (monthDay is (>= 1 and <= 31) or (<= -1 and >= -31))
                 continue;
 
             throw new FormatException($"Monthday '{monthDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
@@ -192,7 +220,7 @@ public abstract class RecurrenceRule
         var months = SplitToMonthList(str);
         foreach (var month in months)
         {
-            if (!Enum.IsDefined(typeof(Month), month))
+            if (!Enum.IsDefined(month))
             {
                 throw new FormatException("BYMONTH is invalid.");
             }
@@ -211,7 +239,7 @@ public abstract class RecurrenceRule
         var yearDays = SplitToInt32List(str);
         foreach (var yearDay in yearDays)
         {
-            if ((yearDay >= 1 && yearDay <= 366) || (yearDay <= -1 && yearDay >= -366))
+            if (yearDay is (>= 1 and <= 366) or (<= -1 and >= -366))
                 continue;
             throw new FormatException($"Year day '{yearDay.ToString(CultureInfo.InvariantCulture)}' is invalid.");
         }
@@ -253,7 +281,7 @@ public abstract class RecurrenceRule
         for (var i = 0; i < str.Length; i++)
         {
             var c = str[i];
-            if ((c >= '0' && c <= '9') || c == '+' || c == '-')
+            if (c is (>= '0' and <= '9') or '+' or '-')
                 continue;
 
             if (i == 0)
@@ -467,11 +495,17 @@ public abstract class RecurrenceRule
         return list;
     }
 
+    /// <summary>Gets the next occurrence of the recurrence starting from the specified date.</summary>
+    /// <param name="startDate">The date to start searching for the next occurrence.</param>
+    /// <returns>The next occurrence date, or <see langword="null"/> if there are no more occurrences.</returns>
     public DateTime? GetNextOccurrence(DateTime startDate)
     {
         return GetNextOccurrences(startDate).FirstOrDefault();
     }
 
+    /// <summary>Gets all occurrences of the recurrence starting from the specified date.</summary>
+    /// <param name="startDate">The date to start generating occurrences from.</param>
+    /// <returns>An enumerable sequence of occurrence dates.</returns>
     public virtual IEnumerable<DateTime> GetNextOccurrences(DateTime startDate)
     {
         if (Occurrences == 0)
@@ -491,10 +525,15 @@ public abstract class RecurrenceRule
         }
     }
 
+    /// <summary>When implemented in a derived class, generates the internal sequence of occurrence dates.</summary>
+    /// <param name="startDate">The date to start generating occurrences from.</param>
+    /// <returns>An enumerable sequence of occurrence dates.</returns>
     protected abstract IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate);
 
+    /// <summary>Gets the RFC 5545 string representation of this recurrence rule.</summary>
     public abstract string Text { get; }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return Text;

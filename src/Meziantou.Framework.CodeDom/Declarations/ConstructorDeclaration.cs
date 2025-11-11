@@ -1,10 +1,16 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a constructor declaration.</summary>
+/// <example>
+/// <code>
+/// var ctor = new ConstructorDeclaration();
+/// ctor.Modifiers = Modifiers.Public;
+/// ctor.Arguments.Add(new MethodArgumentDeclaration(typeof(string), "name"));
+/// ctor.Statements = new AssignStatement(new MemberReferenceExpression(new ThisExpression(), "_name"), new ArgumentReferenceExpression("name"));
+/// </code>
+/// </example>
 public class ConstructorDeclaration : MemberDeclaration, IModifiers
 {
-    private StatementCollection? _statements;
-    private ConstructorInitializer? _initializer;
-
     public ConstructorDeclaration()
     {
         Arguments = new MethodArgumentCollection(this);
@@ -15,14 +21,14 @@ public class ConstructorDeclaration : MemberDeclaration, IModifiers
 
     public StatementCollection? Statements
     {
-        get => _statements;
-        set => SetParent(ref _statements, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public ConstructorInitializer? Initializer
     {
-        get => _initializer;
-        set => SetParent(ref _initializer, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public Modifiers Modifiers { get; set; }

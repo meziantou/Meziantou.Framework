@@ -13,11 +13,7 @@ internal static class ThrowHelper
         // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
         if (!(default(T) == null) && value == null)
         {
-#if NET462
-            throw new ArgumentNullException(argName);
-#else
             ArgumentNullException.ThrowIfNull(value, argName);
-#endif
         }
     }
 

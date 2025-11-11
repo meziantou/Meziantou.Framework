@@ -1,8 +1,6 @@
 #pragma warning disable MA0028 // Optimize StringBuilder would make the code harder to read
 #pragma warning disable MA0101 // String contains an implicit end of line character
 using System.Collections.Immutable;
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -19,14 +17,6 @@ public sealed class ResxGenerator : IIncrementalGenerator
         id: "MFRG0001",
         title: "Couldn't parse Resx file",
         messageFormat: "Couldn't parse Resx file '{0}'",
-        category: "ResxGenerator",
-        DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
-
-    private static readonly DiagnosticDescriptor InvalidPropertiesForNamespace = new(
-        id: "MFRG0002",
-        title: "Couldn't compute namespace",
-        messageFormat: "Couldn't compute namespace for file '{0}'",
         category: "ResxGenerator",
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
@@ -61,7 +51,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
 
     private static bool ParseBoolean(string? value, bool defaultValue)
     {
-        if (bool.TryParse(value, out bool result))
+        if (bool.TryParse(value, out var result))
             return result;
         return defaultValue;
     }
@@ -80,30 +70,26 @@ public sealed class ResxGenerator : IIncrementalGenerator
             var rootNamespaceConfiguration = GetMetadataValue(context, options, "RootNamespace", resxGroup);
             var projectDirConfiguration = GetMetadataValue(context, options, "ProjectDir", resxGroup);
             var namespaceConfiguration = GetMetadataValue(context, options, "Namespace", "DefaultResourcesNamespace", resxGroup);
+            var defaultResourceNameConfiguration = GetMetadataValue(context, options, "DefaultResourceName", globalName: null, resxGroup);
             var resourceNameConfiguration = GetMetadataValue(context, options, "ResourceName", globalName: null, resxGroup);
             var classNameConfiguration = GetMetadataValue(context, options, "ClassName", globalName: null, resxGroup);
             var visibilityConfiguration = GetMetadataValue(context, options, "Visibility", globalName: "DefaultResourcesVisibility", resxGroup);
-            var generateKeyNamesConfiguration = GetMetadataValue(context, options, "GenerateKeyNamesType", globalName: null, resxGroup);
-            var generateResourcesConfiguration = GetMetadataValue(context, options, "GenerateResourcesType", globalName: null, resxGroup);
+            var generateKeyNamesTypeConfiguration = GetMetadataValue(context, options, "GenerateKeyNamesType", globalName: null, resxGroup);
+            var generateResourcesTypeConfiguration = GetMetadataValue(context, options, "GenerateResourcesType", globalName: null, resxGroup);
 
             var rootNamespace = rootNamespaceConfiguration ?? assemblyName ?? "";
             var projectDir = projectDirConfiguration ?? assemblyName ?? "";
-            var defaultResourceName = ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
+            var defaultResourceName = defaultResourceNameConfiguration ?? ComputeResourceName(rootNamespace, projectDir, resxGroup.Key);
             var defaultNamespace = ComputeNamespace(rootNamespace, projectDir, resxGroup.Key);
 
-            var ns = namespaceConfiguration ?? defaultNamespace;
+            var ns = namespaceConfiguration ?? defaultNamespace ?? rootNamespace;
             var resourceName = resourceNameConfiguration ?? defaultResourceName;
             var className = classNameConfiguration ?? ToCSharpNameIdentifier(Path.GetFileName(resxGroup.Key));
             var visibility = string.Equals(visibilityConfiguration, "public", StringComparison.OrdinalIgnoreCase) ? "public" : "internal";
-            var generateKeyNames = ParseBoolean(generateKeyNamesConfiguration, defaultValue: true);
-            var generateResources = ParseBoolean(generateResourcesConfiguration, defaultValue: true);
+            var generateKeyNamesType = ParseBoolean(generateKeyNamesTypeConfiguration, defaultValue: true);
+            var generateResourcesType = ParseBoolean(generateResourcesTypeConfiguration, defaultValue: true);
 
-            if (ns is null)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForNamespace, location: null, resxGroup.First().Path));
-            }
-
-            if (resourceName is null)
+            if (resourceName is null && generateResourcesType)
             {
                 context.ReportDiagnostic(Diagnostic.Create(InvalidPropertiesForResourceName, location: null, resxGroup.First().Path));
             }
@@ -117,11 +103,12 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // RootNamespace (metadata): {rootNamespaceConfiguration}
 // ProjectDir (metadata): {projectDirConfiguration}
 // Namespace / DefaultResourcesNamespace (metadata): {namespaceConfiguration}
+// DefaultResourceName (metadata): {defaultResourceNameConfiguration}
 // ResourceName (metadata): {resourceNameConfiguration}
 // ClassName (metadata): {classNameConfiguration}
 // Visibility (metadata): {visibilityConfiguration}
-// GenerateKeyNames (metadata): {generateKeyNamesConfiguration}
-// GenerateResources (metadata): {generateResourcesConfiguration}
+// GenerateKeyNames (metadata): {generateKeyNamesTypeConfiguration}
+// GenerateResources (metadata): {generateResourcesTypeConfiguration}
 // AssemblyName: {assemblyName}
 // RootNamespace (computed): {rootNamespace}
 // ProjectDir (computed): {projectDir}
@@ -131,20 +118,19 @@ public sealed class ResxGenerator : IIncrementalGenerator
 // ResourceName: {resourceName}
 // ClassName: {className}
 // visibility: {visibility}
-// generateKeyNames: {generateKeyNames}
-// generateResources: {generateResources}
+// generateKeyNames: {generateKeyNamesType}
+// generateResources: {generateResourcesType}
 ";
-
-            if (resourceName is not null && entries is not null)
+            if (entries is not null)
             {
-                content += GenerateCode(ns, className, resourceName, visibility, generateResources, generateKeyNames, entries, supportNullableReferenceTypes);
+                content += GenerateCode(ns, className, resourceName, visibility, generateResourcesType, generateKeyNamesType, entries, supportNullableReferenceTypes);
             }
 
             context.AddSource($"{Path.GetFileName(resxGroup.Key)}.resx.g.cs", SourceText.From(content, Encoding.UTF8));
         }
     }
 
-    private static string GenerateCode(string? ns, string className, string resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
+    private static string GenerateCode(string? ns, string className, string? resourceName, string visibility, bool generateResourcesType, bool generateKeyNamesType, List<ResxEntry> entries, bool enableNullableAttributes)
     {
         var sb = new StringBuilder();
         sb.AppendLine();
@@ -156,7 +142,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             sb.AppendLine("{");
         }
 
-        if (generateResourcesType)
+        if (generateResourcesType && resourceName is not null)
         {
             sb.AppendLine($"    {visibility} partial class " + className);
             sb.AppendLine("    {");
@@ -440,7 +426,7 @@ public sealed class ResxGenerator : IIncrementalGenerator
             return rootNamespace + '.' + relativePath.Replace('/', '.').Replace('\\', '.');
         }
 
-        return null;
+        return Path.GetFileNameWithoutExtension(resourcePath);
     }
 
     private static string? ComputeNamespace(string rootNamespace, string projectDir, string resourcePath)

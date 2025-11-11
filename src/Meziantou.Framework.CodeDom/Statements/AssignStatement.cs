@@ -1,10 +1,8 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an assignment statement (=).</summary>
 public class AssignStatement : Statement
 {
-    private Expression? _leftExpression;
-    private Expression? _rightExpression;
-
     public AssignStatement()
     {
     }
@@ -17,13 +15,13 @@ public class AssignStatement : Statement
 
     public Expression? LeftExpression
     {
-        get => _leftExpression;
-        set => SetParent(ref _leftExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public Expression? RightExpression
     {
-        get => _rightExpression;
-        set => SetParent(ref _rightExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

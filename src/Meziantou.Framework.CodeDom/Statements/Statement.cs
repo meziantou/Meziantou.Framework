@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for all statements (assignments, loops, conditionals, etc.).</summary>
 public abstract class Statement : CodeObject, ICommentable, INullableContext
 {
     public CommentCollection CommentsBefore { get; }

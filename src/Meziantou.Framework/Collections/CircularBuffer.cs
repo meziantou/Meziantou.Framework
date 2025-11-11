@@ -3,12 +3,25 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Collections;
 
+/// <summary>
+/// A circular buffer (ring buffer) collection that maintains a fixed-size buffer and overwrites old items when full.
+/// </summary>
+/// <example>
+/// <code>
+/// var buffer = new CircularBuffer&lt;int&gt;(3) { AllowOverwrite = true };
+/// buffer.Add(1); // [1]
+/// buffer.Add(2); // [1, 2]
+/// buffer.Add(3); // [1, 2, 3]
+/// buffer.Add(4); // [2, 3, 4] - overwrites 1
+/// </code>
+/// </example>
 public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
 {
     private T[] _items;
     private int _startIndex;
     private int _version;
 
+    /// <summary>Gets or sets the maximum number of items the buffer can hold.</summary>
     public int Capacity
     {
         get => _items.Length;
@@ -34,12 +47,15 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         }
     }
 
+    /// <summary>Gets the current number of items in the buffer.</summary>
     public int Count { get; private set; }
 
+    /// <summary>Gets or sets a value indicating whether old items should be overwritten when the buffer is full.</summary>
     public bool AllowOverwrite { get; set; }
 
     bool ICollection<T>.IsReadOnly => false;
 
+    /// <summary>Initializes a new instance of the <see cref="CircularBuffer{T}"/> class with the specified capacity.</summary>
     public CircularBuffer(int capacity)
     {
         if (capacity <= 0)
@@ -48,6 +64,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         _items = new T[capacity];
     }
 
+    /// <summary>Adds an item to the beginning of the buffer.</summary>
     public void AddFirst(T value)
     {
         if (Count == Capacity)
@@ -223,14 +240,13 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         private readonly CircularBuffer<T> _list;
         private int _index;
         private readonly int _version;
-        private T? _current;
 
         internal Enumerator(CircularBuffer<T> list)
         {
             _list = list;
             _index = 0;
             _version = list._version;
-            _current = default;
+            Current = default;
         }
 
         public readonly void Dispose()
@@ -243,7 +259,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             if (_version == localList._version && ((uint)_index < (uint)localList.Count))
             {
                 var actualIndex = (_list._startIndex + _index) % _list.Capacity;
-                _current = localList._items[actualIndex];
+                Current = localList._items[actualIndex];
                 _index++;
                 return true;
             }
@@ -257,11 +273,11 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             _index = _list.Count + 1;
-            _current = default;
+            Current = default;
             return false;
         }
 
-        public readonly T Current => _current!;
+        public T Current { readonly get => field!; private set; }
 
         readonly object? IEnumerator.Current
         {
@@ -282,7 +298,7 @@ public sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             }
 
             _index = 0;
-            _current = default;
+            Current = default;
         }
     }
 }

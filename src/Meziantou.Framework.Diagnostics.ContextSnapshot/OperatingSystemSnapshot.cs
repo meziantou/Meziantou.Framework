@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the operating system including platform, version, architecture, and platform-specific identifiers.</summary>
 public sealed class OperatingSystemSnapshot
 {
     private static readonly char[] CommaSeparator = ['='];

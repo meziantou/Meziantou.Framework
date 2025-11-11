@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

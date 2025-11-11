@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an array creation expression (new T[]).</summary>
 public class NewArrayExpression : Expression
 {
     public NewArrayExpression()

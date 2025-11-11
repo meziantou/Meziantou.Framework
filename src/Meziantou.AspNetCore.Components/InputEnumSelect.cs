@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -7,6 +6,16 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
+/// <summary>
+/// A select input component for editing enum values.
+/// </summary>
+/// <typeparam name="TEnum">The enum type. Can be nullable to allow no selection.</typeparam>
+/// <remarks>
+/// <para>
+/// This component automatically generates option elements for each enum value. Display names can be customized
+/// using the <see cref="DisplayAttribute"/> on enum members.
+/// </para>
+/// </remarks>
 // Note that adding a constraint on TEnum (where T : Enum) doesn't work when used in the view, Razor raises an error at build time. Also, this would prevent using nullable types...
 public sealed class InputEnumSelect<TEnum> : InputBase<TEnum>
 {

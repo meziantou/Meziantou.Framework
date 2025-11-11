@@ -8,9 +8,19 @@
 
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="Namespace" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="ClassName" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="DefaultResourceName" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="ResourceName" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="Visibility" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateKeyNames" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="GenerateResources" />
   </ItemGroup>
+
+  <Target Name="AddManifestResourceNameToAdditionalFiles" AfterTargets="CreateManifestResourceNames" BeforeTargets="CoreCompile">
+    <!-- Update AdditionalFiles metadata based on matching EmbeddedResource items -->
+    <ItemGroup>
+      <AdditionalFiles Update="@(AdditionalFiles)">
+        <DefaultResourceName>%(EmbeddedResource.ManifestResourceName)</DefaultResourceName>
+      </AdditionalFiles>
+    </ItemGroup>
+  </Target>
 </Project>

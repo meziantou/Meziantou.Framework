@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of the active power management scheme (Windows only).</summary>
 public sealed class PowerManagementSnapshot
 {
     private PowerManagementSnapshot(Guid id, string? friendlyName)
@@ -29,12 +30,12 @@ public sealed class PowerManagementSnapshot
         if (result is Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA or Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS)
         {
             var data = new byte[buffSize];
+            result = Windows.Win32.PInvoke.PowerReadFriendlyName(RootPowerKey: null, currentPlan, SubGroupOfPowerSettingsGuid: null, PowerSettingGuid: null, data, ref buffSize);
+            if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS)
+                return null;
+
             fixed (byte* ptr = data)
             {
-                result = Windows.Win32.PInvoke.PowerReadFriendlyName(RootPowerKey: null, currentPlan, SubGroupOfPowerSettingsGuid: null, PowerSettingGuid: null, ptr, ref buffSize);
-                if (result != Windows.Win32.Foundation.WIN32_ERROR.ERROR_SUCCESS)
-                    return null;
-
                 var name = Marshal.PtrToStringUni((nint)ptr);
                 return new PowerManagementSnapshot(currentPlan, name);
             }

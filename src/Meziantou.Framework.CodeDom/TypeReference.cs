@@ -1,7 +1,13 @@
-using System.Text;
-
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a reference to a type, including support for generics, arrays, and nullable annotations.</summary>
+/// <example>
+/// <code>
+/// var stringType = new TypeReference(typeof(string));
+/// var listOfInt = new TypeReference(typeof(List&lt;&gt;)).MakeGeneric(new TypeReference(typeof(int)));
+/// var intArray = new TypeReference(typeof(int)).MakeArray(1);
+/// </code>
+/// </example>
 public class TypeReference
 {
     private static readonly char[] ArityOrArrayCharacters = ['`', '['];
@@ -16,21 +22,29 @@ public class TypeReference
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="TypeReference"/> class from a type declaration.</summary>
+    /// <param name="typeDeclaration">The type declaration to reference.</param>
     public TypeReference(TypeDeclaration typeDeclaration)
     {
         _typeDeclaration = typeDeclaration ?? throw new ArgumentNullException(nameof(typeDeclaration));
     }
 
+    /// <summary>Initializes a new instance of the <see cref="TypeReference"/> class from a type parameter.</summary>
+    /// <param name="typeParameter">The type parameter to reference.</param>
     public TypeReference(TypeParameter typeParameter)
     {
         _typeParameter = typeParameter ?? throw new ArgumentNullException(nameof(typeParameter));
     }
 
+    /// <summary>Initializes a new instance of the <see cref="TypeReference"/> class from a type name.</summary>
+    /// <param name="typeName">The fully qualified type name.</param>
     public TypeReference(string typeName)
     {
         _typeName = typeName;
     }
 
+    /// <summary>Initializes a new instance of the <see cref="TypeReference"/> class from a reflection type.</summary>
+    /// <param name="type">The reflection type to reference.</param>
     public TypeReference(Type type)
     {
         var name = type.Name;
@@ -82,12 +96,16 @@ public class TypeReference
         }
     }
 
+    /// <summary>Gets a value indicating whether this type reference represents an array.</summary>
     public bool IsArray => ArrayRank > 0;
 
+    /// <summary>Gets or sets the array rank (0 for non-arrays, 1 for single-dimension arrays, etc.).</summary>
     public int ArrayRank { get; set; }
 
+    /// <summary>Gets or sets the nullable annotation for this type reference.</summary>
     public NullableAnnotation Nullable { get; set; }
 
+    /// <summary>Gets the list of generic type parameters for this type reference.</summary>
     public IList<TypeReference> Parameters
     {
         get
@@ -108,6 +126,7 @@ public class TypeReference
         }
     }
 
+    /// <summary>Gets the fully qualified name of the referenced type.</summary>
     public string? TypeName
     {
         get
@@ -168,6 +187,7 @@ public class TypeReference
         }
     }
 
+    /// <summary>Gets the full CLR type name including generic parameters and array notation.</summary>
     public string ClrFullTypeName
     {
         get
@@ -208,6 +228,8 @@ public class TypeReference
         }
     }
 
+    /// <summary>Creates a shallow copy of this type reference.</summary>
+    /// <returns>A new <see cref="TypeReference"/> instance with the same values.</returns>
     public TypeReference Clone()
     {
         var clone = new TypeReference
@@ -227,6 +249,9 @@ public class TypeReference
         return clone;
     }
 
+    /// <summary>Creates a generic type reference with the specified type arguments.</summary>
+    /// <param name="typeArguments">The type arguments for the generic type.</param>
+    /// <returns>A new generic <see cref="TypeReference"/> instance.</returns>
     public TypeReference MakeGeneric(params TypeReference[] typeArguments)
     {
         var type = Clone();
@@ -239,6 +264,9 @@ public class TypeReference
         return type;
     }
 
+    /// <summary>Creates an array type reference with the specified rank.</summary>
+    /// <param name="rank">The array rank (1 for single-dimension, 2 for two-dimensional, etc.).</param>
+    /// <returns>A new array <see cref="TypeReference"/> instance.</returns>
     public TypeReference MakeArray(int rank)
     {
         var type = Clone();
@@ -246,6 +274,9 @@ public class TypeReference
         return type;
     }
 
+    /// <summary>Creates a nullable type reference with the specified nullable annotation.</summary>
+    /// <param name="value">The nullable annotation to apply.</param>
+    /// <returns>A new nullable <see cref="TypeReference"/> instance.</returns>
     public TypeReference MakeNullable(NullableAnnotation value = NullableAnnotation.Nullable)
     {
         var type = Clone();

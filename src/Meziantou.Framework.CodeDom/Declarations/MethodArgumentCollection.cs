@@ -2,6 +2,7 @@ using System.Collections;
 
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a collection of method arguments.</summary>
 public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclaration>, IReadOnlyList<MethodArgumentDeclaration>
 {
     private readonly List<MethodArgumentDeclaration> _list = [];
@@ -12,8 +13,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
 
     public MethodArgumentCollection(CodeObject parent)
     {
-        if (parent is null)
-            throw new ArgumentNullException(nameof(parent));
+        ArgumentNullException.ThrowIfNull(parent);
         Parent = parent;
     }
 
@@ -39,8 +39,7 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
 
     public MethodArgumentDeclaration Add(MethodArgumentDeclaration item)
     {
-        if (item is null)
-            throw new ArgumentNullException(nameof(item));
+        ArgumentNullException.ThrowIfNull(item);
         _list.Add(item);
         item.Parent = Parent;
         return item;
@@ -118,16 +117,11 @@ public class MethodArgumentCollection : CodeObject, IList<MethodArgumentDeclarat
         get => _list[index];
         set
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             var item = this[index];
             _list[index] = value;
-            if (item is not null)
-            {
-                item.Parent = null;
-            }
-
+            item?.Parent = null;
             value.Parent = Parent;
         }
     }

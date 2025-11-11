@@ -1,5 +1,4 @@
 using System.Diagnostics.Contracts;
-using System.Text;
 
 namespace Meziantou.Framework;
 
@@ -15,7 +14,7 @@ public static partial class StringSearchUtilities
         const int MaxCodeLen = 4;
 
         if (s.Length is 0)
-            return string.Empty;
+            return "";
 
         if (s.Length is 1)
             return s.ToUpperInvariant();

@@ -1,6 +1,3 @@
-
-using System.Runtime.CompilerServices;
-
 namespace Meziantou.Framework;
 
 public static class AsyncEnumerableExtensions

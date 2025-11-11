@@ -1,6 +1,4 @@
 using System.Text.Json;
-using Xunit;
-using Xunit.v3;
 
 namespace Meziantou.Framework.NuGetPackageValidation.Tool.Tests;
 

@@ -6,7 +6,7 @@
 
     <Description>Microsoft.Extension.Logging.ILogger implementation for xunit.v3</Description>
     <PackageTags>xunit, xunit.v3, logger</PackageTags>
-    <Version>1.1.15</Version>
+    <Version>1.1.17</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +14,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
-    <PackageReference Include="xunit.v3.extensibility.core" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.11" />
+    <PackageReference Include="xunit.v3.extensibility.core" Version="3.2.0" />
   </ItemGroup>
 
 </Project>

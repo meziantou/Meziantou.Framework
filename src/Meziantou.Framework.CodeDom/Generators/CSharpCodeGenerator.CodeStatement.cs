@@ -28,8 +28,7 @@ public partial class CSharpCodeGenerator
         if (statement is null)
             return;
 
-        if (options is null)
-            throw new ArgumentNullException(nameof(options));
+        ArgumentNullException.ThrowIfNull(options);
 
         WriteNullableContextBefore(writer, statement);
         WriteBeforeComments(writer, statement);

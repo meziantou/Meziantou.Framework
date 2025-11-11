@@ -1,6 +1,5 @@
 #pragma warning disable MA0032 // Use an overload with a CancellationToken argument
 
-using System.Globalization;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework;
 using Meziantou.Framework.DependencyScanning;

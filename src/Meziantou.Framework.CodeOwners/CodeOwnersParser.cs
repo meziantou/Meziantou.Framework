@@ -1,12 +1,30 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.Extensions.ObjectPool;
 
 namespace Meziantou.Framework.CodeOwners;
 
+/// <summary>
+/// Parses CODEOWNERS files used by GitHub and GitLab to define code ownership.
+/// <example>
+/// <code>
+/// var content = """
+///     * @user1 @user2
+///     *.js @js-owner
+///     docs/* docs@example.com
+///     """;
+/// var entries = CodeOwnersParser.Parse(content).ToArray();
+/// // entries[0]: Pattern="*", Member="user1", EntryType=Username
+/// // entries[1]: Pattern="*", Member="user2", EntryType=Username
+/// // entries[2]: Pattern="*.js", Member="js-owner", EntryType=Username
+/// // entries[3]: Pattern="docs/*", Member="docs@example.com", EntryType=EmailAddress
+/// </code>
+/// </example>
+/// </summary>
 public static class CodeOwnersParser
 {
+    /// <summary>Parses the content of a CODEOWNERS file and returns the code owner entries.</summary>
+    /// <param name="content">The content of the CODEOWNERS file.</param>
+    /// <returns>An enumerable collection of <see cref="CodeOwnersEntry"/> representing the parsed code owners.</returns>
     public static IEnumerable<CodeOwnersEntry> Parse(string content)
     {
         var context = new CodeOwnersParserContext(content);
@@ -129,7 +147,7 @@ public static class CodeOwnersParser
             while (!_lexer.EndOfFile)
             {
                 var c = _lexer.Peek();
-                if (c is null || c == '\r' || c == '\n')
+                if (c is null or '\r' or '\n')
                     return StringBuilderPool.ToStringAndReturn(sb);
 
                 c = _lexer.Consume();
@@ -193,7 +211,7 @@ public static class CodeOwnersParser
                     }
 
                     c = _lexer.Consume();
-                    if (c == ' ' || c == '\t')
+                    if (c is ' ' or '\t')
                     {
                         AddEntry(isMember, StringBuilderPool.ToStringAndReturn(sb), pattern, patternIndex);
                         foundMember = true;
@@ -263,7 +281,7 @@ public static class CodeOwnersParser
             }
 
             var requiredReviewerCountString = StringBuilderPool.ToStringAndReturn(sb);
-            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out int requiredReviewerCount);
+            var isParseValid = int.TryParse(requiredReviewerCountString, NumberStyles.Integer, CultureInfo.InvariantCulture, out var requiredReviewerCount);
             return isParseValid ? requiredReviewerCount : 1;
         }
 
@@ -398,7 +416,7 @@ public static class CodeOwnersParser
             while (_currentIndex + 1 < _content.Length)
             {
                 var next = _content[_currentIndex + 1];
-                if (next != ' ' && next != '\t')
+                if (next is not ' ' and not '\t')
                     return;
 
                 _currentIndex++;

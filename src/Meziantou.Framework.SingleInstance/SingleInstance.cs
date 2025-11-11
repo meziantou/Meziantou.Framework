@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Pipes;
 using System.Runtime.Versioning;
 
@@ -8,20 +9,75 @@ using System.Security.Principal;
 
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Ensures that only a single instance of an application can run at a time and provides communication between instances.
+/// </summary>
+/// <example>
+/// Basic usage:
+/// <code>
+/// var applicationId = new Guid("dfae4e70-179f-4726-aa98-00a832315f5a");
+/// using var singleInstance = new SingleInstance(applicationId);
+/// if (singleInstance.StartApplication())
+/// {
+///     // This is the first instance
+///     singleInstance.NewInstance += (sender, e) =>
+///     {
+///         // Handle notification from another instance
+///         Console.WriteLine($"New instance started with {e.Arguments.Length} arguments");
+///     };
+/// }
+/// else
+/// {
+///     // Notify the first instance
+///     singleInstance.NotifyFirstInstance(args);
+/// }
+/// </code>
+/// </example>
 public sealed class SingleInstance(Guid applicationId) : IDisposable
 {
     private const byte NotifyInstanceMessageType = 1;
     private NamedPipeServerStream? _server;
     private Mutex? _mutex;
 
+    /// <summary>
+    /// Occurs when another instance of the application attempts to start.
+    /// </summary>
     public event EventHandler<SingleInstanceEventArgs>? NewInstance;
 
-    private string PipeName => "Local\\Pipe" + applicationId.ToString();
+    private string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.
+    /// </summary>
+    /// <value>
+    /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/>.
+    /// </value>
     public bool StartServer { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the timeout for connecting to the first instance when notifying it.
+    /// </summary>
+    /// <value>
+    /// The connection timeout. The default is 3 seconds.
+    /// </value>
     public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
+    private static int GetSessionId()
+    {
+        using var currentProcess = Process.GetCurrentProcess();
+        return currentProcess.SessionId;
+    }
+
+    /// <summary>
+    /// Attempts to start the application as the first instance.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> if this is the first instance and the application can start; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    /// If this method returns <see langword="true"/>, the application should continue running and can receive notifications from other instances through the <see cref="NewInstance"/> event.
+    /// If this method returns <see langword="false"/>, the application should call <see cref="NotifyFirstInstance"/> to notify the first instance and then exit.
+    /// </remarks>
     public bool StartApplication()
     {
         if (TryAcquireMutex())
@@ -33,29 +89,13 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         return false;
     }
 
-#if NETCOREAPP2_1_OR_GREATER
-    [SupportedOSPlatformGuard("windows")]
-    private static bool IsWindows()
-    {
-#if NET5_0_OR_GREATER
-        return OperatingSystem.IsWindows();
-#elif NETCOREAPP3_1 || NETSTANDARD2_0
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#elif NET462 || NET472
-        return Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-#error Platform notsupported
-#endif
-    }
-#endif
-
     private void StartNamedPipeServer()
     {
         if (!StartServer)
             return;
 
 #if NETCOREAPP2_1_OR_GREATER
-        if (!IsWindows())
+        if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("The communication with the first instance is only supported on Windows");
 
         _server = new NamedPipeServerStream(
@@ -155,10 +195,21 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
     }
 
+    /// <summary>
+    /// Notifies the first instance of the application that another instance is attempting to start.
+    /// </summary>
+    /// <param name="args">The command-line arguments to send to the first instance.</param>
+    /// <returns>
+    /// <see langword="true"/> if the notification was sent successfully; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="args"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// This method is only supported on Windows. The first instance must have <see cref="StartServer"/> set to <see langword="true"/> to receive notifications.
+    /// The method will timeout after <see cref="ClientConnectionTimeout"/> if the first instance is not responding.
+    /// </remarks>
     public bool NotifyFirstInstance(string[] args)
     {
-        if (args is null)
-            throw new ArgumentNullException(nameof(args));
+        ArgumentNullException.ThrowIfNull(args);
 
         using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
         try
@@ -170,7 +221,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
             using (var binaryWriter = new BinaryWriter(ms))
             {
                 binaryWriter.Write(NotifyInstanceMessageType);
-                binaryWriter.Write(GetCurrentProcessId());
+                binaryWriter.Write(Environment.ProcessId);
                 binaryWriter.Write(args.Length);
                 foreach (var arg in args)
                 {
@@ -190,17 +241,9 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
     }
 
-    private static int GetCurrentProcessId()
-    {
-#if NET5_0_OR_GREATER
-        return Environment.ProcessId;
-#elif NET461 || NET462 || NET472
-        return System.Diagnostics.Process.GetCurrentProcess().Id;
-#else
-#error Platform not supported
-#endif
-    }
-
+    /// <summary>
+    /// Releases all resources used by the <see cref="SingleInstance"/> object.
+    /// </summary>
     public void Dispose()
     {
         _mutex?.Dispose();

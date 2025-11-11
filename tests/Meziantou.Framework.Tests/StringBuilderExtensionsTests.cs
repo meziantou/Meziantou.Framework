@@ -1,6 +1,3 @@
-using System.Text;
-using Xunit;
-
 namespace Meziantou.Framework.Tests;
 
 public class StringBuilderExtensionsTests

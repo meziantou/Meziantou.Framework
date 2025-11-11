@@ -1,13 +1,25 @@
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents a yearly recurrence rule.</summary>
+/// <example>
+/// <code>
+/// var rrule = new YearlyRecurrenceRule { ByMonths = { Month.January }, ByMonthDays = { 1 } };
+/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// </code>
+/// </example>
 public sealed class YearlyRecurrenceRule : RecurrenceRule
 {
+    /// <summary>Limits occurrences to specific days of the month.</summary>
     public IList<int>? ByMonthDays { get; set; }
+
+    /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay>? ByWeekDays { get; set; }
+
+    /// <summary>Limits occurrences to specific months.</summary>
     public IList<Month>? ByMonths { get; set; }
     //public IList<int> ByWeekNo { get; set; }
+
+    /// <summary>Limits occurrences to specific days of the year (1-366).</summary>
     public IList<int>? ByYearDays { get; set; }
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
@@ -184,7 +196,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
             result = [];
             foreach (var month in ByMonths.Distinct().Order())
             {
-                if (month >= Month.January && month <= Month.December)
+                if (month is >= Month.January and <= Month.December)
                 {
                     for (var dt = startOfYear.AddMonths((int)month - 1); dt.Month == (int)month; dt = dt.AddDays(1))
                     {
@@ -217,6 +229,7 @@ public sealed class YearlyRecurrenceRule : RecurrenceRule
     //    return result;
     //}
 
+    /// <inheritdoc />
     public override string Text
     {
         get

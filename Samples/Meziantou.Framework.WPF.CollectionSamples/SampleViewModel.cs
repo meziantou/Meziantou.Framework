@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows.Input;
 using Meziantou.Framework.WPF.Collections;
 

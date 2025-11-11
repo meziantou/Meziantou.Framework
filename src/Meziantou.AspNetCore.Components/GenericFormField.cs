@@ -7,14 +7,24 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace Meziantou.AspNetCore.Components;
 
+/// <summary>
+/// Represents a field in a generic form, providing metadata and rendering capabilities for a model property.
+/// </summary>
+/// <typeparam name="TModel">The type of the model containing the field.</typeparam>
+/// <remarks>
+/// <para>
+/// This class is used by the GenericForm component to automatically generate form fields based on model properties.
+/// It reads metadata from attributes such as <see cref="DisplayAttribute"/>, <see cref="DisplayNameAttribute"/>,
+/// <see cref="DescriptionAttribute"/>, and <see cref="EditorAttribute"/> to customize the field's appearance and behavior.
+/// </para>
+/// </remarks>
 public sealed class GenericFormField<TModel>
 {
     private static readonly MethodInfo EventCallbackFactoryCreate = GetEventCallbackFactoryCreate();
 
     private readonly GenericForm<TModel> _form;
-    private RenderFragment? _editorTemplate;
-    private RenderFragment? _fieldValidationTemplate;
 
+    /// <summary>Occurs when the field value changes.</summary>
     public event EventHandler? ValueChanged;
 
     private GenericFormField(GenericForm<TModel> form, PropertyInfo propertyInfo)
@@ -43,10 +53,16 @@ public sealed class GenericFormField<TModel>
         return result;
     }
 
+    /// <summary>Gets the <see cref="PropertyInfo"/> representing the model property for this field.</summary>
     public PropertyInfo Property { get; }
+
+    /// <summary>Gets the HTML id attribute value for the editor element.</summary>
     public string EditorId => _form.BaseEditorId + '_' + Property.Name;
+
+    /// <summary>Gets the model instance that owns this field.</summary>
     public TModel Owner => _form.Model!;
 
+    /// <summary>Gets the display name for the field, determined from <see cref="DisplayAttribute"/> or <see cref="DisplayNameAttribute"/>, or the property name if no attribute is present.</summary>
     public string DisplayName
     {
         get
@@ -71,6 +87,7 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets the display order for the field from the <see cref="DisplayAttribute"/>. Returns 10000 if not specified, as recommended by Microsoft.</summary>
     public int DisplayOrder
     {
         get
@@ -91,6 +108,7 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets the description for the field from <see cref="DisplayAttribute"/> or <see cref="DescriptionAttribute"/>.</summary>
     public string? Description
     {
         get
@@ -115,6 +133,7 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets the prompt text for the field from <see cref="DisplayAttribute"/>.</summary>
     public string? Prompt
     {
         get
@@ -131,8 +150,10 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets the property type.</summary>
     public Type PropertyType => Property.PropertyType;
 
+    /// <summary>Gets or sets the current value of the field.</summary>
     public object? Value
     {
         get => Property.GetValue(Owner);
@@ -146,12 +167,13 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets a render fragment that renders the appropriate input editor for this field.</summary>
     public RenderFragment EditorTemplate
     {
         get
         {
-            if (_editorTemplate is not null)
-                return _editorTemplate;
+            if (field is not null)
+                return field;
 
             // () => Owner.Property
             var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);
@@ -166,7 +188,7 @@ public sealed class GenericFormField<TModel>
             var changeHandlerLambda = Expression.Lambda(typeof(Action<>).MakeGenericType(PropertyType), body, changeHandlerParameter);
             var changeHandler = method.Invoke(EventCallback.Factory, [this, changeHandlerLambda.Compile()]);
 
-            return _editorTemplate ??= builder =>
+            return field ??= builder =>
             {
                 var (componentType, additonalAttributes) = GetEditorType(Property);
                 builder.OpenComponent(0, componentType);
@@ -182,6 +204,7 @@ public sealed class GenericFormField<TModel>
         }
     }
 
+    /// <summary>Gets a render fragment that renders the validation message for this field, or <c>null</c> if field validation is disabled.</summary>
     public RenderFragment? FieldValidationTemplate
     {
         get
@@ -189,7 +212,7 @@ public sealed class GenericFormField<TModel>
             if (!_form.EnableFieldValidation)
                 return null;
 
-            return _fieldValidationTemplate ??= builder =>
+            return field ??= builder =>
             {
                 // () => Owner.Property
                 var access = Expression.Property(Expression.Constant(Owner, typeof(TModel)), Property);

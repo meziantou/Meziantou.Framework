@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a using directive for importing namespaces.</summary>
 public class UsingDirective : Directive
 {
     public UsingDirective()

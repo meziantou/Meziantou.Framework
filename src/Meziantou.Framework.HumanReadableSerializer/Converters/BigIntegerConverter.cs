@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Numerics;
 
 namespace Meziantou.Framework.HumanReadable.Converters;

@@ -10,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -35,6 +34,11 @@ public static class MeziantouServiceDefaults
     {
         var options = new MeziantouServiceDefaultsOptions();
         configure?.Invoke(options);
+
+        if (options.ValidateDependencyContainersOnStartup)
+        {
+            builder.ConfigureContainer(new DefaultServiceProviderFactory(new ServiceProviderOptions() { ValidateOnBuild = true, ValidateScopes = true }));
+        }
 
         builder.Services.Configure<KestrelServerOptions>(options =>
         {

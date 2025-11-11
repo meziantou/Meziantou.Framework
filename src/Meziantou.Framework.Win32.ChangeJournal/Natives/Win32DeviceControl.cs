@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace Meziantou.Framework.Win32.Natives;
 
@@ -18,20 +18,21 @@ internal static class Win32DeviceControl
         var buffer = initialBufferLength is 0 ? Array.Empty<byte>() : new byte[initialBufferLength];
         fixed (void* structurePointer = &structure)
         {
+            using var handleScope = new SafeHandleValue(handle);
             fixed (void* bufferPointer = buffer)
             {
-                controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
             }
 
             if (!controlResult)
             {
                 var errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == (int)Windows.Win32.Foundation.WIN32_ERROR.ERROR_MORE_DATA)
+                if (errorCode == (int)WIN32_ERROR.ERROR_MORE_DATA)
                 {
                     buffer = new byte[returnedSize];
                     fixed (void* bufferPointer = buffer)
                     {
-                        controlResult = PInvoke.DeviceIoControl(handle, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
+                        controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, structurePointer, (uint)Marshal.SizeOf(structure), bufferPointer, (uint)buffer.Length, &returnedSize, lpOverlapped: null);
                     }
 
                     if (!controlResult)
@@ -53,7 +54,8 @@ internal static class Win32DeviceControl
         fixed (void* pStructure = &structure)
         {
             uint returnedSize = 0;
-            var controlResult = PInvoke.DeviceIoControl(handle, (uint)code, lpInBuffer: null, 0u, pStructure, (uint)Marshal.SizeOf<TStructure>(), &returnedSize, lpOverlapped: null);
+            using var handleScope = new SafeHandleValue(handle);
+            var controlResult = PInvoke.DeviceIoControl((HANDLE)handleScope.Value, (uint)code, lpInBuffer: null, 0u, pStructure, (uint)Marshal.SizeOf<TStructure>(), &returnedSize, lpOverlapped: null);
             if (!controlResult)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }

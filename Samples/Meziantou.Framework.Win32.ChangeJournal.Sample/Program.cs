@@ -1,4 +1,4 @@
-﻿using Meziantou.Framework;
+using Meziantou.Framework;
 using Meziantou.Framework.Win32;
 
 using var changeJournal = ChangeJournal.Open(new DriveInfo("D:"), unprivileged: !Environment.IsPrivilegedProcess);
@@ -16,7 +16,7 @@ Console.WriteLine($"Last USN: {ChangeJournal.GetEntry("D:/test.txt").UniqueSeque
 using (var fs = new FileStream("D:/test.txt", FileMode.Open, FileAccess.Write))
 {
     var buffer = new byte[] { 0xFF };
-    for (int i = 0; i < 5; i++)
+    for (var i = 0; i < 5; i++)
     {
         fs.Write(buffer);
         fs.Seek(1_000_000, SeekOrigin.Current);

@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
 public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
@@ -9,8 +6,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
     protected override string GetText(DailyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         var sb = new StringBuilder();
         sb.Append("tous les");
@@ -31,8 +27,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
     protected override string GetText(WeeklyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         var sb = new StringBuilder();
         sb.Append("toutes les");
@@ -59,8 +54,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
     protected override string GetText(MonthlyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
         var sb = new StringBuilder();
         sb.Append("tous les");
         if (rrule.Interval == 1)
@@ -99,8 +93,7 @@ public sealed class RecurrenceRuleHumanizerFrench : RecurrenceRuleHumanizer
 
     protected override string GetText(YearlyRecurrenceRule rrule, CultureInfo? cultureInfo)
     {
-        if (rrule is null)
-            throw new ArgumentNullException(nameof(rrule));
+        ArgumentNullException.ThrowIfNull(rrule);
 
         var sb = new StringBuilder();
         sb.Append("tous les");

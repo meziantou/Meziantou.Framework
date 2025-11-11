@@ -1,8 +1,24 @@
-using System.Text;
-
 namespace Meziantou.Framework;
 
-// https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/
+/// <summary>Provides methods for properly escaping and quoting command-line arguments for Windows applications.</summary>
+/// <remarks>
+/// The implementation is based on the article: <see href="https://blogs.msdn.microsoft.com/twistylittlepassagesallalike/2011/04/23/everyone-quotes-command-line-arguments-the-wrong-way/">Everyone quotes command line arguments the wrong way</see>.
+/// </remarks>
+/// <example>
+/// <code>
+/// // Quote a single argument for standard Windows applications
+/// var arg = CommandLineBuilder.WindowsQuotedArgument(@"path with spaces\file.txt");
+/// // Returns: "path with spaces\file.txt"
+///
+/// // Quote multiple arguments
+/// var args = CommandLineBuilder.WindowsQuotedArguments("arg1", "path with spaces", "normal");
+/// // Returns: arg1 "path with spaces" normal
+///
+/// // Quote for cmd.exe (handles special characters like &amp;, |, ^, etc.)
+/// var cmdArg = CommandLineBuilder.WindowsCmdArgument(@"malicious argument"" &amp; whoami");
+/// // Returns properly escaped argument safe for cmd.exe
+/// </code>
+/// </example>
 #if CommandLineBuilder_PUBLIC
 public
 #else
@@ -46,6 +62,9 @@ static class CommandLineBuilder
         }
     }
 
+    /// <summary>Quotes and escapes a command-line argument for standard Windows applications.</summary>
+    /// <param name="value">The argument value to quote and escape.</param>
+    /// <returns>The quoted and escaped argument string, or <see langword="null"/> if <paramref name="value"/> is <see langword="null"/>.</returns>
     [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsQuotedArgument(string? value)
     {
@@ -63,15 +82,17 @@ static class CommandLineBuilder
         return sb.ToString();
     }
 
+    /// <summary>Quotes and escapes multiple command-line arguments for standard Windows applications and joins them with spaces.</summary>
+    /// <param name="values">The argument values to quote and escape.</param>
+    /// <returns>A string containing all quoted and escaped arguments joined with spaces.</returns>
     public static string WindowsQuotedArguments(params string[] values)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return string.Join(' ', values.Select(WindowsQuotedArgument));
-#else
-        return string.Join(" ", values.Select(WindowsQuotedArgument));
-#endif
     }
 
+    /// <summary>Quotes and escapes a command-line argument for cmd.exe, handling special characters like (, ), %, !, ^, ", &lt;, &gt;, &amp;, and |.</summary>
+    /// <param name="value">The argument value to quote and escape.</param>
+    /// <returns>The quoted and escaped argument string safe for cmd.exe, or <see langword="null"/> if <paramref name="value"/> is <see langword="null"/>.</returns>
     [return: NotNullIfNotNull(parameterName: nameof(value))]
     public static string? WindowsCmdArgument(string? value)
     {
@@ -98,12 +119,11 @@ static class CommandLineBuilder
         return sb.ToString();
     }
 
+    /// <summary>Quotes and escapes multiple command-line arguments for cmd.exe and joins them with spaces.</summary>
+    /// <param name="values">The argument values to quote and escape.</param>
+    /// <returns>A string containing all quoted and escaped arguments joined with spaces, safe for cmd.exe execution.</returns>
     public static string WindowsCmdArguments(params string[] values)
     {
-#if NETCOREAPP2_1_OR_GREATER
         return string.Join(' ', values.Select(WindowsCmdArgument));
-#else
-        return string.Join(" ", values.Select(WindowsCmdArgument));
-#endif
     }
 }

@@ -3,6 +3,7 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a process including ID, name, memory usage, processor time, and loaded modules.</summary>
 public class ProcessSnapshot
 {
     internal ProcessSnapshot(Process process)

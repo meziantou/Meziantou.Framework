@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.14</Version>
+    <Version>1.0.17</Version>
     <IsTrimmable>true</IsTrimmable>
     <Description>Services for Blazor WebAssembly</Description>
 
@@ -18,18 +18,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net10.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0-rc.2.25502.107" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net9.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.10" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup Condition="$(TargetFramework) == 'net8.0'">
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.21" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.21" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.22" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.22" />
   </ItemGroup>
 
 </Project>

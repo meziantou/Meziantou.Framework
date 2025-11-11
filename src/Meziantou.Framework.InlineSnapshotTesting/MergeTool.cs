@@ -4,6 +4,9 @@ using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
+/// <summary>
+/// Represents a merge tool that can be used to compare and update snapshots.
+/// </summary>
 public abstract class MergeTool
 {
     public static MergeTool BeyondCompare { get; } = new DiffEngineTool(DiffTool.BeyondCompare);
@@ -39,6 +42,12 @@ public abstract class MergeTool
     public static MergeTool GitDiffTool { get; } = new GitDiffTool();
     public static MergeTool GitMergeTool { get; } = new GitMergeTool();
 
+    /// <summary>Starts the merge tool to compare the current file with the new file.</summary>
+    /// <param name="currentFilePath">The path to the current snapshot file.</param>
+    /// <param name="newFilePath">The path to the new snapshot file.</param>
+    /// <returns>A <see cref="MergeToolResult"/> that represents the merge tool process, or null if the tool cannot be started.</returns>
+    public abstract MergeToolResult? Start(string currentFilePath, string newFilePath);
+
     private static bool IsDisable()
     {
         var variable = Environment.GetEnvironmentVariable("DiffEngine_Disabled");
@@ -64,8 +73,6 @@ public abstract class MergeTool
 
         return null;
     }
-
-    public abstract MergeToolResult? Start(string currentFilePath, string newFilePath);
 
     private protected static string CopyFileToTemp(string path)
     {

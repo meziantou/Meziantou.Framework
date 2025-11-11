@@ -6,6 +6,22 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework.Http;
 
+/// <summary>A collection of HSTS (HTTP Strict Transport Security) domain policies that determines which domains should be accessed over HTTPS.</summary>
+/// <example>
+/// <code>
+/// // Create a collection with preloaded domains from the Chromium HSTS preload list
+/// var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+///
+/// // Add a custom domain policy
+/// policies.Add("example.com", TimeSpan.FromDays(365), includeSubdomains: true);
+///
+/// // Check if a domain should be upgraded to HTTPS
+/// if (policies.MustUpgradeRequest("example.com"))
+/// {
+///     // Upgrade HTTP to HTTPS
+/// }
+/// </code>
+/// </example>
 public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
 {
     private readonly List<ConcurrentDictionary<string, HstsDomainPolicy>> _policies = new(capacity: 8);
@@ -15,13 +31,19 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     private readonly DateTimeOffset _expires18weeks;
     private readonly DateTimeOffset _expires1year;
 
+    /// <summary>Gets the default HSTS policy collection that includes preloaded domains from the Chromium HSTS preload list.</summary>
     public static HstsDomainPolicyCollection Default { get; } = new();
 
+    /// <summary>Initializes a new instance of the <see cref="HstsDomainPolicyCollection"/> class.</summary>
+    /// <param name="includePreloadDomains">If <c>true</c>, includes preloaded domains from the Chromium HSTS preload list. Default is <c>true</c>.</param>
     public HstsDomainPolicyCollection(bool includePreloadDomains = true)
         : this(timeProvider: null, includePreloadDomains)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="HstsDomainPolicyCollection"/> class with a custom time provider.</summary>
+    /// <param name="timeProvider">The time provider to use for determining policy expiration. If <c>null</c>, uses <see cref="TimeProvider.System"/>.</param>
+    /// <param name="includePreloadDomains">If <c>true</c>, includes preloaded domains from the Chromium HSTS preload list. Default is <c>true</c>.</param>
     public HstsDomainPolicyCollection(TimeProvider? timeProvider, bool includePreloadDomains = true)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -54,11 +76,19 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
         }
     }
 
+    /// <summary>Adds or updates an HSTS policy for the specified host with a maximum age.</summary>
+    /// <param name="host">The domain host name.</param>
+    /// <param name="maxAge">The duration for which the HSTS policy should be in effect.</param>
+    /// <param name="includeSubdomains">If <c>true</c>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, TimeSpan maxAge, bool includeSubdomains)
     {
         Add(host, _timeProvider.GetUtcNow().Add(maxAge), includeSubdomains);
     }
 
+    /// <summary>Adds or updates an HSTS policy for the specified host with an expiration date.</summary>
+    /// <param name="host">The domain host name.</param>
+    /// <param name="expiresAt">The date and time when the HSTS policy expires.</param>
+    /// <param name="includeSubdomains">If <c>true</c>, the policy applies to all subdomains of the host.</param>
     public void Add(string host, DateTimeOffset expiresAt, bool includeSubdomains)
     {
         ArgumentNullException.ThrowIfNull(host);
@@ -81,12 +111,18 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
             factoryArgument: (expiresAt, includeSubdomains));
     }
 
+    /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
+    /// <param name="host">The domain host name to check.</param>
+    /// <returns><c>true</c> if the request should be upgraded to HTTPS; otherwise, <c>false</c>.</returns>
     public bool MustUpgradeRequest(string host)
     {
         ArgumentNullException.ThrowIfNull(host);
         return MustUpgradeRequest(host.AsSpan());
     }
 
+    /// <summary>Determines whether an HTTP request to the specified host should be upgraded to HTTPS based on HSTS policies.</summary>
+    /// <param name="host">The domain host name to check.</param>
+    /// <returns><c>true</c> if the request should be upgraded to HTTPS; otherwise, <c>false</c>.</returns>
     public bool MustUpgradeRequest(ReadOnlySpan<char> host)
     {
         var enumerator = new DomainSplitReverseEnumerator(host);
@@ -156,14 +192,18 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
     private ref struct DomainSplitReverseEnumerator
     {
         private ReadOnlySpan<char> _span;
-        private int _index;
+
         public DomainSplitReverseEnumerator(ReadOnlySpan<char> span)
         {
             _span = span;
-            _index = span.Length;
+            Current = span.Length;
         }
 
-        public int Current => _index == 0 ? 0 : (_index + 1);
+        public int Current
+        {
+            readonly get => field == 0 ? 0 : (field + 1);
+            private set;
+        }
 
         public bool MoveNext()
         {
@@ -173,12 +213,12 @@ public sealed partial class HstsDomainPolicyCollection : IEnumerable<HstsDomainP
                 if (_span.IsEmpty)
                     return false;
 
-                _index = 0;
+                Current = 0;
                 _span = ReadOnlySpan<char>.Empty;
                 return true;
             }
 
-            _index = index;
+            Current = index;
             _span = _span.Slice(0, index);
             return true;
         }

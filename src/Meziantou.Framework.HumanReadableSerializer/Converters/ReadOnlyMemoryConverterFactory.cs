@@ -43,11 +43,7 @@ internal sealed class ReadOnlyMemoryConverterFactory : HumanReadableConverterFac
     {
         protected override void WriteValue(HumanReadableTextWriter writer, ReadOnlyMemory<byte> value, HumanReadableSerializerOptions options)
         {
-#if NET6_0_OR_GREATER
             writer.WriteValue(Convert.ToBase64String(value.Span));
-#else
-            writer.WriteValue(Convert.ToBase64String(value.Span.ToArray()));
-#endif
         }
     }
 

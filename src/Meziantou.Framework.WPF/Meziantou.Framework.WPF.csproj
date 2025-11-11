@@ -4,12 +4,12 @@
     <TargetFrameworks>$(LatestTargetFrameworksWindows);net462</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
-    <Version>1.5.16</Version>
+    <Version>1.5.18</Version>
     <Description>Collection of Commands, Markup extensions, DependencyProperty, and collections for WPF</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Collections.Immutable" Version="9.0.10" />
+    <PackageReference Include="System.Collections.Immutable" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'net472'">

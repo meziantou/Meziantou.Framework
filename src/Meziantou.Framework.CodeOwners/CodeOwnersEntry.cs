@@ -2,6 +2,19 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.CodeOwners;
 
+/// <summary>
+/// Represents a single code owner entry in a CODEOWNERS file, associating a file pattern with an owner.
+/// <example>
+/// <code>
+/// // Parse a CODEOWNERS file
+/// var entries = CodeOwnersParser.Parse("*.js @user1").ToArray();
+/// var entry = entries[0];
+/// // entry.Pattern: "*.js"
+/// // entry.Member: "user1"
+/// // entry.EntryType: CodeOwnersEntryType.Username
+/// </code>
+/// </example>
+/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
 {
@@ -14,16 +27,22 @@ public readonly struct CodeOwnersEntry : IEquatable<CodeOwnersEntry>
         EntryType = entryType;
     }
 
+    /// <summary>Gets the zero-based index of the pattern in the CODEOWNERS file.</summary>
     public int PatternIndex { get; }
 
+    /// <summary>Gets the file pattern (e.g., "*.js", "/docs/*", or "*") that this entry applies to.</summary>
     public string Pattern { get; }
 
+    /// <summary>Gets the type of the owner (username, email address, or none).</summary>
     public CodeOwnersEntryType EntryType { get; }
 
+    /// <summary>Gets the owner identifier (username without @ or email address), or null if no owner is assigned.</summary>
     public string? Member { get; }
 
+    /// <summary>Gets the section this entry belongs to, or null if not part of a section.</summary>
     public CodeOwnersSection? Section { get; }
 
+    /// <summary>Gets a value indicating whether this entry belongs to an optional section.</summary>
     public bool IsOptional => Section?.IsOptional ?? false;
 
     public override string ToString()

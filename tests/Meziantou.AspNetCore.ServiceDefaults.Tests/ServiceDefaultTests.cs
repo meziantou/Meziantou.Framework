@@ -11,7 +11,7 @@ namespace Meziantou.AspNetCore.ServiceDefaults.Tests;
 public sealed class ServiceDefaultTests
 {
     [Fact]
-    public async Task Test1()
+    public async Task HasDefaultHealthChecks()
     {
         var builder = WebApplication.CreateBuilder();
         builder.UseMeziantouConventions();
@@ -31,7 +31,7 @@ public sealed class ServiceDefaultTests
     }
 
     [Fact]
-    public async Task MultipleRegister()
+    public async Task CanCallTryUseMeziantouConventionsMultipleTimes()
     {
         var builder = WebApplication.CreateBuilder();
         builder.UseMeziantouConventions();
@@ -51,9 +51,33 @@ public sealed class ServiceDefaultTests
         Assert.Equal("""{"sample":"value1"}""", await httpClient.GetStringAsync("/"));
     }
 
+    [Fact]
+    public async Task ValidateContainerOnStartup_MissingServices()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.Services.AddTransient<FooService>();
+
+        Assert.Throws<AggregateException>(() => builder.Build());
+    }
+
+    [Fact]
+    public async Task ValidateContainerOnStartup_InvalidLifeCycle()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.UseMeziantouConventions();
+        builder.Services.AddSingleton<FooService>();
+        builder.Services.AddScoped<BarService>();
+
+        Assert.Throws<AggregateException>(() => builder.Build());
+    }
+
     private enum Sample
     {
         Value1,
         Value2,
     }
+
+    private sealed class FooService(BarService bar) { public BarService Bar { get; } = bar; }
+    private sealed class BarService;
 }

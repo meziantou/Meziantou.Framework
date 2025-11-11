@@ -1,18 +1,21 @@
-using System.Text;
 using System.Xml.Linq;
 using System.Xml;
 
 namespace Meziantou.Framework.HumanReadable.ValueFormatters;
 
+/// <summary>Formats XML values for human-readable output.</summary>
 public sealed class XmlFormatter : ValueFormatter
 {
     private readonly XmlFormatterOptions _options;
 
+    /// <summary>Initializes a new instance of the <see cref="XmlFormatter"/> class with default options.</summary>
     public XmlFormatter()
         : this(options: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="XmlFormatter"/> class with the specified options.</summary>
+    /// <param name="options">The formatting options.</param>
     public XmlFormatter(XmlFormatterOptions? options)
     {
         _options = options ?? new();

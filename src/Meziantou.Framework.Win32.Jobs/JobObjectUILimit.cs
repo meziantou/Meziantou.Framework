@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Win32.Natives;
 
+/// <summary>Defines UI restrictions for processes in a job object.</summary>
 [Flags]
 public enum JobObjectUILimit
 {

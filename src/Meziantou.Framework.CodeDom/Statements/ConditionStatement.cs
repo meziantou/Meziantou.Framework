@@ -1,27 +1,24 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a conditional statement (if-else).</summary>
 public class ConditionStatement : Statement
 {
-    private Expression? _condition;
-    private StatementCollection? _trueStatements;
-    private StatementCollection? _falseStatements;
-
     public Expression? Condition
     {
-        get => _condition;
-        set => SetParent(ref _condition, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public StatementCollection? TrueStatements
     {
-        get => _trueStatements;
-        set => SetParent(ref _trueStatements, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public StatementCollection? FalseStatements
     {
-        get => _falseStatements;
-        set => SetParent(ref _falseStatements, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public static ConditionStatement CreateIfNotNull(Expression leftExpression)

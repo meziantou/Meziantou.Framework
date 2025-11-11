@@ -1,12 +1,25 @@
-using System.Globalization;
-
 namespace Meziantou.Framework;
 
 /// <summary>
 /// A utility class to compute unique short names for a given collection of names.
 /// </summary>
+/// <example>
+/// <code>
+/// // Create short names for a collection
+/// var names = new[] { "CustomerName", "CustomerNumber", "CustomerAddress" };
+/// var shortNames = ShortName.Create(names, maxLength: 5);
+/// // Result: { "CustomerName" = "Custo", "CustomerNumber" = "Custo0", "CustomerAddress" = "Custo1" }
+/// </code>
+/// </example>
 public static class ShortName
 {
+    /// <summary>
+    /// Create a short name, making sure it does not collide with an existing collection of short names.
+    /// </summary>
+    /// <param name="shortNames">The set of existing short names.</param>
+    /// <param name="maxLength">Maximum length of computed short name.</param>
+    /// <param name="name">The name to shorten.</param>
+    /// <returns>A string representing the short name; <see langword="null"/> if the short name cannot be created</returns>
     public static string? Create(ISet<string> shortNames, int maxLength, string name)
     {
         ArgumentNullException.ThrowIfNull(shortNames);

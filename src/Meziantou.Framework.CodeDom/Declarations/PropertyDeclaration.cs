@@ -1,15 +1,24 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a property declaration.</summary>
+/// <example>
+/// <code>
+/// var prop = new PropertyDeclaration("Name", typeof(string));
+/// prop.Modifiers = Modifiers.Public;
+/// prop.Getter = new PropertyAccessorDeclaration();
+/// prop.Setter = new PropertyAccessorDeclaration();
+/// </code>
+/// </example>
 public class PropertyDeclaration : MemberDeclaration, IModifiers
 {
-    private PropertyAccessorDeclaration? _setter;
-    private PropertyAccessorDeclaration? _getter;
-
     public PropertyDeclaration()
         : this(name: null, type: null)
     {
     }
 
+    /// <summary>Initializes a new instance of the <see cref="PropertyDeclaration"/> class with the specified name and type.</summary>
+    /// <param name="name">The property name.</param>
+    /// <param name="type">The property type.</param>
     public PropertyDeclaration(string? name, TypeReference? type)
     {
         Name = name;
@@ -22,14 +31,14 @@ public class PropertyDeclaration : MemberDeclaration, IModifiers
 
     public PropertyAccessorDeclaration? Getter
     {
-        get => _getter;
-        set => SetParent(ref _getter, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public PropertyAccessorDeclaration? Setter
     {
-        get => _setter;
-        set => SetParent(ref _setter, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? PrivateImplementationType { get; set; }

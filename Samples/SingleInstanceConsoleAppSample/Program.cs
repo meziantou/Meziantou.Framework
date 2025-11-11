@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework;
 
 Console.WriteLine("Hello World!");

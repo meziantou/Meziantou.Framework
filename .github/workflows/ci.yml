@@ -62,14 +62,14 @@ jobs:
       - run: dotnet publish src/Meziantou.Framework.InlineSnapshotTesting.Prompt.NotificationTray --configuration Release --os win /p:IsOfficialBuild=true "--output:${{runner.temp}}/prompt" /bl:publish-notificationtray.binlog
 
       - run: dotnet pack eng/packages.proj --configuration Release /p:IsOfficialBuild=true --output ${{ env.NuGetDirectory }} /p:RepositoryBranch="${{github.ref}}" "/p:PromptFolder=${{runner.temp}}/prompt" /bl:pack.binlog
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: nuget
           if-no-files-found: error
           retention-days: 3
           path: ${{ env.NuGetDirectory }}/**/*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: binlog
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}
@@ -131,7 +131,7 @@ jobs:
       - name: Run tests
         run: dotnet test eng/build.proj  --configuration ${{ matrix.configuration }} --no-build --results-directory "${{ env.TestResultsDirectory }}" ${{ matrix.additionalArguments }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
@@ -142,7 +142,7 @@ jobs:
             **/*.binlog
             ${{ env.TestResultsDirectory }}/**/*
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
@@ -188,7 +188,7 @@ jobs:
       - name: Install dotnet-coverage
         run: dotnet tool update --global dotnet-coverage
       - name: Download test results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-*-coverage
           path: test-results
@@ -196,7 +196,7 @@ jobs:
         run: dotnet-coverage merge --output test-result.coverage --output-format coverage (Get-ChildItem test-results -Recurse -Filter "*.coverage")
       - name: Merge coverage files (format cobertura)
         run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: code-coverage
           if-no-files-found: error
@@ -212,7 +212,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: Setup .NET
         uses: ./.github/setup-dotnet
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: nuget
           path: ${{ env.NuGetDirectory }}

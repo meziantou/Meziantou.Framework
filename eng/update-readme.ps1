@@ -53,6 +53,6 @@ if (($OriginalContent -join "`n") -ne $NewContent) {
     Write-Warning "README was not up-to-date"
 
     # Show the diff (useful in CI logs)
-    git diff $ReadmePath
+    git --no-pager diff $ReadmePath
     exit 1
 }

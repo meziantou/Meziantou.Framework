@@ -1,19 +1,35 @@
 using System.Net.Http.Headers;
-using System.Text;
 
 namespace Meziantou.Framework.Http;
 
+/// <summary>
+/// Represents a Link header value as defined in <see href="https://datatracker.ietf.org/doc/html/rfc8288">RFC 8288</see>.
+/// </summary>
 public sealed class LinkHeaderValue
 {
     private static ReadOnlySpan<char> ParameterSeparators => [' ', '\t', '=', ';', ','];
 
+    /// <summary>
+    /// Gets the URL of the link.
+    /// </summary>
     [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Breaking change")]
     public string Url { get; }
 
+    /// <summary>
+    /// Gets the relation type (rel parameter) of the link.
+    /// </summary>
     public string Rel => GetParameterValue("rel") ?? "";
 
+    /// <summary>
+    /// Gets the value of a parameter by name.
+    /// </summary>
+    /// <param name="parameterName">The name of the parameter.</param>
+    /// <returns>The parameter value, or <see langword="null"/> if the parameter is not found.</returns>
     public string? GetParameterValue(string parameterName) => Parameters.FirstOrDefault(p => p.Key == parameterName).Value;
 
+    /// <summary>
+    /// Gets the list of parameters associated with the link.
+    /// </summary>
     public IReadOnlyList<KeyValuePair<string, string>> Parameters { get; }
 
     private LinkHeaderValue(string url, IReadOnlyList<KeyValuePair<string, string>> parameters)
@@ -25,10 +41,20 @@ public sealed class LinkHeaderValue
         Parameters = parameters;
     }
 
+    /// <summary>
+    /// Parses Link header values from an HTTP response message.
+    /// </summary>
+    /// <param name="httpResponse">The HTTP response message containing Link headers.</param>
+    /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     // https://httpwg.org/specs/rfc8288.html
     // https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3
     public static IEnumerable<LinkHeaderValue> Parse(HttpResponseMessage httpResponse) => Parse(httpResponse.Headers);
 
+    /// <summary>
+    /// Parses Link header values from HTTP headers.
+    /// </summary>
+    /// <param name="headers">The HTTP headers containing Link header values.</param>
+    /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(HttpHeaders headers)
     {
         if (!headers.TryGetValues("Link", out var values))
@@ -37,8 +63,18 @@ public sealed class LinkHeaderValue
         return values.SelectMany(Parse);
     }
 
+    /// <summary>
+    /// Parses a Link header value from a string.
+    /// </summary>
+    /// <param name="value">The Link header value to parse.</param>
+    /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(string value) => Parse(value.AsSpan());
 
+    /// <summary>
+    /// Parses a Link header value from a character span.
+    /// </summary>
+    /// <param name="value">The Link header value to parse.</param>
+    /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> Parse(ReadOnlySpan<char> value)
     {
         var result = new List<LinkHeaderValue>();

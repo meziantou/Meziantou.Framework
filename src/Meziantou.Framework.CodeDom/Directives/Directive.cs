@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Base class for all directives (using, etc.).</summary>
 public abstract class Directive : CodeObject, ICommentable
 {
     public CommentCollection CommentsBefore { get; }

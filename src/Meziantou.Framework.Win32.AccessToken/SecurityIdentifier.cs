@@ -7,6 +7,29 @@ using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a security identifier (SID) that uniquely identifies a user, group, or other security principal.
+/// </summary>
+/// <example>
+/// <code>
+/// // Get a well-known SID
+/// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+/// Console.WriteLine($"Administrators SID: {adminSid.Sid}");
+/// Console.WriteLine($"Full Name: {adminSid.FullName}");
+/// 
+/// // Compare SIDs
+/// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.Query);
+/// var ownerSid = token.GetOwner();
+/// if (ownerSid == adminSid)
+/// {
+///     Console.WriteLine("Owner is administrator");
+/// }
+/// </code>
+/// </example>
+/// <remarks>
+/// A SID is a variable-length structure that uniquely identifies a security principal in Windows.
+/// This class provides methods to resolve SIDs to account names and domains.
+/// </remarks>
 [SupportedOSPlatform("windows5.1.2600")]
 public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
 {
@@ -24,12 +47,22 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         Sid = ConvertSidToStringSid(sid);
     }
 
+    /// <summary>Gets the domain name associated with the SID.</summary>
+    /// <value>The domain name, or <see langword="null"/> if the SID could not be resolved.</value>
     public string? Domain { get; }
+
+    /// <summary>Gets the account name associated with the SID.</summary>
+    /// <value>The account name, or <see langword="null"/> if the SID could not be resolved.</value>
     public string? Name { get; }
+
+    /// <summary>Gets the string representation of the SID (e.g., "S-1-5-21-...").</summary>
     public string Sid { get; }
 
+    /// <summary>Gets the full name in the format "Domain\Name".</summary>
     public string FullName => Domain + "\\" + Name;
 
+    /// <summary>Returns a string representation of the security identifier.</summary>
+    /// <returns>The full name if available; otherwise, the SID string.</returns>
     public override string ToString()
     {
         if (Name is null)
@@ -38,6 +71,16 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         return FullName;
     }
 
+    /// <summary>Creates a <see cref="SecurityIdentifier"/> for a well-known SID type.</summary>
+    /// <param name="type">The well-known SID type to create.</param>
+    /// <returns>A <see cref="SecurityIdentifier"/> representing the well-known SID.</returns>
+    /// <exception cref="Win32Exception">The SID could not be created.</exception>
+    /// <example>
+    /// <code>
+    /// var adminSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinBuiltinAdministratorsSid);
+    /// var systemSid = SecurityIdentifier.FromWellKnown(WellKnownSidType.WinLocalSystemSid);
+    /// </code>
+    /// </example>
     public static unsafe SecurityIdentifier FromWellKnown(WellKnownSidType type)
     {
         uint size = MaxBinaryLength * sizeof(byte);
@@ -96,13 +139,16 @@ public sealed class SecurityIdentifier : IEquatable<SecurityIdentifier?>
         }
     }
 
+    /// <summary>Determines whether the specified <see cref="SecurityIdentifier"/> is equal to the current instance.</summary>
     public bool Equals(SecurityIdentifier? other)
     {
         return other != null && Sid == other.Sid;
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj) => Equals(obj as SecurityIdentifier);
 
+    /// <inheritdoc/>
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Sid);
 
     public static bool operator ==(SecurityIdentifier? left, SecurityIdentifier? right) => EqualityComparer<SecurityIdentifier>.Default.Equals(left, right);

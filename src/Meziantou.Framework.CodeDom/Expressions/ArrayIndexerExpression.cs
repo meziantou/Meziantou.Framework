@@ -1,9 +1,8 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents an array indexer expression (e.g., array[index]).</summary>
 public class ArrayIndexerExpression : Expression
 {
-    private Expression? _arrayExpression;
-
     public ArrayIndexerExpression()
         : this(array: null)
     {
@@ -22,8 +21,8 @@ public class ArrayIndexerExpression : Expression
 
     public Expression? ArrayExpression
     {
-        get => _arrayExpression;
-        set => SetParent(ref _arrayExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public CodeObjectCollection<Expression> Indices { get; }

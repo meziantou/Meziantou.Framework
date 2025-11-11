@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.CodeDom.Tests;
 
 public class TypeReferenceTests

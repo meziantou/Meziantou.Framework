@@ -1,11 +1,21 @@
-using System.Text;
-
 namespace Meziantou.Framework.Scheduling;
 
+/// <summary>Represents a monthly recurrence rule.</summary>
+/// <example>
+/// <code>
+/// var rrule = new MonthlyRecurrenceRule { ByMonthDays = { -1 } }; // Last day of each month
+/// var nextOccurrences = rrule.GetNextOccurrences(DateTime.Now).ToArray();
+/// </code>
+/// </example>
 public sealed class MonthlyRecurrenceRule : RecurrenceRule
 {
+    /// <summary>Limits occurrences to specific days of the week with optional ordinal positions.</summary>
     public IList<ByDay> ByWeekDays { get; set; } = new List<ByDay>();
+
+    /// <summary>Limits occurrences to specific days of the month.</summary>
     public IList<int> ByMonthDays { get; set; } = new List<int>();
+
+    /// <summary>Limits occurrences to specific months.</summary>
     public IList<Month> ByMonths { get; set; } = new List<Month>();
 
     protected override IEnumerable<DateTime> GetNextOccurrencesInternal(DateTime startDate)
@@ -51,6 +61,7 @@ public sealed class MonthlyRecurrenceRule : RecurrenceRule
         // ReSharper disable once IteratorNeverReturns
     }
 
+    /// <inheritdoc />
     public override string Text
     {
         get

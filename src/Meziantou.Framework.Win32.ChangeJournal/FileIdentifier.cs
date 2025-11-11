@@ -1,14 +1,17 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 using Windows.Win32;
+using Windows.Win32.Foundation;
 using Windows.Win32.Storage.FileSystem;
 
 namespace Meziantou.Framework.Win32;
 
+/// <summary>
+/// Represents a unique file or directory identifier on an NTFS volume.
+/// </summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct FileIdentifier : IEquatable<FileIdentifier>
 {
@@ -32,6 +35,12 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
     {
     }
 
+    /// <summary>
+    /// Gets the file identifier for the specified file or directory path.
+    /// </summary>
+    /// <param name="path">The path to the file or directory.</param>
+    /// <returns>The file identifier for the specified file or directory.</returns>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     [SupportedOSPlatform("windows6.0.6000")]
     public unsafe static FileIdentifier FromFile(string path)
     {
@@ -39,12 +48,18 @@ public readonly struct FileIdentifier : IEquatable<FileIdentifier>
         return FromFile(handle);
     }
 
+    /// <summary>
+    /// Gets the file identifier for the specified file or directory handle.
+    /// </summary>
+    /// <param name="handle">A handle to the file or directory.</param>
+    /// <returns>The file identifier for the specified file or directory.</returns>
+    /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
     [SupportedOSPlatform("windows6.0.6000")]
     public unsafe static FileIdentifier FromFile(SafeFileHandle handle)
     {
         var result = new FILE_ID_INFO();
-        FILE_ID_INFO* pointer = &result;
-        if (PInvoke.GetFileInformationByHandleEx(handle, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, pointer, (uint)sizeof(FILE_ID_INFO)))
+        using var handleScope = new SafeHandleValue(handle);
+        if (PInvoke.GetFileInformationByHandleEx((HANDLE)handleScope.Value, FILE_INFO_BY_HANDLE_CLASS.FileIdInfo, &result, (uint)sizeof(FILE_ID_INFO)))
         {
             return new FileIdentifier(result.FileId);
         }

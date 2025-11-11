@@ -1,10 +1,18 @@
-using System.Globalization;
-using System.Text;
-
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides utilities for working with countries and region information.
+/// </summary>
+/// <example>
+/// <code>
+/// var region = new RegionInfo("US");
+/// string flag = Country.GetUnicodeFlag(region); // Returns "🇺🇸"
+/// string flag2 = Country.GetUnicodeFlag("FR"); // Returns "🇫🇷"
+/// </code>
+/// </example>
 public static class Country
 {
+    /// <summary>Gets the Unicode flag emoji for the specified region.</summary>
     public static string GetUnicodeFlag(RegionInfo region)
     {
         ArgumentNullException.ThrowIfNull(region);
@@ -12,6 +20,7 @@ public static class Country
         return GetUnicodeFlag(region.TwoLetterISORegionName);
     }
 
+    /// <summary>Gets the Unicode flag emoji for the specified two-letter ISO region code.</summary>
     public static string GetUnicodeFlag(string twoLetterISORegionName)
     {
         ArgumentNullException.ThrowIfNull(twoLetterISORegionName);

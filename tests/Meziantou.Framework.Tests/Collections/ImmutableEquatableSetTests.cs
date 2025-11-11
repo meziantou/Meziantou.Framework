@@ -1,7 +1,6 @@
 #pragma warning disable CS1718 // Comparison made to same variable
 #pragma warning disable xUnit2013 // Do not use equality check to check for collection size.
 using Meziantou.Framework.Collections;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.Collections;
 

@@ -1,20 +1,56 @@
-using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>Represents a byte size value that can be formatted, parsed, and compared. Supports both decimal (kB, MB, GB) and binary (kiB, MiB, GiB) units.</summary>
+/// <example>
+/// <code>
+/// // Create an instance
+/// var size = new ByteSize(1024);
+/// var size2 = ByteSize.FromKiloBytes(10);
+/// var size3 = ByteSize.Parse("10MB");
+///
+/// // Format with automatic unit selection
+/// Console.WriteLine(size.ToString()); // "1kiB"
+///
+/// // Format with specific unit
+/// Console.WriteLine(size.ToString("MB")); // "0.001024MB"
+///
+/// // Perform arithmetic operations
+/// var total = ByteSize.FromKiloBytes(1) + ByteSize.FromKiloBytes(2);
+/// Console.WriteLine(total.ToString()); // "3kB"
+/// </code>
+/// </example>
 [StructLayout(LayoutKind.Auto)]
 public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, IComparable<ByteSize>, IFormattable
+#if NET6_0_OR_GREATER
+    , ISpanFormattable
+#endif
+#if NET7_0_OR_GREATER
+    , ISpanParsable<ByteSize>
+#endif
+#if NET8_0_OR_GREATER
+    , IUtf8SpanFormattable
+    , IUtf8SpanParsable<ByteSize>
+#endif
 {
+    /// <summary>Initializes a new instance of the <see cref="ByteSize"/> struct with the specified byte value.</summary>
+    /// <param name="length">The size in bytes.</param>
     public ByteSize(long length)
     {
         Value = length;
     }
 
+    /// <summary>Gets the size in bytes.</summary>
     public long Value { get; }
 
+    /// <summary>Gets a <see cref="ByteSize"/> instance representing zero bytes.</summary>
     public static ByteSize Zero => new(0L);
+
+    /// <summary>Gets a <see cref="ByteSize"/> instance representing the maximum possible byte value.</summary>
     public static ByteSize MaxValue => new(long.MaxValue);
+
+    /// <summary>Gets a <see cref="ByteSize"/> instance representing the minimum possible byte value.</summary>
     public static ByteSize MinValue => new(long.MinValue);
 
     public override bool Equals(object? obj) => obj is ByteSize byteSize && Equals(byteSize);
@@ -97,7 +133,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         for (var i = 0; i < format.Length; i++)
         {
             var c = format[i];
-            if (c > '0' && c < '9')
+            if (c is >= '0' and <= '9')
             {
                 index = i;
                 break;
@@ -116,7 +152,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             {
                 unit = FindBestUnitI();
             }
-            else if (unitString == "g" || unitString == "f" || unitString == "G" || unitString == "F")
+            else if (unitString is "g" or "f" or "G" or "F")
             {
                 unit = FindBestUnit();
             }
@@ -137,6 +173,91 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
         return GetValue(unit).ToString(numberFormat, formatProvider) + UnitToString(unit);
     }
+
+#if NET6_0_OR_GREATER
+    /// <summary>
+    /// Tries to format the value into the provided span of characters.
+    /// </summary>
+    /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
+    /// <param name="charsWritten">When this method returns, contains the number of characters that were written in destination.</param>
+    /// <param name="format">A span containing the characters that represent a standard or custom format string.</param>
+    /// <param name="provider">An optional object that supplies culture-specific formatting information for destination.</param>
+    /// <returns>true if the formatting was successful; otherwise, false.</returns>
+    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    {
+        // Determine the format and unit
+        var formatString = format.IsEmpty ? "g" : format;
+
+        var index = -1;
+        for (var i = 0; i < formatString.Length; i++)
+        {
+            var c = formatString[i];
+            if (c is >= '0' and <= '9')
+            {
+                index = i;
+                break;
+            }
+        }
+
+        var unitString = formatString;
+        if (index >= 0)
+        {
+            unitString = formatString[..index];
+        }
+
+        if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
+        {
+            if (unitString.Equals("gi", StringComparison.OrdinalIgnoreCase) || unitString.Equals("fi", StringComparison.OrdinalIgnoreCase))
+            {
+                unit = FindBestUnitI();
+            }
+            else if (unitString is "g" or "f" or "G" or "F")
+            {
+                unit = FindBestUnit();
+            }
+            else
+            {
+                charsWritten = 0;
+                return false;
+            }
+        }
+
+        var numberFormat = "G";
+        if (index > 0)
+        {
+            if (!int.TryParse(formatString[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // Format the value
+        var value = GetValue(unit);
+        var unitStr = UnitToString(unit);
+
+        // Try to format the number part
+        if (!value.TryFormat(destination, out var numberCharsWritten, numberFormat, provider))
+        {
+            charsWritten = 0;
+            return false;
+        }
+
+        // Check if there's enough space for the unit string
+        if (destination.Length - numberCharsWritten < unitStr.Length)
+        {
+            charsWritten = 0;
+            return false;
+        }
+
+        // Copy the unit string
+        unitStr.AsSpan().CopyTo(destination[numberCharsWritten..]);
+        charsWritten = numberCharsWritten + unitStr.Length;
+        return true;
+    }
+#endif
 
     private ByteSizeUnit FindBestUnit()
     {
@@ -184,6 +305,9 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return ByteSizeUnit.Byte;
     }
 
+    /// <summary>Converts the byte size to the specified unit.</summary>
+    /// <param name="unit">The unit to convert to.</param>
+    /// <returns>The value in the specified unit.</returns>
     public double GetValue(ByteSizeUnit unit)
     {
         return (double)Value / (long)unit;
@@ -229,15 +353,29 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
 
     public static implicit operator ByteSize(long value) => new(value);
 
+    /// <summary>Adds two byte size values.</summary>
+    /// <param name="other">The value to add.</param>
+    /// <returns>The sum of the two byte sizes.</returns>
     public ByteSize Add(ByteSize other) => this + other;
+
+    /// <summary>Subtracts a byte size value from this instance.</summary>
+    /// <param name="other">The value to subtract.</param>
+    /// <returns>The result of the subtraction.</returns>
     public ByteSize Substract(ByteSize other) => this - other;
+
+    /// <summary>Multiplies two byte size values.</summary>
+    /// <param name="other">The value to multiply by.</param>
+    /// <returns>The product of the two byte sizes.</returns>
     public ByteSize Multiply(ByteSize other) => this * other;
+
+    /// <summary>Divides this byte size by another.</summary>
+    /// <param name="other">The value to divide by.</param>
+    /// <returns>The result of the division.</returns>
     public ByteSize Divide(ByteSize other) => this / other;
 
-    private static bool TryParseUnit(string unit, out ByteSizeUnit result, out int parsedLength)
+    private static bool TryParseUnit(ReadOnlySpan<char> unit, out ByteSizeUnit result, out int parsedLength)
     {
-        var last = unit[^1];
-        if (last != 'b' && last != 'B')
+        if (unit.IsEmpty || unit[^1] is not 'b' and not 'B')
         {
             result = default;
             parsedLength = 0;
@@ -249,7 +387,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
             parsedLength = 2;
             var isI = false;
             var c = char.ToUpperInvariant(unit[^2]);
-            if (c == 'i' || c == 'I')
+            if (c is 'I')
             {
                 parsedLength = 3;
                 if (unit.Length > 2)
@@ -293,6 +431,12 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return true;
     }
 
+    /// <summary>Converts the string representation of a byte size to its <see cref="ByteSize"/> equivalent.</summary>
+    /// <param name="text">A string containing a byte size to convert.</param>
+    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
+    /// <returns>A <see cref="ByteSize"/> equivalent to the byte size specified in <paramref name="text"/>.</returns>
+    /// <exception cref="FormatException"><paramref name="text"/> is not in a valid format.</exception>
+    [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Would be a breaking change")]
     public static ByteSize Parse(string text, IFormatProvider? formatProvider)
     {
         if (TryParse(text, formatProvider, out var result))
@@ -301,19 +445,57 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         throw new FormatException($"The value '{text}' is not valid");
     }
 
+    /// <summary>Tries to convert the string representation of a byte size to its <see cref="ByteSize"/> equivalent.</summary>
+    /// <param name="text">A string containing a byte size to convert.</param>
+    /// <param name="result">When this method returns, contains the <see cref="ByteSize"/> equivalent to the byte size specified in <paramref name="text"/>, if the conversion succeeded, or zero if the conversion failed.</param>
+    /// <returns><see langword="true"/> if <paramref name="text"/> was converted successfully; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string text, out ByteSize result)
     {
         return TryParse(text, formatProvider: null, out result);
     }
 
+    /// <summary>Tries to convert the string representation of a byte size to its <see cref="ByteSize"/> equivalent.</summary>
+    /// <param name="text">A string containing a byte size to convert.</param>
+    /// <param name="formatProvider">An object that supplies culture-specific formatting information.</param>
+    /// <param name="result">When this method returns, contains the <see cref="ByteSize"/> equivalent to the byte size specified in <paramref name="text"/>, if the conversion succeeded, or zero if the conversion failed.</param>
+    /// <returns><see langword="true"/> if <paramref name="text"/> was converted successfully; otherwise, <see langword="false"/>.</returns>
+    [SuppressMessage("Naming", "CA1725:Parameter names should match base declaration", Justification = "Would be a breaking change")]
     public static bool TryParse(string text, IFormatProvider? formatProvider, out ByteSize result)
     {
-        text = text.Trim();
+        return TryParse(text.AsSpan(), formatProvider, out result);
+    }
+
+    /// <summary>
+    /// Parses a span of characters into a ByteSize value.
+    /// </summary>
+    /// <param name="s">The span of characters to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
+    /// <returns>The result of parsing s.</returns>
+    /// <exception cref="FormatException">s is not in the correct format.</exception>
+    public static ByteSize Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+    {
+        if (TryParse(s, provider, out var result))
+            return result;
+
+        throw new FormatException($"The value is not valid");
+    }
+
+    /// <summary>
+    /// Tries to parse a span of characters into a ByteSize value.
+    /// </summary>
+    /// <param name="s">The span of characters to parse.</param>
+    /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
+    /// <param name="result">When this method returns, contains the result of successfully parsing s, or an undefined value on failure.</param>
+    /// <returns>true if s was successfully parsed; otherwise, false.</returns>
+    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ByteSize result)
+    {
+        s = s.Trim();
 
         // Find unit
-        if (TryParseUnit(text, out var unit, out var unitLength))
+        ByteSizeUnit unit;
+        if (TryParseUnit(s, out unit, out var unitLength))
         {
-            text = text[..^unitLength];
+            s = s[..^unitLength];
         }
         else
         {
@@ -321,13 +503,18 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         }
 
         // Convert number
-        if (long.TryParse(text, NumberStyles.Integer, formatProvider, out var resultLong))
+#if NET7_0_OR_GREATER
+        var valueToParse = s;
+#else
+        var valueToParse = s.ToString();
+#endif
+        if (long.TryParse(valueToParse, NumberStyles.Integer, provider, out var resultLong))
         {
             result = From(resultLong, unit);
             return true;
         }
 
-        if (double.TryParse(text, NumberStyles.Float, formatProvider, out var resultDouble))
+        if (double.TryParse(valueToParse, NumberStyles.Float, provider, out var resultDouble))
         {
             result = From(resultDouble, unit);
             return true;
@@ -337,13 +524,271 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return false;
     }
 
+#if NET8_0_OR_GREATER
+    /// <summary>
+    /// Tries to format the value as UTF-8 into the provided span of bytes.
+    /// </summary>
+    /// <param name="utf8Destination">The span in which to write this instance's value formatted as UTF-8.</param>
+    /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in utf8Destination.</param>
+    /// <param name="format">A span containing the characters that represent a standard or custom format string.</param>
+    /// <param name="provider">An optional object that supplies culture-specific formatting information.</param>
+    /// <returns>true if the formatting was successful; otherwise, false.</returns>
+    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    {
+        // Determine the format and unit
+        var formatString = format.IsEmpty ? "g" : format;
+
+        var index = -1;
+        for (var i = 0; i < formatString.Length; i++)
+        {
+            var c = formatString[i];
+            if (c is >= '0' and <= '9')
+            {
+                index = i;
+                break;
+            }
+        }
+
+        var unitString = formatString;
+        if (index >= 0)
+        {
+            unitString = formatString[..index];
+        }
+
+        if (!TryParseUnit(unitString, out var unit, out var parsedLength) || unitString.Length != parsedLength)
+        {
+            if (unitString.Equals("gi", StringComparison.OrdinalIgnoreCase) || unitString.Equals("fi", StringComparison.OrdinalIgnoreCase))
+            {
+                unit = FindBestUnitI();
+            }
+            else if (unitString is "g" or "f" or "G" or "F")
+            {
+                unit = FindBestUnit();
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        var numberFormat = "G";
+        if (index > 0)
+        {
+            if (!int.TryParse(formatString[index..], NumberStyles.Integer, CultureInfo.InvariantCulture, out var number))
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            numberFormat = "F" + number.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // Format the value
+        var value = GetValue(unit);
+        var unitStr = UnitToString(unit);
+
+        // Try to format the number part as UTF-8
+        if (!value.TryFormat(utf8Destination, out var numberBytesWritten, numberFormat, provider))
+        {
+            bytesWritten = 0;
+            return false;
+        }
+
+        // Check if there's enough space for the unit string (ASCII characters)
+        if (utf8Destination.Length - numberBytesWritten < unitStr.Length)
+        {
+            bytesWritten = 0;
+            return false;
+        }
+
+        // Copy the unit string as UTF-8 bytes (ASCII)
+        for (var i = 0; i < unitStr.Length; i++)
+        {
+            utf8Destination[numberBytesWritten + i] = (byte)unitStr[i];
+        }
+
+        bytesWritten = numberBytesWritten + unitStr.Length;
+        return true;
+    }
+
+    static bool IUtf8SpanParsable<ByteSize>.TryParse(ReadOnlySpan<byte> s, IFormatProvider? provider, out ByteSize result) => TryParse(s, out result);
+    static ByteSize IUtf8SpanParsable<ByteSize>.Parse(ReadOnlySpan<byte> s, IFormatProvider? provider) => Parse(s);
+
+    /// <summary>
+    /// Parses a span of UTF-8 characters into a ByteSize value.
+    /// </summary>
+    /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+    /// <returns>The result of parsing utf8Text.</returns>
+    /// <exception cref="FormatException">utf8Text is not in the correct format.</exception>
+    public static ByteSize Parse(ReadOnlySpan<byte> utf8Text)
+    {
+        if (TryParse(utf8Text, out var result))
+            return result;
+
+        throw new FormatException($"The value is not valid");
+    }
+
+    /// <summary>
+    /// Tries to parse a span of UTF-8 characters into a ByteSize value.
+    /// </summary>
+    /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
+    /// <param name="result">When this method returns, contains the result of successfully parsing utf8Text, or an undefined value on failure.</param>
+    /// <returns>true if utf8Text was successfully parsed; otherwise, false.</returns>
+    public static bool TryParse(ReadOnlySpan<byte> utf8Text, out ByteSize result)
+    {
+        // Trim leading and trailing whitespace
+        while (utf8Text.Length > 0 && IsWhitespace(utf8Text[0]))
+        {
+            utf8Text = utf8Text[1..];
+        }
+        while (utf8Text.Length > 0 && IsWhitespace(utf8Text[^1]))
+        {
+            utf8Text = utf8Text[..^1];
+        }
+
+        // Find unit by checking from the end
+        if (TryParseUtf8Unit(utf8Text, out var unit, out var unitLength))
+        {
+            utf8Text = utf8Text[..^unitLength];
+
+            // Trim trailing whitespace after removing unit
+            while (utf8Text.Length > 0 && IsWhitespace(utf8Text[^1]))
+            {
+                utf8Text = utf8Text[..^1];
+            }
+        }
+        else
+        {
+            unit = ByteSizeUnit.Byte;
+        }
+
+        // Convert number from UTF-8
+        if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out long resultLong, out var bytesConsumed) && bytesConsumed == utf8Text.Length)
+        {
+            result = From(resultLong, unit);
+            return true;
+        }
+
+        if (System.Buffers.Text.Utf8Parser.TryParse(utf8Text, out double resultDouble, out bytesConsumed) && bytesConsumed == utf8Text.Length)
+        {
+            result = From(resultDouble, unit);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    private static bool IsWhitespace(byte b)
+    {
+        return b is 0x20 or 0x09 or 0x0A or 0x0D; // space, tab, LF, CR
+    }
+
+    private static bool TryParseUtf8Unit(ReadOnlySpan<byte> unit, out ByteSizeUnit result, out int parsedLength)
+    {
+        if (unit.IsEmpty || unit[^1] is not (byte)'b' and not (byte)'B')
+        {
+            result = default;
+            parsedLength = 0;
+            return false;
+        }
+
+        if (unit.Length > 1)
+        {
+            parsedLength = 2;
+            var isI = false;
+            var c = (char)unit[^2];
+            c = char.ToUpperInvariant(c);
+            if (c is 'I')
+            {
+                parsedLength = 3;
+                if (unit.Length > 2)
+                {
+                    c = (char)unit[^3];
+                    c = char.ToUpperInvariant(c);
+                    isI = true;
+                }
+                else
+                {
+                    result = default;
+                    return false;
+                }
+            }
+
+            switch (c)
+            {
+                case 'K':
+                    result = isI ? ByteSizeUnit.KibiByte : ByteSizeUnit.KiloByte;
+                    return true;
+
+                case 'M':
+                    result = isI ? ByteSizeUnit.MebiByte : ByteSizeUnit.MegaByte;
+                    return true;
+
+                case 'G':
+                    result = isI ? ByteSizeUnit.GibiByte : ByteSizeUnit.GigaByte;
+                    return true;
+
+                case 'T':
+                    result = isI ? ByteSizeUnit.TebiByte : ByteSizeUnit.TeraByte;
+                    return true;
+
+                case 'P':
+                    result = isI ? ByteSizeUnit.PebiByte : ByteSizeUnit.PetaByte;
+                    return true;
+            }
+        }
+
+        parsedLength = 1;
+        result = ByteSizeUnit.Byte;
+        return true;
+    }
+#endif
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(byte value, ByteSizeUnit unit) => new(value * (long)unit);
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(short value, ByteSizeUnit unit) => new(value * (long)unit);
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(int value, ByteSizeUnit unit) => new(value * (long)unit);
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(long value, ByteSizeUnit unit) => new(value * (long)unit);
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(float value, ByteSizeUnit unit) => new((long)(value * (long)unit));
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a value and unit.</summary>
+    /// <param name="value">The numeric value.</param>
+    /// <param name="unit">The unit of the value.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the specified value and unit.</returns>
     public static ByteSize From(double value, ByteSizeUnit unit) => new((long)(value * (long)unit));
 
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a file's length.</summary>
+    /// <param name="fileInfo">The file information.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the file's size.</returns>
     public static ByteSize FromFileLength(FileInfo fileInfo) => new(fileInfo.Length);
+
+    /// <summary>Creates a <see cref="ByteSize"/> instance from a file's length.</summary>
+    /// <param name="filePath">The path to the file.</param>
+    /// <returns>A <see cref="ByteSize"/> instance representing the file's size.</returns>
     public static ByteSize FromFileLength(string filePath) => FromFileLength(new FileInfo(filePath));
 }

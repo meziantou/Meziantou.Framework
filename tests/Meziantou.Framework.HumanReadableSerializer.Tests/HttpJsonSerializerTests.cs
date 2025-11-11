@@ -1,6 +1,4 @@
-﻿using System.Globalization;
 using Meziantou.Framework.HumanReadable.ValueFormatters;
-using Xunit;
 
 namespace Meziantou.Framework.HumanReadable.Tests;
 public sealed class HttpJsonSerializerTests : SerializerTestsBase

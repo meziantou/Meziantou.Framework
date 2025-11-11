@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace Meziantou.Framework.Html.Tests;
 
 public class HtmlNodeTests

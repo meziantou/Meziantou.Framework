@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Sanitizers</RootNamespace>
-    <Version>2.0.7</Version>
+    <Version>2.0.9</Version>
     <IsTrimmable>false</IsTrimmable>
     <Description>Provide helpers to sanitize HTML fragment</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.3.0" />
+    <PackageReference Include="AngleSharp" Version="1.3.1" />
   </ItemGroup>
 
 </Project>

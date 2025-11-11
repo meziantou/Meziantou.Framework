@@ -7,13 +7,13 @@
 
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>meziantou.validate-nuget-package</ToolCommandName>
-    <Version>1.0.31</Version>
+    <Version>1.0.36</Version>
     <Description>CLI tool to validate NuGet packages follows best-practices</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.2.25502.107" />
-    <PackageReference Include="System.Text.Json" Version="9.0.10" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup>

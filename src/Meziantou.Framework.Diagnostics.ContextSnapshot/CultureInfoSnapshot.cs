@@ -1,7 +1,6 @@
-using System.Globalization;
-
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of culture information including the culture name and read-only status.</summary>
 public sealed class CultureInfoSnapshot
 {
     internal static CultureInfoSnapshot? Get(CultureInfo? culture) => culture is null ? null : new CultureInfoSnapshot(culture);

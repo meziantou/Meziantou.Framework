@@ -1,8 +1,7 @@
-﻿#pragma warning disable CA1869
+#pragma warning disable CA1869
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Xunit;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot.Tests;
 

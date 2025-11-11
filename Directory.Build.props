@@ -35,7 +35,7 @@
 
   <!-- Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Meziantou.Polyfill" Version="1.0.52">
+    <PackageReference Include="Meziantou.Polyfill" Version="1.0.62">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

@@ -1,5 +1,17 @@
 namespace Meziantou.Framework;
 
+/// <summary>
+/// Provides methods to locate executables in the system PATH.
+/// </summary>
+/// <example>
+/// <code>
+/// string? gitPath = ExecutableFinder.GetFullExecutablePath("git");
+/// if (gitPath is not null)
+/// {
+///     Console.WriteLine($"Git found at: {gitPath}");
+/// }
+/// </code>
+/// </example>
 #if PUBLIC_EXECUTABLE_FINDER
 public
 #else
@@ -7,20 +19,12 @@ internal
 #endif
 static class ExecutableFinder
 {
-    private static bool IsWindows()
-    {
-#if NETFRAMEWORK
-        return Environment.OSVersion.Platform == PlatformID.Win32NT;
-#else
-        return OperatingSystem.IsWindows();
-#endif
-    }
-
+    /// <summary>Searches for an executable in the system PATH and returns its full path if found.</summary>
     // https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/path
     public static string? GetFullExecutablePath(string executableName, string? workingDirectory = null)
     {
         var separator = Path.PathSeparator;
-        var extensions = IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
+        var extensions = OperatingSystem.IsWindows() ? (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(separator) : [];
         var path = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(separator);
 
         IEnumerable<string> searchPaths = path;

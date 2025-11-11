@@ -327,14 +327,9 @@ public sealed class FullPathTests
         Assert.NotEmpty(fullPath.Value);
     }
 
-    private static bool IsWindows()
-    {
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-    }
-
     private static void CreateSymlink(string source, string target, SymbolicLink options)
     {
-        if (IsWindows())
+        if (OperatingSystem.IsWindows())
         {
             if (!CreateSymbolicLink(source, target, options))
             {

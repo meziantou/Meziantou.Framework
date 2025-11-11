@@ -1,6 +1,5 @@
 #nullable disable
 using System.ComponentModel;
-using System.Text;
 
 namespace Meziantou.Framework.Html;
 

@@ -1,5 +1,4 @@
 #pragma warning disable CA1054 // URI-like parameters should not be strings
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.Extensions.Primitives;
 
@@ -87,7 +86,7 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
+        return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
     /// <summary>
@@ -148,7 +147,7 @@ public static class QueryStringUtilities
         ArgumentNullException.ThrowIfNull(uri);
         ArgumentNullException.ThrowIfNull(queryString);
 
-        return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create<string, string?>(kvp.Key, v)));
+        return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
     /// <summary>
@@ -282,13 +281,13 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
+    /// <summary>Adds or replaces the given query key and value in the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="name">The name of the query key.</param>
     /// <param name="value">The query value.</param>
     /// <returns>The combined result.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="uri"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public static string AddOrReplaceQueryString(string uri, string name, string? value)
     {
         ArgumentNullException.ThrowIfNull(uri);
@@ -324,6 +323,7 @@ public static class QueryStringUtilities
         return AddOrReplaceQueryString(uri, accumulator);
     }
 
+    /// <summary>Removes the specified query parameter from the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="name">The name of the query key.</param>
     /// <returns>The combined result.</returns>
@@ -409,7 +409,7 @@ public static class QueryStringUtilities
             {
                 if (delimiterIndex > scanIndex)
                 {
-                    result.Append(queryString[scanIndex..delimiterIndex], string.Empty);
+                    result.Append(queryString[scanIndex..delimiterIndex], "");
                 }
             }
 

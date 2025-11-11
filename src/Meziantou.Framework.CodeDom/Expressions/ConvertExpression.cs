@@ -1,9 +1,8 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a type conversion expression (as operator).</summary>
 public class ConvertExpression : Expression
 {
-    private Expression? _expression;
-
     public ConvertExpression()
     {
     }
@@ -16,8 +15,8 @@ public class ConvertExpression : Expression
 
     public Expression? Expression
     {
-        get => _expression;
-        set => SetParent(ref _expression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public TypeReference? Type { get; set; }

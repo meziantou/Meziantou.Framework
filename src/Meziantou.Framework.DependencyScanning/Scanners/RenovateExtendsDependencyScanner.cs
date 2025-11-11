@@ -1,12 +1,10 @@
-
 using Meziantou.Framework.DependencyScanning.Internals;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-// https://docs.renovatebot.com/configuration-options/
-// https://docs.renovatebot.com/config-presets/
+/// <summary>Scans Renovate configuration files for extends references to shared configuration presets.</summary>
 public sealed class RenovateExtendsDependencyScanner : DependencyScanner
 {
     private static readonly string[] PotentialRenovateFiles =

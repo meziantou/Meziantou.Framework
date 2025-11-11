@@ -1,5 +1,3 @@
-﻿using Xunit;
-
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class SnapshotComparerTests
 {

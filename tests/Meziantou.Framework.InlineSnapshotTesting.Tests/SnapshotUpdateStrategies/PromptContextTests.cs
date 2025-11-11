@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis;
-using Xunit;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests.SnapshotUpdateStrategies;
@@ -79,7 +78,7 @@ public sealed class PromptContextTests(ITestOutputHelper testOutputHelper)
               </ItemGroup>
               <ItemGroup>
                 <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-                {{string.Join("\n", packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
+                {{string.Join('\n', packages.Select(p => $"""<PackageReference Include="{p.PackageName}" Version="{p.Version}" />"""))}}
               </ItemGroup>
             </Project>
             """);

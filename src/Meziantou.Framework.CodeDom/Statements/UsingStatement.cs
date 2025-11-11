@@ -1,13 +1,12 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a using statement for automatic resource disposal.</summary>
 public class UsingStatement : Statement
 {
-    private Statement? _statement;
-
     public Statement? Statement
     {
-        get => _statement;
-        set => SetParent(ref _statement, value);
+        get;
+        set => SetParent(ref field, value);
     }
 
     public StatementCollection? Body { get; set; }

@@ -1,9 +1,8 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a local variable declaration statement.</summary>
 public class VariableDeclarationStatement : Statement
 {
-    private Expression? _initExpression;
-
     public VariableDeclarationStatement()
     {
     }
@@ -21,8 +20,8 @@ public class VariableDeclarationStatement : Statement
 
     public Expression? InitExpression
     {
-        get => _initExpression;
-        set => SetParent(ref _initExpression, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }
 

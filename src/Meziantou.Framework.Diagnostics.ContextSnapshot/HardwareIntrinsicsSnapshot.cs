@@ -7,6 +7,7 @@ using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of hardware intrinsics support including SIMD capabilities and CPU instruction sets (AVX, SSE, ARM NEON, etc.).</summary>
 public sealed class HardwareIntrinsicsSnapshot
 {
     internal HardwareIntrinsicsSnapshot() { }

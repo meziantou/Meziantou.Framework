@@ -1,5 +1,6 @@
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a time zone including ID, standard name, UTC offset, and daylight saving time support.</summary>
 public sealed class TimeZoneSnapshot
 {
     internal TimeZoneSnapshot(TimeZoneInfo timeZoneInfo)

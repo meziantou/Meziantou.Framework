@@ -7,29 +7,54 @@ namespace Meziantou.Framework;
 // https://github.com/GrabYourPitchforks/runtime/pull/5/files
 // https://github.com/GrabYourPitchforks/runtime/commit/7532410d14d7950241a87d5090af7bf1cb712e3b
 // https://source.dot.net/#Microsoft.AspNetCore.DataProtection/Secret.cs,726e6ae00d63e382
+/// <summary>
+/// Provides factory methods for creating <see cref="SensitiveData{T}"/> instances.
+/// </summary>
+/// <example>
+/// <code>
+/// // Create sensitive data from a string
+/// using var secret = SensitiveData.Create("my-password");
+///
+/// // Reveal the data when needed
+/// string password = secret.RevealToString();
+///
+/// // Create sensitive data from a byte array
+/// byte[] key = new byte[] { 1, 2, 3, 4, 5 };
+/// using var sensitiveKey = SensitiveData.Create(key);
+/// byte[] revealedKey = sensitiveKey.RevealToArray();
+/// </code>
+/// </example>
 public static class SensitiveData
 {
-    /// <summary>
-    /// Create an instance of <see cref="SensitiveData{Char}" /> with the <paramref name="value"/>.
-    /// </summary>
-    /// <param name="value">The sensitive data</param>
-    /// <returns></returns>
+    /// <summary>Creates an instance of <see cref="SensitiveData{Char}" /> from a string.</summary>
+    /// <param name="value">The sensitive string data to protect.</param>
+    /// <returns>A new <see cref="SensitiveData{Char}"/> instance containing the string contents.</returns>
     public static SensitiveData<char> Create(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
         return new(value);
     }
 
-    /// Create an instance of <see cref="SensitiveData{T}" /> with the <paramref name="buffer"/>.
+    /// <summary>Creates an instance of <see cref="SensitiveData{T}" /> from an array.</summary>
+    /// <typeparam name="T">The unmanaged type of elements in the buffer.</typeparam>
+    /// <param name="buffer">The buffer containing sensitive data to protect.</param>
+    /// <returns>A new <see cref="SensitiveData{T}"/> instance containing a copy of the buffer contents.</returns>
     public static SensitiveData<T> Create<T>(T[] buffer) where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(buffer);
         return new(buffer);
     }
 
-    /// Create an instance of <see cref="SensitiveData{T}" /> with the <paramref name="buffer"/>.
+    /// <summary>Creates an instance of <see cref="SensitiveData{T}" /> from a read-only span.</summary>
+    /// <typeparam name="T">The unmanaged type of elements in the buffer.</typeparam>
+    /// <param name="buffer">The read-only span containing sensitive data to protect.</param>
+    /// <returns>A new <see cref="SensitiveData{T}"/> instance containing a copy of the buffer contents.</returns>
     public static SensitiveData<T> Create<T>(ReadOnlySpan<T> buffer) where T : unmanaged => new(buffer);
 
+    /// <summary>Reveals the contents of a <see cref="SensitiveData{Char}"/> instance as a string.</summary>
+    /// <param name="secret">The sensitive data to reveal.</param>
+    /// <returns>A string containing the revealed sensitive data.</returns>
+    /// <exception cref="ObjectDisposedException">The instance has already been disposed.</exception>
     public static string RevealToString(this SensitiveData<char> secret)
     {
         return string.Create(secret.GetLength(), secret, (span, buffer) => buffer.RevealInto(span));
@@ -41,6 +66,29 @@ public static class SensitiveData
 /// However, there's no effort to thwart <i>intentional</i> disclosure of these
 /// contents, such as through a debugger or memory dump utility.
 /// </summary>
+/// <typeparam name="T">The unmanaged type of elements stored in this sensitive data buffer.</typeparam>
+/// <example>
+/// <code>
+/// // Create and use sensitive data
+/// using var secret = SensitiveData.Create("my-secret-password");
+///
+/// // Get the length without revealing the data
+/// int length = secret.GetLength();
+///
+/// // Reveal data into an existing buffer
+/// char[] buffer = new char[length];
+/// secret.RevealInto(buffer);
+///
+/// // Or reveal to a new array
+/// char[] revealed = secret.RevealToArray();
+///
+/// // Use the data with a callback to avoid keeping it in memory
+/// secret.RevealAndUse(state: null, (span, _) => {
+///     // Process the sensitive data here
+///     Console.WriteLine($"Processing {span.Length} characters");
+/// });
+/// </code>
+/// </example>
 [TypeConverter(typeof(SensitiveDataTypeConverter))]
 public sealed unsafe class SensitiveData<T> : IDisposable
     where T : unmanaged
@@ -96,6 +144,12 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         return _data.GetSpan().ToArray();
     }
 
+    /// <summary>Reveals the contents and invokes a callback action with the data.</summary>
+    /// <typeparam name="TArg">The type of the argument to pass to the callback.</typeparam>
+    /// <param name="arg">The argument to pass to the callback action.</param>
+    /// <param name="spanAction">The callback action to invoke with the revealed data and argument.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="spanAction"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public void RevealAndUse<TArg>(TArg arg, System.Buffers.ReadOnlySpanAction<T, TArg> spanAction)
     {
         ArgumentNullException.ThrowIfNull(spanAction);
@@ -104,6 +158,9 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         spanAction(span, arg);
     }
 
+    /// <summary>Creates a new copy of this <see cref="SensitiveData{T}"/> instance.</summary>
+    /// <returns>A new <see cref="SensitiveData{T}"/> instance containing a copy of the data.</returns>
+    /// <exception cref="ObjectDisposedException">This instance has already been disposed.</exception>
     public SensitiveData<T> Clone()
     {
         ThrowIfDisposed();

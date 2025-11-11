@@ -2,6 +2,30 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Threading;
 
+/// <summary>Provides an asynchronous reader-writer lock that allows multiple readers or a single writer.</summary>
+/// <example>
+/// <code><![CDATA[
+/// var rwLock = new AsyncReaderWriterLock();
+/// 
+/// // Multiple readers can execute concurrently
+/// async Task ReadAsync()
+/// {
+///     using (await rwLock.ReaderLockAsync())
+///     {
+///         // Read data
+///     }
+/// }
+/// 
+/// // Only one writer can execute at a time
+/// async Task WriteAsync()
+/// {
+///     using (await rwLock.WriterLockAsync())
+///     {
+///         // Write data
+///     }
+/// }
+/// ]]></code>
+/// </example>
 public sealed class AsyncReaderWriterLock
 {
     private readonly Task<Releaser> _readerReleaser;
@@ -12,12 +36,15 @@ public sealed class AsyncReaderWriterLock
     private int _readersWaiting;
     private int _status;
 
+    /// <summary>Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.</summary>
     public AsyncReaderWriterLock()
     {
         _readerReleaser = Task.FromResult(new Releaser(this, writer: false));
         _writerReleaser = Task.FromResult(new Releaser(this, writer: true));
     }
 
+    /// <summary>Asynchronously acquires the reader lock. Multiple readers can hold the lock simultaneously.</summary>
+    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the reader lock.</returns>
     public Task<Releaser> ReaderLockAsync()
     {
         lock (_waitingWriters)
@@ -35,6 +62,8 @@ public sealed class AsyncReaderWriterLock
         }
     }
 
+    /// <summary>Asynchronously acquires the writer lock. Only one writer can hold the lock at a time.</summary>
+    /// <returns>A task that returns a disposable releaser. Disposing the releaser releases the writer lock.</returns>
     public Task<Releaser> WriterLockAsync()
     {
         lock (_waitingWriters)
@@ -98,6 +127,7 @@ public sealed class AsyncReaderWriterLock
         toWake?.SetResult(new Releaser(this, toWakeIsWriter));
     }
 
+    /// <summary>Represents a disposable releaser for an <see cref="AsyncReaderWriterLock"/>. Disposing the releaser releases either the reader or writer lock.</summary>
     [StructLayout(LayoutKind.Auto)]
     [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "<Pending>")]
     public readonly struct Releaser : IDisposable

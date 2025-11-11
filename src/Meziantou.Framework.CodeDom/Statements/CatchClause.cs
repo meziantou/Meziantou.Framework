@@ -1,9 +1,8 @@
 namespace Meziantou.Framework.CodeDom;
 
+/// <summary>Represents a catch clause in a try-catch statement.</summary>
 public class CatchClause : CodeObject, ICommentable
 {
-    private StatementCollection? _body;
-
     public CatchClause()
     {
         CommentsBefore = new CommentCollection(this);
@@ -17,7 +16,7 @@ public class CatchClause : CodeObject, ICommentable
 
     public StatementCollection? Body
     {
-        get => _body;
-        set => SetParent(ref _body, value);
+        get;
+        set => SetParent(ref field, value);
     }
 }

@@ -3,6 +3,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
+/// <summary>Represents a snapshot of a disk drive including name, format, type, free space, and total size.</summary>
 public sealed class DriveSnapshot
 {
     private DriveSnapshot(DriveInfo driveInfo)

@@ -25,7 +25,17 @@ partial class HttpClientMock
     private static readonly string[] <#= verb #>Verb = ["<#= verb.ToUpperInvariant() #>"];
 <# } #>
 <# foreach(var verb in methods) { #>
+    /// <summary>Maps a <#= verb.ToUpperInvariant() #> request to the specified URL pattern.</summary>
+    /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
+    /// <param name="handler">The request handler to execute when the URL pattern is matched.</param>
+    /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder Map<#= verb #>(string url, RequestDelegate handler) => Map(<#= verb #>Verb, url, handler);
+
+    /// <summary>Maps a <#= verb.ToUpperInvariant() #> request to the specified URL pattern.</summary>
+    /// <param name="url">The URL pattern to match. Can include route parameters, query strings, and absolute URLs with scheme and host.</param>
+    /// <param name="handler">The delegate to execute when the URL pattern is matched.</param>
+    /// <returns>An <see cref="IEndpointConventionBuilder"/> for configuring the endpoint.</returns>
     public IEndpointConventionBuilder Map<#= verb #>(string url, Delegate handler) => Map(<#= verb #>Verb, url, handler);
+
 <# } #>
 }

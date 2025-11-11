@@ -2,7 +2,6 @@
 #pragma warning disable MEZ_NET9 // Type or member is obsolete
 #endif
 using Meziantou.Framework.IO;
-using Xunit;
 
 namespace Meziantou.Framework.Tests.IO;
 

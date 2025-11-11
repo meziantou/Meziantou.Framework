@@ -1,8 +1,8 @@
-using System.Text;
 using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.HumanReadable;
 
+/// <summary>Writes human-readable text output with support for indentation, arrays, and objects.</summary>
 public sealed class HumanReadableTextWriter
 {
     private const string Indentation = "  ";
@@ -17,6 +17,8 @@ public sealed class HumanReadableTextWriter
 
     private WriterContext _context;
 
+    /// <summary>Initializes a new instance of the <see cref="HumanReadableTextWriter"/> class.</summary>
+    /// <param name="options">The serialization options.</param>
     public HumanReadableTextWriter(HumanReadableSerializerOptions options)
     {
         _options = options;
@@ -131,6 +133,8 @@ public sealed class HumanReadableTextWriter
         }
     }
 
+    /// <summary>Writes a value to the output.</summary>
+    /// <param name="value">The value to write.</param>
     public void WriteValue(ReadOnlySpan<char> value)
     {
         var multipleLines = StringUtils.IsMultiLines(value);
@@ -159,11 +163,16 @@ public sealed class HumanReadableTextWriter
         }
     }
 
+    /// <summary>Writes a value to the output.</summary>
+    /// <param name="value">The value to write.</param>
     public void WriteValue(string value)
     {
         WriteValue(value.AsSpan());
     }
 
+    /// <summary>Writes a formatted value to the output using the formatter for the specified media type.</summary>
+    /// <param name="mediaTypeName">The media type name (e.g., "application/json").</param>
+    /// <param name="value">The value to write.</param>
     public void WriteFormattedValue(string mediaTypeName, string value)
     {
         var formatter = _options.GetFormatter(mediaTypeName);
@@ -176,12 +185,15 @@ public sealed class HumanReadableTextWriter
         formatter.Format(this, value, _options);
     }
 
+    /// <summary>Writes a null value to the output.</summary>
     public void WriteNullValue()
     {
         Write("<null>");
         WriteNewLine();
     }
 
+    /// <summary>Writes a property name to the output.</summary>
+    /// <param name="propertyName">The name of the property.</param>
     public void WritePropertyName(string propertyName)
     {
         Write(propertyName);
@@ -196,6 +208,7 @@ public sealed class HumanReadableTextWriter
             throw new HumanReadableSerializerException($"Current depth ({_depth}) is equal to or larger than the maximum allowed depth of {_options.MaxDepth}. Cannot write the next object or array");
     }
 
+    /// <summary>Starts writing an object.</summary>
     public void StartObject()
     {
         IncrementDepth();
@@ -211,17 +224,20 @@ public sealed class HumanReadableTextWriter
         }
     }
 
+    /// <summary>Ends writing an object.</summary>
     public void EndObject()
     {
         _depth--;
         _scopes.Pop().Dispose();
     }
 
+    /// <summary>Writes an empty object to the output.</summary>
     public void WriteEmptyObject()
     {
         WriteValue("{}");
     }
 
+    /// <summary>Starts writing an array.</summary>
     public void StartArray()
     {
         if (_text.Length > 0 && _context != WriterContext.ArrayItemStart)
@@ -236,16 +252,20 @@ public sealed class HumanReadableTextWriter
         }
     }
 
+    /// <summary>Ends writing an array.</summary>
     public void EndArray()
     {
         _scopes.Pop().Dispose();
     }
 
+    /// <summary>Writes an empty array to the output.</summary>
     public void WriteEmptyArray()
     {
         WriteValue("[]");
     }
 
+    /// <summary>Starts writing an array item.</summary>
+    /// <param name="index">An optional index or label for the array item.</param>
     public void StartArrayItem(string? index = null)
     {
         Write("- " + index);
@@ -254,6 +274,7 @@ public sealed class HumanReadableTextWriter
         _scopes.Push(new Scope(this, unindent: true));
     }
 
+    /// <summary>Ends writing an array item.</summary>
     public void EndArrayItem()
     {
         _scopes.Pop().Dispose();

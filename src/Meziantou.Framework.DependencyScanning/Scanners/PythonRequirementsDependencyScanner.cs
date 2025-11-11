@@ -3,10 +3,9 @@ using Meziantou.Framework.DependencyScanning.Internals;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;
 
-public sealed class PythonRequirementsDependencyScanner : DependencyScanner
+/// <summary>Scans Python requirements.txt files for PyPI package dependencies.</summary>
+public sealed partial class PythonRequirementsDependencyScanner : DependencyScanner
 {
-    private static readonly Regex PypiReferenceRegex = new(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(2));
-
     protected internal override IReadOnlyCollection<DependencyType> SupportedDependencyTypes { get; } = [DependencyType.PyPi];
 
     protected override bool ShouldScanFileCore(CandidateFileContext context)
@@ -23,7 +22,7 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
         {
             lineNo++;
 
-            var match = PypiReferenceRegex.Match(line);
+            var match = PypiReferenceRegex().Match(line);
             if (!match.Success)
                 continue;
 
@@ -38,4 +37,7 @@ public sealed class PythonRequirementsDependencyScanner : DependencyScanner
                 versionLocation: new TextLocation(context.FileSystem, context.FullPath, lineNo, versionGroup.Index + 1, versionGroup.Length));
         }
     }
+
+    [GeneratedRegex(@"^(?<PACKAGENAME>[\w\.-]+?)\s?(\[.*\])?\s?==\s?(?<VERSION>[\w\.-]*?)$", RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 2000)]
+    private static partial Regex PypiReferenceRegex();
 }

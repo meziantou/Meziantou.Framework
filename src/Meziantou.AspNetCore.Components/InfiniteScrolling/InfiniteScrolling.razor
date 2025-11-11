@@ -32,12 +32,15 @@
 
     private bool IsLoading => _loadItemsCts != null;
 
+    /// <summary>Gets or sets the delegate that provides items to display. This delegate is called when more items need to be loaded.</summary>
     [Parameter]
     public InfiniteScrollingItemsProviderRequestDelegate<T>? ItemsProvider { get; set; }
 
+    /// <summary>Gets or sets the template for rendering each item.</summary>
     [Parameter]
     public RenderFragment<T>? ItemTemplate { get; set; }
 
+    /// <summary>Gets or sets the template to display while loading more items.</summary>
     [Parameter]
     public RenderFragment? LoadingTemplate { get; set; }
 

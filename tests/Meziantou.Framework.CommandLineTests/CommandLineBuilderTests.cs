@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using TestUtilities;
-using Xunit;
 using Xunit.Sdk;
 
 namespace Meziantou.Framework.CommandLineTests;

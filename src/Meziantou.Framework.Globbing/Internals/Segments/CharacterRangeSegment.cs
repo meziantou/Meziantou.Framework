@@ -11,7 +11,7 @@ internal sealed class CharacterRangeSegment : Segment
 
     internal static bool IsAsciiUpper(int c)
     {
-        return c >= 'A' && c <= 'Z';
+        return c is >= 'A' and <= 'Z';
     }
 
     public override bool IsMatch(ref PathReader pathReader)

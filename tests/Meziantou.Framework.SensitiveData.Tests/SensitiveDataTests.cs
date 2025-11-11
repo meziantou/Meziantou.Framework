@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.Json;
-using Xunit;
 
 namespace Meziantou.Framework.Tests;
 

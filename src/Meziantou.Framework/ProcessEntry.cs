@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
+/// <summary>Represents a process and its parent process relationship.</summary>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct ProcessEntry : IEquatable<ProcessEntry>
 {
@@ -12,7 +13,10 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
         ParentProcessId = parentProcessId;
     }
 
+    /// <summary>Gets the process identifier.</summary>
     public int ProcessId { get; }
+
+    /// <summary>Gets the parent process identifier.</summary>
     public int ParentProcessId { get; }
 
     public override bool Equals(object? obj)
@@ -32,6 +36,7 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
 
     public override string ToString() => $"Id: {ProcessId}; Parent Id: {ParentProcessId}";
 
+    /// <summary>Gets the <see cref="Process"/> instance for this process entry.</summary>
     public Process ToProcess()
     {
         return Process.GetProcessById(ProcessId);

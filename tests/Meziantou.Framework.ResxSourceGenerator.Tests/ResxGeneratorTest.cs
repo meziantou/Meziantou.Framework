@@ -1,4 +1,3 @@
-using System.Text;
 using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -6,7 +5,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using TestUtilities;
-using Xunit;
 
 namespace Meziantou.Framework.ResxSourceGenerator.Tests;
 

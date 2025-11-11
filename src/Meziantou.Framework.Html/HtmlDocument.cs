@@ -1,11 +1,34 @@
 #nullable disable
 using System.Diagnostics;
-using System.Globalization;
-using System.Text;
 using System.Xml;
 
 namespace Meziantou.Framework.Html;
 
+/// <summary>
+/// Represents an HTML document that can be loaded, parsed, and manipulated programmatically.
+/// </summary>
+/// <example>
+/// <code>
+/// // Load from file
+/// var doc = new HtmlDocument();
+/// doc.Load("page.html");
+/// 
+/// // Load from string
+/// doc.LoadHtml("&lt;html&gt;&lt;body&gt;Hello&lt;/body&gt;&lt;/html&gt;");
+/// 
+/// // Query elements using XPath
+/// var title = doc.SelectSingleNode("//title")?.InnerText;
+/// var links = doc.SelectNodes("//a[@href]");
+/// 
+/// // Modify and save
+/// doc.HtmlElement.SetAttributeValue("lang", "en");
+/// doc.Save("modified.html");
+/// </code>
+/// </example>
+/// <remarks>
+/// This class provides a DOM-like API for parsing and manipulating HTML documents.
+/// It supports encoding detection, XPath queries, and can handle malformed HTML.
+/// </remarks>
 [DebuggerDisplay("{Name}")]
 #if HTML_PUBLIC
 public
@@ -14,30 +37,60 @@ internal
 #endif
 sealed class HtmlDocument : HtmlNode
 {
-    private HtmlOptions _options = new();
     private string _filePath;
     private HtmlElement _baseElement;
     private bool _baseElementSearched;
     private bool? _xhtml;
-    private HtmlAttribute _namespaceXml;
     private Dictionary<string, string> _declaredNamespaces;
     private Dictionary<string, string> _declaredPrefixes;
 
+    /// <summary>Occurs when the document is being parsed.</summary>
+    /// <remarks>This event can be used to customize the parsing process or track progress.</remarks>
     public event EventHandler<HtmlDocumentParseEventArgs> Parsing;
+
+    /// <summary>Occurs after the document has been parsed.</summary>
     public event EventHandler<HtmlDocumentParseEventArgs> Parsed;
 
+    /// <summary>Initializes a new instance of the <see cref="HtmlDocument"/> class.</summary>
     public HtmlDocument()
-        : base(string.Empty, "#document", string.Empty, ownerDocument: null)
+ : base("", "#document", "", ownerDocument: null)
     {
     }
 
+    /// <summary>Gets the encoding used to read the document stream.</summary>
+    /// <value>The stream encoding, or <see langword="null"/> if the document was not loaded from a stream.</value>
     public Encoding StreamEncoding { get; private set; }
+
+    /// <summary>Gets the encoding detected from the HTML meta tags.</summary>
+    /// <value>The detected encoding, or <see langword="null"/> if no encoding was detected.</value>
+    /// <remarks>
+    /// The encoding is detected from meta tags like &lt;meta charset="utf-8"&gt; or 
+    /// &lt;meta http-equiv="Content-Type" content="text/html; charset=utf-8"&gt;.
+    /// </remarks>
     public Encoding DetectedEncoding { get; private set; }
+
+    /// <summary>Gets or sets the base URI of the document.</summary>
+    /// <value>The base URI used to resolve relative URLs.</value>
     public new Uri BaseAddress { get; set; }
+
+    /// <summary>Gets a value indicating whether the reader was restarted during parsing due to encoding detection.</summary>
+    /// <value><see langword="true"/> if the reader was restarted; otherwise, <see langword="false"/>.</value>
     public bool ReaderWasRestarted { get; private set; }
+
+    /// <summary>Gets the document type declaration element (&lt;!DOCTYPE&gt;).</summary>
+    /// <value>The document type element, or <see langword="null"/> if no DOCTYPE was found.</value>
     public HtmlElement DocumentType { get; private set; }
+
+    /// <summary>Gets the root &lt;html&gt; element of the document.</summary>
+    /// <value>The html element, or <see langword="null"/> if no html element was found.</value>
     public HtmlElement HtmlElement { get; private set; }
+
+    /// <summary>Gets the &lt;body&gt; element of the document.</summary>
+    /// <value>The body element, or <see langword="null"/> if no body element was found.</value>
     public HtmlElement BodyElement { get; private set; }
+
+    /// <summary>Gets the &lt;head&gt; element of the document.</summary>
+    /// <value>The head element, or <see langword="null"/> if no head element was found.</value>
     public HtmlElement HeadElement { get; private set; }
 
     internal static void RemoveIntrinsicElement(HtmlDocument doc, HtmlElement element)
@@ -70,6 +123,8 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Gets the file path from which the document was loaded.</summary>
+    /// <value>The file path, or <see langword="null"/> if the document was not loaded from a file.</value>
     public string FilePath
     {
         get => _filePath;
@@ -80,20 +135,22 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Gets or sets the parsing and serialization options for the document.</summary>
+    /// <value>The HTML options. The default is a new <see cref="HtmlOptions"/> instance.</value>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/>.</exception>
     public HtmlOptions Options
     {
-        get => _options;
+        get;
         set
         {
-            _options = value ?? throw new ArgumentNullException(nameof(value));
+            field = value ?? throw new ArgumentNullException(nameof(value));
             OnPropertyChanged();
         }
-    }
+    } = new();
 
     public void LoadHtml(string html)
     {
-        if (html is null)
-            throw new ArgumentNullException(nameof(html));
+        ArgumentNullException.ThrowIfNull(html);
 
         Clear();
         using var reader = new StringReader(html);
@@ -103,8 +160,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         Clear();
         FilePath = filePath;
@@ -128,8 +184,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(string filePath, bool detectEncodingFromByteOrderMarks)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         Clear();
         FilePath = filePath;
@@ -163,8 +218,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(string filePath, Encoding encoding)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         Clear();
         FilePath = filePath;
@@ -188,8 +242,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(string filePath, Encoding encoding, bool detectEncodingFromByteOrderMarks)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         Clear();
         FilePath = filePath;
@@ -213,8 +266,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(string filePath)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         Clear();
         FilePath = filePath;
@@ -238,8 +290,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(Stream stream, bool detectEncodingFromByteOrderMarks)
     {
-        if (stream is null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         Clear();
         if (detectEncodingFromByteOrderMarks)
@@ -271,8 +322,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(Stream stream, Encoding encoding)
     {
-        if (stream is null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
@@ -295,8 +345,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks)
     {
-        if (stream is null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize: 1024, leaveOpen: true))
@@ -319,8 +368,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize)
     {
-        if (stream is null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         Clear();
         using (var reader = new StreamReader(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: true))
@@ -343,8 +391,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(Stream stream)
     {
-        if (stream is null)
-            throw new ArgumentNullException(nameof(stream));
+        ArgumentNullException.ThrowIfNull(stream);
 
         Clear();
         using (var reader = new StreamReader(stream, Utilities.GetDefaultEncoding(), detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
@@ -367,8 +414,7 @@ sealed class HtmlDocument : HtmlNode
 
     public void Load(TextReader reader)
     {
-        if (reader is null)
-            throw new ArgumentNullException(nameof(reader));
+        ArgumentNullException.ThrowIfNull(reader);
 
         Clear();
         InternalLoad(reader, firstPass: false);
@@ -384,8 +430,7 @@ sealed class HtmlDocument : HtmlNode
         }
         else
         {
-            if (uri is null)
-                throw new ArgumentNullException(nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             _declaredPrefixes ??= new Dictionary<string, string>(StringComparer.Ordinal);
             _declaredPrefixes[prefix] = uri;
@@ -397,8 +442,7 @@ sealed class HtmlDocument : HtmlNode
         }
         else
         {
-            if (prefix is null)
-                throw new ArgumentNullException(nameof(prefix));
+            ArgumentNullException.ThrowIfNull(prefix);
 
             _declaredNamespaces ??= new Dictionary<string, string>(StringComparer.Ordinal);
             _declaredNamespaces[uri] = prefix;
@@ -408,23 +452,23 @@ sealed class HtmlDocument : HtmlNode
     public override string GetNamespaceOfPrefix(string prefix)
     {
         if (_declaredPrefixes is null)
-            return string.Empty;
+            return "";
 
         if (_declaredPrefixes.TryGetValue(prefix, out var namespaceURI))
             return namespaceURI;
 
-        return string.Empty;
+        return "";
     }
 
     public override string GetPrefixOfNamespace(string namespaceURI)
     {
         if (_declaredNamespaces is null)
-            return string.Empty;
+            return "";
 
         if (_declaredNamespaces.TryGetValue(namespaceURI, out var prefix))
             return prefix;
 
-        return string.Empty;
+        return "";
     }
 
     protected override void GetNamespaceAttributes(IDictionary<string, string> namespaces)
@@ -460,11 +504,9 @@ sealed class HtmlDocument : HtmlNode
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlAttribute CreateAttribute(string prefix, string localName, string namespaceURI)
     {
-        if (prefix is null)
-            throw new ArgumentNullException(nameof(prefix));
+        ArgumentNullException.ThrowIfNull(prefix);
 
-        if (localName is null)
-            throw new ArgumentNullException(nameof(localName));
+        ArgumentNullException.ThrowIfNull(localName);
 
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
@@ -486,8 +528,7 @@ sealed class HtmlDocument : HtmlNode
 
     public HtmlElement CreateElement(string name)
     {
-        if (name is null)
-            throw new ArgumentNullException(nameof(name));
+        ArgumentNullException.ThrowIfNull(name);
 
         ParseName(name, out var prefix, out var localName);
         return CreateElement(prefix, localName, namespaceURI: null);
@@ -496,11 +537,9 @@ sealed class HtmlDocument : HtmlNode
     [SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Breaking change")]
     public HtmlElement CreateElement(string prefix, string localName, string namespaceURI)
     {
-        if (prefix is null)
-            throw new ArgumentNullException(nameof(prefix));
+        ArgumentNullException.ThrowIfNull(prefix);
 
-        if (localName is null)
-            throw new ArgumentNullException(nameof(localName));
+        ArgumentNullException.ThrowIfNull(localName);
 
         if (prefix.Contains(':', StringComparison.Ordinal))
             throw new ArgumentException("Prefix must not contain ':'", nameof(prefix));
@@ -929,26 +968,38 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>Saves the document to the specified text writer.</summary>
+    /// <param name="writer">The text writer.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void Save(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         WriteTo(writer);
     }
 
+    /// <summary>Saves the document to the specified XML writer.</summary>
+    /// <param name="writer">The XML writer.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void Save(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         WriteTo(writer);
     }
 
+    /// <summary>
+    /// Saves the document to the specified file.
+    /// </summary>
+    /// <param name="filePath">
+    /// The file path. The file will be overwritten if it exists.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="filePath"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(string filePath)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
         {
@@ -976,10 +1027,21 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified file with the given encoding.
+    /// </summary>
+    /// <param name="filePath">
+    /// The file path. The file will be overwritten if it exists.
+    /// </param>
+    /// <param name="encoding">
+    /// The encoding to use. If <see langword="null"/>, UTF-8 encoding will be used.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="filePath"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(string filePath, Encoding encoding)
     {
-        if (filePath is null)
-            throw new ArgumentNullException(nameof(filePath));
+        ArgumentNullException.ThrowIfNull(filePath);
 
         if (Path.GetExtension(filePath).EqualsIgnoreCase(".xml"))
         {
@@ -1003,10 +1065,18 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified output stream.
+    /// </summary>
+    /// <param name="outStream">
+    /// The output stream.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="outStream"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(Stream outStream)
     {
-        if (outStream is null)
-            throw new ArgumentNullException(nameof(outStream));
+        ArgumentNullException.ThrowIfNull(outStream);
 
         if (StreamEncoding is not null)
         {
@@ -1020,10 +1090,21 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
+    /// <summary>
+    /// Saves the document to the specified output stream with the given encoding.
+    /// </summary>
+    /// <param name="outStream">
+    /// The output stream.
+    /// </param>
+    /// <param name="encoding">
+    /// The encoding to use.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="outStream"/> is <see langword="null"/>.
+    /// </exception>
     public void Save(Stream outStream, Encoding encoding)
     {
-        if (outStream is null)
-            throw new ArgumentNullException(nameof(outStream));
+        ArgumentNullException.ThrowIfNull(outStream);
 
         using var writer = new StreamWriter(outStream, encoding);
         Save(writer);
@@ -1031,16 +1112,14 @@ sealed class HtmlDocument : HtmlNode
 
     public override void WriteTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         WriteContentTo(writer);
     }
 
     public override void WriteContentTo(TextWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         foreach (var node in ChildNodes)
         {
@@ -1050,16 +1129,14 @@ sealed class HtmlDocument : HtmlNode
 
     public override void WriteTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         WriteContentTo(writer);
     }
 
     public void WriteDocType(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (DocumentType is null)
             return;
@@ -1132,8 +1209,7 @@ sealed class HtmlDocument : HtmlNode
 
     public override void WriteContentTo(XmlWriter writer)
     {
-        if (writer is null)
-            throw new ArgumentNullException(nameof(writer));
+        ArgumentNullException.ThrowIfNull(writer);
 
         if (!IsValidXmlDocument)
         {
@@ -1179,14 +1255,16 @@ sealed class HtmlDocument : HtmlNode
     {
         get
         {
-            if (_namespaceXml is null)
+            if (field is null)
             {
-                _namespaceXml = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
-                _namespaceXml.Value = XmlNamespaceURI;
+                field = CreateAttribute(XmlnsPrefix, XmlPrefix, XmlnsNamespaceURI);
+                field.Value = XmlNamespaceURI;
             }
 
-            return _namespaceXml;
+            return field;
         }
+
+        private set;
     }
 
     public HtmlNode ImportNode(HtmlNode node)
@@ -1197,16 +1275,14 @@ sealed class HtmlDocument : HtmlNode
     [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "By design")]
     public HtmlNode ImportNode(HtmlNode node, HtmlCloneOptions cloneOptions)
     {
-        if (node is null)
-            throw new ArgumentNullException(nameof(node));
+        ArgumentNullException.ThrowIfNull(node);
 
         return node.Clone(cloneOptions);
     }
 
     protected override void AddNamespacesInScope(XmlNamespaceScope scope, IDictionary<string, string> dictionary)
     {
-        if (dictionary is null)
-            throw new ArgumentNullException(nameof(dictionary));
+        ArgumentNullException.ThrowIfNull(dictionary);
 
         if (scope != XmlNamespaceScope.Local)
         {
@@ -1233,16 +1309,14 @@ sealed class HtmlDocument : HtmlNode
     [SuppressMessage("Design", "CA1055:URI-like return values should not be strings", Justification = "Breaking change")]
     public string MakeAbsoluteUrl(string url)
     {
-        if (url is null)
-            throw new ArgumentNullException(nameof(url));
+        ArgumentNullException.ThrowIfNull(url);
 
         return MakeAbsoluteUrl(new Uri(url, UriKind.RelativeOrAbsolute)).ToString();
     }
 
     public Uri MakeAbsoluteUrl(Uri uri)
     {
-        if (uri is null)
-            throw new ArgumentNullException(nameof(uri));
+        ArgumentNullException.ThrowIfNull(uri);
 
         if (uri.IsAbsoluteUri)
             return uri;

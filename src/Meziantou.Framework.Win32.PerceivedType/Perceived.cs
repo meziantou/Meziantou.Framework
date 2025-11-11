@@ -8,6 +8,20 @@ namespace Meziantou.Framework.Win32;
 /// <summary>
 /// Defines a file's perceived type based on its extension.
 /// </summary>
+/// <example>
+/// <code>
+/// // Get perceived type for a file
+/// var perceived = Perceived.GetPerceivedType(".txt");
+/// Console.WriteLine(perceived.PerceivedType); // Output: Text
+/// Console.WriteLine(perceived.PerceivedTypeSource); // Output: SoftCoded or HardCoded
+///
+/// // Add custom perceived types
+/// Perceived.AddPerceived(".myext", PerceivedType.Text);
+///
+/// // Add default perceived types for common development file extensions
+/// Perceived.AddDefaultPerceivedTypes();
+/// </code>
+/// </example>
 public sealed class Perceived
 {
     private static readonly ConcurrentDictionary<string, Perceived> PerceivedTypes = new(StringComparer.OrdinalIgnoreCase);
@@ -21,6 +35,7 @@ public sealed class Perceived
         PerceivedTypeSource = perceivedTypeSource;
     }
 
+    /// <summary>Adds default perceived types for common development file extensions such as .cs, .html, .xaml, .sln, etc.</summary>
     public static void AddDefaultPerceivedTypes()
     {
         AddPerceived(".appxmanifest", PerceivedType.Text);
@@ -135,8 +150,7 @@ public sealed class Perceived
             if (!PerceivedTypes.TryGetValue(extension, out ptype))
             {
                 source = PerceivedTypeSource.Undefined;
-                PWSTR text = default;
-                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, &text);
+                var hr = PInvoke.AssocGetPerceivedType(extension, out var perceivedType, out var flag, out _);
                 if (hr.Failed)
                 {
                     type = PerceivedType.Unspecified;

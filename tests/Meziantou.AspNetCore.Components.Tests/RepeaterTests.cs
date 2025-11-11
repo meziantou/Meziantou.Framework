@@ -1,5 +1,4 @@
 using Bunit;
-using BunitTestContext = Bunit.TestContext;
 
 namespace Meziantou.AspNetCore.Components.Tests;
 
@@ -8,8 +7,8 @@ public sealed class RepeaterTests
     [Fact]
     public void NullDataShowLoadingIndicator()
     {
-        using var ctx = new BunitTestContext();
-        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+        using var ctx = new BunitContext();
+        var cut = ctx.Render<Repeater<string>>(parameter => parameter
             .Add(p => p.Items, value: null)
             .Add(p => p.LoadingTemplate, "<p>Loading...</p>")
             .Add(p => p.EmptyTemplate, "<p>empty</p>"));
@@ -20,8 +19,8 @@ public sealed class RepeaterTests
     [Fact]
     public void EmptyTemplate()
     {
-        using var ctx = new BunitTestContext();
-        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+        using var ctx = new BunitContext();
+        var cut = ctx.Render<Repeater<string>>(parameter => parameter
             .Add(p => p.Items, value: new List<string>())
             .Add(p => p.LoadingTemplate, "<p>loading...</p>")
             .Add(p => p.EmptyTemplate, "<p>empty</p>"));
@@ -32,8 +31,8 @@ public sealed class RepeaterTests
     [Fact]
     public void ItemTemplate()
     {
-        using var ctx = new BunitTestContext();
-        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+        using var ctx = new BunitContext();
+        var cut = ctx.Render<Repeater<string>>(parameter => parameter
             .Add(p => p.Items, value: new List<string>() { "a", "b" })
             .Add(p => p.EmptyTemplate, "<p>empty</p>")
             .Add(p => p.ItemTemplate, item => $"{item}"));
@@ -44,8 +43,8 @@ public sealed class RepeaterTests
     [Fact]
     public void ItemTemplateAndSeparatorTemplate()
     {
-        using var ctx = new BunitTestContext();
-        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+        using var ctx = new BunitContext();
+        var cut = ctx.Render<Repeater<string>>(parameter => parameter
             .Add(p => p.Items, value: new List<string>() { "a", "b" })
             .Add(p => p.EmptyTemplate, "<p>empty</p>")
             .Add(p => p.ItemTemplate, item => $"{item}")
@@ -57,8 +56,8 @@ public sealed class RepeaterTests
     [Fact]
     public void ContainerTemplate()
     {
-        using var ctx = new BunitTestContext();
-        var cut = ctx.RenderComponent<Repeater<string>>(parameter => parameter
+        using var ctx = new BunitContext();
+        var cut = ctx.Render<Repeater<string>>(parameter => parameter
             .Add(p => p.Items, value: new List<string>() { "a", "b" })
             .Add(p => p.EmptyTemplate, "<p>empty</p>")
             .Add(p => p.ItemTemplate, item => $"{item}")

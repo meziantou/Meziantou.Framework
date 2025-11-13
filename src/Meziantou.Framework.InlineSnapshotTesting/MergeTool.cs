@@ -8,6 +8,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 public abstract class MergeTool
 {
     public static MergeTool BeyondCompare { get; } = new DiffEngineTool(DiffTool.BeyondCompare);
+    public static MergeTool Cursor { get; } = new DiffEngineTool(DiffTool.Cursor);
     public static MergeTool P4Merge { get; } = new DiffEngineTool(DiffTool.P4Merge);
     public static MergeTool Kaleidoscope { get; } = new DiffEngineTool(DiffTool.Kaleidoscope);
     public static MergeTool DeltaWalker { get; } = new DiffEngineTool(DiffTool.DeltaWalker);

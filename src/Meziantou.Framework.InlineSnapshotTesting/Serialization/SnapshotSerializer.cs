@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
-/// <summary>
-/// Provides methods for serializing objects to snapshot strings.
-/// </summary>
+/// <summary>Provides methods for serializing objects to snapshot strings.</summary>
 public abstract class SnapshotSerializer
 {
     /// <summary>Serializes an object to a string representation.</summary>

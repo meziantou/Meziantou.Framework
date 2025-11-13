@@ -9,9 +9,7 @@ using Windows.Win32.System.JobObjects;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.
-/// </summary>
+/// <summary>A utility class that represents a Windows job object. Job objects allow groups of processes to be managed as a unit.</summary>
 /// <example>
 /// <code>
 /// using var job = new JobObject();
@@ -123,26 +121,20 @@ public sealed class JobObject : IDisposable
 
     public void Dispose() => _jobHandle.Dispose();
 
-    /// <summary>
-    /// Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.
-    /// </summary>
+    /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
     public void Terminate()
     {
         Terminate(1);
     }
 
-    /// <summary>
-    /// Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.
-    /// </summary>
+    /// <summary>Terminates all processes currently associated with the job. If the job is nested, this function terminates all processes currently associated with the job and all of its child jobs in the hierarchy.</summary>
     /// <param name="exitCode">The exit code to be used by all processes and threads in the job object.</param>
     public void Terminate(int exitCode)
     {
         Windows.Win32.PInvoke.TerminateJobObject(_jobHandle, unchecked((uint)exitCode));
     }
 
-    /// <summary>
-    /// Assigns a process to an existing job object.
-    /// </summary>
+    /// <summary>Assigns a process to an existing job object.</summary>
     /// <param name="process">The process.</param>
     public void AssignProcess(Process process)
     {
@@ -151,13 +143,9 @@ public sealed class JobObject : IDisposable
         AssignProcess(process.Handle);
     }
 
-    /// <summary>
-    /// Assigns a process to an existing job object.
-    /// </summary>
+    /// <summary>Assigns a process to an existing job object.</summary>
     /// <param name="processHandle">The process handle.</param>
-    /// <returns>
-    /// true if the function succeeds; otherwise false.
-    /// </returns>
+    /// <returns>true if the function succeeds; otherwise false.</returns>
     public void AssignProcess(IntPtr processHandle)
     {
         var addedRef = false;
@@ -178,9 +166,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Sets limits to the job.
-    /// </summary>
+    /// <summary>Sets limits to the job.</summary>
     /// <param name="limits">The limits. May not be null.</param>
     public unsafe void SetLimits(JobObjectLimits limits)
     {
@@ -259,9 +245,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Get the job's CPU rate limit enabled status and value.
-    /// </summary>
+    /// <summary>Get the job's CPU rate limit enabled status and value.</summary>
     /// <returns>Bool indicating if CPU rate control is enabled and the job's CPU rate limit.</returns>
     public unsafe JobObjectCpuHardCap GetCpuRateHardCap()
     {
@@ -283,9 +267,7 @@ public sealed class JobObject : IDisposable
         };
     }
 
-    /// <summary>
-    /// Disables the job's CPU rate limit.
-    /// </summary>
+    /// <summary>Disables the job's CPU rate limit.</summary>
     public unsafe void DisableCpuRateHardCap()
     {
         var restriction = new JOBOBJECT_CPU_RATE_CONTROL_INFORMATION();
@@ -298,9 +280,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Set the job's CPU rate is calculated based on its relative weight to the weight of other jobs.
-    /// </summary>
+    /// <summary>Set the job's CPU rate is calculated based on its relative weight to the weight of other jobs.</summary>
     /// <param name="weight">
     /// Specifies the scheduling weight of the job object, which determines the share of processor time given to the job relative to other workloads on the processor.
     /// This member can be a value from 1 through 9, where 1 is the smallest share and 9 is the largest share.The default is 5, which should be used for most workloads.
@@ -324,9 +304,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Set the job's CPU rate is a hard limit. After the job reaches its CPU cycle limit for the current scheduling interval, no threads associated with the job will run until the next interval.
-    /// </summary>
+    /// <summary>Set the job's CPU rate is a hard limit. After the job reaches its CPU cycle limit for the current scheduling interval, no threads associated with the job will run until the next interval.</summary>
     /// <param name="minRate">
     /// Specifies the minimum portion of the processor cycles that the threads in a job object can reserve during each scheduling interval.
     /// Specify this rate as a percentage times 100. For example, to set a minimum rate of 50%, specify 50 times 100, or 5,000.
@@ -360,9 +338,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Set bandwidth limits for the job.
-    /// </summary>
+    /// <summary>Set bandwidth limits for the job.</summary>
     /// <param name="maxBandwidth">The maximum bandwidth for outgoing network traffic for the job, in bytes.</param>
     public unsafe void SetNetRateLimits(ulong maxBandwidth)
     {
@@ -380,9 +356,7 @@ public sealed class JobObject : IDisposable
         }
     }
 
-    /// <summary>
-    /// Set security limits for the job.
-    /// </summary>
+    /// <summary>Set security limits for the job.</summary>
     public unsafe void SetSecurityLimits(JobObjectSecurityLimit securityLimit)
     {
         var restriction = new JOBOBJECT_SECURITY_LIMIT_INFORMATION
@@ -397,9 +371,7 @@ public sealed class JobObject : IDisposable
             throw new Win32Exception(err);
         }
     }
-    /// <summary>
-    /// Sets I/O limits on a job object.
-    /// </summary>
+    /// <summary>Sets I/O limits on a job object.</summary>
     [SupportedOSPlatform("windows10.0.10240")]
     public unsafe void SetIoLimits(JobIoRateLimits limits)
     {

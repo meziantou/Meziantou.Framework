@@ -4,9 +4,7 @@ using Microsoft.AspNetCore.Http.Features;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Tracks the number of requests made to the mock server and individual endpoints.
-/// </summary>
+/// <summary>Tracks the number of requests made to the mock server and individual endpoints.</summary>
 public sealed class RequestCounter(IHttpContextAccessor httpContextAccessor)
 {
     private long _totalCount;

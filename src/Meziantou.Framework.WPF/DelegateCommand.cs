@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.WPF;
 
-/// <summary>
-/// Factory class for creating command instances that can be used with WPF data binding.
-/// </summary>
+/// <summary>Factory class for creating command instances that can be used with WPF data binding.</summary>
 /// <example>
 /// <code>
 /// public class MyViewModel

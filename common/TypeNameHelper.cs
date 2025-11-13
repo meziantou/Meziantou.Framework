@@ -31,9 +31,7 @@ internal static class TypeNameHelper
         return item is null ? null : GetTypeDisplayName(item.GetType(), fullName);
     }
 
-    /// <summary>
-    /// Pretty print a type name.
-    /// </summary>
+    /// <summary>Pretty print a type name.</summary>
     /// <param name="type">The <see cref="Type"/>.</param>
     /// <param name="fullName"><see langword="true"/> to print a fully qualified name.</param>
     /// <param name="includeGenericParameterNames"><see langword="true"/> to include generic parameter names.</param>

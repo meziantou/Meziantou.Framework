@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.DependencyScanning;
 
-/// <summary>
-/// Represents a dependency discovered during scanning, including its name, version, type, and location information.
-/// </summary>
+/// <summary>Represents a dependency discovered during scanning, including its name, version, type, and location information.</summary>
 public sealed class Dependency
 {
     public Dependency(string? name, string? version, DependencyType type, Location? nameLocation, Location? versionLocation)

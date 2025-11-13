@@ -3,9 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Collections;
 
-/// <summary>
-/// A circular buffer (ring buffer) collection that maintains a fixed-size buffer and overwrites old items when full.
-/// </summary>
+/// <summary>A circular buffer (ring buffer) collection that maintains a fixed-size buffer and overwrites old items when full.</summary>
 /// <example>
 /// <code>
 /// var buffer = new CircularBuffer&lt;int&gt;(3) { AllowOverwrite = true };

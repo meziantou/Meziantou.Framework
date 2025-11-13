@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Represents a base class for change journal entries.
-/// </summary>
+/// <summary>Represents a base class for change journal entries.</summary>
 public abstract class ChangeJournalEntry
 {
     private static readonly Version Version2 = new(2, 0);

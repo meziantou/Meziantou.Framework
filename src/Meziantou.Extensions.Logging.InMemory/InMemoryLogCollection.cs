@@ -4,9 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
-/// <summary>
-/// Represents a thread-safe collection of log entries captured by in-memory loggers.
-/// </summary>
+/// <summary>Represents a thread-safe collection of log entries captured by in-memory loggers.</summary>
 /// <example>
 /// <code>
 /// var logger = InMemoryLogger.CreateLogger("sample");

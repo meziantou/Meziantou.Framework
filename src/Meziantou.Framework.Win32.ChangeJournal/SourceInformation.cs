@@ -1,14 +1,10 @@
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Specifies additional information about the source of a file or directory change.
-/// </summary>
+/// <summary>Specifies additional information about the source of a file or directory change.</summary>
 [Flags]
 public enum SourceInformation
 {
-    /// <summary>
-    /// No source information is specified.
-    /// </summary>
+    /// <summary>No source information is specified.</summary>
     SourceInfoNotSpecified = 0x0000000,
 
     /// <summary>
@@ -36,8 +32,6 @@ public enum SourceInformation
     /// </summary>
     ReplicationManagement = 0x00000004,
 
-    /// <summary>
-    /// The operation is modifying a file on client systems to match the contents of the same file that exists in the cloud.
-    /// </summary>
+    /// <summary>The operation is modifying a file on client systems to match the contents of the same file that exists in the cloud.</summary>
     ClientReplicationManagement = 0x00000008,
 }

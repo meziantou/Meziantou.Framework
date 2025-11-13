@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.IO;
 
-/// <summary>
-/// A text writer that writes to two underlying text writers simultaneously.
-/// </summary>
+/// <summary>A text writer that writes to two underlying text writers simultaneously.</summary>
 /// <example>
 /// <code>
 /// using var file = new StreamWriter("log.txt");

@@ -2,9 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
-/// <summary>
-/// Provides an in-memory logger implementation that captures log entries for testing purposes.
-/// </summary>
+/// <summary>Provides an in-memory logger implementation that captures log entries for testing purposes.</summary>
 /// <example>
 /// <code>
 /// // Create a logger directly

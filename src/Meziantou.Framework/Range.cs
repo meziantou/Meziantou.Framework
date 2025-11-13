@@ -12,9 +12,7 @@ public static class Range
     }
 }
 
-/// <summary>
-/// Represents a range of comparable values with support for various inclusion/exclusion boundary checks.
-/// </summary>
+/// <summary>Represents a range of comparable values with support for various inclusion/exclusion boundary checks.</summary>
 /// <example>
 /// <code>
 /// var range = new Range&lt;int&gt;(1, 10);

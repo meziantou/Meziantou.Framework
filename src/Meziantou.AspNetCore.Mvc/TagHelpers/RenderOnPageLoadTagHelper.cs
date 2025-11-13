@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
-/// <summary>
-/// A TagHelper that defers rendering of content until after the page has loaded, improving perceived performance.
-/// </summary>
+/// <summary>A TagHelper that defers rendering of content until after the page has loaded, improving perceived performance.</summary>
 /// <example>
 /// <code language="razor">
 /// &lt;!-- Defer loading of non-critical stylesheet --&gt;

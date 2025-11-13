@@ -3,9 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.DataAnnotations;
 
-/// <summary>
-/// Validates each item in a collection by running validation on each item.
-/// </summary>
+/// <summary>Validates each item in a collection by running validation on each item.</summary>
 /// <example>
 /// <code>
 /// public class MyModel

@@ -7,9 +7,7 @@ using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <summary>
-/// Provides services for synchronizing component properties with URL query string parameters.
-/// </summary>
+/// <summary>Provides services for synchronizing component properties with URL query string parameters.</summary>
 /// <remarks>
 /// <para>
 /// This service allows you to bind component properties to query string parameters, making it easy to create shareable URLs

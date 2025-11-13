@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace Meziantou.AspNetCore.Components.WebAssembly;
 
-/// <summary>
-/// A message handler that sets default browser fetch options (cache, credentials, mode) for HTTP requests in Blazor WebAssembly.
-/// </summary>
+/// <summary>A message handler that sets default browser fetch options (cache, credentials, mode) for HTTP requests in Blazor WebAssembly.</summary>
 /// <seealso href="https://www.meziantou.net/bypass-browser-cache-using-httpclient-in-blazor-webassembly.htm"/>
 public sealed class DefaultBrowserOptionsMessageHandler : DelegatingHandler
 {
@@ -26,24 +24,16 @@ public sealed class DefaultBrowserOptionsMessageHandler : DelegatingHandler
         InnerHandler = innerHandler;
     }
 
-    /// <summary>
-    /// Gets or sets the default cache mode for browser requests.
-    /// </summary>
+    /// <summary>Gets or sets the default cache mode for browser requests.</summary>
     public BrowserRequestCache DefaultBrowserRequestCache { get; set; }
 
-    /// <summary>
-    /// Gets or sets the default credentials mode for browser requests.
-    /// </summary>
+    /// <summary>Gets or sets the default credentials mode for browser requests.</summary>
     public BrowserRequestCredentials DefaultBrowserRequestCredentials { get; set; }
 
-    /// <summary>
-    /// Gets or sets the default request mode for browser requests.
-    /// </summary>
+    /// <summary>Gets or sets the default request mode for browser requests.</summary>
     public BrowserRequestMode DefaultBrowserRequestMode { get; set; }
 
-    /// <summary>
-    /// Sends an HTTP request with default browser options applied if not explicitly set.
-    /// </summary>
+    /// <summary>Sends an HTTP request with default browser options applied if not explicitly set.</summary>
     /// <param name="request">The HTTP request message to send.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>The task object representing the asynchronous operation containing the HTTP response message.</returns>

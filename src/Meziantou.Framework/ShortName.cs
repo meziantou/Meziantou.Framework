@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// A utility class to compute unique short names for a given collection of names.
-/// </summary>
+/// <summary>A utility class to compute unique short names for a given collection of names.</summary>
 /// <example>
 /// <code>
 /// // Create short names for a collection
@@ -13,9 +11,7 @@ namespace Meziantou.Framework;
 /// </example>
 public static class ShortName
 {
-    /// <summary>
-    /// Create a short name, making sure it does not collide with an existing collection of short names.
-    /// </summary>
+    /// <summary>Create a short name, making sure it does not collide with an existing collection of short names.</summary>
     /// <param name="shortNames">The set of existing short names.</param>
     /// <param name="maxLength">Maximum length of computed short name.</param>
     /// <param name="name">The name to shorten.</param>
@@ -56,9 +52,7 @@ public static class ShortName
         return shortName;
     }
 
-    /// <summary>
-    /// Create a short name, making sure it does not collide with an existing collection of short names.
-    /// </summary>
+    /// <summary>Create a short name, making sure it does not collide with an existing collection of short names.</summary>
     /// <param name="shortNames">The list of existing short names.</param>
     /// <param name="maxLength">Maximum length of computed short name.</param>
     /// <param name="name">The shorten name.</param>
@@ -81,9 +75,7 @@ public static class ShortName
         return Create(dict, maxLength, name);
     }
 
-    /// <summary>
-    /// Builds a short names collection.
-    /// </summary>
+    /// <summary>Builds a short names collection.</summary>
     /// <param name="names">The input collection of names to shorten. May not be null.</param>
     /// <param name="maxLength">Maximum length of computed short names.</param>
     /// <returns>A dictionary of shorten names</returns>
@@ -92,9 +84,7 @@ public static class ShortName
         return Create(names, maxLength, StringComparer.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Builds a short names collection.
-    /// </summary>
+    /// <summary>Builds a short names collection.</summary>
     /// <param name="names">The input collection of names to shorten. May not be null.</param>
     /// <param name="maxLength">Maximum length of computed short names.</param>
     /// <param name="comparer">Comparer use to compare short names</param>

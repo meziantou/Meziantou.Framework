@@ -4,9 +4,7 @@ using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Provides methods for validating objects against inline snapshots in test code.
-/// </summary>
+/// <summary>Provides methods for validating objects against inline snapshots in test code.</summary>
 /// <example>
 /// <code>
 /// var data = new { FirstName = "John", LastName = "Doe" };

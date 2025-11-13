@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Specifies the reasons for changes in a change journal entry.
-/// </summary>
+/// <summary>Specifies the reasons for changes in a change journal entry.</summary>
 [Flags]
 public enum ChangeReason : uint
 {

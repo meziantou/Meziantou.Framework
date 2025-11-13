@@ -16,14 +16,10 @@ public sealed class SingleInstanceEventArgs : EventArgs
         Arguments = arguments;
     }
 
-    /// <summary>
-    /// Gets the process ID of the new instance that is attempting to start.
-    /// </summary>
+    /// <summary>Gets the process ID of the new instance that is attempting to start.</summary>
     public int ProcessId { get; }
 
-    /// <summary>
-    /// Gets the command-line arguments passed to the new instance.
-    /// </summary>
+    /// <summary>Gets the command-line arguments passed to the new instance.</summary>
     [SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Cannot change the signature, breaking change")]
     public string[] Arguments { get; }
 }

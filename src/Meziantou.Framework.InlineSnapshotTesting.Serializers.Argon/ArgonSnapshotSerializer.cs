@@ -2,9 +2,7 @@ using Argon;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
-/// <summary>
-/// Serializes objects to JSON format using the Argon JSON serializer, compatible with Verify's snapshot format.
-/// </summary>
+/// <summary>Serializes objects to JSON format using the Argon JSON serializer, compatible with Verify's snapshot format.</summary>
 /// <example>
 /// <code>
 /// // Use with InlineSnapshot

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides extension methods for numeric types.
-/// </summary>
+/// <summary>Provides extension methods for numeric types.</summary>
 public static class NumberExtensions
 {
     /// <summary>Returns the number with the same sign as the specified value.</summary>

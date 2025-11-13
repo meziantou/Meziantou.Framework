@@ -2,9 +2,7 @@ namespace Meziantou.Framework;
 
 public static partial class StringSearchUtilities
 {
-    /// <summary>
-    /// Compute the Hamming distance. http://en.wikipedia.org/wiki/Hamming_distance
-    /// </summary>
+    /// <summary>Compute the <see href="http://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</see>.</summary>
     /// <param name="word1"> The first word.</param>
     /// <param name="word2"> The second word.</param>
     /// <returns> The hamming distance.</returns>
@@ -22,9 +20,7 @@ public static partial class StringSearchUtilities
         return result;
     }
 
-    /// <summary>
-    /// Compute the Hamming distance. http://en.wikipedia.org/wiki/Hamming_distance
-    /// </summary>
+    /// <summary>Compute the <see href="http://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</see>.</summary>
     /// <param name="word1">The first word.</param>
     /// <param name="word2">The second word.</param>
     /// <exception cref="ArgumentException">Lists must have the same length.</exception>
@@ -49,9 +45,7 @@ public static partial class StringSearchUtilities
         return result;
     }
 
-    /// <summary>
-    /// Compute the Hamming distance. http://en.wikipedia.org/wiki/Hamming_distance
-    /// </summary>
+    /// <summary>Compute the <see href="http://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</see>.</summary>
     /// <typeparam name="T">Type of elements.</typeparam>
     /// <param name="word1">The first list.</param>
     /// <param name="word2">The second most.</param>
@@ -84,9 +78,7 @@ public static partial class StringSearchUtilities
         return result;
     }
 
-    /// <summary>
-    /// Compute the Levenshtein distance. http://en.wikipedia.org/wiki/Levenshtein_distance
-    /// </summary>
+    /// <summary>Compute the <see href="http://en.wikipedia.org/wiki/Hamming_distance">Hamming distance</see>.</summary>
     /// <param name="word1"> The first word.</param>
     /// <param name="word2"> The second word.</param>
     /// <returns> The Levenshtein distance.</returns>

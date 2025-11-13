@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies the type of HTML parsing error.
-/// </summary>
+/// <summary>Specifies the type of HTML parsing error.</summary>
 #if HTML_PUBLIC
 public
 #else

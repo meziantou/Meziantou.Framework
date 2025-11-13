@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Provides constants for Windows privilege names that can be enabled or disabled on access tokens.
-/// </summary>
+/// <summary>Provides constants for Windows privilege names that can be enabled or disabled on access tokens.</summary>
 /// <example>
 /// <code>
 /// using var token = AccessToken.OpenCurrentProcessToken(TokenAccessLevels.AdjustPrivileges | TokenAccessLevels.Query);

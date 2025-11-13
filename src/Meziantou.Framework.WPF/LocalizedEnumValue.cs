@@ -2,9 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.WPF;
 
-/// <summary>
-/// Represents an enum value with its localized display name.
-/// </summary>
+/// <summary>Represents an enum value with its localized display name.</summary>
 public sealed class LocalizedEnumValue
 {
     private readonly DisplayAttribute? _displayAttribute;

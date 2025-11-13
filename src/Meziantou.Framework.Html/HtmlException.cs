@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Represents errors that occur during HTML parsing or manipulation.
-/// </summary>
+/// <summary>Represents errors that occur during HTML parsing or manipulation.</summary>
 #if HTML_PUBLIC
 public
 #else

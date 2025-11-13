@@ -59,9 +59,7 @@ internal ref partial struct ValueStringBuilder
     /// <summary>Returns the underlying storage of the builder.</summary>
     public Span<char> RawChars { get; private set; }
 
-    /// <summary>
-    /// Returns a span around the contents of the builder.
-    /// </summary>
+    /// <summary>Returns a span around the contents of the builder.</summary>
     /// <param name="terminate">Ensures that the builder has a null char after <see cref="Length"/></param>
     public ReadOnlySpan<char> AsSpan(bool terminate)
     {
@@ -163,9 +161,7 @@ internal ref partial struct ValueStringBuilder
     /// by adding <paramref name="additionalCapacityBeyondPos"/> to
     /// <see cref="_pos"/> whichever is greater.
     /// </summary>
-    /// <param name="additionalCapacityBeyondPos">
-    /// Number of chars requested beyond current position.
-    /// </param>
+    /// <param name="additionalCapacityBeyondPos">Number of chars requested beyond current position.</param>
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void Grow(int additionalCapacityBeyondPos)
     {

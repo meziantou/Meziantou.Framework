@@ -2,9 +2,7 @@ using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <summary>
-/// Provides timezone information and conversion services based on the user's browser timezone.
-/// </summary>
+/// <summary>Provides timezone information and conversion services based on the user's browser timezone.</summary>
 /// <remarks>
 /// <para>
 /// This service retrieves the user's timezone offset from the browser and provides methods to convert between UTC and local times.

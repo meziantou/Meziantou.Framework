@@ -2,9 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives;
 
-/// <summary>
-/// Describes an application that is to be registered with the Restart Manager.
-/// </summary>
+/// <summary>Describes an application that is to be registered with the Restart Manager.</summary>
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 internal struct RM_PROCESS_INFO
 {

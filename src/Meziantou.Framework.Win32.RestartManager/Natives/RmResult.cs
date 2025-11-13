@@ -2,9 +2,7 @@ namespace Meziantou.Framework.Win32.Natives;
 
 internal enum RmResult
 {
-    /// <summary>
-    /// The resources specified have been registered.
-    /// </summary>
+    /// <summary>The resources specified have been registered.</summary>
     ERROR_SUCCESS = 0,
 
     /// <summary>
@@ -19,14 +17,10 @@ internal enum RmResult
     /// </summary>
     ERROR_BAD_ARGUMENTS = 160,
 
-    /// <summary>
-    /// An operation was unable to read or write to the registry.
-    /// </summary>
+    /// <summary>An operation was unable to read or write to the registry.</summary>
     ERROR_WRITE_FAULT = 29,
 
-    /// <summary>
-    /// A Restart Manager operation could not complete because not enough memory was available.
-    /// </summary>
+    /// <summary>A Restart Manager operation could not complete because not enough memory was available.</summary>
     ERROR_OUTOFMEMORY = 14,
 
     /// <summary>
@@ -35,18 +29,12 @@ internal enum RmResult
     /// </summary>
     ERROR_INVALID_HANDLE = 6,
 
-    /// <summary>
-    /// The maximum number of sessions has been reached.
-    /// </summary>
+    /// <summary>The maximum number of sessions has been reached.</summary>
     ERROR_MAX_SESSIONS_REACHED = 353,
 
-    /// <summary>
-    /// This error value is returned by the RmGetList function if the rgAffectedApps buffer is too small to hold all application information in the list.
-    /// </summary>
+    /// <summary>This error value is returned by the RmGetList function if the rgAffectedApps buffer is too small to hold all application information in the list.</summary>
     ERROR_MORE_DATA = 234,
 
-    /// <summary>
-    /// The current operation is canceled by user.
-    /// </summary>
+    /// <summary>The current operation is canceled by user.</summary>
     ERROR_CANCELLED = 1223,
 }

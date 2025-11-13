@@ -2,9 +2,7 @@ using System.Resources;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides localization using embedded resource files (.resx) for relative date formatting.
-/// </summary>
+/// <summary>Provides localization using embedded resource files (.resx) for relative date formatting.</summary>
 /// <remarks>
 /// This is the default localization provider for <see cref="RelativeDate"/>.
 /// It includes translations for English, French and Spanish.

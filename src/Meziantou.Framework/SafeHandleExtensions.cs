@@ -7,9 +7,7 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class SafeHandleExtensions
 {
-    /// <summary>
-    /// Creates a scope that safely increments and decrements the reference count of a safe handle.
-    /// </summary>
+    /// <summary>Creates a scope that safely increments and decrements the reference count of a safe handle.</summary>
     /// <example>
     /// <code>
     /// using var scope = safeHandle.CreateHandleScope();

@@ -2,9 +2,7 @@ using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Represents a change journal entry in version 4 format, which includes extent information for modified ranges.
-/// </summary>
+/// <summary>Represents a change journal entry in version 4 format, which includes extent information for modified ranges.</summary>
 public sealed class ChangeJournalEntryVersion4 : ChangeJournalEntry
 {
     internal ChangeJournalEntryVersion4(USN_RECORD_V4 nativeEntry, ChangeJournalEntryExtent[] extents)
@@ -31,9 +29,7 @@ public sealed class ChangeJournalEntryVersion4 : ChangeJournalEntry
     /// </summary>
     public FileIdentifier ParentReferenceNumber { get; }
 
-    /// <summary>
-    /// Gets the Unique Sequence Number of this entry.
-    /// </summary>
+    /// <summary>Gets the Unique Sequence Number of this entry.</summary>
     public Usn UniqueSequenceNumber { get; }
 
     /// <summary>

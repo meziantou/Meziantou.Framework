@@ -3,9 +3,7 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>
-/// Represents a cgroup v2 control group for managing and limiting resource usage of processes.
-/// </summary>
+/// <summary>Represents a cgroup v2 control group for managing and limiting resource usage of processes.</summary>
 [SupportedOSPlatform("linux")]
 public sealed partial class CGroup2
 {
@@ -13,24 +11,16 @@ public sealed partial class CGroup2
 
     private readonly string _path;
 
-    /// <summary>
-    /// Gets the name of the cgroup.
-    /// </summary>
+    /// <summary>Gets the name of the cgroup.</summary>
     public string Name { get; }
 
-    /// <summary>
-    /// Gets the full path to the cgroup directory.
-    /// </summary>
+    /// <summary>Gets the full path to the cgroup directory.</summary>
     internal string Path => _path;
 
-    /// <summary>
-    /// Gets the parent cgroup, or null if this is the root cgroup.
-    /// </summary>
+    /// <summary>Gets the parent cgroup, or null if this is the root cgroup.</summary>
     public CGroup2? Parent { get; }
 
-    /// <summary>
-    /// Creates a new cgroup instance at the specified path.
-    /// </summary>
+    /// <summary>Creates a new cgroup instance at the specified path.</summary>
     /// <param name="name">The name of the cgroup (relative to parent, or absolute path from /sys/fs/cgroup).</param>
     /// <param name="parent">The parent cgroup, or null for root-level cgroups.</param>
     private CGroup2(string name, CGroup2? parent)
@@ -49,14 +39,10 @@ public sealed partial class CGroup2
         }
     }
 
-    /// <summary>
-    /// Gets the root cgroup.
-    /// </summary>
+    /// <summary>Gets the root cgroup.</summary>
     public static CGroup2 Root => new(CGroupV2MountPoint, parent: null);
 
-    /// <summary>
-    /// Gets an existing child cgroup without creating it.
-    /// </summary>
+    /// <summary>Gets an existing child cgroup without creating it.</summary>
     /// <param name="name">The name of the child cgroup.</param>
     /// <returns>The child cgroup.</returns>
     public CGroup2? GetChild(string name)
@@ -67,9 +53,7 @@ public sealed partial class CGroup2
         return new CGroup2(name, this);
     }
 
-    /// <summary>
-    /// Creates or gets a child cgroup.
-    /// </summary>
+    /// <summary>Creates or gets a child cgroup.</summary>
     /// <param name="name">The name of the child cgroup.</param>
     /// <returns>The child cgroup.</returns>
     public CGroup2 CreateOrGetChild(string name)
@@ -79,25 +63,19 @@ public sealed partial class CGroup2
         return child;
     }
 
-    /// <summary>
-    /// Deletes this cgroup. The cgroup must be empty (no processes and no child cgroups).
-    /// </summary>
+    /// <summary>Deletes this cgroup. The cgroup must be empty (no processes and no child cgroups).</summary>
     /// <exception cref="IOException">If the cgroup cannot be deleted.</exception>
     public void Delete()
     {
         Directory.Delete(_path);
     }
 
-    /// <summary>
-    /// Checks if this cgroup exists.
-    /// </summary>
+    /// <summary>Checks if this cgroup exists.</summary>
     public bool Exists() => Directory.Exists(_path);
 
     #region Process Management
 
-    /// <summary>
-    /// Adds a process to this cgroup.
-    /// </summary>
+    /// <summary>Adds a process to this cgroup.</summary>
     /// <param name="process">The process to add.</param>
     public void AssociateProcess(Process process)
     {
@@ -105,27 +83,21 @@ public sealed partial class CGroup2
         AssociateProcess(process.Id);
     }
 
-    /// <summary>
-    /// Adds a process to this cgroup by its PID.
-    /// </summary>
+    /// <summary>Adds a process to this cgroup by its PID.</summary>
     /// <param name="pid">The process ID.</param>
     public void AssociateProcess(int pid)
     {
         WriteFile("cgroup.procs", pid.ToString(CultureInfo.InvariantCulture));
     }
 
-    /// <summary>
-    /// Adds a thread to this cgroup by its TID.
-    /// </summary>
+    /// <summary>Adds a thread to this cgroup by its TID.</summary>
     /// <param name="tid">The thread ID.</param>
     public void AssociateThread(int tid)
     {
         WriteFile("cgroup.threads", tid.ToString(CultureInfo.InvariantCulture));
     }
 
-    /// <summary>
-    /// Gets all process IDs in this cgroup.
-    /// </summary>
+    /// <summary>Gets all process IDs in this cgroup.</summary>
     public IEnumerable<int> GetProcesses()
     {
         var content = ReadFile("cgroup.procs");
@@ -141,9 +113,7 @@ public sealed partial class CGroup2
         }
     }
 
-    /// <summary>
-    /// Gets all thread IDs in this cgroup.
-    /// </summary>
+    /// <summary>Gets all thread IDs in this cgroup.</summary>
     public IEnumerable<int> GetThreads()
     {
         var content = ReadFile("cgroup.threads");
@@ -163,9 +133,7 @@ public sealed partial class CGroup2
 
     #region Controllers
 
-    /// <summary>
-    /// Gets the list of available controllers.
-    /// </summary>
+    /// <summary>Gets the list of available controllers.</summary>
     public IEnumerable<string> GetAvailableControllers()
     {
         var content = ReadFile("cgroup.controllers");
@@ -175,9 +143,7 @@ public sealed partial class CGroup2
         return content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    /// <summary>
-    /// Gets the list of enabled controllers in the subtree.
-    /// </summary>
+    /// <summary>Gets the list of enabled controllers in the subtree.</summary>
     public IEnumerable<string> GetEnabledControllers()
     {
         var content = ReadFile("cgroup.subtree_control");
@@ -187,9 +153,7 @@ public sealed partial class CGroup2
         return content.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
     }
 
-    /// <summary>
-    /// Set multiple controllers in the subtree.
-    /// </summary>
+    /// <summary>Set multiple controllers in the subtree.</summary>
     /// <param name="controllers">The controller names.</param>
     public void SetControllers(params ReadOnlySpan<string> controllers)
     {
@@ -214,9 +178,7 @@ public sealed partial class CGroup2
 
     #region CPU Controller
 
-    /// <summary>
-    /// Sets the CPU weight (relative share of CPU time).
-    /// </summary>
+    /// <summary>Sets the CPU weight (relative share of CPU time).</summary>
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetCpuWeight(int weight)
     {
@@ -226,9 +188,7 @@ public sealed partial class CGroup2
         WriteFile("cpu.weight", weight.ToString(CultureInfo.InvariantCulture));
     }
 
-    /// <summary>
-    /// Gets the CPU weight.
-    /// </summary>
+    /// <summary>Gets the CPU weight.</summary>
     public int? GetCpuWeight()
     {
         var content = ReadFile("cpu.weight");
@@ -241,9 +201,7 @@ public sealed partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Sets the CPU maximum bandwidth limit.
-    /// </summary>
+    /// <summary>Sets the CPU maximum bandwidth limit.</summary>
     /// <param name="maxMicroseconds">Maximum time in microseconds that the cgroup can run during one period.</param>
     /// <param name="periodMicroseconds">Period in microseconds (default is 100000 = 100ms).</param>
     public void SetCpuMax(long? maxMicroseconds, long periodMicroseconds = 100000)
@@ -255,9 +213,7 @@ public sealed partial class CGroup2
         WriteFile("cpu.max", $"{maxStr} {periodMicroseconds.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>
-    /// Removes the CPU maximum bandwidth limit.
-    /// </summary>
+    /// <summary>Removes the CPU maximum bandwidth limit.</summary>
     public void RemoveCpuMax()
     {
         SetCpuMax(null, 100000);
@@ -267,9 +223,7 @@ public sealed partial class CGroup2
 
     #region Memory Controller
 
-    /// <summary>
-    /// Sets the memory maximum limit in bytes.
-    /// </summary>
+    /// <summary>Sets the memory maximum limit in bytes.</summary>
     /// <param name="bytes">Maximum memory in bytes, or null for no limit.</param>
     public void SetMemoryMax(long? bytes)
     {
@@ -280,9 +234,7 @@ public sealed partial class CGroup2
         WriteFile("memory.max", value);
     }
 
-    /// <summary>
-    /// Gets the memory maximum limit in bytes.
-    /// </summary>
+    /// <summary>Gets the memory maximum limit in bytes.</summary>
     public long? GetMemoryMax()
     {
         var content = ReadFile("memory.max");
@@ -299,9 +251,7 @@ public sealed partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Sets the memory high limit (soft limit with throttling).
-    /// </summary>
+    /// <summary>Sets the memory high limit (soft limit with throttling).</summary>
     /// <param name="bytes">High memory limit in bytes, or null for no limit.</param>
     public void SetMemoryHigh(long? bytes)
     {
@@ -312,9 +262,7 @@ public sealed partial class CGroup2
         WriteFile("memory.high", value);
     }
 
-    /// <summary>
-    /// Sets the memory low limit (best-effort protection).
-    /// </summary>
+    /// <summary>Sets the memory low limit (best-effort protection).</summary>
     /// <param name="bytes">Low memory limit in bytes, or null for no protection.</param>
     public void SetMemoryLow(long? bytes)
     {
@@ -325,9 +273,7 @@ public sealed partial class CGroup2
         WriteFile("memory.low", value);
     }
 
-    /// <summary>
-    /// Sets the memory min limit (hard protection).
-    /// </summary>
+    /// <summary>Sets the memory min limit (hard protection).</summary>
     /// <param name="bytes">Min memory limit in bytes, or null for no protection.</param>
     public void SetMemoryMin(long? bytes)
     {
@@ -338,9 +284,7 @@ public sealed partial class CGroup2
         WriteFile("memory.min", value);
     }
 
-    /// <summary>
-    /// Gets the current memory usage in bytes.
-    /// </summary>
+    /// <summary>Gets the current memory usage in bytes.</summary>
     public long? GetMemoryCurrent()
     {
         var content = ReadFile("memory.current");
@@ -353,9 +297,7 @@ public sealed partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Sets the swap maximum limit in bytes.
-    /// </summary>
+    /// <summary>Sets the swap maximum limit in bytes.</summary>
     /// <param name="bytes">Maximum swap in bytes, or null for no limit.</param>
     public void SetSwapMax(long? bytes)
     {
@@ -370,9 +312,7 @@ public sealed partial class CGroup2
 
     #region IO Controller
 
-    /// <summary>
-    /// Sets the IO weight for a device.
-    /// </summary>
+    /// <summary>Sets the IO weight for a device.</summary>
     /// <param name="major">Device major number.</param>
     /// <param name="minor">Device minor number.</param>
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
@@ -384,9 +324,7 @@ public sealed partial class CGroup2
         WriteFile("io.weight", $"{major.ToString(CultureInfo.InvariantCulture)}:{minor.ToString(CultureInfo.InvariantCulture)} {weight.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>
-    /// Sets the default IO weight.
-    /// </summary>
+    /// <summary>Sets the default IO weight.</summary>
     /// <param name="weight">Weight value between 1 and 10000 (default is 100).</param>
     public void SetDefaultIoWeight(int weight)
     {
@@ -396,9 +334,7 @@ public sealed partial class CGroup2
         WriteFile("io.weight", $"default {weight.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    /// <summary>
-    /// Sets IO bandwidth limits for a device.
-    /// </summary>
+    /// <summary>Sets IO bandwidth limits for a device.</summary>
     /// <param name="major">Device major number.</param>
     /// <param name="minor">Device minor number.</param>
     /// <param name="readBytesPerSecond">Read bandwidth limit in bytes per second, or null for no limit.</param>
@@ -433,9 +369,7 @@ public sealed partial class CGroup2
         WriteFile("io.max", sb.ToString());
     }
 
-    /// <summary>
-    /// Removes IO limits for a device.
-    /// </summary>
+    /// <summary>Removes IO limits for a device.</summary>
     /// <param name="major">Device major number.</param>
     /// <param name="minor">Device minor number.</param>
     public void RemoveIoMax(int major, int minor)
@@ -447,9 +381,7 @@ public sealed partial class CGroup2
 
     #region PID Controller
 
-    /// <summary>
-    /// Sets the maximum number of processes (PIDs) allowed.
-    /// </summary>
+    /// <summary>Sets the maximum number of processes (PIDs) allowed.</summary>
     /// <param name="max">Maximum number of processes, or null for no limit.</param>
     public void SetPidsMax(long? max)
     {
@@ -460,9 +392,7 @@ public sealed partial class CGroup2
         WriteFile("pids.max", value);
     }
 
-    /// <summary>
-    /// Gets the maximum number of processes allowed.
-    /// </summary>
+    /// <summary>Gets the maximum number of processes allowed.</summary>
     public long? GetPidsMax()
     {
         var content = ReadFile("pids.max");
@@ -479,9 +409,7 @@ public sealed partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Gets the current number of processes.
-    /// </summary>
+    /// <summary>Gets the current number of processes.</summary>
     public long? GetPidsCurrent()
     {
         var content = ReadFile("pids.current");
@@ -498,25 +426,19 @@ public sealed partial class CGroup2
 
     #region Freezer
 
-    /// <summary>
-    /// Freezes all processes in this cgroup.
-    /// </summary>
+    /// <summary>Freezes all processes in this cgroup.</summary>
     public void Freeze()
     {
         WriteFile("cgroup.freeze", "1");
     }
 
-    /// <summary>
-    /// Unfreezes all processes in this cgroup.
-    /// </summary>
+    /// <summary>Unfreezes all processes in this cgroup.</summary>
     public void Unfreeze()
     {
         WriteFile("cgroup.freeze", "0");
     }
 
-    /// <summary>
-    /// Gets whether the cgroup is frozen.
-    /// </summary>
+    /// <summary>Gets whether the cgroup is frozen.</summary>
     public bool IsFrozen()
     {
         var events = ReadFile("cgroup.events");
@@ -539,9 +461,7 @@ public sealed partial class CGroup2
 
     #region Kill
 
-    /// <summary>
-    /// Kills all processes in this cgroup and its descendants.
-    /// </summary>
+    /// <summary>Kills all processes in this cgroup and its descendants.</summary>
     public void Kill()
     {
         WriteFile("cgroup.kill", "1");
@@ -579,9 +499,7 @@ public sealed partial class CGroup2
 
     #region Statistics
 
-    /// <summary>
-    /// Gets CPU statistics for this cgroup.
-    /// </summary>
+    /// <summary>Gets CPU statistics for this cgroup.</summary>
     public CpuStat? GetCpuStat()
     {
         var content = ReadFile("cpu.stat");
@@ -591,9 +509,7 @@ public sealed partial class CGroup2
         return CpuStat.Parse(content);
     }
 
-    /// <summary>
-    /// Gets memory statistics for this cgroup.
-    /// </summary>
+    /// <summary>Gets memory statistics for this cgroup.</summary>
     public MemoryStat? GetMemoryStat()
     {
         var content = ReadFile("memory.stat");
@@ -605,8 +521,6 @@ public sealed partial class CGroup2
 
     #endregion
 
-    /// <summary>
-    /// Returns a string representation of this cgroup.
-    /// </summary>
+    /// <summary>Returns a string representation of this cgroup.</summary>
     public override string ToString() => _path;
 }

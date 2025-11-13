@@ -4,14 +4,10 @@ namespace Meziantou.Framework;
 
 public static partial class EnumerableExtensions
 {
-    /// <summary>
-    /// Allow to use the foreach keyword with an IEnumerator
-    /// </summary>
+    /// <summary>Allow to use the foreach keyword with an IEnumerator</summary>
     public static IEnumerator<T> GetEnumerator<T>(this IEnumerator<T> enumerator) => enumerator;
 
-    /// <summary>
-    /// Allow to use the foreach keyword with an IAsyncEnumerator
-    /// </summary>
+    /// <summary>Allow to use the foreach keyword with an IAsyncEnumerator</summary>
     public static IAsyncEnumerator<T> GetAsyncEnumerator<T>(this IAsyncEnumerator<T> enumerator) => enumerator;
 
     public static void AddRange<T>(this ICollection<T> collection, params T[] items)
@@ -310,9 +306,7 @@ public static partial class EnumerableExtensions
         return TimeSpan.FromTicks(result / count);
     }
 
-    /// <summary>
-    /// Ensure the enumerable instance is enumerated only once.
-    /// </summary>
+    /// <summary>Ensure the enumerable instance is enumerated only once.</summary>
     public static IEnumerable<T> AsEnumerableOnce<T>(this IEnumerable<T> enumerable)
     {
         return new EnumerableOnce<T>(enumerable);

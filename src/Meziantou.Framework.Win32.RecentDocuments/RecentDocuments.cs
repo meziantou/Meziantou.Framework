@@ -2,14 +2,10 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Provides methods to manage Windows Recent Documents.
-/// </summary>
+/// <summary>Provides methods to manage Windows Recent Documents.</summary>
 public static class RecentDocuments
 {
-    /// <summary>
-    /// Notifies the system that an item has been accessed, for the purposes of tracking those items used most recently and most frequently.
-    /// </summary>
+    /// <summary>Notifies the system that an item has been accessed, for the purposes of tracking those items used most recently and most frequently.</summary>
     /// <param name="path">The path to the document that has been accessed.</param>
     [SupportedOSPlatform("windows5.1.2600")]
     public static unsafe void AddToRecentDocuments(string path)
@@ -20,9 +16,7 @@ public static class RecentDocuments
         }
     }
 
-    /// <summary>
-    /// Clears all usage data.
-    /// </summary>
+    /// <summary>Clears all usage data.</summary>
     [SupportedOSPlatform("windows5.1.2600")]
     public static unsafe void ClearRecentDocuments()
     {

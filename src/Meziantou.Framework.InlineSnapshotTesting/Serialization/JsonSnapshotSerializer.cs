@@ -2,9 +2,7 @@ using System.Text.Json;
 
 namespace Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
-/// <summary>
-/// Serializes objects to JSON string representations using System.Text.Json.
-/// </summary>
+/// <summary>Serializes objects to JSON string representations using System.Text.Json.</summary>
 public sealed class JsonSnapshotSerializer : SnapshotSerializer
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()

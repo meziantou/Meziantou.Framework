@@ -3,9 +3,7 @@ using System.Diagnostics;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a temporary directory that is automatically deleted when disposed.
-/// </summary>
+/// <summary>Represents a temporary directory that is automatically deleted when disposed.</summary>
 /// <example>
 /// <code>
 /// // Basic usage with using statement

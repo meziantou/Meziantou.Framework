@@ -2,9 +2,7 @@ using Meziantou.Framework.HumanReadable.Utils;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Provides methods for comparing and normalizing snapshot values.
-/// </summary>
+/// <summary>Provides methods for comparing and normalizing snapshot values.</summary>
 public abstract class SnapshotComparer
 {
     /// <summary>Gets the default snapshot comparer that normalizes whitespace and compares line by line.</summary>

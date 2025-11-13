@@ -3,9 +3,7 @@ using System.Windows.Controls;
 
 namespace Meziantou.Framework.Scheduling.RecurrenceRuleSample;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
+/// <summary>Interaction logic for MainWindow.xaml</summary>
 public sealed partial class MainWindow : Window
 {
     public MainWindow()

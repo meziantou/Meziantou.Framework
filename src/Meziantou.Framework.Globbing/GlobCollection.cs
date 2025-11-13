@@ -3,9 +3,7 @@ using System.ComponentModel;
 
 namespace Meziantou.Framework.Globbing;
 
-/// <summary>
-/// Represents a collection of glob patterns that can be evaluated together.
-/// </summary>
+/// <summary>Represents a collection of glob patterns that can be evaluated together.</summary>
 /// <example>
 /// Combine multiple glob patterns with include and exclude rules:
 /// <code>

@@ -35,9 +35,7 @@ namespace Meziantou.Framework
         {
             private const string Kernel32Name = "kernel32.dll";
 
-            /// <summary>
-            /// WARNING: This method does not implicitly handle long paths. Use CreateFile.
-            /// </summary>
+            /// <summary>WARNING: This method does not implicitly handle long paths. Use CreateFile.</summary>
             [DllImport(Kernel32Name, EntryPoint = "CreateFileW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
             private static extern unsafe SafeFileHandle CreateFilePrivate(
@@ -94,9 +92,7 @@ namespace Meziantou.Framework
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
             internal static extern bool FindClose(IntPtr hFindFile);
 
-            /// <summary>
-            /// WARNING: This method does not implicitly handle long paths. Use FindFirstFile.
-            /// </summary>
+            /// <summary>WARNING: This method does not implicitly handle long paths. Use FindFirstFile.</summary>
             [DllImport(Kernel32Name, EntryPoint = "FindFirstFileExW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
             [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
             private static extern SafeFindHandle FindFirstFileExPrivate(string lpFileName, FINDEX_INFO_LEVELS fInfoLevelId, ref WIN32_FIND_DATA lpFindFileData, FINDEX_SEARCH_OPS fSearchOp, IntPtr lpSearchFilter, int dwAdditionalFlags);
@@ -227,9 +223,7 @@ namespace System.IO
         // \\?\, \\.\, \??\
         internal const int DevicePrefixLength = 4;
 
-        /// <summary>
-        /// Returns true if the given character is a valid drive letter
-        /// </summary>
+        /// <summary>Returns true if the given character is a valid drive letter</summary>
         internal static bool IsValidDriveChar(char value)
         {
             return value is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z');
@@ -264,9 +258,7 @@ namespace System.IO
             }
         }
 
-        /// <summary>
-        /// Adds the extended path prefix (\\?\) if not relative or already a device path.
-        /// </summary>
+        /// <summary>Adds the extended path prefix (\\?\) if not relative or already a device path.</summary>
         internal static string EnsureExtendedPrefix(string path)
         {
             // Putting the extended prefix on the path changes the processing of the path. It won't get normalized, which
@@ -289,9 +281,7 @@ namespace System.IO
             return ExtendedDevicePathPrefix + path;
         }
 
-        /// <summary>
-        /// Returns true if the path uses any of the DOS device path syntaxes. ("\\.\", "\\?\", or "\??\")
-        /// </summary>
+        /// <summary>Returns true if the path uses any of the DOS device path syntaxes. ("\\.\", "\\?\", or "\??\")</summary>
         internal static bool IsDevice(string path)
         {
             // If the path begins with any two separators is will be recognized and normalized and prepped with
@@ -361,9 +351,7 @@ namespace System.IO
                 && IsValidDriveChar(path[0]));
         }
 
-        /// <summary>
-        /// True if the given character is a directory separator.
-        /// </summary>
+        /// <summary>True if the given character is a directory separator.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsDirectorySeparator(char c)
         {

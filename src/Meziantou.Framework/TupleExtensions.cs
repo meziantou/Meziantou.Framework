@@ -2,14 +2,10 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides extension methods for tuple types.
-/// </summary>
+/// <summary>Provides extension methods for tuple types.</summary>
 public static class TupleExtensions
 {
-    /// <summary>
-    /// Converts a tuple to an array of objects.
-    /// </summary>
+    /// <summary>Converts a tuple to an array of objects.</summary>
     /// <example>
     /// <code>
     /// var tuple = (1, "hello", true);

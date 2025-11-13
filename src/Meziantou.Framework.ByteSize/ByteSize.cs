@@ -81,9 +81,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return ToString(format: null, formatProvider);
     }
 
-    /// <summary>
-    /// Convert value to string
-    /// </summary>
+    /// <summary>Convert value to string</summary>
     /// <param name="format">
     /// Allowed formats:
     /// <list type="bullet">
@@ -103,9 +101,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return ToString(format, formatProvider: null);
     }
 
-    /// <summary>
-    /// Convert value to string
-    /// </summary>
+    /// <summary>Convert value to string</summary>
     /// <param name="format">
     /// Allowed formats:
     /// <list type="bullet">
@@ -175,9 +171,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     }
 
 #if NET6_0_OR_GREATER
-    /// <summary>
-    /// Tries to format the value into the provided span of characters.
-    /// </summary>
+    /// <summary>Tries to format the value into the provided span of characters.</summary>
     /// <param name="destination">The span in which to write this instance's value formatted as a span of characters.</param>
     /// <param name="charsWritten">When this method returns, contains the number of characters that were written in destination.</param>
     /// <param name="format">A span containing the characters that represent a standard or custom format string.</param>
@@ -465,9 +459,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         return TryParse(text.AsSpan(), formatProvider, out result);
     }
 
-    /// <summary>
-    /// Parses a span of characters into a ByteSize value.
-    /// </summary>
+    /// <summary>Parses a span of characters into a ByteSize value.</summary>
     /// <param name="s">The span of characters to parse.</param>
     /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
     /// <returns>The result of parsing s.</returns>
@@ -480,9 +472,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         throw new FormatException($"The value is not valid");
     }
 
-    /// <summary>
-    /// Tries to parse a span of characters into a ByteSize value.
-    /// </summary>
+    /// <summary>Tries to parse a span of characters into a ByteSize value.</summary>
     /// <param name="s">The span of characters to parse.</param>
     /// <param name="provider">An object that provides culture-specific formatting information about s.</param>
     /// <param name="result">When this method returns, contains the result of successfully parsing s, or an undefined value on failure.</param>
@@ -525,9 +515,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     }
 
 #if NET8_0_OR_GREATER
-    /// <summary>
-    /// Tries to format the value as UTF-8 into the provided span of bytes.
-    /// </summary>
+    /// <summary>Tries to format the value as UTF-8 into the provided span of bytes.</summary>
     /// <param name="utf8Destination">The span in which to write this instance's value formatted as UTF-8.</param>
     /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in utf8Destination.</param>
     /// <param name="format">A span containing the characters that represent a standard or custom format string.</param>
@@ -615,9 +603,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
     static bool IUtf8SpanParsable<ByteSize>.TryParse(ReadOnlySpan<byte> s, IFormatProvider? provider, out ByteSize result) => TryParse(s, out result);
     static ByteSize IUtf8SpanParsable<ByteSize>.Parse(ReadOnlySpan<byte> s, IFormatProvider? provider) => Parse(s);
 
-    /// <summary>
-    /// Parses a span of UTF-8 characters into a ByteSize value.
-    /// </summary>
+    /// <summary>Parses a span of UTF-8 characters into a ByteSize value.</summary>
     /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
     /// <returns>The result of parsing utf8Text.</returns>
     /// <exception cref="FormatException">utf8Text is not in the correct format.</exception>
@@ -629,9 +615,7 @@ public readonly partial struct ByteSize : IEquatable<ByteSize>, IComparable, ICo
         throw new FormatException($"The value is not valid");
     }
 
-    /// <summary>
-    /// Tries to parse a span of UTF-8 characters into a ByteSize value.
-    /// </summary>
+    /// <summary>Tries to parse a span of UTF-8 characters into a ByteSize value.</summary>
     /// <param name="utf8Text">The span of UTF-8 characters to parse.</param>
     /// <param name="result">When this method returns, contains the result of successfully parsing utf8Text, or an undefined value on failure.</param>
     /// <returns>true if utf8Text was successfully parsed; otherwise, false.</returns>

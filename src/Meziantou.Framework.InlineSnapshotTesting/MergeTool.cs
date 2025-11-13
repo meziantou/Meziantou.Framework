@@ -4,9 +4,7 @@ using Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Represents a merge tool that can be used to compare and update snapshots.
-/// </summary>
+/// <summary>Represents a merge tool that can be used to compare and update snapshots.</summary>
 public abstract class MergeTool
 {
     public static MergeTool BeyondCompare { get; } = new DiffEngineTool(DiffTool.BeyondCompare);

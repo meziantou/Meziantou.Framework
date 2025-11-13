@@ -111,9 +111,7 @@ public sealed unsafe class SensitiveData<T> : IDisposable
         contents.CopyTo(_data.GetSpan());
     }
 
-    /// <summary>
-    /// Returns the length (in elements) of this buffer.
-    /// </summary>
+    /// <summary>Returns the length (in elements) of this buffer.</summary>
     public int GetLength()
     {
         ThrowIfDisposed();

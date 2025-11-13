@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Provides methods for formatting snapshot comparison error messages.
-/// </summary>
+/// <summary>Provides methods for formatting snapshot comparison error messages.</summary>
 public abstract class AssertionMessageFormatter
 {
     /// <summary>Formats an error message showing the difference between expected and actual snapshots.</summary>

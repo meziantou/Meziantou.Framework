@@ -2,9 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Meziantou.Framework.DataAnnotations;
 
-/// <summary>
-/// Validates that a string property contains an absolute URI.
-/// </summary>
+/// <summary>Validates that a string property contains an absolute URI.</summary>
 /// <example>
 /// <code>
 /// public class MyModel

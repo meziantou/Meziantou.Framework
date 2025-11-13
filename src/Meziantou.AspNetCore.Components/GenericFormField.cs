@@ -7,9 +7,7 @@ using Microsoft.AspNetCore.Components.Forms;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <summary>
-/// Represents a field in a generic form, providing metadata and rendering capabilities for a model property.
-/// </summary>
+/// <summary>Represents a field in a generic form, providing metadata and rendering capabilities for a model property.</summary>
 /// <typeparam name="TModel">The type of the model containing the field.</typeparam>
 /// <remarks>
 /// <para>

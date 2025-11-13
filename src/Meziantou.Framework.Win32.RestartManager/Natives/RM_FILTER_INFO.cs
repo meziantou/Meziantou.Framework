@@ -2,9 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Win32.Natives;
 
-/// <summary>
-/// Contains information about modifications to restart or shutdown actions. Add, remove, and list modifications to specified applications and services that have been registered with the Restart Manager session by using the RmAddFilter, RmRemoveFilter, and the RmGetFilterList functions.
-/// </summary>
+/// <summary>Contains information about modifications to restart or shutdown actions. Add, remove, and list modifications to specified applications and services that have been registered with the Restart Manager session by using the RmAddFilter, RmRemoveFilter, and the RmGetFilterList functions.</summary>
 [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 internal struct RM_FILTER_INFO
 {

@@ -2,9 +2,7 @@ using Windows.Win32.System.JobObjects;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Defines a job object limits.
-/// </summary>
+/// <summary>Defines a job object limits.</summary>
 /// <example>
 /// <code>
 /// var limits = new JobObjectLimits
@@ -20,12 +18,8 @@ public sealed class JobObjectLimits
 {
     internal JOB_OBJECT_LIMIT InternalFlags { get; set; }
 
-    /// <summary>
-    /// Defines options for a job object.
-    /// </summary>
-    /// <value>
-    /// The options for a job object.
-    /// </value>
+    /// <summary>Defines options for a job object.</summary>
+    /// <value>The options for a job object.</value>
     public JobObjectLimitFlags Flags
     {
         get;
@@ -36,12 +30,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the per-process user-mode execution time limit, in 100-nanosecond ticks.
-    /// </summary>
-    /// <value>
-    /// The per-process user-mode execution time limit, in 100-nanosecond ticks.
-    /// </value>
+    /// <summary>Gets or sets the per-process user-mode execution time limit, in 100-nanosecond ticks.</summary>
+    /// <value>The per-process user-mode execution time limit, in 100-nanosecond ticks.</value>
     public long PerProcessUserTimeLimit
     {
         get;
@@ -52,12 +42,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the per-job user-mode execution time limit, in 100-nanosecond ticks.
-    /// </summary>
-    /// <value>
-    /// The per-job user-mode execution time limit, in 100-nanosecond ticks.
-    /// </value>
+    /// <summary>Gets or sets the per-job user-mode execution time limit, in 100-nanosecond ticks.</summary>
+    /// <value>The per-job user-mode execution time limit, in 100-nanosecond ticks.</value>
     public long PerJobUserTimeLimit
     {
         get;
@@ -68,12 +54,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the minimum working set size for each process associated with the job.
-    /// </summary>
-    /// <value>
-    /// The minimum working set size for each process associated with the job.
-    /// </value>
+    /// <summary>Gets or sets the minimum working set size for each process associated with the job.</summary>
+    /// <value>The minimum working set size for each process associated with the job.</value>
     public nuint MinimumWorkingSetSize
     {
         get;
@@ -84,12 +66,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the maximum working set size for each process associated with the job.
-    /// </summary>
-    /// <value>
-    /// The maximum working set size for each process associated with the job.
-    /// </value>
+    /// <summary>Gets or sets the maximum working set size for each process associated with the job.</summary>
+    /// <value>The maximum working set size for each process associated with the job.</value>
     public nuint MaximumWorkingSetSize
     {
         get;
@@ -100,12 +78,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the active process limit for the job.
-    /// </summary>
-    /// <value>
-    /// The active process limit for the job.
-    /// </value>
+    /// <summary>Gets or sets the active process limit for the job.</summary>
+    /// <value>The active process limit for the job.</value>
     public uint ActiveProcessLimit
     {
         get;
@@ -116,12 +90,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the processor affinity for all processes associated with the job.
-    /// </summary>
-    /// <value>
-    /// The processor affinity for all processes associated with the job.
-    /// </value>
+    /// <summary>Gets or sets the processor affinity for all processes associated with the job.</summary>
+    /// <value>The processor affinity for all processes associated with the job.</value>
     public nuint Affinity
     {
         get;
@@ -132,12 +102,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets priority class for all processes associated with the job.
-    /// </summary>
-    /// <value>
-    /// The priority class for all processes associated with the job.
-    /// </value>
+    /// <summary>Gets or sets priority class for all processes associated with the job.</summary>
+    /// <value>The priority class for all processes associated with the job.</value>
     public uint PriorityClass
     {
         get;
@@ -148,12 +114,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets scheduling  class for all processes associated with the job.
-    /// </summary>
-    /// <value>
-    /// The scheduling  class for all processes associated with the job.
-    /// </value>
+    /// <summary>Gets or sets scheduling  class for all processes associated with the job.</summary>
+    /// <value>The scheduling  class for all processes associated with the job.</value>
     public uint SchedulingClass
     {
         get;
@@ -164,12 +126,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets the limit for the virtual memory that can be committed by a process.
-    /// </summary>
-    /// <value>
-    /// The limit for the virtual memory that can be committed by a process.
-    /// </value>
+    /// <summary>Gets or sets the limit for the virtual memory that can be committed by a process.</summary>
+    /// <value>The limit for the virtual memory that can be committed by a process.</value>
     public nuint ProcessMemoryLimit
     {
         get;
@@ -181,12 +139,8 @@ public sealed class JobObjectLimits
         }
     }
 
-    /// <summary>
-    /// Gets or sets limit for the virtual memory that can be committed for the job.
-    /// </summary>
-    /// <value>
-    /// The limit for the virtual memory that can be committed for the job.
-    /// </value>
+    /// <summary>Gets or sets limit for the virtual memory that can be committed for the job.</summary>
+    /// <value>The limit for the virtual memory that can be committed for the job.</value>
     public nuint JobMemoryLimit
     {
         get;

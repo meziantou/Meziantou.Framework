@@ -2,9 +2,7 @@
 
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies options for cloning HTML nodes.
-/// </summary>
+/// <summary>Specifies options for cloning HTML nodes.</summary>
 [Flags]
 #if HTML_PUBLIC
 public

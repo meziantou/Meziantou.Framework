@@ -3,9 +3,7 @@ using System.Windows.Input;
 
 namespace Meziantou.Framework.WPF;
 
-/// <summary>
-/// Provides utility methods and attached properties for WPF windows.
-/// </summary>
+/// <summary>Provides utility methods and attached properties for WPF windows.</summary>
 /// <example>
 /// <code>
 /// &lt;Window xmlns:wpf="clr-namespace:Meziantou.Framework.WPF;assembly=Meziantou.Framework.WPF"

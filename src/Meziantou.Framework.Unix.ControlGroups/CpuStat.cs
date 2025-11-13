@@ -1,48 +1,30 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>
-/// Represents CPU statistics for a cgroup.
-/// </summary>
+/// <summary>Represents CPU statistics for a cgroup.</summary>
 public sealed class CpuStat
 {
-    /// <summary>
-    /// Total CPU time used by all tasks in the cgroup (in microseconds).
-    /// </summary>
+    /// <summary>Total CPU time used by all tasks in the cgroup (in microseconds).</summary>
     public long UsageMicroseconds { get; private set; }
 
-    /// <summary>
-    /// CPU time spent in user mode (in microseconds).
-    /// </summary>
+    /// <summary>CPU time spent in user mode (in microseconds).</summary>
     public long UserMicroseconds { get; private set; }
 
-    /// <summary>
-    /// CPU time spent in system mode (in microseconds).
-    /// </summary>
+    /// <summary>CPU time spent in system mode (in microseconds).</summary>
     public long SystemMicroseconds { get; private set; }
 
-    /// <summary>
-    /// Number of periods where the cgroup was scheduled.
-    /// </summary>
+    /// <summary>Number of periods where the cgroup was scheduled.</summary>
     public long? NumberOfPeriods { get; private set; }
 
-    /// <summary>
-    /// Number of periods where the cgroup was throttled.
-    /// </summary>
+    /// <summary>Number of periods where the cgroup was throttled.</summary>
     public long? NumberOfThrottled { get; private set; }
 
-    /// <summary>
-    /// Total time the cgroup was throttled (in microseconds).
-    /// </summary>
+    /// <summary>Total time the cgroup was throttled (in microseconds).</summary>
     public long? ThrottledMicroseconds { get; private set; }
 
-    /// <summary>
-    /// Number of burst periods.
-    /// </summary>
+    /// <summary>Number of burst periods.</summary>
     public long? NumberOfBursts { get; private set; }
 
-    /// <summary>
-    /// Total burst time (in microseconds).
-    /// </summary>
+    /// <summary>Total burst time (in microseconds).</summary>
     public long? BurstMicroseconds { get; private set; }
 
     internal static CpuStat Parse(string content)

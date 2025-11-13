@@ -1,13 +1,9 @@
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>
-/// Extension methods for HugeTLB controller on CGroup2.
-/// </summary>
+/// <summary>Extension methods for HugeTLB controller on CGroup2.</summary>
 public partial class CGroup2
 {
-    /// <summary>
-    /// Sets the HugeTLB usage limit for a specific page size.
-    /// </summary>
+    /// <summary>Sets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <param name="bytes">Maximum usage in bytes, or null for no limit.</param>
     public void SetHugeTlbMax(string pageSize, long? bytes)
@@ -22,9 +18,7 @@ public partial class CGroup2
         WriteFile(fileName, value);
     }
 
-    /// <summary>
-    /// Gets the HugeTLB usage limit for a specific page size.
-    /// </summary>
+    /// <summary>Gets the HugeTLB usage limit for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>The limit in bytes, or null if set to max.</returns>
     public long? GetHugeTlbMax(string pageSize)
@@ -47,9 +41,7 @@ public partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Gets the current HugeTLB usage for a specific page size.
-    /// </summary>
+    /// <summary>Gets the current HugeTLB usage for a specific page size.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>Current usage in bytes.</returns>
     public long? GetHugeTlbCurrent(string pageSize)
@@ -68,9 +60,7 @@ public partial class CGroup2
         return null;
     }
 
-    /// <summary>
-    /// Gets the number of times the HugeTLB limit was hit.
-    /// </summary>
+    /// <summary>Gets the number of times the HugeTLB limit was hit.</summary>
     /// <param name="pageSize">The huge page size (e.g., "2MB", "1GB").</param>
     /// <returns>Number of limit hits.</returns>
     public long? GetHugeTlbEventsMax(string pageSize)

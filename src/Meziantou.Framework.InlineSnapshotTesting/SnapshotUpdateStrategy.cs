@@ -5,9 +5,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 
 public abstract class SnapshotUpdateStrategy
 {
-    /// <summary>
-    /// Do not update the snapshots and fail the tests if the snapshots are different.
-    /// </summary>
+    /// <summary>Do not update the snapshots and fail the tests if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Disallow { get; } = new DisallowStrategy();
 
     /// <summary>
@@ -22,14 +20,10 @@ public abstract class SnapshotUpdateStrategy
     /// </summary>
     public static SnapshotUpdateStrategy MergeToolSync { get; } = new BlockingDiffToolStrategy();
 
-    /// <summary>
-    /// Overwrite the source file with the new snapshot. The test fails if the snapshots are different.
-    /// </summary>
+    /// <summary>Overwrite the source file with the new snapshot. The test fails if the snapshots are different.</summary>
     public static SnapshotUpdateStrategy Overwrite { get; } = new AlwaysStrategy();
 
-    /// <summary>
-    /// Overwrite the source file with the new snapshot. The test won't fail.
-    /// </summary>
+    /// <summary>Overwrite the source file with the new snapshot. The test won't fail.</summary>
     public static SnapshotUpdateStrategy OverwriteWithoutFailure { get; } = new AlwaysWithoutFailureStrategy();
 
     public static SnapshotUpdateStrategy Default
@@ -54,16 +48,12 @@ public abstract class SnapshotUpdateStrategy
     }
 
 
-    /// <summary>
-    /// Indicates if an an inline snapshot must be updated
-    /// </summary>
+    /// <summary>Indicates if an an inline snapshot must be updated</summary>
     public abstract bool CanUpdateSnapshot(InlineSnapshotSettings settings, string path, string expectedSnapshot, string actualSnapshot);
 
     public abstract void UpdateFile(InlineSnapshotSettings settings, string targetFile, string tempFile);
 
-    /// <summary>
-    /// Indicates if an exception must be thrown when the snapshots differ.
-    /// </summary>
+    /// <summary>Indicates if an exception must be thrown when the snapshots differ.</summary>
     public abstract bool MustReportError(InlineSnapshotSettings settings, string path);
 
     private protected static void MoveFile(string source, string destination)

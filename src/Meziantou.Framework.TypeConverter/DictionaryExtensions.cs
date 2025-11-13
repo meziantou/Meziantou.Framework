@@ -2,9 +2,7 @@
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides extension methods for retrieving and converting dictionary values.
-/// </summary>
+/// <summary>Provides extension methods for retrieving and converting dictionary values.</summary>
 public static class DictionaryExtensions
 {
     /// <summary>Gets a value from the dictionary and converts it to the specified type, or returns a default value if the key is not found or conversion fails.</summary>

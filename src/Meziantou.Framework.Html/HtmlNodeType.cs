@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies the type of an HTML node.
-/// </summary>
+/// <summary>Specifies the type of an HTML node.</summary>
 #if HTML_PUBLIC
 public
 #else

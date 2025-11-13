@@ -3,9 +3,7 @@ using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Provides a fluent API for configuring and validating inline snapshots.
-/// </summary>
+/// <summary>Provides a fluent API for configuring and validating inline snapshots.</summary>
 /// <example>
 /// <code>
 /// InlineSnapshot

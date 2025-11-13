@@ -2,9 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a date and time that can be formatted as a human-readable relative time string (e.g., "2 hours ago", "in 3 days").
-/// </summary>
+/// <summary>Represents a date and time that can be formatted as a human-readable relative time string (e.g., "2 hours ago", "in 3 days").</summary>
 /// <example>
 /// <code>
 /// // Basic usage

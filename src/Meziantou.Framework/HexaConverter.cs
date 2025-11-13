@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides methods for converting between byte arrays and hexadecimal string representations.
-/// </summary>
+/// <summary>Provides methods for converting between byte arrays and hexadecimal string representations.</summary>
 public static class HexaConverter
 {
     /// <summary>Converts a byte array to its hexadecimal string representation using uppercase letters.</summary>

@@ -6,9 +6,7 @@ using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <summary>
-/// A select input component for editing enum values.
-/// </summary>
+/// <summary>A select input component for editing enum values.</summary>
 /// <typeparam name="TEnum">The enum type. Can be nullable to allow no selection.</typeparam>
 /// <remarks>
 /// <para>

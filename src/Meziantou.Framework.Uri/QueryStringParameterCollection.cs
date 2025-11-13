@@ -4,9 +4,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Represents a collection of query string parameters that preserves insertion order and allows duplicate keys with multiple values.
-/// </summary>
+/// <summary>Represents a collection of query string parameters that preserves insertion order and allows duplicate keys with multiple values.</summary>
 public sealed class QueryStringParameterCollection : IEnumerable<KeyValuePair<string, StringValues>>
 {
     // The number of parameters is often small, so we use a List instead of a Dictionary.

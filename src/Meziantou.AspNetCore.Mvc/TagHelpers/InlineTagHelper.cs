@@ -5,9 +5,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
-/// <summary>
-/// Base class for TagHelpers that inline external files into HTML elements with caching support.
-/// </summary>
+/// <summary>Base class for TagHelpers that inline external files into HTML elements with caching support.</summary>
 /// <remarks>
 /// This abstract class provides functionality to read files from the web root, cache their contents,
 /// and automatically invalidate the cache when files change. It supports reading files as both text

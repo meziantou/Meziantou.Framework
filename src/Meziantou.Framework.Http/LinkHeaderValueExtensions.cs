@@ -2,29 +2,21 @@ using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.Http;
 
-/// <summary>
-/// Provides extension methods for working with Link header values.
-/// </summary>
+/// <summary>Provides extension methods for working with Link header values.</summary>
 public static class LinkHeaderValueExtensions
 {
-    /// <summary>
-    /// Enumerates all Link header values from HTTP headers.
-    /// </summary>
+    /// <summary>Enumerates all Link header values from HTTP headers.</summary>
     /// <param name="headers">The HTTP headers to parse.</param>
     /// <returns>A collection of <see cref="LinkHeaderValue"/> instances.</returns>
     public static IEnumerable<LinkHeaderValue> EnumerateLinkHeaders(this HttpHeaders headers) => LinkHeaderValue.Parse(headers);
 
-    /// <summary>
-    /// Gets the first link with the specified relation type.
-    /// </summary>
+    /// <summary>Gets the first link with the specified relation type.</summary>
     /// <param name="links">The collection of links to search.</param>
     /// <param name="rel">The relation type to find.</param>
     /// <returns>The first <see cref="LinkHeaderValue"/> with the specified relation type, or <see langword="null"/> if not found.</returns>
     public static LinkHeaderValue GetLink(this IEnumerable<LinkHeaderValue> links, string rel) => links.FirstOrDefault(l => string.Equals(l.Rel, rel, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>
-    /// Gets the URL of the first link with the specified relation type.
-    /// </summary>
+    /// <summary>Gets the URL of the first link with the specified relation type.</summary>
     /// <param name="links">The collection of links to search.</param>
     /// <param name="rel">The relation type to find.</param>
     /// <returns>The URL of the first link with the specified relation type, or <see langword="null"/> if not found.</returns>

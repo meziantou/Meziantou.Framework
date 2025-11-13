@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides utilities for working with countries and region information.
-/// </summary>
+/// <summary>Provides utilities for working with countries and region information.</summary>
 /// <example>
 /// <code>
 /// var region = new RegionInfo("US");

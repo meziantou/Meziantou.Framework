@@ -14,9 +14,7 @@ static partial class IOUtilities
         "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
     ];
 
-    /// <summary>
-    /// Makes sure a directory exists for a given file path.
-    /// </summary>
+    /// <summary>Makes sure a directory exists for a given file path.</summary>
     /// <param name="filePath">The file path. Note this is not to be confused with the directory path. May not be null.</param>
     public static void PathCreateDirectory(string filePath)
     {
@@ -34,9 +32,7 @@ static partial class IOUtilities
         Directory.CreateDirectory(dir);
     }
 
-    /// <summary>
-    /// Unprotects the given file path.
-    /// </summary>
+    /// <summary>Unprotects the given file path.</summary>
     /// <param name="path">The file path. May not be null.</param>
     public static void PathUnprotect(string path)
     {
@@ -89,15 +85,11 @@ static partial class IOUtilities
         return relativeUri.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
     }
 
-    /// <summary>
-    /// Converts a text into a valid file name.
-    /// </summary>
+    /// <summary>Converts a text into a valid file name.</summary>
     /// <param name="fileName">The file name.</param>
     /// <param name="reservedNameFormat">The reserved format to use for reserved names. If null '_{0}_' will be used.</param>
     /// <param name="reservedCharFormat">The reserved format to use for reserved characters. If null '_x{0}_' will be used.</param>
-    /// <returns>
-    /// A valid file name.
-    /// </returns>
+    /// <returns>A valid file name.</returns>
     public static string ToValidFileName(string fileName, string reservedNameFormat = "_{0}_", string reservedCharFormat = "_x{0}_")
     {
         ArgumentNullException.ThrowIfNull(fileName);

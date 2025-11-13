@@ -21,14 +21,10 @@ public sealed class ChangeJournal : IDisposable
 
     internal SafeFileHandle ChangeJournalHandle { get; }
 
-    /// <summary>
-    /// Gets the current metadata about the change journal.
-    /// </summary>
+    /// <summary>Gets the current metadata about the change journal.</summary>
     public JournalData Data { get; private set; }
 
-    /// <summary>
-    /// Gets a collection of all change journal entries.
-    /// </summary>
+    /// <summary>Gets a collection of all change journal entries.</summary>
     public IEnumerable<ChangeJournalEntry> Entries { get; }
 
     private ChangeJournal(SafeFileHandle handle, bool unprivileged)
@@ -39,9 +35,7 @@ public sealed class ChangeJournal : IDisposable
         Entries = new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, ChangeReason.All, returnOnlyOnClose: false, TimeSpan.Zero, unprivileged));
     }
 
-    /// <summary>
-    /// Opens the change journal for the specified drive.
-    /// </summary>
+    /// <summary>Opens the change journal for the specified drive.</summary>
     /// <param name="driveInfo">The drive to open the change journal for.</param>
     /// <returns>A <see cref="ChangeJournal"/> instance for accessing the change journal.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="driveInfo"/> is <see langword="null"/>.</exception>
@@ -51,9 +45,7 @@ public sealed class ChangeJournal : IDisposable
         return Open(driveInfo, unprivileged: false);
     }
 
-    /// <summary>
-    /// Opens the change journal for the specified drive.
-    /// </summary>
+    /// <summary>Opens the change journal for the specified drive.</summary>
     /// <param name="driveInfo">The drive to open the change journal for.</param>
     /// <param name="unprivileged">If <see langword="true"/>, uses unprivileged access mode; otherwise, uses standard access mode.</param>
     /// <returns>A <see cref="ChangeJournal"/> instance for accessing the change journal.</returns>
@@ -80,9 +72,7 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournal(handle, unprivileged);
     }
 
-    /// <summary>
-    /// Gets change journal entries with the specified filter criteria.
-    /// </summary>
+    /// <summary>Gets change journal entries with the specified filter criteria.</summary>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
     /// <param name="timeout">The time to wait for new entries before returning.</param>
@@ -92,9 +82,7 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(initialUSN: null, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
-    /// <summary>
-    /// Gets change journal entries starting from a specific USN with the specified filter criteria.
-    /// </summary>
+    /// <summary>Gets change journal entries starting from a specific USN with the specified filter criteria.</summary>
     /// <param name="currentUSN">The USN to start reading from.</param>
     /// <param name="reasonFilter">A filter that specifies which types of changes to include.</param>
     /// <param name="returnOnlyOnClose">If <see langword="true"/>, returns only entries with the Close reason flag set.</param>
@@ -109,9 +97,7 @@ public sealed class ChangeJournal : IDisposable
         return new ChangeJournalEntries(this, new ReadChangeJournalOptions(currentUSN, reasonFilter, returnOnlyOnClose, timeout, _unprivileged));
     }
 
-    /// <summary>
-    /// Gets the change journal entry for a specific file or directory by path.
-    /// </summary>
+    /// <summary>Gets the change journal entry for a specific file or directory by path.</summary>
     /// <param name="path">The path to the file or directory.</param>
     /// <returns>The change journal entry for the specified file or directory.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
@@ -121,9 +107,7 @@ public sealed class ChangeJournal : IDisposable
         return GetEntry(handle);
     }
 
-    /// <summary>
-    /// Gets the change journal entry for a specific file or directory by handle.
-    /// </summary>
+    /// <summary>Gets the change journal entry for a specific file or directory by handle.</summary>
     /// <param name="handle">A handle to the file or directory.</param>
     /// <returns>The change journal entry for the specified file or directory.</returns>
     /// <exception cref="Win32Exception">Thrown when the operation fails.</exception>
@@ -156,9 +140,7 @@ public sealed class ChangeJournal : IDisposable
         }
     }
 
-    /// <summary>
-    /// Refreshes the journal metadata by reading the current state from the change journal.
-    /// </summary>
+    /// <summary>Refreshes the journal metadata by reading the current state from the change journal.</summary>
     public void RefreshJournalData()
     {
         Data = ReadJournalDataImpl();
@@ -190,14 +172,10 @@ public sealed class ChangeJournal : IDisposable
     /// </summary>
     public void Dispose() => ChangeJournalHandle.Dispose();
 
-    /// <summary>
-    /// Deletes the change journal and waits for the deletion to complete.
-    /// </summary>
+    /// <summary>Deletes the change journal and waits for the deletion to complete.</summary>
     public void Delete() => Delete(waitForCompletion: true);
 
-    /// <summary>
-    /// Deletes the change journal.
-    /// </summary>
+    /// <summary>Deletes the change journal.</summary>
     /// <param name="waitForCompletion">If <see langword="true"/>, waits for the deletion to complete; otherwise, deletes asynchronously.</param>
     public void Delete(bool waitForCompletion)
     {
@@ -211,9 +189,7 @@ public sealed class ChangeJournal : IDisposable
         RefreshJournalData();
     }
 
-    /// <summary>
-    /// Creates a new change journal or modifies an existing one.
-    /// </summary>
+    /// <summary>Creates a new change journal or modifies an existing one.</summary>
     /// <param name="maximumSize">The maximum size, in bytes, that the journal can use on the volume.</param>
     /// <param name="allocationDelta">The size, in bytes, by which the journal grows when needed.</param>
     public void Create(ulong maximumSize, ulong allocationDelta)
@@ -228,9 +204,7 @@ public sealed class ChangeJournal : IDisposable
         RefreshJournalData();
     }
 
-    /// <summary>
-    /// Creates a new change journal or modifies an existing one.
-    /// </summary>
+    /// <summary>Creates a new change journal or modifies an existing one.</summary>
     /// <param name="maximumSize">The maximum size, in bytes, that the journal can use on the volume.</param>
     /// <param name="allocationDelta">The size, in bytes, by which the journal grows when needed.</param>
     public void Create(long maximumSize, long allocationDelta)
@@ -245,9 +219,7 @@ public sealed class ChangeJournal : IDisposable
         RefreshJournalData();
     }
 
-    /// <summary>
-    /// Enables range tracking for the change journal.
-    /// </summary>
+    /// <summary>Enables range tracking for the change journal.</summary>
     /// <param name="chunkSize">The granularity of tracked ranges.</param>
     /// <param name="fileSizeThreshold">The file size threshold to start tracking ranges for files with equal or larger size.</param>
     public void EnableTrackModifiedRanges(ulong chunkSize, long fileSizeThreshold)

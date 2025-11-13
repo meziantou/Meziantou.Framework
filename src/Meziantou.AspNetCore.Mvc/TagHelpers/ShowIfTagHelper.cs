@@ -2,9 +2,7 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
-/// <summary>
-/// A TagHelper that conditionally renders elements based on a boolean expression.
-/// </summary>
+/// <summary>A TagHelper that conditionally renders elements based on a boolean expression.</summary>
 /// <example>
 /// <code language="razor">
 /// @* Show content only if user is authenticated *@

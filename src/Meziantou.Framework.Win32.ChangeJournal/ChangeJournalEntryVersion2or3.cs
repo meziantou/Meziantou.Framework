@@ -3,9 +3,7 @@ using Windows.Win32.System.Ioctl;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Represents a change journal entry in version 2 or version 3 format.
-/// </summary>
+/// <summary>Represents a change journal entry in version 2 or version 3 format.</summary>
 public sealed class ChangeJournalEntryVersion2or3 : ChangeJournalEntry
 {
     /// <summary>
@@ -54,9 +52,7 @@ public sealed class ChangeJournalEntryVersion2or3 : ChangeJournalEntry
         ParentReferenceNumber = new FileIdentifier(entry.ParentFileReferenceNumber);
     }
 
-    /// <summary>
-    /// Gets the Unique Sequence Number of this entry.
-    /// </summary>
+    /// <summary>Gets the Unique Sequence Number of this entry.</summary>
     public Usn UniqueSequenceNumber { get; }
 
     /// <summary>

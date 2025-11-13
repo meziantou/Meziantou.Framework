@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Versioning;
 
-/// <summary>
-/// Implements Semantic Version 2.0.0. <see href="https://semver.org/"/>
-/// </summary>
+/// <summary>Implements Semantic Version 2.0.0.</summary>
 /// <example>
 /// <code>
 /// // Parse a semantic version string

@@ -14,9 +14,7 @@ namespace Meziantou.Framework.Win32;
 /// </example>
 public sealed class JobIoRateLimits
 {
-    /// <summary>
-    /// The policy for control of the I/O rate. This member can be one of the following values.
-    /// </summary>
+    /// <summary>The policy for control of the I/O rate. This member can be one of the following values.</summary>
     public JobIoRateFlags ControlFlags { get; set; }
 
     /// <summary>

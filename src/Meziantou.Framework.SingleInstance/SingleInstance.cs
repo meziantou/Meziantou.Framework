@@ -9,9 +9,7 @@ using System.Security.Principal;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Ensures that only a single instance of an application can run at a time and provides communication between instances.
-/// </summary>
+/// <summary>Ensures that only a single instance of an application can run at a time and provides communication between instances.</summary>
 /// <example>
 /// Basic usage:
 /// <code>
@@ -46,20 +44,14 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
 
     private string PipeName { get; } = OperatingSystem.IsWindows() ? $"Local\\Pipe_{applicationId}_{GetSessionId().ToString(CultureInfo.InvariantCulture)}" : null!;
 
-    /// <summary>
-    /// Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.
-    /// </summary>
+    /// <summary>Gets or sets a value indicating whether to start a named pipe server to receive notifications from other instances.</summary>
     /// <value>
     /// <see langword="true"/> to start the server; otherwise, <see langword="false"/>. The default is <see langword="true"/>.
     /// </value>
     public bool StartServer { get; set; } = true;
 
-    /// <summary>
-    /// Gets or sets the timeout for connecting to the first instance when notifying it.
-    /// </summary>
-    /// <value>
-    /// The connection timeout. The default is 3 seconds.
-    /// </value>
+    /// <summary>Gets or sets the timeout for connecting to the first instance when notifying it.</summary>
+    /// <value>The connection timeout. The default is 3 seconds.</value>
     public TimeSpan ClientConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 
     private static int GetSessionId()
@@ -68,9 +60,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         return currentProcess.SessionId;
     }
 
-    /// <summary>
-    /// Attempts to start the application as the first instance.
-    /// </summary>
+    /// <summary>Attempts to start the application as the first instance.</summary>
     /// <returns>
     /// <see langword="true"/> if this is the first instance and the application can start; otherwise, <see langword="false"/>.
     /// </returns>
@@ -195,9 +185,7 @@ public sealed class SingleInstance(Guid applicationId) : IDisposable
         }
     }
 
-    /// <summary>
-    /// Notifies the first instance of the application that another instance is attempting to start.
-    /// </summary>
+    /// <summary>Notifies the first instance of the application that another instance is attempting to start.</summary>
     /// <param name="args">The command-line arguments to send to the first instance.</param>
     /// <returns>
     /// <see langword="true"/> if the notification was sent successfully; otherwise, <see langword="false"/>.

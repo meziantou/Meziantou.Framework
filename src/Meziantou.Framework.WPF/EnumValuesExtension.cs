@@ -2,9 +2,7 @@ using System.Windows.Markup;
 
 namespace Meziantou.Framework.WPF;
 
-/// <summary>
-/// XAML markup extension that provides all values of an enum type.
-/// </summary>
+/// <summary>XAML markup extension that provides all values of an enum type.</summary>
 /// <example>
 /// <code>
 /// &lt;ComboBox ItemsSource="{wpf:EnumValues {x:Type MyEnum}}" /&gt;

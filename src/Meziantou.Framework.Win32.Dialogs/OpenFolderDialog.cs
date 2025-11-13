@@ -4,9 +4,7 @@ using Meziantou.Framework.Win32.Natives;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Provides a modern Windows folder selection dialog using the IFileOpenDialog COM interface.
-/// </summary>
+/// <summary>Provides a modern Windows folder selection dialog using the IFileOpenDialog COM interface.</summary>
 /// <example>
 /// <code>
 /// var dialog = new OpenFolderDialog

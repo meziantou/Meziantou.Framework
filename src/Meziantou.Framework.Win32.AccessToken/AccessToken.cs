@@ -9,9 +9,7 @@ using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Represents a Windows access token that identifies a security context for a process or thread.
-/// </summary>
+/// <summary>Represents a Windows access token that identifies a security context for a process or thread.</summary>
 /// <example>
 /// <code>
 /// // Open the current process token
@@ -117,9 +115,7 @@ public sealed class AccessToken : IDisposable
 
     /// <summary>Gets the mandatory integrity level of the token.</summary>
     /// <returns>A <see cref="TokenEntry"/> containing the integrity level SID, or <see langword="null"/> if not available.</returns>
-    /// <remarks>
-    /// The mandatory integrity level (e.g., Low, Medium, High, System) determines what resources the token can access.
-    /// </remarks>
+    /// <remarks>The mandatory integrity level (e.g., Low, Medium, High, System) determines what resources the token can access.</remarks>
     public TokenEntry? GetMandatoryIntegrityLevel()
     {
         return GetTokenInformation<TOKEN_MANDATORY_LABEL, TokenEntry>(
@@ -158,9 +154,7 @@ public sealed class AccessToken : IDisposable
 
     /// <summary>Enumerates the restricted SIDs in the token.</summary>
     /// <returns>A collection of <see cref="TokenGroupEntry"/> objects representing the restricted SIDs, or <see langword="null"/> if not available.</returns>
-    /// <remarks>
-    /// Restricted SIDs are used to limit the token's access to resources beyond the standard access checks.
-    /// </remarks>
+    /// <remarks>Restricted SIDs are used to limit the token's access to resources beyond the standard access checks.</remarks>
     public IEnumerable<TokenGroupEntry>? EnumerateRestrictedSid()
     {
         return GetTokenInformation<TOKEN_GROUPS, IReadOnlyList<TokenGroupEntry>>(

@@ -2,9 +2,7 @@ namespace Meziantou.Framework;
 
 public static partial class StringSearchUtilities
 {
-    /// <summary>
-    /// Compute the soundex of a string.
-    /// </summary>
+    /// <summary>Compute the soundex of a string.</summary>
     /// <param name="s"> The string.</param>
     /// <param name="dic"> Dictionary containing value of characters.</param>
     /// <param name="replace"> List of replacement to do before computing the soundex.</param>
@@ -74,9 +72,7 @@ public static partial class StringSearchUtilities
         return sb;
     }
 
-    /// <summary>
-    ///     Compute an improved French soundex.
-    /// </summary>
+    /// <summary>Compute an improved French soundex.</summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
     public static string Soundex2(string s)
@@ -207,9 +203,7 @@ public static partial class StringSearchUtilities
         return sb.ToString(0, 4);
     }
 
-    /// <summary>
-    ///     Compute English soundex.
-    /// </summary>
+    /// <summary>Compute English soundex.</summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
     public static string SoundexEnglish(string s)
@@ -239,9 +233,7 @@ public static partial class StringSearchUtilities
         return Soundex(s, dic);
     }
 
-    /// <summary>
-    ///     Compute French soundex.
-    /// </summary>
+    /// <summary>Compute French soundex.</summary>
     /// <param name="s"> The string. </param>
     /// <returns> The soundex. </returns>
     public static string SoundexFrench(string s)

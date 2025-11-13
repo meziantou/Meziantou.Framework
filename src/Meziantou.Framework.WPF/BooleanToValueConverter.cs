@@ -2,9 +2,7 @@ using System.Windows.Data;
 
 namespace Meziantou.Framework.WPF;
 
-/// <summary>
-/// Converts boolean values to custom values for WPF data binding.
-/// </summary>
+/// <summary>Converts boolean values to custom values for WPF data binding.</summary>
 /// <example>
 /// <code>
 /// &lt;Window.Resources&gt;

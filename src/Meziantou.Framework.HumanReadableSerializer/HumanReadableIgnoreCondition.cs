@@ -2,14 +2,10 @@ namespace Meziantou.Framework.HumanReadable;
 
 public enum HumanReadableIgnoreCondition
 {
-    /// <summary>
-    /// Property is never ignored during serialization.
-    /// </summary>
+    /// <summary>Property is never ignored during serialization.</summary>
     Never,
 
-    /// <summary>
-    /// Property is always ignored during serialization.
-    /// </summary>
+    /// <summary>Property is always ignored during serialization.</summary>
     Always,
 
     /// <summary>

@@ -5,9 +5,7 @@ using Windows.Win32.Foundation;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Defines a file's perceived type based on its extension.
-/// </summary>
+/// <summary>Defines a file's perceived type based on its extension.</summary>
 /// <example>
 /// <code>
 /// // Get perceived type for a file
@@ -88,9 +86,7 @@ public sealed class Perceived
         AddPerceived(".xslt", PerceivedType.Text);
     }
 
-    /// <summary>
-    /// Adds a perceived instance to the list.
-    /// </summary>
+    /// <summary>Adds a perceived instance to the list.</summary>
     /// <param name="extension">The file extension. May not be null.</param>
     /// <param name="type">The perceived type.</param>
     public static Perceived AddPerceived(string extension, PerceivedType type)
@@ -106,27 +102,19 @@ public sealed class Perceived
         return perceived;
     }
 
-    /// <summary>
-    /// Gets the file's extension.
-    /// </summary>
+    /// <summary>Gets the file's extension.</summary>
     /// <value>The file's extension.</value>
     public string Extension { get; }
 
-    /// <summary>
-    /// Indicates the normalized perceived type.
-    /// </summary>
+    /// <summary>Indicates the normalized perceived type.</summary>
     /// <value>The normalized perceived type.</value>
     public PerceivedType PerceivedType { get; }
 
-    /// <summary>
-    /// Indicates the source of the perceived type information.
-    /// </summary>
+    /// <summary>Indicates the source of the perceived type information.</summary>
     /// <value>the source of the perceived type information.</value>
     public PerceivedTypeSource PerceivedTypeSource { get; }
 
-    /// <summary>
-    /// Gets a file's perceived type based on its extension.
-    /// </summary>
+    /// <summary>Gets a file's perceived type based on its extension.</summary>
     /// <param name="fileName">The file name. May not be null..</param>
     /// <returns>An instance of the PerceivedType type.</returns>
     [SupportedOSPlatform("windows5.1.2600")]

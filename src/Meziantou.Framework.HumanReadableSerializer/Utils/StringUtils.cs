@@ -46,19 +46,13 @@ internal static class StringUtils
             _isEnumeratorActive = true;
         }
 
-        /// <summary>
-        /// Gets the line at the current position of the enumerator.
-        /// </summary>
+        /// <summary>Gets the line at the current position of the enumerator.</summary>
         public SpanLine Current { get; private set; }
 
-        /// <summary>
-        /// Returns this instance as an enumerator.
-        /// </summary>
+        /// <summary>Returns this instance as an enumerator.</summary>
         public readonly SpanLineEnumerator GetEnumerator() => this;
 
-        /// <summary>
-        /// Advances the enumerator to the next line of the span.
-        /// </summary>
+        /// <summary>Advances the enumerator to the next line of the span.</summary>
         /// <returns>
         /// True if the enumerator successfully advanced to the next line; false if
         /// the enumerator has advanced past the end of the span.

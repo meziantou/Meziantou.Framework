@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies options that control how HTML elements are written.
-/// </summary>
+/// <summary>Specifies options that control how HTML elements are written.</summary>
 [Flags]
 #if HTML_PUBLIC
 public

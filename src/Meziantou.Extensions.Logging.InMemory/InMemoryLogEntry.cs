@@ -3,9 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
-/// <summary>
-/// Represents a log entry captured by an in-memory logger.
-/// </summary>
+/// <summary>Represents a log entry captured by an in-memory logger.</summary>
 /// <example>
 /// <code>
 /// var logger = InMemoryLogger.CreateLogger("sample");

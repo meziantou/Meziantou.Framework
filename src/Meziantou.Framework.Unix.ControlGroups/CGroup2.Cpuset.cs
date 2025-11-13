@@ -2,15 +2,11 @@ using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Unix.ControlGroups;
 
-/// <summary>
-/// Extension methods for cpuset controller on CGroup2.
-/// </summary>
+/// <summary>Extension methods for cpuset controller on CGroup2.</summary>
 [SupportedOSPlatform("linux")]
 public partial class CGroup2
 {
-    /// <summary>
-    /// Sets the CPUs that tasks in this cgroup can use.
-    /// </summary>
+    /// <summary>Sets the CPUs that tasks in this cgroup can use.</summary>
     /// <param name="cpus">Array of CPU numbers (e.g., [0, 1, 2] for CPUs 0-2).</param>
     public void SetCpusetCpus(params ReadOnlySpan<int> cpus)
     {
@@ -24,18 +20,14 @@ public partial class CGroup2
         SetCpusetCpusRaw(ranges);
     }
 
-    /// <summary>
-    /// Sets the CPUs using a raw format string (e.g., "0-3,6,8-10").
-    /// </summary>
+    /// <summary>Sets the CPUs using a raw format string (e.g., "0-3,6,8-10").</summary>
     /// <param name="cpuList">CPU list in cgroup format.</param>
     public void SetCpusetCpusRaw(string cpuList)
     {
         WriteFile("cpuset.cpus", cpuList ?? "");
     }
 
-    /// <summary>
-    /// Gets the CPUs that tasks in this cgroup can use.
-    /// </summary>
+    /// <summary>Gets the CPUs that tasks in this cgroup can use.</summary>
     /// <returns>Array of CPU numbers.</returns>
     public int[]? GetCpusetCpus()
     {
@@ -46,9 +38,7 @@ public partial class CGroup2
         return ParseCpuList(content.Trim());
     }
 
-    /// <summary>
-    /// Gets the effective CPUs (actually granted by parent).
-    /// </summary>
+    /// <summary>Gets the effective CPUs (actually granted by parent).</summary>
     /// <returns>Array of CPU numbers.</returns>
     public int[]? GetCpusetCpusEffective()
     {
@@ -59,9 +49,7 @@ public partial class CGroup2
         return ParseCpuList(content.Trim());
     }
 
-    /// <summary>
-    /// Sets the memory nodes that tasks in this cgroup can use.
-    /// </summary>
+    /// <summary>Sets the memory nodes that tasks in this cgroup can use.</summary>
     /// <param name="nodes">Array of memory node numbers.</param>
     public void SetCpusetMems(params int[] nodes)
     {
@@ -77,18 +65,14 @@ public partial class CGroup2
         SetCpusetMemsRaw(ranges);
     }
 
-    /// <summary>
-    /// Sets the memory nodes using a raw format string.
-    /// </summary>
+    /// <summary>Sets the memory nodes using a raw format string.</summary>
     /// <param name="nodeList">Memory node list in cgroup format.</param>
     public void SetCpusetMemsRaw(string nodeList)
     {
         WriteFile("cpuset.mems", nodeList ?? "");
     }
 
-    /// <summary>
-    /// Gets the memory nodes that tasks in this cgroup can use.
-    /// </summary>
+    /// <summary>Gets the memory nodes that tasks in this cgroup can use.</summary>
     /// <returns>Array of memory node numbers.</returns>
     public int[]? GetCpusetMems()
     {
@@ -99,9 +83,7 @@ public partial class CGroup2
         return ParseCpuList(content.Trim());
     }
 
-    /// <summary>
-    /// Gets the effective memory nodes (actually granted by parent).
-    /// </summary>
+    /// <summary>Gets the effective memory nodes (actually granted by parent).</summary>
     /// <returns>Array of memory node numbers.</returns>
     public int[]? GetCpusetMemsEffective()
     {
@@ -112,9 +94,7 @@ public partial class CGroup2
         return ParseCpuList(content.Trim());
     }
 
-    /// <summary>
-    /// Sets the cpuset partition type.
-    /// </summary>
+    /// <summary>Sets the cpuset partition type.</summary>
     /// <param name="partitionType">The partition type ("member", "root", or "isolated").</param>
     public void SetCpusetPartition(string partitionType)
     {
@@ -123,9 +103,7 @@ public partial class CGroup2
         WriteFile("cpuset.cpus.partition", partitionType);
     }
 
-    /// <summary>
-    /// Gets the cpuset partition type.
-    /// </summary>
+    /// <summary>Gets the cpuset partition type.</summary>
     /// <returns>The partition type.</returns>
     public string? GetCpusetPartition()
     {

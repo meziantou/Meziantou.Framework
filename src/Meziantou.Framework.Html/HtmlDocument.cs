@@ -4,9 +4,7 @@ using System.Xml;
 
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Represents an HTML document that can be loaded, parsed, and manipulated programmatically.
-/// </summary>
+/// <summary>Represents an HTML document that can be loaded, parsed, and manipulated programmatically.</summary>
 /// <example>
 /// <code>
 /// // Load from file
@@ -988,12 +986,8 @@ sealed class HtmlDocument : HtmlNode
         WriteTo(writer);
     }
 
-    /// <summary>
-    /// Saves the document to the specified file.
-    /// </summary>
-    /// <param name="filePath">
-    /// The file path. The file will be overwritten if it exists.
-    /// </param>
+    /// <summary>Saves the document to the specified file.</summary>
+    /// <param name="filePath">The file path. The file will be overwritten if it exists.</param>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="filePath"/> is <see langword="null"/>.
     /// </exception>
@@ -1027,12 +1021,8 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
-    /// <summary>
-    /// Saves the document to the specified file with the given encoding.
-    /// </summary>
-    /// <param name="filePath">
-    /// The file path. The file will be overwritten if it exists.
-    /// </param>
+    /// <summary>Saves the document to the specified file with the given encoding.</summary>
+    /// <param name="filePath">The file path. The file will be overwritten if it exists.</param>
     /// <param name="encoding">
     /// The encoding to use. If <see langword="null"/>, UTF-8 encoding will be used.
     /// </param>
@@ -1065,12 +1055,8 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
-    /// <summary>
-    /// Saves the document to the specified output stream.
-    /// </summary>
-    /// <param name="outStream">
-    /// The output stream.
-    /// </param>
+    /// <summary>Saves the document to the specified output stream.</summary>
+    /// <param name="outStream">The output stream.</param>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="outStream"/> is <see langword="null"/>.
     /// </exception>
@@ -1090,15 +1076,9 @@ sealed class HtmlDocument : HtmlNode
         }
     }
 
-    /// <summary>
-    /// Saves the document to the specified output stream with the given encoding.
-    /// </summary>
-    /// <param name="outStream">
-    /// The output stream.
-    /// </param>
-    /// <param name="encoding">
-    /// The encoding to use.
-    /// </param>
+    /// <summary>Saves the document to the specified output stream with the given encoding.</summary>
+    /// <param name="outStream">The output stream.</param>
+    /// <param name="encoding">The encoding to use.</param>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="outStream"/> is <see langword="null"/>.
     /// </exception>

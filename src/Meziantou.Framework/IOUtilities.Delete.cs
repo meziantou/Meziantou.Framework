@@ -7,9 +7,7 @@ internal
 #endif
 static partial class IOUtilities
 {
-    /// <summary>
-    /// Determines whether the specified exception is a sharing violation exception.
-    /// </summary>
+    /// <summary>Determines whether the specified exception is a sharing violation exception.</summary>
     /// <param name="exception">The exception. May not be null.</param>
     /// <returns>
     /// <see langword="true"/> if the specified exception is a sharing violation exception; otherwise, <see langword="false"/>.

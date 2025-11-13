@@ -5,9 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Meziantou.AspNetCore.Mvc.TagHelpers;
 
-/// <summary>
-/// A TagHelper that inlines image files as Base64-encoded data URIs to reduce HTTP requests.
-/// </summary>
+/// <summary>A TagHelper that inlines image files as Base64-encoded data URIs to reduce HTTP requests.</summary>
 /// <example>
 /// <code language="razor">
 /// &lt;!-- Input --&gt;

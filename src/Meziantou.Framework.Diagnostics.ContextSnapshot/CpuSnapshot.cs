@@ -2,9 +2,7 @@ using Meziantou.Framework.Diagnostics.ContextSnapshot.Internals;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
-/// <summary>
-/// Represents a snapshot of CPU information including processor name, core counts, frequencies, and hardware intrinsics support.
-/// </summary>
+/// <summary>Represents a snapshot of CPU information including processor name, core counts, frequencies, and hardware intrinsics support.</summary>
 /// <example>
 /// Get CPU information:
 /// <code>

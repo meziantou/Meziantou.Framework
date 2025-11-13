@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides factory methods for creating cached enumerables that store enumeration results to prevent multiple enumerations.
-/// </summary>
+/// <summary>Provides factory methods for creating cached enumerables that store enumeration results to prevent multiple enumerations.</summary>
 /// <example>
 /// <code>
 /// var source = GetExpensiveEnumerable();

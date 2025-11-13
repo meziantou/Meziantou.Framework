@@ -5,9 +5,7 @@ using Meziantou.Framework.InlineSnapshotTesting.Serialization;
 
 namespace Meziantou.Framework.InlineSnapshotTesting;
 
-/// <summary>
-/// Provides configuration settings for inline snapshot testing.
-/// </summary>
+/// <summary>Provides configuration settings for inline snapshot testing.</summary>
 public sealed record InlineSnapshotSettings
 {
     private static readonly ImmutableArray<MergeTool> DefaultMergeTools = ImmutableArray.Create(
@@ -111,14 +109,10 @@ public sealed record InlineSnapshotSettings
     /// <remarks>The <c>DiffEngine_Disabled</c> environment variable disable all diff tool even if set explicitly</remarks>
     public IEnumerable<MergeTool>? MergeTools { get; set; } = DefaultMergeTools;
 
-    /// <summary>
-    /// Before editing a file, use the PDB to validate the file path containing the snapshot.
-    /// </summary>
+    /// <summary>Before editing a file, use the PDB to validate the file path containing the snapshot.</summary>
     public bool ValidateSourceFilePathUsingPdbInfoWhenAvailable { get; set; } = true;
 
-    /// <summary>
-    /// Before editing a file, use the PDB to validate the line number containing the snapshot.
-    /// </summary>
+    /// <summary>Before editing a file, use the PDB to validate the line number containing the snapshot.</summary>
     /// <remarks>
     /// PDB and <see cref="System.Runtime.CompilerServices.CallerLineNumberAttribute"/> does not provide
     /// the same value. PDB provide the start of the expression whereas the attribute provide the line

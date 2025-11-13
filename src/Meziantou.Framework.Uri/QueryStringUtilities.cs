@@ -4,14 +4,10 @@ using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides methods for parsing and manipulating query strings.
-/// </summary>
+/// <summary>Provides methods for parsing and manipulating query strings.</summary>
 public static class QueryStringUtilities
 {
-    /// <summary>
-    /// Append the given query key and value to the URI.
-    /// </summary>
+    /// <summary>Append the given query key and value to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="name">The name of the query key.</param>
     /// <param name="value">The query value.</param>
@@ -27,9 +23,7 @@ public static class QueryStringUtilities
         return AddQueryString(uri, [new KeyValuePair<string, string?>(name, value)]);
     }
 
-    /// <summary>
-    /// Append the given query keys and values to the URI.
-    /// </summary>
+    /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A dictionary of query keys and values to append.</param>
     /// <returns>The combined result.</returns>
@@ -43,9 +37,7 @@ public static class QueryStringUtilities
         return AddQueryString(uri, (IEnumerable<KeyValuePair<string, string?>>)queryString);
     }
 
-    /// <summary>
-    /// Append the given query keys and values to the URI.
-    /// </summary>
+    /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A dictionary of query keys and values to append.</param>
     /// <returns>The combined result.</returns>
@@ -58,9 +50,7 @@ public static class QueryStringUtilities
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
 
-    /// <summary>
-    /// Append the given query keys and values to the URI.
-    /// </summary>
+    /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A dictionary of query keys and values to append.</param>
     /// <returns>The combined result.</returns>
@@ -73,9 +63,7 @@ public static class QueryStringUtilities
         return AddQueryString(uri, queryString.Select(tuple => KeyValuePair.Create(tuple.Name, tuple.Value)));
     }
 
-    /// <summary>
-    /// Append the given query keys and values to the URI.
-    /// </summary>
+    /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of query names and values to append.</param>
     /// <returns>The combined result.</returns>
@@ -89,9 +77,7 @@ public static class QueryStringUtilities
         return AddQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
-    /// <summary>
-    /// Append the given query keys and values to the URI.
-    /// </summary>
+    /// <summary>Append the given query keys and values to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to append.</param>
     /// <returns>The combined result.</returns>
@@ -134,9 +120,7 @@ public static class QueryStringUtilities
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Replace the query string with the given query key and value.
-    /// </summary>
+    /// <summary>Replace the query string with the given query key and value.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -150,9 +134,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, queryString.SelectMany(kvp => kvp.Value, (kvp, v) => KeyValuePair.Create(kvp.Key, v)));
     }
 
-    /// <summary>
-    /// Replace the query string with the given query key and value.
-    /// </summary>
+    /// <summary>Replace the query string with the given query key and value.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -206,9 +188,7 @@ public static class QueryStringUtilities
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Append the given query key and value to the URI.
-    /// </summary>
+    /// <summary>Append the given query key and value to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -231,9 +211,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>
-    /// Append the given query key and value to the URI.
-    /// </summary>
+    /// <summary>Append the given query key and value to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -256,9 +234,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>
-    /// Append the given query key and value to the URI.
-    /// </summary>
+    /// <summary>Append the given query key and value to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -301,9 +277,7 @@ public static class QueryStringUtilities
         return SetQueryString(uri, parsed);
     }
 
-    /// <summary>
-    /// Append the given query key and value to the URI.
-    /// </summary>
+    /// <summary>Append the given query key and value to the URI.</summary>
     /// <param name="uri">The base URI.</param>
     /// <param name="queryString">A collection of name value query pairs to set.</param>
     /// <returns>The combined result.</returns>
@@ -337,9 +311,7 @@ public static class QueryStringUtilities
         return AddOrReplaceQueryString(uri, name, value: null);
     }
 
-    /// <summary>
-    /// Parse a query string into its component key and value parts.
-    /// </summary>
+    /// <summary>Parse a query string into its component key and value parts.</summary>
     /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
     /// <returns>A collection of parsed keys and values.</returns>
     public static QueryStringParameterCollection ParseQuery(string? queryString)
@@ -352,9 +324,7 @@ public static class QueryStringUtilities
         return result;
     }
 
-    /// <summary>
-    /// Parse a query string into its component key and value parts.
-    /// </summary>
+    /// <summary>Parse a query string into its component key and value parts.</summary>
     /// <param name="queryString">The raw query string value, with or without the leading '?'.</param>
     /// <returns>A collection of parsed keys and values, null if there are no entries.</returns>
     public static QueryStringParameterCollection? ParseNullableQuery(string? queryString)

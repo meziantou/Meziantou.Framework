@@ -17,8 +17,6 @@ public sealed class HumanReadablePropertyOrderAttribute : HumanReadableAttribute
         Order = order;
     }
 
-    /// <summary>
-    /// The serialization order of the property.
-    /// </summary>
+    /// <summary>The serialization order of the property.</summary>
     public int Order { get; }
 }

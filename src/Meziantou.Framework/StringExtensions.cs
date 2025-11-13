@@ -884,17 +884,13 @@ static partial class StringExtensions
         return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    /// <summary>
-    /// Removes the trailing occurrence of a specified string from the current string.
-    /// </summary>
+    /// <summary>Removes the trailing occurrence of a specified string from the current string.</summary>
     public static string RemoveSuffix(this string str, string suffix)
     {
         return RemoveSuffix(str, suffix, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Removes the trailing occurrence of a specified string from the current string.
-    /// </summary>
+    /// <summary>Removes the trailing occurrence of a specified string from the current string.</summary>
     public static string RemoveSuffix(this string str, string suffix, StringComparison stringComparison)
     {
         if (str.EndsWith(suffix, stringComparison))
@@ -905,17 +901,13 @@ static partial class StringExtensions
         return str;
     }
 
-    /// <summary>
-    /// Removes the leading occurrence of a specified string from the current string.
-    /// </summary>
+    /// <summary>Removes the leading occurrence of a specified string from the current string.</summary>
     public static string RemovePrefix(this string str, string prefix)
     {
         return RemovePrefix(str, prefix, StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Removes the leading occurrence of a specified string from the current string.
-    /// </summary>
+    /// <summary>Removes the leading occurrence of a specified string from the current string.</summary>
     public static string RemovePrefix(this string str, string prefix, StringComparison stringComparison)
     {
         if (str.StartsWith(prefix, stringComparison))

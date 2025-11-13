@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides non-generic access to a strongly-typed ID's underlying value as a string and its type information.
-/// </summary>
+/// <summary>Provides non-generic access to a strongly-typed ID's underlying value as a string and its type information.</summary>
 /// <example>
 /// Working with strongly-typed IDs polymorphically:
 /// <code>
@@ -24,9 +22,7 @@ public interface IStronglyTypedId
     Type UnderlyingType { get; }
 }
 
-/// <summary>
-/// Provides strongly-typed access to the underlying value of a strongly-typed ID.
-/// </summary>
+/// <summary>Provides strongly-typed access to the underlying value of a strongly-typed ID.</summary>
 /// <typeparam name="T">The type of the underlying value.</typeparam>
 /// <example>
 /// Accessing strongly-typed ID values with compile-time type safety:

@@ -10,9 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework;
 
-/// <summary>
-/// A mock HTTP server for testing HTTP clients. Use this to simulate HTTP endpoints without requiring a real server.
-/// </summary>
+/// <summary>A mock HTTP server for testing HTTP clients. Use this to simulate HTTP endpoints without requiring a real server.</summary>
 /// <example>
 /// Create a mock server with a simple endpoint:
 /// <code>

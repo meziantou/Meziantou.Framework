@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Win32.Natives;
 
-/// <summary>
-/// Specifies the type of application that is described by the RM_PROCESS_INFO structure.
-/// </summary>
+/// <summary>Specifies the type of application that is described by the RM_PROCESS_INFO structure.</summary>
 internal enum RM_APP_TYPE
 {
     /// <summary>
@@ -11,29 +9,19 @@ internal enum RM_APP_TYPE
     /// </summary>
     RmUnknownApp = 0,
 
-    /// <summary>
-    /// A Windows application run as a stand-alone process that displays a top-level window.
-    /// </summary>
+    /// <summary>A Windows application run as a stand-alone process that displays a top-level window.</summary>
     RmMainWindow = 1,
 
-    /// <summary>
-    /// A Windows application that does not run as a stand-alone process and does not display a top-level window.
-    /// </summary>
+    /// <summary>A Windows application that does not run as a stand-alone process and does not display a top-level window.</summary>
     RmOtherWindow = 2,
 
-    /// <summary>
-    /// The application is a Windows service.
-    /// </summary>
+    /// <summary>The application is a Windows service.</summary>
     RmService = 3,
 
-    /// <summary>
-    /// The application is Windows Explorer.
-    /// </summary>
+    /// <summary>The application is Windows Explorer.</summary>
     RmExplorer = 4,
 
-    /// <summary>
-    /// The application is a stand-alone console application.
-    /// </summary>
+    /// <summary>The application is a stand-alone console application.</summary>
     RmConsole = 5,
 
     /// <summary>

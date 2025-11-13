@@ -1,8 +1,6 @@
 namespace Meziantou.Framework;
 
-/// <summary>
-/// Provides methods to locate executables in the system PATH.
-/// </summary>
+/// <summary>Provides methods to locate executables in the system PATH.</summary>
 /// <example>
 /// <code>
 /// string? gitPath = ExecutableFinder.GetFullExecutablePath("git");

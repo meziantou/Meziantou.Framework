@@ -3,9 +3,7 @@ using System.Collections.Immutable;
 
 namespace Meziantou.Framework.Diagnostics.ContextSnapshot;
 
-/// <summary>
-/// A builder for creating diagnostic snapshots of the current execution context. Use this to gather system, runtime, and process information for troubleshooting.
-/// </summary>
+/// <summary>A builder for creating diagnostic snapshots of the current execution context. Use this to gather system, runtime, and process information for troubleshooting.</summary>
 /// <example>
 /// Capture comprehensive system diagnostics:
 /// <code>

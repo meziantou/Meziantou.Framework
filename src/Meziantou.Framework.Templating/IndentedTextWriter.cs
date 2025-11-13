@@ -10,17 +10,13 @@ public sealed class IndentedTextWriter : TextWriter
     private bool _tabsPending;
     private readonly string _tabString;
 
-    /// <summary>
-    ///     Gets the encoding for the text writer to use.
-    /// </summary>
+    /// <summary>Gets the encoding for the text writer to use.</summary>
     /// <returns>
     ///     An <see cref="System.Text.Encoding" /> that indicates the encoding for the text writer to use.
     /// </returns>
     public override Encoding Encoding => InnerWriter.Encoding;
 
-    /// <summary>
-    ///     Gets or sets the new line character to use.
-    /// </summary>
+    /// <summary>Gets or sets the new line character to use.</summary>
     /// <returns> The new line character to use. </returns>
     [AllowNull]
     public override string NewLine
@@ -29,9 +25,7 @@ public sealed class IndentedTextWriter : TextWriter
         set => InnerWriter.NewLine = value;
     }
 
-    /// <summary>
-    ///     Gets or sets the number of spaces to indent.
-    /// </summary>
+    /// <summary>Gets or sets the number of spaces to indent.</summary>
     /// <returns> The number of spaces to indent. </returns>
     public int Indent
     {
@@ -55,9 +49,7 @@ public sealed class IndentedTextWriter : TextWriter
     /// </returns>
     public TextWriter InnerWriter { get; }
 
-    /// <summary>
-    ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and default tab string.
-    /// </summary>
+    /// <summary>Initializes a new instance of the IndentedTextWriter class using the specified text writer and default tab string.</summary>
     /// <param name="writer">
     ///     The <see cref="TextWriter" /> to use for output.
     /// </param>
@@ -66,9 +58,7 @@ public sealed class IndentedTextWriter : TextWriter
     {
     }
 
-    /// <summary>
-    ///     Initializes a new instance of the IndentedTextWriter class using the specified text writer and tab string.
-    /// </summary>
+    /// <summary>Initializes a new instance of the IndentedTextWriter class using the specified text writer and tab string.</summary>
     /// <param name="writer">
     ///     The <see cref="TextWriter" /> to use for output.
     /// </param>
@@ -88,9 +78,7 @@ public sealed class IndentedTextWriter : TextWriter
         base.Dispose(disposing);
     }
 
-    /// <summary>
-    ///     Flushes the stream.
-    /// </summary>
+    /// <summary>Flushes the stream.</summary>
     public override void Flush()
     {
         InnerWriter.Flush();
@@ -115,9 +103,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = false;
     }
 
-    /// <summary>
-    ///     Writes the specified string to the text stream.
-    /// </summary>
+    /// <summary>Writes the specified string to the text stream.</summary>
     /// <param name="value"> The string to write. </param>
     public override void Write(string? value)
     {
@@ -125,9 +111,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Boolean value to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Boolean value to the text stream.</summary>
     /// <param name="value"> The Boolean value to write. </param>
     public override void Write(bool value)
     {
@@ -135,9 +119,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes a character to the text stream.
-    /// </summary>
+    /// <summary>Writes a character to the text stream.</summary>
     /// <param name="value"> The character to write. </param>
     public override void Write(char value)
     {
@@ -145,9 +127,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes a character array to the text stream.
-    /// </summary>
+    /// <summary>Writes a character array to the text stream.</summary>
     /// <param name="buffer"> The character array to write. </param>
     public override void Write(char[]? buffer)
     {
@@ -155,9 +135,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(buffer);
     }
 
-    /// <summary>
-    ///     Writes a subarray of characters to the text stream.
-    /// </summary>
+    /// <summary>Writes a subarray of characters to the text stream.</summary>
     /// <param name="buffer"> The character array to write data from. </param>
     /// <param name="index"> Starting index in the buffer. </param>
     /// <param name="count"> The number of characters to write. </param>
@@ -167,9 +145,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(buffer, index, count);
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Double to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Double to the text stream.</summary>
     /// <param name="value"> The double to write. </param>
     public override void Write(double value)
     {
@@ -177,9 +153,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Single to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Single to the text stream.</summary>
     /// <param name="value"> The single to write. </param>
     public override void Write(float value)
     {
@@ -187,9 +161,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes the text representation of an integer to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an integer to the text stream.</summary>
     /// <param name="value"> The integer to write. </param>
     public override void Write(int value)
     {
@@ -197,9 +169,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes the text representation of an 8-byte integer to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an 8-byte integer to the text stream.</summary>
     /// <param name="value"> The 8-byte integer to write. </param>
     public override void Write(long value)
     {
@@ -207,9 +177,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes the text representation of an object to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an object to the text stream.</summary>
     /// <param name="value"> The object to write. </param>
     public override void Write(object? value)
     {
@@ -217,9 +185,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(value);
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string. </param>
     /// <param name="arg0"> The object to write into the formatted string. </param>
     public override void Write(string format, object? arg0)
@@ -228,9 +194,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(format, arg0);
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string to use. </param>
     /// <param name="arg0"> The first object to write into the formatted string. </param>
     /// <param name="arg1"> The second object to write into the formatted string. </param>
@@ -240,9 +204,7 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(format, arg0, arg1);
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string to use. </param>
     /// <param name="arg"> The argument array to output. </param>
     public override void Write(string format, params object?[] arg)
@@ -251,18 +213,14 @@ public sealed class IndentedTextWriter : TextWriter
         InnerWriter.Write(format, arg);
     }
 
-    /// <summary>
-    ///     Writes the specified string to a line without tabs.
-    /// </summary>
+    /// <summary>Writes the specified string to a line without tabs.</summary>
     /// <param name="value"> The string to write. </param>
     public void WriteLineNoTabs(string value)
     {
         InnerWriter.WriteLine(value);
     }
 
-    /// <summary>
-    ///     Writes the specified string, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the specified string, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The string to write. </param>
     public override void WriteLine(string? value)
     {
@@ -271,9 +229,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes a line terminator.
-    /// </summary>
+    /// <summary>Writes a line terminator.</summary>
     public override void WriteLine()
     {
         OutputTabs();
@@ -281,9 +237,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Boolean, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Boolean, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The Boolean to write. </param>
     public override void WriteLine(bool value)
     {
@@ -292,9 +246,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes a character, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes a character, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The character to write. </param>
     public override void WriteLine(char value)
     {
@@ -303,9 +255,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes a character array, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes a character array, followed by a line terminator, to the text stream.</summary>
     /// <param name="buffer"> The character array to write. </param>
     public override void WriteLine(char[]? buffer)
     {
@@ -314,9 +264,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes a subarray of characters, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes a subarray of characters, followed by a line terminator, to the text stream.</summary>
     /// <param name="buffer"> The character array to write data from. </param>
     /// <param name="index"> Starting index in the buffer. </param>
     /// <param name="count"> The number of characters to write. </param>
@@ -327,9 +275,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Double, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Double, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The double to write. </param>
     public override void WriteLine(double value)
     {
@@ -338,9 +284,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of a Single, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a Single, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The single to write. </param>
     public override void WriteLine(float value)
     {
@@ -349,9 +293,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of an integer, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an integer, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The integer to write. </param>
     public override void WriteLine(int value)
     {
@@ -360,9 +302,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of an 8-byte integer, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an 8-byte integer, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The 8-byte integer to write. </param>
     public override void WriteLine(long value)
     {
@@ -371,9 +311,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of an object, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of an object, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> The object to write. </param>
     public override void WriteLine(object? value)
     {
@@ -382,9 +320,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, followed by a line terminator, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, followed by a line terminator, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string. </param>
     /// <param name="arg0"> The object to write into the formatted string. </param>
     public override void WriteLine(string format, object? arg0)
@@ -394,9 +330,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, followed by a line terminator, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, followed by a line terminator, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string to use. </param>
     /// <param name="arg0"> The first object to write into the formatted string. </param>
     /// <param name="arg1"> The second object to write into the formatted string. </param>
@@ -407,9 +341,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes out a formatted string, followed by a line terminator, using the same semantics as specified.
-    /// </summary>
+    /// <summary>Writes out a formatted string, followed by a line terminator, using the same semantics as specified.</summary>
     /// <param name="format"> The formatting string to use. </param>
     /// <param name="arg"> The argument array to output. </param>
     public override void WriteLine(string format, params object?[] arg)
@@ -419,9 +351,7 @@ public sealed class IndentedTextWriter : TextWriter
         _tabsPending = true;
     }
 
-    /// <summary>
-    ///     Writes the text representation of a UInt32, followed by a line terminator, to the text stream.
-    /// </summary>
+    /// <summary>Writes the text representation of a UInt32, followed by a line terminator, to the text stream.</summary>
     /// <param name="value"> A UInt32 to output. </param>
     public override void WriteLine(uint value)
     {

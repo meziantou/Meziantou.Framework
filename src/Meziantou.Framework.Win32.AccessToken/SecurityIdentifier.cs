@@ -7,9 +7,7 @@ using Windows.Win32.Security;
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Represents a security identifier (SID) that uniquely identifies a user, group, or other security principal.
-/// </summary>
+/// <summary>Represents a security identifier (SID) that uniquely identifies a user, group, or other security principal.</summary>
 /// <example>
 /// <code>
 /// // Get a well-known SID

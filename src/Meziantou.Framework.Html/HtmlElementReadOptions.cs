@@ -2,9 +2,7 @@
 
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies options that control how HTML elements are read and parsed.
-/// </summary>
+/// <summary>Specifies options that control how HTML elements are read and parsed.</summary>
 [Flags]
 #if HTML_PUBLIC
 public

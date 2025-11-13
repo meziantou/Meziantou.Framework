@@ -2,9 +2,7 @@ using Microsoft.JSInterop;
 
 namespace Meziantou.AspNetCore.Components;
 
-/// <summary>
-/// Provides access to the browser's clipboard API for reading and writing text.
-/// </summary>
+/// <summary>Provides access to the browser's clipboard API for reading and writing text.</summary>
 /// <remarks>
 /// <para>
 /// This service provides a convenient way to interact with the browser's clipboard in Blazor applications.

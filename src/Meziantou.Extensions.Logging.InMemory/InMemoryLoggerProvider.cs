@@ -2,9 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Extensions.Logging.InMemory;
 
-/// <summary>
-/// Provides a logger provider that stores log entries in memory.
-/// </summary>
+/// <summary>Provides a logger provider that stores log entries in memory.</summary>
 /// <example>
 /// <code>
 /// // Use with dependency injection

@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Html;
 
-/// <summary>
-/// Specifies the type of HTML fragment encountered during parsing.
-/// </summary>
+/// <summary>Specifies the type of HTML fragment encountered during parsing.</summary>
 // NOTE: Keep in sync with HtmlParserState
 #if HTML_PUBLIC
 public

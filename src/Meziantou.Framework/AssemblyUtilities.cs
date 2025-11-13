@@ -4,9 +4,7 @@ namespace Meziantou.Framework;
 
 public static class AssemblyUtilities
 {
-    /// <summary>
-    /// Gets the informational version of an assembly.
-    /// </summary>
+    /// <summary>Gets the informational version of an assembly.</summary>
     /// <param name="assembly">The assembly. May not be null.</param>
     /// <returns>The version represented as a string. May not be null.</returns>
     public static string? GetInformationalVersion(this Assembly assembly)
@@ -22,9 +20,7 @@ public static class AssemblyUtilities
         return null;
     }
 
-    /// <summary>
-    /// Gets the linker timestamp of a specified assembly.
-    /// </summary>
+    /// <summary>Gets the linker timestamp of a specified assembly.</summary>
     /// <param name="assembly">The assembly. May not be null.</param>
     /// <returns>A valid date time or null if an error occurred.</returns>
     public static DateTime? GetLinkerTimestampUtc(this Assembly assembly)
@@ -46,13 +42,9 @@ public static class AssemblyUtilities
         return null;
     }
 
-    /// <summary>
-    /// Gets the linker timestamp of a specified assembly.
-    /// </summary>
+    /// <summary>Gets the linker timestamp of a specified assembly.</summary>
     /// <param name="filePath">The assembly file path.</param>
-    /// <returns>
-    /// A valid date time or null if an error occurred.
-    /// </returns>
+    /// <returns>A valid date time or null if an error occurred.</returns>
     public static DateTime? GetLinkerTimestampUtc(string filePath)
     {
         ArgumentNullException.ThrowIfNull(filePath);

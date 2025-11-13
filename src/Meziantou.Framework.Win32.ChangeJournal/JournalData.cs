@@ -1,8 +1,6 @@
 namespace Meziantou.Framework.Win32;
 
-/// <summary>
-/// Contains information about the change journal on a volume.
-/// </summary>
+/// <summary>Contains information about the change journal on a volume.</summary>
 public sealed class JournalData
 {
     internal JournalData()
@@ -30,9 +28,7 @@ public sealed class JournalData
         RangeTrackFileSizeThreshold = nativeData.RangeTrackFileSizeThreshold;
     }
 
-    /// <summary>
-    ///     64-bit unique journal identifier.
-    /// </summary>
+    /// <summary>64-bit unique journal identifier.</summary>
     public ulong ID { get; }
 
     /// <summary>
@@ -41,9 +37,7 @@ public sealed class JournalData
     /// </summary>
     public Usn FirstUSN { get; }
 
-    /// <summary>
-    ///     The Usn that will be assigned to the next record appended to the journal.
-    /// </summary>
+    /// <summary>The Usn that will be assigned to the next record appended to the journal.</summary>
     public Usn NextUSN { get; }
 
     /// <summary>
@@ -52,14 +46,10 @@ public sealed class JournalData
     /// </summary>
     public Usn LowestValidUSN { get; }
 
-    /// <summary>
-    ///     The largest Usn that will ever to assigned to a record in this journal.
-    /// </summary>
+    /// <summary>The largest Usn that will ever to assigned to a record in this journal.</summary>
     public Usn MaximumUSN { get; }
 
-    /// <summary>
-    ///     The maximum size, in bytes, the journal can use on the volume.
-    /// </summary>
+    /// <summary>The maximum size, in bytes, the journal can use on the volume.</summary>
     public ulong MaximumSize { get; }
 
     /// <summary>
@@ -68,19 +58,13 @@ public sealed class JournalData
     /// </summary>
     public ulong AllocationDelta { get; }
 
-    /// <summary>
-    /// The minimum version of the USN change journal that the file system supports.
-    /// </summary>
+    /// <summary>The minimum version of the USN change journal that the file system supports.</summary>
     public ushort MinSupportedMajorVersion { get; }
 
-    /// <summary>
-    /// The maximum version of the USN change journal that the file system supports.
-    /// </summary>
+    /// <summary>The maximum version of the USN change journal that the file system supports.</summary>
     public ushort MaxSupportedMajorVersion { get; }
 
-    /// <summary>
-    /// Whether or not range tracking is turned on. The following are the possible values for the Flags member.
-    /// </summary>
+    /// <summary>Whether or not range tracking is turned on. The following are the possible values for the Flags member.</summary>
     public ChangeJournalFlags Flags { get; }
 
     /// <summary>

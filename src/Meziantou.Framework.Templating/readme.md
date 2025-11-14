@@ -163,17 +163,6 @@ var result = template.Run(42);
 // result: "Value: 42"
 ```
 
-### Accessing the Output Parameter
-
-You can directly use the output parameter in your code blocks:
-
-```csharp
-var template = new Template();
-template.Load("<% for(int i = 0; i < 3; i++) __output__.Write(i); %>");
-var result = template.Run();
-// result: "012"
-```
-
 ### Building Templates Separately
 
 Templates can be built (compiled) separately from execution:
@@ -245,7 +234,3 @@ catch (TemplateException ex)
     Console.WriteLine($"Template error: {ex.Message}");
 }
 ```
-
-## Additional Resources
-
-- [Blog post about Meziantou.Framework.Templating](https://www.meziantou.net/creating-a-template-engine-in-csharp.htm?WT.mc_id=DT-MVP-5003978)

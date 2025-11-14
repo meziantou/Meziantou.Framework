@@ -12,12 +12,6 @@ A powerful and flexible .NET template engine that allows you to create text temp
 - **Using directives** - Import namespaces and types for use in templates
 - **Debug support** - Generate debug symbols for template debugging
 
-## Installation
-
-```xml
-<PackageReference Include="Meziantou.Framework.Templating" Version="2.0.10" />
-```
-
 ## Usage
 
 ### Basic Template

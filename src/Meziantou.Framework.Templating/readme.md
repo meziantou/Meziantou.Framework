@@ -87,11 +87,11 @@ Combine text, evaluation blocks, and statement blocks:
 
 ```csharp
 var template = new Template();
-template.Load(@"
+template.Load("""
 <% for(int i = 1; i <= 3; i++) { %>
   Item <%= i %>: <%= i * 10 %>
 <% } %>
-");
+""");
 var result = template.Run();
 // result:
 //   Item 1: 10

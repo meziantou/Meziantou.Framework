@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>A .NET library for managing Linux Control Groups v2 (cgroups v2). Provides APIs to create/delete cgroups, manage process membership, and configure resource limits for CPU, memory, I/O, PIDs, and more.</Description>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

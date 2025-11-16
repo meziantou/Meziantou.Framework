@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks);net472</TargetFrameworks>
     <Description>A globbing library for .NET. Can be used to match any string or with System.IO.Enumeration.</Description>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

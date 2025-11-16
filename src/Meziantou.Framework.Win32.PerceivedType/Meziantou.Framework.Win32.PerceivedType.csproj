@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <Description>Wrapper for Windows Perceived types</Description>
-    <Version>2.0.12</Version>
+    <Version>2.0.13</Version>
   </PropertyGroup>
 
   <ItemGroup>

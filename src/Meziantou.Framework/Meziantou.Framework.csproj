@@ -5,7 +5,7 @@
     <IsTrimmable>true</IsTrimmable>
 
     <Description>Lots of utility classes</Description>
-    <Version>5.0.5</Version>
+    <Version>5.0.6</Version>
     <DefineConstants>$(DefineConstants);PUBLIC_IO_UTILITIES;PUBLIC_STRING_EXTENSIONS;PUBLIC_MARKDOWN_BUILDER;PUBLIC_EXECUTABLE_FINDER;PUBLIC_SAFEHANDLEVALUE</DefineConstants>
   </PropertyGroup>
 

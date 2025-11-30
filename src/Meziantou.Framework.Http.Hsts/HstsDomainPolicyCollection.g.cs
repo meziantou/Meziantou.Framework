@@ -10,21 +10,21 @@ partial class HstsDomainPolicyCollection
 {
     private void LoadPreloadDomains()
     {
-        // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/cf68ae74a6d947e83a92fae9b58a5dccd9d09083/net/http/transport_security_state_static.json
-        // Commit date: 2025-10-24T21:57:59.0000000+00:00
+        // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/957d143c2f02f572e0b05c45880e3236136d8c48/net/http/transport_security_state_static.json
+        // Commit date: 2025-11-25T23:45:39.0000000+00:00
         CollectionsMarshal.SetCount(_policies, 4);
 
         var dict1 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 61, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[0] = dict1;
         Load(dict1, 51, "preload_1.bin");
 
-        var dict2 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 85238, comparer: StringComparer.OrdinalIgnoreCase);
+        var dict2 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 85158, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[1] = dict2;
-        Load(dict2, 85228, "preload_2.bin");
+        Load(dict2, 85148, "preload_2.bin");
 
-        var dict3 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 8266, comparer: StringComparer.OrdinalIgnoreCase);
+        var dict3 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 8195, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[2] = dict3;
-        Load(dict3, 8256, "preload_3.bin");
+        Load(dict3, 8185, "preload_3.bin");
 
         var dict4 = new ConcurrentDictionary<string, HstsDomainPolicy>(concurrencyLevel: -1, capacity: 161, comparer: StringComparer.OrdinalIgnoreCase);
         _policies[3] = dict4;

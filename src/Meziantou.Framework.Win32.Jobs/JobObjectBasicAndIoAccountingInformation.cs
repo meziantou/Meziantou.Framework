@@ -9,6 +9,6 @@ public sealed record JobObjectBasicAndIoAccountingInformation
     /// <summary>Contains I/O accounting information for a process or a job object.</summary>
     public required JobObjectBasicAccountingInformation BasicInfo { get; init; }
 
-    /// <summary>Contains I/O accounting information for a process or a job object.</summary>
+    /// <summary>Contains I/O counters for the job object.</summary>
     public required JobObjectIoCounters IoInfo { get; init; }
 }

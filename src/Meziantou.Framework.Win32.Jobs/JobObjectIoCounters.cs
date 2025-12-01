@@ -2,7 +2,7 @@
 
 namespace Meziantou.Framework.Win32;
 
-/// <summary>Contains I/O accounting information for a a job object.</summary>
+/// <summary>Contains I/O accounting information for a job object.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public sealed record JobObjectIoCounters
 {

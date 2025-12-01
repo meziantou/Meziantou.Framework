@@ -163,7 +163,7 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
-    public async Task GetBasicAndIoAccountingInformation()
+    public void GetBasicAndIoAccountingInformation()
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());
@@ -173,7 +173,7 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
-    public async Task GetMemoryAccountingInformation()
+    public void GetMemoryAccountingInformation()
     {
         using var job = new JobObject();
         job.AssignProcess(Process.GetCurrentProcess());

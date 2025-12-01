@@ -395,6 +395,93 @@ public sealed class JobObject : IDisposable
         }
     }
 
+    /// <summary>Get the job's basic accounting information.</summary>
+    /// <returns><see cref="JobObjectBasicAccountingInformation"/> record containing basic accounting information.</returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
+    public unsafe JobObjectBasicAccountingInformation GetBasicAccountingInformation()
+    {
+        var info = new JOBOBJECT_BASIC_ACCOUNTING_INFORMATION();
+
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAccountingInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>(), null))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+
+        return new JobObjectBasicAccountingInformation
+        {
+            TotalUserTime = new(info.TotalUserTime),
+            TotalKernelTime = new(info.TotalKernelTime),
+            ThisPeriodTotalUserTime = new(info.ThisPeriodTotalUserTime),
+            ThisPeriodTotalKernelTime = new(info.ThisPeriodTotalKernelTime),
+            TotalPageFaultCount = info.TotalPageFaultCount,
+            TotalProcesses = info.TotalProcesses,
+            ActiveProcesses = info.ActiveProcesses,
+            TotalTerminatedProcesses = info.TotalTerminatedProcesses,
+        };
+    }
+
+    /// <summary>Get the job's basic and IO accounting information.</summary>
+    /// <returns><see cref="JobObjectBasicAndIoAccountingInformation"/> record containing both basic and IO accounting information.</returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
+    public unsafe JobObjectBasicAndIoAccountingInformation GetBasicAndIoAccountingInformation()
+    {
+        var info = new JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION();
+
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectBasicAndIoAccountingInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_BASIC_AND_IO_ACCOUNTING_INFORMATION>(), null))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+
+        return new JobObjectBasicAndIoAccountingInformation
+        {
+            BasicInfo = new JobObjectBasicAccountingInformation
+            {
+                TotalUserTime = new(info.BasicInfo.TotalUserTime),
+                TotalKernelTime = new(info.BasicInfo.TotalKernelTime),
+                ThisPeriodTotalUserTime = new(info.BasicInfo.ThisPeriodTotalUserTime),
+                ThisPeriodTotalKernelTime = new(info.BasicInfo.ThisPeriodTotalKernelTime),
+                TotalPageFaultCount = info.BasicInfo.TotalPageFaultCount,
+                TotalProcesses = info.BasicInfo.TotalProcesses,
+                ActiveProcesses = info.BasicInfo.ActiveProcesses,
+                TotalTerminatedProcesses = info.BasicInfo.TotalTerminatedProcesses,
+            },
+            IoInfo = new JobObjectIoCounters
+            {
+                ReadOperationCount = info.IoInfo.ReadOperationCount,
+                WriteOperationCount = info.IoInfo.WriteOperationCount,
+                OtherOperationCount = info.IoInfo.OtherOperationCount,
+                ReadTransferCount = info.IoInfo.ReadTransferCount,
+                WriteTransferCount = info.IoInfo.WriteTransferCount,
+                OtherTransferCount = info.IoInfo.OtherTransferCount,
+            },
+        };
+    }
+
+    /// <summary>Get the job's memory accounting information.</summary>
+    /// <returns><see cref="JobObjectMemoryAccountingInformation"/> record containing memory accounting information.</returns>
+    /// <exception cref="Win32Exception">The operation failed.</exception>
+    public unsafe JobObjectMemoryAccountingInformation GetMemoryAccountingInformation()
+    {
+        var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION();
+
+        using var handleScope = new SafeHandleValue(_jobHandle);
+        if (!Windows.Win32.PInvoke.QueryInformationJobObject((HANDLE)handleScope.Value, JOBOBJECTINFOCLASS.JobObjectExtendedLimitInformation, &info, (uint)Marshal.SizeOf<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>(), null))
+        {
+            var err = Marshal.GetLastWin32Error();
+            throw new Win32Exception(err);
+        }
+
+        return new JobObjectMemoryAccountingInformation
+        {
+            PeakProcessMemoryUsed = info.PeakProcessMemoryUsed,
+            PeakJobMemoryUsed = info.PeakJobMemoryUsed,
+        };
+    }
+
     /// <summary>Determines whether the specified process is assigned to this job object.</summary>
     /// <param name="process">The process to check.</param>
     /// <returns><see langword="true"/> if the process is assigned to the job object; otherwise, <see langword="false"/>.</returns>

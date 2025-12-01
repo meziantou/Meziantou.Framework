@@ -64,6 +64,13 @@ job.Terminate();
 job.Terminate(exitCode: 1);
 ````
 
+You can also get accounting information for processes associated with the job:
+````c#
+var basicInfo = job.GetBasicAccountingInformation();
+var basicAndIoInfo = job.GetBasicAndIoAccountingInformation();
+var memoryInfo = job.GetMemoryAccountingInformation();
+````
+
 # Additional resources
 
 - [Job Objects](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects?WT.mc_id=DT-MVP-5003978)

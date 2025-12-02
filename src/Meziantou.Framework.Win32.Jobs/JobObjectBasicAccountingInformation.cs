@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Contains basic accounting information for a job object.</summary>
-[StructLayout(LayoutKind.Sequential)]
 public sealed record JobObjectBasicAccountingInformation
 {
     /// <summary>The total amount of user-mode execution time for all active processes associated with the job, as well as all terminated processes no longer associated with the job.</summary>

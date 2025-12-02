@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Win32;
 
 /// <summary>Represents the memory accounting information for a job object.</summary>
-[StructLayout(LayoutKind.Sequential)]
 public sealed record JobObjectMemoryAccountingInformation
 {
     /// <summary>The peak memory used by any process ever associated with the job.</summary>

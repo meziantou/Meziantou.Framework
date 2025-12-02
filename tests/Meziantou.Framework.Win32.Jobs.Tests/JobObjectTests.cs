@@ -154,6 +154,34 @@ public class JobObjectTests
     }
 
     [Fact, RunIf(FactOperatingSystem.Windows)]
+    public void GetBasicAccountingInformation()
+    {
+        using var job = new JobObject();
+        job.AssignProcess(Process.GetCurrentProcess());
+        var info = job.GetBasicAccountingInformation();
+        Assert.NotEqual(TimeSpan.Zero, info.TotalUserTime);
+    }
+
+    [Fact, RunIf(FactOperatingSystem.Windows)]
+    public void GetBasicAndIoAccountingInformation()
+    {
+        using var job = new JobObject();
+        job.AssignProcess(Process.GetCurrentProcess());
+        var info = job.GetBasicAndIoAccountingInformation();
+        Assert.NotEqual(TimeSpan.Zero, info.BasicInfo.TotalUserTime);
+        Assert.NotEqual((ulong)0, info.IoInfo.ReadOperationCount);
+    }
+
+    [Fact, RunIf(FactOperatingSystem.Windows)]
+    public void GetMemoryAccountingInformation()
+    {
+        using var job = new JobObject();
+        job.AssignProcess(Process.GetCurrentProcess());
+        var info = job.GetMemoryAccountingInformation();
+        Assert.NotEqual((ulong)0, info.PeakProcessMemoryUsed);
+    }
+
+    [Fact, RunIf(FactOperatingSystem.Windows)]
     public void IsAssignedToProcess_NotAssociated()
     {
         using var job = new JobObject();

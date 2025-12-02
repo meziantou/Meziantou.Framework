@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
     <RootNamespace>Meziantou.Framework.Win32</RootNamespace>
-    <Version>3.4.10</Version>
+    <Version>3.4.12</Version>
     <Description>.NET wrapper for Windows Job Objects</Description>
 
     <MeziantouPolyfill_ExcludedPolyfills>T:System.Diagnostics.CodeAnalysis.UnscopedRefAttribute</MeziantouPolyfill_ExcludedPolyfills>
@@ -15,7 +15,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.248">
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.257">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

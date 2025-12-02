@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="bunit" Version="2.0.66" />
+    <PackageReference Include="bunit" Version="2.1.1" />
   </ItemGroup>
 
   <ItemGroup>

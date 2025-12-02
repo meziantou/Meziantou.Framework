@@ -26,14 +26,14 @@ jobs:
   validate_bom:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Validate Code
         run: ./eng/update-bom.ps1
 
   validate_readme:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Validate Readme
@@ -44,7 +44,7 @@ jobs:
   validate_test_projects:
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Validate
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - run: dotnet build eng/packages.proj --configuration Release /p:IsOfficialBuild=true /bl:build.binlog -warnaserror
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ create_nuget ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - uses: actions/download-artifact@v6
@@ -111,7 +111,7 @@ jobs:
         run: |
           $Name = "test-results-${{ matrix.runs-on }}-${{ matrix.configuration }}-${{matrix.additionalArguments}}".Replace(":", "_").Replace("/", "_")
           "artifact-name=$Name" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: git config --global protocol.file.allow always
       - name: Setup .NET
         uses: ./.github/setup-dotnet
@@ -160,7 +160,7 @@ jobs:
         runtime: [ "win-x64", "linux-x64", "osx-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable/Trimmable.csproj
@@ -173,7 +173,7 @@ jobs:
         runtime: [ "win-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - run: dotnet publish --configuration Release --runtime ${{ matrix.runtime }} --self-contained Samples/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -182,7 +182,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [build_and_test]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - name: Install dotnet-coverage
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ validate_bom, validate_readme, validate_test_projects, validate_nuget, build_and_test, test_trimming, test_trimming_wpf ]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: ./.github/setup-dotnet
       - uses: actions/download-artifact@v6

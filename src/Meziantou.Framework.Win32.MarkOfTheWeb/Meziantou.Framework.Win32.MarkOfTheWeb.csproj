@@ -3,12 +3,12 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IsTrimmable>false</IsTrimmable>
-    <Version>1.0.6</Version>
+    <Version>1.0.8</Version>
     <Description>.NET wrapper to get or set Mark of the Web, a metadata identifier used by Microsoft Windows to mark files downloaded from the Internet as potentially unsafe</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.248">
+    <PackageReference Include="Microsoft.Windows.CsWin32" Version="0.3.257">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

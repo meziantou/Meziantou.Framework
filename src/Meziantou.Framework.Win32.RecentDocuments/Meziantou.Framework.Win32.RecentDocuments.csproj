@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <Description>.NET wrapper for Windows Recent Documents</Description>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
   </PropertyGroup>
 
   <ItemGroup>

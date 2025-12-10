@@ -327,6 +327,53 @@ public sealed class FullPathTests
         Assert.NotEmpty(fullPath.Value);
     }
 
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ToWindowsExtendedPath_RegularPath()
+    {
+        var path = FullPath.FromPath(@"C:\temp\test.txt");
+        var extended = path.ToWindowsExtendedPath();
+        Assert.Equal(@"\\?\C:\temp\test.txt", extended);
+    }
+
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ToWindowsExtendedPath_UNCPath()
+    {
+        var path = FullPath.FromPath(@"\\server\share\folder\file.txt");
+        var extended = path.ToWindowsExtendedPath();
+        Assert.Equal(@"\\?\UNC\server\share\folder\file.txt", extended);
+    }
+
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ToWindowsExtendedPath_AlreadyExtended()
+    {
+        var path = FullPath.FromPath(@"C:\temp\test.txt");
+        var extended = path.ToWindowsExtendedPath();
+        var doubleExtended = FullPath.FromPath(extended).ToWindowsExtendedPath();
+        Assert.Equal(extended, doubleExtended);
+    }
+
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ToWindowsExtendedPath_Empty()
+    {
+        var extended = FullPath.Empty.ToWindowsExtendedPath();
+        Assert.Equal("", extended);
+    }
+
+    [Fact]
+    [RunIf(FactOperatingSystem.Windows)]
+    public void ToWindowsExtendedPath_LongPath()
+    {
+        var longSegment = new string('a', 250);
+        var path = FullPath.FromPath($@"C:\{longSegment}\test.txt");
+        var extended = path.ToWindowsExtendedPath();
+        Assert.StartsWith(@"\\?\", extended, StringComparison.Ordinal);
+        Assert.Contains(longSegment, extended, StringComparison.Ordinal);
+    }
+
     private static void CreateSymlink(string source, string target, SymbolicLink options)
     {
         if (OperatingSystem.IsWindows())

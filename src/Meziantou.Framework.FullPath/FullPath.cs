@@ -49,7 +49,78 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
     public bool IsEmpty => _value is null;
 
     /// <summary>Gets the string representation of the path, or an empty string if the path is empty.</summary>
-    public string Value => _value ?? "";
+    /// <remarks>
+    /// If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
+    /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.
+    /// </remarks>
+    public string Value
+    {
+        get
+        {
+            if (_value is null)
+                return "";
+
+            if (OperatingSystem.IsWindows() && ContainsReservedDeviceName(_value))
+                return PathInternal.EnsureExtendedPrefix(_value);
+
+            return _value;
+        }
+    }
+
+    private static bool ContainsReservedDeviceName(string path)
+    {
+        var span = path.AsSpan();
+        var index = 0;
+
+        while (index < span.Length)
+        {
+            var separatorIndex = span[index..].IndexOfAny('\\', '/');
+            var componentEnd = separatorIndex >= 0 ? index + separatorIndex : span.Length;
+            var component = span[index..componentEnd];
+
+            if (IsReservedDeviceName(component))
+                return true;
+
+            if (separatorIndex < 0)
+                break;
+
+            index = componentEnd + 1;
+        }
+
+        return false;
+    }
+
+    private static bool IsReservedDeviceName(ReadOnlySpan<char> component)
+    {
+        if (component.IsEmpty)
+            return false;
+
+        var dotIndex = component.IndexOf('.');
+        var nameOnly = dotIndex >= 0 ? component[..dotIndex] : component;
+
+        if (nameOnly.Length < 3 || nameOnly.Length > 4)
+            return false;
+
+        if (nameOnly.Length == 3)
+        {
+            return nameOnly.Equals("CON", StringComparison.OrdinalIgnoreCase) ||
+                   nameOnly.Equals("PRN", StringComparison.OrdinalIgnoreCase) ||
+                   nameOnly.Equals("AUX", StringComparison.OrdinalIgnoreCase) ||
+                   nameOnly.Equals("NUL", StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (nameOnly.Length == 4)
+        {
+            if (!nameOnly[..3].Equals("COM", StringComparison.OrdinalIgnoreCase) &&
+                !nameOnly[..3].Equals("LPT", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var lastChar = nameOnly[3];
+            return lastChar is >= '0' and <= '9' or '\u00B9' or '\u00B2' or '\u00B3';
+        }
+
+        return false;
+    }
 
     /// <summary>Implicitly converts a <see cref="FullPath"/> to a <see cref="string"/>.</summary>
     public static implicit operator string(FullPath fullPath) => fullPath.ToString();
@@ -491,5 +562,21 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
                 PInvoke.ILFree(itemList);
             }
         }
+    }
+
+    /// <summary>Converts this path to Windows extended-length path format (<c>\\?\</c>).</summary>
+    /// <returns>The path in extended-length format, or an empty string if the path is empty.</returns>
+    /// <remarks>
+    /// <para>The extended-length path format bypasses most path parsing and validation, allowing paths longer than 260 characters.</para>
+    /// <para>UNC paths are converted to <c>\\?\UNC\server\share</c> format.</para>
+    /// <para>If the path already uses a device path syntax (<c>\\?\</c>, <c>\\.\</c>, or <c>\??\</c>), it is returned as-is.</para>
+    /// </remarks>
+    [SupportedOSPlatform("windows")]
+    public string ToWindowsExtendedPath()
+    {
+        if (IsEmpty)
+            return "";
+
+        return PathInternal.EnsureExtendedPrefix(_value);
     }
 }

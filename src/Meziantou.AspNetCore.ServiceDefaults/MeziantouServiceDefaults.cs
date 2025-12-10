@@ -74,6 +74,13 @@ public static class MeziantouServiceDefaults
 
         builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(jsonOptions => ConfigureJsonOptions(jsonOptions.JsonSerializerOptions, options));
         builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(jsonOptions => ConfigureJsonOptions(jsonOptions.SerializerOptions, options));
+
+        builder.Services.AddProblemDetails();
+
+#if NET10_0_OR_GREATER
+        builder.Services.AddValidation();
+#endif
+
         return builder;
     }
 

@@ -50,8 +50,9 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
 
     /// <summary>Gets the string representation of the path, or an empty string if the path is empty.</summary>
     /// <remarks>
-    /// If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
-    /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.
+    /// <para>If the path contains a reserved device name (CON, PRN, AUX, NUL, COM1-COM9, LPT1-LPT9),
+    /// the extended path format (<c>\\?\</c>) is returned to bypass Win32 namespace restrictions.</para>
+    /// <para>Use <see cref="RawValue"/> if you need the unmodified path without device name protection.</para>
     /// </remarks>
     public string Value
     {
@@ -66,6 +67,15 @@ public readonly partial struct FullPath : IEquatable<FullPath>, IComparable<Full
             return _value;
         }
     }
+
+    /// <summary>Gets the string representation of the path without any conversion, or an empty string if the path is empty.</summary>
+    /// <remarks>
+    /// <para>Unlike <see cref="Value"/>, this property returns the path exactly as stored internally, without applying
+    /// any protection for Windows reserved device names.</para>
+    /// <para>Use this property when you need the raw path for operations that handle reserved device names themselves,
+    /// or when you're certain the path doesn't contain reserved device names.</para>
+    /// </remarks>
+    public string RawValue => _value ?? "";
 
     private static bool ContainsReservedDeviceName(string path)
     {

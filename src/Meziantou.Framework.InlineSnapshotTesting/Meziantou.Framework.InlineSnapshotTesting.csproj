@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="DiffEngine" Version="17.0.1" />
-    <PackageReference Include="JsonPath.Net" Version="2.1.1" />
+    <PackageReference Include="JsonPath.Net" Version="2.2.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
   </ItemGroup>
 
@@ -35,7 +35,7 @@
     <PackageReference Include="System.Memory" Version="4.6.3" />
 
     <!-- This is required to generate csproj in the tests, even if the dependency is included transitively -->
-    <PackageReference Include="System.Text.Json" Version="10.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.1" />
   </ItemGroup>
 
   <!-- Package: Copy output of Meziantou.Framework.InlineSnapshotTesting.Prompt.TaskDialog + props to copy to output -->

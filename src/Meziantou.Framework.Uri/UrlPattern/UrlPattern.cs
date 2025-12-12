@@ -176,14 +176,14 @@ public sealed class UrlPattern
         var parser = new ConstructorStringParser(pattern);
         var init = parser.Parse();
 
-        if (baseUrl is null && !init.ContainsKey("protocol"))
+        if (baseUrl is null && !init.ContainsKey(UrlPatternKeys.Protocol))
         {
             throw new UrlPatternException("A base URL must be provided when the pattern does not specify a protocol.");
         }
 
         if (baseUrl is not null)
         {
-            init["baseURL"] = baseUrl;
+            init[UrlPatternKeys.BaseUrl] = baseUrl;
         }
 
         return Create(ConvertDictionaryToInit(init), options);
@@ -699,23 +699,23 @@ public sealed class UrlPattern
     {
         var init = new UrlPatternInit();
 
-        if (dict.TryGetValue("protocol", out var protocol))
+        if (dict.TryGetValue(UrlPatternKeys.Protocol, out var protocol))
             init.Protocol = protocol;
-        if (dict.TryGetValue("username", out var username))
+        if (dict.TryGetValue(UrlPatternKeys.Username, out var username))
             init.Username = username;
-        if (dict.TryGetValue("password", out var password))
+        if (dict.TryGetValue(UrlPatternKeys.Password, out var password))
             init.Password = password;
-        if (dict.TryGetValue("hostname", out var hostname))
+        if (dict.TryGetValue(UrlPatternKeys.Hostname, out var hostname))
             init.Hostname = hostname;
-        if (dict.TryGetValue("port", out var port))
+        if (dict.TryGetValue(UrlPatternKeys.Port, out var port))
             init.Port = port;
-        if (dict.TryGetValue("pathname", out var pathname))
+        if (dict.TryGetValue(UrlPatternKeys.Pathname, out var pathname))
             init.Pathname = pathname;
-        if (dict.TryGetValue("search", out var search))
+        if (dict.TryGetValue(UrlPatternKeys.Search, out var search))
             init.Search = search;
-        if (dict.TryGetValue("hash", out var hash))
+        if (dict.TryGetValue(UrlPatternKeys.Hash, out var hash))
             init.Hash = hash;
-        if (dict.TryGetValue("baseURL", out var baseUrl))
+        if (dict.TryGetValue(UrlPatternKeys.BaseUrl, out var baseUrl))
             init.BaseUrl = baseUrl;
 
         return init;

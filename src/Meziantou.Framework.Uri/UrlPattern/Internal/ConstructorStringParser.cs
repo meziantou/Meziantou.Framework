@@ -146,7 +146,7 @@ internal sealed class ConstructorStringParser
 
                         if (_protocolMatchesSpecialScheme)
                         {
-                            _result["pathname"] = "/";
+                            _result[UrlPatternKeys.Pathname] = "/";
                         }
 
                         if (NextIsAuthoritySlashes())
@@ -265,9 +265,9 @@ internal sealed class ConstructorStringParser
         }
 
         // If parser's result contains "hostname" and not "port", set port to empty string
-        if (_result.ContainsKey("hostname") && !_result.ContainsKey("port"))
+        if (_result.ContainsKey(UrlPatternKeys.Hostname) && !_result.ContainsKey(UrlPatternKeys.Port))
         {
-            _result["port"] = "";
+            _result[UrlPatternKeys.Port] = "";
         }
 
         return _result;
@@ -299,32 +299,32 @@ internal sealed class ConstructorStringParser
             // Set hostname to empty string if transitioning from certain states
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password) &&
                 (newState is ConstructorStringState.Port or ConstructorStringState.Pathname or ConstructorStringState.Search or ConstructorStringState.Hash) &&
-                !_result.ContainsKey("hostname"))
+                !_result.ContainsKey(UrlPatternKeys.Hostname))
             {
-                _result["hostname"] = "";
+                _result[UrlPatternKeys.Hostname] = "";
             }
 
             // Set pathname if transitioning to search or hash
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password or ConstructorStringState.Hostname or ConstructorStringState.Port) &&
                 (newState is ConstructorStringState.Search or ConstructorStringState.Hash) &&
-                !_result.ContainsKey("pathname"))
+                !_result.ContainsKey(UrlPatternKeys.Pathname))
             {
                 if (_protocolMatchesSpecialScheme)
                 {
-                    _result["pathname"] = "/";
+                    _result[UrlPatternKeys.Pathname] = "/";
                 }
                 else
                 {
-                    _result["pathname"] = "";
+                    _result[UrlPatternKeys.Pathname] = "";
                 }
             }
 
             // Set search if transitioning to hash
             if ((_state is ConstructorStringState.Protocol or ConstructorStringState.Authority or ConstructorStringState.Username or ConstructorStringState.Password or ConstructorStringState.Hostname or ConstructorStringState.Port or ConstructorStringState.Pathname) &&
                 newState == ConstructorStringState.Hash &&
-                !_result.ContainsKey("search"))
+                !_result.ContainsKey(UrlPatternKeys.Search))
             {
-                _result["search"] = "";
+                _result[UrlPatternKeys.Search] = "";
             }
         }
 
@@ -355,14 +355,14 @@ internal sealed class ConstructorStringParser
     {
         return state switch
         {
-            ConstructorStringState.Protocol => "protocol",
-            ConstructorStringState.Username => "username",
-            ConstructorStringState.Password => "password",
-            ConstructorStringState.Hostname => "hostname",
-            ConstructorStringState.Port => "port",
-            ConstructorStringState.Pathname => "pathname",
-            ConstructorStringState.Search => "search",
-            ConstructorStringState.Hash => "hash",
+            ConstructorStringState.Protocol => UrlPatternKeys.Protocol,
+            ConstructorStringState.Username => UrlPatternKeys.Username,
+            ConstructorStringState.Password => UrlPatternKeys.Password,
+            ConstructorStringState.Hostname => UrlPatternKeys.Hostname,
+            ConstructorStringState.Port => UrlPatternKeys.Port,
+            ConstructorStringState.Pathname => UrlPatternKeys.Pathname,
+            ConstructorStringState.Search => UrlPatternKeys.Search,
+            ConstructorStringState.Hash => UrlPatternKeys.Hash,
             _ => throw new InvalidOperationException($"Invalid state: {state}"),
         };
     }

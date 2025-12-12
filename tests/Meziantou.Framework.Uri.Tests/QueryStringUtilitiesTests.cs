@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Primitives;
-using Xunit;
+using Microsoft.Extensions.Primitives;
 
 namespace Meziantou.Framework.Uri.Tests;
 
